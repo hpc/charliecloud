@@ -5,6 +5,16 @@ testfiles = \
 .dockerignore \
 Dockerfile.00_tiny \
 Dockerfile.argenv \
+bucache/a.df \
+bucache/a-fail.df \
+bucache/argenv.df \
+bucache/argenv-special.df \
+bucache/argenv2.df \
+bucache/b.df \
+bucache/c.df \
+bucache/copy.df \
+bucache/force.df \
+bucache/from.df \
 build/10_sanity.bats \
 build/40_pull.bats \
 build/50_ch-image.bats \

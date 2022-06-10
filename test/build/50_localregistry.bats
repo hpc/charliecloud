@@ -11,27 +11,21 @@ tag='ch-image push'
 setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    # Skip unless GitHub Actions or there is a listener on localhost:5000.
-    if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
-                                      && ss -lnt | grep -F :5000); then
-        skip 'no local registry'
-    fi
-    export CH_IMAGE_USERNAME=charlie
-    export CH_IMAGE_PASSWORD=test
+    localregistry_init
 }
 
 @test "${tag}: without destination reference" {
     # FIXME: This test sets up an alias tag manually so we can use it to push.
     # Remove when we have real aliasing support for images.
-    ln -vfns 00_tiny "$CH_IMAGE_STORAGE"/img/localhost:5000%00_tiny
+    ln -vfns 00_tiny "$CH_IMAGE_STORAGE"/img/localhost+5000%00_tiny
 
     run ch-image -v --tls-no-verify push localhost:5000/00_tiny
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pushing image:   localhost:5000/00_tiny'* ]]
-    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost:5000%00_tiny"* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%00_tiny"* ]]
 
-    rm "$CH_IMAGE_STORAGE"/img/localhost:5000%00_tiny
+    rm "$CH_IMAGE_STORAGE"/img/localhost+5000%00_tiny
 }
 
 @test "${tag}: with destination reference" {
@@ -86,9 +80,8 @@ EOF
     [[ $output = *'stripping unsafe setuid bit: ./setuid_file'* ]]
 
     # Pull it back
-    run ch-image -v --tls-no-verify pull localhost:5000/foo/bar:weirdal "$img2"
-    echo "$output"
-    [[ $status -eq 0 ]]
+    ch-image -v --tls-no-verify pull localhost:5000/foo/bar:weirdal
+    ch-convert localhost:5000/foo/bar:weirdal "$img2"
     ls -l "$img2"
     [[ $(stat -c '%A' "$img2"/setuid_file) = -rw-r----- ]]
     [[ $(stat -c '%A' "$img2"/setgid_file) = -rw-r----- ]]
@@ -117,7 +110,8 @@ ENV weird="al yankovic"
 EOF
 
     ch-image push --tls-no-verify tmpimg localhost:5000/tmpimg
-    ch-image pull --tls-no-verify localhost:5000/tmpimg "$BATS_TMPDIR"/tmpimg
+    ch-image pull --tls-no-verify localhost:5000/tmpimg
+    ch-convert localhost:5000/tmpimg "$BATS_TMPDIR"/tmpimg
 
     run ch-run "$BATS_TMPDIR"/tmpimg --unset-env='*' --set-env -- env
     echo "$output"

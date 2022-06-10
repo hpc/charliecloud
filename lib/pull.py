@@ -3,6 +3,8 @@ import os.path
 import sys
 
 import charliecloud as ch
+import build_cache as bu
+
 
 ## Constants ##
 
@@ -16,6 +18,7 @@ manifests_internal = {
 }
 
 
+
 ## Main ##
 
 def main(cli):
@@ -24,16 +27,10 @@ def main(cli):
    if (cli.parse_only):
       print(ref.as_verbose_str)
       sys.exit(0)
-   image = ch.Image(ref, cli.image_dir)
-   ch.INFO("pulling image:    %s" % ref)
+   img = ch.Image(ref)
+   ch.INFO("pulling image:    %s" % img.ref)
    ch.INFO("requesting arch:  %s" % ch.arch)
-   if (cli.image_dir is not None):
-      ch.INFO("destination:      %s" % image.unpack_path)
-   else:
-      ch.VERBOSE("destination:      %s" % image.unpack_path)
-   pullet = Image_Puller(image, not cli.no_cache)
-   pullet.pull_to_unpacked(cli.last_layer)
-   pullet.done()
+   bu.cache.pull_eager(img, cli.last_layer)
    ch.done_notify()
 
 
@@ -46,15 +43,15 @@ class Image_Puller:
                 "image",
                 "layer_hashes",
                 "registry",
-                "use_cache")
+                "sid_input")
 
-   def __init__(self, image, use_cache):
+   def __init__(self, image):
       self.architectures = None
-      self.image = image
-      self.registry = ch.Registry_HTTP(image.ref)
       self.config_hash = None
+      self.image = image
       self.layer_hashes = None
-      self.use_cache = use_cache
+      self.registry = ch.Registry_HTTP(image.ref)
+      self.sid_input = None
 
    @property
    def config_path(self):
@@ -111,7 +108,7 @@ class Image_Puller:
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
-         if (os.path.exists(self.config_path) and self.use_cache):
+         if (os.path.exists(self.config_path) and ch.dlcache_p):
             ch.INFO("config: using existing file")
          else:
             self.registry.blob_to_file(self.config_hash, self.config_path,
@@ -121,7 +118,7 @@ class Image_Puller:
          path = self.layer_path(lh)
          ch.VERBOSE("layer path: %s" % path)
          msg = "layer %d/%d: %s" % (i, len(self.layer_hashes), lh[:7])
-         if (os.path.exists(path) and self.use_cache):
+         if (os.path.exists(path) and ch.dlcache_p):
             ch.INFO("%s: using existing file" % msg)
          else:
             self.registry.blob_to_file(lh, path, "%s: downloading" % msg)
@@ -139,9 +136,9 @@ class Image_Puller:
       return (code, msg)
 
    def fatman_load(self):
-      """Load the fat manifest JSON file, downloading it first if needed. If
-         the image has a fat manifest, populate self.architectures; this may
-         be an empty dictionary if no valid architectures were found.
+      """Download the fat manifest and load it. If the image has a fat manifest
+         populate self.architectures; this may be an empty dictionary if no
+         valid architectures were found.
 
          Raises:
 
@@ -155,12 +152,9 @@ class Image_Puller:
          # cheat; internal manifest library matches every architecture
          self.architectures = { ch.arch_host: None }
          return
-      if (os.path.exists(self.fatman_path) and self.use_cache):
-         ch.INFO("manifest list: using existing file")
-      else:
-         # raises Not_In_Registry_Error if needed
-         self.registry.fatman_to_file(self.fatman_path,
-                                      "manifest list: downloading")
+      # raises Not_In_Registry_Error if needed
+      self.registry.fatman_to_file(self.fatman_path,
+                                   "manifest list: downloading")
       fm = ch.json_from_file(self.fatman_path, "fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
          # FIXME (issue #1101): If it's a v2 manifest we could use it instead
@@ -199,8 +193,8 @@ class Image_Puller:
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
    def manifest_load(self):
-      """Download the manifest file if needed, parse it, and set
-         self.config_hash and self.layer_hashes. If the image does not exist,
+      """Download the manifest file, parse it, and set self.config_hash and
+         self.layer_hashes. If the image does not exist,
          exit with error."""
       def bad_key(key):
          ch.FATAL("manifest: %s: no key: %s" % (self.manifest_path, key))
@@ -212,18 +206,15 @@ class Image_Puller:
          manifest = manifests_internal[str(self.image.ref)]
          ch.INFO("manifest: using internal library")
       except KeyError:
-         # download the file if needed, then parse it
+         # download the file and parse it
          if (ch.arch == "yolo" or self.architectures is None):
             digest = None
          else:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
-         if (os.path.exists(self.manifest_path) and self.use_cache):
-            ch.INFO("manifest: using existing file")
-         else:
-            self.registry.manifest_to_file(self.manifest_path,
-                                           "manifest: downloading",
-                                           digest=digest)
+         self.registry.manifest_to_file(self.manifest_path,
+                                        "manifest: downloading",
+                                        digest=digest)
          manifest = ch.json_from_file(self.manifest_path, "manifest")
       # validate schema version
       try:
@@ -263,6 +254,9 @@ class Image_Puller:
          self.layer_hashes.append(ch.digest_trim(i[key2]))
       if (version == 1):
          self.layer_hashes.reverse()
+      # Remember State_ID input. We can't rely on the manifest existing in
+      # serialized form (e.g. for internal manifests), so re-serialize.
+      self.sid_input = json.dumps(manifest, sort_keys=True)
 
    def manifest_digest_by_arch(self):
       "Return skinny manifest digest for target architecture."
@@ -288,9 +282,7 @@ class Image_Puller:
                   'try "ch-image list IMAGE_REF"')
       return digest
 
-   def pull_to_unpacked(self, last_layer=None):
-      "Pull and flatten image."
-      self.download()
+   def unpack(self, last_layer=None):
       layer_paths = [self.layer_path(h) for h in self.layer_hashes]
       self.image.unpack(layer_paths, last_layer)
       self.image.metadata_replace(self.config_path)

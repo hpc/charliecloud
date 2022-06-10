@@ -6,6 +6,7 @@ import os
 import os.path
 import sys
 
+import build_cache as bu
 import charliecloud as ch
 import pull
 import version
@@ -39,10 +40,36 @@ class Version(Action_Exit):
 # Argument: command line arguments Namespace. Do not need to call sys.exit()
 # because caller manages that.
 
+def build_cache(cli):
+   if (cli.bucache == ch.Build_Mode.DISABLED):
+      ch.FATAL("build-cache subcommand invalid with build cache disabled")
+   if (cli.reset):
+      bu.cache.reset()
+   if (cli.gc):
+      bu.cache.garbageinate()
+   if (cli.tree):
+      bu.cache.tree_print()
+   if (cli.dot):
+      bu.cache.tree_dot()
+   bu.cache.summary_print()
+
 def delete(cli):
-   img_ref = ch.Image_Ref(cli.image_ref)
-   img = ch.Image(img_ref)
+   img = ch.Image(ch.Image_Ref(cli.image_ref))
    img.unpack_delete()
+   bu.cache.worktrees_prune()
+
+def gestalt_bucache(cli):
+   bu.have_deps()
+
+def gestalt_bucache_dot(cli):
+   bu.have_deps()
+   bu.have_dot()
+
+def gestalt_python_path(cli):
+   print(sys.executable)
+
+def gestalt_storage_path(cli):
+   print(ch.storage.root)
 
 def import_(cli):
    if (not os.path.exists(cli.path)):
@@ -50,13 +77,12 @@ def import_(cli):
    dst = ch.Image(ch.Image_Ref(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
+   dst.unpack_clear()
    if (os.path.isdir(cli.path)):
       dst.copy_unpacked(cli.path)
    else:  # tarball, hopefully
       dst.unpack([cli.path])
-   # initialize metadata if needed
-   dst.metadata_load()
-   dst.metadata_save()
+   bu.cache.adopt(dst)
    ch.done_notify()
 
 def list_(cli):
@@ -67,8 +93,7 @@ def list_(cli):
          ch.FATAL("does not exist: %s" % ch.storage.root)
       if (not ch.storage.valid_p):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
-      imgs = ch.ossafe(os.listdir, "can't list directory: %s" % ch.storage.root, imgdir)
-      for img in sorted(imgs):
+      for img in sorted(ch.listdir(imgdir)):
          print(ch.Image_Ref(img))
    else:
       # list specified image
@@ -81,9 +106,22 @@ def list_(cli):
          img.metadata_load()
          stored = "yes (%s)" % img.metadata["arch"]
       print("in local storage:    %s" % stored)
+      # in cache?
+      (sid, commit) = bu.cache.find_image(img)
+      if (sid is None):
+         cached = "no"
+      else:
+         cached = "yes (state ID %s, commit %s)" % (sid.short, commit[:7])
+         if (os.path.exists(img.unpack_path)):
+            wdc = bu.cache.worktree_get_head(img)
+            if (wdc is None):
+               ch.WARNING("stored image not connected to build cache")
+            elif (wdc != commit):
+               ch.WARNING("stored image doesn't match build cache: %s" % wdc)
+      print("in build cache:      %s" % cached)
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
-      pullet = pull.Image_Puller(img, not cli.no_cache)
+      pullet = pull.Image_Puller(img)
       try:
          pullet.fatman_load()
          remote = "yes"
@@ -103,11 +141,6 @@ def list_(cli):
       print("host architecture:   %s" % ch.arch_host)
       print("archs available:     %s" % arch_avail)
 
-def python_path(cli):
-   print(sys.executable)
-
 def reset(cli):
    ch.storage.reset()
 
-def storage_path(cli):
-   print(ch.storage.root)

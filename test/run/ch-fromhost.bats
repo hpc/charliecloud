@@ -36,8 +36,8 @@ fromhost_ls () {
 
 @test 'ch-fromhost (CentOS)' {
     scope standard
-    prerequisites_ok centos8
-    img=${ch_imgdir}/centos8
+    prerequisites_ok almalinux8
+    img=${ch_imgdir}/almalinux8
 
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
@@ -139,8 +139,8 @@ fromhost_ls () {
 
 @test 'ch-fromhost errors' {
     scope standard
-    prerequisites_ok centos8
-    img=${ch_imgdir}/centos8
+    prerequisites_ok almalinux8
+    img=${ch_imgdir}/almalinux8
 
     # no image
     run ch-fromhost --path sotest/sotest.c

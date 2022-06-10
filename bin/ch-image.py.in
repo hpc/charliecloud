@@ -7,6 +7,7 @@ import sys
 
 sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../lib/charliecloud"))
+import build_cache as bu
 import charliecloud as ch
 import build
 import misc
@@ -30,13 +31,13 @@ def main():
    if (not os.path.exists(ch.CH_RUN)):
       ch.depfails.append(("missing", ch.CH_RUN))
 
-   ap = argparse.ArgumentParser(formatter_class=ch.HelpFormatter,
+   ap = ch.ArgumentParser(
       description="Build and manage images; completely unprivileged.",
       epilog="""Storage directory is used for caching and temporary images.
                 Location: first defined of --storage, $CH_IMAGE_STORAGE, and
-                %s.""" % ch.Storage.root_default())
-   ap._optionals.title = "options"  # https://stackoverflow.com/a/16981688
-   sps = ap.add_subparsers(title="subcommands", metavar="CMD")
+                %s.""" % ch.Storage.root_default(),
+      sub_title="subcommands",
+      sub_metavar="CMD")
 
    # Common options.
    #
@@ -71,36 +72,59 @@ def main():
    #     main parser look again) works [3], but is complicated and has some
    #     odd side effects e.g. multiple subcommands will be accepted.
    #
+   # Each sub-list is a group of options. They key identifies the mutually
+   # exclustive group, or non-mutually exclusive if None.
+   #
    # [1]: https://bugs.python.org/issue9351#msg373665
    # [2]: https://docs.python.org/3/library/argparse.html#parents
    # [3]: https://stackoverflow.com/a/54936198
    common_opts = \
-      [[ ["-a", "--arch"],
-         { "metavar": "ARCH",
-           "default": "host",
-           "help": "architecture for image registries (default: host)"}],
-       [ ["--dependencies"],
-         { "action": misc.Dependencies,
-           "help": "print any missing dependencies and exit" }],
-       [ ["--no-cache"],
-         { "action": "store_true",
-           "help": "download everything needed, ignoring the cache" }],
-       [ ["--password-many"],
-         { "action": "store_true",
-           "help": "re-prompt each time a registry password is needed" }],
-       [ ["-s", "--storage"],
-         { "metavar": "DIR",
-           "help": "set builder internal storage directory to DIR" }],
-       [ ["--tls-no-verify"],
-         { "action": "store_true",
-           "help": "don't verify registry certificates (dangerous!)" }],
-       [ ["-v", "--verbose"],
-         { "action": "count",
-           "default": 0,
-           "help": "print extra chatter (can be repeated)" } ],
-       [ ["--version"],
-         { "action": misc.Version,
-           "help": "print version and exit" } ]]
+      { "bucache": [
+           [["--cache"],
+            { "action": "store_const",
+              "const": ch.Build_Mode.ENABLED,
+              "dest": "bucache",
+              "help": "enable build cache" }],
+           [["--no-cache"],
+            { "action": "store_const",
+              "const": ch.Build_Mode.DISABLED,
+              "dest": "bucache",
+              "help": "disable build cache" }],
+           [["--rebuild"],
+            { "action": "store_const",
+              "const": ch.Build_Mode.REBUILD,
+              "dest": "bucache",
+              "help": "force cache misses for non-FROM instructions" }] ],
+        None: [
+           [["-a", "--arch"],
+            { "metavar": "ARCH",
+              "default": "host",
+              "help": "architecture for image registries (default: host)"}],
+           [["--always-download"],
+            { "action": "store_true",
+              "help": "redownload any image files when pulling"}],
+           [["--debug"],
+            { "action": "store_true",
+              "help": "add short traceback to fatal error hints" }],
+           [["--dependencies"],
+            { "action": misc.Dependencies,
+              "help": "print any missing dependencies and exit" }],
+           [["--password-many"],
+            { "action": "store_true",
+              "help": "re-prompt each time a registry password is needed" }],
+           [["-s", "--storage"],
+            { "metavar": "DIR",
+              "help": "set builder internal storage directory to DIR" }],
+           [["--tls-no-verify"],
+            { "action": "store_true",
+              "help": "don't verify registry certificates (dangerous!)" }],
+           [["-v", "--verbose"],
+            { "action": "count",
+              "default": 0,
+              "help": "print extra chatter (can be repeated)" }],
+           [["--version"],
+            { "action": misc.Version,
+              "help": "print version and exit" }] ] }
 
    # Most, but not all, subcommands need to check dependencies before doing
    # anything (the exceptions being basic information commands like
@@ -112,24 +136,31 @@ def main():
 
    # Helper function to set up a subparser. The star forces the latter two
    # arguments to be called by keyword, for clarity.
-   def add_opts(p, dispatch, *, deps_check, stog_init):
+   def add_opts(p, dispatch, *, deps_check, stog_init, help_=False):
       assert (not stog_init or deps_check)  # can't init storage w/o deps
-      sp.set_defaults(func=dispatch)
-      dependencies_check[dispatch] = deps_check
-      storage_init[dispatch] = stog_init
-      for (args, kwargs) in common_opts:
-         p.add_argument(*args, **{ **kwargs,
-                                   "default": argparse.SUPPRESS,
-                                   "help": argparse.SUPPRESS })
+      if (dispatch is not None):
+         p.set_defaults(func=dispatch)
+         dependencies_check[dispatch] = deps_check
+         storage_init[dispatch] = stog_init
+      for (name, group) in common_opts.items():
+         if (name is None):
+            p2 = p
+         else:
+            p2 = p.add_mutually_exclusive_group()
+         for (args, kwargs) in group:
+            if (help_):
+               kwargs2 = kwargs
+            else:
+               kwargs2 = { **kwargs,
+                           "default": argparse.SUPPRESS,
+                           "help": argparse.SUPPRESS }
+            p2.add_argument(*args, **kwargs2)
 
    # main parser
-   for (args, kwargs) in common_opts:
-      ap.add_argument(*args, **kwargs)
+   add_opts(ap, None, deps_check=False, stog_init=False, help_=True)
 
    # build
-   help="build image from Dockerfile"
-   sp = sps.add_parser("build", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("build", "build image from Dockerfile")
    add_opts(sp, build.main, deps_check=True, stog_init=True)
    sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
                    action="append", default=[],
@@ -152,17 +183,45 @@ def main():
    sp.add_argument("context", metavar="CONTEXT",
                    help="context directory")
 
+   # build-cache
+   sp = ap.add_parser("build-cache", "print build cache information")
+   add_opts(sp, misc.build_cache, deps_check=True, stog_init=True)
+   sp.add_argument("--gc",
+                   action="store_true",
+                   help="run garbage collection first")
+   sp.add_argument("--reset",
+                   action="store_true",
+                   help="clear and re-initialize first")
+   sp.add_argument("--tree",
+                   action="store_true",
+                   help="print a text tree summary")
+   sp.add_argument("--dot", nargs="?", metavar="PATH", const="build-cache",
+                   help="write DOT and PDF tree summaries")
+
    # delete
-   help="delete image from internal storage"
-   sp = sps.add_parser("delete", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("delete", "delete image from internal storage")
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
 
+   # gestalt (has sub-subcommands)
+   sp = ap.add_parser("gestalt", "query debugging configuration",
+                      sub_title="subsubcommands", sub_metavar="CMD")
+   add_opts(sp, lambda x: False, deps_check=False, stog_init=False)
+   # bucache
+   tp = sp.add_parser("bucache", "exit successfully if build cache available")
+   add_opts(tp, misc.gestalt_bucache, deps_check=True, stog_init=False)
+   # bucache-dot
+   tp = sp.add_parser("bucache-dot", "exit success if can produce DOT trees")
+   add_opts(tp, misc.gestalt_bucache_dot, deps_check=True, stog_init=False)
+   # storage-path
+   tp = sp.add_parser("storage-path", "print storage directory path")
+   add_opts(tp, misc.gestalt_storage_path, deps_check=False, stog_init=False)
+   # python-path
+   tp = sp.add_parser("python-path", "print path to python interpreter in use")
+   add_opts(tp, misc.gestalt_python_path, deps_check=False, stog_init=False)
+
    # import
-   help="copy external image into storage"
-   sp = sps.add_parser("import", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("import", "copy external image into storage")
    add_opts(sp, misc.import_, deps_check=True, stog_init=True)
    sp.add_argument("path", metavar="PATH",
                    help="directory or tarball to import")
@@ -170,30 +229,24 @@ def main():
                    help="destination image name (tag)")
 
    # list
-   help="print information about image(s)"
-   sp = sps.add_parser("list", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("list", "print information about image(s)")
    add_opts(sp, misc.list_, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
 
    # pull
-   help="pull image from remote repository to local filesystem"
-   sp = sps.add_parser("pull", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("pull",
+                      "copy image from remote repository to local filesystem")
    add_opts(sp, pull.main, deps_check=True, stog_init=True)
    sp.add_argument("--last-layer", metavar="N", type=int,
                    help="stop after unpacking N layers")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the image reference")
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
-   sp.add_argument("image_dir", metavar="IMAGE_DIR", nargs="?",
-                   help="unpacked image path (default: opaque path in storage dir)")
 
    # push
-   help="push image from local filesystem to remote repository"
-   sp = sps.add_parser("push", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("push",
+                      "copy image from local filesystem to remote repository")
    add_opts(sp, push.main, deps_check=True, stog_init=True)
    sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("--image", metavar="DIR",
@@ -201,23 +254,9 @@ def main():
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
                    help="destination image reference (default: IMAGE_REF)")
 
-   # python-path
-   help="print path to python interpreter in use"
-   sp = sps.add_parser("python-path", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
-   add_opts(sp, misc.python_path, deps_check=False, stog_init=False)
-
    # reset
-   help="delete everything in ch-image builder storage"
-   sp = sps.add_parser("reset", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
+   sp = ap.add_parser("reset", "delete everything in ch-image builder storage")
    add_opts(sp, misc.reset, deps_check=True, stog_init=False)
-
-   # storage-path
-   help="print storage directory path"
-   sp = sps.add_parser("storage-path", help=help, description=help,
-                       formatter_class=ch.HelpFormatter)
-   add_opts(sp, misc.storage_path, deps_check=False, stog_init=False)
 
    # Parse it up!
    if (len(sys.argv) < 2):
@@ -231,6 +270,7 @@ def main():
       ch.dependencies_check()
    if (storage_init[cli.func]):
       ch.storage.init()
+      bu.init(cli)
    cli.func(cli)
 
 

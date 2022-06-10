@@ -5,13 +5,14 @@ tag='ch-image --force'
 
 setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+    export CH_IMAGE_CACHE=disabled
 }
 
 @test "${tag}: no matching distro" {
     scope standard
 
     # without --force
-    run ch-image -v build -t tmpimg -f - . <<'EOF'
+    run ch-image -v build --no-cache -t tmpimg -f - . <<'EOF'
 FROM alpine:3.9
 EOF
     echo "$output"

@@ -1,0 +1,4 @@
+FROM centos:7
+WORKDIR /
+RUN yum install -y ed         # doesn't need --force
+WORKDIR /usr

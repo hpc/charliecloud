@@ -42,6 +42,10 @@ a.out
 /charliecloud-*.tar*
 /charliecloud-*/
 
+# debugging crap
+/build-cache.gv
+/build-cache.pdf
+
 # OS X crap
 ._*
 .DS_Store
