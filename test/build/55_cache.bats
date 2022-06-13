@@ -978,7 +978,7 @@ EOF
 *  (bar, alpine+3.9) PULL alpine:3.9
 | *  (scratch, foo) PULL scratch
 |/
-*  (HEAD -> root) root
+*  (HEAD -> root) ROOT
 EOF
 )
     run ch-image build-cache --tree
