@@ -5,7 +5,7 @@ load ../common
     # These should all yield an output image, but we don't actually care about
     # it, so re-use the same one.
 
-    export CH_IMAGE_BUCACHE=disabled
+    export CH_IMAGE_CACHE=disabled
 
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only' # FIXME: other builders?
@@ -423,7 +423,7 @@ EOF
 EOF
 )
     run build_ --no-cache -t tmpimg -f - . <<'EOF'
-FROM centos8
+FROM almalinux8
 
 # FIXME: make this more comprehensive, e.g. space-separate vs.
 # equals-separated for everything.

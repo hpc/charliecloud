@@ -378,7 +378,7 @@ EOF
 }
 
 @test 'ch-image build --bind' {
-    ch-image --bucache=disabled build -t tmpimg -f - \
+    ch-image --no-cache build -t tmpimg -f - \
              -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
 FROM 00_tiny
 RUN mount
@@ -409,7 +409,7 @@ RUN echo "shell2: $0"
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    if [[ $CH_IMAGE_BUCACHE = disabled ]]; then
+    if [[ $CH_IMAGE_CACHE = disabled ]]; then
         [[ $output = *'cwd1: /mnt'* ]]
         [[ $output = *'cwd2: /usr'* ]]
         [[ $output = *'env1: PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin'* ]]
@@ -441,6 +441,7 @@ EOF
 {
   "arch": "amd64",
   "arg": {
+    "FAKEROOTDONTTRYCHOWN": "1",
     "PATH": "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
     "TAR_OPTIONS": "--no-same-owner"
   },

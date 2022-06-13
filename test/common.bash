@@ -108,17 +108,6 @@ crayify_mpi_or_skip () {
     fi
 }
 
-# Do we need sudo to run docker?
-if docker info > /dev/null 2>&1; then
-    docker_ () {
-        docker "$@"
-    }
-else
-    docker_ () {
-        sudo docker "$@"
-    }
-fi
-
 env_require () {
     if [[ -z ${!1} ]]; then
         printf '$%s is empty or not set\n\n' "$1" >&2
@@ -134,6 +123,17 @@ image_ok () {
     [[ $byte_ct -ge 3145728 ]]  # image is at least 3MiB
     [[ -d $1/bin && -d $1/dev && -d $1/usr ]]
 
+}
+
+localregistry_init () {
+    # Skip unless GitHub Actions or there is a listener on localhost:5000.
+    if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \
+                                      && ss -lnt | grep -F :5000); then
+        skip 'no local registry'
+    fi
+    # Note: These will only stick if function is called *not* in a subshell.
+    export CH_IMAGE_USERNAME=charlie
+    export CH_IMAGE_PASSWORD=test
 }
 
 multiprocess_ok () {
@@ -255,6 +255,17 @@ unpack_img_all_nodes () {
     fi
 }
 
+# Do we need sudo to run docker?
+if [[ -n $ch_docker_nosudo ]]; then
+    docker_ () {
+        docker "$@"
+    }
+else
+    docker_ () {
+        sudo docker "$@"
+    }
+fi
+
 # Do we have what we need?
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR
@@ -275,8 +286,6 @@ export BATS_TMPDIR=$btnew
 
 # shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
-# shellcheck disable=SC2034
-ch_lib=$(ch-convert --_lib-path)
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)

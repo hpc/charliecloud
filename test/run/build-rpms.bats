@@ -85,19 +85,19 @@ setup () {
 }
 
 @test 'build/install el8 RPMS' {
-    prerequisites_ok centos8
-    img=${ch_imgdir}/centos8
+    prerequisites_ok almalinux8
+    img=${ch_imgdir}/almalinux8
     image_ok "$img"
     rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 
-    # Build and install RPMs into CentOS 8 image.
+    # Build and install RPMs into AlmaLinux 8 image.
     (cd .. && packaging/fedora/build --install "$img" \
                                      --rpmbuild="$BATS_TMPDIR/rpmbuild" HEAD)
 }
 
 @test 'check el8 RPM files' {
-    prerequisites_ok centos8
-    img=${ch_imgdir}/centos8
+    prerequisites_ok almalinux8
+    img=${ch_imgdir}/almalinux8
     # Do installed RPMs look sane?
     run ch-run "$img" -- rpm -qa "charliecloud*"
     echo "$output"
@@ -128,8 +128,8 @@ setup () {
 }
 
 @test 'remove el8 RPMs' {
-    prerequisites_ok centos8
-    img=${ch_imgdir}/centos8
+    prerequisites_ok almalinux8
+    img=${ch_imgdir}/almalinux8
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-debuginfo \
                                            charliecloud-doc \

@@ -241,7 +241,7 @@ DEFAULT_CONFIGS = {
                 " > /etc/apt/apt.conf.d/no-sandbox"),
                 ("command -v fakeroot > /dev/null",
                  # update b/c base image ships with no package indexes
-                 "apt-get update && apt-get install -y pseudo") ],
+                 "apt-get update && apt-get install -y fakeroot") ],
      "cmds": ["apt", "apt-get", "dpkg"],
      "each": ["fakeroot"] },
 

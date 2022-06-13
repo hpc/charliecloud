@@ -278,13 +278,12 @@ class T_Debian_Latest(Debian):
    base = "debian:latest"
 class T_Ubuntu_16(Debian):
    base = "ubuntu:16.04"
-   arch_excludes = ["aarch64"]  # no pseudo package
 class T_Ubuntu_18(Debian):
    base = "ubuntu:18.04"
 class T_Ubuntu_21(Debian):
    base = "ubuntu:21.10"
-#class T_Ubuntu_Latest(Debian):  # no worky; see issue #1348
-#   base = "ubuntu:latest"
+class T_Ubuntu_Latest(Debian):
+   base = "ubuntu:latest"
 
 class SUSE(Test):
    config = "suse"
@@ -292,9 +291,14 @@ class SUSE(Test):
             # No openssh packages seem to need --force.
             **{ Run.FAKE_NEEDED: "zypper install -y ed",
                 Run.NEEDED:      "zypper install -y dbus-1" } }
-class T_OpenSUSE_42(SUSE):
-   base = "opensuse/archive:42.3"
-   arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
+# As of 2022-06-03, fails with “Signature verification failed for file
+# 'repomd.xml' from repository 'OSS Update'.”. Neither opensuse/archive:42.3
+# nor opensuse/leap:42.3 work, though the latter has more architectures.
+#class T_OpenSUSE_42_3(SUSE):
+#   base = "opensuse/archive:42.3"
+#   arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
+class T_OpenSUSE_Leap_15_0(SUSE):
+   base = "opensuse/leap:15.0"
 class T_OpenSUSE_Leap_Latest(SUSE):
    base = "opensuse/leap:latest"
 
@@ -333,7 +337,7 @@ setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     # FIXME: Would be good to test with build cache enabled, but there are
     # lots of assumptions about output that are not valid in that case.
-    [[ $CH_IMAGE_BUCACHE = disabled ]] || skip 'bucache disabled only'
+    [[ $CH_IMAGE_CACHE = disabled ]] || skip 'bucache disabled only'
 }
 """)
 

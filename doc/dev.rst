@@ -610,9 +610,9 @@ Dependencies
   * Python 3.6+
   * Either:
 
-    * the provided example :code:`centos7` or :code:`centos8` image
+    * the provided example :code:`centos7` or :code:`almalinux8` image
     * a RHEL/CentOS 7 or newer container image with (note there are different
-      python version names for the listed packages in RHEL/CentOS 8):
+      python version names for the listed packages in RHEL 8 and derivatives):
       * autoconf
       * automake
       * gcc

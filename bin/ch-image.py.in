@@ -72,47 +72,59 @@ def main():
    #     main parser look again) works [3], but is complicated and has some
    #     odd side effects e.g. multiple subcommands will be accepted.
    #
+   # Each sub-list is a group of options. They key identifies the mutually
+   # exclustive group, or non-mutually exclusive if None.
+   #
    # [1]: https://bugs.python.org/issue9351#msg373665
    # [2]: https://docs.python.org/3/library/argparse.html#parents
    # [3]: https://stackoverflow.com/a/54936198
    common_opts = \
-      [[ ["-a", "--arch"],
-         { "metavar": "ARCH",
-           "default": "host",
-           "help": "architecture for image registries (default: host)"}],
-       [ ["--bucache"],
-         { "metavar": "MODE",
-           "type": ch.Build_Mode,
-           "help": "build cache mode: enabled, disabled, rebuild"}],
-       [ ["--debug"],
-         { "action": "store_true",
-           "help": "add short traceback to fatal error hints" }],
-       [ ["--dlcache"],
-         { "metavar": "MODE",
-           "type": ch.Download_Mode,
-           "help": "download cache mode: enabled, write-only"}],
-       [ ["--dependencies"],
-         { "action": misc.Dependencies,
-           "help": "print any missing dependencies and exit" }],
-       [ ["--no-cache"],
-         { "action": "store_true",
-           "help": "shorthand for --bucache=disabled --dlcache=write-only" }],
-       [ ["--password-many"],
-         { "action": "store_true",
-           "help": "re-prompt each time a registry password is needed" }],
-       [ ["-s", "--storage"],
-         { "metavar": "DIR",
-           "help": "set builder internal storage directory to DIR" }],
-       [ ["--tls-no-verify"],
-         { "action": "store_true",
-           "help": "don't verify registry certificates (dangerous!)" }],
-       [ ["-v", "--verbose"],
-         { "action": "count",
-           "default": 0,
-           "help": "print extra chatter (can be repeated)" }],
-       [ ["--version"],
-         { "action": misc.Version,
-           "help": "print version and exit" } ]]
+      { "bucache": [
+           [["--cache"],
+            { "action": "store_const",
+              "const": ch.Build_Mode.ENABLED,
+              "dest": "bucache",
+              "help": "enable build cache" }],
+           [["--no-cache"],
+            { "action": "store_const",
+              "const": ch.Build_Mode.DISABLED,
+              "dest": "bucache",
+              "help": "disable build cache" }],
+           [["--rebuild"],
+            { "action": "store_const",
+              "const": ch.Build_Mode.REBUILD,
+              "dest": "bucache",
+              "help": "force cache misses for non-FROM instructions" }] ],
+        None: [
+           [["-a", "--arch"],
+            { "metavar": "ARCH",
+              "default": "host",
+              "help": "architecture for image registries (default: host)"}],
+           [["--always-download"],
+            { "action": "store_true",
+              "help": "redownload any image files when pulling"}],
+           [["--debug"],
+            { "action": "store_true",
+              "help": "add short traceback to fatal error hints" }],
+           [["--dependencies"],
+            { "action": misc.Dependencies,
+              "help": "print any missing dependencies and exit" }],
+           [["--password-many"],
+            { "action": "store_true",
+              "help": "re-prompt each time a registry password is needed" }],
+           [["-s", "--storage"],
+            { "metavar": "DIR",
+              "help": "set builder internal storage directory to DIR" }],
+           [["--tls-no-verify"],
+            { "action": "store_true",
+              "help": "don't verify registry certificates (dangerous!)" }],
+           [["-v", "--verbose"],
+            { "action": "count",
+              "default": 0,
+              "help": "print extra chatter (can be repeated)" }],
+           [["--version"],
+            { "action": misc.Version,
+              "help": "print version and exit" }] ] }
 
    # Most, but not all, subcommands need to check dependencies before doing
    # anything (the exceptions being basic information commands like
@@ -124,19 +136,28 @@ def main():
 
    # Helper function to set up a subparser. The star forces the latter two
    # arguments to be called by keyword, for clarity.
-   def add_opts(p, dispatch, *, deps_check, stog_init):
+   def add_opts(p, dispatch, *, deps_check, stog_init, help_=False):
       assert (not stog_init or deps_check)  # can't init storage w/o deps
-      p.set_defaults(func=dispatch)
-      dependencies_check[dispatch] = deps_check
-      storage_init[dispatch] = stog_init
-      for (args, kwargs) in common_opts:
-         p.add_argument(*args, **{ **kwargs,
-                                   "default": argparse.SUPPRESS,
-                                   "help": argparse.SUPPRESS })
+      if (dispatch is not None):
+         p.set_defaults(func=dispatch)
+         dependencies_check[dispatch] = deps_check
+         storage_init[dispatch] = stog_init
+      for (name, group) in common_opts.items():
+         if (name is None):
+            p2 = p
+         else:
+            p2 = p.add_mutually_exclusive_group()
+         for (args, kwargs) in group:
+            if (help_):
+               kwargs2 = kwargs
+            else:
+               kwargs2 = { **kwargs,
+                           "default": argparse.SUPPRESS,
+                           "help": argparse.SUPPRESS }
+            p2.add_argument(*args, **kwargs2)
 
    # main parser
-   for (args, kwargs) in common_opts:
-      ap.add_argument(*args, **kwargs)
+   add_opts(ap, None, deps_check=False, stog_init=False, help_=True)
 
    # build
    sp = ap.add_parser("build", "build image from Dockerfile")
