@@ -1707,6 +1707,12 @@ class Storage:
          mkdir(self.build_cache)
          mkdir(self.unpack_base)
          mkdir(self.upload_cache)
+         for old in self.unpack_base.iterdir():
+            new = old.parent // str(old.name).replace(":", "+")
+            if (old != new):
+               if (new.exists()):
+                  FATAL("can't upgrade: already exists: %s" % new)
+               old.rename(new)
          file_write(self.version_file, "%d\n" % STORAGE_VERSION)
       else:                         # can't upgrade
          FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
