@@ -127,8 +127,8 @@ def list_(cli):
          remote = "yes"
          arch_aware = "yes"
          arch_avail = " ".join(sorted(pullet.architectures.keys()))
-      except ch.Not_In_Registry_Error:
-         remote = "no"
+      except ch.Image_Unavailable_Error:
+         remote = "no (or you are not authorized)"
          arch_aware = "n/a"
          arch_avail = "n/a"
       except ch.No_Fatman_Error:

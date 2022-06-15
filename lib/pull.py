@@ -103,8 +103,8 @@ class Image_Puller:
                            "consider --arch=yolo")
          # manifest
          self.manifest_load()
-      except ch.Not_In_Registry_Error:
-         ch.FATAL("not in registry: %s" % self.registry.ref)
+      except ch.Image_Unavailable_Error:
+         ch.FATAL("unauthorized or not in registry: %s" % self.registry.ref)
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
@@ -142,7 +142,8 @@ class Image_Puller:
 
          Raises:
 
-           * Not_In_Registry_Error if the image does not exist.
+           * Image_Unavailable_Error if the image does not exist or we are not
+             authorized to have it.
 
            * No_Fatman_Error if the image exists but has no fat manifest,
              i.e., is architecture-unaware. In this case self.architectures is
@@ -152,7 +153,7 @@ class Image_Puller:
          # cheat; internal manifest library matches every architecture
          self.architectures = { ch.arch_host: None }
          return
-      # raises Not_In_Registry_Error if needed
+      # raises Image_Unavailable_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
                                    "manifest list: downloading")
       fm = ch.json_from_file(self.fatman_path, "fat manifest")

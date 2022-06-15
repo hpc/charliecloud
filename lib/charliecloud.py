@@ -1,3 +1,4 @@
+import abc
 import argparse
 import atexit
 import collections
@@ -271,11 +272,14 @@ tls_verify = True
 # True if the download cache is enabled.
 dlcache_p = None
 
+# True if we talk to registries authenticated; false if anonymously.
+reg_auth = False
+
 
 ## Exceptions ##
 
 class No_Fatman_Error(Exception): pass
-class Not_In_Registry_Error(Exception): pass
+class Image_Unavailable_Error(Exception): pass
 
 
 ## Classes ##
@@ -1239,42 +1243,201 @@ class Progress_Writer:
       ossafe(self.fp.write, "can't write: %s" % self.path, data)
 
 
+class Registry_Auth(requests.auth.AuthBase):
+
+   # Every registry request has an “authorization object”. This starts as no
+   # authentication at all. If we get HTTP 401 Unauthorized, we try to
+   # “escalate” to a higher level of authorization; some classes have multiple
+   # escalators that we try in order. Escalation can fail either if
+   # authentication fails or there is nothing to escalate to.
+   #
+   # Class attributes:
+   #
+   #   escalators .. Sequence of classes we can escalate to. Empty if no
+   #                 escalation possible.
+   #
+   #   fail_hard ... If authentication fails, whether we should give up (True)
+   #                 or try the next escalator (False).
+   #
+   #   reg_auth .... True if appropriate for authenticated mode, False if
+   #                 anonymous (i.e., --auth or not, respectively). Everything
+   #                 must be one or the other.
+   #
+   #   name ........ Auth type string (from WWW-Authenticate header) that this
+   #                 class matches.
+   #
+   # Notes:
+   #
+   #   1. These classes are not in alphabetical order because classes need to
+   #      refer to their higher-authorization escalators.
+
+   __slots__ = ("auth_h",)  # WWW-Authenticate header if needed by escalator
+
+   @classmethod
+   def authenticate(class_, creds, auth_d):
+      """Authenticate using the given credentials and parsed WWW-Authenticate
+         dictionary. Return a new Registry_Auth object if successful, None if
+         not. The caller is responsible for dealing with the failure."""
+      ...
+
+   def escalate(self, reg, res):
+      """Escalate to a higher level of authorization. Use the WWW-Authenticate
+         header in failed response res if there is one."""
+      VERBOSE("escalating from %s" % self)
+      assert (res.status_code == 401)
+      # Get authentication instructions.
+      if ("WWW-Authenticate" in res.headers):
+         auth_h = res.headers["WWW-Authenticate"]
+      elif (self.auth_h is not None):
+         auth_h = self.auth_h
+      else:
+         FATAL("don’t know how to authenticate: WWW-Authenticate not found")
+      # We use two “undocumented (although very stable and frequently cited)”
+      # methods to parse the authentication response header (thanks Andy,
+      # i.e., @adrecord on GitHub).
+      (auth_type, auth_d) = auth_h.split(maxsplit=1)
+      auth_d = urllib.request.parse_keqv_list(
+                  urllib.request.parse_http_list(auth_d))
+      VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
+      # Is escalation possible in principle?
+      if (len(self.escalators) == 0):
+         FATAL("no further authentication possible, giving up")
+      # Try to escalate.
+      for class_ in self.escalators:
+         if (class_.name == auth_type):
+            if (class_.reg_auth != reg_auth):
+               VERBOSE("skipping %s: auth mode mismatch" % class_.__name__)
+            else:
+               VERBOSE("authenticating using %s" % class_.__name__)
+               auth = class_.authenticate(reg, auth_d)
+               if (auth is not None):
+                  return auth  # success!
+               elif (class_.fail_hard):
+                  FATAL("authentication failed; giving up")
+               else:
+                  VERBOSE("authentication failed; trying next")
+      VERBOSE("authentication failed; nothing left to try")
+      return None
+
+
+class Registry_Auth_Basic(Registry_Auth):
+   escalators = ()
+   fail_hard = True
+   name = "Basic"
+   reg_auth = True
+
+   __slots__ = ("basic")
+
+   def __call__(self, *args, **kwargs):
+      return self.basic(*args, **kwargs)
+
+   def __str__(self):
+      return self.basic.__str__()
+
+   @classmethod
+   def authenticate(class_, reg, auth_d):
+      # Note: Basic does not validate the credentials until we try to use it.
+      if ("realm" not in auth_d):
+         FATAL("WWW-Authenticate missing realm")
+      (username, password) = reg.creds.get()
+      i = class_()
+      i.basic = requests.auth.HTTPBasicAuth(username, password)
+      return i
+
+
+class Registry_Auth_Bearer_IDed(Registry_Auth):
+   # https://stackoverflow.com/a/58055668
+   escalators = ()
+   fail_hard = True
+   name = "Bearer"
+   reg_auth = True
+
+   __slots__ = ("token")
+
+   def __call__(self, req):
+      req.headers["Authorization"] = "Bearer %s" % self.token
+      return req
+
+   def __str__(self):
+      return ("Bearer (IDed) %s" % self.token[:16])
+
+   @classmethod
+   def authenticate(class_, reg, auth_d):
+      # Registries and endpoints vary in what they put in WWW-Authenticate. We
+      # need realm because it's the URL to use for a token. Otherwise, just
+      # give back all the keys we got.
+      for k in ("realm",):
+         if (k not in auth_d):
+            FATAL("WWW-Authenticate missing key: %s" % k)
+      params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
+      # Request a Bearer token.
+      res = reg.request_raw("GET", auth_d["realm"], {200,401,403},
+                            auth=class_.token_auth(reg.creds), params=params)
+      if (res.status_code != 200):
+         VERBOSE("bearer token request rejected")
+         return None
+      # Create new instance.
+      i = class_()
+      i.token = res.json()["token"]
+      VERBOSE("received bearer token: %s" % (i.token[:16]))
+      return i
+
+   @classmethod
+   def token_auth(class_, creds):
+      """Return a requests.auth.AuthBase object used to authenticate the token
+         request."""
+      (username, password) = creds.get()
+      return requests.auth.HTTPBasicAuth(username, password)
+
+
+class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
+   escalators = (Registry_Auth_Bearer_IDed,)
+   fail_hard = False
+   name = "Bearer"
+   reg_auth = False
+
+   __slot__ = ()
+
+   def __str__(self):
+      return ("Bearer (Anon) %s" % self.token[:16])
+
+   @classmethod
+   def token_auth(class_, creds):
+      # The way to get an anonymous Bearer token is to give no Basic auth
+      # header in the token request.
+      return None
+
+
+class Registry_Auth_None(Registry_Auth):
+   name = None
+   escalators = (Registry_Auth_Basic,
+                 Registry_Auth_Bearer_Anon,
+                 Registry_Auth_Bearer_IDed)
+   #fail_hard =  # starting authentication; cannot fail
+   #reg_auth =   # starting authentication in both modes
+
+   def __call__(self, req):
+      return req
+
+   def __str__(self):
+      return "no authorization"
+
+
 class Registry_HTTP:
    """Transfers image data to and from a remote image repository via HTTPS.
 
       Note that ref refers to the *remote* image. Objects of this class have
       no information about the local image."""
 
-   # Note that with some registries, authentication is required even for
-   # anonymous downloads of public images. In this case, we just fetch an
-   # authentication token anonymously.
-
    __slots__ = ("auth",
                 "creds",
                 "ref",
                 "session")
 
-   # https://stackoverflow.com/a/58055668
-   class Bearer_Auth(requests.auth.AuthBase):
-      __slots__ = ("token",)
-      def __init__(self, token):
-         self.token = token
-      def __call__(self, req):
-         req.headers["Authorization"] = "Bearer %s" % self.token
-         return req
-      def __str__(self):
-         return ("Bearer %s" % self.token[:32])
-
-   class Null_Auth(requests.auth.AuthBase):
-      def __call__(self, req):
-         return req
-      def __str__(self):
-         return "no authorization"
-
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
       self.ref = ref.canonical
-      self.auth = self.Null_Auth()
+      self.auth = Registry_Auth_None()
       self.creds = Credentials()
       self.session = None
       # This is commented out because it prints full request and response
@@ -1288,75 +1451,6 @@ class Registry_HTTP:
       "Return an appropriate repository URL."
       url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
       return "/".join((url_base, self.ref.path_full, type_, address))
-
-   def authenticate_basic(self, res, auth_d):
-      VERBOSE("authenticating using Basic")
-      if ("realm" not in auth_d):
-         FATAL("WWW-Authenticate missing realm")
-      (username, password) = self.creds.get()
-      self.auth = requests.auth.HTTPBasicAuth(username, password)
-
-   def authenticate_bearer(self, res, auth_d):
-      VERBOSE("authenticating using Bearer")
-      # Registries vary in what they put in WWW-Authenticate. Specifically,
-      # for everything except NGC, we get back realm, service, and scope. NGC
-      # just gives service and scope. We need realm because it's the URL to
-      # use for a token. scope also seems critical, so check we have that.
-      # Otherwise, just give back all the keys we got.
-      for k in ("realm", "scope"):
-         if (k not in auth_d):
-            FATAL("WWW-Authenticate missing key: %s" % k)
-      params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
-      # Request anonymous auth token first, but only for the “safe” methods.
-      # We assume no registry will accept anonymous pushes. This is because
-      # GitLab registries don't seem to honor the scope argument (issue #975);
-      # e.g., for scope “repository:reidpr/foo/00_tiny:pull,push”, GitLab
-      # 13.6.3-ee will hand out an anonymous token, but that token is rejected
-      # with ‘error="insufficient_scope"’ when the request is re-tried.
-      token = None
-      if (res.request.method not in ("GET", "HEAD")):
-         VERBOSE("won't request anonymous token for %s" % res.request.method)
-      else:
-         VERBOSE("requesting anonymous auth token")
-         res = self.request_raw("GET", auth_d["realm"], {200,401,403},
-                                params=params)
-         if (res.status_code != 200):
-            VERBOSE("anonymous access rejected")
-         else:
-            token = res.json()["token"]
-      # If that failed or was inappropriate, try for an authenticated token.
-      if (token is None):
-         (username, password) = self.creds.get()
-         auth = requests.auth.HTTPBasicAuth(username, password)
-         res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
-                                params=params)
-         token = res.json()["token"]
-      VERBOSE("received auth token: %s" % (token[:32]))
-      self.auth = self.Bearer_Auth(token)
-
-   def authorize(self, res):
-      "Authorize using the WWW-Authenticate header in failed response res."
-      VERBOSE("authorizing")
-      assert (res.status_code == 401)
-      # Get authentication instructions.
-      if ("WWW-Authenticate" not in res.headers):
-         FATAL("WWW-Authenticate header not found")
-      auth_h = res.headers["WWW-Authenticate"]
-      VERBOSE("WWW-Authenticate raw: %s" % auth_h)
-      # We use two “undocumented (although very stable and frequently cited)”
-      # methods to parse the authentication response header (thanks Andy,
-      # i.e., @adrecord on GitHub).
-      (auth_type, auth_d) = auth_h.split(maxsplit=1)
-      auth_d = urllib.request.parse_keqv_list(
-                  urllib.request.parse_http_list(auth_d))
-      VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
-      # Dispatch to proper method.
-      if   (auth_type == "Bearer"):
-         self.authenticate_bearer(res, auth_d)
-      elif (auth_type == "Basic"):
-         self.authenticate_basic(res, auth_d)
-      else:
-         FATAL("unknown auth scheme: %s" % auth_h, "expected Basic or Bearer")
 
    def blob_exists_p(self, digest):
       """Return true if a blob with digest (hex string) exists in the
@@ -1424,6 +1518,15 @@ class Registry_HTTP:
       "Upload config (sequence of bytes)."
       self.blob_upload(bytes_hash(config), config, "config: ")
 
+   def escalate(self, res):
+      "Try to escalate authorization; return True if successful, else False."
+      auth = self.auth.escalate(self, res)
+      if (auth is None):
+         return False
+      else:
+         self.auth = auth
+         return True
+
    def fatman_to_file(self, path, msg):
       """GET the manifest for self.image and save it at path. This seems to
          have three possible results:
@@ -1434,9 +1537,9 @@ class Registry_HTTP:
             2. HTTP 200, but body is a skinny manifest: image exists but is
                not architecture-aware.
 
-            3. HTTP 401/404: image does not exist.
+            3. HTTP 401/404: image does not exist or is unauthorized.
 
-         This method raises Not_In_Registry_Error in case 3. The caller is
+         This method raises Image_Unavailable_Error in case 3. The caller is
          responsible for distinguishing cases 1 and 2."""
       url = self._url_of("manifests", self.ref.version)
       pw = Progress_Writer(path, msg)
@@ -1451,7 +1554,7 @@ class Registry_HTTP:
       pw.close()
       if (res.status_code != 200):
          DEBUG(res.content)
-         raise Not_In_Registry_Error()
+         raise Image_Unavailable_Error()
 
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
@@ -1477,7 +1580,7 @@ class Registry_HTTP:
       pw.close()
       if (res.status_code != 200):
          DEBUG(res.content)
-         raise Not_In_Registry_Error()
+         raise Image_Unavailable_Error()
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
@@ -1495,18 +1598,27 @@ class Registry_HTTP:
          must be non-zero length.
 
          Use current session if there is one, or start a new one if not. If
-         authentication fails (or isn't initialized), then authenticate and
-         re-try the request."""
+         authentication fails (or isn't initialized), then authenticate harder
+         and re-try the request."""
+      # Set up.
       self.session_init_maybe()
       VERBOSE("auth: %s" % self.auth)
       if (out is not None):
          kwargs["stream"] = True
-      res = self.request_raw(method, url, statuses | {401}, **kwargs)
-      if (res.status_code == 401):
-         VERBOSE("HTTP 401 unauthorized")
-         self.authorize(res)
-         VERBOSE("retrying with auth: %s" % self.auth)
-         res = self.request_raw(method, url, statuses, **kwargs)
+      # Make the request.
+      while True:
+         res = self.request_raw(method, url, statuses | {401}, **kwargs)
+         if (res.status_code != 401):
+            break
+         else:
+            VERBOSE("HTTP 401 unauthorized")
+            if (self.escalate(res)):   # success
+               VERBOSE("retrying with auth: %s" % self.auth)
+            elif (401 in statuses):    # caller can deal with it
+               break
+            else:
+               FATAL("authorization failure; don't know what to do")
+      # Stream response if needed.
       if (out is not None and res.status_code == 200):
          try:
             length = int(res.headers["Content-Length"])
@@ -1517,6 +1629,7 @@ class Registry_HTTP:
          out.start(length)
          for chunk in res.iter_content(HTTP_CHUNK_SIZE):
             out.write(chunk)
+      # Done.
       return res
 
    def request_raw(self, method, url, statuses, auth=None, **kwargs):
@@ -1538,10 +1651,15 @@ class Registry_HTTP:
                   % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("%s failed: %s" % (method, x))
-      # Log the rate limit headers if present.
-      for h in ("RateLimit-Limit", "RateLimit-Remaining"):
-         if (h in res.headers):
-            VERBOSE("%s: %s" % (h, res.headers[h]))
+      # Log some headers if needed.
+      for h in res.headers:
+         h = h.lower()
+         if (   "ratelimit" in h
+             or h == "www-authenticate"):
+            f = VERBOSE
+         else:
+            f = DEBUG
+         f("%s: %s" % (h, res.headers[h]))
       return res
 
    def session_init_maybe(self):
@@ -2276,6 +2394,17 @@ def init(cli):
       dlcache = Download_Mode.ENABLED
    global dlcache_p
    dlcache_p = (dlcache == Download_Mode.ENABLED)
+   # registry authentication
+   global reg_auth
+   if (cli.func.__module__ == "push"):
+      reg_auth = True
+   elif (cli.auth is not None):
+      reg_auth = cli.auth
+   elif ("CH_IMAGE_AUTH" in os.environ):
+      reg_auth = (os.environ["CH_IMAGE_AUTH"] == "yes")
+   else:
+      reg_auth = False
+   VERBOSE("registry authentication: %s" % reg_auth)
 
    # misc
    global password_many, tls_verify
