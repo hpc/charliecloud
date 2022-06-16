@@ -156,6 +156,36 @@ physical RAM with `mlock(2)
 <https://man7.org/linux/man-pages/man2/mlock.2.html>`_ or any other special
 treatment, so we cannot guarantee they will never reach non-volatile storage.
 
+.. admonition:: Technical details
+
+   Most registries use something called `Bearer authentication
+   <https://datatracker.ietf.org/doc/html/rfc6750>`_, where the client (e.g.,
+   Charliecloud) includes a *token* in the headers of every HTTP request.
+
+   The authorization dance is different from the typical UNIX approach, where
+   there is a separate login sequence before any content requests are made.
+   The client starts by simply making the HTTP request it wants (e.g., to
+   :code:`GET` an image manifest), and if the registry doesn't like the
+   client's token (or if there is no token because the client doesn't have one
+   yet), it replies with HTTP 401 Unauthorized, but crucially it also provides
+   instructions in the response header on how to get a token. The client then
+   follows those instructions, obtains a token, re-tries the request, and
+   (hopefully) all is well. This approach also allows a client to upgrade a
+   token if needed, e.g. when transitioning from asking if a layer exists to
+   uploading its content.
+
+   The distinction between Charliecloud's anonymous mode and authenticated
+   modes is that it will only ask for anonymous tokens in anonymous mode and
+   authenticated tokens in authenticated mode. That is, anonymous mode does
+   involve an authentication procedure to obtain a token, but this
+   "authentication" is done anonymously. (Yes, it's confusing.)
+
+   Registries also often reply HTTP 401 when an image does not exist, rather
+   than the seemingly more correct HTTP 404 Not Found. This is to avoid
+   information leakage about the existence of images the client is not allowed
+   to pull, and it's why Charliecloud never says an image simply does not
+   exist.
+
 
 Storage directory
 =================
@@ -1040,5 +1070,5 @@ Environment variables
 .. include:: py_env.rst
 
 
-..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df
+..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc
 ..  LocalWords:  dlcache graphviz
