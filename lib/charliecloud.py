@@ -1253,6 +1253,9 @@ class Registry_Auth(requests.auth.AuthBase):
    #
    # Class attributes:
    #
+   #   anon_p ...... True if the authorization object is anonymous; False if
+   #                 it needed authentication.
+   #
    #   escalators .. Sequence of classes we can escalate to. Empty if no
    #                 escalation possible. This is actually a property rather
    #                 than a class attribute because it needs to refer to
@@ -1324,6 +1327,7 @@ class Registry_Auth(requests.auth.AuthBase):
 
 
 class Registry_Auth_Basic(Registry_Auth):
+   anon_p = False
    name = "Basic"
    reg_auth = True
 
@@ -1355,6 +1359,7 @@ class Registry_Auth_Basic(Registry_Auth):
 
 class Registry_Auth_Bearer_IDed(Registry_Auth):
    # https://stackoverflow.com/a/58055668
+   anon_p = False
    name = "Bearer"
    reg_auth = True
    variant = "IDed"
@@ -1417,6 +1422,7 @@ class Registry_Auth_Bearer_IDed(Registry_Auth):
 
 
 class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
+   anon_p = True
    name = "Bearer"
    reg_auth = False
 
@@ -1434,6 +1440,7 @@ class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
 
 
 class Registry_Auth_None(Registry_Auth):
+   anon_p = True
    name = None
    #reg_auth =   # starting authentication in both modes
 
@@ -1556,7 +1563,7 @@ class Registry_HTTP:
 
    def fatman_to_file(self, path, msg):
       """GET the manifest for self.image and save it at path. This seems to
-         have three possible results:
+         have four possible results:
 
             1. HTTP 200, and body is a fat manifest: image exists and is
                architecture-aware.
@@ -1565,6 +1572,8 @@ class Registry_HTTP:
                not architecture-aware.
 
             3. HTTP 401/404: image does not exist or is unauthorized.
+
+            4. HTTP 429: rate limite exceeded.
 
          This method raises Image_Unavailable_Error in case 3. The caller is
          responsible for distinguishing cases 1 and 2."""
@@ -1576,10 +1585,16 @@ class Registry_HTTP:
       # when trying to create schema1 manifest”.
       accept = "%s;q=0.5" % ",".join(  list(TYPES_INDEX.values())
                                      + list(TYPES_MANIFEST.values()))
-      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404, 429},
                          headers={ "Accept" : accept })
       pw.close()
-      if (res.status_code != 200):
+      if (res.status_code == 429):
+         if (self.auth.anon_p):
+            hint = "consider --auth"
+         else:
+            hint = None
+         FATAL("registry rate limit exceeded (HTTP 429)", hint)
+      elif (res.status_code != 200):
          DEBUG(res.content)
          raise Image_Unavailable_Error()
 
