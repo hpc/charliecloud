@@ -1254,10 +1254,11 @@ class Registry_Auth(requests.auth.AuthBase):
    # Class attributes:
    #
    #   escalators .. Sequence of classes we can escalate to. Empty if no
-   #                 escalation possible.
-   #
-   #   fail_hard ... If authentication fails, whether we should give up (True)
-   #                 or try the next escalator (False).
+   #                 escalation possible. This is actually a property rather
+   #                 than a class attribute because it needs to refer to
+   #                 classes that may not have been defined when the module is
+   #                 created, e.g. classes later in the file, or some can
+   #                 escalate to themselves.
    #
    #   reg_auth .... True if appropriate for authenticated mode, False if
    #                 anonymous (i.e., --auth or not, respectively). Everything
@@ -1265,13 +1266,15 @@ class Registry_Auth(requests.auth.AuthBase):
    #
    #   name ........ Auth type string (from WWW-Authenticate header) that this
    #                 class matches.
-   #
-   # Notes:
-   #
-   #   1. These classes are not in alphabetical order because classes need to
-   #      refer to their higher-authorization escalators.
 
-   __slots__ = ("auth_h",)  # WWW-Authenticate header if needed by escalator
+   __slots__ = ("auth_h_next",)  # WWW-Authenticate header for next escalator
+
+   def __eq__(self, other):
+      return (type(self) == type(other))
+
+   @property
+   def escalators(self):
+      ...
 
    @classmethod
    def authenticate(class_, creds, auth_d):
@@ -1288,8 +1291,8 @@ class Registry_Auth(requests.auth.AuthBase):
       # Get authentication instructions.
       if ("WWW-Authenticate" in res.headers):
          auth_h = res.headers["WWW-Authenticate"]
-      elif (self.auth_h is not None):
-         auth_h = self.auth_h
+      elif (self.auth_h_next is not None):
+         auth_h = self.auth_h_next
       else:
          FATAL("don’t know how to authenticate: WWW-Authenticate not found")
       # We use two “undocumented (although very stable and frequently cited)”
@@ -1310,19 +1313,17 @@ class Registry_Auth(requests.auth.AuthBase):
             else:
                VERBOSE("authenticating using %s" % class_.__name__)
                auth = class_.authenticate(reg, auth_d)
-               if (auth is not None):
-                  return auth  # success!
-               elif (class_.fail_hard):
-                  FATAL("authentication failed; giving up")
-               else:
+               if (auth is None):
                   VERBOSE("authentication failed; trying next")
-      VERBOSE("authentication failed; nothing left to try")
+               elif (auth == self):
+                  VERBOSE("authentication did not escalate; trying next")
+               else:
+                  return auth  # success!
+      VERBOSE("no authentication left to try")
       return None
 
 
 class Registry_Auth_Basic(Registry_Auth):
-   escalators = ()
-   fail_hard = True
    name = "Basic"
    reg_auth = True
 
@@ -1331,8 +1332,15 @@ class Registry_Auth_Basic(Registry_Auth):
    def __call__(self, *args, **kwargs):
       return self.basic(*args, **kwargs)
 
+   def __eq__(self, other):
+      return super().__eq__(other) and (self.basic == other.basic)
+
    def __str__(self):
       return self.basic.__str__()
+
+   @property
+   def escalators(self):
+      return ()
 
    @classmethod
    def authenticate(class_, reg, auth_d):
@@ -1347,19 +1355,38 @@ class Registry_Auth_Basic(Registry_Auth):
 
 class Registry_Auth_Bearer_IDed(Registry_Auth):
    # https://stackoverflow.com/a/58055668
-   escalators = ()
-   fail_hard = True
    name = "Bearer"
    reg_auth = True
+   variant = "IDed"
 
-   __slots__ = ("token")
+   __slots__ = ("auth_d",
+                "token")
+
+   def __init__(self, token, auth_d):
+      self.token = token
+      self.auth_d = auth_d
 
    def __call__(self, req):
       req.headers["Authorization"] = "Bearer %s" % self.token
       return req
 
+   def __eq__(self, other):
+      return super().__eq__(other) and (self.auth_d == other.auth_d)
+
    def __str__(self):
-      return ("Bearer (IDed) %s" % self.token[:16])
+      return ("Bearer (%s) %s" % (self.__class__.__name__.split("_")[-1],
+                                  self.token_short))
+
+   @property
+   def escalators(self):
+      # One can escalate to an authenticated Bearer with a greater scope. I’m
+      # pretty sure this doesn’t create an infinite loop because eventually
+      # the token request will fail.
+      return (Registry_Auth_Bearer_IDed,)
+
+   @property
+   def token_short(self):
+      return ("%s..%s" % (self.token[:8], self.token[-8:]))
 
    @classmethod
    def authenticate(class_, reg, auth_d):
@@ -1377,9 +1404,8 @@ class Registry_Auth_Bearer_IDed(Registry_Auth):
          VERBOSE("bearer token request rejected")
          return None
       # Create new instance.
-      i = class_()
-      i.token = res.json()["token"]
-      VERBOSE("received bearer token: %s" % (i.token[:16]))
+      i = class_(res.json()["token"], auth_d)
+      VERBOSE("received bearer token: %s" % (i.token_short))
       return i
 
    @classmethod
@@ -1391,15 +1417,14 @@ class Registry_Auth_Bearer_IDed(Registry_Auth):
 
 
 class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
-   escalators = (Registry_Auth_Bearer_IDed,)
-   fail_hard = False
    name = "Bearer"
    reg_auth = False
 
-   __slot__ = ()
+   __slots__ = ()
 
-   def __str__(self):
-      return ("Bearer (Anon) %s" % self.token[:16])
+   @property
+   def escalators(self):
+      return (Registry_Auth_Bearer_IDed,)
 
    @classmethod
    def token_auth(class_, creds):
@@ -1410,10 +1435,6 @@ class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
 
 class Registry_Auth_None(Registry_Auth):
    name = None
-   escalators = (Registry_Auth_Basic,
-                 Registry_Auth_Bearer_Anon,
-                 Registry_Auth_Bearer_IDed)
-   #fail_hard =  # starting authentication; cannot fail
    #reg_auth =   # starting authentication in both modes
 
    def __call__(self, req):
@@ -1421,6 +1442,12 @@ class Registry_Auth_None(Registry_Auth):
 
    def __str__(self):
       return "no authorization"
+
+   @property
+   def escalators(self):
+      return (Registry_Auth_Basic,
+              Registry_Auth_Bearer_Anon,
+              Registry_Auth_Bearer_IDed)
 
 
 class Registry_HTTP:
@@ -2398,8 +2425,8 @@ def init(cli):
    global reg_auth
    if (cli.func.__module__ == "push"):
       reg_auth = True
-   elif (cli.auth is not None):
-      reg_auth = cli.auth
+   elif (cli.auth):
+      reg_auth = True
    elif ("CH_IMAGE_AUTH" in os.environ):
       reg_auth = (os.environ["CH_IMAGE_AUTH"] == "yes")
    else:
