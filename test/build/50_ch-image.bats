@@ -605,6 +605,21 @@ EOF
 EOF
 }
 
+@test 'ch-image build: multistage syntax' {
+    img=$(cat << EOF
+FROM 00_tiny as tiny
+FROM tmpimg
+COPY --from=tiny /maxperms_file /
+EOF
+)
+    # NAME
+    printf "$img" | ch-image --no-cache build -t multistage -f - .
+    ch-image delete multistage
+    # NAME[:TAG]
+    printf "$img" | ch-image --no-cache build -t multi:stage -f - .
+    ch-image delete multi:stage
+}
+
 @test 'storage directory versioning' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-version
 
