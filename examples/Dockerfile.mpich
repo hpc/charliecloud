@@ -6,7 +6,7 @@
 #
 # ch-test-scope: full
 
-FROM almalinux8
+FROM almalinux:8
 
 RUN dnf install -y --setopt=install_weak_deps=false \
                 automake \
