@@ -1030,6 +1030,15 @@ EOF
 
 @test "${tag}: tag" {
    ch-image build-cache --reset
+   tiny=$(cat << 'EOF'
+FROM alpine:3.9
+RUN touch /maxperms_file \
+ && chmod 0777 /maxperms_file \
+ && mkdir /maxperms_dir \
+ && chmod 1777 /maxperms_dir
+EOF
+)
+    printf "%s" "$tiny" | ch-image build --cache -t 00_tiny -f - .
    ch-image build --cache -t foo -f - . <<EOF
 FROM 00_tiny
 RUN echo foo
