@@ -613,10 +613,10 @@ COPY --from=tiny /maxperms_file /
 EOF
 )
     # NAME
-    printf "$img" | ch-image --no-cache build -t multistage -f - .
+    printf '%s' "$img" | ch-image --no-cache build -t multistage -f - .
     ch-image delete multistage
     # NAME[:TAG]
-    printf "$img" | ch-image --no-cache build -t multi:stage -f - .
+    printf '%s' "$img" | ch-image --no-cache build -t multi:stage -f - .
     ch-image delete multi:stage
 }
 
