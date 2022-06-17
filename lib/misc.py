@@ -145,6 +145,8 @@ def reset(cli):
    ch.storage.reset()
 
 def tag(cli):
+   if (type(bu.cache) is not bu.Enabled_Cache):
+      ch.FATAL('tag: requires enabled build cache')
    src = ch.Image(ch.Image_Ref(cli.source_ref))
    img = ch.Image(ch.Image_Ref(cli.image_ref))
    # Source image SID and git hash.
