@@ -1267,8 +1267,8 @@ class Registry_Auth(requests.auth.AuthBase):
    #                 anonymous (i.e., --auth or not, respectively). Everything
    #                 must be one or the other.
    #
-   #   name ........ Auth type string (from WWW-Authenticate header) that this
-   #                 class matches.
+   #   scheme ...... Auth scheme string (from WWW-Authenticate header) that
+   #                 this class matches.
 
    __slots__ = ("auth_h_next",)  # WWW-Authenticate header for next escalator
 
@@ -1301,16 +1301,16 @@ class Registry_Auth(requests.auth.AuthBase):
       # We use two “undocumented (although very stable and frequently cited)”
       # methods to parse the authentication response header (thanks Andy,
       # i.e., @adrecord on GitHub).
-      (auth_type, auth_d) = auth_h.split(maxsplit=1)
+      (auth_scheme, auth_d) = auth_h.split(maxsplit=1)
       auth_d = urllib.request.parse_keqv_list(
                   urllib.request.parse_http_list(auth_d))
-      VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
+      VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_scheme, auth_d))
       # Is escalation possible in principle?
       if (len(self.escalators) == 0):
          FATAL("no further authentication possible, giving up")
       # Try to escalate.
       for class_ in self.escalators:
-         if (class_.name == auth_type):
+         if (class_.scheme == auth_scheme):
             if (class_.reg_auth != reg_auth):
                VERBOSE("skipping %s: auth mode mismatch" % class_.__name__)
             else:
@@ -1328,7 +1328,7 @@ class Registry_Auth(requests.auth.AuthBase):
 
 class Registry_Auth_Basic(Registry_Auth):
    anon_p = False
-   name = "Basic"
+   scheme = "Basic"
    reg_auth = True
 
    __slots__ = ("basic")
@@ -1360,7 +1360,7 @@ class Registry_Auth_Basic(Registry_Auth):
 class Registry_Auth_Bearer_IDed(Registry_Auth):
    # https://stackoverflow.com/a/58055668
    anon_p = False
-   name = "Bearer"
+   scheme = "Bearer"
    reg_auth = True
    variant = "IDed"
 
@@ -1423,7 +1423,7 @@ class Registry_Auth_Bearer_IDed(Registry_Auth):
 
 class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
    anon_p = True
-   name = "Bearer"
+   scheme = "Bearer"
    reg_auth = False
 
    __slots__ = ()
@@ -1441,7 +1441,7 @@ class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
 
 class Registry_Auth_None(Registry_Auth):
    anon_p = True
-   name = None
+   scheme = None
    #reg_auth =   # starting authentication in both modes
 
    def __call__(self, req):

@@ -119,12 +119,12 @@ Common options placed before or after the sub-command:
 Authentication
 ==============
 
-Charliecloud has no separate :code:`login` subcommand like some other
-container implementations, and we do not plan to add one because Charliecloud
-maintains no configuration files. Instead, Charliecloud will prompt you for a
-username and password when authentication is needed. Note that some
-repositories call the secret something other than "password"; e.g., GitLab
-calls it a "personal access token (PAT)".
+Charliecloud does not maintain configuration files; thus it has no separate 
+:code:`login` subcommand to store secrets. Instead, Charliecloud will prompt
+for a username and password when authentication is needed. Note that some
+repositories refer to secrets as something other than a "password"; e.g.,
+GitLab calls it a "personal access token (PAT)", Quay calls it a
+"Application Token", etc.
 
 For non-interactive authentication, you can use environment variables
 :code:`CH_IMAGE_USERNAME` and :code:`CH_IMAGE_PASSWORD`. Only do this if you
