@@ -312,6 +312,7 @@ EOF
 
 @test "${tag}: §3.4.2 two pulls, different" {
     localregistry_init
+    unset CH_IMAGE_AUTH  # don’t give local creds to Docker Hub
 
     # Simulate a change in an image from a remote repo; ensure that “ch-image
     # pull” downloads the next image. Note ch-image pull behavior is the same
@@ -344,17 +345,19 @@ EOF
 
     echo
     echo '*** Them: Create the initial image state.'
-    ch-image -s "$st" build -t capablanca -f - . <<EOF
+    ch-image -s "$st" build -v -t capablanca -f - . <<EOF
 FROM alpine:3.9
 RUN echo josé > /worldchampion
 EOF
-    ch-image -s "$st" --tls-no-verify push capablanca localhost:5000/champ
+    ch-image -s "$st" --auth --tls-no-verify \
+             push capablanca localhost:5000/champ
 
     echo '*** Us: Build image using theirs as base.'
     # Both download and build caches are cold; FROM will do a (lazy) pull.
     # Files should be downloaded and all instructions should miss. Then do it
     # again; nothing should download and it should be all hits.
-    run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
+    run ch-image -s "$so" --auth --tls-no-verify \
+                 build -t wc -f <(echo "$df_ours") /tmp
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'. FROM'* ]]
@@ -379,7 +382,7 @@ EOF
     echo '*** Us: explicit (eager) pull.'
     # This should download the manifest list and manifest, see that there are
     # no changes, and not download the config or layers.
-    run ch-image -s "$so" --tls-no-verify pull localhost:5000/champ
+    run ch-image -s "$so" --auth --tls-no-verify pull localhost:5000/champ
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
@@ -397,7 +400,7 @@ EOF
 FROM alpine:3.9
 RUN echo "bobby" > /worldchampion
 EOF
-    ch-image -s "$st" --tls-no-verify push fischer localhost:5000/champ
+    ch-image -s "$st" --auth --tls-no-verify push fischer localhost:5000/champ
 
     echo
     echo '*** Us: Rebuild our image (lazy pull does not update).'
@@ -419,7 +422,7 @@ EOF
     echo '*** Us: Explicitly pull updated image.'
     # Returned config hash should differ from what is in storage; thus, the
     # new layer(s) should be pulled and the image branch in the cache updated.
-    run ch-image -s "$so" --tls-no-verify pull localhost:5000/champ
+    run ch-image -s "$so" --auth --tls-no-verify pull localhost:5000/champ
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
