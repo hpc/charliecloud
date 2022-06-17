@@ -14,6 +14,7 @@ Synopsis
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
+   $ ch-image [...] tag IMAGE_REF EXISTING_REF
    $ ch-image { --help | --version | --dependencies }
 
 
@@ -1011,6 +1012,36 @@ in the remote registry, so we don't upload it again.)
 
 Delete all images and cache from ch-image builder storage.
 
+:code:`tag`
+===========
+
+::
+
+   $ ch-image tag SOURCE_REF IMAGE_REF
+
+Add new image :code:`IMAGE_REF` from existing image :code:`SOURCE_REF` to
+storage and cache. If :code:`IMAGE_REF` already exists then it is replaced. This
+feature requires the build cache to be enabled, i.e., :code:`--cache`.
+
+examples
+--------
+
+New image referce :code:`bar` from :code:`foo`.
+
+::
+
+   $ ch-image --cache tag foo bar
+   adding reference: bar
+   copying image ...
+   done
+
+Same, but :code:`bar` already exists.
+
+::
+   deleting image: bar
+   adding reference: bar
+   copying image ...
+   done
 
 Environment variables
 =====================

@@ -144,3 +144,19 @@ def list_(cli):
 def reset(cli):
    ch.storage.reset()
 
+def tag(cli):
+   src = ch.Image(ch.Image_Ref(cli.source_ref))
+   img = ch.Image(ch.Image_Ref(cli.image_ref))
+   # Source image SID and git hash.
+   (src_sid, src_commit) = bu.cache.find_image(src)
+   if (not (src_sid and src_commit)):
+      ch.FATAL("tag: SOURCE_REF: %s doesn't exist in cache" % src.ref)
+   (img_sid, img_commit) = bu.cache.find_image(img)
+   if (img_sid and img_commit):
+      ch.VERBOSE("tag: reference %s exists, replacing it" % img.ref)
+      img.unpack_delete()
+      bu.cache.worktrees_prune()
+   ch.INFO("adding reference: %s" % img.ref)
+   bu.cache.checkout(img, src_commit, src)
+   bu.cache.ready(img)
+   ch.done_notify()

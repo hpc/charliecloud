@@ -1027,3 +1027,42 @@ RUN true        # miss
 RUN mkdir /foo  # should not collide with leftover /foo from above
 EOF
 }
+
+@test "${tag}: tag" {
+   ch-image build-cache --reset
+   ch-image build --cache -t foo -f - . <<EOF
+FROM 00_tiny
+RUN echo foo
+EOF
+
+   # New ref 'bar' based on foo.
+   ch-image --cache tag foo bar
+   blessed_out=$(cat << 'EOF'
+*  (foo, bar) RUN echo foo
+*  (00_tiny) RUN.F touch /maxperms_file  && chmod 0777 /maxperms_file  && m..
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) ROOT
+EOF
+)
+   run ch-image --cache build-cache --tree
+   diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+   # Replace ref 'bar' with reference to new image, 'qux'.
+   ch-image build --cache -t qux -f - . << 'EOF'
+FROM alpine:latest
+echo qux
+EOF
+   blessed_out=$(cat << 'EOF'
+*  (qux, bar) RUN echo qux
+*  (alpine+latest) PULL alpine:latest
+| *  (foo) RUN echo foo
+| *  (00_tiny) RUN.F touch /maxperms_file  && chmod 0777 /maxperms_file  &&..
+| *  (alpine+3.9) PULL alpine:3.9
+|/
+*  (HEAD -> root) ROOT
+EOF
+)
+   ch-image --cache tag qux bar
+   run ch-image --cache build-cache --tree
+   diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}
