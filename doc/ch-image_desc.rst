@@ -14,7 +14,7 @@ Synopsis
    $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
-   $ ch-image [...] tag IMAGE_REF EXISTING_REF
+   $ ch-image [...] tag SOURCE_REF IMAGE_REF
    $ ch-image { --help | --version | --dependencies }
 
 
