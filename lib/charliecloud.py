@@ -1442,7 +1442,7 @@ class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
 class Registry_Auth_None(Registry_Auth):
    anon_p = True
    scheme = None
-   #reg_auth =   # starting authentication in both modes
+   #reg_auth =   # not meaningful b/c we start here in both modes
 
    def __call__(self, req):
       return req
@@ -1659,7 +1659,7 @@ class Registry_HTTP:
             elif (401 in statuses):    # caller can deal with it
                break
             else:
-               FATAL("authorization failure; don't know what to do")
+               FATAL("unhandled authentication failure")
       # Stream response if needed.
       if (out is not None and res.status_code == 200):
          try:
