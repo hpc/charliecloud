@@ -738,7 +738,7 @@ class I_copy(Instruction):
       for src in [variables_sub(i, self.env_build) for i in self.srcs_raw]:
          matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
          if (len(matches) == 0):
-            ch.FATAL("can't copy: not found: %s" % src)
+            ch.FATAL("can't copy: source file not found: %s" % src)
          for i in matches:
             self.srcs.append(i)
             ch.VERBOSE("source: %s" % i)

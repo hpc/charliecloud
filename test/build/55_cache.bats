@@ -976,13 +976,13 @@ EOF
     # Multiple FROM multistage build with no interim instructions. Cold cache.
     ch-image --cache build -t multistage -f - . <<EOF
 FROM 00_tiny as tiny
-FROM tmpimg
+FROM alpine:latest
 COPY --from=tiny /maxperms_file /
 EOF
     # Same as above but with warm cache.
     ch-image --cache build -t multistage -f - . <<EOF
 FROM 00_tiny as tiny
-FROM tmpimg
+FROM alpine:latest
 COPY --from=tiny /maxperms_file /
 EOF
     # Multiple FROM multistage build with interim instructions. Cold cache.
@@ -991,7 +991,7 @@ EOF
     ch-image --cache build -t multi:stage -f - . <<EOF
 FROM 00_tiny as tiny
 RUN echo foo
-FROM tmpimg
+FROM alpine:latest
 RUN echo bar
 COPY --from=tiny /maxperms_file /
 EOF
@@ -999,7 +999,7 @@ EOF
     ch-image --cache build -t multi:stage -f - . <<EOF
 FROM 00_tiny as tiny
 RUN echo foo
-FROM tmpimg
+FROM alpine:latest
 RUN echo bar
 COPY --from=tiny /maxperms_file /
 EOF
