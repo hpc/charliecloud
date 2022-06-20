@@ -226,12 +226,29 @@ void sq_mount(const char *img_path, char *mountpt)
    sq.ll = sqfs_ll_open(img_path, 0);
    Te (sq.ll != NULL, "can't open SquashFS: %s; try ch-run -vv?", img_path);
 
-   if (sqfs_ll_mount(sq.chan, sq.mountpt, &mount_args,
-                     &OPS, sizeof(OPS), sq.ll) != SQFS_OK) {
-      // We get back only SQFS_OK or SQFS_ERR, with no further detail. Looking
-      // at the source code [1], the latter says either fuse_session_new() or
-      // fuse_session_mount() failed, but we can't tell which.
-      // [1]: https://github.com/vasi/squashfuse/blob/74f4fe8/ll.c#L399
-      FATAL("unknown FUSE error mounting SquashFS; try ch-run -vv?");
-   }
+   // sqfs_ll_mount() is squirrely for a couple reasons:
+   //
+   //   1. Error reporting. We get back only SQFS_OK or SQFS_ERR, with no
+   //      further detail. Looking at the source code [1], the latter says
+   //      either fuse_session_new() or fuse_session_mount() failed, but we
+   //      can't tell which, or get any further information about what went
+   //      wrong. Hopefully fusermount3 also printed an error message.
+   //
+   //   2. Race condition. We have been seeing intermittent errors in the test
+   //      suite about permission denied accessing the mount point (issue
+   //      #1364). I *think* this is because a previous mount on the same
+   //      location is not yet cleaned up. For this reason, we have a short
+   //      retry loop.
+   //
+   // [1]: https://github.com/vasi/squashfuse/blob/74f4fe8/ll.c#L399
+   for (int i = 5; true; i--)
+      if (SQFS_OK == sqfs_ll_mount(sq.chan, sq.mountpt, &mount_args,
+                                   &OPS, sizeof(OPS), sq.ll)) {
+         break;  // success
+      } else if (i <= 0) {
+         FATAL("too many FUSE errors; giving up");
+      } else {
+         WARNING("FUSE error mounting SquashFS; will retry");
+         sleep(1);
+      }
 }
