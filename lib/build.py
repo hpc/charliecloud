@@ -891,7 +891,7 @@ class I_from_(Instruction):
          self.parent.checkout()
          self.parent.ready()
       # At this point any meaningful parent of FROM, e.g., previous stage, has
-      # been closed; thus act as own parent.
+      # been closed; thus, act as own parent.
       self.parent = self
       # Pull base image if needed.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)

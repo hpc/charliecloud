@@ -962,47 +962,30 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}: multistage build copy" {
-    ch-image build-cache --reset
-    tiny=$(cat << EOF
+@test "${tag}: multistage COPY" {
+    # Multi-stage build with no instructions in the first stage.
+    df_no=$(cat <<'EOF'
 FROM alpine:3.9
-RUN touch /maxperms_file \
- && chmod 0777 /maxperms_file \
- && mkdir /maxperms_dir \
- && chmod 1777 /maxperms_dir
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
 EOF
-)
-    printf "%s" "$tiny" | ch-image build --cache -t 00_tiny -f - .
-    # Multiple FROM multistage build with no interim instructions. Cold cache.
-    ch-image --cache build -t multistage -f - . <<EOF
-FROM 00_tiny as tiny
-FROM alpine:latest
-COPY --from=tiny /maxperms_file /
+           )
+    # Multi-stage build with instruction in the first stage.
+    df_yes=$(cat <<'EOF'
+FROM alpine:3.9
+RUN echo foo
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
 EOF
-    # Same as above but with warm cache.
-    ch-image --cache build -t multistage -f - . <<EOF
-FROM 00_tiny as tiny
-FROM alpine:latest
-COPY --from=tiny /maxperms_file /
-EOF
-    # Multiple FROM multistage build with interim instructions. Cold cache.
+            )
+
     ch-image build-cache --reset
-    printf "%s" "$tiny" | ch-image build --cache -t 00_tiny -f - .
-    ch-image --cache build -t multi -f - . <<EOF
-FROM 00_tiny as tiny
-RUN echo foo
-FROM alpine:latest
-RUN echo bar
-COPY --from=tiny /maxperms_file /
-EOF
-    # Same as above with warm cache.
-    ch-image --cache build -t multi -f - . <<EOF
-FROM 00_tiny as tiny
-RUN echo foo
-FROM alpine:latest
-RUN echo bar
-COPY --from=tiny /maxperms_file /
-EOF
+    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
+    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
+
+    ch-image build-cache --reset
+    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
+    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
 }
 
 @test "${tag}: §3.6 rebuild" {
