@@ -1019,9 +1019,9 @@ Delete all images and cache from ch-image builder storage.
 
    $ ch-image tag SOURCE_REF IMAGE_REF
 
-Add new image :code:`IMAGE_REF` from existing image :code:`SOURCE_REF` to
-storage and cache. If :code:`IMAGE_REF` already exists then it is replaced. This
-feature requires the build cache to be enabled, i.e., :code:`--cache`.
+Create image reference :code:`IMAGE_REF` from existing image reference
+:code:`SOURCE_REF` and add to storage and cache. If :code:`IMAGE_REF` already
+exists then it is replaced. This feature requires the build cache to be enabled.
 
 examples
 --------
