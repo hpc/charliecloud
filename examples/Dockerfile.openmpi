@@ -122,7 +122,8 @@ ARG MPI_VERSION=3.1.6
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
  && tar xf openmpi-${MPI_VERSION}.tar.gz
 COPY dont-init-ucx-on-intel-cray.patch ./openmpi-${MPI_VERSION}
-RUN cd openmpi-${MPI_VERSION} && git apply dont-init-ucx-on-intel-cray.patch \
+RUN cd openmpi-${MPI_VERSION} \
+ && patch -p1 dont-init-ucx-on-intel-cray.patch \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \

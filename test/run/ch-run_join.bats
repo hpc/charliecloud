@@ -10,6 +10,7 @@ ipc_clean () {
 
 ipc_clean_p () {
     sem="$(find /dev/shm -maxdepth 1 -name '*ch-run*')"
+    echo "$sem" 1>&2
     [[ -z $sem ]]
 }
 
@@ -230,6 +231,8 @@ unset_vars () {
     # everyone chdir(2)s properly.
     # shellcheck disable=SC2086
     run $ch_mpirun_2_1node ch-run -v --join --cd /test "$ch_timg" -- ./printns 2
+    echo "$output"
+    [[ $status -eq 0 ]]
     ipc_clean_p
     joined_ok 2 2 1 "$status" "$output"
 
@@ -237,6 +240,8 @@ unset_vars () {
     # of the namespaces.
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run -v --join "$ch_timg" -- /test/printns 4
+    echo "$output"
+    [[ $status -eq 0 ]]
     joined_ok "$ch_cores_total" "$ch_cores_node" "$ch_nodes" \
               "$status" "$output"
     ipc_clean_p
@@ -360,7 +365,7 @@ unset_vars () {
     ch-run -v "$ch_timg" -- \
            /test/printns 5 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
-    sleep 1
+    sleep 2
     cat "${BATS_TMPDIR}/join.1.err"
     cat "${BATS_TMPDIR}/join.1.ns"
     grep -Fq "join: 0 0 (null) 0" "${BATS_TMPDIR}/join.1.err"
@@ -397,7 +402,7 @@ unset_vars () {
     ch-run -v --join-ct=2 --join-tag=bar "$ch_timg" -- \
            /test/printns 5 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
-    sleep 1
+    sleep 2
     cat "${BATS_TMPDIR}/join.1.err"
     cat "${BATS_TMPDIR}/join.1.ns"
       grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.1.err"
@@ -414,7 +419,7 @@ unset_vars () {
     ch-run -v --join-ct=2 --join-tag=bar "${ch_timg}" -- \
            /test/printns 5 "${BATS_TMPDIR}/join.2.ns" \
            >& "${BATS_TMPDIR}/join.2.err" &
-    sleep 1
+    sleep 2
     cat "${BATS_TMPDIR}/join.2.err"
     cat "${BATS_TMPDIR}/join.2.ns"
       grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.2.err"

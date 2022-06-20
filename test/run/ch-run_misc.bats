@@ -823,7 +823,7 @@ EOF
     rmdir "$mountpt"
 
     # -m with non-sqfs img
-    img=${BATS_TMPDIR}/dirimg
+    img=$(realpath "${BATS_TMPDIR}/dirimg")
     ch-convert -i squash "$ch_timg" "$img"
     run ch-run -m /doesnotexist -v "$img" -- /bin/true
     echo "$output"

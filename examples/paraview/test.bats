@@ -50,7 +50,7 @@ setup () {
 
 @test "${ch_tag}/cone serial PNG" {
     pict_ok
-    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.serial.png" 100
+    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.serial.png" 1000
 }
 
 @test "${ch_tag}/cone ranks=2" {
@@ -66,7 +66,7 @@ setup () {
 @test "${ch_tag}/cone ranks=2 PNG" {
     multiprocess_ok
     pict_ok
-    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.2ranks.png" 100
+    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.2ranks.png" 1000
 }
 
 @test "${ch_tag}/cone ranks=N" {
@@ -82,7 +82,7 @@ setup () {
 @test "${ch_tag}/cone ranks=N PNG" {
     multiprocess_ok
     pict_ok
-    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.nranks.png" 100
+    pict_assert_equal "${indir}/cone.png" "${outdir}/cone.nranks.png" 1000
 }
 
 @test "${ch_tag}/revert image" {
