@@ -1048,7 +1048,7 @@ EOF
    ch-image --cache tag foo bar
    blessed_out=$(cat << 'EOF'
 *  (foo, bar) RUN echo foo
-*  (00_tiny) RUN.F touch /maxperms_file  && chmod 0777 /maxperms_file  && m..
+*  (00_tiny) RUN touch /maxperms_file  && chmod 0777 /maxperms_file  && mkd..
 *  (alpine+3.9) PULL alpine:3.9
 *  (HEAD -> root) ROOT
 EOF
@@ -1059,13 +1059,13 @@ EOF
    # Replace ref 'bar' with reference to new image, 'qux'.
    ch-image build --cache -t qux -f - . << 'EOF'
 FROM alpine:latest
-echo qux
+RUN echo qux
 EOF
    blessed_out=$(cat << 'EOF'
 *  (qux, bar) RUN echo qux
 *  (alpine+latest) PULL alpine:latest
 | *  (foo) RUN echo foo
-| *  (00_tiny) RUN.F touch /maxperms_file  && chmod 0777 /maxperms_file  &&..
+| *  (00_tiny) RUN touch /maxperms_file  && chmod 0777 /maxperms_file  && m..
 | *  (alpine+3.9) PULL alpine:3.9
 |/
 *  (HEAD -> root) ROOT
