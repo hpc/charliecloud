@@ -900,10 +900,9 @@ if [[ -z $CHTEST_INSTALLED ]]; then
     if [[ $ch_version != "$cf_version" ]]; then
         warning "inconsistent configure version: ${cf_version}"
     fi
-    src_version=$("${ch_base}/misc/version" 2> /dev/null || echo '')
-    if [[ $src_version = '' ]]; then
-       src_version=$(cat "${ch_base}/VERSION")
-    fi
+    # Charliecloud version. Prefer git; otherwise use simple version.
+    src_version=$(   "${ch_base}/misc/version" 2> /dev/null \
+                  || cat "${ch_base}/VERSION")
     if [[ $ch_version != "$src_version" ]]; then
         warning "inconsistent source version: ${src_version}"
     fi
