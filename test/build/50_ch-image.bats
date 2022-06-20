@@ -605,19 +605,13 @@ EOF
 EOF
 }
 
-@test 'ch-image build: multistage syntax' {
-    img=$(cat << EOF
-FROM 00_tiny as tiny
-FROM tmpimg
-COPY --from=tiny /maxperms_file /
+@test 'ch-image build: multistage with colon' {
+cat <<'EOF' | ch-image --no-cache build -t tmpimg:tagged -f - .
+FROM alpine:3.9
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
 EOF
-)
-    # NAME
-    printf '%s' "$img" | ch-image --no-cache build -t multistage -f - .
-    ch-image delete multistage
-    # NAME[:TAG]
-    printf '%s' "$img" | ch-image --no-cache build -t multi:stage -f - .
-    ch-image delete multi:stage
+    ch-image delete tmpimg:tagged
 }
 
 @test 'storage directory versioning' {
