@@ -613,7 +613,7 @@ while true; do
                 shift
                 in_fmt=$1
                 ;;
-            -i=*|--in-fmt=*)
+            --in-fmt=*)
                 in_fmt=${1#*=}
                 ;;
             -n|--dry-run)
@@ -626,12 +626,15 @@ while true; do
                 shift
                 out_fmt=$1
                 ;;
-            -o=*|--out-fmt=*)
+            --out-fmt=*)
                 out_fmt=${1#*=}
                 ;;
             --tmp)
                 shift
                 tmpdir=$1
+                ;;
+            --tmp=*)
+                tmpdir=${1#*=}
                 ;;
             *)
                 break

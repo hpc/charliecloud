@@ -42,7 +42,7 @@ Options that print brief information and then exit:
 
 Common options placed before or after the sub-command:
 
-  :code:`-a`, :code:`--arch ARCH`
+  :code:`-a ARCH`, :code:`--arch=ARCH`, :code: `--arch ARCH`
      Use :code:`ARCH` for architecture-aware registry operations, currently
      :code:`pull` and pulls done within :code:`build`. :code:`ARCH` can be:
      (1) :code:`yolo`, to bypass architecture-aware code and use the
@@ -148,7 +148,7 @@ and various caches.
 
 In descending order of priority, this directory is located at:
 
-  :code:`-s`, :code:`--storage DIR`
+  :code:`-s DIR`, :code:`--storage=DIR`, :code:`--storage DIR`
     Command line option.
 
   :code:`$CH_IMAGE_STORAGE`
@@ -331,7 +331,7 @@ Required argument:
 
 Options:
 
-  :code:`-b`, :code:`--bind SRC[:DST]`
+  :code:`-b SRC[:DST]`, :code:`--bind=SRC[:DST]`, :code:`--bind SRC[:DST]`
     For :code:`RUN` instructions only, bind-mount :code:`SRC` at guest
     :code:`DST`. The default destination if not specified is to use the same
     path as the host; i.e., the default is equivalent to
@@ -346,12 +346,12 @@ Options:
     :code:`COPY`, can only access host files from the context directory,
     regardless of this option.
 
-  :code:`--build-arg KEY[=VALUE]`
+  :code:`--build-arg=KEY[=VALUE]`, :code:`--build-arg KEY[=VALUE]`
     Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
     to :code:`VALUE`. If :code:`VALUE` not specified, use the value of
     environment variable :code:`KEY`.
 
-  :code:`-f`, :code:`--file DOCKERFILE`
+  :code:`-f DOCKERFILE`, :code:`--file=DOCKERFILE`, :code:`--file DOCKERFILE`
     Use :code:`DOCKERFILE` instead of :code:`CONTEXT/Dockerfile`. If a single
     hyphen (:code:`-`) is specified, read the Dockerfile from standard input;
     like :code:`docker build`, the context directory is still available in
@@ -372,7 +372,7 @@ Options:
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
 
-  :code:`-t`, :code:`--tag TAG`
+  :code:`-t TAG`, :code:`--tag=TAG`, :code:`--tag TAG`
     Name of image to create. If not specified, infer the name:
 
     1. If Dockerfile named :code:`Dockerfile` with an extension: use the
@@ -828,7 +828,7 @@ Description
 
 Options:
 
-  :code:`--last-layer N`
+  :code:`--last-layer=N`, :code:`--last-layer N`
     Unpack only :code:`N` layers, leaving an incomplete image. This option is
     intended for debugging.
 
@@ -927,7 +927,7 @@ Destination:
 
 Options:
 
-  :code:`--image DIR`
+  :code:`--image=DIR`, :code:`--image DIR`
     Use the unpacked image located at :code:`DIR` rather than an image in the
     storage directory named :code:`IMAGE_REF`.
 

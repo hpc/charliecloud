@@ -45,13 +45,13 @@ Options
 To specify which files to inject
 --------------------------------
 
-  :code:`-c`, :code:`--cmd CMD`
+  :code:`-c CMD`, :code:`--cmd=CMD`, :code:`--cmd CMD`
     Inject files listed in the standard output of command :code:`CMD`.
 
-  :code:`-f`, :code:`--file FILE`
+  :code:`-f FILE`, :code:`--file=FILE`, :code:`--file FILE`
     Inject files listed in the file :code:`FILE`.
 
-  :code:`-p`, :code:`--path PATH`
+  :code:`-p PATH`, :code:`--path=PATH`, :code:`--path PATH`
     Inject the file at :code:`PATH`.
 
   :code:`--cray-mpi`
@@ -67,7 +67,7 @@ These can be repeated, and at least one must be specified.
 To specify the destination within the image
 -------------------------------------------
 
-  :code:`-d`, :code:`--dest DST`
+  :code:`-d DST`, :code:`--dest=DST`, :code:`--dest DST`
     Place files specified later in directory :code:`IMGDIR/DST`, overriding the
     inferred destination, if any. If a file's destination cannot be inferred
     and :code:`--dest` has not been specified, exit with an error. This can be

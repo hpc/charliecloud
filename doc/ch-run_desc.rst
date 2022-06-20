@@ -39,7 +39,7 @@ proper support is enabled, a SquashFS archive.
     when :code:`DST` needs to be created: :code:`ch-run` will refuse to follow
     absolute symlinks in this case, to avoid directory creation surprises.
 
-  :code:`-c`, :code:`--cd=DIR`
+  :code:`-c DIR`, :code:`--cd=DIR`, :code:`--cd DIR`
     Initial working directory in container.
 
   :code:`--ch-ssh`
@@ -48,24 +48,24 @@ proper support is enabled, a SquashFS archive.
   :code:`--env-no-expand`
     don't expand variables when using :code:`--set-env`
 
-  :code:`-g`, :code:`--gid=GID`
+  :code:`-g GID`, :code:`--gid=GID`, :code:`--gid GID`
     Run as group :code:`GID` within container.
 
   :code:`-j`, :code:`--join`
     Use the same container (namespaces) as peer :code:`ch-run` invocations.
 
-  :code:`--join-pid=PID`
+  :code:`--join-pid=PID`, :code:`--join-pid PID`
     Join the namespaces of an existing process.
 
-  :code:`--join-ct=N`
+  :code:`--join-ct=N`, :code:`--join-ct N`
     Number of :code:`ch-run` peers (implies :code:`--join`; default: see
     below).
 
-  :code:`--join-tag=TAG`
+  :code:`--join-tag=TAG`, :code:`--join-tag TAG`
     Label for :code:`ch-run` peer group (implies :code:`--join`; default: see
     below).
 
-  :code:`-m`, :code:`--mount=DIR`
+  :code:`-m DIR`, :code:`--mount=DIR`, :code:`--mount DIR`
     Use :code:`DIR` for the SquashFS mount point, which must already exist. If
     not specified, the default is :code:`/var/tmp/$USER.ch/mnt`, which *will*
     be created if needed.
@@ -88,7 +88,7 @@ proper support is enabled, a SquashFS archive.
     bind-mounted at container :code:`/tmp`. If this is specified, a new
     :code:`tmpfs` is mounted on the container's :code:`/tmp` instead.
 
-  :code:`--set-env`, :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
+  :code:`--set-env FILE`, :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`,
     Set environment variable(s). With:
 
        * no argument: as listed in file :code:`/ch/environment` within the
@@ -105,7 +105,7 @@ proper support is enabled, a SquashFS archive.
 
     See below for details on how environment variables work in :code:`ch-run`.
 
-  :code:`-u`, :code:`--uid=UID`
+  :code:`-u UID`, :code:`--uid=UID`, :code:`--uid UID`
     Run as user :code:`UID` within container.
 
   :code:`--unset-env=GLOB`

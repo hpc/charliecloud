@@ -31,7 +31,7 @@ producing the final format actually needed.
   :code:`-h`, :code:`--help`
     Print help and exit.
 
-  :code:`-i`, :code:`--in-fmt FMT`
+  :code:`-i FMT`, :code:`--in-fmt=FMT`, :code:`--in-fmt FMT`,
     Input image format is :code:`FMT`. If omitted, inferred as described below.
 
   :code:`-n`, :code:`--dry-run`
@@ -41,10 +41,10 @@ producing the final format actually needed.
   :code:`--no-clobber`
     Error if :code:`OUT` already exists, rather than replacing it.
 
-  :code:`-o`, :code:`--out-fmt FMT`
+  :code:`-o FMT`, :code:`--out-fmt=FMT`, :code:`--out-fmt FMT`,
     Output image format is :code:`FMT`; inferred if omitted.
 
-  :code:`--tmp DIR`
+  :code:`--tmp=DIR`, :code:`--tmp DIR`,
     A sub-directory for temporary storage is created in :code:`DIR` and
     removed at the end of a successful conversion. **If this script crashes or
     errors out, the temporary directory is left behind to assist in
