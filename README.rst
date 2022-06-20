@@ -66,6 +66,7 @@ Contributors:
 * Megan Phinney <mphinney@lanl.gov>
 * Reid Priedhorsky <reidpr@lanl.gov>, co-founder and project lead
 * Tim Randles <trandles@lanl.gov>, co-founder
+* Andy Record <adrecord on github.com>
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Peter Wienemann <wienemann@physik.uni-bonn.de>
 * Lowell Wofford <lowell@lanl.gov>
