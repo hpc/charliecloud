@@ -73,7 +73,7 @@ Contributors:
 How can I participate?
 ----------------------
 
-Use our GitHub page: https://hpc.github.io/charliecloud
+Use our GitHub page: https://github.com/hpc/charliecloud
 
 Bug reports and feature requests should be filed as "Issues". Questions,
 comments, support requests, and everything else should use our "Discussions".
