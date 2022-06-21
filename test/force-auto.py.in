@@ -306,7 +306,7 @@ class T_OpenSUSE_Leap_Latest(SUSE):
 class T_Arch_Latest(Test):
    config = "arch"
    base = "archlinux:latest"
-   arch_exclues = ["aarch64", "ppc64le"]  # base only amd64
+   arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
    # pacman does not exit non-zero when installing openssh fails; work
    # around this bug by grepping the pacman log.
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "pacman -Syq --noconfirm ed; ! fgrep failed: /var/log/pacman.log",
