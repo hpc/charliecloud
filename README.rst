@@ -66,6 +66,7 @@ Contributors:
 * Megan Phinney <mphinney@lanl.gov>
 * Reid Priedhorsky <reidpr@lanl.gov>, co-founder and project lead
 * Tim Randles <trandles@lanl.gov>, co-founder
+* Meisam Tabriz <meisam.tabriz@mpcdf.mpg.de>
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Peter Wienemann <wienemann@physik.uni-bonn.de>
 * Lowell Wofford <lowell@lanl.gov>
@@ -73,7 +74,7 @@ Contributors:
 How can I participate?
 ----------------------
 
-Use our GitHub page: https://hpc.github.io/charliecloud
+Use our GitHub page: https://github.com/hpc/charliecloud
 
 Bug reports and feature requests should be filed as "Issues". Questions,
 comments, support requests, and everything else should use our "Discussions".
