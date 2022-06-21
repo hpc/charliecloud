@@ -605,6 +605,15 @@ EOF
 EOF
 }
 
+@test 'ch-image build: multistage with colon' {
+cat <<'EOF' | ch-image --no-cache build -t tmpimg:tagged -f - .
+FROM alpine:3.9
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
+EOF
+    ch-image delete tmpimg:tagged
+}
+
 @test 'storage directory versioning' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-version
 

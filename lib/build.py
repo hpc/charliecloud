@@ -880,7 +880,7 @@ class I_from_(Instruction):
                   % (image_ct, self.image_i + 1))
       else:
          # Not last image; append stage index to tag.
-         tag = "%s/_stage%d" % (cli.tag, self.image_i)
+         tag = "%s_stage%d" % (cli.tag, self.image_i)
       self.image = ch.Image(ch.Image_Ref(tag))
       images[self.image_i] = self.image
       if (self.image_alias is not None):
