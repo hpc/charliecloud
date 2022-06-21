@@ -282,13 +282,6 @@ class Instruction(abc.ABC):
          return self.image.metadata["env"]
 
    @property
-   def first_p(self):
-      """Return True if the first instruction, False otherwise. WARNING: Do
-         not just check that attribute “parent” is None, because some first
-         instructions do set their parent."""
-      return (self.parent is None or self.parent is self)
-
-   @property
    def miss(self):
       return (self.git_hash is None)
 
@@ -745,7 +738,7 @@ class I_copy(Instruction):
       for src in [variables_sub(i, self.env_build) for i in self.srcs_raw]:
          matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
          if (len(matches) == 0):
-            ch.FATAL("can't copy: not found: %s" % src)
+            ch.FATAL("can't copy: source file not found: %s" % src)
          for i in matches:
             self.srcs.append(i)
             ch.VERBOSE("source: %s" % i)
@@ -886,20 +879,20 @@ class I_from_(Instruction):
       if (self.image_alias is not None):
          images[self.image_alias] = self.image
       ch.VERBOSE("image path: %s" % self.image.unpack_path)
-      # FROM doesn’t have a meaningful parent because it’s opening a new
-      # stage, so act as own parent.
-      self.parent = self
       # More error checking.
       if (str(self.image.ref) == str(self.base_image.ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
       # Close previous stage if needed.
-      if (not self.first_p and miss_ct == 0):
+      if (miss_ct == 0 and self.image_i > 0):
          # While there haven't been any misses so far, we do need to check out
          # the previous stage (a) to read its metadata and (b) in case there's
          # a COPY later. This will still be fast most of the time since the
          # correct branch is likely to be checked out already.
          self.parent.checkout()
          self.parent.ready()
+      # At this point any meaningful parent of FROM, e.g., previous stage, has
+      # been closed; thus, act as own parent.
+      self.parent = self
       # Pull base image if needed.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       unpack_no_git = (    self.base_image.unpack_exist_p
