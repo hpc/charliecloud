@@ -92,7 +92,7 @@ class Image_Puller:
          if (ch.arch != "yolo"):
             try:
                self.fatman_load()
-               if (ch.arch not in self.architectures):
+               if (not self.architectures.in_warn(ch.arch)):
                   ch.FATAL("requested arch unavailable: %s" % ch.arch,
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
@@ -155,7 +155,7 @@ class Image_Puller:
       self.architectures = None
       if (str(self.src_ref) in manifests_internal):
          # cheat; internal manifest library matches every architecture
-         self.architectures = { ch.arch_host: None }
+         self.architectures = ch.Arch_Dict({ ch.arch_host: None })
          return
       # raises Not_In_Registry_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
@@ -174,7 +174,7 @@ class Image_Puller:
             return
          else:
             ch.FATAL("manifest list: error: %s" % msg)
-      self.architectures = dict()
+      self.architectures = ch.Arch_Dict()
       if ("manifests" not in fm):
          ch.FATAL("manifest list has no key 'manifests'")
       for m in fm["manifests"]:

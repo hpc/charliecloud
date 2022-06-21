@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 90
     strategy:
-      #fail-fast: true  # if any job fails, cancel the rest immediately
+      fail-fast: false  # Actions seems kind of flaky lately
       matrix:
         builder: [none, docker, ch-image]
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]

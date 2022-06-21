@@ -962,6 +962,31 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+@test "${tag}: multistage COPY" {
+    # Multi-stage build with no instructions in the first stage.
+    df_no=$(cat <<'EOF'
+FROM alpine:3.9
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
+EOF
+           )
+    # Multi-stage build with instruction in the first stage.
+    df_yes=$(cat <<'EOF'
+FROM alpine:3.9
+RUN echo foo
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
+EOF
+            )
+
+    ch-image build-cache --reset
+    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
+    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
+
+    ch-image build-cache --reset
+    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
+    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
+}
 
 @test "${tag}: pull to specified destination" {
     ch-image reset
