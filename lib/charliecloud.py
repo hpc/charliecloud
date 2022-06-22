@@ -2022,6 +2022,9 @@ def VERBOSE(msg, hint=None, **kwargs):
 def WARNING(msg, hint=None, **kwargs):
    log(msg, hint, "31m", "warning: ", **kwargs)  # red
 
+def ERROR(msg, hint=None, **kwargs):
+   log(msg, hint, "31m", "error: ", **kwargs)  # red
+
 def arch_host_get():
    "Return the registry architecture of the host."
    arch_uname = platform.machine()
