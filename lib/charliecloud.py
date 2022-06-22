@@ -2004,7 +2004,7 @@ def FATAL(msg, hint=None, **kwargs):
                                    f.lineno, f.name)
                      for f in reversed(traceback.extract_stack()[1:-1]))
       hint = tr if hint is None else "%s: %s" % (hint, tr)
-   log(msg, hint, "1;31m", "error: ", **kwargs)  # bold red
+   ERROR(msg, hint, **kwargs)
    sys.exit(1)
 
 def INFO(msg, hint=None, **kwargs):
@@ -2023,7 +2023,7 @@ def WARNING(msg, hint=None, **kwargs):
    log(msg, hint, "31m", "warning: ", **kwargs)  # red
 
 def ERROR(msg, hint=None, **kwargs):
-   log(msg, hint, "31m", "error: ", **kwargs)  # red
+   log(msg, hint, "1;31m", "error: ", **kwargs)  # bold red
 
 def arch_host_get():
    "Return the registry architecture of the host."
