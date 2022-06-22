@@ -879,7 +879,7 @@ EOF
 }
 
 
-@test "${tag}: pull" {
+@test "${tag}: pull to default destination" {
     ch-image build-cache --reset
 
     printf '\n*** Case 1: Not in build cache\n\n'
@@ -987,6 +987,45 @@ EOF
     echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
     echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
 }
+
+@test "${tag}: pull to specified destination" {
+    ch-image reset
+
+    # pull special image to weird destination
+    ch-image pull scratch foo
+
+    # pull normal image to weird destination
+    sleep 1
+    ch-image pull alpine:3.9 bar
+
+    # everything in order?
+    blessed_tree=$(cat << 'EOF'
+*  (bar, alpine+3.9) PULL alpine:3.9
+| *  (scratch, foo) PULL scratch
+|/
+*  (HEAD -> root) ROOT
+EOF
+)
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
+    ls -x "$CH_IMAGE_STORAGE"/img
+    [[ $(ls -x "$CH_IMAGE_STORAGE"/img) == "bar  foo" ]]
+
+    # pull same normal image normally
+    sleep 1
+    ch-image pull alpine:3.9
+
+    # everything still in order?
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
+    ls -x "$CH_IMAGE_STORAGE"/img
+    [[ $(ls -x "$CH_IMAGE_STORAGE"/img) == "alpine+3.9  bar  foo" ]]
+}
+
 
 @test "${tag}: §3.6 rebuild" {
     ch-image build-cache --reset

@@ -23,14 +23,17 @@ manifests_internal = {
 
 def main(cli):
    # Set things up.
-   ref = ch.Image_Ref(cli.image_ref)
+   src_ref = ch.Image_Ref(cli.source_ref)
+   dst_ref = src_ref if cli.dest_ref is None else ch.Image_Ref(cli.dest_ref)
    if (cli.parse_only):
-      print(ref.as_verbose_str)
+      print(src_ref.as_verbose_str)
       sys.exit(0)
-   img = ch.Image(ref)
-   ch.INFO("pulling image:    %s" % img.ref)
+   dst_img = ch.Image(dst_ref)
+   ch.INFO("pulling image:    %s" % src_ref)
+   if (src_ref != dst_ref):
+      ch.INFO("destination:      %s" % dst_ref)
    ch.INFO("requesting arch:  %s" % ch.arch)
-   bu.cache.pull_eager(img, cli.last_layer)
+   bu.cache.pull_eager(dst_img, src_ref, cli.last_layer)
    ch.done_notify()
 
 
@@ -43,15 +46,17 @@ class Image_Puller:
                 "image",
                 "layer_hashes",
                 "registry",
-                "sid_input")
+                "sid_input",
+                "src_ref")
 
-   def __init__(self, image):
+   def __init__(self, image, src_ref):
       self.architectures = None
       self.config_hash = None
       self.image = image
       self.layer_hashes = None
-      self.registry = ch.Registry_HTTP(image.ref)
+      self.registry = ch.Registry_HTTP(src_ref)
       self.sid_input = None
+      self.src_ref = src_ref
 
    @property
    def config_path(self):
@@ -148,7 +153,7 @@ class Image_Puller:
              i.e., is architecture-unaware. In this case self.architectures is
              set to None."""
       self.architectures = None
-      if (str(self.image.ref) in manifests_internal):
+      if (str(self.src_ref) in manifests_internal):
          # cheat; internal manifest library matches every architecture
          self.architectures = ch.Arch_Dict({ ch.arch_host: None })
          return
@@ -203,7 +208,7 @@ class Image_Puller:
       # obtain the manifest
       try:
          # internal manifest library, e.g. for "FROM scratch"
-         manifest = manifests_internal[str(self.image.ref)]
+         manifest = manifests_internal[str(self.src_ref)]
          ch.INFO("manifest: using internal library")
       except KeyError:
          # download the file and parse it

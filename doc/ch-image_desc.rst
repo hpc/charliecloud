@@ -11,7 +11,7 @@ Synopsis
    $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [IMAGE_REF]
-   $ ch-image [...] pull [...] IMAGE_REF [IMAGE_DIR]
+   $ ch-image [...] pull [...] IMAGE_REF [DEST_REF]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
    $ ch-image { --help | --version | --dependencies }
@@ -819,12 +819,19 @@ Synopsis
 
 ::
 
-   $ ch-image [...] pull [...] IMAGE_REF
+   $ ch-image [...] pull [...] IMAGE_REF [DEST_REF]
 
 See the FAQ for the gory details on specifying image references.
 
 Description
 -----------
+
+Destination:
+
+  :code:`DEST_REF`
+    If specified, use this as the destination image reference, rather than
+    :code:`IMAGE_REF`. This lets you pull an image with a complicated
+    reference while storing it locally with a simpler one.
 
 Options:
 

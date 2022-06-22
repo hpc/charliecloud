@@ -232,6 +232,19 @@ class Enabled_Cache:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
+   def branch_nocheckout(self, src_ref, dest):
+      """Create ready branch for Image_Ref src_ref pointing to dest, which can
+         be either an Image_Ref or a Git commit reference (as a string)."""
+      if (isinstance(dest, ch.Image_Ref)):
+         dest = self.branch_name_ready(dest)
+      # Some versions of Git won't let us update a branch that's already
+      # checked out, so detach that worktree if it exists.
+      src_img = ch.Image(src_ref)
+      if (src_img.unpack_exist_p):
+         ch.cmd_quiet(["git", "checkout", "--detach"], cwd=src_img.unpack_path)
+      ch.cmd_quiet(["git", "branch", "-f", self.branch_name_ready(src_ref),
+                    dest], cwd=self.root)
+
    def checkout(self, image, git_hash, base_image):
       # base_image used in other subclasses
       ch.INFO("copying image ...")
@@ -499,10 +512,10 @@ class Enabled_Cache:
          ch.ossafe(os.chmod, "can't restore mode: %s" % path, fm.name,
                    stat.S_IMODE(fm.mode))
 
-   def pull_eager(self, img, last_layer=None):
+   def pull_eager(self, img, src_ref, last_layer=None):
       """Pull image, always checking if the repository version is newer. This
          is the pull operation invoked from the command line."""
-      pullet = pull.Image_Puller(img)
+      pullet = pull.Image_Puller(img, src_ref)
       pullet.download()  # will use dlcache if appropriate
       dl_sid = self.sid_from_parent(self.root_id, pullet.sid_input)
       dl_git_hash = self.find_sid(dl_sid, img.ref.for_path)
@@ -514,24 +527,26 @@ class Enabled_Cache:
       else:
          # Unpack and commit downloaded image. This also creates the worktree.
          ch.INFO("pulled image: adding to build cache")
-         self.pull_lazy(img, last_layer, pullet)
+         self.pull_lazy(img, src_ref, last_layer, pullet)
 
-   def pull_lazy(self, image, last_layer=None, pullet=None):
-      """Pull image if it does not exist in the build cache, i.e., do not ask
-         the registry if there is a newer version. This is the pull operation
-         invoked by FROM. If pullet is not None, use that Image_Puller and do
-         not download anything (i.e., assume Image_Puller.download() has
-         already been called)."""
+   def pull_lazy(self, img, src_ref, last_layer=None, pullet=None):
+      """Pull img from src_ref if it does not exist in the build cache, i.e.,
+         do not ask the registry if there is a newer version. This is the pull
+         operation invoked by FROM. If pullet is not None, use that
+         Image_Puller and do not download anything (i.e., assume
+         Image_Puller.download() has already been called)."""
       if (pullet is None):
          # a young hen, especially one less than one year old
-         pullet = pull.Image_Puller(image)
+         pullet = pull.Image_Puller(img, src_ref)
          pullet.download()
-      self.worktree_add(image, "root")
+      self.worktree_add(img, "root")
       pullet.unpack(last_layer)
       sid = self.sid_from_parent(self.root_id, pullet.sid_input)
       pullet.done()
-      commit = self.commit(image.unpack_path, sid, "PULL %s" % image.ref)
-      self.ready(image)
+      commit = self.commit(img.unpack_path, sid, "PULL %s" % src_ref)
+      self.ready(img)
+      if (img.ref != src_ref):
+         self.branch_nocheckout(src_ref, img.ref)
       return (sid, commit)
 
    def ready(self, image):
@@ -699,14 +714,14 @@ class Disabled_Cache(Rebuild_Cache):
    def find_image(self, *args):
       return (None, None)
 
-   def pull_lazy(self, image, last_layer=None, pullet=None):
-      if (pullet is None and os.path.exists(image.unpack_path)):
+   def pull_lazy(self, img, src_ref, last_layer=None, pullet=None):
+      if (pullet is None and os.path.exists(img.unpack_path)):
          ch.VERBOSE("base image already exists, skipping pull")
       else:
          if (pullet is None):
-            pullet = pull.Image_Puller(image)
+            pullet = pull.Image_Puller(img, src_ref)
             pullet.download()
-         image.unpack_clear()
+         img.unpack_clear()
          pullet.unpack(last_layer)
          pullet.done()
       return (None, None)

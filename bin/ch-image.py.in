@@ -241,16 +241,18 @@ def main():
    sp.add_argument("--last-layer", metavar="N", type=int,
                    help="stop after unpacking N layers")
    sp.add_argument("--parse-only", action="store_true",
-                   help="stop after parsing the image reference")
-   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
+                   help="stop after parsing the image reference(s)")
+   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image reference")
+   sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
+                   help="destination image reference (default: IMAGE_REF)")
 
    # push
    sp = ap.add_parser("push",
                       "copy image from local filesystem to remote repository")
    add_opts(sp, push.main, deps_check=True, stog_init=True)
-   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("--image", metavar="DIR",
                    help="path to unpacked image (default: opaque path in storage dir)")
+   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
                    help="destination image reference (default: IMAGE_REF)")
 
