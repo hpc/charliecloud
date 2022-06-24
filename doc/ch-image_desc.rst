@@ -84,6 +84,12 @@ Common options placed before or after the sub-command:
     storage. Note that :code:`ch-image pull` will always retrieve the most
     up-to-date image; this option is mostly for debugging.
 
+  :code:`--auth`
+    Authenticate with the remote repository, then (if successful) make all
+    subsequent requests in authenticated mode. For most subcommands, the
+    default is to never authenticate, i.e., make all requests anonymously. The
+    exception is :code:`push`, which implies :code:`--auth`.
+
   :code:`--cache`
     Enable build cache.
 
@@ -113,16 +119,34 @@ Common options placed before or after the sub-command:
 Authentication
 ==============
 
-If the remote repository needs authentication, Charliecloud will prompt you
-for a username and password. Note that some repositories call the secret
-something other than "password"; e.g., GitLab calls it a "personal access
-token (PAT)".
+Charliecloud does not have configuration files; thus, it has no separate
+:code:`login` subcommand to store secrets. Instead, Charliecloud will prompt
+for a username and password when authentication is needed. Note that some
+repositories refer to the secret as something other than a "password"; e.g.,
+GitLab calls it a "personal access token (PAT)", Quay calls it an "application
+token", and nVidia NGC calls it an "API token".
 
-These values are remembered for the life of the process and silently
-re-offered to the registry if needed. One case when this happens is on push to
-a private registry: many registries will first offer a read-only token when
-:code:`ch-image` checks if something exists, then re-authenticate when
-upgrading the token to read-write for upload. If your site uses one-time
+For non-interactive authentication, you can use environment variables
+:code:`CH_IMAGE_USERNAME` and :code:`CH_IMAGE_PASSWORD`. Only do this if you
+fully understand the implications for your specific use case, because it is
+difficult to securely store secrets in environment variables.
+
+By default for most subcommands, all registry access is anonymous. To instead
+use authenticated access for everything, specify :code:`--auth` or set the
+environment variable :code:`$CH_IMAGE_AUTH=yes`. The exception is
+:code:`push`, which always runs in authenticated mode. Even for pulling public
+images, it can be useful to authenticate for registries that have per-user
+rate limits, such as `Docker Hub
+<https://docs.docker.com/docker-hub/download-rate-limit/>`_. (Older versions
+of Charliecloud started with anonymous access, then tried to upgrade to
+authenticated if it seemed necessary. However, this turned out to be brittle;
+see issue `#1318 <https://github.com/hpc/charliecloud/issues/1318>`_.)
+
+The username and password are remembered for the life of the process and
+silently re-offered to the registry if needed. One case when this happens is
+on push to a private registry: many registries will first offer a read-only
+token when :code:`ch-image` checks if something exists, then re-authenticate
+when upgrading the token to read-write for upload. If your site uses one-time
 passwords such as provided by a security device, you can specify
 :code:`--password-many` to provide a new secret each time.
 
@@ -132,11 +156,35 @@ physical RAM with `mlock(2)
 <https://man7.org/linux/man-pages/man2/mlock.2.html>`_ or any other special
 treatment, so we cannot guarantee they will never reach non-volatile storage.
 
-There is no separate :code:`login` subcommand like Docker. For non-interactive
-authentication, you can use environment variables :code:`CH_IMAGE_USERNAME`
-and :code:`CH_IMAGE_PASSWORD`. Only do this if you fully understand the
-implications for your specific use case, because it is difficult to securely
-store secrets in environment variables.
+.. admonition:: Technical details
+
+   Most registries use something called `Bearer authentication
+   <https://datatracker.ietf.org/doc/html/rfc6750>`_, where the client (e.g.,
+   Charliecloud) includes a *token* in the headers of every HTTP request.
+
+   The authorization dance is different from the typical UNIX approach, where
+   there is a separate login sequence before any content requests are made.
+   The client starts by simply making the HTTP request it wants (e.g., to
+   :code:`GET` an image manifest), and if the registry doesn't like the
+   client's token (or if there is no token because the client doesn't have one
+   yet), it replies with HTTP 401 Unauthorized, but crucially it also provides
+   instructions in the response header on how to get a token. The client then
+   follows those instructions, obtains a token, re-tries the request, and
+   (hopefully) all is well. This approach also allows a client to upgrade a
+   token if needed, e.g. when transitioning from asking if a layer exists to
+   uploading its content.
+
+   The distinction between Charliecloud's anonymous mode and authenticated
+   modes is that it will only ask for anonymous tokens in anonymous mode and
+   authenticated tokens in authenticated mode. That is, anonymous mode does
+   involve an authentication procedure to obtain a token, but this
+   "authentication" is done anonymously. (Yes, it's confusing.)
+
+   Registries also often reply HTTP 401 when an image does not exist, rather
+   than the seemingly more correct HTTP 404 Not Found. This is to avoid
+   information leakage about the existence of images the client is not allowed
+   to pull, and it's why Charliecloud never says an image simply does not
+   exist.
 
 
 Storage directory
@@ -1029,5 +1077,5 @@ Environment variables
 .. include:: py_env.rst
 
 
-..  LocalWords:  tmpfs'es bigvendor AUTH Aimage bucache buc bigfile df
+..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc
 ..  LocalWords:  dlcache graphviz

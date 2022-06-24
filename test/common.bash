@@ -132,6 +132,7 @@ localregistry_init () {
         skip 'no local registry'
     fi
     # Note: These will only stick if function is called *not* in a subshell.
+    export CH_IMAGE_AUTH=yes
     export CH_IMAGE_USERNAME=charlie
     export CH_IMAGE_PASSWORD=test
 }
