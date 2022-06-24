@@ -6,19 +6,19 @@ of code as of version 0.28~pre is:
 .. list-table::
 
    * - Program itself
-     - 5243
+     - 6330
    * - Test suite & examples
-     - 8897
+     - 9917
    * - Documentation
-     - 4669
+     - 4871
    * - Build system
-     - 1094
+     - 1138
    * - Packaging
-     - 616
+     - 617
    * - Miscellaneous
-     - 406
+     - 410
    * - Total
-     - 20925
+     - 23283
 
 These include code only, excluding blank lines and comments. They were counted
 using `cloc <https://github.com/AlDanial/cloc>`_ version 1.86.
