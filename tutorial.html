@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Tutorial &mdash; Charliecloud 0.27 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.28 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.27
+                0.28
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -253,7 +253,7 @@ supported.</p>
 <span class="k">RUN</span> touch /usr/bin/ch-ssh
 </pre></div>
 </div>
-<p>This creates a minimal CentOS 8 image with <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> installed. We
+<p>This creates a minimal AlmaLinux 8 image with <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> installed. We
 will encounter more complex Dockerfiles later in this tutorial.</p>
 </section>
 <section id="build-charliecloud-image">
@@ -263,7 +263,7 @@ the option to enable unprivileged build workarounds <code class="code docutils l
 context directory <code class="code docutils literal notranslate"><span class="pre">.</span></code>, which in this case is the current directory.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build --force .
 <span class="go">inferred image name: hello</span>
-<span class="go">2 FROM centos:8</span>
+<span class="go">2 FROM almalinux:8</span>
 <span class="go">will use --force: rhel8: CentOS/RHEL 8+</span>
 <span class="go">[...]</span>
 <span class="go">7 COPY [&#39;.&#39;] -&gt; &#39;hello&#39;</span>
@@ -278,10 +278,10 @@ context directory <code class="code docutils literal notranslate"><span class="p
 progress. While not shown above, it uses yellow for this chatter, while
 build command output remains in the default color (e.g., white).</p>
 </div>
-<p>This image and the <code class="code docutils literal notranslate"><span class="pre">centos:8</span></code> base image used to build it are now
+<p>This image and the <code class="code docutils literal notranslate"><span class="pre">almalinux:8</span></code> base image used to build it are now
 visible in Charliecloud’s builder storage:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list
-<span class="go">centos:8</span>
+<span class="go">almalinux:8</span>
 <span class="go">hello</span>
 </pre></div>
 </div>
@@ -747,10 +747,10 @@ image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
 <p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic CentOS image
-(<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.centos8</span></code>):</p>
+(<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.almalinux8</span></code>):</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
 
-<span class="c"># This image has two purposes: (1) demonstrate we can build a CentOS 8 image</span>
+<span class="c"># This image has two purposes: (1) demonstrate we can build a AlmaLinux 8 image</span>
 <span class="c"># and (2) provide a build environment for Charliecloud EPEL 8 RPMs.</span>
 <span class="c">#</span>
 <span class="c"># Quirks:</span>
@@ -793,7 +793,7 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 <span class="c"># Need wheel to install bundled Lark, and the RPM version doesn&#39;t work.</span>
 <span class="k">RUN</span> pip3 install wheel
 
-<span class="c"># CentOS&#39;s linker doesn&#39;t search these paths by default; add them because we</span>
+<span class="c"># AlmaLinux&#39;s linker doesn&#39;t search these paths by default; add them because we</span>
 <span class="c"># will install stuff later into /usr/local.</span>
 <span class="k">RUN</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib&quot;</span> &gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
  <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib64&quot;</span> &gt;&gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
@@ -804,7 +804,7 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">centos8</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux8</span>
 
 <span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
 <span class="c"># OpenMPI for use inside a container.</span>
@@ -864,8 +864,6 @@ useful to show a real example.</p>
 
 <span class="c"># OS packages needed to build this stuff.</span>
 <span class="c">#</span>
-<span class="c"># As of 2019-10-07, CentOS 8 provides version 22.2 of libibverbs. This is</span>
-<span class="c"># quite new but works for our test systems.</span>
 <span class="c"># Note that libpsm2 is x86-64 only so we skip if missing</span>
 <span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
                 automake <span class="se">\</span>
@@ -896,8 +894,8 @@ useful to show a real example.</p>
 
 <span class="k">WORKDIR</span><span class="s"> /usr/local/src</span>
 
-<span class="c"># UCX. There is a package for CentOS 8 but we want control over build options,</span>
-<span class="c"># specifically multithreaded support.</span>
+<span class="c"># UCX. There is a package but we want control over build options, specifically</span>
+<span class="c"># multithreaded support.</span>
 <span class="k">ARG</span> <span class="nv">UCX_VERSION</span><span class="o">=</span><span class="m">1</span>.11.2
 <span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
               https://github.com/openucx/ucx.git <span class="se">\</span>
@@ -909,7 +907,7 @@ useful to show a real example.</p>
 
 <span class="c"># PMI2.</span>
 <span class="c">#</span>
-<span class="c"># CentOS doesn&#39;t have a package with the Slurm PMI2 libraries we need, so</span>
+<span class="c"># There isn&#39;t a package available with the Slurm PMI2 libraries we need, so</span>
 <span class="c"># build them from Slurm&#39;s release.</span>
 <span class="k">ARG</span> <span class="nv">SLURM_VERSION</span><span class="o">=</span><span class="m">19</span>-05-3-2
 <span class="k">RUN</span> wget https://github.com/SchedMD/slurm/archive/slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
@@ -929,7 +927,8 @@ useful to show a real example.</p>
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
  <span class="o">&amp;&amp;</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
 <span class="k">COPY</span> dont-init-ucx-on-intel-cray.patch ./openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>
-<span class="k">RUN</span> <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="o">&amp;&amp;</span> git apply dont-init-ucx-on-intel-cray.patch <span class="se">\</span>
+<span class="k">RUN</span> <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> patch -p1 dont-init-ucx-on-intel-cray.patch <span class="se">\</span>
  <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
     <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
     ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
@@ -951,7 +950,7 @@ useful to show a real example.</p>
 </div>
 <p>So what is going on here?</p>
 <ol class="arabic simple">
-<li><p>Use the latest CentOS 8 as the base image.</p></li>
+<li><p>Use the latest AlmaLinux 8 as the base image.</p></li>
 <li><p>Install a basic build system using the OS package manager.</p></li>
 <li><p>For a few dependencies and then OpenMPI itself:</p>
 <ol class="arabic simple">
