@@ -152,7 +152,11 @@ def main():
             p2 = p.add_argument_group(title=title)
             p2 = p2.add_mutually_exclusive_group()
          for (args, kwargs) in group:
-            p2.add_argument(*args, **kwargs)
+            if (help_):
+               kwargs2 = kwargs
+            else:
+               kwargs2 = { **kwargs, "default": argparse.SUPPRESS }
+            p2.add_argument(*args, **kwargs2)
 
    # main parser
    add_opts(ap, None, deps_check=False, stog_init=False, help_=True)
