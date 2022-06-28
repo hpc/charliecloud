@@ -78,6 +78,7 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 libibverbs-utils \
                 librdmacm \
                 librdmacm-devel \
+                patch \
                 rdma-core \
                 make \
                 numactl-devel \
