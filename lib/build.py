@@ -832,14 +832,26 @@ class I_env_space(Env):
 class I_from_(Instruction):
 
    __slots__ = ("alias",
+                "arg",
                 "base_image")
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree,
+      self.arg = self.options.pop("arg", "False")
+      if (self.arg):
+         arg_list = self.arg.split("=")
+         ch.INFO(arg_list)
+         if (arg_list[0] == ch.tree_child_terminal(self.tree, "from_var", "WORD")):
+            ch.INFO(arg_list[0])
+            self.base_image = ch.Image(ch.Image_Ref(arg_list[1]))
+         else:
+            self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree, "image_ref")))
+      else:
+         self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree,
                                                             "image_ref")))
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
+      ch.INFO(self.base_image)
 
    # Not meaningful for FROM.
    sid_input = None
@@ -923,7 +935,16 @@ class I_from_(Instruction):
 
    def execute(self):
       # Everything happens in prepare().
-      pass
+      ch.INFO(self.arg)
+      if (self.arg == "False"):
+         ch.INFO("arg is false")
+      elif (self.arg):
+         ch.INFO("setting arg")
+         arg_list = self.arg.split("=")
+         value = variables_sub(arg_list[1], self.env_build)
+         self.env_arg[arg_list[0]] = arg_list[1]
+      else:
+         pass
 
 
 class Run(Instruction):

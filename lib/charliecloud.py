@@ -170,8 +170,9 @@ env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i ( _WS option )* _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i ( _WS option )* _WS ( image_ref | from_var ) [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
+from_var: "$" WORD
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
