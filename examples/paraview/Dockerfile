@@ -3,6 +3,9 @@ FROM openmpi
 WORKDIR /usr/local/src
 
 RUN dnf install -y --setopt=install_weak_deps=false \
+                'dnf-command(config-manager)' \
+ && dnf config-manager --enable powertools \
+ && dnf install -y --setopt=install_weak_deps=false \
                 cmake \
                 expat-devel \
                 libpng-devel \
