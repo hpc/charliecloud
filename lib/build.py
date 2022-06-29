@@ -948,6 +948,7 @@ class I_from_(Instruction):
             k = self.arg.pop()
             v = self.arg.pop()
             value = variables_sub(k, self.env_build)
+            ch.VERBOSE("setting %s to %s" % (k, v))
             self.env_arg[k] = v
 
 class Run(Instruction):

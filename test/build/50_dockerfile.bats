@@ -738,23 +738,33 @@ EOF
     fi
 
     # --arg not used in from
-    run ch-image build -t tmpimg -f - . <<'EOF'
-FROM --arg=foo=foo 00_tiny
+    run ch-image build -v -t tmpimg -f - . <<'EOF'
+FROM --arg=foo=bar 00_tiny
 RUN echo $foo
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"foo"* ]]
+    [[ $output = *"setting foo to bar"* ]]
 
     # --arg used in from
-    run ch-image build -t tmpimg -f - . <<'EOF'
+    run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM --arg=os=00_tiny $os
 RUN echo $os
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"FROM  --arg=os=00_tiny00_tiny"* ]] # is os actually from --arg
-    [[ $output = *"00_tiny"* ]]
+    [[ $output = *"setting os to 00_tiny"* ]]
+
+    # multiple --arg used in from
+    run ch-image build -v -t tmpimg -f - . <<'EOF'
+FROM --arg=foo=bar --arg=os=00_tiny $os
+RUN echo $foo
+RUN echo $os
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"setting foo to bar"* ]]
+    [[ $output = *"setting os to 00_tiny"* ]]
 }
 
 @test 'Dockerfile: COPY list form' {
