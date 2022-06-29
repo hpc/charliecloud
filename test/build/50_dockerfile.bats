@@ -736,6 +736,25 @@ EOF
     else
         [[ $status -eq 0 ]]
     fi
+
+    # --arg not used in from
+    run ch-image build -t tmpimg -f - . <<'EOF'
+FROM --arg=foo=foo 00_tiny
+RUN echo $foo
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"foo"* ]]
+
+    # --arg used in from
+    run ch-image build -t tmpimg -f - . <<'EOF'
+FROM --arg=os=00_tiny $os
+RUN echo $os
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"FROM  --arg=os=00_tiny00_tiny"* ]] # is os actually from --arg
+    [[ $output = *"00_tiny"* ]]
 }
 
 @test 'Dockerfile: COPY list form' {
