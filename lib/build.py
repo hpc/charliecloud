@@ -250,10 +250,16 @@ class Instruction(abc.ABC):
       for st in ch.tree_children(tree, "option"):
          k = ch.tree_terminal(st, "OPTION_KEY")
          v = ch.tree_terminal(st, "OPTION_VALUE")
-         if (k in self.options):
-            ch.FATAL("%3d %s: repeated option --%s"
-                     % (self.lineno, self.str_name, k))
-         self.options[k] = v
+         if (k == "arg"):
+            try:
+               self.options[k] = self.options[k] + "=" + v
+            except KeyError:
+               self.options[k] = v
+         else:
+            if (k in self.options):
+               ch.FATAL("%3d %s: repeated option --%s"
+                        % (self.lineno, self.str_name, k))
+            self.options[k] = v
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
       self.tree = tree
@@ -837,14 +843,18 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.arg = self.options.pop("arg", "False")
-      if (self.arg):
-         arg_list = self.arg.split("=")
-         if (arg_list[0] == ch.tree_child_terminal(self.tree, "from_var", "WORD")):
-            self.base_image = ch.Image(ch.Image_Ref(arg_list[1]))
-         else:
-            self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree, "image_ref")))
-      else:
+      self.base_image = None
+      arg_check = self.options.pop("arg", "False")
+      if (arg_check):
+         self.arg = arg_check.split("=")
+         img = ch.tree_child_terminal(self.tree, "from_var", "WORD")
+         if (img is not None): #seach for var
+            i = 0
+            while (i < len(self.arg)): # search for variable in FROM
+               if (self.arg[i] == ch.tree_child_terminal(self.tree, "from_var", "WORD")):
+                  self.base_image = ch.Image(ch.Image_Ref(self.arg[i+1]))
+               i+=2
+      if(self.base_image is None):
          self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree,
                                                             "image_ref")))
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
@@ -932,15 +942,13 @@ class I_from_(Instruction):
 
    def execute(self):
       # Everything happens in prepare().
-      if (self.arg == "False"):
-         ch.INFO("arg is false")
-      elif (self.arg):
-         arg_list = self.arg.split("=")
-         value = variables_sub(arg_list[1], self.env_build)
-         self.env_arg[arg_list[0]] = arg_list[1]
-      else:
-         pass
-
+      if (len(self.arg) > 1):
+         self.arg.reverse()
+         while (len(self.arg) > 0):
+            k = self.arg.pop()
+            v = self.arg.pop()
+            value = variables_sub(k, self.env_build)
+            self.env_arg[k] = v
 
 class Run(Instruction):
 
