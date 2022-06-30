@@ -937,19 +937,20 @@ class I_from_(Instruction):
          ch.WARNING("base image also exists non-cached; using cache")
       # Load metadata
       self.image.metadata_load(self.base_image)
+
+      # set --arg 
+      while (len(self.arg) > 1):
+         k = self.arg.pop(0)
+         v = self.arg.pop(0)
+         value = variables_sub(k, self.env_build)
+         ch.VERBOSE("setting %s to %s" % (k, v))
+         self.env_arg[k] = v 
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 
    def execute(self):
       # Everything happens in prepare().
-      if (len(self.arg) > 1):
-         self.arg.reverse()
-         while (len(self.arg) > 0):
-            k = self.arg.pop()
-            v = self.arg.pop()
-            value = variables_sub(k, self.env_build)
-            ch.VERBOSE("setting %s to %s" % (k, v))
-            self.env_arg[k] = v
+      pass
 
 class Run(Instruction):
 
