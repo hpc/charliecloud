@@ -5,7 +5,6 @@ WORKDIR /usr/local/src
 # Packages for building.
 RUN dnf install -y --setopt=install_weak_deps=false \
                 cmake \
-                patch \
                 python3-devel \
                 python3-pip \
                 python3-setuptools \

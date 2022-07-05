@@ -137,7 +137,10 @@ RUN cd openmpi-${MPI_VERSION} \
                 --enable-mca-no-build=btl-openib,plm-slurm \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../openmpi-${MPI_VERSION}*
-RUN ldconfig
+# AlmaLinux's linker doesn't search these paths by default.
+RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
+ && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \
+ && ldconfig
 
 # OpenMPI expects this program to exist, even if it's not used. Default is
 # "ssh : rsh", but that's not installed.
