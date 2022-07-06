@@ -843,20 +843,31 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.base_image = None
+#         img = ch.tree_child_terminal(self.tree, "from_var", "WORD")
+#         if (img is not None): #seach for var
+#            i = 0
+#            while (i < len(self.arg)): # search for variable in FROM
+#               if (self.arg[i] == ch.tree_child_terminal(self.tree, "from_var", "WORD")):
+#                  self.base_image = ch.Image(ch.Image_Ref(self.arg[i+1]))
+#               i+=2
+#      if(self.base_image is None):
+#      self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree,
+#                                                        "image_ref")))
+      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"))
+      #ch.INFO(image_ref.as_verbose_str)
       arg_check = self.options.pop("arg", "False")
       if (arg_check):
+         #ch.INFO(arg_check)
          self.arg = arg_check.split("=")
-         img = ch.tree_child_terminal(self.tree, "from_var", "WORD")
-         if (img is not None): #seach for var
-            i = 0
-            while (i < len(self.arg)): # search for variable in FROM
-               if (self.arg[i] == ch.tree_child_terminal(self.tree, "from_var", "WORD")):
-                  self.base_image = ch.Image(ch.Image_Ref(self.arg[i+1]))
-               i+=2
-      if(self.base_image is None):
-         self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree,
-                                                            "image_ref")))
+         #ch.INFO(self.arg)
+      image_ref.host = self.update_var(image_ref.host)
+      image_ref.port = self.update_var(image_ref.port)
+      image_ref.name = self.update_var(image_ref.name)
+      image_ref.tag = self.update_var(image_ref.tag)
+      image_ref.digest = self.update_var(image_ref.digest)
+
+      self.base_image = ch.Image(image_ref)
+      #ch.INFO(self.base_image)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
 
@@ -867,6 +878,17 @@ class I_from_(Instruction):
    def str_(self):
       alias = " AS %s" % self.alias if self.alias else ""
       return "%s%s" % (self.base_image.ref, alias)
+
+   def update_var(self, var):
+      if (var is not None and var[0] == "$"):
+         val = var[1:len(var)]
+         idx = self.arg.index(val)
+         if (idx % 2 == 0):
+            return self.arg[idx + 1]
+         else:
+            ch.FATAL("variable does not exist")
+            return
+      return var
 
    def checkout_for_build(self):
       assert (isinstance(bu.cache, bu.Disabled_Cache))

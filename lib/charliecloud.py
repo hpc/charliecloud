@@ -140,10 +140,10 @@ ir_path: ( IR_PATH_COMPONENT "/" )+
 ir_name: IR_PATH_COMPONENT
 ir_tag: ":" IR_TAG
 ir_digest: "@sha256:" HEX_STRING
-IR_HOST: /[A-Za-z0-9_.-]+/
-IR_PORT: /[0-9]+/
-IR_PATH_COMPONENT: /[a-z0-9_.-]+/
-IR_TAG: /[A-Za-z0-9_.-]+/
+IR_HOST: /[$A-Za-z0-9_.-]+/
+IR_PORT: /[$0-9]+/
+IR_PATH_COMPONENT: /[$a-z0-9_.-]+/
+IR_TAG: /[$A-Za-z0-9_.-]+/
 
 /// Dockerfile ///
 
@@ -170,9 +170,8 @@ env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i ( _WS option )* _WS ( image_ref | from_var ) [ _WS from_alias ] _NEWLINES
+from_: "FROM"i ( _WS option )* _WS image_ref [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
-from_var: "$" WORD
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
