@@ -880,7 +880,7 @@ class I_from_(Instruction):
       return "%s%s" % (self.base_image.ref, alias)
 
    def update_var(self, var):
-      if (var is not None and var[0] == "$"):
+      if (var is not None and str(var) and var[0] == "$"):
          val = var[1:len(var)]
          idx = self.arg.index(val)
          if (idx % 2 == 0):
