@@ -393,7 +393,10 @@ CH_CHECK_VERSION([PYTHON], [$vmin_python],
                  [--version | head -1 | cut -d' ' -f2])
 
 # Python module "requests"
-vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
+
+# CentOS 7; FIXME: haven't actually tested this
+vmin_requests=$(grep 'requests' requirements.txt | sed 's/requests>=//g')
+
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for requests module])
   cat <<EOF | $PYTHON_SHEBANG
