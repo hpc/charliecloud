@@ -267,15 +267,6 @@ EOF
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
-    # ARG before FROM
-    run ch-image build -t tmpimg -f - . <<'EOF'
-ARG foo=bar
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
-
     # FROM --platform
     run ch-image build -t tmpimg -f - . <<'EOF'
 FROM --platform=foo 00_tiny
@@ -398,6 +389,16 @@ EOF
     [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
     [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
     [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
+
+    # ARG before FROM
+    run ch-image build -t tmpimg -f - . <<'EOF'
+ARG foo=bar
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: ARG before FROM not supported; use --arg with FROM '* ]] 
+
 }
 
 
@@ -736,6 +737,11 @@ EOF
     else
         [[ $status -eq 0 ]]
     fi
+}
+
+@test 'Dockerfile: FROM parsing' {
+    scope standard
+    [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
 
     # --arg not used in from
     run ch-image build -v -t tmpimg -f - . <<'EOF'
@@ -757,14 +763,14 @@ EOF
 
     # multiple --arg used in from
     run ch-image build -v -t tmpimg -f - . <<'EOF'
-FROM --arg=foo=bar --arg=os=00_tiny $os
+FROM --arg=version=latest --arg=os=alpine $os:$version
 RUN echo $foo
 RUN echo $os
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"setting foo to bar"* ]]
-    [[ $output = *"setting os to 00_tiny"* ]]
+    [[ $output = *"setting version to latest"* ]]
+    [[ $output = *"setting os to alpine"* ]]
 }
 
 @test 'Dockerfile: COPY list form' {

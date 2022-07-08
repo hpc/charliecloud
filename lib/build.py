@@ -206,7 +206,7 @@ class Main_Loop(lark.Visitor):
                 or isinstance(inst, I_from_)):
                pass
             elif (isinstance(inst, Arg)):
-               ch.WARNING("ARG before FROM not yet supported; see issue #779")
+               ch.WARNING("ARG before FROM not supported; use --arg with FROM ")
                return
             else:
                ch.FATAL("first instruction must be ARG or FROM")
@@ -843,31 +843,16 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-#         img = ch.tree_child_terminal(self.tree, "from_var", "WORD")
-#         if (img is not None): #seach for var
-#            i = 0
-#            while (i < len(self.arg)): # search for variable in FROM
-#               if (self.arg[i] == ch.tree_child_terminal(self.tree, "from_var", "WORD")):
-#                  self.base_image = ch.Image(ch.Image_Ref(self.arg[i+1]))
-#               i+=2
-#      if(self.base_image is None):
-#      self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree,
-#                                                        "image_ref")))
       image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"))
-      #ch.INFO(image_ref.as_verbose_str)
       arg_check = self.options.pop("arg", "False")
       if (arg_check):
-         #ch.INFO(arg_check)
          self.arg = arg_check.split("=")
-         #ch.INFO(self.arg)
       image_ref.host = self.update_var(image_ref.host)
       image_ref.port = self.update_var(image_ref.port)
       image_ref.name = self.update_var(image_ref.name)
       image_ref.tag = self.update_var(image_ref.tag)
       image_ref.digest = self.update_var(image_ref.digest)
-
       self.base_image = ch.Image(image_ref)
-      #ch.INFO(self.base_image)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
 
