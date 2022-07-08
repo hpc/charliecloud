@@ -764,7 +764,7 @@ EOF
     # multiple --arg used in from
     run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM --arg=version=latest --arg=os=alpine $os:$version
-RUN echo $foo
+RUN echo $latest
 RUN echo $os
 EOF
     echo "$output"
