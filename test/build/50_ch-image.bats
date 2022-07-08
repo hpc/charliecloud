@@ -5,6 +5,7 @@ setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
+
 @test 'ch-image common options' {
     # no common options
     run ch-image list
@@ -31,6 +32,7 @@ setup () {
     [[ $output = *'verbose level: 1'* ]]
 }
 
+
 @test 'ch-image delete' {
     # Verify image doesn't exist.
     run ch-image list
@@ -55,6 +57,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output != *"delete/test"* ]]
 }
+
 
 @test 'broken image delete' {
     # Verify image doesn't exist.
@@ -83,6 +86,7 @@ EOF
     [[ $output != *"deletetest"* ]]
 }
 
+
 @test 'broken image overwrite' {
     # Build image.
     ch-image build -t tmpimg -f - . << 'EOF'
@@ -101,6 +105,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"tmpimg"* ]]
 }
+
 
 @test 'ch-image import' {
     # Note: We don't test importing a real image because (1) when this is run
@@ -230,6 +235,7 @@ EOF
     rm -Rfv --one-file-system "$fixtures"
 }
 
+
 @test 'ch-image list' {
 
     # list all images
@@ -318,6 +324,7 @@ EOF
     [[ $output = *'remote arch-aware:   yes'* ]]
 }
 
+
 @test 'ch-image reset' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-reset
 
@@ -369,6 +376,7 @@ EOF
    [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
 }
 
+
 @test 'ch-image storage-path' {
     run ch-image gestalt storage-path
     echo "$output"
@@ -376,6 +384,7 @@ EOF
     [[ $output = /* ]]                                        # absolute path
     [[ $CH_IMAGE_STORAGE && $output = "$CH_IMAGE_STORAGE" ]]  # what we set
 }
+
 
 @test 'ch-image build --bind' {
     ch-image --no-cache build -t tmpimg -f - \
@@ -388,6 +397,7 @@ RUN ls -lR /mnt/0
 RUN test -f /mnt/0/empty-file
 EOF
 }
+
 
 @test 'ch-image build: metadata carry-forward' {
     arch_exclude aarch64  # test image not available
@@ -605,6 +615,7 @@ EOF
 EOF
 }
 
+
 @test 'ch-image build: multistage with colon' {
 cat <<'EOF' | ch-image --no-cache build -t tmpimg:tagged -f - .
 FROM alpine:3.9
@@ -613,6 +624,63 @@ COPY --from=0 /etc/os-release /
 EOF
     ch-image delete tmpimg:tagged
 }
+
+
+@test 'ch-image build: failed RUN' {
+    ch-image delete tmpimg || true
+
+    df=$(cat <<'EOF'
+FROM 00_tiny
+RUN set -o noclobber \
+ && echo hello > file_ \
+ && mkdir dir_empty \
+ && mkdir dir_nonempty \
+ && mkfifo fifo_ \
+EOF
+        )
+
+    ! ch-image build -t tmpimg - <<EOF
+${df}
+ && false
+EOF
+
+    # This will succeed unless there’s leftover junk from failed RUN above.
+    ch-image build -t tmpimg - <<EOF
+${df}
+ && true
+EOF
+}
+
+
+@test 'ch-image build: failed COPY' {
+    ch-image delete tmpimg || true
+
+    # Set up fixtures.
+    fixtures_dir="$BATS_TMPDIR"/copyfail
+    rm -Rf --one-file-system "$fixtures_dir"
+    mkdir "$fixtures_dir"
+    touch "$fixtures_dir"/file_readable
+    touch "$fixtures_dir"/file_unreadable
+    chmod 000 "$fixtures_dir"/file_unreadable
+    mkdir "$fixtures_dir"/dir_
+    touch "$fixtures_dir"/dir_/file_
+
+    # This will fail after the first file is already copied, because COPY is
+    # non-atomic. We use an unreadable file because if the file didn't exist,
+    # COPY would fail out before starting.
+    ! ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF'
+FROM 00_tiny
+COPY /file_readable /file_unreadable /
+EOF
+
+    # This will succeed unless there’s leftover junk from failed COPY above.
+    # Otherwise, it will fail because can’t overwrite a file with a directory.
+    ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF'
+FROM 00_tiny
+COPY /dir_ /file_readable
+EOF
+}
+
 
 @test 'storage directory versioning' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-version
