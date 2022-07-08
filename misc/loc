@@ -268,9 +268,7 @@ find . -type f -a \( \
 countem "BUILD SYSTEM" /tmp/loc.build
 
 # packaging code
-find ./packaging \( \
-        -name Makefile.am \
-     -o -path ../requirements.txt \) -prune -o -type f \
+find ./packaging \( -name Makefile.am \) -prune -o -type f \
      -print | sort > /tmp/loc.packaging
 countem "PACKAGING" /tmp/loc.packaging
 
@@ -278,6 +276,7 @@ countem "PACKAGING" /tmp/loc.packaging
 find . -type f -a \( \
         -path ./.gitattributes \
      -o -path ./.gitignore \
+     -o -path ./requirements.txt \
      -o -path ./VERSION \
      -o -path ./misc/docker-clean.sh \
      -o -path ./misc/grep \
