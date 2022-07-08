@@ -629,13 +629,18 @@ EOF
 @test 'ch-image build: failed RUN' {
     ch-image delete tmpimg || true
 
-    df=$(cat <<'EOF'
+    # tr(1) works around a bug in Bash ≤4.4 (I think) that causes here docs
+    # containing literal backslashes to parse incorrectly. See item “aa” in
+    # the changelog [1] for version bash-5.0-alpha.
+    #
+    # [1]: https://git.savannah.gnu.org/cgit/bash.git/tree/CHANGES
+    df=$(cat <<'EOF' | tr '%' '\\'
 FROM 00_tiny
-RUN set -o noclobber \
- && echo hello > file_ \
- && mkdir dir_empty \
- && mkdir dir_nonempty \
- && mkfifo fifo_ \
+RUN set -o noclobber %
+ && echo hello > file_ %
+ && mkdir dir_empty %
+ && mkdir dir_nonempty %
+ && mkfifo fifo_ %
 EOF
         )
 
