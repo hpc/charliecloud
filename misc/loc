@@ -270,7 +270,7 @@ countem "BUILD SYSTEM" /tmp/loc.build
 # packaging code
 find ./packaging \( \
         -name Makefile.am \
-     -o -path ./requirements.txt \) -prune -o -type f \
+     -o -path ../requirements.txt \) -prune -o -type f \
      -print | sort > /tmp/loc.packaging
 countem "PACKAGING" /tmp/loc.packaging
 
