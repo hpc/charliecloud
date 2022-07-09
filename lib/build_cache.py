@@ -433,6 +433,9 @@ class Enabled_Cache:
       if (fm.empty_dir_p):
          ch.rmdir(fm.name)
          return fm  # can't do anything else after it's gone
+      # Remove FIFOs for the same reason.
+      if (stat.S_ISFIFO(st.st_mode)):
+         ch.unlink(fm.name)
       # Rename if necessary.
       if (name.startswith(".weirdal_")):
          ch.WARNING("file starts with sentinel, will be renamed: %s" % name)
@@ -479,7 +482,7 @@ class Enabled_Cache:
             name = fm.name
       if (fm.empty_dir_p):
          ch.ossafe(os.mkdir, "can't mkdir: %s" % path, fm.name)
-      if (not quick and stat.S_ISFIFO(fm.mode)):
+      if (stat.S_ISFIFO(fm.mode)):
          ch.ossafe(os.mkfifo, "can't make FIFO: %s" % path, fm.name)
       if (fm.hardlink_to is not None and not os.path.exists(fm.name)):
          # This relies on prepare and restore having the same traversal order,
@@ -570,6 +573,15 @@ class Enabled_Cache:
          # Create new build cache.
          ch.mkdir(self.root)
          self.bootstrap()
+
+   def rollback(self, path):
+      """Restore path to the last committed state, including both tracked and
+         untracked files."""
+      ch.INFO("rolling back ...")
+      fm = self.git_prepare(path, write=False)
+      ch.cmd_quiet(["git", "reset", "--hard", "HEAD"], cwd=path)
+      ch.cmd_quiet(["git", "clean", "-fdq"], cwd=path)
+      self.git_restore(path)
 
    def sid_from_parent(self, *args):
       # This lets us intercept the call and return None in disabled mode.
@@ -727,6 +739,9 @@ class Disabled_Cache(Rebuild_Cache):
       return (None, None)
 
    def ready(self, *args):
+      pass
+
+   def rollback(self, *args):
       pass
 
    def sid_from_parent(self, *args):

@@ -218,7 +218,11 @@ class Main_Loop(lark.Visitor):
          if (inst.miss):
             if (self.miss_ct == 1):
                inst.checkout_for_build()
-            inst.execute()
+            try:
+               inst.execute()
+            except SystemExit:  # fatal error
+               inst.rollback()
+               raise
             if (inst.image_i >= 0):
                inst.metadata_update()
             inst.commit()
@@ -406,6 +410,11 @@ class Instruction(abc.ABC):
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       ch.INFO(self.str_log)
       return miss_ct + int(self.miss)
+
+   def rollback(self):
+      """Discard everything done by execute(), which may have completed
+         partially, fully, or not at all."""
+      bu.cache.rollback(self.image.unpack_path)
 
    def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported, ignored: %s %s" % (self.str_name, msg))
