@@ -856,6 +856,80 @@ functionally identical when re-imported.
    already been imported.
 
 
+:code:`modify`
+==============
+
+Interactively edit the specified image.
+
+Synopsis
+--------
+
+::
+
+   $ ch-image [...] modify [...] TARGET
+
+Description
+-----------
+
+This subcommand starts a shell on the image named :code:`TARGET`, in order to
+edit the image interactively. It is similar to a :code:`RUN` instruction that
+starts an interactive shell. By default, ask the user whether to save changes
+when the shell exits.
+
+Options:
+
+  :code:`-m MSG`
+    Use :code:`MSG` to identify the edits to the build cache. That is, if you
+    run this command twice with the same :code:`TARGET`, the same :code:`-o
+    DEST`, and the same :code:`MSG`, the second session will overwrite the
+    first. (Without :code:`-o`, the second session will build atop the first.)
+    By default, every interactive session is considered different from every
+    other, as if a random :code:`MSG` were entered.
+
+  :code:`-o`, :code:`--out DEST`
+    Save the results in image named :code:`DEST`, leaving :code:`TARGET`
+    unchanged.
+
+  :code:`-s`, :code:`--shell SHELL`
+    Start :code:`SHELL` instead of :code:`/bin/sh`.
+
+  :code:`-y`, :code:`--yes`
+    Do not prompt the user to save. Instead, save if the shell exits
+    successfully, and roll back if it exits unsuccessfully, e.g. by executing
+    :code:`exit 1`.
+
+.. warning::
+
+   This subcommand is rarely needed. Non-interactive build using a Dockerfile
+   is almost always better, because it preserves the sequence of operations
+   that created an image. Only use this subcommand if you really know what you
+   are doing.
+
+Examples
+--------
+
+To edit the image :code:`foo`, adding :code:`/opt/lib` to the default shared
+library search path, producing image :code:`bar` as the result::
+
+   $ ch-image modify -o bar foo
+   [...]
+   > emacs /etc/ld.so.conf
+   [... append line “/opt/lib” to the file ...]
+   > ldconfig
+   > exit
+   Save changes ([y]/n)? y
+   committing ...
+   [...]
+
+Equivalently, and almost certainly preferred::
+
+   $ cat Dockerfile
+   FROM foo
+   RUN echo /opt/lib >> /etc/ld.so.conf
+   RUN ldconfig
+   $ ch-image build -t bar -f Dockerfile .
+
+
 :code:`pull`
 ============
 
