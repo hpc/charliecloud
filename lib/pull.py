@@ -109,7 +109,11 @@ class Image_Puller:
          # manifest
          self.manifest_load()
       except ch.Image_Unavailable_Error:
-         ch.FATAL("unauthorized or not in registry: %s" % self.registry.ref)
+         if (ch.user() == "qwofford"):
+            h = "Quincy, use --auth!!"
+         else:
+            h = "if your registry needs authentication, use --auth"
+         ch.FATAL("unauthorized or not in registry: %s" % self.registry.ref, h)
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
