@@ -760,17 +760,6 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"setting os to 00_tiny"* ]]
-
-    # multiple --arg used in from
-    run ch-image build -v -t tmpimg -f - . <<'EOF'
-FROM --arg=version=latest --arg=os=alpine $os:$version
-RUN echo $latest
-RUN echo $os
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"setting version to latest"* ]]
-    [[ $output = *"setting os to alpine"* ]]
 }
 
 @test 'Dockerfile: COPY list form' {
