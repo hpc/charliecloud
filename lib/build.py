@@ -206,7 +206,7 @@ class Main_Loop(lark.Visitor):
                 or isinstance(inst, I_from_)):
                pass
             elif (isinstance(inst, Arg)):
-               ch.WARNING("ARG before FROM not supported; use --arg in FROM")
+               ch.WARNING("ARG before FROM not supported; use --arg with FROM ")
                return
             else:
                ch.FATAL("first instruction must be ARG or FROM")

@@ -352,7 +352,7 @@ FROM 00_tiny
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'warning: ARG before FROM not supported; use --arg in FROM'* ]]
+    [[ $output = *'warning: ARG before FROM not supported; use --arg with FROM'* ]]
 
     # parser directives
     run ch-image build -t tmpimg -f - . <<'EOF'
@@ -398,6 +398,16 @@ EOF
     [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
     [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
     [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
+
+    # ARG before FROM
+    run ch-image build -t tmpimg -f - . <<'EOF'
+ARG foo=bar
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: ARG before FROM not supported; use --arg with FROM '* ]] 
+
 }
 
 
@@ -755,7 +765,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"setting os to 00_tiny"* ]]
 
-    # multiple --arg used in from
+    # multiple --arg
     run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM --arg=foo=bar --arg=os=00_tiny $os
 RUN echo $foo
@@ -765,6 +775,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *"setting foo to bar"* ]]
     [[ $output = *"setting os to 00_tiny"* ]]
+
 }
 
 @test 'Dockerfile: COPY list form' {
