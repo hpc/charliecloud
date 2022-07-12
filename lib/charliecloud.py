@@ -19,6 +19,7 @@ import pprint
 import re
 import shlex
 import shutil
+import signal
 import stat
 import subprocess
 import sys
@@ -2523,6 +2524,29 @@ def json_from_file(path, msg):
    except json.JSONDecodeError as x:
       FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
    return data
+
+def kill_blocking(pid, timeout=10):
+   """Kill process pid with SIGTERM (the friendly one) and wait for it to
+      exit. If timeout (in seconds) is exceeded and it’s still running, exit
+      with a fatal error. It is *not* an error if pid does not exist, to avoid
+      race conditions where we decide to kill a process and it exits before we
+      can send the signal."""
+   sig = signal.SIGTERM
+   try:
+      os.kill(pid, sig)
+   except ProcessLookupError:  # ESRCH, no such process
+      return
+   except OSError as x:
+      FATAL("can’t signal PID %d with %d: %s" % (pid, sig, x.strerror))
+   for i in range(timeout*2):
+      try:
+         os.kill(pid, 0)  # no effect on process
+      except ProcessLookupError:  # done
+         return
+      except OSError as x:
+         FATAL("can’t signal PID %s with 0: %s" % (pid, x.strerror))
+      time.sleep(0.5)
+   FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid))
 
 def listdir(path):
    "Return set of entries in directory path, without self (.) and parent (..)."

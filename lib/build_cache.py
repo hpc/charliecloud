@@ -562,15 +562,31 @@ class Enabled_Cache:
       if (self.bootstrap_ct >= 1):
          ch.WARNING("not resetting brand-new cache")
       else:
-         ch.INFO("deleting build cache")
-         ch.rmtree(self.root)
+         # Kill any Git garbage collection that may be running, to avoid race
+         # conditions while deleting the cache (see issue #1406). Open
+         # directly to avoid a TOCTOU race.
+         pid_path = ch.storage.build_cache // "gc.pid"
+         try:
+            fp = open(pid_path, "rt", encoding="UTF-8")
+            text = ch.ossafe(fp.read, "can’t read: %s" % pid_path)
+            pid = int(text.split()[0])
+            ch.INFO("stopping build cache garbage collection, PID %d" % pid)
+            ch.kill_blocking(pid)
+            ch.close_(fp)
+         except FileNotFoundError:
+            # no PID file, therefore no GC running
+            pass
+         except OSError as x:
+            FATAL("can’t open GC PID file: %s: %s" % (pid_path, x.strerror))
          # Delete images that are worktrees referring back to the build cache.
+         ch.INFO("deleting build cache")
          for d in ch.listdir(ch.storage.unpack_base):
             dotgit = ch.storage.unpack_base // d // ".git"
             if (os.path.exists(dotgit)):
                ch.VERBOSE("deleting cached image: %s" % d)
                ch.rmtree(ch.storage.unpack_base // d)
          # Create new build cache.
+         ch.rmtree(self.root)
          ch.mkdir(self.root)
          self.bootstrap()
 

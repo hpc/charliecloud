@@ -70,7 +70,8 @@ load ../common
     # ShellCheck excludes used below:
     #
     #  SC2002  useless use of cat
-    #  SC2164  cd exit code unchecked (Bats checks for failure)
+    #  SC2103  cd exit code unchecked (Bats checks for failure)
+    #  SC2164  same as SC2103
     #
     # Additional excludes work around issue #210, and I think are required for
     # the Bats tests forever:
@@ -121,7 +122,7 @@ load ../common
         echo "shellcheck: ${i}"
           sed -r -e 's/@test (.+) \{/test_ () {/g' "$i" \
                  -e 's/%\(([a-zA-Z0-9_]+)\)/SUBST_\1/g' \
-        | shellcheck -s bash -e SC1090,SC2002,SC2154,SC2164 -
+        | shellcheck -s bash -e SC1090,SC2002,SC2103,SC2154,SC2164 -
     done < <( find "$ch_base" -name '*.bats' -o -name '*.bats.in' )
 }
 

@@ -1094,3 +1094,42 @@ RUN true        # miss
 RUN mkdir /foo  # should not collide with leftover /foo from above
 EOF
 }
+
+
+@test "${tag}: garbage vs. reset" {
+    rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+
+    # Init build cache.
+    ch-image list
+    cd "$CH_IMAGE_STORAGE"/bucache
+
+    # Turn off auto-gc so it's not triggered during the build itself.
+    git config gc.auto 0
+
+    # Build an image that’s going to be annoying to garbage collect, but not
+    # too annoying, so the test isn’t too long. Keep in mind this is probably
+    # happening on a tmpfs.
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.9
+RUN for i in $(seq 0 1024); do \
+       dd if=/dev/urandom of=/$i bs=192K count=1 status=none; \
+    done
+#RUN ls -lh
+EOF
+
+    # Turn auto-gc back on, and configure it to run basically always.
+    git config gc.auto 1
+    #git config gc.autoDetach false  # for testing
+    cat config
+
+    # Garbage collect. Use raw Git commands so we can control exactly what is
+    # going on.
+    git gc --auto
+
+    # Reset the cache while garbage collection is still running.
+    cd ..
+    run ch-image build-cache --reset
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'stopping build cache garbage collection'* ]]
+}
