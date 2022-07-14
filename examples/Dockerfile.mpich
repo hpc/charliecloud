@@ -1,8 +1,9 @@
 # The MPICH example has a smaller scope than the OpenMPI example. We want to
-# provide an MPICH build that works on a single node and (via ch-fromhost
-# trickery) on Cray Aries systems. That's it for now.
+# provide an MPICH build that works (via ch-fromhost trickery) on Cray Aries
+# and Slingshot systems. That's it for now.
 #
-# We build MPICH rather than install the RPM to get a bare bones build.
+# We build MPICH rather than install the RPM so we have more control over build
+# options.
 #
 # ch-test-scope: full
 
@@ -15,7 +16,19 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 gcc-c++ \
                 gcc-gfortran \
                 git \
+                ibacm \
+                libevent-devel \
+                libtool \
+                libibumad \
+                libibumad-devel \
+                libibverbs \
+                libibverbs-devel \
+                libibverbs-utils \
+                librdmacm \
+                librdmacm-devel \
+                rdma-core \
                 make \
+                numactl-devel \
                 wget \
  && dnf clean all
 
@@ -30,26 +43,14 @@ RUN git clone https://github.com/hpc/patchelf.git \
  && make install \
  && rm -Rf ../patchelf
 
-# Forcing ch3 instead of the default ch4 as the latter requires ucx or
-# libfabric to be installed.
-ARG MPI_VERSION=3.4.1
+ARG MPI_VERSION=4.0.2
 ARG MPI_URL=http://www.mpich.org/static/downloads/${MPI_VERSION}
 RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
  && tar xf mpich-${MPI_VERSION}.tar.gz \
  && cd mpich-${MPI_VERSION} \
- && CFLAGS=-O3 \
-    CXXFLAGS=-O3 \
-    ./configure --prefix=/usr/local \
-                --disable-cxx \
-                --disable-fortran \
-                --disable-threads \
-                --disable-rpath \
-                --disable-static \
-                --disable-wrapper-rpath \
-                --with-device=ch3 \
-                --without-ibverbs \
-                --without-libfabric \
-                --without-slurm \
+ && ./configure --prefix=/usr/local \
+                --enable-threads-multiple \
+                --with-device=ch4:ofi \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../mpich-${MPI_VERSION}*
 RUN ldconfig

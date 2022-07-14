@@ -283,7 +283,9 @@ if [ $cray_mpich ]; then
     # shellcheck disable=SC2016
        [ "$CRAY_MPICH_DIR" ] \
     || fatal '$CRAY_MPICH_DIR not set; is module cray-mpich-abi loaded?'
-    cray_libmpi=$CRAY_MPICH_DIR/lib/libmpi.so.12
+       [ -d "$CRAY_MPICH_DIR/lib-abi-mpich" ] \
+    && cray_libmpi=$CRAY_MPICH_DIR/lib-abi-mpich/libmpi.so.12 \
+    || cray_libmpi=$CRAY_MPICH_DIR/lib/libmpi.so.12
        [ -f "$cray_libmpi" ] \
     || fatal "not found: ${cray_libmpi}; is module cray-mpich-abi loaded?"
 
@@ -300,10 +302,11 @@ if [ $cray_mpich ]; then
                    | grep -F /opt \
                    | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
     # dlopen(3)'ed dependencies. I don't know how to not hard-code these.
-    queue_files /opt/cray/alps/default/lib64/libalpsutil.so.0.0.0
-    queue_files /opt/cray/alps/default/lib64/libalpslli.so.0.0.0
-    queue_files /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0.0.0
-    #queue_files /opt/cray/alps/default/lib64/libalps.so.0.0.0
+       [ -d "/opt/cray/alps" ] \
+    && queue_files /opt/cray/alps/default/lib64/libalpsutil.so.0.0.0 \
+                   /opt/cray/alps/default/lib64/libalpslli.so.0.0.0
+       [ -d "/opt/cray/wlm_detect"] \
+    && queue_files /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0.0.0
 fi
 
 if [ $cray_openmpi ]; then
@@ -342,8 +345,10 @@ if [ $cray_mpi ]; then
     queue_mkdir /var/opt/cray/alps/spool
 
     # libwlm_detect.so requires this file to be present.
-    queue_mkdir /etc/opt/cray/wlm_detect
-    queue_files /etc/opt/cray/wlm_detect/active_wlm /etc/opt/cray/wlm_detect
+       [ -d "/etc/opt/cray/wlm_detect" ] \
+    && queue_mkdir /etc/opt/cray/wlm_detect \
+    && queue_files /etc/opt/cray/wlm_detect/active_wlm \
+                   /etc/opt/cray/wlm_detect
 
     # uGNI needs a pile of hugetlbfs filesystems at paths that are arbitrary
     # but in a specific order in /proc/mounts. ch-run bind-mounts here later.

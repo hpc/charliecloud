@@ -49,6 +49,7 @@ setup () {
 }
 
 @test "${ch_tag}/cone serial PNG" {
+    [[ -z $ch_cray ]] || skip 'serial launches unsupported on Cray'
     pict_ok
     pict_assert_equal "${indir}/cone.png" "${outdir}/cone.serial.png" 1000
 }
