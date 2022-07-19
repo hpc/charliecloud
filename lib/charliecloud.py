@@ -2546,7 +2546,8 @@ def kill_blocking(pid, timeout=10):
       except OSError as x:
          FATAL("can’t signal PID %s with 0: %s" % (pid, x.strerror))
       time.sleep(0.5)
-   FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid))
+   FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid),
+         BUG_REPORT_PLZ)
 
 def listdir(path):
    "Return set of entries in directory path, without self (.) and parent (..)."

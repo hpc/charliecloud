@@ -1114,7 +1114,6 @@ FROM alpine:3.9
 RUN for i in $(seq 0 1024); do \
        dd if=/dev/urandom of=/$i bs=192K count=1 status=none; \
     done
-#RUN ls -lh
 EOF
 
     # Turn auto-gc back on, and configure it to run basically always.
