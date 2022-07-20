@@ -140,10 +140,10 @@ ir_path: ( IR_PATH_COMPONENT "/" )+
 ir_name: IR_PATH_COMPONENT
 ir_tag: ":" IR_TAG
 ir_digest: "@sha256:" HEX_STRING
-IR_HOST: /[$A-Za-z0-9_.-]+/
-IR_PORT: /[$0-9]+/
-IR_PATH_COMPONENT: /[$a-z0-9_.-]+/
-IR_TAG: /[$A-Za-z0-9_.-]+/
+IR_HOST: /[A-Za-z0-9$_.-]+/
+IR_PORT: /[0-9$]+/
+IR_PATH_COMPONENT: /[a-z0-9$_.-]+/
+IR_TAG: /[A-Za-z0-9$_.-]+/
 
 /// Dockerfile ///
 

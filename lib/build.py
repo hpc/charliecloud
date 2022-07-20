@@ -206,7 +206,7 @@ class Main_Loop(lark.Visitor):
                 or isinstance(inst, I_from_)):
                pass
             elif (isinstance(inst, Arg)):
-               ch.WARNING("ARG before FROM not supported; use --arg with FROM ")
+               ch.WARNING("ARG before FROM not yet supported; see issue #779\n Can use --arg with FROM ")
                return
             else:
                ch.FATAL("first instruction must be ARG or FROM")
@@ -255,11 +255,20 @@ class Instruction(abc.ABC):
                self.options[k] = self.options[k] + "=" + v
             except KeyError:
                self.options[k] = v
-         else:
+         else: 
             if (k in self.options):
                ch.FATAL("%3d %s: repeated option --%s"
                         % (self.lineno, self.str_name, k))
             self.options[k] = v
+
+      """
+      for st in ch.tree_children(tree, "option_keypair"):
+         k = ch.tree_terminal(st, "OPTION_KEY")
+         v = ch.tree_terminal(st, "OPTION_VALUE_PAIR")
+         ch.INFO("setting %s to %s" % (k, v))
+         try: 
+            self.options[k] = self.options[k] + "
+"""
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
       self.tree = tree
@@ -958,6 +967,7 @@ class I_from_(Instruction):
    def execute(self):
       # Everything happens in prepare().
       pass
+
 
 class Run(Instruction):
 

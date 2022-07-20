@@ -267,6 +267,15 @@ EOF
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
+    # ARG before FROM
+    run ch-image build -t tmpimg -f - . <<'EOF'
+ARG foo=bar
+FROM 00_tiny
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
+
     # FROM --platform
     run ch-image build -t tmpimg -f - . <<'EOF'
 FROM --platform=foo 00_tiny
@@ -345,15 +354,6 @@ EOF
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
-    # ARG before FROM
-    run ch-image build -t tmpimg -f - . <<'EOF'
-ARG foo=bar
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warning: ARG before FROM not supported; use --arg with FROM'* ]]
-
     # parser directives
     run ch-image build -t tmpimg -f - . <<'EOF'
 # escape=foo
@@ -398,15 +398,6 @@ EOF
     [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
     [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
     [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
-
-    # ARG before FROM
-    run ch-image build -t tmpimg -f - . <<'EOF'
-ARG foo=bar
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warning: ARG before FROM not supported; use --arg with FROM '* ]] 
 
 }
 
