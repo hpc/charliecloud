@@ -10,6 +10,7 @@
 #include <dirent.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/prctl.h>
 #include <sys/wait.h>
 #include <unistd.h>
 
@@ -127,7 +128,9 @@ void sq_fork(struct container *c)
    Zf (stat(c->newroot, &st), "can't stat mount point: %s", c->newroot);
    Te (S_ISDIR(st.st_mode), "not a directory: %s", c->newroot);
 
-   // Mount SquashFS.
+   // Mount SquashFS. Use PR_SET_NO_NEW_PRIVS to actively reject running
+   // fusermount3(1) setuid, even if it’s installed that way.
+   Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    sq_mount(c->img_path, c->newroot);
 
    // Now that the filesystem is mounted, we can fork without race condition.
