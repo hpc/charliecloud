@@ -11,7 +11,8 @@ Description
 
 Run command :code:`CMD` in a fully unprivileged Charliecloud container using
 the image located at :code:`IMAGE`, which can be either a directory or, if the
-proper support is enabled, a SquashFS archive.
+proper support is enabled, a SquashFS archive. :code:`ch-run` does not use any
+setuid or setcap helpers, even for mounting SquashFS images with FUSE.
 
   :code:`-b`, :code:`--bind=SRC[:DST]`
     Bind-mount :code:`SRC` at guest :code:`DST`. The default destination if
@@ -158,10 +159,15 @@ can be accomplished by:
 * Any other workflow that produces an appropriate directory tree.
 
 The second is a SquashFS image archive mounted internally by :code:`ch-run`,
-available if it's linked with the optional :code:`libsquashfuse_ll`.
-:code:`ch-run` mounts the image filesystem, services all FUSE requests, and
-unmounts it, all within :code:`ch-run`. See :code:`--mount` above to set the
-mount point location.
+available if it's linked with the optional :code:`libsquashfuse_ll` shared
+library. :code:`ch-run` mounts the image filesystem, services all FUSE
+requests, and unmounts it, all within :code:`ch-run`. See :code:`--mount`
+above to set the mount point location.
+
+Like other FUSE implementations, Charliecloud calls the :code:`fusermount3(1)`
+utility to mount the SquashFS filesystem. However, **this executable does not
+need to be installed setuid root**, and in fact :code:`ch-run` actively
+suppresses its setuid bit if set (using :code:`prctl(2)`).
 
 Prior versions of Charliecloud provided wrappers for the :code:`squashfuse`
 and :code:`squashfuse_ll` SquashFS mount commands and :code:`fusermount -u`

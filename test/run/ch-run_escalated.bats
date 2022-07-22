@@ -74,3 +74,11 @@ load ../common
     [[ $status -eq 1 ]]
     [[ $output = *'please report this bug ('* ]]
 }
+
+@test 'non-setuid fusermount3' {
+    [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
+    if [[ -u $(command -v fusermount3) ]]; then
+        pedantic_fail 'fusermount3(1) is setuid'
+    fi
+    true  # other tests validate it actually works
+}
