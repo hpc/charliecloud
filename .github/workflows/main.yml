@@ -144,10 +144,6 @@ jobs:
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
-          # Unset setuid on all fusermount3(1) on the system.
-          sudo find / -name fusermount3 -exec chmod -v u-s {} \;
-          ls -lh $(command -v fusermount3)
-          [[ ! -u $(command -v fusermount3) ]]
           # Configure Git and friends for build cache.
           if [[ $CH_IMAGE_CACHE = enabled ]]; then
               # Git
@@ -182,6 +178,11 @@ jobs:
           make
           sudo sh -c 'umask 0022 && make install'
           sudo ldconfig
+          # Unset setuid on all fusermount3(1) on the system.
+          sudo find / -name fusermount3 -exec chmod -v u-s {} \;
+          ls -lh $(command -v fusermount3)
+          [[ ! -u $(command -v fusermount3) ]]
+
 
       - name: install musl and friends
         if: ${{ matrix.pack_fmt == 'tar-unpack' }}
