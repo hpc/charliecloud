@@ -147,8 +147,14 @@ vset () {
 }
 
 
+# Needs more testing but it appears podman doesn't ever need root
+# Podman will become preferred to Docker on a system with both
+if podman info > /dev/null 2>&1; then
+    docker_ () {
+        podman "$@"
+    }
 # Do we need sudo to run docker?
-if docker info > /dev/null 2>&1; then
+elif docker info > /dev/null 2>&1; then
     docker_ () {
         docker "$@"
     }
