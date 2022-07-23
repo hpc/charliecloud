@@ -4,5 +4,6 @@
 # USERS can install all our python dependencies simply by running:
 # > pip install -r requirements.txt
 
-
+lark-parser
+wheel
 requests>=2.6.0
