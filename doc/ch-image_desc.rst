@@ -224,9 +224,9 @@ Python's :code:`fnctl.flock()` function, which I believe boils down to
 <http://0pointer.de/blog/projects/locking.html>`_ but should work for our
 purposes. In particular, it should work for a storage directory on NFS. Some
 operations lock the entire storage directory, while others only part of it;
-for example, during instruction execution, :code:`ch-image build` locks only
-the image being modified. Over time, we hope to increase concurrency by
-decreasing locking granularity.
+for example, during :code:`RUN` instruction execution, :code:`ch-image build`
+locks only the image being modified. Over time, we hope to increase
+concurrency by decreasing locking granularity.
 
 While you can currently explore the storage directory and find unpacked images
 runnable with :code:`ch-run`, this is not a supported use case. The supported

@@ -1819,7 +1819,7 @@ class Storage:
          return "image %s" % self.image.ref
       @property
       def lockfile(self):
-         return storage.unpack(self.image) + ",lock"
+         return str(self.image.unpack_path) + ",lock"
 
    def __init__(self, storage_cli):
       self.locks = [self.Lock_None()]

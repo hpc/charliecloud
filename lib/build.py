@@ -943,11 +943,13 @@ class Run(Instruction):
       return super().str_name + (".F" if cli.force else "")
 
    def execute(self):
+      ch.storage.lock_narrow(ch.Storage.Lock_Image(self.image))
       rootfs = self.image.unpack_path
       fakeroot_config.init_maybe(rootfs, self.cmd, self.env_build)
       cmd = fakeroot_config.inject_run(self.cmd)
       exit_code = ch.ch_run_modify(rootfs, cmd, self.env_build, self.workdir,
                                    cli.bind, fail_ok=True)
+      ch.storage.lock_widen()
       if (exit_code != 0):
          msg = "build failed: RUN command exited with %d" % exit_code
          if (cli.force):
