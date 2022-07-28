@@ -3,6 +3,7 @@ import argparse
 import atexit
 import collections
 import collections.abc
+import contextlib
 import copy
 import datetime
 import enum
@@ -1766,10 +1767,62 @@ class Storage:
    """Source of truth for all paths within the storage directory. Do not
       compute any such paths elsewhere!"""
 
-   __slots__ = ("lockfile_fp",
+   __slots__ = ("locks",
                 "root")
 
+   class Lock_None:
+      __slots__ = ("lockfile_fp")
+      def __str__(self):
+         return "null lock"
+      def acquire(self):
+         pass
+      def release(self):
+         pass
+
+   class Lock_All(Lock_None):
+      # Note: file locking on Linux is a disaster [1, 2]. Currently, we use
+      # POSIX fcntl(2) locking, which has major pitfalls but should be fine
+      # for our use case. It apparently works on NFS [3] and does not require
+      # cleanup/stealing like a lock file would.
+      #
+      # [1]: https://apenwarr.ca/log/20101213
+      # [2]: http://0pointer.de/blog/projects/locking.html
+      # [3]: https://stackoverflow.com/a/22411531
+      __slots__ = ("lockfile_fp")
+      def __str__(self):
+         return "storage directory"
+      @property
+      def lockfile(self):
+         return storage.lockfile
+      def acquire(self):
+         self.file_lock(self.lockfile)
+      def file_lock(self, path):
+         self.lockfile_fp = open_(self.lockfile, "w")
+         with timeout(300):
+            try:
+               VERBOSE("waiting for lock: %s" % self)
+               fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX)
+               VERBOSE("locked: %s" % self.lockfile)
+            except InterruptedError:
+               FATAL("timeout locking: %s" % self)
+      def file_unlock(self):
+         close_(self.lockfile_fp)
+         VERBOSE("lock released: %s" % self.lockfile)
+      def release(self):
+         self.file_unlock()
+
+   class Lock_Image(Lock_All):
+      __slots__ = ("image")
+      def __init__(self, image):
+         self.image = image
+      def __str__(self):
+         return "image %s" % self.image.ref
+      @property
+      def lockfile(self):
+         return storage.unpack(self.image) + ",lock"
+
    def __init__(self, storage_cli):
+      self.locks = [self.Lock_None()]
       self.root = storage_cli
       if (self.root is None):
          self.root = self.root_env()
@@ -1840,10 +1893,10 @@ class Storage:
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
-      # WARNING: This function contains multiple calls to self.lock(). The
+      # WARNING: This function contains multiple calls to lock_narrow(). The
       # point is to lock as soon as we know the storage directory exists, and
       # definitely before writing anything, to reduce the race conditions that
-      # surely exist. Ensure new code paths also call self.lock().
+      # surely exist. Ensure new code paths also call it.
       self.init_move_old()  # see issues #1160 and #1243
       if (not os.path.isdir(self.root)):
          op = "initializing"
@@ -1859,11 +1912,11 @@ class Storage:
          v_found = self.version_read()
       if (v_found == STORAGE_VERSION):
          VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
-         self.lock()
+         self.lock_narrow(self.Lock_All())
       elif (v_found in {None, 1, 2}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
          mkdir(self.root)
-         self.lock()
+         self.lock_narrow(self.Lock_All())
          mkdir(self.download_cache)
          mkdir(self.build_cache)
          mkdir(self.unpack_base)
@@ -1923,26 +1976,53 @@ class Storage:
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
 
-   def lock(self):
-      """Lock the storage directory. Charliecloud does not at present support
-         concurrent use of ch-image(1) against the same storage directory."""
-      # File locking on Linux is a disaster [1, 2]. Currently, we use POSIX
-      # fcntl(2) locking, which has major pitfalls but should be fine for our
-      # use case. It apparently works on NFS [3] and does not require
-      # cleanup/stealing like a lock file would.
-      #
-      # [1]: https://apenwarr.ca/log/20101213
-      # [2]: http://0pointer.de/blog/projects/locking.html
-      # [3]: https://stackoverflow.com/a/22411531
-      self.lockfile_fp = open_(self.lockfile, "w")
-      try:
-         fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
-      except OSError as x:
-         if (x.errno in { errno.EACCES, errno.EAGAIN }):
-            FATAL("storage directory is already in use",
-                  "concurrent instances of ch-image cannot share the same storage directory")
-         else:
-            FATAL("can't lock storage directory: %s" % x.strerror)
+   def lock_narrow(self, lock_new):
+      """Narrow the current storage directory lock to lock_new, possibly
+         blocking until the lock can be obtained.
+
+         Lock API details:
+
+           1. On startup, we hold a “null lock” that does not lock anything.
+
+           2. Locks have only two operations:
+
+              * “Narrow” (this method) to a more fine-grained lock. For
+                example, one could transition from the null lock to the whole
+                storage directory, or storage directory to specific image, but
+                transition from locking a specific image to the download cache
+                is not allowed. You would have to widen from the specific
+                image to the whole storage directory, then narrow to the
+                download cache.
+
+             * “Widen” (lock_narrow()) to the previously held lock, except the
+               null lock cannot be widened.
+
+             Both narrow and widen release the current lock before acquiring
+             the new one, so they can block if another process is holding (or
+             acquires first) the new lock.
+
+          3. Any given lock is exclusive, but different locks do not match
+             each other. For example, one process could hold the storage
+             directory lock while two other processes hold the locks for two
+             separate images. The exception is the null lock, which can be
+             held an unlimited number of times.
+
+          4. The lock hierarchy is defined by subclassing, e.g., lock A is
+             narrower than lock B if A is a subclass of B."""
+      if (not (    isinstance(lock_new, self.locks[-1].__class__)
+               and lock_new.__class__ != self.locks[-1].__class__)):
+         FATAL("invalid lock narrowing: %s -> %s" % (self.locks[-1], lock_new))
+      self.locks[-1].release()
+      self.locks.append(lock_new)
+      self.locks[-1].acquire()
+
+   def lock_widen(self):
+      """Release the current lock and re-acquire the previous lock, possibly
+         blocking to do so."""
+      self.locks[-1].release()
+      self.locks.pop()
+      assert (len(self.locks) >= 1)
+      self.locks[-1].acquire()
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
@@ -1959,9 +2039,6 @@ class Storage:
          self.init()  # largely for debugging
       else:
          FATAL("%s not a builder storage" % (self.root));
-
-   def unlock(self):
-      close_(self.lockfile_fp)
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
@@ -2658,6 +2735,21 @@ def symlink(target, source, clobber=False):
                % (source, target, os.readlink(source)))
    except OSError as x:
       FATAL("can't symlink: %s -> %s: %s" % (source, target, x.strerror))
+
+# This context manager wraps any system call in a timeout t in seconds, using
+# alarm(2). Warning: If there is existing alarm pending, or possibly sleep(3),
+# that will be cancelled. See: https://stackoverflow.com/a/57024155
+@contextlib.contextmanager
+def timeout(t):
+   def handler(signum, frame):
+      raise InterruptedError
+   handler_old = signal.signal(signal.SIGALRM, handler)
+   try:
+      signal.alarm(t)
+      yield
+   finally:
+      signal.alarm(0)
+      signal.signal(signal.SIGALRM, handler_old)
 
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and

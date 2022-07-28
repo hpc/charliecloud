@@ -218,10 +218,20 @@ for this; tmpfs'es such as :code:`/var/tmp` are a good choice if you have
 enough RAM (:code:`/tmp` is not recommended because :code:`ch-run` bind-mounts
 it into containers by default).
 
-While you can currently poke around in the storage directory and find unpacked
-images runnable with :code:`ch-run`, this is not a supported use case. The
-supported workflow uses :code:`ch-convert` to obtain a packed image; see the
-tutorial for details.
+Concurrent access to the same storage directory is managed by file locks using
+Python's :code:`fnctl.flock()` function, which I believe boils down to
+:code:`fnctl(2)` style POSIX locking, which has `major disadvantages
+<http://0pointer.de/blog/projects/locking.html>`_ but should work for our
+purposes. In particular, it should work for a storage directory on NFS. Some
+operations lock the entire storage directory, while others only part of it;
+for example, during instruction execution, :code:`ch-image build` locks only
+the image being modified. Over time, we hope to increase concurrency by
+decreasing locking granularity.
+
+While you can currently explore the storage directory and find unpacked images
+runnable with :code:`ch-run`, this is not a supported use case. The supported
+workflow uses :code:`ch-convert` to obtain a packed image; see the tutorial
+for details.
 
 The storage directory format changes on no particular schedule. Often
 :code:`ch-image` is able to upgrade the directory; however, downgrading is not
@@ -1078,4 +1088,4 @@ Environment variables
 
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc
-..  LocalWords:  dlcache graphviz
+..  LocalWords:  dlcache graphviz lockf
