@@ -849,7 +849,8 @@ class Image_Ref:
                 "path",
                 "name",
                 "tag",
-                "digest")
+                "digest",
+                "dict")
 
    # Reference parser object. Instantiating a parser took 100ms when we tested
    # it, which means we can't really put it in a loop. But, at parse time,
@@ -858,13 +859,14 @@ class Image_Ref:
    # first use.
    parser = None
 
-   def __init__(self, src=None):
+   def __init__(self, src=None, dict=None):
       self.host = None
       self.port = None
       self.path = []
       self.name = None
       self.tag = None
       self.digest = None
+      self.dict = dict
       if (isinstance(src, str)):
          src = self.parse(src)
       if (isinstance(src, lark.tree.Tree)):
@@ -979,20 +981,33 @@ fields:
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
-      self.host = tree_child_terminal(t, "ir_hostport", "IR_HOST")
-      self.port = tree_child_terminal(t, "ir_hostport", "IR_PORT")
+      self.host = self.var_sub(tree_child_terminal(t, "ir_hostport", "IR_HOST"))
+      self.port = self.var_sub(tree_child_terminal(t, "ir_hostport", "IR_PORT"))
       if (self.port is not None):
          self.port = int(self.port)
-      self.path = list(tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"))
-      self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
-      self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
-      self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
+      #self.path = list(tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"))
+      for x in tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"):
+         self.path.append(self.var_sub(x))
+      self.name = self.var_sub(tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT"))
+      self.tag = self.var_sub(tree_child_terminal(t, "ir_tag", "IR_TAG"))
+      self.digest = self.var_sub(tree_child_terminal(t, "ir_digest", "HEX_STRING"))
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host
           and self.port is None):
          self.path.insert(0, self.host)
          self.host = None
+
+   def var_sub(self, var):
+      if (var is not None and var[0] == "$"):
+         key = var[1:len(var)]
+         pair = self.dict.get(key)
+         if (pair is not None):
+            return pair
+         else:
+            ch.FATAL("%s is not set" % key)
+      return var
+
 
 
 class OrderedSet(collections.abc.MutableSet):

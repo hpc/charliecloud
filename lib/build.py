@@ -251,24 +251,17 @@ class Instruction(abc.ABC):
          k = ch.tree_terminal(st, "OPTION_KEY")
          v = ch.tree_terminal(st, "OPTION_VALUE")
          if (k == "arg"):
+            tmp = v.split("=")
             try:
-               self.options[k] = self.options[k] + "=" + v
+               self.options[k].update({tmp[0]: tmp[1]})
             except KeyError:
-               self.options[k] = v
+               self.options[k] = {tmp[0]: tmp[1]}
          else: 
             if (k in self.options):
                ch.FATAL("%3d %s: repeated option --%s"
                         % (self.lineno, self.str_name, k))
             self.options[k] = v
 
-      """
-      for st in ch.tree_children(tree, "option_keypair"):
-         k = ch.tree_terminal(st, "OPTION_KEY")
-         v = ch.tree_terminal(st, "OPTION_VALUE_PAIR")
-         ch.INFO("setting %s to %s" % (k, v))
-         try: 
-            self.options[k] = self.options[k] + "
-"""
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
       self.tree = tree
@@ -852,15 +845,8 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"))
-      arg_check = self.options.pop("arg", "False")
-      if (arg_check):
-         self.arg = arg_check.split("=")
-      image_ref.host = self.update_var(image_ref.host)
-      image_ref.port = self.update_var(image_ref.port)
-      image_ref.name = self.update_var(image_ref.name)
-      image_ref.tag = self.update_var(image_ref.tag)
-      image_ref.digest = self.update_var(image_ref.digest)
+      self.arg = self.options.pop("arg", None)
+      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), self.arg)
       self.base_image = ch.Image(image_ref)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
@@ -872,17 +858,6 @@ class I_from_(Instruction):
    def str_(self):
       alias = " AS %s" % self.alias if self.alias else ""
       return "%s%s" % (self.base_image.ref, alias)
-
-   def update_var(self, var):
-      if (isinstance(var, str) and var[0] == "$"):
-         val = var[1:len(var)]
-         idx = self.arg.index(val)
-         if (idx % 2 == 0):
-            return self.arg[idx + 1]
-         else:
-            ch.FATAL("variable does not exist")
-            return
-      return var
 
    def checkout_for_build(self):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
@@ -954,13 +929,12 @@ class I_from_(Instruction):
       # Load metadata
       self.image.metadata_load(self.base_image)
 
-      # set --arg 
-      while (len(self.arg) > 1):
-         k = self.arg.pop(0)
-         v = self.arg.pop(0)
-         value = variables_sub(k, self.env_build)
-         ch.VERBOSE("setting %s to %s" % (k, v))
-         self.env_arg[k] = v 
+      # set --arg
+      if (self.arg is not None):
+         for var in self.arg:
+            val = self.arg.get(var)
+            ch.VERBOSE("setting %s to %s" % (var, val))
+            self.env_arg[var] = val
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 
