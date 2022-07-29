@@ -178,6 +178,11 @@ jobs:
           make
           sudo sh -c 'umask 0022 && make install'
           sudo ldconfig
+          # Unset setuid on all fusermount3(1) on the system.
+          sudo find / -name 'fusermount*' -exec chmod -v u-s {} \;
+          ls -lh $(command -v fusermount3)
+          [[ ! -u $(command -v fusermount3) ]]
+
 
       - name: install musl and friends
         if: ${{ matrix.pack_fmt == 'tar-unpack' }}

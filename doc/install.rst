@@ -455,17 +455,20 @@ The SquashFS workflow requires `SquashFS Tools
 
 To mount these archives using :code:`ch-run`'s internal code, you need:
 
-* `libfuse3 <https://github.com/libfuse/libfuse>`_ including development
-  files, which is probably available in your distribution (e.g.,
-  :code:`libfuse3-dev`), and
+1. `libfuse3 <https://github.com/libfuse/libfuse>`_, including:
 
-* a very recent version of `SquashFUSE <https://github.com/vasi/squashfuse>`_
-  that has the :code:`libsquashfuse_ll` shared library. At the time of this
-  writing (August 2021), this is probably `commit 56a24f6
-  <https://github.com/vasi/squashfuse/commit/56a24f6c7f6e5cfd0ce5185f175da223d00dc1ca>`_
-  or newer, and there is no versioned release yet. This must be installed,
-  though it can be a non-standard location; :code:`ch-run` can't link with
-  :code:`libsquashfuse` in the latter's build directory.
+   * development files, which are probably available in your distribution,
+     e.g., :code:`libfuse3-dev`. (Build time only.)
+
+   * The :code:`fusermount3` executable, which often comes in a distro package
+     called something like :code:`fuse3`. **This is typically installed
+     setuid, but Charliecloud does not need that**; you can :code:`chmod u-s`
+     the file or build/install as a normal user.
+
+2. `SquashFUSE <https://github.com/vasi/squashfuse>`_ v0.1.105 or later (we
+   need the :code:`libsquashfuse_ll` shared library). This must be installed,
+   not linked from its build directory, though it can be installed in a
+   non-standard location.
 
 Without these, you can still use a SquashFS workflow but must mount and
 unmount the filesystem archives manually. You can do this using the
