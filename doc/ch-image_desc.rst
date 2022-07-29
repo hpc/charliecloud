@@ -98,6 +98,11 @@ Common options placed before or after the sub-command:
     if you want to re-execute a Dockerfile and store the new results in cache,
     use :code:`--rebuild` instead.
 
+  :code:`--no-lock`
+    Disable storage directory locking. This lets you run as many concurrent
+    :code:`ch-image` instances as you want against the same storage directory,
+    which risks corruption but may be OK for some workloads.
+
   :code:`--rebuild`
     Execute all instructions, even if they are build cache hits, except for
     :code:`FROM` which is retrieved from cache on hit.
