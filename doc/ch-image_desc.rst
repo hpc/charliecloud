@@ -200,7 +200,9 @@ In descending order of priority, this directory is located at:
     Command line option.
 
   :code:`$CH_IMAGE_STORAGE`
-    Environment variable.
+    Environment variable. The path must be absolute, because the variable is
+    likely set in a very different context than when it's used, which seems
+    error-prone on what a relative path is relative to.
 
   :code:`/var/tmp/$USER.ch`
     Default. (Previously, the default was :code:`/var/tmp/$USER/ch-image`. If
