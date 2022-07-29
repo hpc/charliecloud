@@ -896,6 +896,11 @@ class Image_Ref:
                                    parser="earley", propagate_positions=True)
       s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
+      while (s.find("$") > -1): #variable substitution
+         start = s.find("$")
+         end = s.find(":", start)
+         str = s[start, end - 1]
+         s.replace(str, self.dict.get(str[1: -1]))
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
