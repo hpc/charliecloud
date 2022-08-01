@@ -250,17 +250,21 @@ class Instruction(abc.ABC):
       for st in ch.tree_children(tree, "option"):
          k = ch.tree_terminal(st, "OPTION_KEY")
          v = ch.tree_terminal(st, "OPTION_VALUE")
-         if (k == "arg"):
-            tmp = v.split("=")
-            try:
-               self.options[k].update({tmp[0]: tmp[1]})
-            except KeyError:
-               self.options[k] = {tmp[0]: tmp[1]}
-         else: 
-            if (k in self.options):
-               ch.FATAL("%3d %s: repeated option --%s"
-                        % (self.lineno, self.str_name, k))
-            self.options[k] = v
+         if (k in self.options):
+            ch.FATAL("%3d %s: repeated option --%s"
+                     % (self.lineno, self.str_name, k))
+         self.options[k] = v
+
+      for st in ch.tree_children(tree, "option_keypair"):
+         k = ch.tree_terminal(st, "OPTION_KEY")
+         s = ch.tree_terminal(st, "OPTION_VAR")
+         v = ch.tree_terminal(st, "OPTION_VALUE")
+         # assuming all key pair options allow multiple options
+         ch.INFO("setting %s to %s" % (s, v))
+         try:
+            self.options[k].update({s: v})
+         except KeyError:
+             self.options[k] = {s: v}
 
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())

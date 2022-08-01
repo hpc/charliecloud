@@ -170,7 +170,7 @@ env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i ( _WS option )* _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i (_WS option_keypair)* ( _WS option )* _WS image_ref [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
@@ -190,8 +190,10 @@ UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 /// Common ///
 
 option: "--" OPTION_KEY "=" OPTION_VALUE
+option_keypair: "--" OPTION_KEY "=" OPTION_VAR "=" OPTION_VALUE
 OPTION_KEY: /[a-z]+/
-OPTION_VALUE: /[^ \t\n]+/
+OPTION_VALUE: /[^= \t\n]+/
+OPTION_VAR: /[a-z]+/
 
 // Matching lines in the face of continuations is surprisingly hairy. Notes:
 //
