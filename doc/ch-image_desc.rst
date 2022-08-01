@@ -546,6 +546,13 @@ environment:
 Note that :code:`ARG` and :code:`ENV` have different syntax despite very
 similar semantics.
 
+:code:`ARG` before :code:`FROM`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+:code:`ARG` before :code:`FROM` is not currently supported but the :code:`--arg`
+option in the :code:`FROM` command has the same functionality.
+
+Note :code:`--arg` can be used multiple times in a single :code:`FROM` line. 
+
 :code:`COPY`
 ~~~~~~~~~~~~
 

@@ -992,9 +992,8 @@ fields:
       self.port = self.var_sub(tree_child_terminal(t, "ir_hostport", "IR_PORT"))
       if (self.port is not None):
          self.port = int(self.port)
-      #self.path = list(tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"))
-      for x in tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"):
-         self.path.append(self.var_sub(x))
+      for s in tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"):
+         self.path.append(self.var_sub(s))
       self.name = self.var_sub(tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT"))
       self.tag = self.var_sub(tree_child_terminal(t, "ir_tag", "IR_TAG"))
       self.digest = self.var_sub(tree_child_terminal(t, "ir_digest", "HEX_STRING"))
@@ -1014,8 +1013,6 @@ fields:
          else:
             ch.FATAL("%s is not set" % key)
       return var
-
-
 
 class OrderedSet(collections.abc.MutableSet):
 

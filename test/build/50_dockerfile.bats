@@ -398,7 +398,6 @@ EOF
     [[ $output = *'warning: not supported, ignored: STOPSIGNAL instruction'* ]]
     [[ $output = *'warning: not supported, ignored: USER instruction'* ]]
     [[ $output = *'warning: not supported, ignored: VOLUME instruction'* ]]
-
 }
 
 
@@ -738,7 +737,7 @@ EOF
         [[ $status -eq 0 ]]
     fi
 
-    # --arg not used in from
+    # --arg not used in image name
     run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM --arg=foo=bar 00_tiny
 RUN echo $foo
