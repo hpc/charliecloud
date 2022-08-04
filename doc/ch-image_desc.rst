@@ -263,8 +263,8 @@ image. Enabled mode is selected with :code:`--cache` or setting
 :code:`--no-cache` or :code:`disabled`, and rebuild mode with
 :code:`--rebuild` or :code:`rebuild`.
 
-In 0.28, the default mode is :code:`--no-cache`. In 0.29, we expect the default
-to be :code:`--cache` if an appropriate Git is installed, otherwise
+The default mode is currently :code:`--no-cache`. In 0.30, we expect the
+default to be :code:`--cache` if an appropriate Git is installed, otherwise
 :code:`--no-cache`.
 
 For example, suppose we have this Dockerfile::
