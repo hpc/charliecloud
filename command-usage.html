@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>3. Charliecloud command reference &mdash; Charliecloud 0.28 documentation</title>
+  <title>3. Charliecloud command reference &mdash; Charliecloud 0.29 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.28
+                0.29
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -863,8 +863,8 @@ image. Enabled mode is selected with <code class="code docutils literal notransl
 <code class="code docutils literal notranslate"><span class="pre">$CH_IMAGE_CACHE</span></code> to <code class="code docutils literal notranslate"><span class="pre">enabled</span></code>, disabled mode with
 <code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code> or <code class="code docutils literal notranslate"><span class="pre">disabled</span></code>, and rebuild mode with
 <code class="code docutils literal notranslate"><span class="pre">--rebuild</span></code> or <code class="code docutils literal notranslate"><span class="pre">rebuild</span></code>.</p>
-<p>In 0.28, the default mode is <code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code>. In 0.29, we expect the default
-to be <code class="code docutils literal notranslate"><span class="pre">--cache</span></code> if an appropriate Git is installed, otherwise
+<p>The default mode is currently <code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code>. In 0.30, we expect the
+default to be <code class="code docutils literal notranslate"><span class="pre">--cache</span></code> if an appropriate Git is installed, otherwise
 <code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code>.</p>
 <p>For example, suppose we have this Dockerfile:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat a.df
@@ -1619,7 +1619,8 @@ useful for debugging situations where standard error is consumed or lost.</p>
 <h3><span class="section-number">3.5.2. </span>Description<a class="headerlink" href="#id23" title="Permalink to this headline">¶</a></h3>
 <p>Run command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code> in a fully unprivileged Charliecloud container using
 the image located at <code class="code docutils literal notranslate"><span class="pre">IMAGE</span></code>, which can be either a directory or, if the
-proper support is enabled, a SquashFS archive.</p>
+proper support is enabled, a SquashFS archive. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> does not use any
+setuid or setcap helpers, even for mounting SquashFS images with FUSE.</p>
 <blockquote>
 <div><dl>
 <dt><code class="code docutils literal notranslate"><span class="pre">-b</span></code>, <code class="code docutils literal notranslate"><span class="pre">--bind=SRC[:DST]</span></code></dt><dd><p>Bind-mount <code class="code docutils literal notranslate"><span class="pre">SRC</span></code> at guest <code class="code docutils literal notranslate"><span class="pre">DST</span></code>. The default destination if
@@ -1738,10 +1739,14 @@ un-mount it after run with <code class="code docutils literal notranslate"><span
 <li><p>Any other workflow that produces an appropriate directory tree.</p></li>
 </ul>
 <p>The second is a SquashFS image archive mounted internally by <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>,
-available if it’s linked with the optional <code class="code docutils literal notranslate"><span class="pre">libsquashfuse_ll</span></code>.
-<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> mounts the image filesystem, services all FUSE requests, and
-unmounts it, all within <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>. See <code class="code docutils literal notranslate"><span class="pre">--mount</span></code> above to set the
-mount point location.</p>
+available if it’s linked with the optional <code class="code docutils literal notranslate"><span class="pre">libsquashfuse_ll</span></code> shared
+library. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> mounts the image filesystem, services all FUSE
+requests, and unmounts it, all within <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>. See <code class="code docutils literal notranslate"><span class="pre">--mount</span></code>
+above to set the mount point location.</p>
+<p>Like other FUSE implementations, Charliecloud calls the <code class="code docutils literal notranslate"><span class="pre">fusermount3(1)</span></code>
+utility to mount the SquashFS filesystem. However, <strong>this executable does not
+need to be installed setuid root</strong>, and in fact <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> actively
+suppresses its setuid bit if set (using <code class="code docutils literal notranslate"><span class="pre">prctl(2)</span></code>).</p>
 <p>Prior versions of Charliecloud provided wrappers for the <code class="code docutils literal notranslate"><span class="pre">squashfuse</span></code>
 and <code class="code docutils literal notranslate"><span class="pre">squashfuse_ll</span></code> SquashFS mount commands and <code class="code docutils literal notranslate"><span class="pre">fusermount</span> <span class="pre">-u</span></code>
 unmount command. We removed these because we concluded they had minimal

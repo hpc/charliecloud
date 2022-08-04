@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1. Installing &mdash; Charliecloud 0.28 documentation</title>
+  <title>1. Installing &mdash; Charliecloud 0.29 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.28
+                0.29
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -686,17 +686,22 @@ matches previous <code class="code docutils literal notranslate"><span class="pr
 <h4><span class="section-number">1.3.5.9. </span>SquashFS and SquashFUSE<a class="headerlink" href="#squashfs-and-squashfuse" title="Permalink to this headline">¶</a></h4>
 <p>The SquashFS workflow requires <a class="reference external" href="https://github.com/plougher/squashfs-tools">SquashFS Tools</a> to create SquashFS archives.</p>
 <p>To mount these archives using <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s internal code, you need:</p>
+<ol class="arabic simple">
+<li><p><a class="reference external" href="https://github.com/libfuse/libfuse">libfuse3</a>, including:</p>
 <ul class="simple">
-<li><p><a class="reference external" href="https://github.com/libfuse/libfuse">libfuse3</a> including development
-files, which is probably available in your distribution (e.g.,
-<code class="code docutils literal notranslate"><span class="pre">libfuse3-dev</span></code>), and</p></li>
-<li><p>a very recent version of <a class="reference external" href="https://github.com/vasi/squashfuse">SquashFUSE</a>
-that has the <code class="code docutils literal notranslate"><span class="pre">libsquashfuse_ll</span></code> shared library. At the time of this
-writing (August 2021), this is probably <a class="reference external" href="https://github.com/vasi/squashfuse/commit/56a24f6c7f6e5cfd0ce5185f175da223d00dc1ca">commit 56a24f6</a>
-or newer, and there is no versioned release yet. This must be installed,
-though it can be a non-standard location; <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> can’t link with
-<code class="code docutils literal notranslate"><span class="pre">libsquashfuse</span></code> in the latter’s build directory.</p></li>
+<li><p>development files, which are probably available in your distribution,
+e.g., <code class="code docutils literal notranslate"><span class="pre">libfuse3-dev</span></code>. (Build time only.)</p></li>
+<li><p>The <code class="code docutils literal notranslate"><span class="pre">fusermount3</span></code> executable, which often comes in a distro package
+called something like <code class="code docutils literal notranslate"><span class="pre">fuse3</span></code>. <strong>This is typically installed
+setuid, but Charliecloud does not need that</strong>; you can <code class="code docutils literal notranslate"><span class="pre">chmod</span> <span class="pre">u-s</span></code>
+the file or build/install as a normal user.</p></li>
 </ul>
+</li>
+<li><p><a class="reference external" href="https://github.com/vasi/squashfuse">SquashFUSE</a> v0.1.105 or later (we
+need the <code class="code docutils literal notranslate"><span class="pre">libsquashfuse_ll</span></code> shared library). This must be installed,
+not linked from its build directory, though it can be installed in a
+non-standard location.</p></li>
+</ol>
 <p>Without these, you can still use a SquashFS workflow but must mount and
 unmount the filesystem archives manually. You can do this using the
 executables that come with SquashFUSE, and the version requirement is much
