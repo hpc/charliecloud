@@ -631,9 +631,9 @@ Third-party software compiled from source
 Under this method, one uses :code:`RUN` commands to fetch the desired software
 using :code:`curl` or :code:`wget`, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic CentOS image
-(:code:`examples/Dockerfile.almalinux8`):
+(:code:`examples/Dockerfile.almalinux_8ch`):
 
-.. literalinclude:: ../examples/Dockerfile.almalinux8
+.. literalinclude:: ../examples/Dockerfile.almalinux_8ch
    :language: docker
    :lines: 2-
 
