@@ -179,7 +179,8 @@ jobs:
           sudo sh -c 'umask 0022 && make install'
           sudo ldconfig
           # Unset setuid on all fusermount3(1) on the system.
-          sudo find / -name 'fusermount*' -exec chmod -v u-s {} \;
+          sudo chmod -v u-s /usr/bin/fusermount*
+          sudo find / -name 'fusermount*' -ls
           ls -lh $(command -v fusermount3)
           [[ ! -u $(command -v fusermount3) ]]
 
