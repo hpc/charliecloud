@@ -707,11 +707,8 @@ class I_copy(Instruction):
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
          st = ch.stat_(path, links=links)
-         return path.encode("UTF-8") + struct.pack("=HQQQ",
-                                                   st.st_mode,
-                                                   st.st_size,
-                                                   st.st_mtime_ns,
-                                                   st.st_ctime_ns)
+         return (  path.encode("UTF-8")
+                 + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.
       if (cli.context == "-"):
          ch.FATAL("can't COPY: no context because \"-\" given")
