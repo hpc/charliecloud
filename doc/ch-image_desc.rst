@@ -276,7 +276,7 @@ For example, suppose we have this Dockerfile::
 
 On our first build, we get::
 
-  $ ch-image --cache build -t foo -f a.df .
+  $ ch-image build -t foo -f a.df .
     1. FROM alpine:3.9
   [ ... pull chatter omitted ... ]
     2. RUN echo foo
@@ -292,7 +292,7 @@ instruction was executed. You can also see this by the output of the two
 
 But on our second build, we get::
 
-  $ ch-image --cache build -t foo -f a.df .
+  $ ch-image build -t foo -f a.df .
     1* FROM alpine:3.9
     2* RUN echo foo
     3* RUN echo bar
@@ -313,7 +313,7 @@ three instructions are the same, but the third is different::
   FROM alpine:3.9
   RUN echo foo
   RUN echo qux
-  $ ch-image --cache build -t c -f c.df .
+  $ ch-image build -t c -f c.df .
     1* FROM alpine:3.9
     2* RUN echo foo
     3. RUN echo qux
@@ -326,7 +326,7 @@ third is a miss, so Charliecloud retrieves that state and continues building.
 
 We can also inspect the cache::
 
-  $ ch-image --cache build-cache --tree
+  $ ch-image build-cache --tree
   *  (c) RUN echo qux
   | *  (a) RUN echo bar
   |/
