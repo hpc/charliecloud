@@ -48,8 +48,7 @@ def init(cli):
    if (cli.bucache != ch.Build_Mode.DISABLED):
       ok = have_deps(False)
       if (cli.bucache is None):
-         #cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
-         cli.bucache = ch.Build_Mode.DISABLED
+         cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
          ch.VERBOSE("using default build cache mode")
       if (cli.bucache != ch.Build_Mode.DISABLED and not ok):
          ch.FATAL("insufficient Git for build cache mode: %s"

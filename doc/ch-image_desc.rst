@@ -91,12 +91,13 @@ Common options placed before or after the sub-command:
     exception is :code:`push`, which implies :code:`--auth`.
 
   :code:`--cache`
-    Enable build cache.
+    Enable build cache. Default if a sufficiently new Git is available.
 
   :code:`--no-cache`
-    Disable build cache (default). This option turns off the cache completely;
-    if you want to re-execute a Dockerfile and store the new results in cache,
-    use :code:`--rebuild` instead.
+    Disable build cache. Default if a sufficiently new Git is not available.
+    This option turns off the cache completely; if you want to re-execute a
+    Dockerfile and store the new results in cache, use :code:`--rebuild`
+    instead.
 
   :code:`--rebuild`
     Execute all instructions, even if they are build cache hits, except for
@@ -258,14 +259,13 @@ The cache has three modes, *enabled*, *disabled*, and a hybrid mode called
 *rebuild* where the cache is fully enabled for :code:`FROM` instructions, but
 all other operations re-execute and re-cache their results. The purpose of
 *rebuild* is to do a clean rebuild of a Dockerfile atop a known-good base
-image. Enabled mode is selected with :code:`--cache` or setting
+image.
+
+Enabled mode is selected with :code:`--cache` or setting
 :code:`$CH_IMAGE_CACHE` to :code:`enabled`, disabled mode with
 :code:`--no-cache` or :code:`disabled`, and rebuild mode with
-:code:`--rebuild` or :code:`rebuild`.
-
-The default mode is currently :code:`--no-cache`. In 0.30, we expect the
-default to be :code:`--cache` if an appropriate Git is installed, otherwise
-:code:`--no-cache`.
+:code:`--rebuild` or :code:`rebuild`. The default mode is *enabled* if an
+appropriate Git is installed, otherwise *disabled*.
 
 For example, suppose we have this Dockerfile::
 
