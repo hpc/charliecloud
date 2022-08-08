@@ -852,7 +852,7 @@ class Image_Ref:
                 "name",
                 "tag",
                 "digest",
-                "dict")
+                "variables")
 
    # Reference parser object. Instantiating a parser took 100ms when we tested
    # it, which means we can't really put it in a loop. But, at parse time,
@@ -861,14 +861,14 @@ class Image_Ref:
    # first use.
    parser = None
 
-   def __init__(self, src=None, dict=None):
+   def __init__(self, src=None, variables={}):
       self.host = None
       self.port = None
       self.path = []
       self.name = None
       self.tag = None
       self.digest = None
-      self.dict = dict
+      self.variables = variables
       if (isinstance(src, str)):
          src = self.parse(src)
       if (isinstance(src, lark.tree.Tree)):
@@ -902,7 +902,7 @@ class Image_Ref:
          start = s.find("$")
          end = s.find(":", start)
          str = s[start, end - 1]
-         s.replace(str, self.dict.get(str[1: -1]))
+         s.replace(str, self.variables.get(str[1: -1]))
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
@@ -1007,11 +1007,11 @@ fields:
    def var_sub(self, var):
       if (var is not None and var[0] == "$"):
          key = var[1:len(var)]
-         pair = self.dict.get(key)
+         pair = self.variables.get(key)
          if (pair is not None):
             return pair
          else:
-            ch.FATAL("%s is not set" % key)
+            FATAL("%s is not set" % key)
       return var
 
 class OrderedSet(collections.abc.MutableSet):

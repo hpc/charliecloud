@@ -247,6 +247,8 @@ class Instruction(abc.ABC):
          variables_sub() here."""
       self.lineno = tree.meta.line
       self.options = {}
+
+      # saving options with only 1 saved value
       for st in ch.tree_children(tree, "option"):
          k = ch.tree_terminal(st, "OPTION_KEY")
          v = ch.tree_terminal(st, "OPTION_VALUE")
@@ -255,16 +257,14 @@ class Instruction(abc.ABC):
                      % (self.lineno, self.str_name, k))
          self.options[k] = v
 
+      # saving keypair options in a dictionary
       for st in ch.tree_children(tree, "option_keypair"):
          k = ch.tree_terminal(st, "OPTION_KEY")
          s = ch.tree_terminal(st, "OPTION_VAR")
          v = ch.tree_terminal(st, "OPTION_VALUE")
          # assuming all key pair options allow multiple options
-         ch.INFO("setting %s to %s" % (s, v))
-         try:
-            self.options[k].update({s: v})
-         except KeyError:
-             self.options[k] = {s: v}
+         self.options.setdefault(k, {})
+         self.options[k].update({s: v})
 
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
@@ -844,13 +844,13 @@ class I_env_space(Env):
 class I_from_(Instruction):
 
    __slots__ = ("alias",
-                "arg",
+                "args",
                 "base_image")
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.arg = self.options.pop("arg", None)
-      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), self.arg)
+      self.args = self.options.pop("arg", {})
+      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), self.args)
       self.base_image = ch.Image(image_ref)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
@@ -934,11 +934,10 @@ class I_from_(Instruction):
       self.image.metadata_load(self.base_image)
 
       # set --arg
-      if (self.arg is not None):
-         for var in self.arg:
-            val = self.arg.get(var)
-            ch.VERBOSE("setting %s to %s" % (var, val))
-            self.env_arg[var] = val
+      for var in self.args:
+         val = self.args.get(var)
+         ch.VERBOSE("setting %s to %s" % (var, val))
+         self.env_arg[var] = val
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 
