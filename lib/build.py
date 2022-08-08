@@ -244,7 +244,7 @@ class Instruction(abc.ABC):
    def __init__(self, tree):
       """Note: When this is called, all we know about the instruction is
          what's in the parse tree. In particular, you must not call
-         variables_sub() here."""
+         ch.variables_sub() here."""
       self.lineno = tree.meta.line
       self.options = {}
 
@@ -497,7 +497,7 @@ class Arg(Instruction):
 
    def prepare(self, *args):
       if (self.value is not None):
-         self.value = variables_sub(self.value, self.env_build)
+         self.value = ch.variables_sub(self.value, self.env_build)
          self.env_arg[self.key] = self.value
       return super().prepare(*args)
 
@@ -754,7 +754,7 @@ class I_copy(Instruction):
       ch.VERBOSE("context: %s" % context)
       # Expand sources.
       self.srcs = list()
-      for src in [variables_sub(i, self.env_build) for i in self.srcs_raw]:
+      for src in [ch.variables_sub(i, self.env_build) for i in self.srcs_raw]:
          matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
          if (len(matches) == 0):
             ch.FATAL("can't copy: not found: %s" % src)
@@ -762,7 +762,7 @@ class I_copy(Instruction):
             self.srcs.append(i)
             ch.VERBOSE("source: %s" % i)
       # Expand destination.
-      self.dst = variables_sub(self.dst_raw, self.env_build)
+      self.dst = ch.variables_sub(self.dst_raw, self.env_build)
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in self.srcs:
@@ -814,7 +814,7 @@ class Env(Instruction):
             print("%s=%s" % (k, v), file=fp)
 
    def prepare(self, *args):
-      self.value = variables_sub(unescape(self.value), self.env_build)
+      self.value = ch.variables_sub(unescape(self.value), self.env_build)
       self.env_env[self.key] = self.value
       return super().prepare(*args)
 
@@ -989,7 +989,7 @@ class I_run_exec(Run):
       return json.dumps(self.cmd)  # double quotes, shlex.quote is less verbose
 
    def prepare(self, *args):
-      self.cmd = [    variables_sub(unescape(i), self.env_build)
+      self.cmd = [    ch.variables_sub(unescape(i), self.env_build)
                   for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
       return super().prepare(*args)
 
@@ -1020,7 +1020,7 @@ class I_shell(Instruction):
       return str(self.shell)
 
    def prepare(self, *args):
-      self.shell = [variables_sub(unescape(i), self.env_build)
+      self.shell = [ch.variables_sub(unescape(i), self.env_build)
                     for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
       return super().prepare(*args)
 
@@ -1037,7 +1037,7 @@ class I_workdir(Instruction):
       ch.mkdirs(self.image.unpack_path // self.workdir)
 
    def prepare(self, *args):
-      self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
+      self.path = ch.variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
                                 self.env_build)
       self.chdir(self.path)
       return super().prepare(*args)
@@ -1093,7 +1093,7 @@ class Environment:
    #      image metadata then
    #      - could get it from Git if needed, but that seems complicated
    # - valid during prepare() and execute() but not __init__()
-   #   - in particular, don't variables_sub() in __init__()
+   #   - in particular, don't ch.variables_sub() in __init__()
    # - instructions that update it need to change the env object in prepare()
    #   - WORKDIR SHELL ARG ENV
    #   - FROM
@@ -1104,20 +1104,6 @@ class Environment:
 
 
 ## Supporting functions ###
-
-def variables_sub(s, variables):
-   # FIXME: This should go in the grammar rather than being a regex kludge.
-   #
-   # Dockerfile spec does not say what to do if substituting a value that's
-   # not set. We ignore those subsitutions. This is probably wrong (the shell
-   # substitutes the empty string).
-   for (k, v) in variables.items():
-      # FIXME: remove when issue #774 is fixed
-      m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
-      if (m is not None):
-         ch.FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
-      s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
-   return s
 
 def unescape(sl):
    # FIXME: This is also ugly and should go in the grammar.

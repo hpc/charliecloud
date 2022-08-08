@@ -870,7 +870,7 @@ class Image_Ref:
       self.digest = None
       self.variables = variables
       if (isinstance(src, str)):
-         src = self.parse(src)
+         src = self.parse(src, variables)
       if (isinstance(src, lark.tree.Tree)):
          self.from_tree(src)
       elif (src is not None):
@@ -892,17 +892,13 @@ class Image_Ref:
       return out
 
    @classmethod
-   def parse(class_, s):
+   def parse(class_, s, variables):
       if (class_.parser is None):
          class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR,
                                    parser="earley", propagate_positions=True)
       s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
-      while (s.find("$") > -1): #variable substitution
-         start = s.find("$")
-         end = s.find(":", start)
-         str = s[start, end - 1]
-         s.replace(str, self.variables.get(str[1: -1]))
+      s = variables_sub(s, variables)
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
@@ -1006,12 +1002,7 @@ fields:
 
    def var_sub(self, var):
       if (var is not None and var[0] == "$"):
-         key = var[1:len(var)]
-         pair = self.variables.get(key)
-         if (pair is not None):
-            return pair
-         else:
-            FATAL("%s is not set" % key)
+         return variables_sub(var, self.variables)
       return var
 
 class OrderedSet(collections.abc.MutableSet):
@@ -2485,6 +2476,20 @@ def user():
       return os.environ["USER"]
    except KeyError:
       FATAL("can't get username: $USER not set")
+
+def variables_sub(s, variables):
+   # FIXME: This should go in the grammar rather than being a regex kludge.
+   #
+   # Dockerfile spec does not say what to do if substituting a value that's
+   # not set. We ignore those subsitutions. This is probably wrong (the shell
+   # substitutes the empty string).
+   for (k, v) in variables.items():
+      # FIXME: remove when issue #774 is fixed
+      m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
+      if (m is not None):
+         FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
+      s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
+   return s 
 
 def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
    """Return True if the version number of program exected as argv is at least
