@@ -983,12 +983,23 @@ EOF
             )
 
     ch-image build-cache --reset
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
+    run ch-image build -t tmpimg -f <(echo "$df_no") .  # cold
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'. COPY'* ]]
+    run ch-image build -t tmpimg -f <(echo "$df_no") .  # hot
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* COPY'* ]]
 
-    ch-image build-cache --reset
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
+    run ch-image build -t tmpimg -f <(echo "$df_yes") .  # cold
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'. COPY'* ]]
+    run ch-image build -t tmpimg -f <(echo "$df_yes") .  # hot
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* COPY'* ]]
 }
 
 @test "${tag}: pull to specified destination" {
