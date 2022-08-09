@@ -598,9 +598,11 @@ EOF
               | grep "commits" | awk '{print $2}') <(echo 8)
 
     # Number of commits after garbage collecting.
+    ch-image build-cache --tree
     ch-image build-cache --gc
     diff -u <(  ch-image build-cache \
               | grep "commits" | awk '{print $2}') <(echo 4)
+    ch-image build-cache --tree
 }
 
 @test "${tag}: ARG and ENV" {
