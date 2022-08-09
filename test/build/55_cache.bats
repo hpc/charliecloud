@@ -252,6 +252,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+
 @test "${tag}: §3.7 change then revert" {
     ch-image build-cache --reset
 
@@ -466,9 +467,11 @@ EOF
 EOF
 }
 
+
 # FIXME: for issue #1359, add test here where they revert the image in the
 # remote registry to a previous state; our next pull will hit, and so too
 # should any subsequent previously cached instructions based on the FROM SID.
+
 
 @test "${tag}: branch ready" {
     ch-image build-cache --reset
@@ -562,6 +565,55 @@ EOF
 }
 
 
+@test "${tag}: §3.6 rebuild" {
+    ch-image build-cache --reset
+
+    # Build. Mode should not matter here, but we use enabled because that's
+    # more lifelike.
+    ch-image build -t a -f ./bucache/a.df ./bucache
+
+    # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
+    # have two branches.
+    sleep 1
+    run ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. RUN echo foo'* ]]
+    [[ $output = *'. RUN echo bar'* ]]
+    blessed_out=$(cat << 'EOF'
+*  (a) RUN echo bar
+*  RUN echo foo
+| *  RUN echo bar
+| *  RUN echo foo
+|/
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) ROOT
+EOF
+)
+    run ch-image build-cache --tree --dot="${dot_base}rebuild"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Re-build again in "rebuild" mode. The branch pointer should move to the
+    # newer execution.
+    run ch-image build-cache -v --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    commit_before=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
+    echo "before: ${commit_before}"
+    sleep 1
+    ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
+    run ch-image build-cache -v --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
+    echo "after: ${commit_after}"
+    [[ $commit_before != "$commit_after" ]]
+}
+
+
 ### Additional test cases for correctness ###
 
 @test "${tag}: reset" {
@@ -604,6 +656,7 @@ EOF
               | grep "commits" | awk '{print $2}') <(echo 4)
     ch-image build-cache --tree
 }
+
 
 @test "${tag}: ARG and ENV" {
     ch-image build-cache --reset
@@ -967,31 +1020,6 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
-@test "${tag}: multistage COPY" {
-    # Multi-stage build with no instructions in the first stage.
-    df_no=$(cat <<'EOF'
-FROM alpine:3.9
-FROM alpine:3.10
-COPY --from=0 /etc/os-release /
-EOF
-           )
-    # Multi-stage build with instruction in the first stage.
-    df_yes=$(cat <<'EOF'
-FROM alpine:3.9
-RUN echo foo
-FROM alpine:3.10
-COPY --from=0 /etc/os-release /
-EOF
-            )
-
-    ch-image build-cache --reset
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
-
-    ch-image build-cache --reset
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
-}
 
 @test "${tag}: pull to specified destination" {
     ch-image reset
@@ -1032,52 +1060,30 @@ EOF
 }
 
 
-@test "${tag}: §3.6 rebuild" {
-    ch-image build-cache --reset
-
-    # Build. Mode should not matter here, but we use enabled because that's
-    # more lifelike.
-    ch-image build -t a -f ./bucache/a.df ./bucache
-
-    # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
-    # have two branches.
-    sleep 1
-    run ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'* FROM'* ]]
-    [[ $output = *'. RUN echo foo'* ]]
-    [[ $output = *'. RUN echo bar'* ]]
-    blessed_out=$(cat << 'EOF'
-*  (a) RUN echo bar
-*  RUN echo foo
-| *  RUN echo bar
-| *  RUN echo foo
-|/
-*  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) ROOT
+@test "${tag}: multistage COPY" {
+    # Multi-stage build with no instructions in the first stage.
+    df_no=$(cat <<'EOF'
+FROM alpine:3.9
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
 EOF
-)
-    run ch-image build-cache --tree --dot="${dot_base}rebuild"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+           )
+    # Multi-stage build with instruction in the first stage.
+    df_yes=$(cat <<'EOF'
+FROM alpine:3.9
+RUN echo foo
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
+EOF
+            )
 
-    # Re-build again in "rebuild" mode. The branch pointer should move to the
-    # newer execution.
-    run ch-image build-cache -v --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    commit_before=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
-    echo "before: ${commit_before}"
-    sleep 1
-    ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
-    run ch-image build-cache -v --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
-    echo "after: ${commit_after}"
-    [[ $commit_before != "$commit_after" ]]
+    ch-image build-cache --reset
+    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
+    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
+
+    ch-image build-cache --reset
+    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
+    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
 }
 
 
