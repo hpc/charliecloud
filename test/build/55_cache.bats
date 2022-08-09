@@ -1140,3 +1140,24 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'stopping build cache garbage collection'* ]]
 }
+
+
+@test "${tag}: all hits, no image" {
+    df=$(cat <<'EOF'
+FROM alpine:3.9
+RUN echo foo
+EOF
+        )
+
+    ch-image build-cache --reset
+    ch-image build -t tmpimg -f <(echo "$df") .
+    ch-image delete tmpimg
+    [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg ]]
+    run ch-image build -v -t tmpimg -f <(echo "$df") .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RUN'* ]]
+    [[ $output = *"no image found: $CH_IMAGE_STORAGE/img/tmpimg"* ]]
+    [[ $output = *'created worktree'* ]]
+}
