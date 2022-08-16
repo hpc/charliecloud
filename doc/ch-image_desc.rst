@@ -10,7 +10,7 @@ Synopsis
    $ ch-image [...] delete IMAGE_REF
    $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
-   $ ch-image [...] list [IMAGE_REF]
+   $ ch-image [...] list [-l] [IMAGE_REF]
    $ ch-image [...] pull [...] IMAGE_REF [DEST_REF]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
@@ -799,12 +799,15 @@ Synopsis
 
 ::
 
-   $ ch-image [...] list [IMAGE_REF]
+   $ ch-image [...] list [-l] [IMAGE_REF]
 
 Description
 -----------
 
 Optional argument:
+
+  :code:`-l`, :code:`--long`
+    Use long format (name, last change timestamp) when listing images
 
   :code:`IMAGE_REF`
     Print details of what's known about :code:`IMAGE_REF`, both locally and in

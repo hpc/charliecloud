@@ -646,6 +646,10 @@ class Image:
       for path in metadata["volumes"]:
          mkdirs(self.unpack_path // path)
 
+   @property
+   def metadata_changed(self):
+      return time.ctime(os.path.getmtime(self.metadata_path // "metadata.json"))
+
    def tarballs_write(self, tarball_dir):
       """Write one uncompressed tarball per layer to tarball_dir. Return a
          sequence of tarball basenames, with the lowest layer first."""

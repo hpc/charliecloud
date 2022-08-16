@@ -93,8 +93,14 @@ def list_(cli):
          ch.FATAL("does not exist: %s" % ch.storage.root)
       if (not ch.storage.valid_p):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
-      for img in sorted(ch.listdir(imgdir)):
-         print(ch.Image_Ref(img))
+      images = sorted(ch.listdir(imgdir))
+      padding = max([len(str(ref)) for ref in images])
+      for ref in images:
+         img = ch.Image(ch.Image_Ref(ref))
+         if cli.long:
+            print("{:<{padding}} | {}".format(str(img), img.metadata_changed, padding=padding))
+         else:
+            print(img)
    else:
       # list specified image
       img = ch.Image(ch.Image_Ref(cli.image_ref))
@@ -104,7 +110,7 @@ def list_(cli):
          stored = "no"
       else:
          img.metadata_load()
-         stored = "yes (%s)" % img.metadata["arch"]
+         stored = "yes ({}), last change: {}".format(img.metadata["arch"], img.metadata_changed)
       print("in local storage:    %s" % stored)
       # in cache?
       (sid, commit) = bu.cache.find_image(img)
