@@ -305,7 +305,7 @@ if [ $cray_mpich ]; then
        [ -d "/opt/cray/alps" ] \
     && queue_files /opt/cray/alps/default/lib64/libalpsutil.so.0.0.0 \
                    /opt/cray/alps/default/lib64/libalpslli.so.0.0.0
-       [ -d "/opt/cray/wlm_detect"] \
+       [ -d "/opt/cray/wlm_detect" ] \
     && queue_files /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0.0.0
 fi
 
