@@ -70,6 +70,7 @@ Contributors:
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Peter Wienemann <wienemann@physik.uni-bonn.de>
 * Lowell Wofford <lowell@lanl.gov>
+* Richard Berger <rberger@lanl.gov>
 
 How can I participate?
 ----------------------
