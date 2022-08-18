@@ -2225,7 +2225,7 @@ def chmod_min(path, mode, st=None):
    mode_old = stat.S_IMODE(st.st_mode)
    if (mode & mode_old != mode):
       mode |= mode_old
-      VERBOSE("fixing permisssions: %s: %03o -> %03o" % (path, mode_old, mode))
+      VERBOSE("fixing permissions: %s: %03o -> %03o" % (path, mode_old, mode))
       ossafe(os.chmod, "can't chmod: %s" % path, path, mode)
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
