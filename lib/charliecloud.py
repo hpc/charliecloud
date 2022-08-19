@@ -285,6 +285,10 @@ dlcache_p = None
 # True if we talk to registries authenticated; false if anonymously.
 reg_auth = False
 
+# True if we lock storage directory to prevent concurrent access; false for no
+# locking (which is very YOLO and may break the storage directory).
+storage_lock = True
+
 
 ## Exceptions ##
 
@@ -1934,6 +1938,8 @@ class Storage:
       # [1]: https://apenwarr.ca/log/20101213
       # [2]: http://0pointer.de/blog/projects/locking.html
       # [3]: https://stackoverflow.com/a/22411531
+      if (not storage_lock):
+         return
       self.lockfile_fp = open_(self.lockfile, "w")
       try:
          fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -1959,9 +1965,6 @@ class Storage:
          self.init()  # largely for debugging
       else:
          FATAL("%s not a builder storage" % (self.root));
-
-   def unlock(self):
-      close_(self.lockfile_fp)
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
@@ -2476,9 +2479,10 @@ def init(cli):
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
-   # storage object
-   global storage
+   # storage directory
+   global storage, storage_lock
    storage = Storage(cli.storage)
+   storage_lock = not cli.no_lock
    # architecture
    global arch, arch_host
    assert (cli.arch is not None)
@@ -2505,7 +2509,6 @@ def init(cli):
    else:
       reg_auth = False
    VERBOSE("registry authentication: %s" % reg_auth)
-
    # misc
    global password_many, tls_verify
    password_many = cli.password_many
