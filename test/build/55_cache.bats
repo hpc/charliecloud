@@ -791,7 +791,7 @@ EOF
     [[ $output = *'* FROM'* ]]
     [[ $output = *'* COPY'* ]]
 
-    printf '\n*** Rename file back; still miss b/c ctime.\n\n'
+    printf '\n*** Rename file back; all hits.\n\n'
     stat "$fixtures"/file1a
     mv "$fixtures"/file1a "$fixtures"/file1
     stat "$fixtures"/file1
@@ -799,16 +799,9 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'* FROM'* ]]
-    [[ $output = *'. COPY'* ]]
-
-    printf '\n*** Re-build; all hits.\n\n'
-    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'* FROM'* ]]
     [[ $output = *'* COPY'* ]]
 
-    printf '\n*** Update content, same length, reset mtime; miss b/c ctime.\n\n'
+    printf '\n*** Update content, same length, reset mtime; all hits.\n\n'
     cat "$fixtures"/file1
     stat "$fixtures"/file1
     mtime=$(stat -c %y "$fixtures"/file1)
@@ -816,13 +809,6 @@ EOF
     touch -d "$mtime" "$fixtures"/file1
     cat "$fixtures"/file1
     stat "$fixtures"/file1
-    run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'* FROM'* ]]
-    [[ $output = *'. COPY'* ]]
-
-    printf '\n*** Re-build; all hits.\n\n'
     run ch-image build -t foo -f ./bucache/copy.df "$fixtures"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -983,12 +969,24 @@ EOF
             )
 
     ch-image build-cache --reset
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
+    run ch-image build -t tmpimg -f <(echo "$df_no") .  # cold
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'. COPY'* ]]
+    run ch-image build -t tmpimg -f <(echo "$df_no") .  # hot
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* COPY'* ]]
 
     ch-image build-cache --reset
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
+    run ch-image build -t tmpimg -f <(echo "$df_yes") .  # cold
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'. COPY'* ]]
+    run ch-image build -t tmpimg -f <(echo "$df_yes") .  # hot
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* COPY'* ]]
 }
 
 @test "${tag}: pull to specified destination" {
