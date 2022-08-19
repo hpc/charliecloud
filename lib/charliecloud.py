@@ -1780,6 +1780,8 @@ class Storage:
       if (self.root is None):
          self.root = self.root_default()
       self.root = Path(self.root)
+      if (not self.root.is_absolute()):
+         self.root = os.getcwd() // self.root
 
    @property
    def build_cache(self):
@@ -1836,10 +1838,12 @@ class Storage:
       if ("CH_GROW_STORAGE" in os.environ):
          # Avoid surprises if user still has $CH_GROW_STORAGE set (see #906).
          FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
-      try:
-         return os.environ["CH_IMAGE_STORAGE"]
-      except KeyError:
+      if (not "CH_IMAGE_STORAGE" in os.environ):
          return None
+      path = Path(os.environ["CH_IMAGE_STORAGE"])
+      if (not path.is_absolute()):
+         FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
+      return path
 
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
