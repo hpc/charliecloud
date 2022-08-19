@@ -1234,3 +1234,20 @@ EOF
     statwalk | diff -u <(echo "$stat1") -
 }
 
+
+@test "${tag}: ignore patterns" {
+       git check-ignore -q __ch-test_ignore__ \
+    || pedantic_fail 'global ignore not configured'
+
+    ch-image build-cache --reset
+
+    df=$(cat <<'EOF'
+FROM alpine:3.9
+RUN touch __ch-test_ignore__
+EOF
+        )
+    echo "$df" | ch-image build -t tmpimg -
+    ch-image delete tmpimg
+    echo "$df" | ch-image build -t tmpimg -
+    ls -lh "$CH_IMAGE_STORAGE"/img/tmpimg/__ch-test_ignore__
+}
