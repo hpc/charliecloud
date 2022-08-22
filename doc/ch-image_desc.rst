@@ -42,43 +42,10 @@ Options that print brief information and then exit:
 
 Common options placed before or after the sub-command:
 
-  :code:`-a`, :code:`--arch ARCH`
-     Use :code:`ARCH` for architecture-aware registry operations, currently
-     :code:`pull` and pulls done within :code:`build`. :code:`ARCH` can be:
-     (1) :code:`yolo`, to bypass architecture-aware code and use the
-     registry's default architecture; (2) :code:`host`, to use the host's
-     architecture, obtained with the equivalent of :code:`uname -m` (default
-     if :code:`--arch` not specified); or (3) an architecture name. If the
-     specified architecture is not available, the error message will list
-     which ones are.
-
-     **Notes:**
-
-     1. :code:`ch-image` is limited to one image per image reference in
-        builder storage at a time, regardless of architecture. For example, if
-        you say :code:`ch-image pull --arch=foo baz` and then :code:`ch-image
-        pull --arch=bar baz`, builder storage will contain one image called
-        "baz", with architecture "bar".
-
-     2. Images' default architecture is usually :code:`amd64`, so this is
-        usually what you get with :code:`--arch=yolo`. Similarly, if a
-        registry image is architecture-unaware, it will still be pulled with
-        :code:`--arch=amd64` and :code:`--arch=host` on x86-64 hosts (other
-        host architectures must specify :code:`--arch=yolo` to pull
-        architecture-unaware images).
-
-     3. :code:`uname -m` and image registries often use different names for
-        the same architecture. For example, what :code:`uname -m` reports as
-        "x86_64" is known to registries as "amd64". :code:`--arch=host` should
-        translate if needed, but it's useful to know this is happening.
-        Directly specified architecture names are passed to the registry
-        without translation.
-
-     4. Registries treat architecture as a pair of items, architecture and
-        sometimes variant (e.g., "arm" and "v7"). Charliecloud treats
-        architecture as a simple string and converts to/from the registry view
-        transparently.
-
+  :code:`-a`, :code:`--arch ARCH` 
+    Use ARCH for architecture-aware registry operations, currently pull and 
+    pulls done within build (see below for important details) 
+ 
   :code:`--always-download`
     Download all files when pulling, even if they are already in builder
     storage. Note that :code:`ch-image pull` will always retrieve the most
@@ -120,6 +87,46 @@ Common options placed before or after the sub-command:
 
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated.
+
+
+:code:`-a`, :code:`--arch ARCH`:
+================================
+
+  Use :code:`ARCH` for architecture-aware registry operations, currently
+  :code:`pull` and pulls done within :code:`build`. :code:`ARCH` can be:
+  (1) :code:`yolo`, to bypass architecture-aware code and use the
+  registry's default architecture; (2) :code:`host`, to use the host's
+  architecture, obtained with the equivalent of :code:`uname -m` (default
+  if :code:`--arch` not specified); or (3) an architecture name. If the
+  specified architecture is not available, the error message will list
+  which ones are.
+
+  **Notes:**
+
+  1. :code:`ch-image` is limited to one image per image reference in
+     builder storage at a time, regardless of architecture. For example, if
+     you say :code:`ch-image pull --arch=foo baz` and then :code:`ch-image
+     pull --arch=bar baz`, builder storage will contain one image called
+     "baz", with architecture "bar".
+
+  2. Images' default architecture is usually :code:`amd64`, so this is
+     usually what you get with :code:`--arch=yolo`. Similarly, if a
+     registry image is architecture-unaware, it will still be pulled with
+     :code:`--arch=amd64` and :code:`--arch=host` on x86-64 hosts (other
+     host architectures must specify :code:`--arch=yolo` to pull
+     architecture-unaware images).
+
+  3. :code:`uname -m` and image registries often use different names for
+     the same architecture. For example, what :code:`uname -m` reports as
+     "x86_64" is known to registries as "amd64". :code:`--arch=host` should
+     translate if needed, but it's useful to know this is happening.
+     Directly specified architecture names are passed to the registry
+     without translation.
+
+  4. Registries treat architecture as a pair of items, architecture and
+     sometimes variant (e.g., "arm" and "v7"). Charliecloud treats
+     architecture as a simple string and converts to/from the registry view
+     transparently.   
 
 
 Authentication
