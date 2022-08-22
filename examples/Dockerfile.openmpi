@@ -91,12 +91,32 @@ WORKDIR /usr/local/src
 
 # UCX. There is a package but we want control over build options, specifically
 # multithreaded support.
-ARG UCX_VERSION=1.11.2
-RUN git clone --branch v${UCX_VERSION} --depth 1 \
-              https://github.com/openucx/ucx.git \
- && cd ucx \
+ARG LIBFABRIC_VERSION=1.15.1
+RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
+              https://github.com/ofiwg/libfabric/ \
+ && cd libfabric \
  && ./autogen.sh \
  && ./contrib/configure-release-mt --prefix=/usr/local \
+                                   # enable the etwork direct provider,
+                                   # shm, i.e., shared memory. Enables apps to
+                                   # run over any verbs hardware (infiniband,
+                                   # IWarp, RoCE). The cray aries provider will
+                                   # be injected at run-time.
+                                   --enable-shm \
+                                   # Enable OPX for omni-path HPC fabrics.
+                                   --enable-opx \
+                                   --disable-psm \
+                                   # enable PSM 2.x interface supported by the
+                                   # intel omni-path fabric.
+                                   --enable-psm2 \
+                                   --disable-psm3 \
+                                   --disable-rxm \
+                                   --disable-sockets \
+                                   --disable-tcp \
+                                   --disable-udp \
+                                   --disable-usnic \
+                                   --disable-verbs \
+                                   --disable-bgq
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../ucx*
 
@@ -108,7 +128,7 @@ ARG SLURM_VERSION=19-05-3-2
 RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz \
  && tar -xf slurm-${SLURM_VERSION}.tar.gz \
  && cd slurm-slurm-${SLURM_VERSION} \
- && ./configure --prefix=/usr/local \
+ && ./configure --prefix=/usr/local/libfabric \
  && cd contribs/pmi2 \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../../../slurm*
@@ -123,7 +143,6 @@ RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
  && tar xf openmpi-${MPI_VERSION}.tar.gz
 COPY dont-init-ucx-on-intel-cray.patch ./openmpi-${MPI_VERSION}
 RUN cd openmpi-${MPI_VERSION} \
- && patch -p1 dont-init-ucx-on-intel-cray.patch \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \
@@ -131,7 +150,7 @@ RUN cd openmpi-${MPI_VERSION} \
                 --with-slurm \
                 --with-pmi=/usr/local \
                 --with-pmix \
-                --with-ucx \
+                --with-libfabric=/usr/local/libfabric \
                 --disable-pty-support \
                 --enable-mca-no-build=btl-openib,plm-slurm \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
