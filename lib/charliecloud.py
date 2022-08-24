@@ -148,7 +148,7 @@ IR_TAG: /[A-Za-z0-9$_.-]+/
 /// Dockerfile ///
 
 // First instruction must be ARG or FROM, but that is not a syntax error.
-dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
+dockerfile: _NEWLINES? ( arg_first | directive | comment )* from_? ( instruction | comment )*
 
 ?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
@@ -156,6 +156,9 @@ directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
 comment: _WS? _COMMENT_BODY _NEWLINES
 _COMMENT_BODY: /#[^\n]*/
+arg_first: "ARG"i _WS ( arg_first_bare | arg_first_equals ) _NEWLINES
+arg_first_bare: WORD
+arg_first_equals: WORD "=" ( WORD | STRING_QUOTED )
 
 copy: "COPY"i ( _WS option )* _WS ( copy_list | copy_shell ) _NEWLINES
 copy_list.2: _string_list

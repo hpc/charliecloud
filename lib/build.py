@@ -203,7 +203,8 @@ class Main_Loop(lark.Visitor):
          inst = globals()[class_](tree)
          if (self.instruction_total_ct == 0):
             if (   isinstance(inst, I_directive)
-                or isinstance(inst, I_from_)):
+                or isinstance(inst, I_from_)
+                or isinstance(inst, Arg_First)):
                pass
             elif (isinstance(inst, Arg)):
                ch.WARNING("ARG before FROM not yet supported; see issue #779\n Can use --arg with FROM ")
@@ -215,7 +216,9 @@ class Main_Loop(lark.Visitor):
             self.miss_ct = inst.prepare(self.miss_ct)
          except Instruction_Ignored:
             return
-         if (inst.miss):
+         if (isinstance(inst, Arg_First)):
+            inst.execute()
+         elif (inst.miss):
             if (self.miss_ct == 1):
                inst.checkout_for_build()
             inst.execute()
@@ -238,6 +241,7 @@ class Instruction(abc.ABC):
                 "options",      # consumed
                 "options_str",  # saved at instantiation
                 "parent",
+                "argfrom",
                 "sid",
                 "tree")
 
@@ -274,6 +278,7 @@ class Instruction(abc.ABC):
       self.parent = None
       self.image_alias = None
       self.image_i = None
+      self.argfrom = {}
 
    @property
    def env_arg(self):
@@ -302,7 +307,10 @@ class Instruction(abc.ABC):
 
    @property
    def miss(self):
-      return (self.git_hash is None)
+      try:
+         return (self.git_hash is None)
+      except AttributeError:
+         return False
 
    @property
    def shell(self):
@@ -393,6 +401,7 @@ class Instruction(abc.ABC):
          self.image = self.parent.image
          self.image_alias = self.parent.image_alias
          self.image_i = self.parent.image_i
+         self.argfrom = self.parent.argfrom
 
    def metadata_update(self):
       self.image.metadata["history"].append(
@@ -520,6 +529,51 @@ class I_arg_equals(Arg):
          v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
       return v
 
+class Arg_First(Instruction):
+
+   __slots__ = ("key",
+                 "value")
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = ch.tree_terminal(self.tree, "WORD", 0)
+      self.value = self.value_default()
+
+   @property
+   def sid_input(self):
+      return super().sid_input
+
+   @property
+   def str_(self):
+      s = "%s=" % self.key
+      if (self.value is not None):
+         s += "'%s'" % self.value
+      if (self.key in ch.ARGS_MAGIC):
+         s += " [special]"
+      return s
+
+   def prepare(self, *args):
+      if (self.value is not None):
+         self.argfrom = {self.key: self.value}
+      ch.INFO(self.str_log)
+      return 0
+
+class I_arg_first_bare(Arg_First):
+
+   __slots__ = ()
+
+   def value_default(self):
+      return None
+
+class I_arg_first_equals(Arg_First):
+
+   __slots__ = ()
+
+   def value_default(self):
+      v = ch.tree_terminal(self.tree, "WORD", 1)
+      if (v is None):
+         v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
+      return v
 
 class I_copy(Instruction):
 
@@ -849,8 +903,8 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.args = self.options.pop("arg", {})
-      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), self.args)
+      self.argfrom.update(self.options.pop("arg", {}))
+      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), self.argfrom)
       self.base_image = ch.Image(image_ref)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
@@ -934,8 +988,8 @@ class I_from_(Instruction):
       self.image.metadata_load(self.base_image)
 
       # set --arg
-      for var in self.args:
-         val = self.args.get(var)
+      for var in self.argfrom:
+         val = self.argfrom.get(var)
          ch.VERBOSE("setting %s to %s" % (var, val))
          self.env_arg[var] = val
       # Done.
