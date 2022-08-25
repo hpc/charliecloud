@@ -904,10 +904,6 @@ class I_from_(Instruction):
    def __init__(self, *args):
       super().__init__(*args)
       self.argfrom.update(self.options.pop("arg", {}))
-      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), self.argfrom)
-      self.base_image = ch.Image(image_ref)
-      self.alias = ch.tree_child_terminal(self.tree, "from_alias",
-                                          "IR_PATH_COMPONENT")
 
    # Not meaningful for FROM.
    sid_input = None
@@ -932,6 +928,10 @@ class I_from_(Instruction):
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
       #
+      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), self.argfrom)
+      self.base_image = ch.Image(image_ref)
+      self.alias = ch.tree_child_terminal(self.tree, "from_alias",
+                                          "IR_PATH_COMPONENT")
       # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
