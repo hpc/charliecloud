@@ -1,4 +1,4 @@
-nname: test suite
+name: test suite
 
 on:
   pull_request:           # all pull requests
