@@ -14,6 +14,7 @@ noexecs = \
 Dockerfile.centos7 \
 Dockerfile.almalinux8 \
 Dockerfile.debian9 \
+Dockerfile.libfabric \
 Dockerfile.mpich \
 Dockerfile.nvidia \
 Dockerfile.openmpi \

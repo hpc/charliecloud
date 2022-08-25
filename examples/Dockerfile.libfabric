@@ -1,0 +1,122 @@
+# ch-test-scope: full
+FROM almalinux8
+
+# A key goal of this Dockerfile is to demonstrate best practices for building
+# OpenMPI and MPICH for use inside a container.
+#
+# This Dockerfile aspires to work close to optimally on clusters with any of the
+# following interconnects:
+#
+#    - Ethernet (TCP/IP)
+#    - InfiniBand (IB)
+#    - Omni-Path (OPA)
+#    - RDMA over Converged Ethernet (RoCE) interconnects
+#    - Gemini/Aries (UGNI) **
+#
+# with no environment variables, command line arguments, additional
+# configuration files, and minimal runtime manipulation.
+#
+# MPI implementations have numerous ways of communicating messages over
+# interconnects. We use Libfabric (OFI), an OpenFabric framework that
+# exports fabric communication services to applications, to manage these
+# communcations with built-in, or loadable, fabric providers. This allows us to:
+# uniformly manage fabric communcations services for OpenMPI and MPICH; and
+# leverage host-built loadable shared object providers to give our containers
+# access to proprietary hardware, e.g., Cray Gemini/Aries.
+#
+# Providers implement the application facing software interfaces needed to
+# access network specific protocols, drivers, and hardware [2]. The built-in
+# providers relevant here are:
+#
+#   Provider  included  reason  Eth  IB  OPA  RoCE  Slingshot   Gemini/Aries
+#   --------  --------  ------  ---  --  ---  ----  ---------   ------------
+#
+#   tcp       Yes                Y*  X   X    X     X           X
+#   verbs     Yes                N   Y   N    Y
+#   psm2      No        a        N   N   Y    N
+#   opx       No        b        N   N   Y    N
+#   psm3      Yes                Y   N   Y    Y
+#   ugni      No        c                                       Y*
+#   shm       Yes       d
+#
+#   Y : supported
+#   Y*: best choice for that interconnect
+#   X : supported but sub-optimal
+#     : unclear
+#
+#   a : psm3 does what psm2 does
+#   b : psm3 covers OPA
+#   c : requires cray interconnect and libraries
+#
+# The full list of OFI providers can be seen here:
+#   - https://github.com/ofiwg/libfabric/blob/main/README.md
+#
+# PMI/PMIx are include these so that we can use srun or any other PMI[x]
+# provider, with no matching MPI needed on the host.
+
+# OS packages needed to build this stuff.
+#
+# Note that libpsm2 is x86-64 only so we skip if missing
+RUN dnf install -y --setopt=install_weak_deps=false \
+                automake \
+                file \
+                flex \
+                gcc \
+                gcc-c++ \
+                gcc-gfortran \
+                git \
+                ibacm \
+                libatomic \
+                libevent-devel \
+                libtool \
+                libibumad \
+                libibumad-devel \
+                librdmacm \
+                librdmacm-devel \
+                rdma-core \
+                make \
+                numactl-devel \
+                wget \
+ && dnf install -y --setopt=install_weak_deps=false --skip-broken \
+                 libpsm2 \
+                 libpsm2-devel \
+ && dnf clean all
+
+WORKDIR /usr/local/src
+
+# Libfabric (OFI)
+ARG LIBFABRIC_VERSION=1.15.1
+RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
+              https://github.com/ofiwg/libfabric/ \
+ && cd libfabric \
+ && ./autogen.sh \
+ && ./configure --prefix=/usr/local \
+                --disable-opx \
+                --disable-psm2 \
+                --disable-efa \
+                --disable-rxm \
+                --disable-sockets \
+                --enable-psm3 \
+                --enable-tcp \
+                --enable-verbs \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../libfabric* \
+ && mkdir /usr/lib/libfabric
+
+# PMI2.
+#
+# There isn't a package available with the Slurm PMI2 libraries we need, so
+# build them from Slurm's release.
+ARG SLURM_VERSION=19-05-3-2
+RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz \
+ && tar -xf slurm-${SLURM_VERSION}.tar.gz \
+ && cd slurm-slurm-${SLURM_VERSION} \
+ && ./configure --prefix=/usr \
+ && cd contribs/pmi2 \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../../../slurm*
+
+# Add Cray Gemini/Aries directories. On Cray machines these directories are
+# bind mounted inside the container giving it the ability to leverage host built
+# UGNI DSO providers. See FAQ: Craysauce.
+RUN mkdir -p /etc/opt/cray /var/opt/cray /opt/cray

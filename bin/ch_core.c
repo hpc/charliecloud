@@ -45,9 +45,10 @@ struct bind BINDS_DEFAULT[] = {
    { "/sys",                     "/sys",                     BD_REQUIRED },
    { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
    { "/etc/machine-id",          "/etc/machine-id",          BD_OPTIONAL },
+   { "/etc/opt/cray",            "/etc/opt/cray",            BD_OPTIONAL },
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
-   { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs",  BD_OPTIONAL },
-   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
+   { "/opt/cray",                "/opt/cray",                BD_OPTIONAL },
+   { "/var/opt/cray",            "/var/opt/cray",            BD_OPTIONAL },
    { 0 }
 };
 
@@ -224,6 +225,12 @@ void enter_udss(struct container *c)
                             | MS_RDONLY;  // read-only.
       Zf (mount(NULL, c->newroot, NULL, flags, NULL),
           "can't re-mount image read-only (is it on NFS?)");
+   }
+   // No write OFI injection proto. FIXME: implement oci hooks instead.
+   if (getenv("OFI_DSO_PROVIDER_DIR")) {
+      const char * dso_d = getenv("OFI_DSO_PROVIDER_DIR");
+      bind_mount(dso_d, "/usr/lib/libfabric", BD_REQUIRED, "/", MS_PRIVATE);
+      bind_mount("/etc/ld.so.cache", "/etc/ld.so.cache", BD_REQUIRED, "/", MS_PRIVATE);
    }
    // Bind-mount user-specified directories.
    bind_mounts(c->binds, c->newroot, 0);

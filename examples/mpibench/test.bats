@@ -79,10 +79,6 @@ check_process_ct () {
     check_finalized "$output"
 }
 
-@test "${ch_tag}/crayify image" {
-    crayify_mpi_or_skip "$ch_img"
-}
-
 # This test compares OpenMPI's point to point bandwidth with all high speed
 # plugins enabled against the performance just using TCP. Pass if HSN
 # performance is at least double TCP.
@@ -111,6 +107,7 @@ check_process_ct () {
 
 @test "${ch_tag}/pingpong (host launch)" {
     multiprocess_ok
+    cray_ofi_ok
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args PingPong
@@ -123,6 +120,7 @@ check_process_ct () {
 
 @test "${ch_tag}/sendrecv (host launch)" {
     multiprocess_ok
+    cray_ofi_ok
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args Sendrecv
@@ -135,6 +133,7 @@ check_process_ct () {
 
 @test "${ch_tag}/allreduce (host launch)" {
     multiprocess_ok
+    cray_ofi_ok
     # shellcheck disable=SC2086
     run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args Allreduce
@@ -143,8 +142,4 @@ check_process_ct () {
     check_errors "$output"
     check_process_ct "$ch_cores_total" "$output"
     check_finalized "$output"
-}
-
-@test "${ch_tag}/revert image" {
-    unpack_img_all_nodes "$ch_cray"
 }

@@ -99,12 +99,13 @@ chtest_fixtures_ok () {
     [[ $(stat -c %a "${1}/maxperms_file") = 777 ]]
 }
 
-crayify_mpi_or_skip () {
+cray_ofi_ok () {
     if [[ $ch_cray ]]; then
-        # shellcheck disable=SC2086
-        $ch_mpirun_node ch-fromhost --cray-mpi "$1"
-    else
-        skip 'host is not a Cray'
+        if [[ -z $OFI_DSO_PROVIDER_DIR ]]; then
+            skip 'OFI_DSO_PROVIDER_DIR not set'
+        elif [[ ! -f $OFI_DOS_PROVIDER_DIR/*-fi.so ]]; then
+            skip "OFI_DSO_PROVIDER_DIR doesn't have dso providers"
+        fi
     fi
 }
 
