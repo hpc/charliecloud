@@ -1168,7 +1168,7 @@ EOF
 
     statwalk () {
         # Remove mtime and atime for symlinks, where it cannot be set.
-        ( cd $CH_IMAGE_STORAGE/img/tmpimg/test
+        ( cd "$CH_IMAGE_STORAGE"/img/tmpimg/test
             find . -printf '%n %M %4s m=%TFT%TT a=%AFT%AT %p (%l)\n' \
           | sed -E 's/(1 l.+)([am]=[0-9T:.-]+ ){2}(.+)$/\1m=::: a=::: \3/' \
           | LC_ALL=C sort -k6 )
@@ -1177,7 +1177,7 @@ EOF
     # Build it. Every instruction does a quick restore, so this validates that
     # works, aside from mtime and atime which are expected to vary.
     ch-image build -t tmpimg -f ./bucache/difficult.df .
-    stat $CH_IMAGE_STORAGE/img/tmpimg/test/fifo_
+    stat "$CH_IMAGE_STORAGE"/img/tmpimg/test/fifo_
     stat1=$(statwalk)
     diff -u - <(echo "$stat1" | sed -E 's/([am])=[0-9T:.-]+/\1=:::/g') <<'EOF'
 7 drwxr-x---  240 m=::: a=::: . ()
