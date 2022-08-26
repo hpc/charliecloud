@@ -14,6 +14,7 @@ Synopsis
    $ ch-image [...] pull [...] IMAGE_REF [DEST_REF]
    $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
+   $ ch-image [...] undelete IMAGE_REF
    $ ch-image { --help | --version | --dependencies }
 
 
@@ -1065,6 +1066,18 @@ in the remote registry, so we don't upload it again.)
    $ ch-image [...] reset
 
 Delete all images and cache from ch-image builder storage.
+
+
+:code:`undelete`
+================
+
+::
+
+   $ ch-image [...] undelete IMAGE_REF
+
+If :code:`IMAGE_REF` has been deleted but is in the build cache, recover it
+from the cache. Only available when the cache is enabled, and will not
+overwrite :code:`IMAGE_REF` if it exists.
 
 
 Environment variables
