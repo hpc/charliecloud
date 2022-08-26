@@ -92,12 +92,18 @@ Common options placed before or after the sub-command:
     exception is :code:`push`, which implies :code:`--auth`.
 
   :code:`--cache`
-    Enable build cache.
+    Enable build cache. Default if a sufficiently new Git is available.
 
   :code:`--no-cache`
-    Disable build cache (default). This option turns off the cache completely;
-    if you want to re-execute a Dockerfile and store the new results in cache,
-    use :code:`--rebuild` instead.
+    Disable build cache. Default if a sufficiently new Git is not available.
+    This option turns off the cache completely; if you want to re-execute a
+    Dockerfile and store the new results in cache, use :code:`--rebuild`
+    instead.
+
+  :code:`--no-lock`
+    Disable storage directory locking. This lets you run as many concurrent
+    :code:`ch-image` instances as you want against the same storage directory,
+    which risks corruption but may be OK for some workloads.
 
   :code:`--rebuild`
     Execute all instructions, even if they are build cache hits, except for
@@ -201,7 +207,9 @@ In descending order of priority, this directory is located at:
     Command line option.
 
   :code:`$CH_IMAGE_STORAGE`
-    Environment variable.
+    Environment variable. The path must be absolute, because the variable is
+    likely set in a very different context than when it's used, which seems
+    error-prone on what a relative path is relative to.
 
   :code:`/var/tmp/$USER.ch`
     Default. (Previously, the default was :code:`/var/tmp/$USER/ch-image`. If
@@ -259,14 +267,13 @@ The cache has three modes, *enabled*, *disabled*, and a hybrid mode called
 *rebuild* where the cache is fully enabled for :code:`FROM` instructions, but
 all other operations re-execute and re-cache their results. The purpose of
 *rebuild* is to do a clean rebuild of a Dockerfile atop a known-good base
-image. Enabled mode is selected with :code:`--cache` or setting
+image.
+
+Enabled mode is selected with :code:`--cache` or setting
 :code:`$CH_IMAGE_CACHE` to :code:`enabled`, disabled mode with
 :code:`--no-cache` or :code:`disabled`, and rebuild mode with
-:code:`--rebuild` or :code:`rebuild`.
-
-The default mode is currently :code:`--no-cache`. In 0.30, we expect the
-default to be :code:`--cache` if an appropriate Git is installed, otherwise
-:code:`--no-cache`.
+:code:`--rebuild` or :code:`rebuild`. The default mode is *enabled* if an
+appropriate Git is installed, otherwise *disabled*.
 
 For example, suppose we have this Dockerfile::
 
@@ -277,7 +284,7 @@ For example, suppose we have this Dockerfile::
 
 On our first build, we get::
 
-  $ ch-image --cache build -t foo -f a.df .
+  $ ch-image build -t foo -f a.df .
     1. FROM alpine:3.9
   [ ... pull chatter omitted ... ]
     2. RUN echo foo
@@ -293,7 +300,7 @@ instruction was executed. You can also see this by the output of the two
 
 But on our second build, we get::
 
-  $ ch-image --cache build -t foo -f a.df .
+  $ ch-image build -t foo -f a.df .
     1* FROM alpine:3.9
     2* RUN echo foo
     3* RUN echo bar
@@ -314,7 +321,7 @@ three instructions are the same, but the third is different::
   FROM alpine:3.9
   RUN echo foo
   RUN echo qux
-  $ ch-image --cache build -t c -f c.df .
+  $ ch-image build -t c -f c.df .
     1* FROM alpine:3.9
     2* RUN echo foo
     3. RUN echo qux
@@ -327,7 +334,7 @@ third is a miss, so Charliecloud retrieves that state and continues building.
 
 We can also inspect the cache::
 
-  $ ch-image --cache build-cache --tree
+  $ ch-image build-cache --tree
   *  (c) RUN echo qux
   | *  (a) RUN echo bar
   |/
