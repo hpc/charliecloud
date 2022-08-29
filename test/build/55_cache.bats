@@ -1191,12 +1191,17 @@ EOF
     ch-image build-cache --reset
 
     statwalk () {
-        # Remove mtime and atime for symlinks, where it cannot be set.
+        # Remove (1) mtime and atime for symlinks, where it cannot be set, and
+        # (2) directory sizes, which vary by filesystem and maybe other stuff.
         ( cd "$CH_IMAGE_STORAGE"/img/tmpimg/test
             find . -printf '%n %M %4s m=%TFT%TT a=%AFT%AT %p (%l)\n' \
-          | sed -E 's/(1 l.+)([am]=[0-9T:.-]+ ){2}(.+)$/\1m=::: a=::: \3/' \
+          | sed -E 's/^(1 l.+)([am]=[0-9T:.-]+ ){2}(.+)$/\1m=::: a=::: \3/' \
+          | sed -E 's/^([1-9] d[rwxs-]{9}) [0-9 ]{4}/\1 0000/' \
           | LC_ALL=C sort -k6 )
     }
+
+    # Set umask so permissions match our reference data.
+    umask 0027
 
     # Build it. Every instruction does a quick restore, so this validates that
     # works, aside from mtime and atime which are expected to vary.
@@ -1204,22 +1209,22 @@ EOF
     stat "$CH_IMAGE_STORAGE"/img/tmpimg/test/fifo_
     stat1=$(statwalk)
     diff -u - <(echo "$stat1" | sed -E 's/([am])=[0-9T:.-]+/\1=:::/g') <<'EOF'
-7 drwxr-x---  240 m=::: a=::: . ()
-2 drwsrwxrwx   60 m=::: a=::: ./dir_all ()
+7 drwxr-x--- 0000 m=::: a=::: . ()
+2 drwsrwxrwx 0000 m=::: a=::: ./dir_all ()
 1 -rwsrwxrwx    0 m=::: a=::: ./dir_all/file_all ()
-2 drwxr-x---   40 m=::: a=::: ./dir_empty ()
-3 drwxr-x---   60 m=::: a=::: ./dir_empty_empty ()
-2 drwxr-x---   40 m=::: a=::: ./dir_empty_empty/dir_empty ()
-2 drwx------   60 m=::: a=::: ./dir_min ()
+2 drwxr-x--- 0000 m=::: a=::: ./dir_empty ()
+3 drwxr-x--- 0000 m=::: a=::: ./dir_empty_empty ()
+2 drwxr-x--- 0000 m=::: a=::: ./dir_empty_empty/dir_empty ()
+2 drwx------ 0000 m=::: a=::: ./dir_min ()
 1 -r--------    0 m=::: a=::: ./dir_min/file_min ()
 1 prw-r-----    0 m=::: a=::: ./fifo_ ()
-3 drwxr-x---   60 m=::: a=::: ./gitrepo ()
-7 drwxr-x---  200 m=::: a=::: ./gitrepo/.git ()
+3 drwxr-x--- 0000 m=::: a=::: ./gitrepo ()
+7 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git ()
 1 -rw-r-----   23 m=::: a=::: ./gitrepo/.git/HEAD ()
-2 drwxr-x---   40 m=::: a=::: ./gitrepo/.git/branches ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/branches ()
 1 -rw-r-----   92 m=::: a=::: ./gitrepo/.git/config ()
 1 -rw-r-----   73 m=::: a=::: ./gitrepo/.git/description ()
-2 drwxr-x---  280 m=::: a=::: ./gitrepo/.git/hooks ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/hooks ()
 1 -rwxr-x---  478 m=::: a=::: ./gitrepo/.git/hooks/applypatch-msg.sample ()
 1 -rwxr-x---  896 m=::: a=::: ./gitrepo/.git/hooks/commit-msg.sample ()
 1 -rwxr-x---  189 m=::: a=::: ./gitrepo/.git/hooks/post-update.sample ()
@@ -1232,14 +1237,14 @@ EOF
 1 -rwxr-x--- 1492 m=::: a=::: ./gitrepo/.git/hooks/prepare-commit-msg.sample ()
 1 -rwxr-x--- 2783 m=::: a=::: ./gitrepo/.git/hooks/push-to-checkout.sample ()
 1 -rwxr-x--- 3650 m=::: a=::: ./gitrepo/.git/hooks/update.sample ()
-2 drwxr-x---   60 m=::: a=::: ./gitrepo/.git/info ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/info ()
 1 -rw-r-----  240 m=::: a=::: ./gitrepo/.git/info/exclude ()
-4 drwxr-x---   80 m=::: a=::: ./gitrepo/.git/objects ()
-2 drwxr-x---   40 m=::: a=::: ./gitrepo/.git/objects/info ()
-2 drwxr-x---   40 m=::: a=::: ./gitrepo/.git/objects/pack ()
-4 drwxr-x---   80 m=::: a=::: ./gitrepo/.git/refs ()
-2 drwxr-x---   40 m=::: a=::: ./gitrepo/.git/refs/heads ()
-2 drwxr-x---   40 m=::: a=::: ./gitrepo/.git/refs/tags ()
+4 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/objects ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/objects/info ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/objects/pack ()
+4 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/refs ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/refs/heads ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/refs/tags ()
 2 -rw-r-----    0 m=::: a=::: ./hard_src ()
 2 -rw-r-----    0 m=::: a=::: ./hard_target ()
 1 lrwxrwxrwx   11 m=::: a=::: ./soft_src (soft_target)
