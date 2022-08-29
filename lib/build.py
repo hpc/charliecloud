@@ -202,14 +202,9 @@ class Main_Loop(lark.Visitor):
       if (class_ in globals()):
          inst = globals()[class_](tree)
          if (self.instruction_total_ct == 0):
-            if (   isinstance(inst, I_directive)
-                or isinstance(inst, I_from_)
-                or isinstance(inst, Arg_First)):
-               pass
-            elif (isinstance(inst, Arg)):
-               ch.WARNING("ARG before FROM not yet supported; see issue #779\n Can use --arg with FROM ")
-               return
-            else:
+            if (not (isinstance(inst, I_directive)
+                  or isinstance(inst, I_from_)
+                  or isinstance(inst, Arg_First))):
                ch.FATAL("first instruction must be ARG or FROM")
          inst.init(self.inst_prev)
          try:
@@ -310,7 +305,7 @@ class Instruction(abc.ABC):
       try:
          return (self.git_hash is None)
       except AttributeError:
-         return False
+         return True
 
    @property
    def shell(self):
@@ -898,7 +893,6 @@ class I_env_space(Env):
 class I_from_(Instruction):
 
    __slots__ = ("alias",
-                "args",
                 "base_image")
 
    def __init__(self, *args):

@@ -731,7 +731,6 @@ EOF
     # --arg not used in image name
     run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM --arg=foo=bar 00_tiny
-RUN echo $foo
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
@@ -740,7 +739,6 @@ EOF
     # --arg used in from
     run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM --arg=os=00_tiny $os
-RUN echo $os
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
@@ -749,14 +747,21 @@ EOF
     # multiple --arg
     run ch-image build -v -t tmpimg -f - . <<'EOF'
 FROM --arg=foo=bar --arg=os=00_tiny $os
-RUN echo $foo
-RUN echo $os
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"setting foo to bar"* ]]
     [[ $output = *"setting os to 00_tiny"* ]]
 
+    # arg before from
+    run ch-image build -v -t tmpimg -f - . <<'EOF'
+ARG os=00_tiny
+FROM $os
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"FROM 00_tiny"* ]]
+    [[ $output = *"setting os to 00_tiny"* ]]
 }
 
 @test 'Dockerfile: COPY list form' {
