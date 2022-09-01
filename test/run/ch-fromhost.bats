@@ -116,8 +116,8 @@ fromhost_ls () {
 
 @test 'ch-fromhost (Debian)' {
     scope full
-    prerequisites_ok debian9
-    img=${ch_imgdir}/debian9
+    prerequisites_ok debian_9ch
+    img=${ch_imgdir}/debian_9ch
 
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
