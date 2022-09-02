@@ -926,6 +926,8 @@ class Image_Ref:
          src = self.parse(src)
       if (isinstance(src, lark.tree.Tree)):
          self.from_tree(src)
+      #if (isinstance(str, Path)):
+         #src = self.parse(src.parts[-1])
       elif (src is not None):
          assert False, "unsupported initialization type"
 
@@ -1985,19 +1987,19 @@ class Storage:
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
       entries = listdir(self.root)
-      for entry in { i.name for i in (self.build_cache,
-                                      self.download_cache,
-                                      self.unpack_base,
-                                      self.upload_cache,
-                                      self.version_file) }:
+      for entry in { Path(i.name) for i in (self.build_cache,
+                                                    self.download_cache,
+                                                    self.unpack_base,
+                                                    self.upload_cache,
+                                                    self.version_file) }:
          try:
             entries.remove(entry)
          except KeyError:
-            FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
-      entries -= { i.name for i in (self.lockfile, self.mount_point) }
+            FATAL("%s: missing file or directory: %s" % (msg_prefix, entry.parts[-1]))
+      entries -= { Path(i.name) for i in (self.lockfile, self.mount_point) }
       if (len(entries) > 0):
          FATAL("%s: extraneous file(s): %s"
-               % (msg_prefix, " ".join(i for i in sorted(entries))))
+               % (msg_prefix, " ".join(str(i) for i in sorted(entries))))
       # check version
       v_found = self.version_read()
       if (v_found != STORAGE_VERSION):
@@ -2007,7 +2009,7 @@ class Storage:
       imgs = listdir(self.unpack_base)
       imgs_bad = set()
       for img in imgs:
-         if (":" in img):  # bad char check b/c problem here is bad upgrade
+         if (":" in str(img)):  # bad char check b/c problem here is bad upgrade
             FATAL("%s: storage directory broken: bad image dir name: %s"
                   % (msg_prefix, img), BUG_REPORT_PLZ)
 
@@ -2557,8 +2559,12 @@ def kill_blocking(pid, timeout=10):
          BUG_REPORT_PLZ)
 
 def listdir(path):
-   "Return set of entries in directory path, without self (.) and parent (..)."
-   return set(ossafe(os.listdir, "can't list: %s" % path, path))
+   """Return set of entries in directory path, without self (.) and
+      parent (..). We considered changing this to use os.scandir() for #992,
+      but decided that the advantages it offered didn't warrant the effort
+      required to make the change."""
+   #return set(ossafe(os.listdir, "can't list: %s" % path, path))
+   return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % path, path))
 
 def log(msg, hint, color, prefix, end="\n"):
    if (color is not None):

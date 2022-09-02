@@ -87,8 +87,11 @@ class File_Metadata:
                 'mode',
                 'name')
 
-   def __init__(self, name, st):
-      self.name = name
+   def __init__(self, path, st):
+      if (len(path.parts) <= 1):
+         self.name = str(path)
+      else:
+         self.name = path.parts[-1] # name is file basename
       self.atime_ns = st.st_atime_ns
       self.dont_restore = False
       self.children = list()  # so we can keep it sorted
@@ -183,7 +186,7 @@ class Enabled_Cache:
       ls = ch.listdir(self.root)
       if (len(ls) == 0):
          self.bootstrap()  # empty; initialize a new cache
-      elif (not {"HEAD", "objects", "refs"} <= ls):
+      elif (not {ch.Path(i) for i in ["HEAD", "objects", "refs"]} <= ls):
          # Non-empty but not an existing cache.
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
@@ -373,21 +376,21 @@ class Enabled_Cache:
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
       cwd = ch.chdir(unpack_path)
-      met = self.git_prepare_walk(dict(), None, ".", os.lstat("."))
+      met = self.git_prepare_walk(dict(), None, ch.Path("."), os.lstat("."))
       if (write):
          ch.file_write("ch/git.pickle", pickle.dumps(met, protocol=4))
       ch.chdir(cwd)
       t.log("gathered file metadata")
       return met
 
-   def git_prepare_walk(self, hardlinks, parent, name, st):
+   def git_prepare_walk(self, hardlinks, parent, f_path, st):
       """Return a File_Metadata object describing file name and its children
          (if name is a directory), and rename files as described in
          git_prepare(). Changes CWD during operation but does restore it."""
       # While the standard library provides a similar function os.walk() that
       # is internally recursive, it must be used iteratively.
-      fm = File_Metadata(name, st)
-      path = name if parent is None else "%s/%s" % (parent, name)
+      fm = File_Metadata(f_path, st)
+      path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
       # Ensure minimum permissions. Some tools like to make files with mode
       # 000, because root ignores the permissions bits.
       ch.chmod_min(path, 0o700 if stat.S_ISDIR(st.st_mode) else 0o400, st)
@@ -397,7 +400,7 @@ class Enabled_Cache:
             or stat.S_ISFIFO(st.st_mode)):
          if (path.startswith("./var/lib/rpm/__db.")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
-            ch.unlink(name)
+            ch.unlink(fm.name)
             fm.dont_restore = True
             return fm
       elif (   stat.S_ISSOCK(st.st_mode)):
@@ -406,10 +409,10 @@ class Enabled_Cache:
             or stat.S_ISBLK(st.st_mode)):
          ch.FATAL("device files invalid in image: %s" % path)
       elif (   stat.S_ISDIR(st.st_mode)):
-         entries = sorted(ch.listdir(name))
-         cwd = ch.chdir(name)
+         entries = sorted(ch.listdir(fm.name))
+         cwd = ch.chdir(fm.name)
          for i in entries:
-            if (not (parent is None and i.startswith(".git"))):
+            if (not (parent is None and str(i).startswith(".git"))):
                fm.children.append(self.git_prepare_walk(hardlinks, path,
                                                         i, os.lstat(i)))
          ch.chdir(cwd)
@@ -422,7 +425,7 @@ class Enabled_Cache:
             ch.TRACE("hard link: deleting subsequent: %d %d %s"
                      % (st.st_dev, st.st_ino, path))
             fm.hardlink_to = hardlinks[(st.st_dev, st.st_ino)]
-            ch.unlink(name)
+            ch.unlink(fm.name)
          else:
             ch.TRACE("hard link: recording first: %d %d %s"
                      % (st.st_dev, st.st_ino, path))
@@ -436,12 +439,12 @@ class Enabled_Cache:
       if (stat.S_ISFIFO(st.st_mode)):
          ch.unlink(fm.name)
       # Rename if necessary.
-      if (name.startswith(".weirdal_")):
-         ch.WARNING("file starts with sentinel, will be renamed: %s" % name)
-      if (name.startswith(".git")):
-         name_new = name.replace(".git", ".weirdal_")
-         ch.VERBOSE("renaming: %s -> %s" % (name, name_new))
-         ch.rename(name, name_new)
+      if (fm.name.startswith(".weirdal_")):
+         ch.WARNING("file starts with sentinel, will be renamed: %s" % fm.name)
+      if (fm.name.startswith(".git")):
+         name_new = fm.name.replace(".git", ".weirdal_")
+         ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
+         ch.rename(fm.name, name_new)
       # Done.
       return fm
 
@@ -491,8 +494,8 @@ class Enabled_Cache:
          ch.TRACE("hard link: restoring: %s -> %s" % (path, target))
          ch.ossafe(os.link, "can't hardlink: %s -> %s" % (path, target),
                    target, fm.name, follow_symlinks=False)
-      if (fm.name.startswith(".git")):
-         ch.rename(fm.name.replace(".git", ".weirdal_"), fm.name)
+      if (str(fm.name).startswith(".git")):
+         ch.rename(str(fm.name).replace(".git", ".weirdal_"), str(fm.name))
       if (not quick):
          if (stat.S_ISSOCK(fm.mode)):
             ch.WARNING("ignoring socket in image: %s" % path)
