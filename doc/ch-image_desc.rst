@@ -247,6 +247,9 @@ directory with :code:`ch-image reset`.
 Build cache
 ===========
 
+Overview
+--------
+
 Subcommands that create images, such as :code:`build` and :code:`pull`, can
 use a build cache to speed repeated operations. That is, an image is created
 by starting from the empty image and executing a sequence of instructions,
@@ -274,7 +277,83 @@ Enabled mode is selected with :code:`--cache` or setting
 :code:`--rebuild` or :code:`rebuild`. The default mode is *enabled* if an
 appropriate Git is installed, otherwise *disabled*.
 
-For example, suppose we have this Dockerfile::
+Compared to other implementations
+---------------------------------
+
+Other container implementations typically use build caches based on overlayfs,
+or fuse-overlayfs in unprivileged situations (configured via a "storage
+driver"). This works by creating a new tmpfs for each instruction, layered
+atop the previous instruction's tmpfs using overlayfs. Each layer can then be
+tarred up separately to form a tar-based diff.
+
+The Git-based cache has two advantages over the overlayfs approach. First,
+kernel-mode overlayfs is only available unprivileged in Linux 5.11 and higher,
+forcing the use of fuse-overlayfs and its accompanying FUSE overhead for
+unprivileged use cases. Second, Git de-duplicates and compresses files in a
+fairly sophisticated way across the entire build cache, not just between image
+states with an ancestry relationship (detailed in the next section).
+
+A disadvantage is lowered performance in some cases. Preliminary experiments
+suggest this performance penalty is relatively modest, and sometimes
+Charliecloud is actually faster than alternatives. We have ongoing experiments
+to answer this performance question in more detail.
+
+De-duplication and garbage collection
+-------------------------------------
+
+Charliecloud's build cache takes advantage of Git's file de-duplication
+features. This operates across the entire build cache, i.e., files are
+de-duplicated no matter where in the cache they are found or the relationship
+between their container images. Files are de-duplicated at different times
+depending on whether they are identical or merely similar.
+
+*Identical* files are de-duplicated at :code:`git add` time; in
+:code:`ch-image build` terms, that's upon committing a successful instruction.
+That is, it's impossible to store two files with the same content in the build
+cache. If you try — say with :code:`RUN yum install -y foo` in one Dockerfile
+and :code:`RUN yum install foo bar` in another, which are different
+instructions but both install RPM :code:`foo`'s files — the content is stored
+once and each copy gets its own metadata and a pointer to the content, much
+like filesystem hard links.
+
+*Similar* files, however, are only de-duplicated during Git's garbage
+collection process. When files are initially added to a Git repository (with
+:code:`git add`), they are stored inside the repository as (possibly
+compressed) individual files, called *objects* in Git jargon. Upon garbage
+collection, which happens both automatically when certain parameters are met
+and explicitly with :code:`git gc`, these files are archived and
+(re-)compressed together into a single file called a *packfile*. Also,
+existing packfiles may be re-written into the new one.
+
+During this process, similar files are identified, and each set of similar
+files is stored as one base file plus diffs to recover the others. (I haven't
+found a good reference on how similarity is determined.) This *delta* process
+is agnostic to alignment, which is an advantage over alignment-sensitive
+block-level de-duplicating filesystems. Exception: "Large" files are not
+compressed or de-duplicated. We use the Git default threshold of 512 MiB (as
+of this writing).
+
+Charliecloud runs Git garbage collection at two different times. First, a
+lighter-weight garbage pass runs automatically when the number of loose files
+(objects) grows beyond a limit. This limit is in flux as we learn more about
+build cache performance, but it's quite a bit higher than the Git default.
+This garbage runs in the background and can continue for a few minutes after
+the build completes; you may see Git processes using a lot of CPU.
+
+An important limitation of the automatic garbage is that large packfiles
+(again, this is in flux, but it's several GiB) will not be re-packed, limiting
+the scope of similar file detection. To address this, a heavier garbage
+collection can be run manually with :code:`ch-image build-cache --gc`. This
+will re-pack (and re-write) the entire build cache, de-duplicating all similar
+files. In both cases, garbage uses all available cores.
+
+:code:`git build-cache` prints the specific garbage collection parameters in
+use.
+
+Example
+-------
+
+Suppose we have this Dockerfile::
 
   $ cat a.df
   FROM alpine:3.9
@@ -729,9 +808,8 @@ installing into the image::
 
    $ ch-image [...] build-cache [...]
 
-Print basic information about the cache: number of entries (commits), number of
-files, disk space used, number of named and unnamed branches, number of state
-IDs, etc.
+Print information about the cache, including some Charliecloud and Git
+statistics as well as Git settings.
 
 If any of the following options are given, do the corresponding operation
 before printing. Multiple options can be given, in which case they happen in
@@ -741,8 +819,9 @@ this order.
     Clear and re-initialize the build cache.
 
   :code:`--gc`
-    Run Git garbage collection on the cache. Among other things, this will
-    remove all cache entries not currently reachable from a named branch.
+    Run Git garbage collection on the cache, including full de-duplication of
+    similar files. This will remove all cache entries not currently reachable
+    from a named branch. The operation can take a long time on large caches.
 
   :code:`--text`
     Print a text tree of the cache using Git's :code:`git log --graph`
@@ -1085,4 +1164,4 @@ Environment variables
 
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc
-..  LocalWords:  dlcache graphviz
+..  LocalWords:  dlcache graphviz packfile packfiles
