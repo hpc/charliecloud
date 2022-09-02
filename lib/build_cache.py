@@ -5,6 +5,7 @@ import pickle
 import re
 import stat
 import tempfile
+import textwrap
 import time
 
 import charliecloud as ch
@@ -634,6 +635,14 @@ class Enabled_Cache:
       print("commits:       %4d" % commit_ct)
       print("files:         %4d %s" % (file_ct, file_suffix))
       print("disk used:     %4d %s" % (byte_ct, byte_suffix))
+      # some information directly from Git
+      if (ch.verbose >= 1):
+         out = ch.cmd_stdout(["git", "count-objects", "-vH"]).stdout
+         print("Git statistics:")
+         print(textwrap.indent(out, "  "), end="")
+         out = ch.file_read_all(self.root // "config")
+         print("Git config:")
+         print(textwrap.indent(out, "  "), end="")
 
    def tree_print(self):
       # Note the percent codes are interpreted by Git.

@@ -808,8 +808,8 @@ installing into the image::
 
    $ ch-image [...] build-cache [...]
 
-Print information about the cache, including some Charliecloud and Git
-statistics as well as Git settings.
+Print basic information about the cache. If :code:`-v` is given, also print
+some Git statistics and the Git repository configuration.
 
 If any of the following options are given, do the corresponding operation
 before printing. Multiple options can be given, in which case they happen in
