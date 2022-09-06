@@ -435,7 +435,6 @@ class Image:
          self.unpack_path = Path(unpack_path)
       else:
          self.unpack_path = storage.unpack(self.ref)
-      print("unpack_path is " + str(type(unpack_path)))
       self.metadata_init()
 
    @property
@@ -477,7 +476,6 @@ class Image:
          image; the essentials will be created if needed."""
       def ignore(path, names):
          path = Path(path)  # match type of src_path
-         print("Ignore called...")
          ignore = list()
          if (path == src_path):
             for name in names:
@@ -2219,6 +2217,7 @@ def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
    h = hashlib.sha256()
    h.update(data)
+   print(type(h))
    return h.hexdigest()
 
 def chdir(path):
