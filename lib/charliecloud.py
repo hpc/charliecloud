@@ -435,6 +435,7 @@ class Image:
          self.unpack_path = Path(unpack_path)
       else:
          self.unpack_path = storage.unpack(self.ref)
+      print("unpack_path is " + str(type(unpack_path)))
       self.metadata_init()
 
    @property
@@ -476,6 +477,7 @@ class Image:
          image; the essentials will be created if needed."""
       def ignore(path, names):
          path = Path(path)  # match type of src_path
+         print("Ignore called...")
          ignore = list()
          if (path == src_path):
             for name in names:
@@ -926,8 +928,6 @@ class Image_Ref:
          src = self.parse(src)
       if (isinstance(src, lark.tree.Tree)):
          self.from_tree(src)
-      #if (isinstance(str, Path)):
-         #src = self.parse(src.parts[-1])
       elif (src is not None):
          assert False, "unsupported initialization type"
 
@@ -1148,6 +1148,12 @@ class Path(pathlib.PosixPath):
          return self.parts[0]
       except IndexError:
          return None
+
+   @property
+   def basename(self):
+      """Return path object representing file basename. For example,
+         Path("foo/bar/baz").basename returns Path("baz")"""
+      return Path(self.name)
 
    def joinpath_posix(self, *others):
       others2 = list()
@@ -1987,16 +1993,16 @@ class Storage:
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
       entries = listdir(self.root)
-      for entry in { Path(i.name) for i in (self.build_cache,
-                                                    self.download_cache,
-                                                    self.unpack_base,
-                                                    self.upload_cache,
-                                                    self.version_file) }:
+      for entry in { i.basename for i in (self.build_cache,
+                                         self.download_cache,
+                                         self.unpack_base,
+                                         self.upload_cache,
+                                         self.version_file) }:
          try:
             entries.remove(entry)
          except KeyError:
-            FATAL("%s: missing file or directory: %s" % (msg_prefix, entry.parts[-1]))
-      entries -= { Path(i.name) for i in (self.lockfile, self.mount_point) }
+            FATAL("%s: missing file or directory: %s" % (msg_prefix, str(entry)))
+      entries -= { i.basename for i in (self.lockfile, self.mount_point) }
       if (len(entries) > 0):
          FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(str(i) for i in sorted(entries))))
