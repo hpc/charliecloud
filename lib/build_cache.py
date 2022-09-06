@@ -1,3 +1,4 @@
+import configparser
 import enum
 import hashlib
 import os
@@ -18,6 +19,37 @@ import pull
 DOT_MIN = (2, 30, 1)
 GIT_MIN = (2, 28, 1)
 GIT2DOT_MIN = (0, 8, 3)
+
+# Git configuration. Note some of these are overridden in specific commands.
+# Documentation for these variables: https://git-scm.com/docs/git-config
+GIT_CONFIG = {
+   # Try to maximize “git add” speed.
+   "core.looseCompression":  "0",
+   # In some quick-and-dirty tests (see issue #1412), pack.compression=1 is
+   # 50% faster than the default 6 at the cost of 6% more size, while
+   # Compression 0 is twice as fast but also over twice the size; 9 doubles
+   # the time with no space savings. 1 seems like the right balance.
+   "pack.compression":       "1",
+   # These two are guesses based on the fact that HPC machines tend to have a
+   # lot of memory and more caching is faster.
+   "pack.deltaCacheLimit":   "4096",
+   "pack.deltaCacheSize":    "2G",
+   # These two are guesses based on [1] and its links, particularly [2].
+   # [1]: https://stackoverflow.com/questions/28720151
+   # [2]: https://web.archive.org/web/20170526024841/https://vcscompare.blogspot.com/2008/06/git-repack-parameters.html
+   "pack.depth":             "36",
+   "pack.window":            "24",
+   # Leave packs larger than this alone during automatic GC. This is to avoid
+   # excessive resource consumption during GC the user didn't ask for.
+   "gc.bigPackThreshold":    "12G",
+   # Anything unreachable from a named branch or the reflog is unavailable to
+   # the build cache, so we may as well delete it immediately. However, there
+   # might be a concurrent Git operation in progress, so don’t use “now”.
+   "gc.pruneExpire":         "12.hours.ago",
+   # States on the reflog are available to the build cache, but the default
+   # prune time is 90 and 30 days respectively, which seems too long.
+   "gc.reflogExpire":        "14.days.ago",
+}
 
 
 ## Globals ##
@@ -188,6 +220,7 @@ class Enabled_Cache:
          # Non-empty but not an existing cache.
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
+      self.configure()  # every open so configuration is up to date
 
    @property
    def root(self):
@@ -270,6 +303,28 @@ class Enabled_Cache:
       self.git_restore(path, fm)
       return git_hash
 
+   def configure(self):
+      path = self.root // "config"
+      fp = ch.open_(path, "r+")
+      config = configparser.ConfigParser()
+      config.read_file(fp, source=path)
+      changed = False
+      for (k, v) in GIT_CONFIG.items():
+         (s, k) = k.lower().split(".", maxsplit=1)
+         if (config.get(s, k, fallback=None) != v):
+            changed = True
+            try:
+               config.add_section(s)
+            except configparser.DuplicateSectionError:
+               pass
+            config.set(s, k, v)
+      if (changed):
+         ch.VERBOSE("writing updated Git config")
+         fp.seek(0)
+         fp.truncate()
+         ch.ossafe(config.write, "can’t write Git config: %s" % path, fp)
+      ch.close_(fp)
+
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
          no such branch."""
@@ -319,9 +374,9 @@ class Enabled_Cache:
    def garbageinate(self):
       ch.INFO("collecting cache garbage")
       t = ch.Timer()
-      ch.cmd_quiet(["git", "reflog", "expire",
-                    "--expire-unreachable=now", "--all"], cwd=self.root)
-      ch.cmd_quiet(["git", "gc", "--prune=now"], cwd=self.root)
+      # Expire the reflog with a recent time instead of now in case there is a
+      # parallel Git operation in progress.
+      ch.cmd(["git", "-c", "gc.reflogExpire=12.hours.ago", "gc"], cwd=self.root)
       t.log("collected garbage")
 
    def git_prepare(self, unpack_path, write=True):
