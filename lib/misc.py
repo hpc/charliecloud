@@ -150,3 +150,13 @@ def list_(cli):
 def reset(cli):
    ch.storage.reset()
 
+def undelete(cli):
+   if (cli.bucache != ch.Build_Mode.ENABLED):
+      ch.FATAL("only available when cache is enabled")
+   img = ch.Image(ch.Image_Ref(cli.image_ref))
+   if (img.unpack_exist_p):
+      ch.FATAL("image exists; will not overwrite")
+   (_, git_hash) = bu.cache.find_image(img)
+   if (git_hash is None):
+      ch.FATAL("image not in cache")
+   bu.cache.checkout(img, git_hash, None)

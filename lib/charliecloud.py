@@ -44,7 +44,7 @@ depfails = []
 # [1]: https://github.com/lark-parser/lark/issues/505
 import lark
 LARK_MIN = (0,  7, 1)
-LARK_MAX = (0, 12, 0)
+LARK_MAX = (99, 0, 0)
 lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
    depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
@@ -284,6 +284,10 @@ dlcache_p = None
 
 # True if we talk to registries authenticated; false if anonymously.
 reg_auth = False
+
+# True if we lock storage directory to prevent concurrent access; false for no
+# locking (which is very YOLO and may break the storage directory).
+storage_lock = True
 
 
 ## Exceptions ##
@@ -1780,6 +1784,8 @@ class Storage:
       if (self.root is None):
          self.root = self.root_default()
       self.root = Path(self.root)
+      if (not self.root.is_absolute()):
+         self.root = os.getcwd() // self.root
 
    @property
    def build_cache(self):
@@ -1836,10 +1842,12 @@ class Storage:
       if ("CH_GROW_STORAGE" in os.environ):
          # Avoid surprises if user still has $CH_GROW_STORAGE set (see #906).
          FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
-      try:
-         return os.environ["CH_IMAGE_STORAGE"]
-      except KeyError:
+      if (not "CH_IMAGE_STORAGE" in os.environ):
          return None
+      path = Path(os.environ["CH_IMAGE_STORAGE"])
+      if (not path.is_absolute()):
+         FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
+      return path
 
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
@@ -1938,6 +1946,8 @@ class Storage:
       # [1]: https://apenwarr.ca/log/20101213
       # [2]: http://0pointer.de/blog/projects/locking.html
       # [3]: https://stackoverflow.com/a/22411531
+      if (not storage_lock):
+         return
       self.lockfile_fp = open_(self.lockfile, "w")
       try:
          fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -1963,9 +1973,6 @@ class Storage:
          self.init()  # largely for debugging
       else:
          FATAL("%s not a builder storage" % (self.root));
-
-   def unlock(self):
-      close_(self.lockfile_fp)
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
@@ -2229,7 +2236,7 @@ def chmod_min(path, mode, st=None):
    mode_old = stat.S_IMODE(st.st_mode)
    if (mode & mode_old != mode):
       mode |= mode_old
-      VERBOSE("fixing permisssions: %s: %03o -> %03o" % (path, mode_old, mode))
+      VERBOSE("fixing permissions: %s: %03o -> %03o" % (path, mode_old, mode))
       ossafe(os.chmod, "can't chmod: %s" % path, path, mode)
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
@@ -2480,9 +2487,10 @@ def init(cli):
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
-   # storage object
-   global storage
+   # storage directory
+   global storage, storage_lock
    storage = Storage(cli.storage)
+   storage_lock = not cli.no_lock
    # architecture
    global arch, arch_host
    assert (cli.arch is not None)
@@ -2509,7 +2517,6 @@ def init(cli):
    else:
       reg_auth = False
    VERBOSE("registry authentication: %s" % reg_auth)
-
    # misc
    global password_many, tls_verify
    password_many = cli.password_many

@@ -112,6 +112,9 @@ def main():
            [["--dependencies"],
             { "action": misc.Dependencies,
               "help": "print any missing dependencies and exit" }],
+           [["--no-lock"],
+            { "action": "store_true",
+              "help": "allow concurrent storage directory access (risky!)" }],
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],
@@ -263,6 +266,11 @@ def main():
    # reset
    sp = ap.add_parser("reset", "delete everything in ch-image builder storage")
    add_opts(sp, misc.reset, deps_check=True, stog_init=False)
+
+   # undelete
+   sp = ap.add_parser("undelete", "recover image from build cache")
+   add_opts(sp, misc.undelete, deps_check=True, stog_init=True)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to recover")
 
    # Parse it up!
    if (len(sys.argv) < 2):

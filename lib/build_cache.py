@@ -48,8 +48,7 @@ def init(cli):
    if (cli.bucache != ch.Build_Mode.DISABLED):
       ok = have_deps(False)
       if (cli.bucache is None):
-         #cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
-         cli.bucache = ch.Build_Mode.DISABLED
+         cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
          ch.VERBOSE("using default build cache mode")
       if (cli.bucache != ch.Build_Mode.DISABLED and not ok):
          ch.FATAL("insufficient Git for build cache mode: %s"
@@ -396,6 +395,7 @@ class Enabled_Cache:
       if   (   stat.S_ISREG(st.st_mode)
             or stat.S_ISLNK(st.st_mode)
             or stat.S_ISFIFO(st.st_mode)):
+         # normally nothing to do here on these file types
          if (path.startswith("./var/lib/rpm/__db.")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
             ch.unlink(name)
@@ -506,12 +506,11 @@ class Enabled_Cache:
       # Restore my metadata.
       if ((   not quick                     # Git broke metadata
            or fm.hardlink_to is not None    # we just made the hardlink
-           or stat.S_ISDIR(fm.mode))        # maybe just created / new hardlink
+           or stat.S_ISDIR(fm.mode)         # maybe just created / new hardlink
+           or stat.S_ISFIFO(fm.mode))       # we just made the FIFO
           and not stat.S_ISLNK(fm.mode)):   # can't not follow symlinks
          ch.ossafe(os.utime, "can't restore times: %s" % path, fm.name,
                    ns=(fm.atime_ns, fm.mtime_ns))
-         #if (fm.name == "setuid_dir"):
-         #   print("restoring mode: %s 0o%05o" % (fm.name, fm.mode))
          ch.ossafe(os.chmod, "can't restore mode: %s" % path, fm.name,
                    stat.S_IMODE(fm.mode))
 
