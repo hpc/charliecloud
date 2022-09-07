@@ -50,7 +50,7 @@ GIT_CONFIG = {
    # These two are guesses based on the fact that HPC machines tend to have a
    # lot of memory and more caching is faster.
    "pack.deltaCacheLimit":   "4096",
-   "pack.deltaCacheSize":    "2G",
+   "pack.deltaCacheSize":    "1G",
    # These two are guesses based on [1] and its links, particularly [2].
    # [1]: https://stackoverflow.com/questions/28720151
    # [2]: https://web.archive.org/web/20170526024841/https://vcscompare.blogspot.com/2008/06/git-repack-parameters.html
@@ -387,9 +387,8 @@ class Enabled_Cache:
       t = ch.Timer()
       # Expire the reflog with a recent time instead of now in case there is a
       # parallel Git operation in progress.
-      ch.cmd(["git", "-c", "gc.reflogExpire=12.hours.ago",
-                     "-c", "gc.bigPackthreshold=0",
-              "gc"], cwd=self.root)
+      ch.cmd(["git", "-c", "gc.bigPackthreshold=0", "-c", "gc.pruneExpire=now",
+                     "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
       t.log("collected garbage")
 
    def git_prepare(self, unpack_path, write=True):

@@ -820,8 +820,10 @@ this order.
 
   :code:`--gc`
     Run Git garbage collection on the cache, including full de-duplication of
-    similar files. This will remove all cache entries not currently reachable
-    from a named branch. The operation can take a long time on large caches.
+    similar files. This will immediately remove all cache entries not
+    currently reachable from a named branch (which is likely to cause
+    corruption if the build cache is being accessed concurrently by another
+    process). The operation can take a long time on large caches.
 
   :code:`--text`
     Print a text tree of the cache using Git's :code:`git log --graph`
