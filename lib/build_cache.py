@@ -228,6 +228,10 @@ class Enabled_Cache:
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
       self.configure()  # every open so configuration is up to date
+      # Prune stale worktrees that might have been left around after failed
+      # builds or other interruptions.
+      ch.cmd_quiet(["git", "worktree", "prune"], cwd=self.root)
+
 
    @property
    def root(self):
