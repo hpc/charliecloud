@@ -25,6 +25,23 @@ GIT2DOT_MIN = (0, 8, 3)
 GIT_CONFIG = {
    # Try to maximize “git add” speed.
    "core.looseCompression":  "0",
+   # Quick-and-dirty results suggest that commit is not faster after garbage
+   # collection, and checkout is actually a little faster if *not* garbage
+   # collected. Therefore, it's not a high priority to run garbage collection.
+   # Further, I would assume garbaging a lot of files rather than a few gives
+   # better opportunities for delta compression. Our most file-ful example
+   # image is obspy at about 50K files.
+   "gc.auto":                "100000",
+   # Leave packs larger than this alone during automatic GC. This is to avoid
+   # excessive resource consumption during GC the user didn't ask for.
+   "gc.bigPackThreshold":    "12G",
+   # Anything unreachable from a named branch or the reflog is unavailable to
+   # the build cache, so we may as well delete it immediately. However, there
+   # might be a concurrent Git operation in progress, so don’t use “now”.
+   "gc.pruneExpire":         "12.hours.ago",
+   # States on the reflog are available to the build cache, but the default
+   # prune time is 90 and 30 days respectively, which seems too long.
+   "gc.reflogExpire":        "14.days.ago",
    # In some quick-and-dirty tests (see issue #1412), pack.compression=1 is
    # 50% faster than the default 6 at the cost of 6% more size, while
    # Compression 0 is twice as fast but also over twice the size; 9 doubles
@@ -39,16 +56,6 @@ GIT_CONFIG = {
    # [2]: https://web.archive.org/web/20170526024841/https://vcscompare.blogspot.com/2008/06/git-repack-parameters.html
    "pack.depth":             "36",
    "pack.window":            "24",
-   # Leave packs larger than this alone during automatic GC. This is to avoid
-   # excessive resource consumption during GC the user didn't ask for.
-   "gc.bigPackThreshold":    "12G",
-   # Anything unreachable from a named branch or the reflog is unavailable to
-   # the build cache, so we may as well delete it immediately. However, there
-   # might be a concurrent Git operation in progress, so don’t use “now”.
-   "gc.pruneExpire":         "12.hours.ago",
-   # States on the reflog are available to the build cache, but the default
-   # prune time is 90 and 30 days respectively, which seems too long.
-   "gc.reflogExpire":        "14.days.ago",
 }
 
 
@@ -376,7 +383,9 @@ class Enabled_Cache:
       t = ch.Timer()
       # Expire the reflog with a recent time instead of now in case there is a
       # parallel Git operation in progress.
-      ch.cmd(["git", "-c", "gc.reflogExpire=12.hours.ago", "gc"], cwd=self.root)
+      ch.cmd(["git", "-c", "gc.reflogExpire=12.hours.ago",
+                     "-c", "gc.bigPackthreshold=0",
+              "gc"], cwd=self.root)
       t.log("collected garbage")
 
    def git_prepare(self, unpack_path, write=True):
