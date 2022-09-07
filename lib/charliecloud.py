@@ -451,6 +451,14 @@ class Image:
       return False
 
    @property
+   def last_modified(self):
+      # Return the last modified time of self as a datetime.datetime object in
+      # the local time zone.
+      return datetime.datetime.fromtimestamp(
+                 stat_(self.metadata_path // "metadata.json").st_mtime,
+                 datetime.timezone.utc).astimezone()
+
+   @property
    def metadata_path(self):
       return self.unpack_path // "ch"
 
@@ -649,10 +657,6 @@ class Image:
       VERBOSE("ensuring volume directories exist")
       for path in metadata["volumes"]:
          mkdirs(self.unpack_path // path)
-
-   @property
-   def metadata_changed(self):
-      return time.ctime(os.path.getmtime(self.metadata_path // "metadata.json"))
 
    def tarballs_write(self, tarball_dir):
       """Write one uncompressed tarball per layer to tarball_dir. Return a

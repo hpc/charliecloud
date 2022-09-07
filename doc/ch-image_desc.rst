@@ -815,7 +815,7 @@ Description
 Optional argument:
 
   :code:`-l`, :code:`--long`
-    Use long format (name, last change timestamp) when listing images
+    Use long format (name, last change timestamp) when listing images.
 
   :code:`IMAGE_REF`
     Print details of what's known about :code:`IMAGE_REF`, both locally and in
