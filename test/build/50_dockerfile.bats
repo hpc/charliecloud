@@ -424,7 +424,7 @@ EOF
 EOF
 )
     run build_ --no-cache -t tmpimg -f - . <<'EOF'
-FROM almalinux8
+FROM almalinux_8ch
 
 # FIXME: make this more comprehensive, e.g. space-separate vs.
 # equals-separated for everything.
@@ -528,7 +528,7 @@ EOF
 
    # test that it works with python3
    run build_ -t tmpimg -f - . <<'EOF'
-FROM centos7
+FROM centos_7ch
 SHELL ["/usr/bin/python3", "-c"]
 RUN print ("hello")
 EOF
