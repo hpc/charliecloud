@@ -513,6 +513,8 @@ class I_arg_equals(Arg):
 
 class I_copy(Instruction):
 
+   # ABANDON ALL HOPE YE WHO ENTER HERE.
+   #
    # Note: The Dockerfile specification for COPY is complex, messy,
    # inexplicably different from cp(1), and incomplete. We try to be
    # bug-compatible with Docker but probably are not 100%. See the FAQ.
@@ -572,8 +574,9 @@ class I_copy(Instruction):
       assert (os.path.isdir(src) and not os.path.islink(src))
       assert (os.path.isdir(dst) and not os.path.islink(dst))
       ch.DEBUG("copying named directory: %s -> %s" % (src, dst))
-      for (dirpath, dirnames, filenames) in os.walk(src, onerror=onerror):
-         dirpath = ch.Path(dirpath)
+      for (dirpath, dirnames, filenames) in ch.walk(src, onerror=onerror):
+         #dirpath = ch.Path(dirpath)
+         dirnames = list(dirnames)    # convert generator to list
          subdir = dirpath.relative_to(src)
          dst_dir = dst // subdir
          # dirnames can contain symlinks, which we handle as files, so we'll
@@ -581,7 +584,7 @@ class I_copy(Instruction):
          dirnames2 = dirnames.copy()  # shallow copy
          dirnames[:] = list()         # clear in place
          for d in dirnames2:
-            d = ch.Path(d)
+            #d = ch.Path(d)
             src_path = dirpath // d
             dst_path = dst_dir // d
             ch.TRACE("dir: %s -> %s" % (src_path, dst_path))
@@ -593,6 +596,7 @@ class I_copy(Instruction):
                dirnames.append(d)   # directory, descend into later
             # If destination exists, but isn't a directory, remove it.
             if (os.path.exists(dst_path)):
+            #if (dst_path.exists()):
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   ch.TRACE("dst_path exists and is a directory")
                else:
@@ -608,7 +612,7 @@ class I_copy(Instruction):
                       "can't copy metadata: %s -> %s" % (src_path, dst_path),
                       src_path, dst_path, follow_symlinks=False)
          for f in filenames:
-            f = ch.Path(f)
+            #f = ch.Path(f)
             src_path = dirpath // f
             dst_path = dst_dir // f
             ch.TRACE("file or symlink via copy2: %s -> %s"

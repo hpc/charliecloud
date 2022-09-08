@@ -432,7 +432,8 @@ class Image:
       assert isinstance(ref, Image_Ref)
       self.ref = ref
       if (unpack_path is not None):
-         self.unpack_path = Path(unpack_path)
+         assert isinstance(unpack_path, Path)
+         self.unpack_path = unpack_path
       else:
          self.unpack_path = storage.unpack(self.ref)
       self.metadata_init()
@@ -2217,7 +2218,6 @@ def bytes_hash(data):
    "Return the hash of data, as a hex string with no leading algorithm tag."
    h = hashlib.sha256()
    h.update(data)
-   print(type(h))
    return h.hexdigest()
 
 def chdir(path):
@@ -2568,8 +2568,17 @@ def listdir(path):
       parent (..). We considered changing this to use os.scandir() for #992,
       but decided that the advantages it offered didn't warrant the effort
       required to make the change."""
-   #return set(ossafe(os.listdir, "can't list: %s" % path, path))
    return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % path, path))
+
+def walk(*args, **kwargs): # Wrapper for os.walk()
+   """Return a generator representing the files in a directory tree (root
+      specified in *args). For each directroy in said tree, yield 3-tuple
+      (dirpath, dirnames, filenames), where dirpath is a Path object, and
+      dirnames and filenames are generators for lists of Path objects."""
+   for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
+      yield (Path(dirpath),
+             (Path(dirname) for dirname in dirnames),
+             (Path(filename) for filename in filenames))
 
 def log(msg, hint, color, prefix, end="\n"):
    if (color is not None):
