@@ -94,13 +94,14 @@ def list_(cli):
       if (not ch.storage.valid_p):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
       images = sorted(ch.listdir(imgdir))
-      img_width = max(len(str(ref)) for ref in images)
-      for ref in images:
-         img = ch.Image(ch.Image_Ref(ref))
-         if cli.long:
-            print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
-         else:
-            print(img)
+      if (len(images) >= 1):
+         img_width = max(len(str(ref)) for ref in images)
+         for ref in images:
+            img = ch.Image(ch.Image_Ref(ref))
+            if cli.long:
+               print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
+            else:
+               print(img)
    else:
       # list specified image
       img = ch.Image(ch.Image_Ref(cli.image_ref))
