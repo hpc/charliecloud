@@ -352,17 +352,17 @@ void join_namespace(pid_t pid, const char *ns)
       }
    }
    /* setns(2) seems to be involved in some kind of race with syslog(3).
-      Rarely,when configured with --enable-syslog, the call fails with EINVAL.
-      We never figured out a proper fix, so just retry a few times in a
-      loop. See issue #1270. */
+      Rarely, when configured with --enable-syslog, the call fails with
+      EINVAL. We never figured out a proper fix, so just retry a few times in
+      a loop. See issue #1270. */
    for (int i = 0; ; i++)
       if (setns(fd, 0) == 0) {
          break;
       } else {
          if (i >= 5) {
-            FATAL("can’t join %s namespace of pid %d", ns, pid);
+            Tf (0, "can’t join %s namespace of pid %d", ns, pid);
          } else {
-            WARNING("can’t join %s namespace of pid %d; trying again", ns, pid);
+            WARNING("can’t join %s namespace; trying again", ns);
             sleep(1);
          }
       }
