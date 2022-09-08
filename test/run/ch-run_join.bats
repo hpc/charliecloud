@@ -84,6 +84,7 @@ sleepcat () {
             return 0
         fi
     done
+    echo "timed out waiting for $path to appear" 1>&2
     return 0
 }
 
