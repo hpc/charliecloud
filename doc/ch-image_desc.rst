@@ -311,7 +311,7 @@ depending on whether they are identical or merely similar.
 :code:`ch-image build` terms, that's upon committing a successful instruction.
 That is, it's impossible to store two files with the same content in the build
 cache. If you try — say with :code:`RUN yum install -y foo` in one Dockerfile
-and :code:`RUN yum install foo bar` in another, which are different
+and :code:`RUN yum install -y foo bar` in another, which are different
 instructions but both install RPM :code:`foo`'s files — the content is stored
 once and each copy gets its own metadata and a pointer to the content, much
 like filesystem hard links.
@@ -326,9 +326,9 @@ and explicitly with :code:`git gc`, these files are archived and
 existing packfiles may be re-written into the new one.
 
 During this process, similar files are identified, and each set of similar
-files is stored as one base file plus diffs to recover the others. (I haven't
-found a good reference on how similarity is determined.) This *delta* process
-is agnostic to alignment, which is an advantage over alignment-sensitive
+files is stored as one base file plus diffs to recover the others. (Similarity
+detection seems to be based primarily on file size.) This *delta* process is
+agnostic to alignment, which is an advantage over alignment-sensitive
 block-level de-duplicating filesystems. Exception: "Large" files are not
 compressed or de-duplicated. We use the Git default threshold of 512 MiB (as
 of this writing).
@@ -337,8 +337,8 @@ Charliecloud runs Git garbage collection at two different times. First, a
 lighter-weight garbage pass runs automatically when the number of loose files
 (objects) grows beyond a limit. This limit is in flux as we learn more about
 build cache performance, but it's quite a bit higher than the Git default.
-This garbage runs in the background and can continue for a few minutes after
-the build completes; you may see Git processes using a lot of CPU.
+This garbage runs in the background and can continue after the build
+completes; you may see Git processes using a lot of CPU.
 
 An important limitation of the automatic garbage is that large packfiles
 (again, this is in flux, but it's several GiB) will not be re-packed, limiting
@@ -348,7 +348,7 @@ will re-pack (and re-write) the entire build cache, de-duplicating all similar
 files. In both cases, garbage uses all available cores.
 
 :code:`git build-cache` prints the specific garbage collection parameters in
-use.
+use, and :code:`-v` can be added for more detail.
 
 Example
 -------

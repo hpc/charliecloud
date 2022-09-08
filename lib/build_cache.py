@@ -41,7 +41,7 @@ GIT_CONFIG = {
    "gc.pruneExpire":         "12.hours.ago",
    # States on the reflog are available to the build cache, but the default
    # prune time is 90 and 30 days respectively, which seems too long.
-   "gc.reflogExpire":        "14.days.ago",
+   #"gc.reflogExpire":        "14.days.ago",  # changed my mind
    # In some quick-and-dirty tests (see issue #1412), pack.compression=1 is
    # 50% faster than the default 6 at the cost of 6% more size, while
    # Compression 0 is twice as fast but also over twice the size; 9 doubles
