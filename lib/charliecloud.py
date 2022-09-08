@@ -2574,11 +2574,13 @@ def walk(*args, **kwargs): # Wrapper for os.walk()
    """Return a generator representing the files in a directory tree (root
       specified in *args). For each directroy in said tree, yield 3-tuple
       (dirpath, dirnames, filenames), where dirpath is a Path object, and
-      dirnames and filenames are generators for lists of Path objects."""
+      dirnames and filenames are lists of Path objects. For insight into
+      the latter being lists rather than generators, see use of ch.walk()
+      in the copy_src_dir() method of the I_copy class (build.py)."""
    for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
       yield (Path(dirpath),
-             (Path(dirname) for dirname in dirnames),
-             (Path(filename) for filename in filenames))
+             [Path(dirname) for dirname in dirnames],
+             [Path(filename) for filename in filenames])
 
 def log(msg, hint, color, prefix, end="\n"):
    if (color is not None):

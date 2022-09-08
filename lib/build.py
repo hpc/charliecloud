@@ -576,7 +576,6 @@ class I_copy(Instruction):
       ch.DEBUG("copying named directory: %s -> %s" % (src, dst))
       for (dirpath, dirnames, filenames) in ch.walk(src, onerror=onerror):
          #dirpath = ch.Path(dirpath)
-         dirnames = list(dirnames)    # convert generator to list
          subdir = dirpath.relative_to(src)
          dst_dir = dst // subdir
          # dirnames can contain symlinks, which we handle as files, so we'll
