@@ -1164,6 +1164,12 @@ class Path(pathlib.PosixPath):
          others2.append(other)
       return self.joinpath(*others2)
 
+   def add_suffix(self, suff):
+      """Returns the path object restulting from appending the specified
+         suffix to the end of the path name. E.g. Path(foo).add_suffix(".txt")
+         returns Path("foo.txt)."""
+      return Path(str(self) + suff)
+
 
 class Progress:
    """Simple progress meter for countable things that updates at most once per
@@ -2397,7 +2403,7 @@ def file_gzip(path, args=[]):
       the file's new name. Pass args to the gzip executable. This lets us gzip
       files (a) in parallel if pigz is installed and (b) without reading them
       into memory."""
-   path_c = Path(str(path) + ".gz")
+   path_c = path.add_suffix(".gz")
    # On first call, remember first available of pigz and gzip using an
    # attribute of this function (yes, you can do that lol).
    if (not hasattr(file_gzip, "gzip")):
