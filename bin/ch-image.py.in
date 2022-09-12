@@ -255,7 +255,7 @@ def main():
    sp = ap.add_parser("push",
                       "copy image from local filesystem to remote repository")
    add_opts(sp, push.main, deps_check=True, stog_init=True)
-   sp.add_argument("--image", metavar="DIR", type=ch.Path
+   sp.add_argument("--image", metavar="DIR", type=ch.Path,
                    help="path to unpacked image (default: opaque path in storage dir)")
    sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
