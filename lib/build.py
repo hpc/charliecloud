@@ -569,15 +569,12 @@ class I_copy(Instruction):
          ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
-      #src = src.resolve()
       src = ch.Path(os.path.realpath(src))
-      assert isinstance(dst, ch.Path)
-      #dst = ch.Path(dst)
+      dst = ch.Path(dst)
       assert (os.path.isdir(src) and not os.path.islink(src))
       assert (os.path.isdir(dst) and not os.path.islink(dst))
       ch.DEBUG("copying named directory: %s -> %s" % (src, dst))
       for (dirpath, dirnames, filenames) in ch.walk(src, onerror=onerror):
-         #dirpath = ch.Path(dirpath)
          subdir = dirpath.relative_to(src)
          dst_dir = dst // subdir
          # dirnames can contain symlinks, which we handle as files, so we'll
@@ -585,7 +582,6 @@ class I_copy(Instruction):
          dirnames2 = dirnames.copy()  # shallow copy
          dirnames[:] = list()         # clear in place
          for d in dirnames2:
-            #d = ch.Path(d)
             src_path = dirpath // d
             dst_path = dst_dir // d
             ch.TRACE("dir: %s -> %s" % (src_path, dst_path))
@@ -597,7 +593,6 @@ class I_copy(Instruction):
                dirnames.append(d)   # directory, descend into later
             # If destination exists, but isn't a directory, remove it.
             if (os.path.exists(dst_path)):
-            #if (dst_path.exists()):
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   ch.TRACE("dst_path exists and is a directory")
                else:
@@ -613,7 +608,6 @@ class I_copy(Instruction):
                       "can't copy metadata: %s -> %s" % (src_path, dst_path),
                       src_path, dst_path, follow_symlinks=False)
          for f in filenames:
-            #f = ch.Path(f)
             src_path = dirpath // f
             dst_path = dst_dir // f
             ch.TRACE("file or symlink via copy2: %s -> %s"

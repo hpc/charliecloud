@@ -476,7 +476,7 @@ class Image:
          the latter case other.unpack_path is used. other need not be a valid
          image; the essentials will be created if needed."""
       def ignore(path, names):
-         path = Path(path)  # match type of src_path
+         #path = Path(path)  # match type of src_path
          ignore = list()
          if (path == src_path):
             for name in names:
