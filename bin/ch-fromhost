@@ -1,9 +1,19 @@
 #!/bin/sh
-
+#
+# There are three primary uses of ch-fromhost:
+#
+#   1) inject arbitrary files from the host into the container;
+#
+#   2) inject host-built, loadable libfabric (OFI) shared object (dso) providers
+#      into an image with a MPI built against libfabric to use; and
+#
+#   3) inject nvidia libraries necessary to leverage GPUs with
+#      nvidiia-container-cli.
+#
 # The basic algorithm here is that we build up a list of file
 # source:destination pairs separated by newlines, then walk through them and
-# copy them into the image. We also maintain a list of directories to create
-# and a list of file globs to remove.
+# copy them into the image. We also maintain a list of directories and ldconfig
+# conf files to create, and a list of file globs to remove.
 #
 # The colon separator to avoid the difficulty of iterating through a sequence
 # of pairs with no arrays or structures in POSIX sh. We could avoid it by
@@ -53,12 +63,13 @@ Which files to inject (one or more required; can be repeated):
   -c, --cmd CMD    listed in the stdout of CMD
   -f, --file FILE  listed in file FILE
   -p, --path PATH  inject the file at PATH
-  --cray-mpi       Cray-enable MPICH/OpenMPI installed within the image
+  -o, --ofi  PATH  add host compiled OFI DSO provider(s) to image libfabric
+  --host-ofi       ofi providers at path CH_FROMHOST_OFI
   --nvidia         recommended by nVidia (via "nvidia-container-cli list")
 
 Destination within image:
 
-  -d, --dest DST   place following files in IMGDIR/DST, overriding inference
+  -d, --dest DST   place preceding files in IMGDIR/DST, overriding inference
 
 Options:
 
@@ -72,9 +83,6 @@ NOTE: This command is experimental. Features may be incomplete and/or buggy.
 EOF
 )
 
-cray_mpi=          # Cray fixups requested
-cray_openmpi=      # ... for OpenMPI
-cray_mpich=        # ... for MPICH
 dest=
 image=
 newline='
@@ -89,7 +97,7 @@ no_ldconfig=
 
 debug () {
     if [ "$verbose" ]; then
-        printf '%s\n' "$1" 1>&2
+        printf '[ debug ] %s\n' "$1" 1>&2
     fi
 }
 
@@ -152,6 +160,40 @@ queue_files () {
     IFS="$old_ifs"
 }
 
+queue_ofi_dso () {
+    old_ifs="$IFS"
+    IFS="$newline"
+    d="${dest:-$2}"
+    if [ -d $1 ]; then
+       debug "searching $1 for ofi providers (*-fi.so)"
+       for f in "${1}/"*-fi.so; do
+           debug "  found $f"
+           queue_ofi_dso "$f"
+       done
+       [ -n $ofi_found ] || "no ofi providers found in $1"
+    elif [ -f "$1" ]; then
+        inject_ofi="${inject_ofi:+$inject_ofi$newline}$f:$d"
+        ofi_found=yes
+        # process ofi dso link paths
+        ldds=$(ldd $1 2>&1 | grep lib | awk '{print $3}' | sort -u)
+        for l in $ldds; do
+            ld=$(dirname $(readlink -f "$l"))
+            # avoid duplicates and host libfabric.so location
+            if [ $(echo "$ld_conf" | grep -c "$ld") -eq 0 \
+                -a $(echo "$ld" | grep -c "libfabric.so") -eq 0 ]; then
+                queue_add_ldconf "$ld"
+            fi
+        done
+    else
+        fatal "$1 is not a path or shared object"
+    fi
+}
+
+queue_add_ldconf () {
+    [ "$1" ]
+    ld_conf="${ld_conf:+$ld_conf$newline}$1"
+}
+
 queue_mkdir () {
     [ "$1" ]
     inject_mkdirs="${inject_mkdirs:+$inject_mkdirs$newline}$1"
@@ -161,7 +203,6 @@ queue_unlink () {
     [ "$1" ]
     inject_unlinks="${inject_unlinks:+$inject_unlinks$newline}$1"
 }
-
 
 parse_basic_args "$@"
 
@@ -174,11 +215,6 @@ while [ $# -gt 0 ]; do
             queue_files "$out"
             shift
             ;;
-        --cray-mpi)
-            # Can't act right away because we need the image path.
-            cray_mpi=yes
-            lib_found=yes
-            ;;
         -d|--dest)
             ensure_nonempty --dest "$1"
             dest=$1
@@ -189,6 +225,18 @@ while [ $# -gt 0 ]; do
             out=$(cat "$1") || fatal "cannot read file: ${1}"
             queue_files "$out"
             shift
+            ;;
+        --host-ofi)
+            if [ -z $CH_FROMHOST_OFI ]; then
+                echo "CH_FROMHOST_OFI not set"
+                echo "hints:"
+                echo "  - this variable is typically set by admins or developers"
+                echo "  - if you know the location of your machine's ofi dso"
+                echo "    providers you can set CH_FROMSHOT_OFI yourself or "
+                echo "    use --ofi PATH"
+                fatal "CH_FROMHOST_OFI not set"
+            fi
+            queue_ofi_dso "$CH_FROMHOST_OFI"
             ;;
         --lib-path)
             # Note: If this is specified along with one of the file
@@ -210,6 +258,11 @@ while [ $# -gt 0 ]; do
             queue_files "$1"
             shift
             ;;
+        -o|--ofi)
+            ensure_nonempty --ofi "$1"
+            queue_ofi_dso "$1"
+            shift
+            ;;
         -v|--verbose)
             verbose=yes
             ;;
@@ -227,24 +280,6 @@ while [ $# -gt 0 ]; do
 done
 
 [ "$image" ] || fatal "no image specified"
-
-if [ $cray_mpi ]; then
-    sentinel=/etc/opt/cray/release/cle-release
-    [ -f $sentinel ] || fatal "not found: ${sentinel}: are you on a Cray?"
-
-    mpi_version=$("${ch_bin}/ch-run" "$image" -- mpirun --version || true)
-    case $mpi_version in
-        *mpich*)
-            cray_mpich=yes
-            ;;
-        *'Open MPI'*)
-            cray_openmpi=yes
-            ;;
-        *)
-            fatal "can't find MPI in image"
-            ;;
-    esac
-fi
 
 if [ $lib_found ]; then
     # We want to put the libraries in the first directory that ldconfig
@@ -264,78 +299,43 @@ if [ $lib_found ]; then
     debug "shared library destination: ${lib_dest}"
 fi
 
+if [ $ofi_found ]; then
+    # libfabric will store, and pick up, loadable DSOs in the directory:
+    # $PREFIX/lib/libfabric. This directory is automatically created
+    # when configuring libfabric to built any provider(s) with loadable option,
+    # e.g.,
+    #
+    #   ./configure --enable-cray-gni=dl
+    #
+    # If it doesn't exist we need to create it.
+    debug "searching ${image} for libfabric dso provider destination..."
+    ofi_dest=$(find "$image" -name "libfabric" | grep -E '^.*lib\/libfabric$')
+    if [ -z $ofi_dest ]; then
+       debug "  valid destination not found; searching for libfabric.so"
+       ofi_so=$(find "$image" -name  "libfabric.so")
+       [ -n ofi_so ] || fatal "libfabric.so not found in $image"
+       debug "  found: $ofi_so"
+       ofi_dest=$(dirname $ofi_so)
+       queue_mkdir "$ofi_dest"
+    else
+        debug "  found: $ofi_dest"
+    fi
+    debug "using libfabric dso provider destination: $ofi_dest"
+    lib_found=yes
+fi
+
 if [ $lib_dest_print ]; then
+    echo "standard file library dest:"
     echo "$lib_dest"
+    if [ -n $ofi_dest ]; then
+        echo
+        echo "libfabric destination:"
+        echo "$ofi_dest"
+    fi
     exit 0
 fi
 
-if [ $cray_mpich ]; then
-    # Remove open source libmpi.so.
-    #
-    # FIXME: These versions are specific to MPICH 3.2.1. I haven't figured out
-    # how to use glob patterns here (they don't get expanded when I tried
-    # basic things).
-    queue_unlink "$lib_dest/libmpi.so"
-    queue_unlink "$lib_dest/libmpi.so.12"
-    queue_unlink "$lib_dest/libmpi.so.12.1.1"
-
-    # Directory containing Cray's libmpi.so.12.
-    # shellcheck disable=SC2016
-       [ "$CRAY_MPICH_DIR" ] \
-    || fatal '$CRAY_MPICH_DIR not set; is module cray-mpich-abi loaded?'
-    cray_libmpi=$CRAY_MPICH_DIR/lib/libmpi.so.12
-       [ -f "$cray_libmpi" ] \
-    || fatal "not found: ${cray_libmpi}; is module cray-mpich-abi loaded?"
-
-    # Note: Most or all of these filenames are symlinks, and the copy will
-    # convert them to normal files (with the same content). In the
-    # documentation, we say not to do that. However, it seems to work, it's
-    # simpler than resolving them, and we apply greater abuse to libmpi.so.12
-    # below.
-
-    # Cray libmpi.so.12.
-    queue_files "$cray_libmpi"
-    # Linked dependencies.
-    queue_files "$(  ldd "$cray_libmpi" \
-                   | grep -F /opt \
-                   | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
-    # dlopen(3)'ed dependencies. I don't know how to not hard-code these.
-    queue_files /opt/cray/alps/default/lib64/libalpsutil.so.0.0.0
-    queue_files /opt/cray/alps/default/lib64/libalpslli.so.0.0.0
-    queue_files /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0.0.0
-    #queue_files /opt/cray/alps/default/lib64/libalps.so.0.0.0
-fi
-
-if [ $cray_openmpi ]; then
-    # Both MPI_ROOT and MPIHOME are the base of the OpenMPI install tree.
-    # We use MPIHOME because some users unset MPI_ROOT.
-    #
-    # Note also that the OpenMPI module name is not standardized.
-       [ "$MPIHOME" ] \
-    || fatal "MPIHOME not set; is OpenMPI module loaded?"
-
-    # Inject libmpi from the host
-    host_libmpi=${MPIHOME}/lib/libmpi.so
-        [ -f "$host_libmpi" ] \
-    || fatal "not found: ${host_libmpi}; is OpenMPI module loaded?"
-    queue_files "$host_libmpi"
-    queue_files "$(  ldd "$host_libmpi" \
-                   | grep -E "/usr|/opt" \
-                   | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
-
-    # Remove core MPI libraries from image. This works around ParaView
-    # dlopen(3)-related errors that we don't understand.
-    image_mpilibs=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -p \
-                    | sed -nE 's@^.* => (/.*/(libmpi|libopen-rte|libopen-pal)\.so([0-9.]+)?)$@\1@p')
-       echo "$image_mpilibs" | grep -q "libmpi" \
-    || fatal "can't find libmpi.so* in image"
-    for f in $image_mpilibs; do
-        queue_unlink "$f"
-        queue_unlink "$("${ch_bin}/ch-run" "$image" -- readlink -f "$f")"
-    done
-fi
-
-if [ $cray_mpi ]; then
+if [ -f /etc/opt/cray/release/cle-release ]; then
     # ALPS libraries require the contents of this directory to be present at
     # the same path as the host. Create the mount point here, then ch-run
     # bind-mounts it later.
@@ -350,21 +350,36 @@ if [ $cray_mpi ]; then
     queue_mkdir /var/opt/cray/hugetlbfs
 fi
 
-
-[ "$inject_files" ] || fatal "empty file list"
+[ "$inject_files" ] || [ "$inject_ofi" ] || fatal "empty file list"
 
 debug "injecting into image: ${image}"
 
 old_ifs="$IFS"
 IFS="$newline"
+
+# Process unlink list.
 for u in $inject_unlinks; do
     debug "  rm -f ${image}${u}"
     rm -f "${image}${u}"
 done
+
+# Process bind-mount destination targets.
 for d in $inject_mkdirs; do
     debug "  mkdir -p ${image}${d}"
     mkdir -p "${image}${d}"
 done
+
+if [ $ofi_found ]; then
+    ch_conf=${image}/etc/ld.so.conf.d/ch-ofi.conf
+    # Create or replace repare image ch-ofi.conf.
+    printf '' > "$ch_conf"
+    # add ofi dso provider ld library dirs.
+    for c in $ld_conf; do
+        debug "   echo '$c' >> $ch_conf"
+        echo "$c" >> "$ch_conf"
+    done
+fi
+
 for file in $inject_files; do
     f="${file%%:*}"
     d="${file#*:}"
@@ -390,22 +405,30 @@ for file in $inject_files; do
        cp --dereference --preserve=all "$f" "${image}${d}" \
     || fatal "cannot inject: ${f}"
 done
+for file in $inject_ofi; do
+    f="${file%%:*}"
+    d="${file#*:}"
+    infer=
+    if is_so "$f" && [ -z "$d" ]; then
+        d=$ofi_dest
+        infer=" (inferred)"
+    fi
+    debug "  ${f} -> ${d}${infer}"
+    [ "$d" ] || fatal "no destination for: ${f}"
+    [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
+    [ -d "${d}" ] || fatal "not a directory: ${d}"
+    if [ ! -w "${d}" ]; then
+        # Some images unpack with unwriteable directories; fix. This seems
+        # like a bit of a kludge to me, so I'd like to remove this special
+        # case in the future if possible. (#323)
+        info "${d} not writeable; fixing"
+        chmod u+w "${d}" || fatal "can't chmod u+w: ${d}"
+    fi
+       cp --dereference --preserve=all "$f" "${d}/" \
+    || fatal "cannot inject: ${f}"
+
+done
 IFS="$old_ifs"
-
-if [ $cray_mpich ]; then
-    # Restore libmpi.so symlink (it's part of several chains).
-    debug "  ln -s libmpi.so.12 ${image}${lib_dest}/libmpi.so"
-    ln -s libmpi.so.12 "${image}${lib_dest}/libmpi.so"
-
-    # Patch libmpi.so.12 so its soname is "libmpi.so.12" instead of e.g.
-    # "libmpich_gnu_51.so.3". Otherwise, the application won't link without
-    # LD_LIBRARY_PATH, and LD_LIBRARY_PATH is to be avoided.
-    #
-    # Note: This currently requires our patched patchelf (issue #256).
-    debug "fixing soname on libmpi.so.12"
-    "${ch_bin}/ch-run" -w "$image" -- \
-        patchelf --set-soname libmpi.so.12 "$lib_dest/libmpi.so.12"
-fi
 
 if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
     debug "running ldconfig"
@@ -413,3 +436,4 @@ if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
 else
     debug "not running ldconfig"
 fi
+echo 'done'

@@ -28,6 +28,10 @@ count_ranks () {
     [[ $output = *'0: finalize ok'* ]]
 }
 
+@test "${ch_tag}/inject host cray-gni ofi dso" {
+    cray_ofi_or_skip "$ch_img"
+}
+
 @test "${ch_tag}/MPI version" {
     [[ -z $ch_cray ]] || skip 'serial launches unsupported on Cray'
     # shellcheck disable=SC2086
@@ -69,7 +73,6 @@ count_ranks () {
 
 @test "${ch_tag}/host starts ranks" {
     multiprocess_ok
-    cray_ofi_ok
     echo "starting ranks with: ${mpirun_core}"
 
     guest_mpi=$(ch-run "$ch_img" -- mpirun --version | head -1)
@@ -90,7 +93,9 @@ count_ranks () {
     [[ $ch_cray ]] || skip 'host is not a Cray'
 
     ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
-    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
-    ch-run "$ch_img" -- mount | grep -F /opt/cray
-    ch-run "$ch_img" -- mount | grep -F /etc/opt/cray
+    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/hugetlbfs
+}
+
+@test "${ch_tag}/revert image" {
+    unpack_img_all_nodes "$ch_cray"
 }

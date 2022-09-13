@@ -58,8 +58,8 @@ lammps_try () {
 
 }
 
-@test "${ch_tag}/crayify image" {
-    crayify_mpi_or_skip "$ch_img"
+@test "${ch_tag}/inject host cray-gni ofi dso" {
+    cray_ofi_or_skip "$ch_img"
 }
 
 @test "${ch_tag}/using all cores" {

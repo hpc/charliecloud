@@ -48,7 +48,6 @@ copy/dirG/s_file4/file_ \
 copy/fileA \
 copy/fileB \
 copy/test.bats \
-dont-init-ucx-on-intel-cray.patch \
 exhaustive/Dockerfile \
 hello/Dockerfile \
 hello/README \

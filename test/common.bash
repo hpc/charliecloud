@@ -98,14 +98,14 @@ chtest_fixtures_ok () {
     [[ $(stat -c %a "${1}/maxperms_dir") = 1777 ]]
     [[ $(stat -c %a "${1}/maxperms_file") = 777 ]]
 }
-
-cray_ofi_ok () {
+cray_ofi_or_skip () {
     if [[ $ch_cray ]]; then
-        if [[ -z $OFI_DSO_PROVIDER_DIR ]]; then
-            skip 'OFI_DSO_PROVIDER_DIR not set'
-        elif [[ ! -f $OFI_DOS_PROVIDER_DIR/*-fi.so ]]; then
-            skip "OFI_DSO_PROVIDER_DIR doesn't have dso providers"
-        fi
+        # shellcheck disable=SC2086
+        [[ -n $CH_FROMHOST_OFI ]] || skip 'CH_FROMHOST_OFI not set'
+        [[ -f $CH_FROMHOST_OFI/libgnix-fi.so ]] || skip 'libgnix-fi.so missing'
+        $ch_mpirun_node ch-fromhost --host-ofi "$1"
+    else
+        skip 'host is not a Cray'
     fi
 }
 

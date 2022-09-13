@@ -226,12 +226,6 @@ void enter_udss(struct container *c)
       Zf (mount(NULL, c->newroot, NULL, flags, NULL),
           "can't re-mount image read-only (is it on NFS?)");
    }
-   // No write OFI injection proto. FIXME: implement oci hooks instead.
-   if (getenv("OFI_DSO_PROVIDER_DIR")) {
-      const char * dso_d = getenv("OFI_DSO_PROVIDER_DIR");
-      bind_mount(dso_d, "/usr/lib/libfabric", BD_REQUIRED, "/", MS_PRIVATE);
-      bind_mount("/etc/ld.so.cache", "/etc/ld.so.cache", BD_REQUIRED, "/", MS_PRIVATE);
-   }
    // Bind-mount user-specified directories.
    bind_mounts(c->binds, c->newroot, 0);
    // Overmount / to avoid EINVAL if it's a rootfs.
