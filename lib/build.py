@@ -211,7 +211,7 @@ class Main_Loop(lark.Visitor):
             self.miss_ct = inst.prepare(self.miss_ct)
          except Instruction_Ignored:
             return
-         if (isinstance(inst, Arg_First)):
+         if (isinstance(inst, Setting)):
             inst.execute()
          elif (inst.miss):
             if (self.miss_ct == 1):
@@ -302,10 +302,7 @@ class Instruction(abc.ABC):
 
    @property
    def miss(self):
-      try:
-         return (self.git_hash is None)
-      except AttributeError:
-         return True
+      return (self.git_hash is None)
 
    @property
    def shell(self):
@@ -392,6 +389,9 @@ class Instruction(abc.ABC):
       self.parent = parent
       if (self.parent is None):
          self.image_i = -1
+      elif (isinstance(self.parent, Setting)):
+         self.image_i = -1
+         self.argfrom = self.parent.argfrom
       else:
          self.image = self.parent.image
          self.image_alias = self.parent.image_alias
@@ -468,6 +468,100 @@ class Instruction_Supported_Never(Instruction_Unsupported):
       self.unsupported_forever_warn("instruction")
       self.ignore()
 
+class Setting(abc.ABC):
+
+   __slots__ = ("lineno",
+                "options",      # consumed
+                "options_str",  # saved at instantiation
+                "parent",
+                "argfrom",
+                "sid",
+                "tree")
+
+   def __init__(self, tree):
+      """Note: When this is called, all we know about the instruction is
+         what's in the parse tree. In particular, you must not call
+         ch.variables_sub() here."""
+      self.lineno = tree.meta.line
+      self.options = {}
+
+      # saving options with only 1 saved value
+      for st in ch.tree_children(tree, "option"):
+         k = ch.tree_terminal(st, "OPTION_KEY")
+         v = ch.tree_terminal(st, "OPTION_VALUE")
+         if (k in self.options):
+            ch.FATAL("%3d %s: repeated option --%s"
+                     % (self.lineno, self.str_name, k))
+         self.options[k] = v
+
+      # saving keypair options in a dictionary
+      for st in ch.tree_children(tree, "option_keypair"):
+         k = ch.tree_terminal(st, "OPTION_KEY")
+         s = ch.tree_terminal(st, "OPTION_VAR")
+         v = ch.tree_terminal(st, "OPTION_VALUE")
+         # assuming all key pair options allow multiple options
+         self.options.setdefault(k, {})
+         self.options[k].update({s: v})
+
+      self.options_str = " ".join("--%s=%s" % (k,v)
+                                  for (k,v) in self.options.items())
+      self.tree = tree
+
+   @property
+   def sid_input(self):
+      return str(self).encode("UTF-8")
+
+   @property
+   @abc.abstractmethod
+   def str_(self):
+      ...
+
+   @property
+   def str_name(self):
+      return self.__class__.__name__.split("_")[1].upper()
+
+   @property
+   def str_log(self):
+      return ("%3s. %s" % (self.lineno, self))
+
+   def __str__(self):
+      options = self.options_str
+      if (options != ""):
+         options = " " + options
+      return "%s %s%s" % (self.str_name, options, self.str_)
+
+   def execute(self):
+      """Do what the instruction says. At this point, the unpack directory is
+         all ready to go. Thus, the method is cache-ignorant."""
+      pass
+
+   def init(self, parent):
+      """Initialize attributes defining this instruction's context, much of
+         which is not available until the previous instruction is processed.
+         After this is called, the instruction has a valid image and parent
+         instruction, unless it's the first instruction, in which case
+         prepare() does the initialization."""
+      # Separate from prepare() because subclasses shouldn't need to override
+      # it. If a subclass doesn't like the result, it can just change things
+      # in prepare().
+      self.parent = None
+
+   def prepare(self, miss_ct):
+      """Set up for execution; parent is the parent instruction and miss_ct is
+         the number of misses in this stage so far. Returns the new number of
+         misses; usually miss_ct if this instruction hit or miss_ct + 1 if it
+         missed. Some instructions (e.g., FROM) resets the miss count.
+         Announce self as soon as hit/miss status is known, hopefully before
+         doing anything complicated or time-consuming.
+         Typically, subclasses will set up enough state for self.sid_input to
+         be valid, then call super().prepare().
+         WARNING: Instructions that modify image metadata (at this writing,
+         ARG ENV FROM SHELL WORKDIR) must do so here, not in execute(), so
+         that metadata is available to late instructions even on cache hit."""
+      self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
+      self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
+      ch.INFO(self.str_log)
+      return miss_ct + int(self.miss)
 
 class Arg(Instruction):
 
@@ -524,7 +618,7 @@ class I_arg_equals(Arg):
          v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
       return v
 
-class Arg_First(Instruction):
+class Arg_First(Setting):
 
    __slots__ = ("key",
                  "value")

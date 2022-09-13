@@ -987,26 +987,26 @@ fields:
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
-      self.host = self.var_sub(tree_child_terminal(t, "ir_hostport", "IR_HOST"))
-      self.port = self.var_sub(tree_child_terminal(t, "ir_hostport", "IR_PORT"))
+      def var_sub(var):
+         if (var is not None and var[0] == "$"):
+            return variables_sub(var, self.variables)
+         return var
+
+      self.host = var_sub(tree_child_terminal(t, "ir_hostport", "IR_HOST"))
+      self.port = var_sub(tree_child_terminal(t, "ir_hostport", "IR_PORT"))
       if (self.port is not None):
          self.port = int(self.port)
       for s in tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"):
-         self.path.append(self.var_sub(s))
-      self.name = self.var_sub(tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT"))
-      self.tag = self.var_sub(tree_child_terminal(t, "ir_tag", "IR_TAG"))
-      self.digest = self.var_sub(tree_child_terminal(t, "ir_digest", "HEX_STRING"))
+         self.path.append(var_sub(s))
+      self.name = var_sub(tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT"))
+      self.tag = var_sub(tree_child_terminal(t, "ir_tag", "IR_TAG"))
+      self.digest = var_sub(tree_child_terminal(t, "ir_digest", "HEX_STRING"))
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host
           and self.port is None):
          self.path.insert(0, self.host)
          self.host = None
-
-   def var_sub(self, var):
-      if (var is not None and var[0] == "$"):
-         return variables_sub(var, self.variables)
-      return var
 
 class OrderedSet(collections.abc.MutableSet):
 
