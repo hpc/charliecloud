@@ -100,8 +100,7 @@ RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
                 --enable-tcp \
                 --enable-verbs \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../libfabric* \
- && mkdir /usr/lib/libfabric
+ && rm -Rf ../libfabric*
 
 # PMI2.
 #
@@ -111,12 +110,7 @@ ARG SLURM_VERSION=19-05-3-2
 RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz \
  && tar -xf slurm-${SLURM_VERSION}.tar.gz \
  && cd slurm-slurm-${SLURM_VERSION} \
- && ./configure --prefix=/usr \
+ && ./configure --prefix=/usr/local \
  && cd contribs/pmi2 \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../../../slurm*
-
-# Add Cray Gemini/Aries directories. On Cray machines these directories are
-# bind mounted inside the container giving it the ability to leverage host built
-# UGNI DSO providers. See FAQ: Craysauce.
-RUN mkdir -p /etc/opt/cray /var/opt/cray /opt/cray

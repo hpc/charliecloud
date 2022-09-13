@@ -18,12 +18,12 @@ RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
 RUN cd openmpi-${MPI_VERSION} \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
-    ./configure --prefix=/usr \
+    ./configure --prefix=/usr/local \
                 --sysconfdir=/mnt/0 \
                 --with-slurm \
-                --with-pmi \
+                --with-pmi=/usr/local \
                 --with-pmix \
-                --with-libfabric \
+                --with-libfabric=/usr/local \
                 --disable-pty-support \
                 --enable-mca-no-build=btl-openib,plm-slurm \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
