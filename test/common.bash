@@ -381,10 +381,10 @@ ch_mpirun_np="-np ${ch_cores_node}"
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
     ch_multiprocess=yes
-    ch_mpirun_node='srun --ntasks-per-node 1'
-    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"
-    ch_mpirun_2='srun -n2'
-    ch_mpirun_2_1node='srun -N1 -n2'
+    ch_mpirun_node='srun --mpi=pmi2 --ntasks-per-node 1'
+    ch_mpirun_core="srun --mpi=pmi2 --ntasks-per-node $ch_cores_node"
+    ch_mpirun_2='srun --mpi=pmi2 -n2'
+    ch_mpirun_2_1node='srun --mpi=pmi2 -N1 -n2'
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
     # in a Slurm allocation.
@@ -397,7 +397,7 @@ if [[ $SLURM_JOB_ID ]]; then
         ch_mpirun_2_2node=false
     else
         ch_multinode=yes
-        ch_mpirun_2_2node='srun -N2 -n2'
+        ch_mpirun_2_2node='srun --pmi=2 -N2 -n2'
     fi
 else
     # shellcheck disable=SC2034
