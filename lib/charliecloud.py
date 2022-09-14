@@ -1170,6 +1170,13 @@ class Path(pathlib.PosixPath):
          returns Path("foo.txt)."""
       return Path(str(self) + suff)
 
+   def mkdir_(self):
+      TRACE("ensuring directory: %s" % self)
+      try:
+         self.mkdir(exist_ok=True)
+      except OSError as x:
+         FATAL("can't mkdir: %s: %s: %s" % (self, x.filename, x.sterrror))
+
 
 class Progress:
    """Simple progress meter for countable things that updates at most once per
@@ -1883,12 +1890,17 @@ class Storage:
          self.lock()
       elif (v_found in {None, 1, 2}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
-         mkdir(self.root)
+         #mkdir(self.root)
+         self.root.mkdir_()
          self.lock()
-         mkdir(self.download_cache)
-         mkdir(self.build_cache)
-         mkdir(self.unpack_base)
-         mkdir(self.upload_cache)
+         #mkdir(self.download_cache)
+         #mkdir(self.build_cache)
+         #mkdir(self.unpack_base)
+         #mkdir(self.upload_cache)
+         self.download_cache.mkdir_()
+         self.build_cache.mkdir_()
+         self.unpack_base.mkdir_()
+         self.upload_cache.mkdir_()
          for old in self.unpack_base.iterdir():
             new = old.parent // str(old.name).replace(":", "+")
             if (old != new):
@@ -2605,10 +2617,12 @@ def log(msg, hint, color, prefix, end="\n"):
 def mkdir(path):
    TRACE("ensuring directory: %s" % path)
    try:
-      os.mkdir(path)
-   except FileExistsError as x:
-      if (not os.path.isdir(path)):
-         FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
+      #Path(path).mkdir(exist_ok=True)
+      path.mkdir(exist_ok=True)
+      #os.mkdir(path)
+   #except FileExistsError as x:
+   #   if (not os.path.isdir(path)):
+   #      FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
    except OSError as x:
       FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
 
