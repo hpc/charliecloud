@@ -1176,8 +1176,9 @@ class Path(pathlib.PosixPath):
       TRACE("ensuring directory: %s" % self)
       try:
          super().mkdir(exist_ok=True)
-      except FileExistsError as x:                                             
-         if (not os.path.isdir(path)):                                                     FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
+      except FileExistsError as x:
+         if (not self.is_dir()):
+            FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
          FATAL("can't mkdir: %s: %s: %s" % (self, x.filename, x.strerror))
 
