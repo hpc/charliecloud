@@ -1175,7 +1175,7 @@ class Path(pathlib.PosixPath):
       try:
          self.mkdir(exist_ok=True)
       except OSError as x:
-         FATAL("can't mkdir: %s: %s: %s" % (self, x.filename, x.sterrror))
+         FATAL("can't mkdir: %s: %s: %s" % (self, x.filename, x.strerror))
 
 
 class Progress:

@@ -182,7 +182,8 @@ class Enabled_Cache:
    def __init__(self):
       self.bootstrap_ct = 0
       if (not os.path.isdir(self.root)):
-         ch.mkdir(self.root)
+         #ch.mkdir(self.root)
+         self.root.mkdir_()
       ls = ch.listdir(self.root)
       if (len(ls) == 0):
          self.bootstrap()  # empty; initialize a new cache
@@ -589,7 +590,8 @@ class Enabled_Cache:
                ch.rmtree(ch.storage.unpack_base // d)
          # Create new build cache.
          ch.rmtree(self.root)
-         ch.mkdir(self.root)
+         #ch.mkdir(self.root)
+         self.root.mkdir_()
          self.bootstrap()
 
    def rollback(self, path):
