@@ -1932,7 +1932,8 @@ class Storage:
          return
       INFO("storage dir: valid at old default: %s" % old.root)
       if (not os.path.exists(self.root)):
-         mkdir(self.root)
+         #mkdir(self.root)
+         self.root.mkdir()
       elif (self.valid_p):
          WARNING("storage dir: also valid at new default: %s" % self.root,
                  hint="consider deleting the old one")
