@@ -470,7 +470,8 @@ class Instruction_Supported_Never(Instruction_Unsupported):
 
 class Setting(abc.ABC):
 
-   __slots__ = ("lineno",
+   __slots__ = ("argfrom",
+                "lineno",
                 "options",      # consumed
                 "options_str",  # saved at instantiation
                 "parent",
@@ -506,6 +507,7 @@ class Setting(abc.ABC):
       self.options_str = " ".join("--%s=%s" % (k,v)
                                   for (k,v) in self.options.items())
       self.tree = tree
+      self.argfrom = {}
 
    @property
    def sid_input(self):
@@ -545,6 +547,8 @@ class Setting(abc.ABC):
       # it. If a subclass doesn't like the result, it can just change things
       # in prepare().
       self.parent = None
+      if (parent is not None):
+         self.argfrom = parent.argfrom
 
    def prepare(self, miss_ct):
       """Set up for execution; parent is the parent instruction and miss_ct is
@@ -643,7 +647,7 @@ class Arg_First(Setting):
 
    def prepare(self, *args):
       if (self.value is not None):
-         self.argfrom = {self.key: self.value}
+         self.argfrom.update({self.key: self.value})
       ch.INFO(self.str_log)
       return 0
 

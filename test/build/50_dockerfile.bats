@@ -756,12 +756,14 @@ EOF
     # arg before from
     run ch-image build -v -t tmpimg -f - . <<'EOF'
 ARG os=00_tiny
+ARG foo=bar
 FROM $os
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"FROM 00_tiny"* ]]
     [[ $output = *"setting os to 00_tiny"* ]]
+    [[ $output = *"setting foo to bar"* ]]
 }
 
 @test 'Dockerfile: COPY list form' {
