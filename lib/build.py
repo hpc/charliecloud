@@ -211,9 +211,7 @@ class Main_Loop(lark.Visitor):
             self.miss_ct = inst.prepare(self.miss_ct)
          except Instruction_Ignored:
             return
-         if (isinstance(inst, Setting)):
-            inst.execute()
-         elif (inst.miss):
+         if (inst.miss):
             if (self.miss_ct == 1):
                inst.checkout_for_build()
             inst.execute()
@@ -469,13 +467,13 @@ class Instruction_Supported_Never(Instruction_Unsupported):
       self.ignore()
 
 class Setting(abc.ABC):
+# This is a super class for no-op instructions. It does not interact
+# with the build cache.
 
    __slots__ = ("argfrom",
+                "image_i",
                 "lineno",
-                "options",      # consumed
-                "options_str",  # saved at instantiation
                 "parent",
-                "argfrom",
                 "sid",
                 "tree")
 
@@ -484,30 +482,13 @@ class Setting(abc.ABC):
          what's in the parse tree. In particular, you must not call
          ch.variables_sub() here."""
       self.lineno = tree.meta.line
-      self.options = {}
-
-      # saving options with only 1 saved value
-      for st in ch.tree_children(tree, "option"):
-         k = ch.tree_terminal(st, "OPTION_KEY")
-         v = ch.tree_terminal(st, "OPTION_VALUE")
-         if (k in self.options):
-            ch.FATAL("%3d %s: repeated option --%s"
-                     % (self.lineno, self.str_name, k))
-         self.options[k] = v
-
-      # saving keypair options in a dictionary
-      for st in ch.tree_children(tree, "option_keypair"):
-         k = ch.tree_terminal(st, "OPTION_KEY")
-         s = ch.tree_terminal(st, "OPTION_VAR")
-         v = ch.tree_terminal(st, "OPTION_VALUE")
-         # assuming all key pair options allow multiple options
-         self.options.setdefault(k, {})
-         self.options[k].update({s: v})
-
-      self.options_str = " ".join("--%s=%s" % (k,v)
-                                  for (k,v) in self.options.items())
       self.tree = tree
       self.argfrom = {}
+      self.image_i = -1
+
+   @property
+   def miss(self):
+      return True
 
    @property
    def sid_input(self):
@@ -527,22 +508,15 @@ class Setting(abc.ABC):
       return ("%3s. %s" % (self.lineno, self))
 
    def __str__(self):
-      options = self.options_str
-      if (options != ""):
-         options = " " + options
-      return "%s %s%s" % (self.str_name, options, self.str_)
+      return "%s %s" % (self.str_name, self.str_)
+
+   def commit(self):
+      pass
 
    def execute(self):
-      """Do what the instruction says. At this point, the unpack directory is
-         all ready to go. Thus, the method is cache-ignorant."""
       pass
 
    def init(self, parent):
-      """Initialize attributes defining this instruction's context, much of
-         which is not available until the previous instruction is processed.
-         After this is called, the instruction has a valid image and parent
-         instruction, unless it's the first instruction, in which case
-         prepare() does the initialization."""
       # Separate from prepare() because subclasses shouldn't need to override
       # it. If a subclass doesn't like the result, it can just change things
       # in prepare().
@@ -551,21 +525,7 @@ class Setting(abc.ABC):
          self.argfrom = parent.argfrom
 
    def prepare(self, miss_ct):
-      """Set up for execution; parent is the parent instruction and miss_ct is
-         the number of misses in this stage so far. Returns the new number of
-         misses; usually miss_ct if this instruction hit or miss_ct + 1 if it
-         missed. Some instructions (e.g., FROM) resets the miss count.
-         Announce self as soon as hit/miss status is known, hopefully before
-         doing anything complicated or time-consuming.
-         Typically, subclasses will set up enough state for self.sid_input to
-         be valid, then call super().prepare().
-         WARNING: Instructions that modify image metadata (at this writing,
-         ARG ENV FROM SHELL WORKDIR) must do so here, not in execute(), so
-         that metadata is available to late instructions even on cache hit."""
-      self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
-      self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
-      ch.INFO(self.str_log)
-      return miss_ct + int(self.miss)
+      pass
 
 class Arg(Instruction):
 
