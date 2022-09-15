@@ -332,8 +332,10 @@ class Instruction(abc.ABC):
       return "%s %s%s" % (self.str_name, options, self.str_)
 
    def chdir(self, path):
-      if (path.startswith("/")):
-         self.workdir = ch.Path(path)
+      #if (path.startswith("/")):
+      #   self.workdir = ch.Path(path)
+      if path.is_absolute():
+         self.workdir = path
       else:
          self.workdir //= path
 
@@ -1009,14 +1011,14 @@ class I_workdir(Instruction):
 
    @property
    def str_(self):
-      return self.path
+      return str(self.path)
 
    def execute(self):
       ch.mkdirs(self.image.unpack_path // self.workdir)
 
    def prepare(self, *args):
-      self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
-                                self.env_build)
+      self.path = ch.Path(variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
+                                self.env_build))
       self.chdir(self.path)
       return super().prepare(*args)
 
