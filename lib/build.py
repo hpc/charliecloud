@@ -385,7 +385,7 @@ class Instruction(abc.ABC):
       # it. If a subclass doesn't like the result, it can just change things
       # in prepare().
       self.parent = parent
-      if (self.parent is None or is instance(self.parent, Setting)):
+      if (self.parent is None or isinstance(self.parent, Setting)):
          self.image_i = -1
       else:
          self.image = self.parent.image
