@@ -143,10 +143,14 @@ multiprocess_ok () {
     # If the MPI in the container is MPICH, we only try host launch on Crays.
     # For the other settings (workstation, other Linux clusters), it may or
     # may not work; we simply haven't tried.
-    [[ $ch_mpi = mpich && -z $ch_cray ]] \
-        && skip 'MPICH untested'
+    #[[ $ch_mpi = mpich && -z $ch_cray ]] \
+    #    && skip 'MPICH untested'
     # Exit function successfully.
     true
+}
+
+openmpi_or_skip () {
+    [[ $ch_mpi == 'openmpi' ]] || skip "openmpi only"
 }
 
 pedantic_fail () {
@@ -327,18 +331,12 @@ ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034
 ch_timg=${ch_imgdir}/chtest
 
-# MPICH requires different handling from OpenMPI. Set a variable to enable
-# some kludges.
 if [[ $ch_tag = *'-mpich' ]]; then
     ch_mpi=mpich
-    # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
-    # Slurm environment variables, it tries to launch even local ranks with
-    # "srun". This of course fails within the container. You can't turn it off
-    # by building with --without-slurm like OpenMPI, so we fall back to this
-    # environment variable at run time.
-    export HYDRA_LAUNCHER=fork
+    ch_mpi_exe=mpiexec
 else
     ch_mpi=openmpi
+    ch_mpi_exe=mpirun
 fi
 
 # Crays are special.
@@ -380,11 +378,12 @@ ch_mpirun_np="-np ${ch_cores_node}"
 # shellcheck disable=SC2034
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
+    srun_mpi=$CH_TEST_SLURM_MPI
     ch_multiprocess=yes
-    ch_mpirun_node='srun --mpi=pmi2 --ntasks-per-node 1'
-    ch_mpirun_core="srun --mpi=pmi2 --ntasks-per-node $ch_cores_node"
-    ch_mpirun_2='srun --mpi=pmi2 -n2'
-    ch_mpirun_2_1node='srun --mpi=pmi2 -N1 -n2'
+    ch_mpirun_node="srun $srun_mpi --ntasks-per-node 1"
+    ch_mpirun_core="srun $srun_mpi --ntasks-per-node $ch_cores_node"
+    ch_mpirun_2="srun $srun_mpi -n2"
+    ch_mpirun_2_1node="srun $srun_mpi -N1 -n2"
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
     # are present. Work around this by fooling OpenMPI into believing it's not
     # in a Slurm allocation.
@@ -397,7 +396,7 @@ if [[ $SLURM_JOB_ID ]]; then
         ch_mpirun_2_2node=false
     else
         ch_multinode=yes
-        ch_mpirun_2_2node='srun --pmi=2 -N2 -n2'
+        ch_mpirun_2_2node="srun $srun_mpi -N2 -n2"
     fi
 else
     # shellcheck disable=SC2034

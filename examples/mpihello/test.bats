@@ -17,6 +17,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/guest starts ranks" {
+    openmpi_or_skip
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
     echo "$output"
@@ -93,7 +94,7 @@ count_ranks () {
     [[ $ch_cray ]] || skip 'host is not a Cray'
 
     ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
-    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/hugetlbfs
+    ch-run "$ch_img" -- mount | grep -F /dev/hugepages
 }
 
 @test "${ch_tag}/revert image" {

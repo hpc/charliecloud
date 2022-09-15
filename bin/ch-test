@@ -882,6 +882,10 @@ while [[ $# -gt 0 ]]; do
     --sudo)
         use_sudo=yes
         ;;
+    --srun-mpi=*)
+        require_unset srun_mpi
+        srun_mpi="--mpi=${opt#*=}"
+        ;;
     --lustre)
         require_unset lustredir
         lustredir=$1; shift
@@ -955,6 +959,8 @@ vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
                       21 'Lustre test dir'
+vset CH_TEST_SLURM_MPI "$srun_mpi"     "$CH_TEST_SLURM_MPI" "--mpi=$SLURM_MPI_TYPE" \
+                      21 'srun --mpi'
 printf '\n'
 
 if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then

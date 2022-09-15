@@ -229,12 +229,8 @@ while [ $# -gt 0 ]; do
         --host-ofi)
             if [ -z $CH_FROMHOST_OFI ]; then
                 echo "CH_FROMHOST_OFI not set"
-                echo "hints:"
-                echo "  - this variable is typically set by admins or developers"
-                echo "  - if you know the location of your machine's ofi dso"
-                echo "    providers you can set CH_FROMSHOT_OFI yourself or "
-                echo "    use --ofi PATH"
-                fatal "CH_FROMHOST_OFI not set"
+                echo "hint: see FAQ: host OFI (FIXME)"
+                fatal "no host ofi dso provider directory"
             fi
             queue_ofi_dso "$CH_FROMHOST_OFI"
             ;;
@@ -307,7 +303,8 @@ if [ $ofi_found ]; then
     #
     #   ./configure --enable-cray-gni=dl
     #
-    # If it doesn't exist we need to create it.
+    # If it doesn't exist we need to create it where the libfabric.so library
+    # is found.
     debug "searching ${image} for libfabric dso provider destination..."
     ofi_so=$("${ch_bin}/ch-run" --no-home "$image" -- find / \
                                                 -not \( -path /proc -prune \) \

@@ -45,9 +45,10 @@ check_process_ct () {
 
 # one from "Single Transfer Benchmarks"
 @test "${ch_tag}/pingpong (guest launch)" {
+    openmpi_or_skip
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
-               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
+               "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -57,9 +58,10 @@ check_process_ct () {
 
 # one from "Parallel Transfer Benchmarks"
 @test "${ch_tag}/sendrecv (guest launch)" {
+    openmpi_or_skip
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
-               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
+               "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -69,9 +71,10 @@ check_process_ct () {
 
 # one from "Collective Benchmarks"
 @test "${ch_tag}/allreduce (guest launch)" {
+    openmpi_or_skip
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
-               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
+               "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -90,6 +93,7 @@ check_process_ct () {
     multiprocess_ok
     [[ $ch_multinode ]] || skip "multinode only"
     [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
+    openmpi_or_skip
     # Verify we have known HSN devices present. (Note that -d tests for
     # directory, not device.)
     [[ ! -d /dev/infiniband ]] && pedantic_fail "no high speed network detected"
