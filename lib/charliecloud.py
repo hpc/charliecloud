@@ -1180,6 +1180,7 @@ class Path(pathlib.PosixPath):
       #   if (not self.is_dir()):
       #      FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
+         print("raising OSError")
          FATAL("can't mkdir: %s: %s: %s" % (self, x.filename, x.strerror))
 
 
