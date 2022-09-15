@@ -34,6 +34,8 @@ images = dict()
 # parse tree, so we can use it for error checking.
 image_ct = None
 
+# ARG values that are set before FROM.
+argfrom = {}
 
 ## Imports not in standard library ##
 
@@ -234,7 +236,6 @@ class Instruction(abc.ABC):
                 "options",      # consumed
                 "options_str",  # saved at instantiation
                 "parent",
-                "argfrom",
                 "sid",
                 "tree")
 
@@ -271,7 +272,6 @@ class Instruction(abc.ABC):
       self.parent = None
       self.image_alias = None
       self.image_i = None
-      self.argfrom = {}
 
    @property
    def env_arg(self):
@@ -385,16 +385,12 @@ class Instruction(abc.ABC):
       # it. If a subclass doesn't like the result, it can just change things
       # in prepare().
       self.parent = parent
-      if (self.parent is None):
+      if (self.parent is None or is instance(self.parent, Setting)):
          self.image_i = -1
-      elif (isinstance(self.parent, Setting)):
-         self.image_i = -1
-         self.argfrom = self.parent.argfrom
       else:
          self.image = self.parent.image
          self.image_alias = self.parent.image_alias
          self.image_i = self.parent.image_i
-         self.argfrom = self.parent.argfrom
 
    def metadata_update(self):
       self.image.metadata["history"].append(
@@ -470,8 +466,7 @@ class Setting(abc.ABC):
 # This is a super class for no-op instructions. It does not interact
 # with the build cache.
 
-   __slots__ = ("argfrom",
-                "image_i",
+   __slots__ = ("image_i",
                 "lineno",
                 "parent",
                 "sid",
@@ -483,7 +478,6 @@ class Setting(abc.ABC):
          ch.variables_sub() here."""
       self.lineno = tree.meta.line
       self.tree = tree
-      self.argfrom = {}
       self.image_i = -1
 
    @property
@@ -521,8 +515,6 @@ class Setting(abc.ABC):
       # it. If a subclass doesn't like the result, it can just change things
       # in prepare().
       self.parent = None
-      if (parent is not None):
-         self.argfrom = parent.argfrom
 
    def prepare(self, miss_ct):
       pass
@@ -607,7 +599,7 @@ class Arg_First(Setting):
 
    def prepare(self, *args):
       if (self.value is not None):
-         self.argfrom.update({self.key: self.value})
+         argfrom.update({self.key: self.value})
       ch.INFO(self.str_log)
       return 0
 
@@ -955,7 +947,7 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.argfrom.update(self.options.pop("arg", {}))
+      argfrom.update(self.options.pop("arg", {}))
 
    # Not meaningful for FROM.
    sid_input = None
@@ -980,7 +972,7 @@ class I_from_(Instruction):
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
       #
-      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), self.argfrom)
+      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), argfrom)
       self.base_image = ch.Image(image_ref)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
@@ -1040,8 +1032,8 @@ class I_from_(Instruction):
       self.image.metadata_load(self.base_image)
 
       # set --arg
-      for var in self.argfrom:
-         val = self.argfrom.get(var)
+      for var in argfrom:
+         val = argfrom.get(var)
          ch.VERBOSE("setting %s to %s" % (var, val))
          self.env_arg[var] = val
       # Done.
