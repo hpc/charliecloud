@@ -351,6 +351,14 @@ if [ -f /etc/opt/cray/release/cle-release ]; then
     # uGNI needs a pile of hugetlbfs filesystems at paths that are arbitrary
     # but in a specific order in /proc/mounts. ch-run bind-mounts here later.
     queue_mkdir /var/opt/cray/hugetlbfs
+
+    # OFI uGNI provider, libgnix-fi.so, links against libxpmem, libudreg,
+    # libalpsutil, libalpslli, and libugni, provided by the Cray host in various
+    # subdirectories in /opt/cray.
+    queue_mkdir /opt/cray/udreg
+    queue_mkdir /opt/cray/xpmem
+    queue_mkdir /opt/cray/ugni
+    queue_mkdir /opt/cray/alps
 fi
 
 [ "$inject_files" ] || [ "$inject_ofi" ] || fatal "empty file list"
