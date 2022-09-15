@@ -476,7 +476,6 @@ class Image:
          the latter case other.unpack_path is used. other need not be a valid
          image; the essentials will be created if needed."""
       def ignore(path, names):
-         #path = Path(path)  # match type of src_path
          ignore = list()
          if (path == src_path):
             for name in names:
@@ -721,7 +720,6 @@ class Image:
          present will be left unchanged. After this, self.unpack_path is a
          valid Charliecloud image directory."""
       # Metadata directory.
-      #mkdir(self.unpack_path // "ch")
       (self.unpack_path // "ch").mkdir()
       file_ensure_exists(self.unpack_path // "ch/environment")
       # Essential directories & mount points. Do nothing if something already
@@ -741,8 +739,7 @@ class Image:
       layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
-      #mkdir(self.unpack_path)  # create directory in case no layers
-      self.unpack_path.mkdir()
+      self.unpack_path.mkdir()  # create directory in case no layers
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
          if (i > last_layer):
@@ -1177,10 +1174,8 @@ class Path(pathlib.PosixPath):
       try:
          super().mkdir(exist_ok=True)
       except FileExistsError as x:
-      #   if (not self.is_dir()):
           FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
-         print("raising OSError")
          FATAL("can't mkdir: %s: %s: %s" % (self, x.filename, x.strerror))
 
 
@@ -1896,13 +1891,8 @@ class Storage:
          self.lock()
       elif (v_found in {None, 1, 2}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
-         #mkdir(self.root)
          self.root.mkdir()
          self.lock()
-         #mkdir(self.download_cache)
-         #mkdir(self.build_cache)
-         #mkdir(self.unpack_base)
-         #mkdir(self.upload_cache)
          self.download_cache.mkdir()
          self.build_cache.mkdir()
          self.unpack_base.mkdir()
@@ -1933,7 +1923,6 @@ class Storage:
          return
       INFO("storage dir: valid at old default: %s" % old.root)
       if (not os.path.exists(self.root)):
-         #mkdir(self.root)
          self.root.mkdir()
       elif (self.valid_p):
          WARNING("storage dir: also valid at new default: %s" % self.root,
@@ -2018,10 +2007,10 @@ class Storage:
       # verify file *type*, assuming that kind of error is rare.
       entries = listdir(self.root)
       for entry in { i.basename for i in (self.build_cache,
-                                         self.download_cache,
-                                         self.unpack_base,
-                                         self.upload_cache,
-                                         self.version_file) }:
+                                          self.download_cache,
+                                          self.unpack_base,
+                                          self.upload_cache,
+                                          self.version_file) }:
          try:
             entries.remove(entry)
          except KeyError:
@@ -2620,20 +2609,6 @@ def log(msg, hint, color, prefix, end="\n"):
       print(festoon, "hint: ", hint, sep="", file=log_fp, flush=True)
    if (color is not None):
       color_reset(log_fp)
-
-"""
-def mkdir(path):
-   TRACE("ensuring directory: %s" % path)
-   try:
-      #Path(path).mkdir(exist_ok=True)
-      path.mkdir(exist_ok=True)
-      #os.mkdir(path)
-   #except FileExistsError as x:
-   #   if (not os.path.isdir(path)):
-   #      FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
-   except OSError as x:
-      FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
-"""
 
 def mkdirs(path, exist_ok=True):
    TRACE("ensuring directories: %s" % path)

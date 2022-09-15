@@ -642,10 +642,7 @@ class I_copy(Instruction):
         path unpack_path. We can't use os.path.realpath() because if dst is
         an absolute symlink, we need to use the *image's* root directory, not
         the host. Thus, we have to resolve symlinks manually."""
-      #unpack_path = ch.Path(unpack_path)
-      #dst_canon = ch.Path(unpack_path)
       dst_canon = unpack_path
-      #dst = ch.Path(dst)
       dst_parts = list(reversed(dst.parts))  # easier to operate on end of list
       iter_ct = 0
       while (len(dst_parts) > 0):
@@ -677,7 +674,6 @@ class I_copy(Instruction):
 
    def execute(self):
       # Locate the destination.
-      #unpack_canon = os.path.realpath(self.image.unpack_path)
       unpack_canon = ch.Path(self.image.unpack_path).resolve()
       if (self.dst.startswith("/")):
          dst = ch.Path(self.dst)
@@ -756,7 +752,6 @@ class I_copy(Instruction):
       # canonical paths yet because we need the source path as given.)
       for src in self.srcs:
          src_canon = src.resolve()
-         #src_canon = os.path.realpath(src)
          if (not os.path.commonpath([src_canon, context_canon])
                  .startswith(context_canon)): # no clear substitute for
                                               # commonpath in pathlib
