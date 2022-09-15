@@ -569,8 +569,7 @@ class I_copy(Instruction):
          ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
-      src = src.resolve()  # alternative to os.path.realpath()?
-      #src = ch.Path(os.path.realpath(src))
+      src = src.resolve()  # alternative to os.path.realpath()
       dst = ch.Path(dst)
       assert (src.is_dir() and not src.is_symlink())
       assert (dst.is_dir() and not dst.is_symlink())

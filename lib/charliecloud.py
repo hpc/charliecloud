@@ -1800,7 +1800,6 @@ class Storage:
          self.root = self.root_env()
       if (self.root is None):
          self.root = self.root_default()
-      self.root = Path(self.root)
       if (not self.root.is_absolute()):
          self.root = os.getcwd() // self.root
 
@@ -1912,7 +1911,7 @@ class Storage:
    def init_move_old(self):
       """If appropriate, move storage directory from old default path to new.
          See issues #1160 and #1243."""
-      old = Storage("/var/tmp/%s/ch-image" % user())
+      old = Storage(Path("/var/tmp/%s/ch-image" % user()))
       moves = ( "dlcache", "img", "ulcache", "version" )
       if (self.root != self.root_default()):
          return  # do nothing silently unless using default storage dir
@@ -2506,7 +2505,10 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage directory
    global storage, storage_lock
-   storage = Storage(cli.storage)
+   if (cli.storage is None):
+      storage = Storage(cli.storage)
+   else:
+      storage = Storage(Path(cli.storage))
    storage_lock = not cli.no_lock
    # architecture
    global arch, arch_host
