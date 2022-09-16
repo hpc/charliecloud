@@ -738,12 +738,22 @@ EOF
 ARG os=alpine:3.9
 ARG foo=bar
 FROM $os
-RUN echo "os=$os foo=$foo"
+ARG baz=qux
+RUN echo "os=$os foo=$foo baz=$baz"
+RUN echo alpine=$(cat /etc/alpine-release | cut -d. -f1-2)
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'FROM alpine:3.9'* ]]
-    [[ $output = *'os=alpine:3.9 foo=bar'* ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # WTF, Docker?
+        # shellcheck disable=SC2016
+        [[ $output = *'FROM $os'* ]]
+        [[ $output = *'os= foo= baz=qux'* ]]
+    else
+        [[ $output = *'FROM alpine:3.9'* ]]
+        [[ $output = *'os=alpine:3.9 foo=bar baz=qux'* ]]
+    fi
+    [[ $output = *'alpine=3.9'* ]]
 
     # multi-stage
     run build_ --no-cache -t tmpimg - <<'EOF'
@@ -751,15 +761,29 @@ ARG os1=alpine:3.9
 ARG os2=alpine:3.16
 FROM $os1
 RUN echo "1: os1=$os1 os2=$os2"
+RUN echo alpine1=$(cat /etc/alpine-release | cut -d. -f1-2)
 FROM $os2
 RUN echo "2: os1=$os1 os2=$os2"
+RUN echo alpine2=$(cat /etc/alpine-release | cut -d. -f1-2)
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'FROM alpine:3.9'* ]]
-    [[ $output = *'FROM alpine:3.16'* ]]
-    [[ $output = *'1: os1=alpine:3.9 os2=alpine:3.16'* ]]
-    [[ $output = *'2: os1=alpine:3.9 os2=alpine:3.16'* ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # WTF, Docker?
+        # shellcheck disable=SC2016
+        [[ $output = *'FROM $os1'* ]]
+        # shellcheck disable=SC2016
+        [[ $output = *'FROM $os2'* ]]
+        [[ $output = *'1: os1= os2='* ]]
+        [[ $output = *'2: os1= os2='* ]]
+    else
+        [[ $output = *'FROM alpine:3.9'* ]]
+        [[ $output = *'FROM alpine:3.16'* ]]
+        [[ $output = *'1: os1=alpine:3.9 os2=alpine:3.16'* ]]
+        [[ $output = *'2: os1=alpine:3.9 os2=alpine:3.16'* ]]
+    fi
+    [[ $output = *'alpine1=3.9'* ]]
+    [[ $output = *'alpine2=3.16'* ]]
 
     # no default value
     run build_ --no-cache -t tmpimg - <<'EOF'
@@ -770,23 +794,37 @@ EOF
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
     [[ $output = *'FROM $os'* ]]
-    [[ $output = *'error: not in registry'* ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # shellcheck disable=SC2016
+        [[ $output = *'base name ($os) should not be blank'* ]]
+    else
+        [[ $output = *'error: not in registry'* ]]
+    fi
 
     # set with --build-arg
     run build_ --no-cache --build-arg=os=alpine:3.16 -t tmpimg - <<'EOF'
 ARG os=alpine:3.9
 FROM $os
 RUN echo "os=$os"
+RUN echo alpine=$(cat /etc/alpine-release | cut -d. -f1-2)
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'FROM alpine:3.16'* ]]
-    [[ $output = *'os=alpine:3.16'* ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # WTF, Docker?
+        # shellcheck disable=SC2016
+        [[ $output = *'FROM $os'* ]]
+        [[ $output = *'os='* ]]
+    else
+        [[ $output = *'FROM alpine:3.16'* ]]
+        [[ $output = *'os=alpine:3.16'* ]]
+    fi
+    [[ $output = *'alpine=3.16'* ]]
 
     # both before and after FROM
     run build_ --no-cache -t tmpimg - <<'EOF'
 ARG foo=bar
-FROM 00_tiny
+FROM alpine:3.9
 ARG foo=baz
 RUN echo "foo=$foo"
 EOF

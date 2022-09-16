@@ -509,6 +509,9 @@ in the Dockerfile reference.
 with Docker where these variables miss upon *use*, except for certain
 cache-excluded variables that never cause misses, listed below.
 
+Note that :code:`ARG` and :code:`ENV` have different syntax despite very
+similar semantics.
+
 :code:`ch-image` passes the following proxy environment variables in to the
 build. Changes to these variables do not cause a cache miss. They do not
 require an :code:`ARG` instruction, as `documented
@@ -543,8 +546,12 @@ environment:
    PATH=/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
    TAR_OPTIONS=--no-same-owner
 
-Note that :code:`ARG` and :code:`ENV` have different syntax despite very
-similar semantics.
+:code:`ARG`
+~~~~~~~~~~~
+
+Variables set with :code:`ARG` are available anywhere in the Dockerfile,
+unlike Docker, where they only work in :code:`FROM` instructions, and possibly
+in other :code:`ARG` before the first :code:`FROM`.
 
 :code:`FROM`
 ~~~~~~~~~~~~
