@@ -1,5 +1,9 @@
 load ../common
 
+setup () {
+    [[ $CH_TEST_BUILDER != none ]] || skip 'no builder'
+}
+
 
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
@@ -394,7 +398,6 @@ EOF
 
 @test 'Dockerfile: ENV parsing' {
     scope standard
-    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
 
     env_expected=$(cat <<'EOF'
 ('chse_0a', 'value 0a')
@@ -474,7 +477,6 @@ EOF
 
 @test 'Dockerfile: SHELL' {
    scope standard
-   [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
    [[ $CH_TEST_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
 
    # test that SHELL command can change executables and parameters
@@ -539,8 +541,6 @@ EOF
     # seconds for ch-image.
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
         scope standard
-    elif [[ $CH_TEST_BUILDER = none ]]; then
-        skip 'no builder'
     else
         scope full
     fi
@@ -727,44 +727,110 @@ EOF
     else
         [[ $status -eq 0 ]]
     fi
+}
 
-    # --arg not used in image name
-    run ch-image build -v -t tmpimg -f - . <<'EOF'
-FROM --arg=foo=bar 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"setting foo to bar"* ]]
 
-    # --arg used in from
-    run ch-image build -v -t tmpimg -f - . <<'EOF'
-FROM --arg=os=00_tiny $os
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"setting os to 00_tiny"* ]]
+@test 'Dockerfile: ARG before FROM' {
+    scope standard
 
-    # multiple --arg
-    run ch-image build -v -t tmpimg -f - . <<'EOF'
-FROM --arg=foo=bar --arg=os=00_tiny $os
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"setting foo to bar"* ]]
-    [[ $output = *"setting os to 00_tiny"* ]]
-
-    # arg before from
-    run ch-image build -v -t tmpimg -f - . <<'EOF'
-ARG os=00_tiny
+    # single-stage
+    run build_ --no-cache -t tmpimg - <<'EOF'
+ARG os=alpine:3.9
 ARG foo=bar
+FROM $os
+RUN echo "os=$os foo=$foo"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'FROM alpine:3.9'* ]]
+    [[ $output = *'os=alpine:3.9 foo=bar'* ]]
+
+    # multi-stage
+    run build_ --no-cache -t tmpimg - <<'EOF'
+ARG os1=alpine:3.9
+ARG os2=alpine:3.16
+FROM $os1
+RUN echo "1: os1=$os1 os2=$os2"
+FROM $os2
+RUN echo "2: os1=$os1 os2=$os2"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'FROM alpine:3.9'* ]]
+    [[ $output = *'FROM alpine:3.16'* ]]
+    [[ $output = *'1: os1=alpine:3.9 os2=alpine:3.16'* ]]
+    [[ $output = *'2: os1=alpine:3.9 os2=alpine:3.16'* ]]
+
+    # no default value
+    run build_ --no-cache -t tmpimg - <<'EOF'
+ARG os
 FROM $os
 EOF
     echo "$output"
+    [[ $status -eq 1 ]]
+    # shellcheck disable=SC2016
+    [[ $output = *'FROM $os'* ]]
+    [[ $output = *'error: not in registry'* ]]
+
+    # set with --build-arg
+    run build_ --no-cache --build-arg=os=alpine:3.16 -t tmpimg - <<'EOF'
+ARG os=alpine:3.9
+FROM $os
+RUN echo "os=$os"
+EOF
+    echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"FROM 00_tiny"* ]]
-    [[ $output = *"setting os to 00_tiny"* ]]
-    [[ $output = *"setting foo to bar"* ]]
+    [[ $output = *'FROM alpine:3.16'* ]]
+    [[ $output = *'os=alpine:3.16'* ]]
+
+    # both before and after FROM
+    run build_ --no-cache -t tmpimg - <<'EOF'
+ARG foo=bar
+FROM 00_tiny
+ARG foo=baz
+RUN echo "foo=$foo"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'foo=baz'* ]]  # second wins
 }
+
+
+@test 'Dockerfile: FROM --arg' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    # --arg present but not used in image name
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
+FROM --arg=foo=bar 00_tiny
+RUN echo "1: foo=$foo"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'FROM --arg=foo=bar 00_tiny'* ]]
+    [[ $output = *'1: foo=bar'* ]]
+
+    # --arg used in image name
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
+FROM --arg=os=00_tiny $os
+RUN echo "1: os=$os"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'FROM --arg=os=00_tiny 00_tiny'* ]]
+    [[ $output = *'1: os=00_tiny'* ]]
+
+    # multiple --arg
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
+FROM --arg=foo=bar --arg=os=00_tiny $os
+RUN echo "1: foo=$foo os=$os"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'FROM --arg=foo=bar --arg=os=00_tiny 00_tiny'* ]]
+    [[ $output = *'1: foo=bar os=00_tiny'* ]]
+}
+
 
 @test 'Dockerfile: COPY list form' {
     scope standard
@@ -794,7 +860,6 @@ EOF
 
 @test 'Dockerfile: COPY errors' {
     scope standard
-    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
     [[ $CH_TEST_BUILDER = buildah* ]] && skip 'Buildah untested'
 
     # Dockerfile on stdin, so no context directory.
@@ -936,7 +1001,6 @@ EOF
 
 @test 'Dockerfile: COPY --from errors' {
     scope standard
-    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
     [[ $CH_TEST_BUILDER = buildah* ]] && skip 'Buildah untested'
 
     # Note: Docker treats several types of erroneous --from names as another

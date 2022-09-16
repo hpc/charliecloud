@@ -173,7 +173,7 @@ env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i (_WS option_keypair)* ( _WS option )* _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i (_WS ( option | option_keypair ) )* _WS image_ref [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
@@ -864,16 +864,16 @@ class Image_Ref:
    # first use.
    parser = None
 
-   def __init__(self, src=None, variables={}):
+   def __init__(self, src=None, variables=None):
       self.host = None
       self.port = None
       self.path = []
       self.name = None
       self.tag = None
       self.digest = None
-      self.variables = variables
+      self.variables = dict() if variables is None else variables
       if (isinstance(src, str)):
-         src = self.parse(src, variables)
+         src = self.parse(src, self.variables)
       if (isinstance(src, lark.tree.Tree)):
          self.from_tree(src)
       elif (src is not None):
@@ -987,26 +987,25 @@ fields:
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
-      def var_sub(var):
-         if (var is not None and var[0] == "$"):
-            return variables_sub(var, self.variables)
-         return var
-
-      self.host = var_sub(tree_child_terminal(t, "ir_hostport", "IR_HOST"))
-      self.port = var_sub(tree_child_terminal(t, "ir_hostport", "IR_PORT"))
+      self.host = tree_child_terminal(t, "ir_hostport", "IR_HOST")
+      self.port = tree_child_terminal(t, "ir_hostport", "IR_PORT")
       if (self.port is not None):
          self.port = int(self.port)
-      for s in tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"):
-         self.path.append(var_sub(s))
-      self.name = var_sub(tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT"))
-      self.tag = var_sub(tree_child_terminal(t, "ir_tag", "IR_TAG"))
-      self.digest = var_sub(tree_child_terminal(t, "ir_digest", "HEX_STRING"))
+      self.path = [    variables_sub(s, self.variables)
+                   for s in tree_child_terminals(t, "ir_path",
+                                                 "IR_PATH_COMPONENT")]
+      self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
+      self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
+      self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
+      for a in ("host", "port", "name", "tag", "digest"):
+         setattr(self, a, variables_sub(getattr(self, a), self.variables))
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host
           and self.port is None):
          self.path.insert(0, self.host)
          self.host = None
+
 
 class OrderedSet(collections.abc.MutableSet):
 
@@ -2481,6 +2480,8 @@ def user():
       FATAL("can't get username: $USER not set")
 
 def variables_sub(s, variables):
+   if (s is None):
+      return s
    # FIXME: This should go in the grammar rather than being a regex kludge.
    #
    # Dockerfile spec does not say what to do if substituting a value that's
@@ -2492,7 +2493,7 @@ def variables_sub(s, variables):
       if (m is not None):
          FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
       s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
-   return s 
+   return s
 
 def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
    """Return True if the version number of program exected as argv is at least

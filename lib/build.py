@@ -206,7 +206,7 @@ class Main_Loop(lark.Visitor):
          if (self.instruction_total_ct == 0):
             if (not (isinstance(inst, I_directive)
                   or isinstance(inst, I_from_)
-                  or isinstance(inst, Arg_First))):
+                  or isinstance(inst, Instruction_No_Image))):
                ch.FATAL("first instruction must be ARG or FROM")
          inst.init(self.inst_prev)
          try:
@@ -261,11 +261,16 @@ class Instruction(abc.ABC):
          s = ch.tree_terminal(st, "OPTION_VAR")
          v = ch.tree_terminal(st, "OPTION_VALUE")
          # assuming all key pair options allow multiple options
-         self.options.setdefault(k, {})
-         self.options[k].update({s: v})
+         self.options.setdefault(k, {}).update({s: v})
 
-      self.options_str = " ".join("--%s=%s" % (k,v)
-                                  for (k,v) in self.options.items())
+      ol = list()
+      for (k, v) in self.options.items():
+         if (isinstance(v, dict)):
+            for (k2, v) in v.items():
+               ol.append("--%s=%s=%s" % (k, k2, v))
+         else:
+            ol.append("--%s=%s" % (k, v))
+      self.options_str = " ".join(ol)
       self.tree = tree
       # These are set in init().
       self.image = None
@@ -318,6 +323,10 @@ class Instruction(abc.ABC):
       return str(self).encode("UTF-8")
 
    @property
+   def status_char(self):
+      return bu.cache.status_char(self.miss)
+
+   @property
    @abc.abstractmethod
    def str_(self):
       ...
@@ -328,7 +337,7 @@ class Instruction(abc.ABC):
 
    @property
    def str_log(self):
-      return ("%3s%s %s" % (self.lineno, bu.cache.status_char(self.miss), self))
+      return ("%3s%s %s" % (self.lineno, self.status_char, self))
 
    @property
    def workdir(self):
@@ -342,7 +351,7 @@ class Instruction(abc.ABC):
       options = self.options_str
       if (options != ""):
          options = " " + options
-      return "%s %s%s" % (self.str_name, options, self.str_)
+      return "%s%s %s" % (self.str_name, options, self.str_)
 
    def chdir(self, path):
       if (path.startswith("/")):
@@ -385,7 +394,7 @@ class Instruction(abc.ABC):
       # it. If a subclass doesn't like the result, it can just change things
       # in prepare().
       self.parent = parent
-      if (self.parent is None or isinstance(self.parent, Setting)):
+      if (self.parent is None):
          self.image_i = -1
       else:
          self.image = self.parent.image
@@ -462,62 +471,39 @@ class Instruction_Supported_Never(Instruction_Unsupported):
       self.unsupported_forever_warn("instruction")
       self.ignore()
 
-class Setting(abc.ABC):
-# This is a super class for no-op instructions. It does not interact
-# with the build cache.
 
-   __slots__ = ("image_i",
-                "lineno",
-                "parent",
-                "sid",
-                "tree")
+class Instruction_No_Image(Instruction):
+   # This is a class for instructions that do not affect the image, i.e.,
+   # no-op from the image’s perspective, but executed for their side effects,
+   # e.g., changing some configuration. These instructions do not interact
+   # with the build cache and can be executed when no image exists (i.e.,
+   # before FROM).
 
-   def __init__(self, tree):
-      """Note: When this is called, all we know about the instruction is
-         what's in the parse tree. In particular, you must not call
-         ch.variables_sub() here."""
-      self.lineno = tree.meta.line
-      self.tree = tree
-      self.image_i = -1
+   # FIXME: Only tested with instructions before the first FROM. I doubt it
+   # works for instructions elsewhere.
 
    @property
    def miss(self):
       return True
 
-   @property
-   def sid_input(self):
-      return str(self).encode("UTF-8")
+   #@property
+   #def sid_input(self):
+   #   return str(self).encode("UTF-8")
 
    @property
-   @abc.abstractmethod
-   def str_(self):
-      ...
+   def status_char(self):
+      return " "
 
-   @property
-   def str_name(self):
-      return self.__class__.__name__.split("_")[1].upper()
-
-   @property
-   def str_log(self):
-      return ("%3s. %s" % (self.lineno, self))
-
-   def __str__(self):
-      return "%s %s" % (self.str_name, self.str_)
+   def checkout_for_build(self):
+      pass
 
    def commit(self):
       pass
 
-   def execute(self):
-      pass
-
-   def init(self, parent):
-      # Separate from prepare() because subclasses shouldn't need to override
-      # it. If a subclass doesn't like the result, it can just change things
-      # in prepare().
-      self.parent = None
-
    def prepare(self, miss_ct):
-      pass
+      ch.INFO(self.str_log)
+      return miss_ct + int(self.miss)
+
 
 class Arg(Instruction):
 
@@ -574,19 +560,20 @@ class I_arg_equals(Arg):
          v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
       return v
 
-class Arg_First(Setting):
+
+class Arg_First(Instruction_No_Image):
 
    __slots__ = ("key",
-                 "value")
+                "value")
 
    def __init__(self, *args):
       super().__init__(*args)
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
-      self.value = self.value_default()
-
-   @property
-   def sid_input(self):
-      return super().sid_input
+      if (self.key in cli.build_arg):
+         self.value = cli.build_arg[self.key]
+         del cli.build_arg[self.key]
+      else:
+         self.value = self.value_default()
 
    @property
    def str_(self):
@@ -600,8 +587,8 @@ class Arg_First(Setting):
    def prepare(self, *args):
       if (self.value is not None):
          argfrom.update({self.key: self.value})
-      ch.INFO(self.str_log)
-      return 0
+      return super().prepare(*args)
+
 
 class I_arg_first_bare(Arg_First):
 
@@ -609,6 +596,7 @@ class I_arg_first_bare(Arg_First):
 
    def value_default(self):
       return None
+
 
 class I_arg_first_equals(Arg_First):
 
@@ -619,6 +607,7 @@ class I_arg_first_equals(Arg_First):
       if (v is None):
          v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
       return v
+
 
 class I_copy(Instruction):
 
@@ -1030,12 +1019,8 @@ class I_from_(Instruction):
          ch.WARNING("base image also exists non-cached; using cache")
       # Load metadata
       self.image.metadata_load(self.base_image)
+      self.env_arg.update(argfrom)  # from pre-FROM ARG
 
-      # set --arg
-      for var in argfrom:
-         val = argfrom.get(var)
-         ch.VERBOSE("setting %s to %s" % (var, val))
-         self.env_arg[var] = val
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 
@@ -1118,7 +1103,7 @@ class I_shell(Instruction):
       return str(self.shell)
 
    def prepare(self, *args):
-      self.shell = [ch.variables_sub(unescape(i), self.env_build)
+      self.shell = [    ch.variables_sub(unescape(i), self.env_build)
                     for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
       return super().prepare(*args)
 
@@ -1135,8 +1120,9 @@ class I_workdir(Instruction):
       ch.mkdirs(self.image.unpack_path // self.workdir)
 
    def prepare(self, *args):
-      self.path = ch.variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
-                                self.env_build)
+      self.path = ch.variables_sub(ch.tree_terminals_cat(self.tree,
+                                                         "LINE_CHUNK"),
+                                   self.env_build)
       self.chdir(self.path)
       return super().prepare(*args)
 

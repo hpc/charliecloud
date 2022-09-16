@@ -548,10 +548,9 @@ similar semantics.
 
 :code:`FROM`
 ~~~~~~~~~~~~
-:code:`--arg` option in the :code:`FROM` command has the same functionality
-as :code:`ARG`.
 
-Note :code:`--arg` can be used multiple times in a single :code:`FROM` line. 
+The :code:`FROM` instruction accepts option :code:`--arg=NAME=VALUE`, which
+serves the same purpose as the :code:`ARG` instruction. It can be repeated.
 
 :code:`COPY`
 ~~~~~~~~~~~~
