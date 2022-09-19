@@ -1,6 +1,6 @@
 # ch-test-scope: full
 
-# See Dockerfile.libfabric for deetz.
+# See Dockerfile.libfabric for MPI goals and details.
 FROM libfabric
 
 # To configure MPICH to use SLURM as its process manager we must set the
@@ -10,8 +10,8 @@ FROM libfabric
 #   2) --with-pm=no   Disable the hydra and gforker process manager.
 #
 # This enables us to use SLURM to manage host launched multinode jobs. As a
-# consequence the mpiexec exectuable is no longer compiled and installed in the
-# container; no guest launch.
+# consequence the mpiexec exectuable is no longer compiled or installed in the
+# container.
 ARG MPI_VERSION=4.0.2
 ARG MPI_URL=http://www.mpich.org/static/downloads/${MPI_VERSION}
 RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
