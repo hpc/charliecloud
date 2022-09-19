@@ -1,3 +1,4 @@
+import configparser
 import enum
 import hashlib
 import os
@@ -5,6 +6,7 @@ import pickle
 import re
 import stat
 import tempfile
+import textwrap
 import time
 
 import charliecloud as ch
@@ -17,6 +19,44 @@ import pull
 DOT_MIN = (2, 30, 1)
 GIT_MIN = (2, 28, 1)
 GIT2DOT_MIN = (0, 8, 3)
+
+# Git configuration. Note some of these are overridden in specific commands.
+# Documentation for these variables: https://git-scm.com/docs/git-config
+GIT_CONFIG = {
+   # Try to maximize “git add” speed.
+   "core.looseCompression":  "0",
+   # Quick-and-dirty results suggest that commit is not faster after garbage
+   # collection, and checkout is actually a little faster if *not* garbage
+   # collected. Therefore, it's not a high priority to run garbage collection.
+   # Further, I would assume garbaging a lot of files rather than a few gives
+   # better opportunities for delta compression. Our most file-ful example
+   # image is obspy at about 50K files.
+   "gc.auto":                "100000",
+   # Leave packs larger than this alone during automatic GC. This is to avoid
+   # excessive resource consumption during GC the user didn't ask for.
+   "gc.bigPackThreshold":    "12G",
+   # Anything unreachable from a named branch or the reflog is unavailable to
+   # the build cache, so we may as well delete it immediately. However, there
+   # might be a concurrent Git operation in progress, so don’t use “now”.
+   "gc.pruneExpire":         "12.hours.ago",
+   # States on the reflog are available to the build cache, but the default
+   # prune time is 90 and 30 days respectively, which seems too long.
+   #"gc.reflogExpire":        "14.days.ago",  # changed my mind
+   # In some quick-and-dirty tests (see issue #1412), pack.compression=1 is
+   # 50% faster than the default 6 at the cost of 6% more size, while
+   # Compression 0 is twice as fast but also over twice the size; 9 doubles
+   # the time with no space savings. 1 seems like the right balance.
+   "pack.compression":       "1",
+   # These two are guesses based on the fact that HPC machines tend to have a
+   # lot of memory and more caching is faster.
+   "pack.deltaCacheLimit":   "4096",
+   "pack.deltaCacheSize":    "1G",
+   # These two are guesses based on [1] and its links, particularly [2].
+   # [1]: https://stackoverflow.com/questions/28720151
+   # [2]: https://web.archive.org/web/20170526024841/https://vcscompare.blogspot.com/2008/06/git-repack-parameters.html
+   "pack.depth":             "36",
+   "pack.window":            "24",
+}
 
 
 ## Globals ##
@@ -187,6 +227,11 @@ class Enabled_Cache:
          # Non-empty but not an existing cache.
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
+      self.configure()  # every open so configuration is up to date
+      # Prune stale worktrees that might have been left around after failed
+      # builds or other interruptions.
+      ch.cmd_quiet(["git", "worktree", "prune"], cwd=self.root)
+
 
    @property
    def root(self):
@@ -269,6 +314,28 @@ class Enabled_Cache:
       self.git_restore(path, fm)
       return git_hash
 
+   def configure(self):
+      path = self.root // "config"
+      fp = ch.open_(path, "r+")
+      config = configparser.ConfigParser()
+      config.read_file(fp, source=path)
+      changed = False
+      for (k, v) in GIT_CONFIG.items():
+         (s, k) = k.lower().split(".", maxsplit=1)
+         if (config.get(s, k, fallback=None) != v):
+            changed = True
+            try:
+               config.add_section(s)
+            except configparser.DuplicateSectionError:
+               pass
+            config.set(s, k, v)
+      if (changed):
+         ch.VERBOSE("writing updated Git config")
+         fp.seek(0)
+         fp.truncate()
+         ch.ossafe(config.write, "can’t write Git config: %s" % path, fp)
+      ch.close_(fp)
+
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
          no such branch."""
@@ -318,9 +385,10 @@ class Enabled_Cache:
    def garbageinate(self):
       ch.INFO("collecting cache garbage")
       t = ch.Timer()
-      ch.cmd_quiet(["git", "reflog", "expire",
-                    "--expire-unreachable=now", "--all"], cwd=self.root)
-      ch.cmd_quiet(["git", "gc", "--prune=now"], cwd=self.root)
+      # Expire the reflog with a recent time instead of now in case there is a
+      # parallel Git operation in progress.
+      ch.cmd(["git", "-c", "gc.bigPackthreshold=0", "-c", "gc.pruneExpire=now",
+                     "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
       t.log("collected garbage")
 
    def git_prepare(self, unpack_path, write=True):
@@ -395,6 +463,7 @@ class Enabled_Cache:
       if   (   stat.S_ISREG(st.st_mode)
             or stat.S_ISLNK(st.st_mode)
             or stat.S_ISFIFO(st.st_mode)):
+         # normally nothing to do here on these file types
          if (path.startswith("./var/lib/rpm/__db.")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
             ch.unlink(name)
@@ -505,12 +574,11 @@ class Enabled_Cache:
       # Restore my metadata.
       if ((   not quick                     # Git broke metadata
            or fm.hardlink_to is not None    # we just made the hardlink
-           or stat.S_ISDIR(fm.mode))        # maybe just created / new hardlink
+           or stat.S_ISDIR(fm.mode)         # maybe just created / new hardlink
+           or stat.S_ISFIFO(fm.mode))       # we just made the FIFO
           and not stat.S_ISLNK(fm.mode)):   # can't not follow symlinks
          ch.ossafe(os.utime, "can't restore times: %s" % path, fm.name,
                    ns=(fm.atime_ns, fm.mtime_ns))
-         #if (fm.name == "setuid_dir"):
-         #   print("restoring mode: %s 0o%05o" % (fm.name, fm.mode))
          ch.ossafe(os.chmod, "can't restore mode: %s" % path, fm.name,
                    stat.S_IMODE(fm.mode))
 
@@ -634,6 +702,14 @@ class Enabled_Cache:
       print("commits:       %4d" % commit_ct)
       print("files:         %4d %s" % (file_ct, file_suffix))
       print("disk used:     %4d %s" % (byte_ct, byte_suffix))
+      # some information directly from Git
+      if (ch.verbose >= 1):
+         out = ch.cmd_stdout(["git", "count-objects", "-vH"]).stdout
+         print("Git statistics:")
+         print(textwrap.indent(out, "  "), end="")
+         out = ch.file_read_all(self.root // "config")
+         print("Git config:")
+         print(textwrap.indent(out, "  "), end="")
 
    def tree_print(self):
       # Note the percent codes are interpreted by Git.

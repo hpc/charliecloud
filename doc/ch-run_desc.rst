@@ -598,7 +598,7 @@ either :code:`WANTED_` or :code:`ALSO_WANTED_`::
 Note that some programs, such as shells, set some environment variables even
 if started with no init files::
 
-  $ ch-run --unset-env='*' $CH_TEST_IMGDIR/debian9 -- bash --noprofile --norc -c env
+  $ ch-run --unset-env='*' $CH_TEST_IMGDIR/debian_9ch -- bash --noprofile --norc -c env
   SHLVL=1
   PWD=/
   _=/usr/bin/env
@@ -668,3 +668,4 @@ status is 1 regardless of the signal value.
 
 
 ..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH
+..  LocalWords:  noprofile norc SHLVL PWD

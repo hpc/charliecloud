@@ -184,6 +184,11 @@ convert-img () {
     esac
     echo "CONVERT ${ct}: ${in_desc} ($in_fmt) -> ${out_desc} (${out_fmt})"
     delete "$out_fmt" "$out_desc"
+    if [[ $in_fmt = ch-image && $CH_IMAGE_CACHE = enabled ]]; then
+        # round-trip the input image through Git
+        ch-image delete "$in_desc"
+        ch-image undelete "$in_desc"
+    fi
     ch-convert --no-clobber -v -i "$in_fmt" -o "$out_fmt" "$in_desc" "$out_desc"
     # Doing it twice doubles the time but also tests that both new conversions
     # and overwrite work. Hence, full scope only.

@@ -21,7 +21,7 @@ case $version_simple in
         ;;
 esac
 
-if [ ! -d "${ch_base}/.git" ] || [ -z "$prerelease" ]; then
+if [ ! -e "${ch_base}/.git" ] || [ -z "$prerelease" ]; then
     # no Git or release version; use simple version
     printf "%s\n" "$version_simple"
 else

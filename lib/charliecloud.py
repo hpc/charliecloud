@@ -44,7 +44,7 @@ depfails = []
 # [1]: https://github.com/lark-parser/lark/issues/505
 import lark
 LARK_MIN = (0,  7, 1)
-LARK_MAX = (0, 12, 0)
+LARK_MAX = (99, 0, 0)
 lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
    depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
@@ -2232,7 +2232,7 @@ def chmod_min(path, mode, st=None):
    mode_old = stat.S_IMODE(st.st_mode)
    if (mode & mode_old != mode):
       mode |= mode_old
-      VERBOSE("fixing permisssions: %s: %03o -> %03o" % (path, mode_old, mode))
+      VERBOSE("fixing permissions: %s: %03o -> %03o" % (path, mode_old, mode))
       ossafe(os.chmod, "can't chmod: %s" % path, path, mode)
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):

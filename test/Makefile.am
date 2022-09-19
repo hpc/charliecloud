@@ -13,6 +13,7 @@ bucache/argenv2.df \
 bucache/b.df \
 bucache/c.df \
 bucache/copy.df \
+bucache/difficult.df \
 bucache/force.df \
 bucache/from.df \
 build/10_sanity.bats \
