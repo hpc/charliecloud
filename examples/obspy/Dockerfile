@@ -3,7 +3,10 @@
 # ch-test-arch-exclude: ppc64le  # no obspy Conda package?
 FROM almalinux8
 
-RUN dnf install -y --setopt=install_weak_deps=false zlib-devel which \
+RUN dnf install -y --setopt=install_weak_deps=false \
+                libpng-devel \
+                which \
+                zlib-devel \
  && dnf clean all
 
 WORKDIR /usr/local/src
@@ -47,3 +50,12 @@ WORKDIR /
 RUN wget -nv http://examples.obspy.org/RJOB_061005_072159.ehz.new
 COPY hello.py .
 RUN chmod 755 ./hello.py
+
+# Add bind-mount DST files and directories for example tests.
+RUN mkdir /diff \
+ && echo "example bind mount DST file" > /inp_a \
+ && echo "example bind mount DST file" > /inp_b
+
+# Unlike the paraview example, we have to once again ldconfig here, otherwise
+# /usr/local/lib links are not resolved.
+RUN /sbin/ldconfig

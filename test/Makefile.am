@@ -60,6 +60,7 @@ sobuilts = \
 sotest/bin/sotest \
 sotest/lib/libsotest.so.1.0 \
 sotest/libsotest.so \
+sotest/libsotest-fi.so \
 sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
@@ -102,13 +103,18 @@ docs-sane force-auto make-perms-test: %: %.py.in
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0 sotest/libsotest.so sotest/libsotest.so.1
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^
+
 sotest/libsotest.so.1.0: sotest/libsotest.c
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
 
 sotest/libsotest.so: sotest/libsotest.so.1.0
 	ln -fTs ./libsotest.so.1.0 $@
+
 sotest/libsotest.so.1: sotest/libsotest.so.1.0
 	ln -fTs ./libsotest.so.1.0 $@
+
+sotest/libsotest-fi.so: sotest/libsotest.so
+	ln -fTs ./libsotest.so $@
 
 sotest/bin/sotest: sotest/sotest
 	mkdir -p sotest/bin

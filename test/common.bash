@@ -166,25 +166,26 @@ pict_assert_equal () {
     ref=$1
     sample=$2
     pixel_max_ct=${3:-0}
-    sample_base=${sample%.*}
+    sample_base=$(basename "${sample%.*}")
     sample_ext=${sample##*.}
-    diff_=${sample_base}.diff.${sample_ext}
-    echo "reference:   ${ref}"
-    echo "sample:      ${sample}"
-    echo "diff image:  ${diff_}"
+    diff_dir="${BATS_TMPDIR}/$(basename $(dirname $sample))"
+    ref_bind="${ref}:/inp_a"
+    sample_bind="${sample}:/inp_b"
+    diff_bind="${diff_dir}:/diff"
+    diff_="/diff/${sample_base}.diff.${sample_ext}"
+    echo "reference: $ref"
+    echo "   bind: $ref_bind"
+    echo "sample: $sample"
+    echo "   bind: $sample_bind"
+    echo "diff: $diff_"
+    echo "   bind: $diff_bind"
     # See: https://imagemagick.org/script/command-line-options.php#metric
-    # We don't want to rely on ImageMagick existing on the host; we install
-    # it in the image. We can't bind-mount arbitrary files inside the image
-    # without a valid bind DST (note that adding the --write flag only works
-    # when the bind SRC is a directory). Thus we create bind DST files and
-    # remove them afterwards.
-    touch "$ch_img/a"
-    touch "$ch_img/b"
-    pixel_ct=$(ch-run "$ch_img" -b "$ref:/a" -b "$sample:/b" -- \
-                      compare -metric AE /a /b "$diff_" 2>&1 || true)
+    pixel_ct=$(ch-run "$ch_img" -b "$ref_bind" \
+                                -b "$sample_bind" \
+                                -b "$diff_bind" -- \
+                      compare -metric AE /inp_a /inp_b "$diff_" 2>&1 || true)
     echo "diff count:  ${pixel_ct} pixels, max ${pixel_max_ct}"
     [[ $pixel_ct -le $pixel_max_ct ]]
-    rm "$ch_img/a" "$ch_img/b"
 }
 
 # Check if the pict_ functions are usable; if not, pedantic-fail.
@@ -338,9 +339,11 @@ if [[ $ch_tag = *'-mpich' ]]; then
     # As of MPICH 4.0.2, using SLURM as the MPICH process manager requires two
     # configure options that disable the compilation of mpiexec. This may not
     # always be the case.
+    # shellcheck disable=SC2034
     ch_mpi_exe=mpiexec
 else
     ch_mpi=openmpi
+    # shellcheck disable=SC2034
     ch_mpi_exe=mpirun
 fi
 

@@ -13,6 +13,8 @@ fromhost_clean () {
     find "$1" -xdev \(           \
          -name 'libcuda*'        \
       -o -name 'libnvidia*'      \
+      -o -name 'libfabric'       \
+      -o -name libsotest-fi.so   \
       -o -name libsotest.so.1    \
       -o -name libsotest.so.1.0  \
       -o -name sotest            \
@@ -46,7 +48,6 @@ fromhost_ls () {
     fromhost_clean "$img"
     ch-fromhost -v --file sotest/files_inferrable.txt "$img"
     fromhost_ls "$img"
-    test -f "${img}/usr/bin/sotest"
     test -f "${img}${libpath}/libsotest.so.1.0"
     test -L "${img}${libpath}/libsotest.so.1"
     ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest
@@ -229,6 +230,30 @@ fromhost_ls () {
     [[ $output = *'cannot read file: /doesnotexist'* ]]
     fromhost_clean_p "$img"
 
+    # --ofi no argument
+    run ch-fromhost "$img" --ofi
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'--ofi must not be empty'* ]]
+
+    # --ofi path doesn't exist
+    run ch-fromhost "$img" --ofi /rando/path
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'is not, or does not contain, valid OFI dso(s)'* ]]
+
+    # --ofi path has no -fi.so
+    run ch-fromhost "$img" --ofi "$CHTEST_DIR"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'is not, or does not contain, valid OFI dso(s)'* ]]
+
+    # --ofi file is not a -fi.so
+    run ch-fromhost "$img" --ofi "$CHTEST_DIR/sotest/libsotest.so"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'is not, or does not contain, valid OFI dso(s)'* ]]
+
     # --path no argument
     run ch-fromhost "$img" --path
     echo "$output"
@@ -295,22 +320,33 @@ fromhost_ls () {
     fromhost_clean_p "$img"
 }
 
-@test 'ch-fromhost --cray-mpi not on a Cray' {
+@test 'ch-fromhost --ofi (OpenMPI)' {
     scope full
-    [[ $ch_cray ]] && skip 'host is a Cray'
-    run ch-fromhost --cray-mpi "$ch_timg"
+    prerequisites_ok openmpi
+    img=${ch_imgdir}/openmpi
+    run ch-fromhost --ofi "${CHTEST_DIR}/sotest/libsotest-fi.so" "$img"
     echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'are you on a Cray?'* ]]
+    [[ $status -eq 0 ]]
+    fromhost_clean "$img"
 }
 
-@test 'ch-fromhost --cray-mpi with no MPI installed' {
+@test 'ch-fromhost --ofi with no libfabric installed' {
     scope full
-    [[ $ch_cray ]] || skip 'host is not a Cray'
-    run ch-fromhost --cray-mpi "$ch_timg"
+    run ch-fromhost --ofi "${CHTEST_DIR}/sotest/libsotest-fi.so" "$ch_timg"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't find MPI in image"* ]]
+    [[ $output = *"libfabric.so not found in"* ]]
+}
+
+@test 'ch-fromhost --host-ofi with no host ofi' {
+    scope full
+    ofi_dir="$CH_FROMHOST_OFI"
+    unset CH_FROMHOST_OFI
+    run ch-fromhost --host-ofi "$ch_timg"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'CH_FROMHOST_OFI not set'* ]]
+    export "CH_FROMHOST_OFI=${ofi_dir}"
 }
 
 @test 'ch-fromhost --nvidia with GPU' {

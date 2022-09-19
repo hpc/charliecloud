@@ -960,7 +960,7 @@ vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
                       21 'Lustre test dir'
 vset CH_TEST_SLURM_MPI "$srun_mpi"     "$CH_TEST_SLURM_MPI" "--mpi=$SLURM_MPI_TYPE" \
-                      21 'srun mpi type argument'
+                      21 'srun mpi type'
 printf '\n'
 
 if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then

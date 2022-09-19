@@ -8,13 +8,15 @@ setup () {
     scope full
     prerequisites_ok paraview
     indir=${CHTEST_EXAMPLES_DIR}/paraview
-    outdir=$BATS_TMPDIR
+    outdir=$BATS_TMPDIR/paraview
     inbind=${indir}:/mnt/0
     outbind=${outdir}:/mnt/1
     if [[ $ch_multinode ]]; then
         # Bats only creates $BATS_TMPDIR on the first node.
         # shellcheck disable=SC2086
-        $ch_mpirun_node mkdir -p "$BATS_TMPDIR"
+        $ch_mpirun_node mkdir -p "$outdir"
+    else
+        mkdir -p "$outdir"
     fi
 }
 
