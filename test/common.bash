@@ -140,12 +140,6 @@ localregistry_init () {
 
 multiprocess_ok () {
     [[ $ch_multiprocess ]] || skip 'no multiprocess launch tool found'
-    # If the MPI in the container is MPICH, we only try host launch on Crays.
-    # For the other settings (workstation, other Linux clusters), it may or
-    # may not work; we simply haven't tried.
-    #[[ $ch_mpi = mpich && -z $ch_cray ]] \
-    #    && skip 'MPICH untested'
-    # Exit function successfully.
     true
 }
 
@@ -333,6 +327,9 @@ ch_timg=${ch_imgdir}/chtest
 
 if [[ $ch_tag = *'-mpich' ]]; then
     ch_mpi=mpich
+    # As of MPICH 4.0.2, using SLURM as the MPICH process manager requires two
+    # configure options that disable the compilation of mpiexec. This may not
+    # always be the case.
     ch_mpi_exe=mpiexec
 else
     ch_mpi=openmpi
