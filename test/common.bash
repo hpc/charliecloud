@@ -173,14 +173,23 @@ pict_assert_equal () {
     echo "sample:      ${sample}"
     echo "diff image:  ${diff_}"
     # See: https://imagemagick.org/script/command-line-options.php#metric
-    pixel_ct=$(compare -metric AE "$ref" "$sample" "$diff_" 2>&1 || true)
+    # We don't want to rely on ImageMagick existing on the host; we install
+    # it in the image. We can't bind-mount arbitrary files inside the image
+    # without a valid bind DST (note that adding the --write flag only works
+    # when the bind SRC is a directory). Thus we create bind DST files and
+    # remove them afterwards.
+    touch "$ch_img/a"
+    touch "$ch_img/b"
+    pixel_ct=$(ch-run "$ch_img" -b "$ref:/a" -b "$sample:/b" -- \
+                      compare -metric AE /a /b "$diff_" 2>&1 || true)
     echo "diff count:  ${pixel_ct} pixels, max ${pixel_max_ct}"
     [[ $pixel_ct -le $pixel_max_ct ]]
+    rm "$ch_img/a" "$ch_img/b"
 }
 
 # Check if the pict_ functions are usable; if not, pedantic-fail.
 pict_ok () {
-    if ! command -v compare > /dev/null 2>&1; then
+    if "$ch_mpirun_node" ch-run "$ch_img" -- compare > /dev/null 2>&1; then
         pedantic_fail 'need ImageMagick'
     fi
 }
@@ -236,7 +245,6 @@ unpack_img_all_nodes () {
     if [[ $1 ]]; then
         case $CH_TEST_PACK_FMT in
             squash-mount)
-                # Lots of things expect no extension here, so go with that even
                 # though it's a file, not a directory.
                 $ch_mpirun_node ln -s "${ch_tardir}/${ch_tag}.sqfs" "${ch_imgdir}/${ch_tag}"
                 ;;
