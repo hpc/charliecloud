@@ -4,8 +4,8 @@
 #
 #   1) inject arbitrary files from the host into the container;
 #
-#   2) inject host-built, loadable libfabric (OFI) shared object (dso) providers
-#      into an image with a MPI built against libfabric to use; and
+#   2) inject host-built, loadable libfabric (OFI) dynamic shared object (dso)
+#      providers into an image with a MPI built against libfabric to use; and
 #
 #   3) inject nvidia libraries necessary to leverage GPUs with
 #      nvidiia-container-cli.
@@ -65,7 +65,7 @@ Which files to inject (one or more required; can be repeated):
   -p, --path PATH  inject the file at PATH
   -o, --ofi  PATH  add host compiled OFI DSO provider(s) to image libfabric
   --host-ofi       ofi providers at path CH_FROMHOST_OFI
-  --nvidia         recommended by nVidia (via "nvidia-container-cli list")
+  --nvidia         recommended by nVidia (via \"nvidia-container-cli list\")
 
 Destination within image:
 
@@ -74,7 +74,7 @@ Destination within image:
 Options:
 
   --lib-path       print the inferred destination for shared libraries
-  --no-ldconfig    don't run ldconfig even if we injected shared libraries
+  --no-ldconfig    don\'t run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
   -v, --verbose    list the injected files
   --version        print version and exit
@@ -164,13 +164,15 @@ queue_ofi_dso () {
     old_ifs="$IFS"
     IFS="$newline"
     d="${dest:-$2}"
-    if [ -d $1 ]; then
+    # Directory of OFI provider dsos (*-fi.so's).
+    if [ -d "$1" ]; then
        debug "searching $1 for ofi providers (*-fi.so)"
        for f in "${1}/"*-fi.so; do
            debug "  found $f"
            queue_ofi_dso "$f"
        done
-       [ -n $ofi_found ] || "no ofi providers found in $1"
+       [ -n "$ofi_found" ] || "no ofi providers found in $1"
+    # Single OFI dso provider.
     elif [ -f "$1" ]; then
         inject_ofi="${inject_ofi:+$inject_ofi$newline}$f:$d"
         ofi_found=yes
@@ -228,9 +230,9 @@ while [ $# -gt 0 ]; do
             ;;
         --host-ofi)
             if [ -z $CH_FROMHOST_OFI ]; then
-                echo "CH_FROMHOST_OFI not set"
-                echo "hint: see FAQ: host OFI (FIXME)"
-                fatal "no host ofi dso provider directory"
+                hint_1="hint: use --ofi to target specific -fi.so provider; or"
+                hint_2="hint: see FAQ: site OFI providers (FIXME:)"
+                fatal "CH_FROMHOST_OFI not set\n%s\%s" "$hint_1" "$hint_2"
             fi
             queue_ofi_dso "$CH_FROMHOST_OFI"
             ;;
@@ -315,9 +317,9 @@ if [ $ofi_found ]; then
                                                 -not \( -path /etc/opt/cray -prune \) \
                                                 -not \( -path /opt/cray -prune \) \
                                                 -name  "libfabric.so")
-    [ -n ofi_so ] || fatal "libfabric.so not found in $image"
+    [ -n "$ofi_so" ] || fatal "libfabric.so not found in $image"
     debug "  found: $image/$ofi_so"
-    ofi_dest=$(dirname $ofi_so)
+    ofi_dest=$(dirname "$ofi_so")
     ofi_dest="${ofi_dest}/libfabric"
     queue_mkdir "$ofi_dest"
     debug "using libfabric dso provider destination: $ofi_dest"
