@@ -16,18 +16,24 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 python3-devel \
                 python3-mako \
                 python3-pip \
+                which \
+                zlib-devel \
  && dnf clean all
 
 RUN pip3 install --no-binary=mpi4py \
     cython \
     mpi4py
 
+WORKDIR /usr/local/src
+
 # Install ImageMagick
-ARG MAGICK_VERSION=7.1.0-48
-RUN wget -nv -0 "https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VERSION}.tar.gz" \
- && tar xf ${MAGICK_VERSION}.tar.gz \
+# The latest, 7.1.0, fails to install with a cryptic libtool error. ¯\_(ツ)_/¯
+ARG MAGICK_VERSION=7.0.11-14
+RUN wget -nv -O ImageMagick-${MAGICK_VERSION}.tar.gz \
+    "https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VERSION}.tar.gz" \
+ && tar xf ImageMagick-${MAGICK_VERSION}.tar.gz \
  && cd ImageMagick-${MAGICK_VERSION} \
- && ./configure --prefix=/user/local \
+ && ./configure --prefix=/usr/local \
  && make -j $(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../ImageMagick-${MAGICK_VERSION}
 

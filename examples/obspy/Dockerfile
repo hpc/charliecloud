@@ -1,13 +1,22 @@
 # ch-test-scope: standard
 # ch-test-arch-exclude: aarch64  # no obspy Conda package
 # ch-test-arch-exclude: ppc64le  # no obspy Conda package?
-FROM debian:buster
+FROM almalinux8
 
-RUN    apt-get update \
-    && apt-get install -y \
-       bzip2 \
-       wget \
-    && rm -rf /var/lib/apt/lists/*
+RUN dnf install -y --setopt=install_weak_deps=false zlib-devel which \
+ && dnf clean all
+
+WORKDIR /usr/local/src
+# Install ImageMagick
+# The latest, 7.1.0, fails to install with a cryptic libtool error. ¯\_(ツ)_/¯
+ARG MAGICK_VERSION=7.0.11-14
+RUN wget -nv -O ImageMagick-${MAGICK_VERSION}.tar.gz \
+    "https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VERSION}.tar.gz" \
+ && tar xf ImageMagick-${MAGICK_VERSION}.tar.gz \
+ && cd ImageMagick-${MAGICK_VERSION} \
+ && ./configure --prefix=/usr/local \
+ && make -j $(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../ImageMagick-${MAGICK_VERSION}
 
 # Install Miniconda. Notes/gotchas:
 #
@@ -18,7 +27,6 @@ RUN    apt-get update \
 #   2. Use latest version so we catch sooner if things explode.
 #
 # [1]: https://docs.anaconda.com/anaconda/user-guide/faq/
-WORKDIR /usr/local/src
 ARG MC_VERSION=latest
 ARG MC_FILE=Miniconda3-$MC_VERSION-Linux-x86_64.sh
 RUN wget -nv https://repo.anaconda.com/miniconda/$MC_FILE

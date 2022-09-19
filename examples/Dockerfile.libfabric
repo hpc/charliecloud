@@ -19,40 +19,51 @@ FROM almalinux8
 # MPI implementations have numerous ways of communicating messages over
 # interconnects. We use Libfabric (OFI), an OpenFabric framework that
 # exports fabric communication services to applications, to manage these
-# communcations with built-in, or loadable, fabric providers. This allows us to:
-# uniformly manage fabric communcations services for OpenMPI and MPICH; and
-# leverage host-built loadable shared object providers to give our containers
-# access to proprietary hardware, e.g., Cray Gemini/Aries.
+# communcations with built-in, or loadable, fabric providers.
+#
+#   - https://ofiwg.github.io/libfabric
+#   - https://ofiwg.github.io/libfabric/v1.14.0/man/fi_provider.3.html
+#
+# Using OFI, we can: 1) uniformly manage fabric communcations services for both
+# OpenMPI and MPICH; and 2) leverage host-built loadable dynamic shared object
+# (dso) providers to give our container examples access to proprietary host
+# hardware, e.g., Cray Gemini/Aries.
 #
 # Providers implement the application facing software interfaces needed to
-# access network specific protocols, drivers, and hardware [2]. The built-in
+# access network specific protocols, drivers, and hardware. The built-in
 # providers relevant here are:
 #
 #   Provider  included  reason  Eth  IB  OPA  RoCE  Slingshot   Gemini/Aries
 #   --------  --------  ------  ---  --  ---  ----  ---------   ------------
 #
-#   tcp       Yes                Y*  X   X    X     X           X
-#   verbs     Yes                N   Y   N    Y
-#   psm2      No        a        N   N   Y    N
-#   opx       No        b        N   N   Y    N
-#   psm3      Yes                Y   N   Y    Y
-#   ugni      No        c                                       Y*
+#   opx       No        a        N   N   Y    N
+#   psm2      No        b        N   N   Y    N
+#   psm3      Yes       c        Y   N   Y    Y                 X
 #   shm       Yes       d
+#   tcp       Yes                Y*  X   X    X     X           X
+#   ugni      No        f                                       Y*
+#   verbs     Yes               N   Y   N    Y
 #
 #   Y : supported
 #   Y*: best choice for that interconnect
 #   X : supported but sub-optimal
 #     : unclear
 #
-#   a : psm3 does what psm2 does
-#   b : psm3 covers OPA
+#   a : OPA is covered by psm3.
+#   b : psm3 is preffered over psm2.
+#   c : psm3 provides optimized performance for most verbs and socket devices
+#       Additionally, PSM3.x: 1) fully integrates the OFI provider and
+#       underlying PSM3 protocols/implementation, and 2) exports only OFI APIs.
 #   c : requires cray interconnect and libraries
+#   d : shm enables applications using OFI to be run over shared memory.
 #
 # The full list of OFI providers can be seen here:
+#
 #   - https://github.com/ofiwg/libfabric/blob/main/README.md
 #
-# PMI/PMIx are include these so that we can use srun or any other PMI[x]
-# provider, with no matching MPI needed on the host.
+# Finally, PMI/PMIx are include these so that we can use srun or any other
+# PMI[x] provider, with no matching MPI needed on the host.
+
 
 # OS packages needed to build this stuff.
 #

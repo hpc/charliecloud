@@ -229,7 +229,7 @@ while [ $# -gt 0 ]; do
             shift
             ;;
         --host-ofi)
-            if [ -z $CH_FROMHOST_OFI ]; then
+            if [ -z "$CH_FROMHOST_OFI" ]; then
                 hint_1="hint: use --ofi to target specific -fi.so provider; or"
                 hint_2="hint: see FAQ: site OFI providers (FIXME:)"
                 fatal "CH_FROMHOST_OFI not set\n%s\%s" "$hint_1" "$hint_2"
