@@ -997,8 +997,15 @@ fields:
       self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
       self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
       self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
-      for a in ("host", "port", "name", "tag", "digest"):
-         setattr(self, a, variables_sub(getattr(self, a), self.variables))
+      list = ["host", "port", "name", "tag", "digest"]
+      for a in range(len(list)):
+         tmp = variables_sub(getattr(self, list[a]), self.variables)
+         if tmp is not None and ":" in tmp:
+            split = tmp.split(":")
+            setattr(self, list[a], split[0])
+            setattr(self, list[a+1], split[1])
+         else:
+            setattr(self, list[a], tmp)
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host
