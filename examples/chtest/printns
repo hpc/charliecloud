@@ -24,6 +24,7 @@ hostname = socket.gethostname()
 for ns in glob.glob("/proc/self/ns/*"):
    stat = os.stat(ns)
    print("%s:%s:%d" % (ns, hostname, stat.st_ino), file=out, flush=True)
+out.close()  # close the file ASAP to not collide with a later printns
 
 if (pause):
    time.sleep(pause)
