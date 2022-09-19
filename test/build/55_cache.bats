@@ -1280,3 +1280,45 @@ EOF
     echo "$df" | ch-image build -t tmpimg -
     ls -lh "$CH_IMAGE_STORAGE"/img/tmpimg/__ch-test_ignore__
 }
+
+
+@test "${tag}: delete" {
+    ch-image build-cache --reset
+
+    printf 'FROM alpine:3.9\nRUN echo 1a\n' | ch-image build -t 1a -
+    printf 'FROM alpine:3.9\nRUN echo 1b\n' | ch-image build -t 1b -
+    printf 'FROM alpine:3.9\nRUN echo 2a\n' | ch-image build -t 2a -
+
+    blessed_tree=$(ch-image build-cache --tree | treeonly)
+    echo "$blessed_tree"
+
+    # starting point
+    diff -u <(printf "1a\n1b\n2a\nalpine:3.9\n") <(ch-image list)
+
+    # no glob
+    ch-image delete 2a
+    diff -u <(printf "1a\n1b\nalpine:3.9\n") <(ch-image list)
+
+    # matches none (non-empty)
+    run ch-image delete 'foo*'
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'no image matching glob, can’t delete: foo*'* ]]
+
+    # matches some
+    ch-image delete '1*'
+    diff -u <(printf "alpine:3.9\n") <(ch-image list)
+
+    # matches all
+    ch-image delete '*'
+    diff -u <(printf "") <(ch-image list)
+
+    # matches none (empty)
+    run ch-image delete '*'
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'no image matching glob, can’t delete: *'* ]]
+
+    # build cache unchanged
+    diff -u <(echo "$blessed_tree") <(ch-image build-cache --tree | treeonly)
+}
