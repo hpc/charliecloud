@@ -162,8 +162,8 @@ The implementation of :code:`--ofi` is experimental and has a couple quirks.
 
    b. Corresponding open source MPI implementation configured and built against
       the container libfabric, e.g.,
-         - `MPICH<https://www.mpich.org/>`_, or
-         - `OpenMPI <https://www.open-mpi.org/>`_.
+      - `MPICH <https://www.mpich.org/>`_, or
+      - `OpenMPI <https://www.open-mpi.org/>`_.
       See :code:`charliecloud/examples/Dockerfile.mpich` and
       :code:`charliecloud/examples/Dockerfile.openmpi`.
 
