@@ -453,7 +453,7 @@ for file in $inject_ofi; do
 done
 IFS="$old_ifs"
 
-if [ -z "$no_ldconfig" ] && ([ $lib_found ] || [ $ofi_found ]); then
+if [ -z "$no_ldconfig" ] && {[ $lib_found ] || [ $ofi_found ]}; then
     debug "running ldconfig"
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
 else
