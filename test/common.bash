@@ -101,8 +101,8 @@ chtest_fixtures_ok () {
 cray_ofi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
-        [[ -n $CH_FROMHOST_OFI ]] || skip 'CH_FROMHOST_OFI not set'
-        [[ -f $CH_FROMHOST_OFI/libgnix-fi.so ]] || skip 'libgnix-fi.so missing'
+        [[ -n "$CH_FROMHOST_OFI" ]] || skip 'CH_FROMHOST_OFI not set'
+        [[ -f "${CH_FROMHOST_OFI}/libgnix-fi.so" ]] || skip 'libgnix-fi.so missing'
         $ch_mpirun_node ch-fromhost --host-ofi "$1"
     else
         skip 'host is not a Cray'
