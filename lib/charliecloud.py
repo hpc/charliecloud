@@ -514,7 +514,7 @@ class Image:
       # Unpacking an empty layer doesn't accomplish anything so we ignore them.
       empty_cnt = 0
       for (i, path) in enumerate(layer_tars, start=1):
-         lh = os.path.basename(path).split(".", 1)[0]
+         lh = os.path.path_name(path).split(".", 1)[0]
          lh_short = lh[:7]
          INFO("layer %d/%d: %s: listing" % (i, len(layer_tars), lh_short))
          try:
@@ -863,7 +863,7 @@ class Image:
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
             dir_ = os.path.dirname(m.name)
-            filename = os.path.basename(m.name)
+            filename = os.path.path_name(m.name)
             if (filename.startswith(".wh.")):
                wo_ct += 1
                members.remove(m)
@@ -1148,9 +1148,9 @@ class Path(pathlib.PosixPath):
          return None
 
    @property
-   def basename(self):
+   def path_name(self):
       """Return path object representing file basename. For example,
-         Path("foo/bar/baz").basename returns Path("baz")"""
+         Path("foo/bar/baz").path_name returns Path("baz")"""
       return Path(self.name)
 
    def joinpath_posix(self, *others):
@@ -2005,7 +2005,7 @@ class Storage:
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
       entries = listdir(self.root)
-      for entry in { i.basename for i in (self.build_cache,
+      for entry in { i.path_name for i in (self.build_cache,
                                           self.download_cache,
                                           self.unpack_base,
                                           self.upload_cache,
@@ -2014,7 +2014,7 @@ class Storage:
             entries.remove(entry)
          except KeyError:
             FATAL("%s: missing file or directory: %s" % (msg_prefix, str(entry)))
-      entries -= { i.basename for i in (self.lockfile, self.mount_point) }
+      entries -= { i.path_name for i in (self.lockfile, self.mount_point) }
       if (len(entries) > 0):
          FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(str(i) for i in sorted(entries))))
@@ -2188,7 +2188,7 @@ def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
       # calling ch-image.main()) and last entry (this function).
-      tr = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
+      tr = ", ".join("%s:%d:%s" % (os.path.path_name(f.filename),
                                    f.lineno, f.name)
                      for f in reversed(traceback.extract_stack()[1:-1]))
       hint = tr if hint is None else "%s: %s" % (hint, tr)

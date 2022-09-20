@@ -59,7 +59,7 @@ def main(cli_):
 
    # Infer image name if needed.
    if (cli.tag is None):
-      path = os.path.basename(cli.file)
+      path = os.path.path_name(cli.file)
       if ("." in path):
          (base, ext_all) = str(path).split(".", maxsplit=1)
          (base_all, ext_last) = str(path).rsplit(".", maxsplit=1)
@@ -73,7 +73,7 @@ def main(cli_):
          cli.tag = base_all
          ch.VERBOSE("inferring name from Dockerfile basename: %s" % cli.tag)
       elif (os.path.abspath(cli.context) != "/"):
-         cli.tag = os.path.basename(os.path.abspath(cli.context))
+         cli.tag = os.path.path_name(os.path.abspath(cli.context))
          ch.VERBOSE("inferring name from context directory: %s" % cli.tag)
       else:
          assert (os.path.abspath(cli.context) == "/")
@@ -332,10 +332,8 @@ class Instruction(abc.ABC):
       return "%s %s%s" % (self.str_name, options, self.str_)
 
    def chdir(self, path):
-      #if (path.startswith("/")):
-      #   self.workdir = ch.Path(path)
-      if path.is_absolute():
-         self.workdir = path
+      if (path.startswith("/")):
+         self.workdir = ch.Path(path)
       else:
          self.workdir //= path
 
@@ -515,8 +513,6 @@ class I_arg_equals(Arg):
 
 class I_copy(Instruction):
 
-   # ABANDON ALL HOPE YE WHO ENTER HERE.
-   #
    # Note: The Dockerfile specification for COPY is complex, messy,
    # inexplicably different from cp(1), and incomplete. We try to be
    # bug-compatible with Docker but probably are not 100%. See the FAQ.
@@ -571,12 +567,13 @@ class I_copy(Instruction):
          ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
-      src = src.resolve()  # alternative to os.path.realpath()
+      src = ch.Path(os.path.realpath(src))
       dst = ch.Path(dst)
-      assert (src.is_dir() and not src.is_symlink())
-      assert (dst.is_dir() and not dst.is_symlink())
+      assert (os.path.isdir(src) and not os.path.islink(src))
+      assert (os.path.isdir(dst) and not os.path.islink(dst))
       ch.DEBUG("copying named directory: %s -> %s" % (src, dst))
-      for (dirpath, dirnames, filenames) in ch.walk(src, onerror=onerror):
+      for (dirpath, dirnames, filenames) in os.walk(src, onerror=onerror):
+         dirpath = ch.Path(dirpath)
          subdir = dirpath.relative_to(src)
          dst_dir = dst // subdir
          # dirnames can contain symlinks, which we handle as files, so we'll
@@ -584,6 +581,7 @@ class I_copy(Instruction):
          dirnames2 = dirnames.copy()  # shallow copy
          dirnames[:] = list()         # clear in place
          for d in dirnames2:
+            d = ch.Path(d)
             src_path = dirpath // d
             dst_path = dst_dir // d
             ch.TRACE("dir: %s -> %s" % (src_path, dst_path))
@@ -610,6 +608,7 @@ class I_copy(Instruction):
                       "can't copy metadata: %s -> %s" % (src_path, dst_path),
                       src_path, dst_path, follow_symlinks=False)
          for f in filenames:
+            f = ch.Path(f)
             src_path = dirpath // f
             dst_path = dst_dir // f
             ch.TRACE("file or symlink via copy2: %s -> %s"
@@ -631,19 +630,21 @@ class I_copy(Instruction):
          not be called recursively. If dst is a directory, file should go in
          that directory named src (i.e., the directory creation magic has
          already happened)."""
-      assert (src.is_file())
+      assert (os.path.isfile(src))
       assert (   not os.path.exists(dst)
               or (os.path.isdir(dst) and not os.path.islink(dst))
               or (os.path.isfile(dst) and not os.path.islink(dst)))
       ch.DEBUG("copying named file: %s -> %s" % (src, dst))
-      ch.copy2(src, dst, follow_symlinks=True) # should support path objects
+      ch.copy2(src, dst, follow_symlinks=True)
 
    def dest_realpath(self, unpack_path, dst):
       """Return the canonicalized version of path dst within (canonical) image
         path unpack_path. We can't use os.path.realpath() because if dst is
         an absolute symlink, we need to use the *image's* root directory, not
         the host. Thus, we have to resolve symlinks manually."""
-      dst_canon = unpack_path
+      unpack_path = ch.Path(unpack_path)
+      dst_canon = ch.Path(unpack_path)
+      dst = ch.Path(dst)
       dst_parts = list(reversed(dst.parts))  # easier to operate on end of list
       iter_ct = 0
       while (len(dst_parts) > 0):
@@ -675,7 +676,7 @@ class I_copy(Instruction):
 
    def execute(self):
       # Locate the destination.
-      unpack_canon = ch.Path(self.image.unpack_path).resolve()
+      unpack_canon = os.path.realpath(self.image.unpack_path)
       if (self.dst.startswith("/")):
          dst = ch.Path(self.dst)
       else:
@@ -684,32 +685,32 @@ class I_copy(Instruction):
       dst_canon = self.dest_realpath(unpack_canon, dst) # strips trailing slash
       ch.VERBOSE("destination, canonical: %s" % dst_canon)
       if (not os.path.commonpath([dst_canon, unpack_canon])
-              .startswith(str(unpack_canon))):
+              .startswith(unpack_canon)):
          ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
       # Create the destination directory if needed.
       if (   self.dst.endswith("/")
           or len(self.srcs) > 1
-          or self.srcs[0].is_dir()):
+          or os.path.isdir(self.srcs[0])):
          if (not os.path.exists(dst_canon)):
             ch.mkdirs(dst_canon)
          elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
             ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
       # Copy each source.
       for src in self.srcs:
-         if (src.is_file()):
+         if (os.path.isfile(src)):
             self.copy_src_file(src, dst_canon)
-         elif (src.is_dir()):
+         elif (os.path.isdir(src)):
             self.copy_src_dir(src, dst_canon)
          else:
             ch.FATAL("can't COPY: unknown file type: %s" % src)
 
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
-         st = ch.stat_(path, links=links) # should accept Path
-         return (  str(path).encode("UTF-8")
+         st = ch.stat_(path, links=links)
+         return (  path.encode("UTF-8")
                  + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.
-      if (cli.context == "-"):
+      if ((cli.context == "-") and (self.from_ is None)):
          ch.FATAL("can't COPY: no context because \"-\" given")
       if (len(self.srcs_raw) < 1):
          ch.FATAL("can't COPY: must specify at least one source")
@@ -740,8 +741,8 @@ class I_copy(Instruction):
       ch.VERBOSE("context: %s" % context)
       # Expand sources.
       self.srcs = list()
-      for src in (variables_sub(i, self.env_build) for i in self.srcs_raw):
-         matches = [ch.Path(i) for i in glob.glob("%s/%s" % (context, src))]  # glob can't take Path
+      for src in [variables_sub(i, self.env_build) for i in self.srcs_raw]:
+         matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
          if (len(matches) == 0):
             ch.FATAL("can't copy: source file not found: %s" % src)
          for i in matches:
@@ -752,17 +753,16 @@ class I_copy(Instruction):
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in self.srcs:
-         src_canon = src.resolve()
+         src_canon = os.path.realpath(src)
          if (not os.path.commonpath([src_canon, context_canon])
-                 .startswith(context_canon)): # no clear substitute for
-                                              # commonpath in pathlib
+                 .startswith(context_canon)):
             ch.FATAL("can't COPY from outside context: %s" % src)
       # Gather metadata for hashing.
       # FIXME: Locale issues related to sorting?
       self.src_metadata = bytearray()
       for src in self.srcs:
          self.src_metadata += stat_bytes(src, links=True)
-         if (src.is_dir()):
+         if (os.path.isdir(src)):
             for (dir_, dirs, files) in os.walk(src):
                self.src_metadata += stat_bytes(dir_)
                for f in sorted(files):
@@ -1011,14 +1011,14 @@ class I_workdir(Instruction):
 
    @property
    def str_(self):
-      return str(self.path)
+      return self.path
 
    def execute(self):
       ch.mkdirs(self.image.unpack_path // self.workdir)
 
    def prepare(self, *args):
-      self.path = ch.Path(variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
-                                self.env_build))
+      self.path = variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
+                                self.env_build)
       self.chdir(self.path)
       return super().prepare(*args)
 
