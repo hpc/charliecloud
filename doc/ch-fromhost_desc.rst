@@ -17,23 +17,45 @@ Description
 Inject files from the host into the Charliecloud image directory
 :code:`IMGDIR`.
 
-The purpose of this command is to inject files into a container image that are
-necessary to run the container on a specific host; e.g., GPU libraries that
-are tied to a specific kernel version. **It is not a general copy-to-image
-tool**; see further discussion on use cases below. It should be run after
-:code:`ch-convert` and before :code:`ch-run`. After invocation, the image is
-no longer portable to other hosts.
+The purpose of this command is to inject arbitrary files and loadable Libfabric
+shared object providers into a container that are necessary to access host
+specific resources; usually GPU or proprietary interconnets. **It is not a
+general copy-to-image tool**; see further discussion on use cases below.
+
+It should be run after:code:`ch-convert` and before :code:`ch-run`. After
+invocation, the image is no longer portable to other hosts.
 
 Injection is not atomic; if an error occurs partway through injection, the
-image is left in an undefined state. Injection is currently implemented using
-a simple file copy, but that may change in the future.
+image is left in an undefined state and should be re-unpacked from storage.
+Injection is currently implemented using a simple file copy, but that may
+change in the future.
 
-By default, file paths that contain the strings :code:`/bin` or :code:`/sbin`
-are assumed to be executables and placed in :code:`/usr/bin` within the
-container. File paths that contain the strings :code:`/lib` or :code:`.so` are
-assumed to be shared libraries and are placed in the first-priority directory
-reported by :code:`ldconfig` (see :code:`--lib-path` below). Other files are
-placed in the directory specified by :code:`--dest`.
+Arbitrary file and Libfabric injection are handled differently.
+
+Loadable Libfabric providers
+----------------------------
+
+Loadable Libfabric providers, e.g., files that end in :code:`-fi.so`, are copied
+to a sepcific directory, :code:`libfabric`, inside the image where
+:code:`libfabric.so` is found. If the directory doesn't exist it is created.
+
+Paths listed in the provider's :code:`ldd` output that do not exist
+within the image are created and assumed to be used as bind-mount targets for
+corresponding host paths at run time.
+
+:code:`ldconfig` is executed in the container, using :code:`ch-run -w`, after
+injection.
+
+Arbitrary files
+---------------
+
+Arbitrary file paths that contain the strings :code:`/bin` or
+:code:`/sbin` are assumed to be executables and placed in :code:`/usr/bin`
+within the container. Paths that are not loadable libfabric providers and
+contain the strings :code:`/lib` or :code:`.so` are assumed to be shared
+libraries and are placed in the first-priority directory reported by
+:code:`ldconfig` (see :code:`--lib-path` below). Other files are placed in the
+directory specified by :code:`--dest`.
 
 If any shared libraries are injected, run :code:`ldconfig` inside the
 container (using :code:`ch-run -w`) after injection.
@@ -54,9 +76,12 @@ To specify which files to inject
   :code:`-p`, :code:`--path PATH`
     Inject the file at :code:`PATH`.
 
-  :code:`--cray-mpi`
-    Cray-enable MPICH/OpenMPI installed inside the image. See important details
-    below.
+  :code:`-o`. :code:`--ofi PATH`
+    Inject the loadable Libfabric provider(s) at :code:`PATH`.
+
+  :code:`--host-ofi`
+    Inject all loadable providers found at :code:`CH_FROMHOST_OFI`. See
+    important details below.
 
   :code:`--nvidia`
     Use :code:`nvidia-container-cli list` (from :code:`libnvidia-container`)
@@ -78,6 +103,10 @@ Additional arguments
 
   :code:`--lib-path`
     Print the guest destination path for shared libraries inferred as
+    described above.
+
+  :code:`--lib-ofi-path`
+    Print the guest destination path for loadable libfabric providers as
     described above.
 
   :code:`--no-ldconfig`
@@ -116,57 +145,73 @@ some use cases and the recommended approach:
 3. *I have some shared libraries that I need in the image for functionality or
    performance, and they aren't available in a place where I can use*
    :code:`COPY`. This is the intended use case of :code:`ch-fromhost`. You can
-   use :code:`--cmd`, :code:`--file`, and/or :code:`--path` to put together a
-   custom solution. But, please consider filing an issue so we can package
-   your functionality with a tidy option like :code:`--cray-mpi` or
-   :code:`--nvidia`.
+   use :code:`--cmd`, :code:`--file`, :code:`--ofi`, and/or :code:`--path` to
+   put together a custom solution. But, please consider filing an issue so we
+   can package your functionality with a tidy option like :code:`--nvidia`.
 
 
-:code:`--cray-mpi` dependencies and quirks
-==========================================
+:code:`--ofi` usage and quirks
+==============================
 
-The implementation of :code:`--cray-mpi` is messy, foul smelling, and brittle.
-It replaces or overrides the MPICH or OpenMPI libraries installed in the
-container. Users should be aware of the following.
-
+The implementation of :code:`--ofi` is experimental and has a couple quirks.
 
 1. Containers must have the following software installed:
 
-   a. Corresponding open source MPI implementation. (`MPICH
-      <https://www.mpich.org/>`_ and `OpenMPI <https://www.open-mpi.org/>`_.)
+   a. Libfabric (https://ofiwg.github.io/libfabric/). See
+      :code:`charliecloud/examples/Dockerfile.libfabric`.
 
-   b. `PatchELF with our patches <https://github.com/hpc/patchelf>`_.
-      Use the :code:`shrink-soname` branch. (MPICH only.)
+   b. Corresponding open source MPI implementation configured and built against
+      the container libfabric, e.g.,
+         - `MPICH<https://www.mpich.org/>`_, or
+         - `OpenMPI <https://www.open-mpi.org/>`_.
+      See :code:`charliecloud/examples/Dockerfile.mpich` and
+      :code:`charliecloud/examples/Dockerfile.openmpi`.
 
-   c. :code:`libgfortran.so.3`, because Cray's :code:`libmpi.so.12`
-      links to it. (MPICH only.)
+2. The Cray UGNI loadable provider, :code:`libgnix-fi.so`, will link to
+   compiler(s) in the programming environment by default. For example, if it
+   is built under the :code:`PrgEnv-intel` PE, the provider will have links to
+   files at paths :code:`/opt/gcc` and :code:`/opt/intel` that :code:`ch-run`
+   will not bind automatically.
 
-2. Applications must be dynamically linked to :code:`libmpi.so.12` (not e.g.
-   :code:`libmpich.so.12`).
+   Managing all possible bind-mount paths is untenable. Thus, this experimental
+   implementation works only with Cray UGNI provider(s) built on XC series
+   systems with the minimal modules necessary to compile provider and
+   leverage the Aries interconnect at run-time, e.g.,:
 
-   a. How to configure MPICH to accomplish this is not yet clear to us;
-      :code:`test/Dockerfile.mpich` does it, while the Debian packages do not.
-      (MPICH only.)
+   - modules
+   - craype-network-aries
+   - eproxy
+   - slurm
+   - cray-mpich
+   - craype-haswell
+   - craype-hugepages2M
 
-3. An ABI compatible module for the given MPI implementation must be loaded
-   when :code:`ch-fromhost` is invoked.
-
-   a. Load the :code:`cray-mpich-abi` module. (MPICH only.)
-
-   b. We recommend loading the module of a version as close to what
-      is installed in the image as possible. This OpenMPI install needs to be
-      built such that libmpi contains all needed plugins (as opposed to them
-      being standalone shared libraries). See `OpenMPI's documentation
-      <https://www.open-mpi.org/faq/?category=building>`_ for how to do this.
-      (OpenMPI only.)
+   Cray UGNI providers linked against more complicated PE's will work assuming
+   1) the user explicitly bind-mounts any and all missing paths from the
+   provider's :code:`ldd` output, and 2) all such paths do not conflict with
+   container functionality, e.g., :code:`/usr/bin/`, etc.
 
 4. Tested only for C programs compiled with GCC, and it probably won't work
-   otherwise. If you'd like to use another compiler or another programming
-   language, please get in touch so we can implement the necessary support.
+   without extensive bind-mounts and kluding. If you'd like to use another
+   compiler or programming environment, please get in touch so we can implement
+   the necessary support.
 
 Please file a bug if we missed anything above or if you know how to make the
 code better.
 
+:code:`--host-ofi` usage
+========================
+
+This option leverages the variable, :code:`CH_FROMHOST_OFI`, intended to be set
+by admins or site Charliecloud curators, to give users abstracted access to
+common host-specific providers, e.g, :code:`libgnix-fi.so` for Cray's XC system
+series with the Aries interconnect.
+
+For example, assuming :code:`libgnix-fi.so` is built and available on the XC
+system at path: :code:`/opt/mysite/lib/libfabric/libnginx-si.so`, setting
+:code:`CH_FROMHOST_OFI=/opt/mysite/lib/libfabric` for Charliecloud users will
+enable them to inject on said system without having to know which provider to
+use or where to find it.
 
 Notes
 =====
@@ -195,6 +240,10 @@ There are two alternate approaches for nVidia GPU libraries:
 Further, while these alternate approaches would simplify or eliminate this
 script for nVidia GPUs, they would not solve the problem for other situations.
 
+At the time of this writing, a Cray Slingshot optimized provider is not
+available. We are working with HPE to get this feature added sooner, rather
+than later, however, we may need to revert to more complicated injection
+techniques for future Cray systems with Slingshot.
 
 Bugs
 ====
@@ -262,30 +311,35 @@ then run :code:`ldconfig`::
     /usr/lib64/libGLESv1_CM_nvidia.so.460.32.03 -> /usr/lib64//bind9-export (inferred)
   running ldconfig
 
-Inject the Cray-enabled MPI libraries into the image, and then run
+Inject the Cray-ugni loadable provider into the image, and then run
 :code:`ldconfig`::
 
-  $ ch-fromhost --cray-mpi /var/tmp/baz
-  asking ldconfig for shared library destination
-  /sbin/ldconfig: Can't stat /libx32: No such file or directory
-  /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
-  shared library destination: /usr/lib64//bind9-export
-  found shared library: /usr/lib64/liblustreapi.so.1
-  found shared library: /opt/cray/xpmem/default/lib64/libxpmem.so.0
-  [...]
-  injecting into image: /var/tmp/baz
-    rm -f /var/tmp/openmpi/usr/lib64//bind9-export/libopen-rte.so.40
-    rm -f /var/tmp/openmpi/usr/lib64/bind9-export/libopen-rte.so.40
-  [...]
-    mkdir -p /var/tmp/openmpi/var/opt/cray/alps/spool
-    mkdir -p /var/tmp/openmpi/etc/opt/cray/wlm_detect
-  [...]
-    /usr/lib64/liblustreapi.so.1 -> /usr/lib64//bind9-export (inferred)
-    /opt/cray/xpmem/default/lib64/libxpmem.so.0 -> /usr/lib64//bind9-export (inferred)
-  [...]
-    /etc/opt/cray/wlm_detect/active_wlm -> /etc/opt/cray/wlm_detect
-  running ldconfig
-
+  $ ch-fromhost --ofi $HOME/scratch/opt/lib/libfabric/libginx-fi.so /var/tmp/openmpi
+  [ debug ]   found /home/cholo/scratch/opt/lib/libfabric/libgnix-fi.so
+  [ debug ] searching /var/tmp/openmpi for libfabric dso provider destination...
+  [ debug ]   found: /var/tmp/openmpi//usr/local/lib/libfabric.so
+  [ debug ] using libfabric dso provider destination: /usr/local/lib/libfabric
+  [ debug ] injecting into image: /var/tmp/openmpi
+  [ debug ]   mkdir -p /var/tmp/openmpi/usr/local/lib/libfabric
+  [ debug ]   mkdir -p /var/tmp/openmpi/var/opt/cray/alps/spool
+  [ debug ]   mkdir -p /var/tmp/openmpi/etc/opt/cray/wlm_detect
+  [ debug ]   mkdir -p /var/tmp/openmpi/var/opt/cray/hugetlbfs
+  [ debug ]   mkdir -p /var/tmp/openmpi/opt/cray/udreg
+  [ debug ]   mkdir -p /var/tmp/openmpi/opt/cray/xpmem
+  [ debug ]   mkdir -p /var/tmp/openmpi/opt/cray/ugni
+  [ debug ]   mkdir -p /var/tmp/openmpi/opt/cray/alps
+  [ debug ]    echo '/lib64' >> /var/tmp/openmpi/etc/ld.so.conf.d/ch-ofi.conf
+  [ debug ]    echo '/opt/cray/[...]' >> /var/tmp/openmpi/etc/ld.so.conf.d/ch-ofi.conf
+  [ debug ]    echo '/opt/cray/udreg/[...]' >> /var/tmp/openmpi/etc/ld.so.conf.d/ch-ofi.conf
+  [ debug ]    echo '/opt/cray/ugni/[...]' >> /var/tmp/openmpi/etc/ld.so.conf.d/ch-ofi.conf
+  [ debug ]    echo '/opt/cray/wlm_detect/[...]' >> /var/tmp/openmpi/etc/ld.so.conf.d/ch-ofi.conf
+  [ debug ]    echo '/opt/cray/xpmem/[...]' >> /var/tmp/openmpi/etc/ld.so.conf.d/ch-ofi.conf
+  [ debug ]    echo '/users/cholo/scratch/opt/lib' >> /var/tmp/openmpi/etc/ld.so.conf.d/ch-ofi.conf
+  [ debug ]    echo '/usr/lib64' >> /var/tmp/openmpi/etc/ld.so.conf.d/ch-ofi.conf
+  [ debug ]   /etc/opt/cray/wlm_detect/[...] -> /etc/opt/cray/wlm_detect
+  [ debug ]   /home/cholo/scratch/opt/lib/libfabric/libgnix-fi.so -> /usr/local/lib/libfabric (inferred)
+  [ debug ] running ldconfig
+  done
 
 Acknowledgements
 ================
