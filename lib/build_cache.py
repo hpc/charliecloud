@@ -119,6 +119,17 @@ class File_Metadata:
 
    # Note: ctime cannot be restored: https://unix.stackexchange.com/a/36105
 
+   # Note/FIXME: Because children is a list, rather than e.g. a dictionary
+   # that maps names to child objects, we cannot efficiently access the
+   # children by name. See get() and set(). Changing that attribute's type
+   # requires either bumping the storage directory version or automagically
+   # converting on un-pickle. Because currently (9/19/2022) our performance
+   # requirements are not large, I don't think the hassle of doing either of
+   # these is merited.
+   #
+   # A related design problem is that this class is externally mucked with a
+   # lot, e.g. by build_cache.git_prepare_walk() and .git_restore_walk().
+
    __slots__ = ('atime_ns',
                 'children',
                 'dont_restore',
@@ -157,6 +168,28 @@ class File_Metadata:
       # or empty_dir_p (recursively empty directory tree).
       return all((c.hardlink_to is not None or c.empty_dir_p)
                  for c in self.children)
+
+   def get(self, path):
+      """Return the File_Metadata object at path. Slow; see comment."""
+      assert (len(path.parts) >= 1)
+      for c in self.children:
+         if (c.name == path.first):
+            if (len(path.parts) == 1):
+               return c
+            else:
+               return c.get(path.lstrip(1))
+      assert False, "unreachable code reached"
+
+   def set(self, path, fm):
+      """Set the File_Metadata object at path to fm. Slow; see comment."""
+      assert (len(path.parts) >= 1)
+      for (i, c) in enumerate(self.children):
+         if (c.name == path.first):
+            if (len(path.parts) == 1):
+               self.children[i] = fm  # WARNING: iteration now broken
+            else:
+               c.set(path.lstrip(1), fm)
+            break
 
 
 class State_ID:
@@ -214,7 +247,8 @@ class Enabled_Cache:
    root_id =   State_ID.from_text("4A6F:73C3:A9204361:7061626C:616E6361")
    import_id = State_ID.from_text("5061:756C:204D6F72:70687900:00000000")
 
-   __slots__ = ("bootstrap_ct")
+   __slots__ = ("bootstrap_ct",
+                "file_metadata")
 
    def __init__(self):
       self.bootstrap_ct = 0
@@ -232,7 +266,6 @@ class Enabled_Cache:
       # builds or other interruptions.
       ch.cmd_quiet(["git", "worktree", "prune"], cwd=self.root)
 
-
    @property
    def root(self):
       return ch.storage.build_cache
@@ -249,7 +282,8 @@ class Enabled_Cache:
       self.worktree_adopt(img, "root")
       img.metadata_load()
       img.metadata_save()
-      gh = self.commit(img.unpack_path, self.import_id, "IMPORT %s" % img.ref)
+      gh = self.commit(img.unpack_path, self.import_id,
+                       "IMPORT %s" % img.ref, [])
       self.ready(img)
       return (self.import_id, gh)
 
@@ -293,13 +327,25 @@ class Enabled_Cache:
       # base_image used in other subclasses
       ch.INFO("copying image ...")
       self.worktree_add(image, git_hash)
-      self.git_restore(image.unpack_path)
+      self.git_restore(image.unpack_path, [], False)
 
-   def commit(self, path, sid, msg):
-      fm = self.git_prepare(path)
+   def commit(self, path, sid, msg, files):
+      # Commit image at path into the build cache. If set files is empty, any
+      # and all image content may have been changed. Otherwise, assume files
+      # lists the only files in the image that have changed. These must be
+      # relative paths relative to the image root (i.e., path), may only be
+      # regular files, and get none of the special handling we have for
+      # general image content.
+      #
+      # WARNING: files must be empty for the first image commit.
+      self.git_prepare(path, files)
       cwd = ch.chdir(path)
       t = ch.Timer()
-      ch.cmd_quiet(["git", "add", "-A"])
+      if (len(files) == 0):
+         git_files = ["-A"]
+      else:
+         git_files = list(files) + ["ch/git.pickle"]
+      ch.cmd_quiet(["git", "add"] + git_files)
       t.log("prepared index")
       t = ch.Timer()
       ch.cmd_quiet(["git", "commit", "-q", "--allow-empty",
@@ -311,7 +357,7 @@ class Enabled_Cache:
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
       git_hash = cp.stdout.strip()
       ch.chdir(cwd)
-      self.git_restore(path, fm)
+      self.git_restore(path, files, True)
       return git_hash
 
    def configure(self):
@@ -391,7 +437,7 @@ class Enabled_Cache:
                      "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
       t.log("collected garbage")
 
-   def git_prepare(self, unpack_path, write=True):
+   def git_prepare(self, unpack_path, files, write=True):
       """Recursively walk the given unpack path and prepare it for a Git
          commit. Most of this is reversed by git_restore(); anything not
          reversed is noted. For each file, in this order:
@@ -441,12 +487,17 @@ class Enabled_Cache:
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
       cwd = ch.chdir(unpack_path)
-      met = self.git_prepare_walk(dict(), None, ".", os.lstat("."))
+      if (len(files) == 0):
+         self.file_metadata = self.git_prepare_walk(dict(), None, ".",
+                                                    os.lstat("."))
+      else:
+         for path in files:
+            self.file_metadata.set(path, File_Metadata(path.name, path.lstat()))
       if (write):
-         ch.file_write("ch/git.pickle", pickle.dumps(met, protocol=4))
+         ch.file_write("ch/git.pickle", pickle.dumps(self.file_metadata,
+                                                     protocol=4))
       ch.chdir(cwd)
       t.log("gathered file metadata")
-      return met
 
    def git_prepare_walk(self, hardlinks, parent, name, st):
       """Return a File_Metadata object describing file name and its children
@@ -514,23 +565,27 @@ class Enabled_Cache:
       # Done.
       return fm
 
-   def git_restore(self, unpack_path, fm=None):
-      """Opposite of git_prepare. If fm is non-None, do a quick restore,
-         assuming that unpack_path is unchanged since fm was returned from
-         git_prepare, rather than the directory being checked out from Git.
-         I.e. only restore things that we broke in git_prepare() (e.g.,
-         renaming .git files), not things that Git breaks (e.g., file
-         permissions). Otherwise (i.e., fm is None), read the File_Metadata
-         tree from “ch/git.pickle” under unpack_path and do a full restore.
-         This method will dirty the Git working directory."""
+   def git_restore(self, unpack_path, files, quick):
+      """Opposite of git_prepare. If files is non-empty, only restore those
+         files. If quick, assuming that unpack_path is unchanged since
+         file_metadata was collected earlier in this process, rather than the
+         directory being checked out from Git. I.e. only restore things that
+         we broke in git_prepare() (e.g., renaming .git files), not things
+         that Git breaks (e.g., file permissions). Otherwise (i.e., not
+         quick), read the File_Metadata tree from “ch/git.pickle” under
+         unpack_path and do a full restore. This method will dirty the Git
+         working directory."""
       t = ch.Timer()
       cwd = ch.chdir(unpack_path)
-      if (fm is not None):
-         quick=True
+      if (not quick):
+         self.file_metadata = pickle.loads(ch.file_read_all("ch/git.pickle",
+                                                            text=False))
+      if (len(files) == 0):
+         self.git_restore_walk(unpack_path, None, self.file_metadata, quick)
       else:
-         quick=False
-         fm = pickle.loads(ch.file_read_all("ch/git.pickle", text=False))
-      self.git_restore_walk(unpack_path, None, fm, quick)
+         for path in files:
+            self.git_restore_walk(path, path.parent,
+                                  self.file_metadata.get(path), quick)
       ch.chdir(cwd)
       t.log("restored file metadata (%s)" % ("quick" if quick else "full"))
 
@@ -613,7 +668,7 @@ class Enabled_Cache:
       pullet.unpack(last_layer)
       sid = self.sid_from_parent(self.root_id, pullet.sid_input)
       pullet.done()
-      commit = self.commit(img.unpack_path, sid, "PULL %s" % src_ref)
+      commit = self.commit(img.unpack_path, sid, "PULL %s" % src_ref, [])
       self.ready(img)
       if (img.ref != src_ref):
          self.branch_nocheckout(src_ref, img.ref)
@@ -661,10 +716,10 @@ class Enabled_Cache:
       """Restore path to the last committed state, including both tracked and
          untracked files."""
       ch.INFO("rolling back ...")
-      fm = self.git_prepare(path, write=False)
+      self.git_prepare(path, [], write=False)
       ch.cmd_quiet(["git", "reset", "--hard", "HEAD"], cwd=path)
       ch.cmd_quiet(["git", "clean", "-fdq"], cwd=path)
-      self.git_restore(path)
+      self.git_restore(path, [], False)
 
    def sid_from_parent(self, *args):
       # This lets us intercept the call and return None in disabled mode.
@@ -752,7 +807,7 @@ class Enabled_Cache:
    def worktree_add(self, image, base):
       t = ch.Timer()
       if (image.unpack_cache_linked):
-         self.git_prepare(image.unpack_path, write=False)  # clean worktree
+         self.git_prepare(image.unpack_path, [], write=False)  # clean worktree
          ch.cmd_quiet(["git", "checkout",
                        "-B", self.branch_name_unready(image.ref), base],
                       cwd=image.unpack_path)
