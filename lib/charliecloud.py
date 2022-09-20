@@ -2505,10 +2505,7 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage directory
    global storage, storage_lock
-   if (cli.storage is None):
-      storage = Storage(cli.storage)
-   else:
-      storage = Storage(Path(cli.storage))
+   storage = Storage(cli.storage)
    storage_lock = not cli.no_lock
    # architecture
    global arch, arch_host
