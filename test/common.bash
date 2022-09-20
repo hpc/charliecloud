@@ -168,7 +168,7 @@ pict_assert_equal () {
     pixel_max_ct=${3:-0}
     sample_base=$(basename "${sample%.*}")
     sample_ext=${sample##*.}
-    diff_dir=${BATS_TMPDIR}/"$(basename "$(dirname $sample)")"
+    diff_dir=${BATS_TMPDIR}/"$(basename "$(dirname "$sample")")"
     ref_bind="${ref}:/inp_a"
     sample_bind="${sample}:/inp_b"
     diff_bind="${diff_dir}:/diff"
