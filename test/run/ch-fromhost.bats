@@ -325,29 +325,52 @@ fromhost_ls () {
     scope full
     prerequisites_ok openmpi
     img=${ch_imgdir}/openmpi
-    run ch-fromhost --ofi "${CHTEST_DIR}/sotest/libsotest-fi.so" "$img"
+
+    ofidest=$(ch-fromhost --ofi-dest "$img")
+    echo "provider dest: ${ofidest}"
+
+    # The libsotest-fi.so is a dummy provider intended to exercise ch-fromhost
+    # script logic. Succeed if ch-fromhost finds the container libfabric.so and
+    # injects the libfabric-fi.so dummy executable in the directory /libfabric
+    # where libfabric.so is found.
+    img=${ch_imgdir}/openmpi
+    ofi=${CHTEST_DIR}/sotest/lib/libfabric/libsotest-fi.so
+    run ch-fromhost --ofi "${ofi}" "$img"
     echo "$output"
     [[ $status -eq 0 ]]
+    test -f "${img}/${ofidest}/libsotest-fi.so"
     fromhost_clean "$img"
 }
 
-@test 'ch-fromhost --ofi with no libfabric installed' {
+@test 'ch-fromhost --host-ofi (OpenMPI)' {
     scope full
-    run ch-fromhost --ofi "${CHTEST_DIR}/sotest/libsotest-fi.so" "$ch_timg"
+    prerequisites_ok openmpi
+    img=${ch_imgdir}/openmpi
+
+    ofidest=$(ch-fromhost --ofi-dest "$img")
+    echo "provider dest: ${ofidest}"
+
+    old_ofi="$CH_FROMHOST_OFI"
+    new_ofi=${CHTEST_DIR}/sotest/lib/libfabric
+    export CH_FROMHOST_OFI="$new_ofi"
+    img=${ch_imgdir}/openmpi
+    run ch-fromhost "$img" --host-ofi
     echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"libfabric.so not found in"* ]]
+    [[ $status -eq 0 ]]
+    test -f "${img}/${ofidest}/libsotest-fi.so"
+    fromhost_clean "$img"
+    export CH_FROMHOST_OFI="$old_ofi"
 }
 
 @test 'ch-fromhost --host-ofi with no host ofi' {
     scope full
-    ofi_dir="$CH_FROMHOST_OFI"
+    old_ofi="$CH_FROMHOST_OFI"
     unset CH_FROMHOST_OFI
     run ch-fromhost --host-ofi "$ch_timg"
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'CH_FROMHOST_OFI not set'* ]]
-    export "CH_FROMHOST_OFI=${ofi_dir}"
+    export "CH_FROMHOST_OFI=${old_ofi}"
 }
 
 @test 'ch-fromhost --nvidia with GPU' {

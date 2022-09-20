@@ -73,6 +73,7 @@ Destination within image:
 
 Options:
 
+  --ofi-dest       print the inferred destination for loadable ofi providers
   --lib-path       print the inferred destination for shared libraries
   --no-ldconfig    don\'t run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
@@ -261,14 +262,18 @@ while [ $# -gt 0 ]; do
             || fatal "nvidia-container-cli failed; does this host have GPUs?"
             queue_files "$out"
             ;;
-        -p|--path)
-            ensure_nonempty --path "$1"
-            queue_files "$1"
-            shift
-            ;;
         -o|--ofi)
             ensure_nonempty --ofi "$1"
             queue_ofi_dso "$1"
+            shift
+            ;;
+        --ofi-dest)
+            ofi_found=yes
+            ofi_dest_print=yes
+            ;;
+        -p|--path)
+            ensure_nonempty --path "$1"
+            queue_files "$1"
             shift
             ;;
         -v|--verbose)
@@ -333,11 +338,15 @@ if [ $ofi_found ]; then
     ofi_dest="${ofi_dest}/libfabric"
     queue_mkdir "$ofi_dest"
     debug "using libfabric dso provider destination: $ofi_dest"
-    lib_found=yes
 fi
 
 if [ $lib_dest_print ]; then
     echo "$lib_dest"
+    exit 0
+fi
+
+if [ $ofi_dest_print ]; then
+    echo "$ofi_dest"
     exit 0
 fi
 
@@ -444,7 +453,7 @@ for file in $inject_ofi; do
 done
 IFS="$old_ifs"
 
-if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
+if [ -z "$no_ldconfig" ] && ([ $lib_found ] || [ $ofi_found ]); then
     debug "running ldconfig"
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
 else

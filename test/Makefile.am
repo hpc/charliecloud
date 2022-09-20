@@ -59,8 +59,8 @@ old-storage
 sobuilts = \
 sotest/bin/sotest \
 sotest/lib/libsotest.so.1.0 \
+sotest/lib/libfabric/libsotest-fi.so \
 sotest/libsotest.so \
-sotest/libsotest-fi.so \
 sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
@@ -113,12 +113,14 @@ sotest/libsotest.so: sotest/libsotest.so.1.0
 sotest/libsotest.so.1: sotest/libsotest.so.1.0
 	ln -fTs ./libsotest.so.1.0 $@
 
-sotest/libsotest-fi.so: sotest/libsotest.so
-	ln -fTs ./libsotest.so $@
-
 sotest/bin/sotest: sotest/sotest
 	mkdir -p sotest/bin
 	cp -a $^ $@
+
 sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
 	mkdir -p sotest/lib
+	cp -a $^ $@
+
+sotest/lib/libfabric/libsotest-fi.so: sotest/libsotest.so.1.0
+	mkdir -p sotest/lib/libfabric
 	cp -a $^ $@
