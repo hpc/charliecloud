@@ -48,6 +48,7 @@ fromhost_ls () {
     fromhost_clean "$img"
     ch-fromhost -v --file sotest/files_inferrable.txt "$img"
     fromhost_ls "$img"
+    test -f "${img}/usr/bin/sotest"
     test -f "${img}${libpath}/libsotest.so.1.0"
     test -L "${img}${libpath}/libsotest.so.1"
     ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest
