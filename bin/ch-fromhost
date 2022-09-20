@@ -125,7 +125,6 @@ is_bin () {
 }
 
 is_ofi () {
-    echo $1
     case $1 in
         *-fi.so)
             return 0
