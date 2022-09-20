@@ -1,7 +1,7 @@
 # ch-test-scope: standard
 # ch-test-arch-exclude: aarch64  # no obspy Conda package
 # ch-test-arch-exclude: ppc64le  # no obspy Conda package?
-FROM almalinux8
+FROM almalinux_8ch
 
 RUN dnf install -y --setopt=install_weak_deps=false \
                 libpng-devel \
