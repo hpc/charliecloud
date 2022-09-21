@@ -1059,3 +1059,14 @@ EOF
     [[ $output = *'manifest: using internal library'* ]]
     [[ $output != *'layer 1'* ]]  # no layers
 }
+
+@test "COPY from previous stage, no context" {
+    # test COPY from previous stage, no context directory (see issue
+    # #1381)
+    run ch-image build --no-cache -t foo - <<'EOF'
+FROM alpine:3.9
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
+EOF
+    [[ "$status" -eq 0 ]]
+}
