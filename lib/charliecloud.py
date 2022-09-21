@@ -514,7 +514,7 @@ class Image:
       # Unpacking an empty layer doesn't accomplish anything so we ignore them.
       empty_cnt = 0
       for (i, path) in enumerate(layer_tars, start=1):
-         lh = os.path.path_name(path).split(".", 1)[0]
+         lh = os.path.basename(path).split(".", 1)[0]
          lh_short = lh[:7]
          INFO("layer %d/%d: %s: listing" % (i, len(layer_tars), lh_short))
          try:
@@ -863,7 +863,7 @@ class Image:
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
             dir_ = os.path.dirname(m.name)
-            filename = os.path.path_name(m.name)
+            filename = os.path.basename(m.name)
             if (filename.startswith(".wh.")):
                wo_ct += 1
                members.remove(m)
@@ -2188,7 +2188,7 @@ def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
       # calling ch-image.main()) and last entry (this function).
-      tr = ", ".join("%s:%d:%s" % (os.path.path_name(f.filename),
+      tr = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
                                    f.lineno, f.name)
                      for f in reversed(traceback.extract_stack()[1:-1]))
       hint = tr if hint is None else "%s: %s" % (hint, tr)

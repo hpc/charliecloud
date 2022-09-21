@@ -59,7 +59,7 @@ def main(cli_):
 
    # Infer image name if needed.
    if (cli.tag is None):
-      path = os.path.path_name(cli.file)
+      path = os.path.basename(cli.file)
       if ("." in path):
          (base, ext_all) = str(path).split(".", maxsplit=1)
          (base_all, ext_last) = str(path).rsplit(".", maxsplit=1)
@@ -73,7 +73,7 @@ def main(cli_):
          cli.tag = base_all
          ch.VERBOSE("inferring name from Dockerfile basename: %s" % cli.tag)
       elif (os.path.abspath(cli.context) != "/"):
-         cli.tag = os.path.path_name(os.path.abspath(cli.context))
+         cli.tag = os.path.basename(os.path.abspath(cli.context))
          ch.VERBOSE("inferring name from context directory: %s" % cli.tag)
       else:
          assert (os.path.abspath(cli.context) == "/")
