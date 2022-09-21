@@ -840,14 +840,23 @@ this order.
 
 ::
 
-   $ ch-image [...] delete IMAGE_REF
+   $ ch-image [...] delete IMAGE_GLOB
 
-Delete the image described by the image reference :code:`IMAGE_REF` from the
-storage directory.
+Delete the image(s) described by :code:`IMAGE_GLOB` from the storage
+directory.
 
-.. note::
+:code:`IMAGE_GLOB` can be either a plain image reference or an image reference
+with glob characters to match multiple images. For example, :code:`ch-image
+delete 'foo*'` will delete all images whose names start with :code:`foo`.
 
-   This sub-command does not also remove the image from the build cache.
+Importantly, this sub-command *does not* also remove the image from the build
+cache. Therefore, it can be used to reduce the size of the storage directory,
+trading off the time needed to retrieve an image from cache.
+
+.. warning::
+
+   Glob characters must be quoted or otherwise protected from the shell, which
+   also desires to interpret them and will do so incorrectly.
 
 :code:`gestalt`
 ===============
