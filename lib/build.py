@@ -710,7 +710,7 @@ class I_copy(Instruction):
          return (  path.encode("UTF-8")
                  + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.
-      if ((cli.context == "-") and (self.from_ is None)):
+      if (cli.context == "-"):
          ch.FATAL("can't COPY: no context because \"-\" given")
       if (len(self.srcs_raw) < 1):
          ch.FATAL("can't COPY: must specify at least one source")
