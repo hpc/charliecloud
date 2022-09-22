@@ -88,12 +88,10 @@ class File_Metadata:
                 'name')
 
    def __init__(self, path, st):
-      #self.name = path.parts[-1] # attribute representing file basename
       if (len(path.parts) < 1):
          self.name = str(path)
       else:
          self.name = path.parts[-1] # name is file basename
-      #self.name = path.name
       self.atime_ns = st.st_atime_ns
       self.dont_restore = False
       self.children = list()  # so we can keep it sorted
