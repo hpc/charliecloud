@@ -92,6 +92,7 @@ class File_Metadata:
          self.name = str(path)
       else:
          self.name = path.parts[-1] # name is file basename
+      #self.name = path.name
       self.atime_ns = st.st_atime_ns
       self.dont_restore = False
       self.children = list()  # so we can keep it sorted
@@ -400,7 +401,8 @@ class Enabled_Cache:
             or stat.S_ISFIFO(st.st_mode)):
          if (path.startswith("./var/lib/rpm/__db.")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
-            ch.unlink(fm.name)
+            #ch.unlink(fm.name)
+            f_path.unlink()
             fm.dont_restore = True
             return fm
       elif (   stat.S_ISSOCK(st.st_mode)):

@@ -683,7 +683,8 @@ class Image:
       self.unpack_init()
 
    def unpack_cache_unlink(self):
-      unlink(self.unpack_path // ".git")
+      #unlink(self.unpack_path // ".git")
+      (self.unpack_path // ".git").unlink()
 
    def unpack_clear(self):
       """If the unpack directory does not exist, do nothing. If the unpack
@@ -1177,6 +1178,11 @@ class Path(pathlib.PosixPath):
           FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
          FATAL("can't mkdir: %s: %s: %s" % (self, x.filename, x.strerror))
+
+   def unlink(self, *args, **kwargs):
+      "Error-checking wrapper for Path.unlink()."
+      print("called unlink")
+      ossafe(super().unlink, "can't unlink: %s" % self)
 
 
 class Progress:
