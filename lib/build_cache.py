@@ -88,10 +88,11 @@ class File_Metadata:
                 'name')
 
    def __init__(self, path, st):
-      if (len(path.parts) <= 1):
-         self.name = str(path)
-      else:
-         self.name = path.parts[-1] # name is file basename
+      self.name = path.parts[-1] # attribute representing file basename
+      #if (len(path.parts) <= 1):
+      #   self.name = str(path)
+      #else:
+      #   self.name = path.parts[-1] # name is file basename
       #self.name = path.name
       self.atime_ns = st.st_atime_ns
       self.dont_restore = False
@@ -402,7 +403,7 @@ class Enabled_Cache:
          if (path.startswith("./var/lib/rpm/__db.")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
             #ch.unlink(fm.name)
-            f_path.unlink()
+            f_path.unlink() # change to fm.path.unlink() when issue #1455 is closed
             fm.dont_restore = True
             return fm
       elif (   stat.S_ISSOCK(st.st_mode)):
@@ -427,7 +428,8 @@ class Enabled_Cache:
             ch.TRACE("hard link: deleting subsequent: %d %d %s"
                      % (st.st_dev, st.st_ino, path))
             fm.hardlink_to = hardlinks[(st.st_dev, st.st_ino)]
-            ch.unlink(fm.name)
+            #ch.unlink(fm.name)
+            f_path.unlink() # f_path -> fm.path (issue #1455)
          else:
             ch.TRACE("hard link: recording first: %d %d %s"
                      % (st.st_dev, st.st_ino, path))
@@ -439,7 +441,8 @@ class Enabled_Cache:
          return fm  # can't do anything else after it's gone
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(st.st_mode)):
-         ch.unlink(fm.name)
+         #ch.unlink(fm.name)
+         f_path.unlink() # f_path -> fm.path (issue #1455)
       # Rename if necessary.
       if (fm.name.startswith(".weirdal_")):
          ch.WARNING("file starts with sentinel, will be renamed: %s" % fm.name)
