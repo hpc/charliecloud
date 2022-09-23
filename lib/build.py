@@ -234,13 +234,14 @@ class Main_Loop(lark.Visitor):
 
 class Instruction(abc.ABC):
 
-   __slots__ = ("git_hash",     # Git commit where sid was found
+   __slots__ = ("commit_files",  # modified files; default: anything
+                "git_hash",      # Git commit where sid was found
                 "image",
                 "image_alias",
                 "image_i",
                 "lineno",
-                "options",      # consumed
-                "options_str",  # saved at instantiation
+                "options",       # consumed
+                "options_str",   # saved at instantiation
                 "parent",
                 "sid",
                 "tree")
@@ -249,8 +250,9 @@ class Instruction(abc.ABC):
       """Note: When this is called, all we know about the instruction is
          what's in the parse tree. In particular, you must not call
          variables_sub() here."""
+      self.commit_files = set()
       self.lineno = tree.meta.line
-      self.options = {}
+      self.options = dict()
       for st in ch.tree_children(tree, "option"):
          k = ch.tree_terminal(st, "OPTION_KEY")
          v = ch.tree_terminal(st, "OPTION_VALUE")
@@ -348,7 +350,8 @@ class Instruction(abc.ABC):
 
    def commit(self):
       path = self.image.unpack_path
-      self.git_hash = bu.cache.commit(path, self.sid, str(self))
+      self.git_hash = bu.cache.commit(path, self.sid, str(self),
+                                      self.commit_files)
 
    def ready(self):
       bu.cache.ready(self.image)
@@ -462,6 +465,7 @@ class Arg(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
+      self.commit_files.add(ch.Path("ch/metadata.json"))
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
@@ -790,6 +794,11 @@ class Env(Instruction):
    __slots__ = ("key",
                 "value")
 
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.commit_files |= {ch.Path("ch/environment"),
+                            ch.Path("ch/metadata.json")}
+
    @property
    def str_(self):
       return "%s='%s'" % (self.key, self.value)
@@ -994,6 +1003,10 @@ class I_run_shell(Run):
 
 
 class I_shell(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.commit_files.add(ch.Path("ch/metadata.json"))
 
    @property
    def str_(self):

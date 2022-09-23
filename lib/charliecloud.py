@@ -1181,6 +1181,16 @@ class Path(pathlib.PosixPath):
          others2.append(other)
       return self.joinpath(*others2)
 
+   def lstrip(self, n):
+      """Return a copy of myself with n leading components removed. E.g.:
+
+           >>> Path("a/b/c").lstrip(1)
+           Path("b/c")
+
+         It is an error if I don’t have at least n+1 components."""
+      assert (len(self.parts) >= n + 1)
+      return Path(".").joinpath(*self.parts[n:])
+
 
 class Progress:
    """Simple progress meter for countable things that updates at most once per
