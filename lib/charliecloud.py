@@ -721,7 +721,7 @@ class Image:
          present will be left unchanged. After this, self.unpack_path is a
          valid Charliecloud image directory."""
       # Metadata directory.
-      (self.unpack_path // "ch").mkdir()
+      (self.unpack_path // "ch").mkdir_()
       file_ensure_exists(self.unpack_path // "ch/environment")
       # Essential directories & mount points. Do nothing if something already
       # exists, without dereferencing, in case it's a symlink, which will work
@@ -740,7 +740,7 @@ class Image:
       layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
-      self.unpack_path.mkdir()  # create directory in case no layers
+      self.unpack_path.mkdir_()  # create directory in case no layers
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
          if (i > last_layer):
@@ -1126,6 +1126,10 @@ class Path(pathlib.PosixPath):
       to silently wrong results when the paths *were* strings (components
       concatenated with no slash)."""
 
+   gzip = None # class attribute that tells us whether or not file_gzip has 
+               # been called on an instance of this class yet (set on first
+               # call).
+
    def __floordiv__(self, right):
       return self.joinpath_posix(right)
 
@@ -1169,21 +1173,239 @@ class Path(pathlib.PosixPath):
          suffix to the end of the path name. E.g. Path(foo).add_suffix(".txt")
          returns Path("foo.txt)."""
       return Path(str(self) + suff)
-
-   def mkdir(self):
+   
+   def mkdir_(self):
       TRACE("ensuring directory: %s" % self)
       try:
          super().mkdir(exist_ok=True)
       except FileExistsError as x:
           FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
-         FATAL("can't mkdir: %s: %s: %s" % (self, x.filename, x.strerror))
+         FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
 
+   """
    def unlink(self, *args, **kwargs):
       "Error-checking wrapper for Path.unlink()."
       print("called unlink")
-      ossafe(super().unlink, "can't unlink: %s" % self)
+      ossafe(super().unlink, "can't unlink: %s" % self.name)
+   """
 
+   def chdir(self):
+      "Change CWD to path and return previous CWD. Exit on error."
+      old = ossafe(os.getcdw, "can't get cwd(2)")
+      ossafe(os.chdir, "can't chdir: %s" % self.name, self)
+      return Path(old)
+
+   def chmod_min(self, mode, st=None):
+      """Set permissions on path so they are at least mode. For symlinks, do
+         nothing, because we don't want to follow symlinks and
+         follow_symlinks=False (or os.lchmod) is not supported on some
+         (all?)  Linux. (Also, symlink permissions are ignored on Linux,
+         so it doesn't matter anyway.)"""
+      if (st is None):
+         st = os.lstat(self)
+      if (stat.S_ISLNK(st.st_mode)):
+         return
+      mode_old = stat.S_IMODE(st.st_mode)
+      if (mode & mode_old != mode):
+         mode |= mode_old
+         VERBOSE("fixing permisssions: %s: %03o -> %03o" % (self, mode_old, mode))
+         ossafe(os.chmod, "can't chmod: %s" % self, self, mode)
+
+   def copytree(self, *args, **kwargs):
+      "Wrapper for shutil.copytree() that exists the program on the first error."
+      print("calling copytree")
+      shutil.copytree(str(self), copy_function=copy2, *args, **kwargs)
+
+   def disk_bytes(self):
+      """Return the number of disk bytes consumed by path. Note this is probably
+         different from the file size."""
+      return self.stat().st_blocks * 512
+
+   def du(self):
+      """Return a tuple (number of files, total bytes on disk) for everything 
+         under path. Warning: double-counts files with multiple hard links."""
+      file_ct = 1
+      byte_ct = disk_bytes(path)
+      for (dir_, subdirs, files) in os.walk(self):
+         file_ct += len(subdirs) + len(files)
+         byte_ct += sum(disk_bytes(dir_ + "/" + i) for i in subdirs + files)
+      return (file_ct, byte_ct)
+
+   def file_ensure_exists(self): # change name? e.g. ensure_exists(self)
+      """If the final element of path exists (without dereferencing if it's a
+         symlink), do nothing; otherwise, create it as an empty regular file."""
+      if (not os.path.lexists(self)):
+         fp = self.open("w")
+         close_(fp)
+
+   def file_gzip(self, args=[]):
+      """Run pigz if it's available, otherwise gzip, on file at path and return
+         the file's new name. Pass args to the gzip executable. This lets us gzip
+         files (a) in parallel if pigz is installed and (b) without reading them
+         into memory."""
+      path_c = self.add_suffix(".gz")
+      # On first call, remember first available of pigz and gzip using class
+      # attribute 'gzip'.
+      if (self.gzip is None):
+         Path.set_gzip()
+      # Remove destination file if it already exists, because gzip --force does
+      # several other things too. (Note: pigz sometimes confusingly reports
+      # "Inappropriate ioctl for device" if destination already exists.)
+      if (path_c.exists()):
+         path_c.unlink()
+      # Compress.
+      cmd([self.gzip] + args + [str(self)])
+      # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1], to
+      # ensure layer hash is consistent. See issue #1080.
+      # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
+      #fp = open_(path_c, "r+b")
+      fp = path_c.open("r+b")
+      ossafe(fp.seek, "can't seek: %s" % fp, 4)
+      ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
+      close_(fp)
+      return path_c
+
+   @classmethod
+   def set_gzip(cls):
+      """Used to set gzip class attribute on first call to file_gzip method"""
+      if (shutil.which("pigz") is not None):
+         cls.gzip = "pigz"
+      elif (shutil.which("gzip") is not None):
+         cls.gzip = "gzip"
+      else:
+         FATAL("can't find path to gzip or pigz")
+
+   def file_hash(self):
+      """Return the hash of data in file at path, as a hex string with no
+         algorithm tag. File is read in chunks and can be larger than memory."""
+      #fp = open_(path, "rb")
+      fp = self.open("rb")
+      h = hashlib.sha256()
+      while True:
+         data = ossafe(fp.read, "can't read: %s" % self.name, 2**18)
+         if (len(data) == 0):
+            break  # EOF
+         h.update(data)
+      close_(fp)
+      return h.hexdigest()
+
+   def file_read_all(self, text=True):
+      """Return the contents of file at path, or exit with error. If text, read
+         in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
+      if (text):
+         mode = "rt"
+         encoding = "UTF-8"
+      else:
+         mode = "rb"
+         encoding = None
+      #fp = open_(path, mode, encoding=encoding)
+      fp = self.open(mode, encoding=encoding)
+      data = ossafe(fp.read, "can't read: %s" % self.name)
+      close_(fp)
+      return data
+
+   def file_size(self, follow_symlinks=False):
+      "Return the size of file at path in bytes."
+      st = ossafe(os.stat, "can't stat: %s" % self.name,
+                  self, follow_symlinks=follow_symlinks)
+      return st.st_size
+
+   def file_write(self, content):
+      if (isinstance(content, str)):
+         content = content.encode("UTF-8")
+      fp = self.open("wb")
+      ossafe(fp.write, "can't write: %s" % self.name, content)
+      close_(fp)
+
+   def grep_p(self, rx):
+      """Return True if file at path contains a line matching regular expression
+         rx, False if it does not."""
+      rx = re.compile(rx)
+      try:
+         with open(self, "rt") as fp:
+            for line in fp:
+               if (rx.search(line) is not None):
+                  return True
+         return False
+      except OSError as x:
+         FATAL("error reading %s: %s" % (self.name, x.strerror))
+
+   def json_from_file(self, msg):
+      DEBUG("loading JSON: %s: %s" % (msg, self))
+      text = self.file_read_all()
+      TRACE("text:\n%s" % text)
+      try:
+         data = json.loads(text)
+         DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
+      except json.JSONDecodeError as x:
+         FATAL("can't parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
+      return data
+
+   def listdir(self):
+      """Return set of entries in directory path, without self (.) and
+         parent (..). We considered changing this to use os.scandir()
+         for #992, but decided that the advantages it offered didn't
+         warrant the effort required to make the change."""
+      return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % self.name, self))
+
+   def mkdirs(self, exist_ok=True):
+      TRACE("ensuring directories: %s" % self.name)
+      try:
+         os.makedirs(self, exist_ok=exist_ok)
+      except OSError as x:
+         FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
+         
+   def open(self, mode, *args, **kwargs):
+      "Error-checking wrapper for open()."
+      return ossafe(super.open, "can't open for %s: %s" % (mode, self.name),
+                    mode, *args, **kwargs) # note: removed 'self' from front of this line
+
+   def rename(self, name_new):
+      if (self.exists()): # is this check necessary? necessary to use ossafe here?
+         FATAL("can't rename: destination exists: %s" % name_new)
+      ossafe(super().rename, "can't rename: %s -> %s" % (self.name, name_new),
+             name_new)
+
+   def rmdir(self):
+      ossafe(super().rmdir, "can't rmdir: %s" % self.name)
+
+   def rmtree(self):
+      if (self.is_dir()):
+         TRACE("deleting directory: %s" % self.name)
+         try:
+            shutil.rmtree(self)
+         except OSError as x:
+            FATAL("can't recursively delete directory %s: %s: %s"
+                  % (self.name, x.filename, x.strerror))
+      else:
+         assert False, "unimplemented"
+
+   def stat_(self, **kwargs):
+      """An error-checking version of stat(). Note that we cannot simply change
+         the definition of stat() to be ossafe, as the exists() method in pathlib
+         relies on an OSError check.    
+         See: https://github.com/python/cpython/blob/3.10/Lib/pathlib.py#L1291"""
+      return ossafe(super().stat, "can't stat: %s" %self.name, **kwargs)
+
+   def symlink(self, target, clobber=False):
+      if (clobber and self.is_file()):
+         unlink(self)
+      try:
+         #os.symlink(target, source)
+         super().symlink_to(target)
+      except FileExistsError:
+         if (not self.is_symlink()):
+            FATAL("can't symlink: source exists and isn't a symlink: %s" % self.name)
+         if (self.readlink() != target):
+            FATAL("can't symlink: %s exists; want target %s but existing is %s"
+                  % (self.name, target, self.readlink()))
+      except OSError as x:
+         FATAL("can't symlink: %s -> %s: %s" % (self.name, target, x.strerror))
+
+   def unlink_(self, *args, **kwargs):
+      "Error-checking wrapper for unlink method"
+      ossafe(super().unlink, "can't unlink: %s" % self.name)
 
 class Progress:
    """Simple progress meter for countable things that updates at most once per
@@ -1896,12 +2118,12 @@ class Storage:
          self.lock()
       elif (v_found in {None, 1, 2}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
-         self.root.mkdir()
+         self.root.mkdir_()
          self.lock()
-         self.download_cache.mkdir()
-         self.build_cache.mkdir()
-         self.unpack_base.mkdir()
-         self.upload_cache.mkdir()
+         self.download_cache.mkdir_()
+         self.build_cache.mkdir_()
+         self.unpack_base.mkdir_()
+         self.upload_cache.mkdir_()
          for old in self.unpack_base.iterdir():
             new = old.parent // str(old.name).replace(":", "+")
             if (old != new):
@@ -1928,7 +2150,7 @@ class Storage:
          return
       INFO("storage dir: valid at old default: %s" % old.root)
       if (not os.path.exists(self.root)):
-         self.root.mkdir()
+         self.root.mkdir_()
       elif (self.valid_p):
          WARNING("storage dir: also valid at new default: %s" % self.root,
                  hint="consider deleting the old one")
