@@ -610,7 +610,7 @@ Dependencies
   * Python 3.6+
   * Either:
 
-    * the provided example :code:`centos7` or :code:`almalinux8` image
+    * the provided example :code:`centos_7ch` or :code:`almalinux_8ch` images
     * a RHEL/CentOS 7 or newer container image with (note there are different
       python version names for the listed packages in RHEL 8 and derivatives):
       * autoconf
@@ -653,15 +653,15 @@ with the test suite, on any system, and leave the results in
 :code:`~/rpmbuild/RPMS` (note the test suite would also build the
 necessary image directory)::
 
-  $ bin/ch-image build -t centos7 -f ./examples/Dockerfile.centos7 ./examples
-  $ bin/ch-convert centos7 $CH_TEST_IMGDIR/centos7
-  $ packaging/fedora/build $CH_TEST_IMGDIR/centos7 0.9.7-1
+  $ bin/ch-image build -f ./examples/Dockerfile.centos_7ch ./examples
+  $ bin/ch-convert centos_7ch $CH_TEST_IMGDIR/centos_7ch
+  $ packaging/fedora/build $CH_TEST_IMGDIR/centos_7ch 0.9.7-1
 
 To build a pre-release RPM of Git HEAD using the CentOS 7 image::
 
-  $ bin/ch-image build -t centos7 -f ./examples/Dockerfile.centos7 ./examples
-  $ bin/ch-convert centos7 $CH_TEST_IMGDIR/centos7
-  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos7 HEAD
+  $ bin/ch-image build -f ./examples/Dockerfile.centos_7ch ./examples
+  $ bin/ch-convert centos_7ch $CH_TEST_IMGDIR/centos_7ch
+  $ packaging/fedora/build ${CH_TEST_IMGDIR}/centos_7ch HEAD
 
 Gotchas and quirks
 ------------------
@@ -1568,4 +1568,4 @@ What to do in each location should either be obvious or commented.
 
 ..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg
 ..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
-..  LocalWords:  abd bbf LOGFILE logfile
+..  LocalWords:  abd bbf LOGFILE logfile rtd

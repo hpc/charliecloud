@@ -351,7 +351,17 @@ void join_namespace(pid_t pid, const char *ns)
          Tf (0, "join: can't open %s", path);
       }
    }
-   Zf (setns(fd, 0), "can't join %s namespace of pid %d", ns, pid);
+   /* setns(2) seems to be involved in some kind of race with syslog(3).
+      Rarely, when configured with --enable-syslog, the call fails with
+      EINVAL. We never figured out a proper fix, so just retry a few times in
+      a loop. See issue #1270. */
+   for (int i = 1; setns(fd, 0) != 0; i++)
+      if (i >= 5) {
+         Tf (0, "can’t join %s namespace of pid %d", ns, pid);
+      } else {
+         WARNING("can’t join %s namespace; trying again", ns);
+         sleep(1);
+      }
 }
 
 /* Join the existing namespaces created by the join winner. */

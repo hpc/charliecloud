@@ -252,6 +252,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+
 @test "${tag}: §3.7 change then revert" {
     ch-image build-cache --reset
 
@@ -466,9 +467,11 @@ EOF
 EOF
 }
 
+
 # FIXME: for issue #1359, add test here where they revert the image in the
 # remote registry to a previous state; our next pull will hit, and so too
 # should any subsequent previously cached instructions based on the FROM SID.
+
 
 @test "${tag}: branch ready" {
     ch-image build-cache --reset
@@ -562,6 +565,55 @@ EOF
 }
 
 
+@test "${tag}: §3.6 rebuild" {
+    ch-image build-cache --reset
+
+    # Build. Mode should not matter here, but we use enabled because that's
+    # more lifelike.
+    ch-image build -t a -f ./bucache/a.df ./bucache
+
+    # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
+    # have two branches.
+    sleep 1
+    run ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. RUN echo foo'* ]]
+    [[ $output = *'. RUN echo bar'* ]]
+    blessed_out=$(cat << 'EOF'
+*  (a) RUN echo bar
+*  RUN echo foo
+| *  RUN echo bar
+| *  RUN echo foo
+|/
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) ROOT
+EOF
+)
+    run ch-image build-cache --tree --dot="${dot_base}rebuild"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    # Re-build again in "rebuild" mode. The branch pointer should move to the
+    # newer execution.
+    run ch-image build-cache -v --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    commit_before=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
+    echo "before: ${commit_before}"
+    sleep 1
+    ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
+    run ch-image build-cache -v --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
+    echo "after: ${commit_after}"
+    [[ $commit_before != "$commit_after" ]]
+}
+
+
 ### Additional test cases for correctness ###
 
 @test "${tag}: reset" {
@@ -598,10 +650,13 @@ EOF
               | grep "commits" | awk '{print $2}') <(echo 8)
 
     # Number of commits after garbage collecting.
+    ch-image build-cache --tree
     ch-image build-cache --gc
     diff -u <(  ch-image build-cache \
               | grep "commits" | awk '{print $2}') <(echo 4)
+    ch-image build-cache --tree
 }
+
 
 @test "${tag}: ARG and ENV" {
     ch-image build-cache --reset
@@ -989,6 +1044,7 @@ EOF
     [[ $output = *'* COPY'* ]]
 }
 
+
 @test "${tag}: pull to specified destination" {
     ch-image reset
 
@@ -1028,52 +1084,30 @@ EOF
 }
 
 
-@test "${tag}: §3.6 rebuild" {
-    ch-image build-cache --reset
-
-    # Build. Mode should not matter here, but we use enabled because that's
-    # more lifelike.
-    ch-image build -t a -f ./bucache/a.df ./bucache
-
-    # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
-    # have two branches.
-    sleep 1
-    run ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'* FROM'* ]]
-    [[ $output = *'. RUN echo foo'* ]]
-    [[ $output = *'. RUN echo bar'* ]]
-    blessed_out=$(cat << 'EOF'
-*  (a) RUN echo bar
-*  RUN echo foo
-| *  RUN echo bar
-| *  RUN echo foo
-|/
-*  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) ROOT
+@test "${tag}: multistage COPY" {
+    # Multi-stage build with no instructions in the first stage.
+    df_no=$(cat <<'EOF'
+FROM alpine:3.9
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
 EOF
-)
-    run ch-image build-cache --tree --dot="${dot_base}rebuild"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+           )
+    # Multi-stage build with instruction in the first stage.
+    df_yes=$(cat <<'EOF'
+FROM alpine:3.9
+RUN echo foo
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
+EOF
+            )
 
-    # Re-build again in "rebuild" mode. The branch pointer should move to the
-    # newer execution.
-    run ch-image build-cache -v --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    commit_before=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
-    echo "before: ${commit_before}"
-    sleep 1
-    ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
-    run ch-image build-cache -v --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    commit_after=$(echo "$output" | sed -En 's/^.+\(a\) ([0-9a-f]+).+$/\1/p')
-    echo "after: ${commit_after}"
-    [[ $commit_before != "$commit_after" ]]
+    ch-image build-cache --reset
+    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
+    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
+
+    ch-image build-cache --reset
+    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
+    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
 }
 
 
@@ -1110,7 +1144,7 @@ EOF
     ch-image build -t tmpimg - <<'EOF'
 FROM alpine:3.9
 RUN for i in $(seq 0 1024); do \
-       dd if=/dev/urandom of=/$i bs=192K count=1 status=none; \
+       dd if=/dev/urandom of=/$i bs=384K count=1 status=none; \
     done
 EOF
 
@@ -1129,4 +1163,162 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'stopping build cache garbage collection'* ]]
+}
+
+
+@test "${tag}: all hits, no image" {
+    df=$(cat <<'EOF'
+FROM alpine:3.9
+RUN echo foo
+EOF
+        )
+
+    ch-image build-cache --reset
+    ch-image build -t tmpimg -f <(echo "$df") .
+    ch-image delete tmpimg
+    [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg ]]
+    run ch-image build -v -t tmpimg -f <(echo "$df") .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RUN'* ]]
+    [[ $output = *"no image found: $CH_IMAGE_STORAGE/img/tmpimg"* ]]
+    [[ $output = *'created worktree'* ]]
+}
+
+
+@test "${tag}: difficult files" {
+    ch-image build-cache --reset
+
+    statwalk () {
+        # Remove (1) mtime and atime for symlinks, where it cannot be set, and
+        # (2) directory sizes, which vary by filesystem and maybe other stuff.
+        ( cd "$CH_IMAGE_STORAGE"/img/tmpimg/test
+            find . -printf '%n %M %4s m=%TFT%TT a=%AFT%AT %p (%l)\n' \
+          | sed -E 's/^(1 l.+)([am]=[0-9T:.-]+ ){2}(.+)$/\1m=::: a=::: \3/' \
+          | sed -E 's/^([1-9] d[rwxs-]{9}) [0-9 ]{4}/\1 0000/' \
+          | LC_ALL=C sort -k6 )
+    }
+
+    # Set umask so permissions match our reference data.
+    umask 0027
+
+    # Build it. Every instruction does a quick restore, so this validates that
+    # works, aside from mtime and atime which are expected to vary.
+    ch-image build -t tmpimg -f ./bucache/difficult.df .
+    stat "$CH_IMAGE_STORAGE"/img/tmpimg/test/fifo_
+    stat1=$(statwalk)
+    diff -u - <(echo "$stat1" | sed -E 's/([am])=[0-9T:.-]+/\1=:::/g') <<'EOF'
+7 drwxr-x--- 0000 m=::: a=::: . ()
+2 drwsrwxrwx 0000 m=::: a=::: ./dir_all ()
+1 -rwsrwxrwx    0 m=::: a=::: ./dir_all/file_all ()
+2 drwxr-x--- 0000 m=::: a=::: ./dir_empty ()
+3 drwxr-x--- 0000 m=::: a=::: ./dir_empty_empty ()
+2 drwxr-x--- 0000 m=::: a=::: ./dir_empty_empty/dir_empty ()
+2 drwx------ 0000 m=::: a=::: ./dir_min ()
+1 -r--------    0 m=::: a=::: ./dir_min/file_min ()
+1 prw-r-----    0 m=::: a=::: ./fifo_ ()
+3 drwxr-x--- 0000 m=::: a=::: ./gitrepo ()
+7 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git ()
+1 -rw-r-----   23 m=::: a=::: ./gitrepo/.git/HEAD ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/branches ()
+1 -rw-r-----   92 m=::: a=::: ./gitrepo/.git/config ()
+1 -rw-r-----   73 m=::: a=::: ./gitrepo/.git/description ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/hooks ()
+1 -rwxr-x---  478 m=::: a=::: ./gitrepo/.git/hooks/applypatch-msg.sample ()
+1 -rwxr-x---  896 m=::: a=::: ./gitrepo/.git/hooks/commit-msg.sample ()
+1 -rwxr-x---  189 m=::: a=::: ./gitrepo/.git/hooks/post-update.sample ()
+1 -rwxr-x---  424 m=::: a=::: ./gitrepo/.git/hooks/pre-applypatch.sample ()
+1 -rwxr-x--- 1643 m=::: a=::: ./gitrepo/.git/hooks/pre-commit.sample ()
+1 -rwxr-x---  416 m=::: a=::: ./gitrepo/.git/hooks/pre-merge-commit.sample ()
+1 -rwxr-x--- 1374 m=::: a=::: ./gitrepo/.git/hooks/pre-push.sample ()
+1 -rwxr-x--- 4898 m=::: a=::: ./gitrepo/.git/hooks/pre-rebase.sample ()
+1 -rwxr-x---  544 m=::: a=::: ./gitrepo/.git/hooks/pre-receive.sample ()
+1 -rwxr-x--- 1492 m=::: a=::: ./gitrepo/.git/hooks/prepare-commit-msg.sample ()
+1 -rwxr-x--- 2783 m=::: a=::: ./gitrepo/.git/hooks/push-to-checkout.sample ()
+1 -rwxr-x--- 3650 m=::: a=::: ./gitrepo/.git/hooks/update.sample ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/info ()
+1 -rw-r-----  240 m=::: a=::: ./gitrepo/.git/info/exclude ()
+4 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/objects ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/objects/info ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/objects/pack ()
+4 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/refs ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/refs/heads ()
+2 drwxr-x--- 0000 m=::: a=::: ./gitrepo/.git/refs/tags ()
+2 -rw-r-----    0 m=::: a=::: ./hard_src ()
+2 -rw-r-----    0 m=::: a=::: ./hard_target ()
+1 lrwxrwxrwx   11 m=::: a=::: ./soft_src (soft_target)
+1 -rw-r-----    0 m=::: a=::: ./soft_target ()
+EOF
+
+    # Build again; tests full restore because we delete the image. Compare
+    # against the (already validated) results of the first build, this time
+    # including timestamps.
+    ch-image delete tmpimg
+    [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg ]]
+    run ch-image build -t tmpimg -f ./bucache/difficult.df .
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* RUN echo last'* ]]
+    statwalk | diff -u <(echo "$stat1") -
+}
+
+
+@test "${tag}: ignore patterns" {
+       git check-ignore -q __ch-test_ignore__ \
+    || pedantic_fail 'global ignore not configured'
+
+    ch-image build-cache --reset
+
+    df=$(cat <<'EOF'
+FROM alpine:3.9
+RUN touch __ch-test_ignore__
+EOF
+        )
+    echo "$df" | ch-image build -t tmpimg -
+    ch-image delete tmpimg
+    echo "$df" | ch-image build -t tmpimg -
+    ls -lh "$CH_IMAGE_STORAGE"/img/tmpimg/__ch-test_ignore__
+}
+
+
+@test "${tag}: delete" {
+    ch-image build-cache --reset
+
+    printf 'FROM alpine:3.9\nRUN echo 1a\n' | ch-image build -t 1a -
+    printf 'FROM alpine:3.9\nRUN echo 1b\n' | ch-image build -t 1b -
+    printf 'FROM alpine:3.9\nRUN echo 2a\n' | ch-image build -t 2a -
+
+    blessed_tree=$(ch-image build-cache --tree | treeonly)
+    echo "$blessed_tree"
+
+    # starting point
+    diff -u <(printf "1a\n1b\n2a\nalpine:3.9\n") <(ch-image list)
+
+    # no glob
+    ch-image delete 2a
+    diff -u <(printf "1a\n1b\nalpine:3.9\n") <(ch-image list)
+
+    # matches none (non-empty)
+    run ch-image delete 'foo*'
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'no image matching glob, can’t delete: foo*'* ]]
+
+    # matches some
+    ch-image delete '1*'
+    diff -u <(printf "alpine:3.9\n") <(ch-image list)
+
+    # matches all
+    ch-image delete '*'
+    diff -u <(printf "") <(ch-image list)
+
+    # matches none (empty)
+    run ch-image delete '*'
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'no image matching glob, can’t delete: *'* ]]
+
+    # build cache unchanged
+    diff -u <(echo "$blessed_tree") <(ch-image build-cache --tree | treeonly)
 }

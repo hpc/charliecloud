@@ -466,6 +466,13 @@ class Image:
    def __str__(self):
       return str(self.ref)
 
+   @classmethod
+   def glob(class_, image_glob):
+      """Return a possibly-empty iterator of images in the storage directory
+         matching the given glob."""
+      for ref in Image_Ref.glob(image_glob):
+         yield class_(ref)
+
    def commit(self):
       "Commit the current unpack directory into the layer cache."
       assert False, "unimplemented"
@@ -704,7 +711,7 @@ class Image:
    def unpack_delete(self):
       VERBOSE("unpack path: %s" % self.unpack_path)
       if (not self.unpack_exist_p):
-         FATAL("%s image not found" % self.ref)
+         FATAL("image not found, can’t delete: %s" % self.ref)
       if (self.deleteable):
          INFO("deleting image: %s" % self.ref)
          chmod_min(self.unpack_path, 0o700)
@@ -945,6 +952,23 @@ class Image_Ref:
          out += "@sha256:" + self.digest
       return out
 
+   @staticmethod
+   def path_to_ref(path):
+      if (isinstance(path, Path)):
+         path = path.name
+      return path.replace("+", ":").replace("%", "/")
+
+   @staticmethod
+   def ref_to_pathstr(ref_str):
+      return ref_str.replace("/", "%").replace(":", "+")
+
+   @classmethod
+   def glob(class_, image_glob):
+      """Return a possibly-empty iterator of references in the storage
+         directory matching the given glob."""
+      for path in storage.unpack_base.glob(class_.ref_to_pathstr(image_glob)):
+         yield class_(class_.path_to_ref(path))
+
    @classmethod
    def parse(class_, s):
       if (class_.parser is None):
@@ -996,7 +1020,7 @@ fields:
 
    @property
    def for_path(self):
-      return str(self).replace("/", "%").replace(":", "+")
+      return self.ref_to_pathstr(str(self))
 
    @property
    def path_full(self):
@@ -1348,6 +1372,16 @@ class Path(pathlib.PosixPath):
          for #992, but decided that the advantages it offered didn't
          warrant the effort required to make the change."""
       return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % self.name, self))
+
+   def lstrip(self, n):
+      """Return a copy of myself with n leading components removed. E.g.:
+
+           >>> Path("a/b/c").lstrip(1)
+           Path("b/c")
+
+         It is an error if I don’t have at least n+1 components."""
+      assert (len(self.parts) >= n + 1)
+      return Path(".").joinpath(*self.parts[n:])
 
    def mkdirs(self, exist_ok=True):
       TRACE("ensuring directories: %s" % self.name)
@@ -2480,7 +2514,7 @@ def chmod_min(path, mode, st=None):
    mode_old = stat.S_IMODE(st.st_mode)
    if (mode & mode_old != mode):
       mode |= mode_old
-      VERBOSE("fixing permisssions: %s: %03o -> %03o" % (path, mode_old, mode))
+      VERBOSE("fixing permissions: %s: %03o -> %03o" % (path, mode_old, mode))
       ossafe(os.chmod, "can't chmod: %s" % path, path, mode)
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):

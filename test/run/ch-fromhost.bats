@@ -36,8 +36,8 @@ fromhost_ls () {
 
 @test 'ch-fromhost (CentOS)' {
     scope standard
-    prerequisites_ok almalinux8
-    img=${ch_imgdir}/almalinux8
+    prerequisites_ok almalinux_8ch
+    img=${ch_imgdir}/almalinux_8ch
 
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
@@ -116,8 +116,8 @@ fromhost_ls () {
 
 @test 'ch-fromhost (Debian)' {
     scope full
-    prerequisites_ok debian9
-    img=${ch_imgdir}/debian9
+    prerequisites_ok debian_9ch
+    img=${ch_imgdir}/debian_9ch
 
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
@@ -139,8 +139,8 @@ fromhost_ls () {
 
 @test 'ch-fromhost errors' {
     scope standard
-    prerequisites_ok almalinux8
-    img=${ch_imgdir}/almalinux8
+    prerequisites_ok almalinux_8ch
+    img=${ch_imgdir}/almalinux_8ch
 
     # no image
     run ch-fromhost --path sotest/sotest.c
