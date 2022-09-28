@@ -1063,6 +1063,9 @@ EOF
 @test "COPY from previous stage, no context" {
     # test COPY from previous stage, no context directory (see issue
     # #1381)
+
+    [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
+
     run ch-image build --no-cache -t foo - <<'EOF'
 FROM alpine:3.9
 FROM alpine:3.10
