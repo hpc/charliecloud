@@ -1182,37 +1182,21 @@ class Path(pathlib.PosixPath):
          Path("foo/bar/baz").path_name returns Path("baz")"""
       return Path(self.name)
 
-   def joinpath_posix(self, *others):
-      others2 = list()
-      for other in others:
-         other = Path(other)
-         if (other.is_absolute()):
-            other = other.relative_to("/")
-            assert (not other.is_absolute())
-         others2.append(other)
-      return self.joinpath(*others2)
+   @classmethod
+   def gzip_set(cls):
+      """Used to set gzip class attribute on first call to file_gzip method"""
+      if (shutil.which("pigz") is not None):
+         cls.gzip = "pigz"
+      elif (shutil.which("gzip") is not None):
+         cls.gzip = "gzip"
+      else:
+         FATAL("can't find path to gzip or pigz")
 
    def add_suffix(self, suff):
       """Returns the path object restulting from appending the specified
          suffix to the end of the path name. E.g. Path(foo).add_suffix(".txt")
          returns Path("foo.txt)."""
       return Path(str(self) + suff)
-   
-   def mkdir_(self):
-      TRACE("ensuring directory: %s" % self)
-      try:
-         super().mkdir(exist_ok=True)
-      except FileExistsError as x:
-          FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
-      except OSError as x:
-         FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
-
-   """
-   def unlink(self, *args, **kwargs):
-      "Error-checking wrapper for Path.unlink()."
-      print("called unlink")
-      ossafe(super().unlink, "can't unlink: %s" % self.name)
-   """
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
@@ -1271,8 +1255,12 @@ class Path(pathlib.PosixPath):
       path_c = self.add_suffix(".gz")
       # On first call, remember first available of pigz and gzip using class
       # attribute 'gzip'.
+      # Note: We originally thought this could be accomplished WITHOUT calling a
+      # class method (by setting the attribute, e.g. "self.gzip = 'foo'"), but it
+      # turned out that this would only set the attribute for the single instance.
+      # To set 'self.gzip' for all instances, we need the class method.
       if (self.gzip is None):
-         Path.set_gzip()
+         Path.gzip_set()
       # Remove destination file if it already exists, because gzip --force does
       # several other things too. (Note: pigz sometimes confusingly reports
       # "Inappropriate ioctl for device" if destination already exists.)
@@ -1289,16 +1277,6 @@ class Path(pathlib.PosixPath):
       ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
       close_(fp)
       return path_c
-
-   @classmethod
-   def set_gzip(cls):
-      """Used to set gzip class attribute on first call to file_gzip method"""
-      if (shutil.which("pigz") is not None):
-         cls.gzip = "pigz"
-      elif (shutil.which("gzip") is not None):
-         cls.gzip = "gzip"
-      else:
-         FATAL("can't find path to gzip or pigz")
 
    def file_hash(self):
       """Return the hash of data in file at path, as a hex string with no
@@ -1355,6 +1333,16 @@ class Path(pathlib.PosixPath):
       except OSError as x:
          FATAL("error reading %s: %s" % (self.name, x.strerror))
 
+   def joinpath_posix(self, *others):
+      others2 = list()
+      for other in others:
+         other = Path(other)
+         if (other.is_absolute()):
+            other = other.relative_to("/")
+            assert (not other.is_absolute())
+         others2.append(other)
+      return self.joinpath(*others2)
+         
    def json_from_file(self, msg):
       DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
@@ -1382,6 +1370,15 @@ class Path(pathlib.PosixPath):
          It is an error if I don’t have at least n+1 components."""
       assert (len(self.parts) >= n + 1)
       return Path(".").joinpath(*self.parts[n:])
+
+   def mkdir_(self):
+      TRACE("ensuring directory: %s" % self)
+      try:
+         super().mkdir(exist_ok=True)
+      except FileExistsError as x:
+          FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
+      except OSError as x:
+         FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
 
    def mkdirs(self, exist_ok=True):
       TRACE("ensuring directories: %s" % self.name)
