@@ -318,6 +318,13 @@ class Enabled_Cache:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
+   def branch_delete(self, branch):
+      "Delete branch branch if it exists; otherwise, do nothing."
+      if (ch.cmd_quiet(["git", "show-ref", "--quiet", "--heads", branch],
+                       cwd=self.root, fail_ok=True) == 0):
+         ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
+
+
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Image_Ref src_ref pointing to dest, which can
          be either an Image_Ref or a Git commit reference (as a string)."""
@@ -687,8 +694,7 @@ class Enabled_Cache:
    def ready(self, image):
       ch.cmd_quiet(["git", "checkout", "-B", self.branch_name_ready(image.ref)],
                    cwd=image.unpack_path)
-      ch.cmd_quiet(["git", "branch", "-D", self.branch_name_unready(image.ref)],
-                   cwd=self.root)
+      self.branch_delete(self.branch_name_unready(image.ref))
 
    def reset(self):
       if (self.bootstrap_ct >= 1):
