@@ -1200,7 +1200,7 @@ class Path(pathlib.PosixPath):
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
-      old = ossafe(os.getcdw, "can't get cwd(2)")
+      old = ossafe(os.getcwd, "can't get cwd(2)")
       ossafe(os.chdir, "can't chdir: %s" % self.name, self)
       return Path(old)
 

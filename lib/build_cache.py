@@ -300,7 +300,10 @@ class Enabled_Cache:
       try:
          with tempfile.TemporaryDirectory(prefix="weirdal.") as td:
             ch.cmd_quiet(["git", "clone", "-q", self.root, td])
-            cwd = ch.chdir(td)
+            #cwd = ch.chdir(td) # td is file like object, not path
+            cwd = ch.Path(td).chdir()
+            #print(type(td))
+            #cwd = td.chdir()
             ch.cmd_quiet(["git", "checkout", "-q", "-b", "root"])
             # Git has no default gitignore, but cancel any global gitignore
             # rules the user might have. https://stackoverflow.com/a/26681066
@@ -308,7 +311,8 @@ class Enabled_Cache:
             ch.cmd_quiet(["git", "add", ".gitignore"])
             ch.cmd_quiet(["git", "commit", "-m", "ROOT\n\n%s" % self.root_id])
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
-            ch.chdir(cwd)
+            #ch.chdir(cwd)
+            cwd.chdir()
       except OSError as x:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
@@ -342,7 +346,8 @@ class Enabled_Cache:
       #
       # WARNING: files must be empty for the first image commit.
       self.git_prepare(path, files)
-      cwd = ch.chdir(path)
+      #cwd = ch.chdir(path)
+      cwd = path.chdir()
       t = ch.Timer()
       if (len(files) == 0):
          git_files = ["-A"]
@@ -359,7 +364,9 @@ class Enabled_Cache:
       # Therefore, retrieve the hash separately.
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
       git_hash = cp.stdout.strip()
-      ch.chdir(cwd)
+      print(type(cwd))
+      cwd.chdir()
+      #ch.chdir(cwd)
       self.git_restore(path, files, True)
       return git_hash
 
@@ -489,7 +496,8 @@ class Enabled_Cache:
 
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
-      cwd = ch.chdir(unpack_path)
+      #cwd = ch.chdir(unpack_path)
+      cwd = unpack_path.chdir()
       if (len(files) == 0):
          self.file_metadata = self.git_prepare_walk(dict(), None, ch.Path("."),
                                                     os.lstat("."))
@@ -499,7 +507,8 @@ class Enabled_Cache:
       if (write):
          ch.file_write("ch/git.pickle", pickle.dumps(self.file_metadata,
                                                      protocol=4))
-      ch.chdir(cwd)
+      #ch.chdir(cwd)
+      cwd.chdir()
       t.log("gathered file metadata")
 
    def git_prepare_walk(self, hardlinks, parent, f_path, st):
@@ -520,8 +529,8 @@ class Enabled_Cache:
          # normally nothing to do here on these file types
          if (path.startswith("./var/lib/rpm/__db.")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
-            #ch.unlink(fm.name)
-            f_path.unlink() # change to fm.path.unlink() when issue #1455 is closed
+            f_path.unlink() # change to fm.path.unlink() once issue #1455 is
+                            # closed
             fm.dont_restore = True
             return fm
       elif (   stat.S_ISSOCK(st.st_mode)):
@@ -531,12 +540,15 @@ class Enabled_Cache:
          ch.FATAL("device files invalid in image: %s" % path)
       elif (   stat.S_ISDIR(st.st_mode)):
          entries = sorted(ch.listdir(fm.name))
-         cwd = ch.chdir(fm.name)
+         #cwd = ch.chdir(fm.name)
+         cwd = f_path.chdir() # once #1455 is closed, this line should get
+                              # changed to 'fm.path.chdir()'.
          for i in entries:
             if (not (parent is None and str(i).startswith(".git"))):
                fm.children.append(self.git_prepare_walk(hardlinks, path,
                                                         i, os.lstat(i)))
-         ch.chdir(cwd)
+         #ch.chdir(cwd)
+         cwd.chdir()
       else:
          ch.FATAL("unexpected file type in image: %x: %s"
                   % (stat.IFMT(st.st_mode), path))
@@ -582,7 +594,8 @@ class Enabled_Cache:
          unpack_path and do a full restore. This method will dirty the Git
          working directory."""
       t = ch.Timer()
-      cwd = ch.chdir(unpack_path)
+      #cwd = ch.chdir(unpack_path)
+      cwd = unpack_path.chdir()
       if (not quick):
          self.file_metadata = pickle.loads(ch.file_read_all("ch/git.pickle",
                                                             text=False))
@@ -592,7 +605,8 @@ class Enabled_Cache:
          for path in files:
             self.git_restore_walk(path, path.parent,
                                   self.file_metadata.get(path), quick)
-      ch.chdir(cwd)
+      #ch.chdir(cwd)
+      cwd.chdir()
       t.log("restored file metadata (%s)" % ("quick" if quick else "full"))
 
    def git_restore_walk(self, root, parent, fm, quick):
@@ -628,10 +642,12 @@ class Enabled_Cache:
             ch.WARNING("ignoring socket in image: %s" % path)
       # Recurse children.
       if (len(fm.children) > 0):
-         cwd = ch.chdir(fm.name)  # works at top level b/c fm.name is "."
+         #cwd = ch.chdir(fm.name)  # works at top level b/c fm.name is "."
+         cwd = ch.Path(fm.name).chdir() 
          for child in fm.children:
             self.git_restore_walk(root, path, child, quick)
-         ch.chdir(cwd)
+         #ch.chdir(cwd)
+         cwd.chdir()
       # Restore my metadata.
       if ((   not quick                     # Git broke metadata
            or fm.hardlink_to is not None    # we just made the hardlink
@@ -741,7 +757,8 @@ class Enabled_Cache:
          return "*"
 
    def summary_print(self):
-      cwd = ch.chdir(self.root)
+      #cwd = ch.chdir(self.root)
+      cwd = ch.Path(self.root).chdir()
       # state IDs
       msgs = ch.cmd_stdout(["git", "log",
                             "--all", "--reflog", "--format=format:%b"]).stdout
