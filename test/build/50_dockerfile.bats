@@ -1045,6 +1045,22 @@ EOF
 }
 
 
+@test "COPY from previous stage, no context" {
+    # Normally, COPY is disallowed if there’s no context directory, but if
+    # it’s from a previous stage, it should work. See issue #1381.
+
+    [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
+
+    run ch-image build --no-cache -t foo - <<'EOF'
+FROM alpine:3.9
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
+EOF
+    echo "$output"
+    [[ "$status" -eq 0 ]]
+}
+
+
 @test 'Dockerfile: FROM scratch' {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
@@ -1058,19 +1074,4 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'manifest: using internal library'* ]]
     [[ $output != *'layer 1'* ]]  # no layers
-}
-
-@test "COPY from previous stage, no context" {
-    # test COPY from previous stage, no context directory (see issue
-    # #1381)
-
-    [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
-
-    run ch-image build --no-cache -t foo - <<'EOF'
-FROM alpine:3.9
-FROM alpine:3.10
-COPY --from=0 /etc/os-release /
-EOF
-    echo "$output"
-    [[ "$status" -eq 0 ]]
 }
