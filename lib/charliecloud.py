@@ -1392,7 +1392,7 @@ class Path(pathlib.PosixPath):
          
    def open(self, mode, *args, **kwargs):
       "Error-checking wrapper for open()."
-      return ossafe(super.open, "can't open for %s: %s" % (mode, self.name),
+      return ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
                     mode, *args, **kwargs) # note: removed 'self' from front of this line
 
    def rename(self, name_new):
