@@ -1068,5 +1068,6 @@ FROM alpine:3.9
 FROM alpine:3.10
 COPY --from=0 /etc/os-release /
 EOF
+    echo "$output"
     [[ "$status" -eq 0 ]]
 }
