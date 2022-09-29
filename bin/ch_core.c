@@ -45,13 +45,30 @@ struct bind BINDS_DEFAULT[] = {
    { "/sys",                     "/sys",                     BD_REQUIRED },
    { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
    { "/etc/machine-id",          "/etc/machine-id",          BD_OPTIONAL },
-   { "/etc/opt/cray",            "/etc/opt/cray",            BD_OPTIONAL },
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
-   { "/opt/cray",                "/opt/cray",                BD_OPTIONAL },
-   { "/var/opt/cray",            "/var/opt/cray",            BD_OPTIONAL },
    { 0 }
 };
 
+/* Cray bind-mounts. */
+struct bind BINDS_CRAY[] = {
+   { "/etc/alternatives",        "/etc/alternatives",        BD_REQUIRED },
+   { "/var/lib/hugetlbfs",       "/var/lib/hugetlbfs",       BD_REQUIRED },
+};
+
+/* Cray Gemini/Aries interconnect bind-mounts. */
+struct bind BINDS_CRAY_UGNI[] = {
+   { "/etc/opt/cray/wlm_detect", "/etc/opt/cray/wlm_detect", BD_REQUIRED },
+   { "/opt/cray/alps",           "/opt/cray/alps",           BD_REQUIRED },
+   { "/opt/cray/udreg",          "/opt/cray/udreg",          BD_REQUIRED },
+   { "/opt/cray/ugni",           "/opt/cray/ugni",           BD_REQUIRED },
+   { "/opt/cray/xpmem",          "/opt/cray/xpmem",          BD_REQUIRED },
+   { "/var/opt/cray/alps",       "/var/opt/cray/alps",       BD_REQUIRED },
+};
+
+/* Known Cray Shasta bind-mounts. */
+struct bind BINDS_CRAY_SHASTA[] = {
+   { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_REQUIRED },
+};
 
 /** Global variables **/
 
@@ -184,6 +201,14 @@ void enter_udss(struct container *c)
    bind_mount(newroot_parent, newroot_parent, BD_REQUIRED, "/", MS_PRIVATE);
    // Bind-mount default files and directories.
    bind_mounts(BINDS_DEFAULT, c->newroot, MS_RDONLY);
+   // Bind-mount cray stuff.
+   if (c->bind_ugni || c->bind_shasta ) {
+      bind_mounts(BINDS_CRAY, c->newroot, MS_RDONLY);
+      if (c->bind_ugni)
+         bind_mounts(BINDS_CRAY_UGNI, c->newroot, MS_RDONLY);
+      if (c->bind_shasta)
+         bind_mounts(BINDS_CRAY_SHASTA, c->newroot, MS_RDONLY);
+   }
    // /etc/passwd and /etc/group.
    if (!c->private_passwd)
       setup_passwd(c);
