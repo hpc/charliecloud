@@ -146,7 +146,7 @@ GRAMMAR = r"""
 // FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
 // to work with brief trying.
 image_ref: IMAGE_REF
-IMAGE_REF: /[A-Za-z0-9$:._]+/
+IMAGE_REF: /[A-Za-z0-9$:._\/-]+/
 IR_PATH_COMPONENT: /[a-z0-9_.-]+/
 
 /// Dockerfile ///
