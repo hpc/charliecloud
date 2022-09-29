@@ -54,8 +54,12 @@ def build_cache(cli):
    bu.cache.summary_print()
 
 def delete(cli):
-   img = ch.Image(ch.Image_Ref(cli.image_ref))
-   img.unpack_delete()
+   delete_ct = 0
+   for img in ch.Image.glob(cli.image_ref):
+      img.unpack_delete()
+      delete_ct += 1
+   if (delete_ct == 0):
+      ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
    bu.cache.worktrees_prune()
 
 def gestalt_bucache(cli):
@@ -121,14 +125,14 @@ def list_(cli):
       print("in build cache:      %s" % cached)
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
-      pullet = pull.Image_Puller(img)
+      pullet = pull.Image_Puller(img, img.ref)
       try:
          pullet.fatman_load()
          remote = "yes"
          arch_aware = "yes"
          arch_avail = " ".join(sorted(pullet.architectures.keys()))
-      except ch.Not_In_Registry_Error:
-         remote = "no"
+      except ch.Image_Unavailable_Error:
+         remote = "no (or you are not authorized)"
          arch_aware = "n/a"
          arch_avail = "n/a"
       except ch.No_Fatman_Error:
@@ -144,3 +148,13 @@ def list_(cli):
 def reset(cli):
    ch.storage.reset()
 
+def undelete(cli):
+   if (cli.bucache != ch.Build_Mode.ENABLED):
+      ch.FATAL("only available when cache is enabled")
+   img = ch.Image(ch.Image_Ref(cli.image_ref))
+   if (img.unpack_exist_p):
+      ch.FATAL("image exists; will not overwrite")
+   (_, git_hash) = bu.cache.find_image(img)
+   if (git_hash is None):
+      ch.FATAL("image not in cache")
+   bu.cache.checkout(img, git_hash, None)

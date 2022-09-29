@@ -322,7 +322,8 @@ AC_MSG_RESULT($have_userns)
 AC_CHECK_DECL(FNM_EXTMATCH,
               [have_fnm_extmatch=yes],
               [have_fnm_extmatch=no],
-              [[#include <fnmatch.h>]])
+              [[#define _GNU_SOURCE
+                #include <fnmatch.h>]])
 
 
 ### SquashFS #################################################################

@@ -79,7 +79,7 @@ def main():
    # [2]: https://docs.python.org/3/library/argparse.html#parents
    # [3]: https://stackoverflow.com/a/54936198
    common_opts = \
-      { "bucache": [
+      { ("bucache", "build cache common options"): [
            [["--cache"],
             { "action": "store_const",
               "const": ch.Build_Mode.ENABLED,
@@ -95,7 +95,7 @@ def main():
               "const": ch.Build_Mode.REBUILD,
               "dest": "bucache",
               "help": "force cache misses for non-FROM instructions" }] ],
-        None: [
+        (None, "misc common options"): [
            [["-a", "--arch"],
             { "metavar": "ARCH",
               "default": "host",
@@ -103,12 +103,18 @@ def main():
            [["--always-download"],
             { "action": "store_true",
               "help": "redownload any image files when pulling"}],
+           [["--auth"],
+            { "action": "store_true",
+              "help": "authenticated registry access; implied by push" }],
            [["--debug"],
             { "action": "store_true",
               "help": "add short traceback to fatal error hints" }],
            [["--dependencies"],
             { "action": misc.Dependencies,
               "help": "print any missing dependencies and exit" }],
+           [["--no-lock"],
+            { "action": "store_true",
+              "help": "allow concurrent storage directory access (risky!)" }],
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],
@@ -142,18 +148,17 @@ def main():
          p.set_defaults(func=dispatch)
          dependencies_check[dispatch] = deps_check
          storage_init[dispatch] = stog_init
-      for (name, group) in common_opts.items():
+      for ((name, title), group) in common_opts.items():
          if (name is None):
-            p2 = p
+            p2 = p.add_argument_group(title=title)
          else:
-            p2 = p.add_mutually_exclusive_group()
+            p2 = p.add_argument_group(title=title)
+            p2 = p2.add_mutually_exclusive_group()
          for (args, kwargs) in group:
             if (help_):
                kwargs2 = kwargs
             else:
-               kwargs2 = { **kwargs,
-                           "default": argparse.SUPPRESS,
-                           "help": argparse.SUPPRESS }
+               kwargs2 = { **kwargs, "default": argparse.SUPPRESS }
             p2.add_argument(*args, **kwargs2)
 
    # main parser
@@ -201,7 +206,7 @@ def main():
    # delete
    sp = ap.add_parser("delete", "delete image from internal storage")
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
-   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
+   sp.add_argument("image_ref", metavar="IMAGE_GLOB", help="image(s) to delete")
 
    # gestalt (has sub-subcommands)
    sp = ap.add_parser("gestalt", "query debugging configuration",
@@ -241,22 +246,29 @@ def main():
    sp.add_argument("--last-layer", metavar="N", type=int,
                    help="stop after unpacking N layers")
    sp.add_argument("--parse-only", action="store_true",
-                   help="stop after parsing the image reference")
-   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image reference")
+                   help="stop after parsing the image reference(s)")
+   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image reference")
+   sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
+                   help="destination image reference (default: IMAGE_REF)")
 
    # push
    sp = ap.add_parser("push",
                       "copy image from local filesystem to remote repository")
    add_opts(sp, push.main, deps_check=True, stog_init=True)
-   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("--image", metavar="DIR",
                    help="path to unpacked image (default: opaque path in storage dir)")
+   sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
                    help="destination image reference (default: IMAGE_REF)")
 
    # reset
    sp = ap.add_parser("reset", "delete everything in ch-image builder storage")
    add_opts(sp, misc.reset, deps_check=True, stog_init=False)
+
+   # undelete
+   sp = ap.add_parser("undelete", "recover image from build cache")
+   add_opts(sp, misc.undelete, deps_check=True, stog_init=True)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to recover")
 
    # Parse it up!
    if (len(sys.argv) < 2):

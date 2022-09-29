@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-20.04
     timeout-minutes: 90
     strategy:
-      fail-fast: true  # if any job fails, cancel the rest immediately
+      fail-fast: false  # Actions seems kind of flaky lately
       matrix:
         builder: [none, docker, ch-image]
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]
@@ -143,7 +143,7 @@ jobs:
           [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
           [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
-          sudo sh -c 'umask 0022 && pip3 install lark-parser requests wheel'
+          sudo sh -c 'umask 0022 && pip3 install lark requests wheel'
           # Configure Git and friends for build cache.
           if [[ $CH_IMAGE_CACHE = enabled ]]; then
               # Git
@@ -151,6 +151,8 @@ jobs:
               git --version
               git config --global user.name 'Judit Polgár'
               git config --global user.email judit@example.com
+              git config --global core.excludesfile ~/.gitignore
+              echo __ch-test_ignore__ >> ~/.gitignore
               # Graphviz
               sudo apt-get install -y graphviz
               dot -V
@@ -178,6 +180,12 @@ jobs:
           make
           sudo sh -c 'umask 0022 && make install'
           sudo ldconfig
+          # Unset setuid on all fusermount3(1) on the system.
+          sudo chmod -v u-s /usr/bin/fusermount*
+          sudo find / -name 'fusermount*' -ls
+          ls -lh $(command -v fusermount3)
+          [[ ! -u $(command -v fusermount3) ]]
+
 
       - name: install musl and friends
         if: ${{ matrix.pack_fmt == 'tar-unpack' }}

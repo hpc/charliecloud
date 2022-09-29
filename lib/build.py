@@ -216,7 +216,11 @@ class Main_Loop(lark.Visitor):
          if (inst.miss):
             if (self.miss_ct == 1):
                inst.checkout_for_build()
-            inst.execute()
+            try:
+               inst.execute()
+            except SystemExit:  # fatal error
+               inst.rollback()
+               raise
             if (inst.image_i >= 0):
                inst.metadata_update()
             inst.commit()
@@ -228,13 +232,14 @@ class Main_Loop(lark.Visitor):
 
 class Instruction(abc.ABC):
 
-   __slots__ = ("git_hash",     # Git commit where sid was found
+   __slots__ = ("commit_files",  # modified files; default: anything
+                "git_hash",      # Git commit where sid was found
                 "image",
                 "image_alias",
                 "image_i",
                 "lineno",
-                "options",      # consumed
-                "options_str",  # saved at instantiation
+                "options",       # consumed
+                "options_str",   # saved at instantiation
                 "parent",
                 "sid",
                 "tree")
@@ -243,10 +248,10 @@ class Instruction(abc.ABC):
       """Note: When this is called, all we know about the instruction is
          what's in the parse tree. In particular, you must not call
          ch.variables_sub() here."""
+      self.commit_files = set()
       self.lineno = tree.meta.line
-      self.options = {}
-
-      # saving options with only 1 saved value
+      self.options = dict()
+       # saving options with only 1 saved value
       for st in ch.tree_children(tree, "option"):
          k = ch.tree_terminal(st, "OPTION_KEY")
          v = ch.tree_terminal(st, "OPTION_VALUE")
@@ -295,13 +300,6 @@ class Instruction(abc.ABC):
          assert False, "unimplemented"  # return dict()
       else:
          return self.image.metadata["env"]
-
-   @property
-   def first_p(self):
-      """Return True if the first instruction, False otherwise. WARNING: Do
-         not just check that attribute “parent” is None, because some first
-         instructions do set their parent."""
-      return (self.parent is None or self.parent is self)
 
    @property
    def miss(self):
@@ -370,7 +368,8 @@ class Instruction(abc.ABC):
 
    def commit(self):
       path = self.image.unpack_path
-      self.git_hash = bu.cache.commit(path, self.sid, str(self))
+      self.git_hash = bu.cache.commit(path, self.sid, str(self),
+                                      self.commit_files)
 
    def ready(self):
       bu.cache.ready(self.image)
@@ -432,6 +431,11 @@ class Instruction(abc.ABC):
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       ch.INFO(self.str_log)
       return miss_ct + int(self.miss)
+
+   def rollback(self):
+      """Discard everything done by execute(), which may have completed
+         partially, fully, or not at all."""
+      bu.cache.rollback(self.image.unpack_path)
 
    def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported, ignored: %s %s" % (self.str_name, msg))
@@ -512,6 +516,7 @@ class Arg(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
+      self.commit_files.add(ch.Path("ch/metadata.json"))
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
@@ -805,13 +810,10 @@ class I_copy(Instruction):
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
          st = ch.stat_(path, links=links)
-         return path.encode("UTF-8") + struct.pack("=HQQQ",
-                                                   st.st_mode,
-                                                   st.st_size,
-                                                   st.st_mtime_ns,
-                                                   st.st_ctime_ns)
+         return (  path.encode("UTF-8")
+                 + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.
-      if (cli.context == "-"):
+      if (cli.context == "-" and self.from_ is None):
          ch.FATAL("can't COPY: no context because \"-\" given")
       if (len(self.srcs_raw) < 1):
          ch.FATAL("can't COPY: must specify at least one source")
@@ -845,7 +847,7 @@ class I_copy(Instruction):
       for src in [ch.variables_sub(i, self.env_build) for i in self.srcs_raw]:
          matches = glob.glob("%s/%s" % (context, src))  # glob can't take Path
          if (len(matches) == 0):
-            ch.FATAL("can't copy: not found: %s" % src)
+            ch.FATAL("can't copy: source file not found: %s" % src)
          for i in matches:
             self.srcs.append(i)
             ch.VERBOSE("source: %s" % i)
@@ -890,6 +892,11 @@ class Env(Instruction):
 
    __slots__ = ("key",
                 "value")
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.commit_files |= {ch.Path("ch/environment"),
+                            ch.Path("ch/metadata.json")}
 
    @property
    def str_(self):
@@ -981,26 +988,26 @@ class I_from_(Instruction):
                   % (image_ct, self.image_i + 1))
       else:
          # Not last image; append stage index to tag.
-         tag = "%s/_stage%d" % (cli.tag, self.image_i)
+         tag = "%s_stage%d" % (cli.tag, self.image_i)
       self.image = ch.Image(ch.Image_Ref(tag))
       images[self.image_i] = self.image
       if (self.image_alias is not None):
          images[self.image_alias] = self.image
       ch.VERBOSE("image path: %s" % self.image.unpack_path)
-      # FROM doesn’t have a meaningful parent because it’s opening a new
-      # stage, so act as own parent.
-      self.parent = self
       # More error checking.
       if (str(self.image.ref) == str(self.base_image.ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
       # Close previous stage if needed.
-      if (not self.first_p and miss_ct == 0):
+      if (miss_ct == 0 and self.image_i > 0):
          # While there haven't been any misses so far, we do need to check out
          # the previous stage (a) to read its metadata and (b) in case there's
          # a COPY later. This will still be fast most of the time since the
          # correct branch is likely to be checked out already.
          self.parent.checkout()
          self.parent.ready()
+      # At this point any meaningful parent of FROM, e.g., previous stage, has
+      # been closed; thus, act as own parent.
+      self.parent = self
       # Pull base image if needed.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       unpack_no_git = (    self.base_image.unpack_exist_p
@@ -1014,7 +1021,8 @@ class I_from_(Instruction):
                ch.WARNING("base image only exists non-cached; adding to cache")
             (self.sid, self.git_hash) = bu.cache.adopt(self.base_image)
          else:
-            (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image)
+            (self.sid, self.git_hash) = bu.cache.pull_lazy(self.base_image,
+                                                           self.base_image.ref)
       elif (unpack_no_git):
          ch.WARNING("base image also exists non-cached; using cache")
       # Load metadata
@@ -1097,6 +1105,10 @@ class I_run_shell(Run):
 
 
 class I_shell(Instruction):
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.commit_files.add(ch.Path("ch/metadata.json"))
 
    @property
    def str_(self):

@@ -23,14 +23,17 @@ manifests_internal = {
 
 def main(cli):
    # Set things up.
-   ref = ch.Image_Ref(cli.image_ref)
+   src_ref = ch.Image_Ref(cli.source_ref)
+   dst_ref = src_ref if cli.dest_ref is None else ch.Image_Ref(cli.dest_ref)
    if (cli.parse_only):
-      print(ref.as_verbose_str)
+      print(src_ref.as_verbose_str)
       sys.exit(0)
-   img = ch.Image(ref)
-   ch.INFO("pulling image:    %s" % img.ref)
+   dst_img = ch.Image(dst_ref)
+   ch.INFO("pulling image:    %s" % src_ref)
+   if (src_ref != dst_ref):
+      ch.INFO("destination:      %s" % dst_ref)
    ch.INFO("requesting arch:  %s" % ch.arch)
-   bu.cache.pull_eager(img, cli.last_layer)
+   bu.cache.pull_eager(dst_img, src_ref, cli.last_layer)
    ch.done_notify()
 
 
@@ -43,15 +46,17 @@ class Image_Puller:
                 "image",
                 "layer_hashes",
                 "registry",
-                "sid_input")
+                "sid_input",
+                "src_ref")
 
-   def __init__(self, image):
+   def __init__(self, image, src_ref):
       self.architectures = None
       self.config_hash = None
       self.image = image
       self.layer_hashes = None
-      self.registry = ch.Registry_HTTP(image.ref)
+      self.registry = ch.Registry_HTTP(src_ref)
       self.sid_input = None
+      self.src_ref = src_ref
 
    @property
    def config_path(self):
@@ -87,7 +92,7 @@ class Image_Puller:
          if (ch.arch != "yolo"):
             try:
                self.fatman_load()
-               if (ch.arch not in self.architectures):
+               if (not self.architectures.in_warn(ch.arch)):
                   ch.FATAL("requested arch unavailable: %s" % ch.arch,
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
@@ -103,8 +108,12 @@ class Image_Puller:
                            "consider --arch=yolo")
          # manifest
          self.manifest_load()
-      except ch.Not_In_Registry_Error:
-         ch.FATAL("not in registry: %s" % self.registry.ref)
+      except ch.Image_Unavailable_Error:
+         if (ch.user() == "qwofford"):
+            h = "Quincy, use --auth!!"
+         else:
+            h = "if your registry needs authentication, use --auth"
+         ch.FATAL("unauthorized or not in registry: %s" % self.registry.ref, h)
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
@@ -142,17 +151,18 @@ class Image_Puller:
 
          Raises:
 
-           * Not_In_Registry_Error if the image does not exist.
+           * Image_Unavailable_Error if the image does not exist or we are not
+             authorized to have it.
 
            * No_Fatman_Error if the image exists but has no fat manifest,
              i.e., is architecture-unaware. In this case self.architectures is
              set to None."""
       self.architectures = None
-      if (str(self.image.ref) in manifests_internal):
+      if (str(self.src_ref) in manifests_internal):
          # cheat; internal manifest library matches every architecture
-         self.architectures = { ch.arch_host: None }
+         self.architectures = ch.Arch_Dict({ ch.arch_host: None })
          return
-      # raises Not_In_Registry_Error if needed
+      # raises Image_Unavailable_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
                                    "manifest list: downloading")
       fm = ch.json_from_file(self.fatman_path, "fat manifest")
@@ -169,7 +179,7 @@ class Image_Puller:
             return
          else:
             ch.FATAL("manifest list: error: %s" % msg)
-      self.architectures = dict()
+      self.architectures = ch.Arch_Dict()
       if ("manifests" not in fm):
          ch.FATAL("manifest list has no key 'manifests'")
       for m in fm["manifests"]:
@@ -203,7 +213,7 @@ class Image_Puller:
       # obtain the manifest
       try:
          # internal manifest library, e.g. for "FROM scratch"
-         manifest = manifests_internal[str(self.image.ref)]
+         manifest = manifests_internal[str(self.src_ref)]
          ch.INFO("manifest: using internal library")
       except KeyError:
          # download the file and parse it

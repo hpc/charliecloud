@@ -82,7 +82,8 @@ void join_namespace(pid_t pid, const char *ns);
 void join_namespaces(pid_t pid);
 void join_end(int join_ct);
 void sem_timedwait_relative(sem_t *sem, int timeout);
-void setup_namespaces(const struct container *c);
+void setup_namespaces(const struct container *c, uid_t uid_out, uid_t uid_in,
+                      gid_t gid_out, gid_t gid_in);
 void setup_passwd(const struct container *c);
 void tmpfs_mount(const char *dst, const char *newroot, const char *data);
 
@@ -145,11 +146,16 @@ void containerize(struct container *c)
    if (c->join)
       join_begin(c->join_tag);
    if (!c->join || join.winner_p) {
+      // Set up two nested user+mount namespaces: the outer so we can run
+      // fusermount3 non-setuid, and the inner so we get the desired UID
+      // within the container. We do this even if the image is a directory, to
+      // reduce the number of code paths.
+      setup_namespaces(c, geteuid(), 0, getegid(), 0);
 #ifdef HAVE_LIBSQUASHFUSE
       if (c->type == IMG_SQUASH)
          sq_fork(c);
 #endif
-      setup_namespaces(c);
+      setup_namespaces(c, 0, c->container_uid, 0, c->container_gid);
       enter_udss(c);
    } else
       join_namespaces(join.shared->winner_pid);
@@ -345,7 +351,17 @@ void join_namespace(pid_t pid, const char *ns)
          Tf (0, "join: can't open %s", path);
       }
    }
-   Zf (setns(fd, 0), "can't join %s namespace of pid %d", ns, pid);
+   /* setns(2) seems to be involved in some kind of race with syslog(3).
+      Rarely, when configured with --enable-syslog, the call fails with
+      EINVAL. We never figured out a proper fix, so just retry a few times in
+      a loop. See issue #1270. */
+   for (int i = 1; setns(fd, 0) != 0; i++)
+      if (i >= 5) {
+         Tf (0, "can’t join %s namespace of pid %d", ns, pid);
+      } else {
+         WARNING("can’t join %s namespace; trying again", ns);
+         sleep(1);
+      }
 }
 
 /* Join the existing namespaces created by the join winner. */
@@ -388,14 +404,10 @@ void sem_timedwait_relative(sem_t *sem, int timeout)
 }
 
 /* Activate the desired isolation namespaces. */
-void setup_namespaces(const struct container *c)
+void setup_namespaces(const struct container *c, uid_t uid_out, uid_t uid_in,
+                      gid_t gid_out, gid_t gid_in)
 {
    int fd;
-   uid_t euid = -1;
-   gid_t egid = -1;
-
-   euid = geteuid();
-   egid = getegid();
 
    LOG_IDS;
    Zf (unshare(CLONE_NEWNS|CLONE_NEWUSER), "can't init user+mount namespaces");
@@ -412,7 +424,7 @@ void setup_namespaces(const struct container *c)
       convert that EUID into the container UID for most (maybe all)
       purposes. */
    T_ (-1 != (fd = open("/proc/self/uid_map", O_WRONLY)));
-   T_ (1 <= dprintf(fd, "%d %d 1\n", c->container_uid, euid));
+   T_ (1 <= dprintf(fd, "%d %d 1\n", uid_in, uid_out));
    Z_ (close(fd));
    LOG_IDS;
 
@@ -420,7 +432,7 @@ void setup_namespaces(const struct container *c)
    T_ (1 <= dprintf(fd, "deny\n"));
    Z_ (close(fd));
    T_ (-1 != (fd = open("/proc/self/gid_map", O_WRONLY)));
-   T_ (1 <= dprintf(fd, "%d %d 1\n", c->container_gid, egid));
+   T_ (1 <= dprintf(fd, "%d %d 1\n", gid_in, gid_out));
    Z_ (close(fd));
    LOG_IDS;
 }

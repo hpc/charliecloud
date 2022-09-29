@@ -1,3 +1,4 @@
+import configparser
 import enum
 import hashlib
 import os
@@ -5,6 +6,7 @@ import pickle
 import re
 import stat
 import tempfile
+import textwrap
 import time
 
 import charliecloud as ch
@@ -17,6 +19,44 @@ import pull
 DOT_MIN = (2, 30, 1)
 GIT_MIN = (2, 28, 1)
 GIT2DOT_MIN = (0, 8, 3)
+
+# Git configuration. Note some of these are overridden in specific commands.
+# Documentation for these variables: https://git-scm.com/docs/git-config
+GIT_CONFIG = {
+   # Try to maximize “git add” speed.
+   "core.looseCompression":  "0",
+   # Quick-and-dirty results suggest that commit is not faster after garbage
+   # collection, and checkout is actually a little faster if *not* garbage
+   # collected. Therefore, it's not a high priority to run garbage collection.
+   # Further, I would assume garbaging a lot of files rather than a few gives
+   # better opportunities for delta compression. Our most file-ful example
+   # image is obspy at about 50K files.
+   "gc.auto":                "100000",
+   # Leave packs larger than this alone during automatic GC. This is to avoid
+   # excessive resource consumption during GC the user didn't ask for.
+   "gc.bigPackThreshold":    "12G",
+   # Anything unreachable from a named branch or the reflog is unavailable to
+   # the build cache, so we may as well delete it immediately. However, there
+   # might be a concurrent Git operation in progress, so don’t use “now”.
+   "gc.pruneExpire":         "12.hours.ago",
+   # States on the reflog are available to the build cache, but the default
+   # prune time is 90 and 30 days respectively, which seems too long.
+   #"gc.reflogExpire":        "14.days.ago",  # changed my mind
+   # In some quick-and-dirty tests (see issue #1412), pack.compression=1 is
+   # 50% faster than the default 6 at the cost of 6% more size, while
+   # Compression 0 is twice as fast but also over twice the size; 9 doubles
+   # the time with no space savings. 1 seems like the right balance.
+   "pack.compression":       "1",
+   # These two are guesses based on the fact that HPC machines tend to have a
+   # lot of memory and more caching is faster.
+   "pack.deltaCacheLimit":   "4096",
+   "pack.deltaCacheSize":    "1G",
+   # These two are guesses based on [1] and its links, particularly [2].
+   # [1]: https://stackoverflow.com/questions/28720151
+   # [2]: https://web.archive.org/web/20170526024841/https://vcscompare.blogspot.com/2008/06/git-repack-parameters.html
+   "pack.depth":             "36",
+   "pack.window":            "24",
+}
 
 
 ## Globals ##
@@ -48,8 +88,7 @@ def init(cli):
    if (cli.bucache != ch.Build_Mode.DISABLED):
       ok = have_deps(False)
       if (cli.bucache is None):
-         #cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
-         cli.bucache = ch.Build_Mode.DISABLED
+         cli.bucache = ch.Build_Mode.ENABLED if ok else ch.Build_Mode.DISABLED
          ch.VERBOSE("using default build cache mode")
       if (cli.bucache != ch.Build_Mode.DISABLED and not ok):
          ch.FATAL("insufficient Git for build cache mode: %s"
@@ -79,6 +118,17 @@ def init(cli):
 class File_Metadata:
 
    # Note: ctime cannot be restored: https://unix.stackexchange.com/a/36105
+
+   # Note/FIXME: Because children is a list, rather than e.g. a dictionary
+   # that maps names to child objects, we cannot efficiently access the
+   # children by name. See get() and set(). Changing that attribute's type
+   # requires either bumping the storage directory version or automagically
+   # converting on un-pickle. Because currently (9/19/2022) our performance
+   # requirements are not large, I don't think the hassle of doing either of
+   # these is merited.
+   #
+   # A related design problem is that this class is externally mucked with a
+   # lot, e.g. by build_cache.git_prepare_walk() and .git_restore_walk().
 
    __slots__ = ('atime_ns',
                 'children',
@@ -118,6 +168,28 @@ class File_Metadata:
       # or empty_dir_p (recursively empty directory tree).
       return all((c.hardlink_to is not None or c.empty_dir_p)
                  for c in self.children)
+
+   def get(self, path):
+      """Return the File_Metadata object at path. Slow; see comment."""
+      assert (len(path.parts) >= 1)
+      for c in self.children:
+         if (c.name == path.first):
+            if (len(path.parts) == 1):
+               return c
+            else:
+               return c.get(path.lstrip(1))
+      assert False, "unreachable code reached"
+
+   def set(self, path, fm):
+      """Set the File_Metadata object at path to fm. Slow; see comment."""
+      assert (len(path.parts) >= 1)
+      for (i, c) in enumerate(self.children):
+         if (c.name == path.first):
+            if (len(path.parts) == 1):
+               self.children[i] = fm  # WARNING: iteration now broken
+            else:
+               c.set(path.lstrip(1), fm)
+            break
 
 
 class State_ID:
@@ -175,7 +247,8 @@ class Enabled_Cache:
    root_id =   State_ID.from_text("4A6F:73C3:A9204361:7061626C:616E6361")
    import_id = State_ID.from_text("5061:756C:204D6F72:70687900:00000000")
 
-   __slots__ = ("bootstrap_ct")
+   __slots__ = ("bootstrap_ct",
+                "file_metadata")
 
    def __init__(self):
       self.bootstrap_ct = 0
@@ -188,6 +261,10 @@ class Enabled_Cache:
          # Non-empty but not an existing cache.
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
+      self.configure()  # every open so configuration is up to date
+      # Prune stale worktrees that might have been left around after failed
+      # builds or other interruptions.
+      ch.cmd_quiet(["git", "worktree", "prune"], cwd=self.root)
 
    @property
    def root(self):
@@ -205,7 +282,8 @@ class Enabled_Cache:
       self.worktree_adopt(img, "root")
       img.metadata_load()
       img.metadata_save()
-      gh = self.commit(img.unpack_path, self.import_id, "IMPORT %s" % img.ref)
+      gh = self.commit(img.unpack_path, self.import_id,
+                       "IMPORT %s" % img.ref, [])
       self.ready(img)
       return (self.import_id, gh)
 
@@ -232,17 +310,42 @@ class Enabled_Cache:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
+   def branch_nocheckout(self, src_ref, dest):
+      """Create ready branch for Image_Ref src_ref pointing to dest, which can
+         be either an Image_Ref or a Git commit reference (as a string)."""
+      if (isinstance(dest, ch.Image_Ref)):
+         dest = self.branch_name_ready(dest)
+      # Some versions of Git won't let us update a branch that's already
+      # checked out, so detach that worktree if it exists.
+      src_img = ch.Image(src_ref)
+      if (src_img.unpack_exist_p):
+         ch.cmd_quiet(["git", "checkout", "--detach"], cwd=src_img.unpack_path)
+      ch.cmd_quiet(["git", "branch", "-f", self.branch_name_ready(src_ref),
+                    dest], cwd=self.root)
+
    def checkout(self, image, git_hash, base_image):
       # base_image used in other subclasses
       ch.INFO("copying image ...")
       self.worktree_add(image, git_hash)
-      self.git_restore(image.unpack_path)
+      self.git_restore(image.unpack_path, [], False)
 
-   def commit(self, path, sid, msg):
-      fm = self.git_prepare(path)
+   def commit(self, path, sid, msg, files):
+      # Commit image at path into the build cache. If set files is empty, any
+      # and all image content may have been changed. Otherwise, assume files
+      # lists the only files in the image that have changed. These must be
+      # relative paths relative to the image root (i.e., path), may only be
+      # regular files, and get none of the special handling we have for
+      # general image content.
+      #
+      # WARNING: files must be empty for the first image commit.
+      self.git_prepare(path, files)
       cwd = ch.chdir(path)
       t = ch.Timer()
-      ch.cmd_quiet(["git", "add", "-A"])
+      if (len(files) == 0):
+         git_files = ["-A"]
+      else:
+         git_files = list(files) + ["ch/git.pickle"]
+      ch.cmd_quiet(["git", "add"] + git_files)
       t.log("prepared index")
       t = ch.Timer()
       ch.cmd_quiet(["git", "commit", "-q", "--allow-empty",
@@ -254,8 +357,30 @@ class Enabled_Cache:
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
       git_hash = cp.stdout.strip()
       ch.chdir(cwd)
-      self.git_restore(path, fm)
+      self.git_restore(path, files, True)
       return git_hash
+
+   def configure(self):
+      path = self.root // "config"
+      fp = ch.open_(path, "r+")
+      config = configparser.ConfigParser()
+      config.read_file(fp, source=path)
+      changed = False
+      for (k, v) in GIT_CONFIG.items():
+         (s, k) = k.lower().split(".", maxsplit=1)
+         if (config.get(s, k, fallback=None) != v):
+            changed = True
+            try:
+               config.add_section(s)
+            except configparser.DuplicateSectionError:
+               pass
+            config.set(s, k, v)
+      if (changed):
+         ch.VERBOSE("writing updated Git config")
+         fp.seek(0)
+         fp.truncate()
+         ch.ossafe(config.write, "can’t write Git config: %s" % path, fp)
+      ch.close_(fp)
 
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
@@ -306,12 +431,13 @@ class Enabled_Cache:
    def garbageinate(self):
       ch.INFO("collecting cache garbage")
       t = ch.Timer()
-      ch.cmd_quiet(["git", "reflog", "expire",
-                    "--expire-unreachable=now", "--all"], cwd=self.root)
-      ch.cmd_quiet(["git", "gc", "--prune=now"], cwd=self.root)
+      # Expire the reflog with a recent time instead of now in case there is a
+      # parallel Git operation in progress.
+      ch.cmd(["git", "-c", "gc.bigPackthreshold=0", "-c", "gc.pruneExpire=now",
+                     "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
       t.log("collected garbage")
 
-   def git_prepare(self, unpack_path, write=True):
+   def git_prepare(self, unpack_path, files, write=True):
       """Recursively walk the given unpack path and prepare it for a Git
          commit. Most of this is reversed by git_restore(); anything not
          reversed is noted. For each file, in this order:
@@ -361,12 +487,17 @@ class Enabled_Cache:
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
       cwd = ch.chdir(unpack_path)
-      met = self.git_prepare_walk(dict(), None, ".", os.lstat("."))
+      if (len(files) == 0):
+         self.file_metadata = self.git_prepare_walk(dict(), None, ".",
+                                                    os.lstat("."))
+      else:
+         for path in files:
+            self.file_metadata.set(path, File_Metadata(path.name, path.lstat()))
       if (write):
-         ch.file_write("ch/git.pickle", pickle.dumps(met, protocol=4))
+         ch.file_write("ch/git.pickle", pickle.dumps(self.file_metadata,
+                                                     protocol=4))
       ch.chdir(cwd)
       t.log("gathered file metadata")
-      return met
 
    def git_prepare_walk(self, hardlinks, parent, name, st):
       """Return a File_Metadata object describing file name and its children
@@ -383,6 +514,7 @@ class Enabled_Cache:
       if   (   stat.S_ISREG(st.st_mode)
             or stat.S_ISLNK(st.st_mode)
             or stat.S_ISFIFO(st.st_mode)):
+         # normally nothing to do here on these file types
          if (path.startswith("./var/lib/rpm/__db.")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
             ch.unlink(name)
@@ -420,6 +552,9 @@ class Enabled_Cache:
       if (fm.empty_dir_p):
          ch.rmdir(fm.name)
          return fm  # can't do anything else after it's gone
+      # Remove FIFOs for the same reason.
+      if (stat.S_ISFIFO(st.st_mode)):
+         ch.unlink(fm.name)
       # Rename if necessary.
       if (name.startswith(".weirdal_")):
          ch.WARNING("file starts with sentinel, will be renamed: %s" % name)
@@ -430,23 +565,27 @@ class Enabled_Cache:
       # Done.
       return fm
 
-   def git_restore(self, unpack_path, fm=None):
-      """Opposite of git_prepare. If fm is non-None, do a quick restore,
-         assuming that unpack_path is unchanged since fm was returned from
-         git_prepare, rather than the directory being checked out from Git.
-         I.e. only restore things that we broke in git_prepare() (e.g.,
-         renaming .git files), not things that Git breaks (e.g., file
-         permissions). Otherwise (i.e., fm is None), read the File_Metadata
-         tree from “ch/git.pickle” under unpack_path and do a full restore.
-         This method will dirty the Git working directory."""
+   def git_restore(self, unpack_path, files, quick):
+      """Opposite of git_prepare. If files is non-empty, only restore those
+         files. If quick, assuming that unpack_path is unchanged since
+         file_metadata was collected earlier in this process, rather than the
+         directory being checked out from Git. I.e. only restore things that
+         we broke in git_prepare() (e.g., renaming .git files), not things
+         that Git breaks (e.g., file permissions). Otherwise (i.e., not
+         quick), read the File_Metadata tree from “ch/git.pickle” under
+         unpack_path and do a full restore. This method will dirty the Git
+         working directory."""
       t = ch.Timer()
       cwd = ch.chdir(unpack_path)
-      if (fm is not None):
-         quick=True
+      if (not quick):
+         self.file_metadata = pickle.loads(ch.file_read_all("ch/git.pickle",
+                                                            text=False))
+      if (len(files) == 0):
+         self.git_restore_walk(unpack_path, None, self.file_metadata, quick)
       else:
-         quick=False
-         fm = pickle.loads(ch.file_read_all("ch/git.pickle", text=False))
-      self.git_restore_walk(unpack_path, None, fm, quick)
+         for path in files:
+            self.git_restore_walk(path, path.parent,
+                                  self.file_metadata.get(path), quick)
       ch.chdir(cwd)
       t.log("restored file metadata (%s)" % ("quick" if quick else "full"))
 
@@ -466,7 +605,7 @@ class Enabled_Cache:
             name = fm.name
       if (fm.empty_dir_p):
          ch.ossafe(os.mkdir, "can't mkdir: %s" % path, fm.name)
-      if (not quick and stat.S_ISFIFO(fm.mode)):
+      if (stat.S_ISFIFO(fm.mode)):
          ch.ossafe(os.mkfifo, "can't make FIFO: %s" % path, fm.name)
       if (fm.hardlink_to is not None and not os.path.exists(fm.name)):
          # This relies on prepare and restore having the same traversal order,
@@ -490,19 +629,18 @@ class Enabled_Cache:
       # Restore my metadata.
       if ((   not quick                     # Git broke metadata
            or fm.hardlink_to is not None    # we just made the hardlink
-           or stat.S_ISDIR(fm.mode))        # maybe just created / new hardlink
+           or stat.S_ISDIR(fm.mode)         # maybe just created / new hardlink
+           or stat.S_ISFIFO(fm.mode))       # we just made the FIFO
           and not stat.S_ISLNK(fm.mode)):   # can't not follow symlinks
          ch.ossafe(os.utime, "can't restore times: %s" % path, fm.name,
                    ns=(fm.atime_ns, fm.mtime_ns))
-         #if (fm.name == "setuid_dir"):
-         #   print("restoring mode: %s 0o%05o" % (fm.name, fm.mode))
          ch.ossafe(os.chmod, "can't restore mode: %s" % path, fm.name,
                    stat.S_IMODE(fm.mode))
 
-   def pull_eager(self, img, last_layer=None):
+   def pull_eager(self, img, src_ref, last_layer=None):
       """Pull image, always checking if the repository version is newer. This
          is the pull operation invoked from the command line."""
-      pullet = pull.Image_Puller(img)
+      pullet = pull.Image_Puller(img, src_ref)
       pullet.download()  # will use dlcache if appropriate
       dl_sid = self.sid_from_parent(self.root_id, pullet.sid_input)
       dl_git_hash = self.find_sid(dl_sid, img.ref.for_path)
@@ -514,24 +652,26 @@ class Enabled_Cache:
       else:
          # Unpack and commit downloaded image. This also creates the worktree.
          ch.INFO("pulled image: adding to build cache")
-         self.pull_lazy(img, last_layer, pullet)
+         self.pull_lazy(img, src_ref, last_layer, pullet)
 
-   def pull_lazy(self, image, last_layer=None, pullet=None):
-      """Pull image if it does not exist in the build cache, i.e., do not ask
-         the registry if there is a newer version. This is the pull operation
-         invoked by FROM. If pullet is not None, use that Image_Puller and do
-         not download anything (i.e., assume Image_Puller.download() has
-         already been called)."""
+   def pull_lazy(self, img, src_ref, last_layer=None, pullet=None):
+      """Pull img from src_ref if it does not exist in the build cache, i.e.,
+         do not ask the registry if there is a newer version. This is the pull
+         operation invoked by FROM. If pullet is not None, use that
+         Image_Puller and do not download anything (i.e., assume
+         Image_Puller.download() has already been called)."""
       if (pullet is None):
          # a young hen, especially one less than one year old
-         pullet = pull.Image_Puller(image)
+         pullet = pull.Image_Puller(img, src_ref)
          pullet.download()
-      self.worktree_add(image, "root")
+      self.worktree_add(img, "root")
       pullet.unpack(last_layer)
       sid = self.sid_from_parent(self.root_id, pullet.sid_input)
       pullet.done()
-      commit = self.commit(image.unpack_path, sid, "PULL %s" % image.ref)
-      self.ready(image)
+      commit = self.commit(img.unpack_path, sid, "PULL %s" % src_ref, [])
+      self.ready(img)
+      if (img.ref != src_ref):
+         self.branch_nocheckout(src_ref, img.ref)
       return (sid, commit)
 
    def ready(self, image):
@@ -544,17 +684,42 @@ class Enabled_Cache:
       if (self.bootstrap_ct >= 1):
          ch.WARNING("not resetting brand-new cache")
       else:
-         ch.INFO("deleting build cache")
-         ch.rmtree(self.root)
+         # Kill any Git garbage collection that may be running, to avoid race
+         # conditions while deleting the cache (see issue #1406). Open
+         # directly to avoid a TOCTOU race.
+         pid_path = ch.storage.build_cache // "gc.pid"
+         try:
+            fp = open(pid_path, "rt", encoding="UTF-8")
+            text = ch.ossafe(fp.read, "can’t read: %s" % pid_path)
+            pid = int(text.split()[0])
+            ch.INFO("stopping build cache garbage collection, PID %d" % pid)
+            ch.kill_blocking(pid)
+            ch.close_(fp)
+         except FileNotFoundError:
+            # no PID file, therefore no GC running
+            pass
+         except OSError as x:
+            FATAL("can’t open GC PID file: %s: %s" % (pid_path, x.strerror))
          # Delete images that are worktrees referring back to the build cache.
+         ch.INFO("deleting build cache")
          for d in ch.listdir(ch.storage.unpack_base):
             dotgit = ch.storage.unpack_base // d // ".git"
             if (os.path.exists(dotgit)):
                ch.VERBOSE("deleting cached image: %s" % d)
                ch.rmtree(ch.storage.unpack_base // d)
          # Create new build cache.
+         ch.rmtree(self.root)
          ch.mkdir(self.root)
          self.bootstrap()
+
+   def rollback(self, path):
+      """Restore path to the last committed state, including both tracked and
+         untracked files."""
+      ch.INFO("rolling back ...")
+      self.git_prepare(path, [], write=False)
+      ch.cmd_quiet(["git", "reset", "--hard", "HEAD"], cwd=path)
+      ch.cmd_quiet(["git", "clean", "-fdq"], cwd=path)
+      self.git_restore(path, [], False)
 
    def sid_from_parent(self, *args):
       # This lets us intercept the call and return None in disabled mode.
@@ -592,6 +757,14 @@ class Enabled_Cache:
       print("commits:       %4d" % commit_ct)
       print("files:         %4d %s" % (file_ct, file_suffix))
       print("disk used:     %4d %s" % (byte_ct, byte_suffix))
+      # some information directly from Git
+      if (ch.verbose >= 1):
+         out = ch.cmd_stdout(["git", "count-objects", "-vH"]).stdout
+         print("Git statistics:")
+         print(textwrap.indent(out, "  "), end="")
+         out = ch.file_read_all(self.root // "config")
+         print("Git config:")
+         print(textwrap.indent(out, "  "), end="")
 
    def tree_print(self):
       # Note the percent codes are interpreted by Git.
@@ -634,7 +807,7 @@ class Enabled_Cache:
    def worktree_add(self, image, base):
       t = ch.Timer()
       if (image.unpack_cache_linked):
-         self.git_prepare(image.unpack_path, write=False)  # clean worktree
+         self.git_prepare(image.unpack_path, [], write=False)  # clean worktree
          ch.cmd_quiet(["git", "checkout",
                        "-B", self.branch_name_unready(image.ref), base],
                       cwd=image.unpack_path)
@@ -699,19 +872,22 @@ class Disabled_Cache(Rebuild_Cache):
    def find_image(self, *args):
       return (None, None)
 
-   def pull_lazy(self, image, last_layer=None, pullet=None):
-      if (pullet is None and os.path.exists(image.unpack_path)):
+   def pull_lazy(self, img, src_ref, last_layer=None, pullet=None):
+      if (pullet is None and os.path.exists(img.unpack_path)):
          ch.VERBOSE("base image already exists, skipping pull")
       else:
          if (pullet is None):
-            pullet = pull.Image_Puller(image)
+            pullet = pull.Image_Puller(img, src_ref)
             pullet.download()
-         image.unpack_clear()
+         img.unpack_clear()
          pullet.unpack(last_layer)
          pullet.done()
       return (None, None)
 
    def ready(self, *args):
+      pass
+
+   def rollback(self, *args):
       pass
 
    def sid_from_parent(self, *args):

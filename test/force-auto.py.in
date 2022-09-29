@@ -225,7 +225,6 @@ class T_CentOS_7(RHEL7, EPEL_Mixin):
 
 class RHEL8(Test):
    config = "rhel8"
-   arch_excludes = ["aarch64"]  # issue #1249
    runs = { **Test.runs,
             **{ Run.FAKE_NEEDED: "dnf install -y"
                                  " --setopt=install_weak_deps=false ed",
@@ -278,10 +277,6 @@ class T_Debian_Latest(Debian):
    base = "debian:latest"
 class T_Ubuntu_16(Debian):
    base = "ubuntu:16.04"
-class T_Ubuntu_18(Debian):
-   base = "ubuntu:18.04"
-class T_Ubuntu_21(Debian):
-   base = "ubuntu:21.10"
 class T_Ubuntu_Latest(Debian):
    base = "ubuntu:latest"
 
@@ -304,25 +299,23 @@ class T_OpenSUSE_Leap_Latest(SUSE):
 
 # Arch has tons of old tags, versioned by date, on Docker Hub. However, only
 # :latest (or equivalently :base) is documented.
-# FIXME: does not currently work; still gets fchownat() errors. See #1295
-class Arch_Latest(Test):
+class T_Arch_Latest(Test):
    config = "arch"
    base = "archlinux:latest"
-   arch_exclues = ["aarch64", "ppc64le"]  # base only amd64 pacman does not
-   # exit non-zero when installing openssh fails; work around this bug by
-   # grepping the pacman log.
+   arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
+   # pacman does not exit non-zero when installing openssh fails; work
+   # around this bug by grepping the pacman log.
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "pacman -Syq --noconfirm ed; ! fgrep failed: /var/log/pacman.log",
                              Run.NEEDED:      "pacman -Syq --noconfirm openssh; ! fgrep failed: /var/log/pacman.log" } }
 
-# FIXME: no worky; still gets "failed to set ownership". See #1296
 class Alpine(Test):
    config = "alpine"
    # openssh does not need --force on Alpine
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "apk add ed",
                              Run.NEEDED:      "apk add dbus" } }
-class Alpine_39(Alpine):
+class T_Alpine_39(Alpine):
    base = "alpine:3.9"
-class Alpine_Latest(Alpine):
+class T_Alpine_Latest(Alpine):
    base = "alpine:latest"
 
 

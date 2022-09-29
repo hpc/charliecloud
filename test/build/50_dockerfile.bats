@@ -128,6 +128,7 @@ EOF
 warning: not yet supported, ignored: issue #777: .dockerignore file
   1. FROM 00_tiny
 copying image ...
+available --force: alpine: Alpine, any version
   4. RUN true 
  13. RUN echo test1a
 test1a
@@ -417,7 +418,7 @@ EOF
 EOF
 )
     run build_ --no-cache -t tmpimg -f - . <<'EOF'
-FROM almalinux8
+FROM almalinux_8ch
 
 # FIXME: make this more comprehensive, e.g. space-separate vs.
 # equals-separated for everything.
@@ -520,7 +521,7 @@ EOF
 
    # test that it works with python3
    run build_ -t tmpimg -f - . <<'EOF'
-FROM centos7
+FROM centos_7ch
 SHELL ["/usr/bin/python3", "-c"]
 RUN print ("hello")
 EOF
@@ -1170,6 +1171,22 @@ EOF
             false
             ;;
     esac
+}
+
+
+@test "COPY from previous stage, no context" {
+    # Normally, COPY is disallowed if there’s no context directory, but if
+    # it’s from a previous stage, it should work. See issue #1381.
+
+    [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
+
+    run ch-image build --no-cache -t foo - <<'EOF'
+FROM alpine:3.9
+FROM alpine:3.10
+COPY --from=0 /etc/os-release /
+EOF
+    echo "$output"
+    [[ "$status" -eq 0 ]]
 }
 
 

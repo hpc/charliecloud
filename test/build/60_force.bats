@@ -13,7 +13,7 @@ setup () {
 
     # without --force
     run ch-image -v build --no-cache -t tmpimg -f - . <<'EOF'
-FROM alpine:3.9
+FROM hello-world:latest
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
@@ -21,7 +21,7 @@ EOF
 
     # with --force
     run ch-image -v build --force -t tmpimg -f - . <<'EOF'
-FROM alpine:3.9
+FROM hello-world:latest
 EOF
     echo "$output"
     [[ $status -eq 0 ]]

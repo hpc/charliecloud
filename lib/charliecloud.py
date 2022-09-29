@@ -1,3 +1,4 @@
+import abc
 import argparse
 import atexit
 import collections
@@ -18,6 +19,7 @@ import pprint
 import re
 import shlex
 import shutil
+import signal
 import stat
 import subprocess
 import sys
@@ -42,7 +44,7 @@ depfails = []
 # [1]: https://github.com/lark-parser/lark/issues/505
 import lark
 LARK_MIN = (0,  7, 1)
-LARK_MAX = (0, 12, 0)
+LARK_MAX = (99, 0, 0)
 lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
    depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
@@ -99,6 +101,15 @@ ARCH_MAP = { "x86_64":    "amd64",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
              "s390x":     "s390x" }  # a.k.a. IBM Z
+
+# Some images have oddly specified architecture. For example, as of
+# 2022-06-08, on Docker Hub, opensuse/leap:15.1 offers architectures amd64,
+# arm/v7, arm64/v8, and ppc64le, while opensuse/leap:15.2 offers amd64, arm,
+# arm64, and ppc64le, i.e., with no variants. This maps architectures to a
+# sequence of fallback architectures that we hope are equivalent. See class
+# Arch_Dict below.
+ARCH_MAP_FALLBACK = { "arm/v7": ("arm",),
+                      "arm64/v8": ("arm64",) }
 
 # ARGs that are “magic”: always available, don’t cause cache misses, not saved
 # with the image.
@@ -283,14 +294,60 @@ tls_verify = True
 # True if the download cache is enabled.
 dlcache_p = None
 
+# True if we talk to registries authenticated; false if anonymously.
+reg_auth = False
+
+# True if we lock storage directory to prevent concurrent access; false for no
+# locking (which is very YOLO and may break the storage directory).
+storage_lock = True
+
 
 ## Exceptions ##
 
 class No_Fatman_Error(Exception): pass
-class Not_In_Registry_Error(Exception): pass
+class Image_Unavailable_Error(Exception): pass
 
 
 ## Classes ##
+
+class Arch_Dict(collections.UserDict):
+   """Dictionary that overloads subscript and “in” to consider
+      ARCH_MAP_FALLBACK."""
+
+   def __contains__(self, k):  # “in” operator
+      if (k in self.data):
+         return True
+      try:
+         return self._fallback_key(k) in self.data
+      except KeyError:
+         return False
+
+   def __getitem__(self, k):
+      try:
+         return self.data.__getitem__(k)
+      except KeyError:
+         return self.data.__getitem__(self._fallback_key(k))
+
+   def _fallback_key(self, k):
+      """Return fallback key corresponding to key k, or raise KeyError if
+         there is no fallback."""
+      assert (k not in self.data)
+      if (k not in ARCH_MAP_FALLBACK):
+         raise KeyError("no fallbacks: %s" % k)
+      for f in ARCH_MAP_FALLBACK[k]:
+         if (f in self.data):
+            return f
+      raise KeyError("fallbacks also missing: %s" % k)
+
+   def in_warn(self, k):
+      """Return True if k in self, False otherwise, just like the “in“
+         operator, but also log a warning if fallback is used."""
+      result = k in self
+      if (result and k not in self.data):
+         WARNING("arch %s requested but falling back to %s" %
+                 (k, self._fallback_key(k)))
+      return result
+
 
 class ArgumentParser(argparse.ArgumentParser):
 
@@ -419,6 +476,13 @@ class Image:
 
    def __str__(self):
       return str(self.ref)
+
+   @classmethod
+   def glob(class_, image_glob):
+      """Return a possibly-empty iterator of images in the storage directory
+         matching the given glob."""
+      for ref in Image_Ref.glob(image_glob):
+         yield class_(ref)
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -658,7 +722,7 @@ class Image:
    def unpack_delete(self):
       VERBOSE("unpack path: %s" % self.unpack_path)
       if (not self.unpack_exist_p):
-         FATAL("%s image not found" % self.ref)
+         FATAL("image not found, can’t delete: %s" % self.ref)
       if (self.deleteable):
          INFO("deleting image: %s" % self.ref)
          chmod_min(self.unpack_path, 0o700)
@@ -901,6 +965,23 @@ class Image_Ref:
          out += "@sha256:" + self.digest
       return out
 
+   @staticmethod
+   def path_to_ref(path):
+      if (isinstance(path, Path)):
+         path = path.name
+      return path.replace("+", ":").replace("%", "/")
+
+   @staticmethod
+   def ref_to_pathstr(ref_str):
+      return ref_str.replace("/", "%").replace(":", "+")
+
+   @classmethod
+   def glob(class_, image_glob):
+      """Return a possibly-empty iterator of references in the storage
+         directory matching the given glob."""
+      for path in storage.unpack_base.glob(class_.ref_to_pathstr(image_glob)):
+         yield class_(class_.path_to_ref(path))
+
    @classmethod
    def parse(class_, s, variables):
       if (class_.parser is None):
@@ -955,7 +1036,7 @@ fields:
 
    @property
    def for_path(self):
-      return str(self).replace("/", "%").replace(":", "+")
+      return self.ref_to_pathstr(str(self))
 
    @property
    def path_full(self):
@@ -1121,6 +1202,16 @@ class Path(pathlib.PosixPath):
          others2.append(other)
       return self.joinpath(*others2)
 
+   def lstrip(self, n):
+      """Return a copy of myself with n leading components removed. E.g.:
+
+           >>> Path("a/b/c").lstrip(1)
+           Path("b/c")
+
+         It is an error if I don’t have at least n+1 components."""
+      assert (len(self.parts) >= n + 1)
+      return Path(".").joinpath(*self.parts[n:])
+
 
 class Progress:
    """Simple progress meter for countable things that updates at most once per
@@ -1260,42 +1351,235 @@ class Progress_Writer:
       ossafe(self.fp.write, "can't write: %s" % self.path, data)
 
 
+class Registry_Auth(requests.auth.AuthBase):
+
+   # Every registry request has an “authorization object”. This starts as no
+   # authentication at all. If we get HTTP 401 Unauthorized, we try to
+   # “escalate” to a higher level of authorization; some classes have multiple
+   # escalators that we try in order. Escalation can fail either if
+   # authentication fails or there is nothing to escalate to.
+   #
+   # Class attributes:
+   #
+   #   anon_p ...... True if the authorization object is anonymous; False if
+   #                 it needed authentication.
+   #
+   #   escalators .. Sequence of classes we can escalate to. Empty if no
+   #                 escalation possible. This is actually a property rather
+   #                 than a class attribute because it needs to refer to
+   #                 classes that may not have been defined when the module is
+   #                 created, e.g. classes later in the file, or some can
+   #                 escalate to themselves.
+   #
+   #   reg_auth .... True if appropriate for authenticated mode, False if
+   #                 anonymous (i.e., --auth or not, respectively). Everything
+   #                 must be one or the other.
+   #
+   #   scheme ...... Auth scheme string (from WWW-Authenticate header) that
+   #                 this class matches.
+
+   __slots__ = ("auth_h_next",)  # WWW-Authenticate header for next escalator
+
+   def __eq__(self, other):
+      return (type(self) == type(other))
+
+   @property
+   def escalators(self):
+      ...
+
+   @classmethod
+   def authenticate(class_, creds, auth_d):
+      """Authenticate using the given credentials and parsed WWW-Authenticate
+         dictionary. Return a new Registry_Auth object if successful, None if
+         not. The caller is responsible for dealing with the failure."""
+      ...
+
+   def escalate(self, reg, res):
+      """Escalate to a higher level of authorization. Use the WWW-Authenticate
+         header in failed response res if there is one."""
+      VERBOSE("escalating from %s" % self)
+      assert (res.status_code == 401)
+      # Get authentication instructions.
+      if ("WWW-Authenticate" in res.headers):
+         auth_h = res.headers["WWW-Authenticate"]
+      elif (self.auth_h_next is not None):
+         auth_h = self.auth_h_next
+      else:
+         FATAL("don’t know how to authenticate: WWW-Authenticate not found")
+      # We use two “undocumented (although very stable and frequently cited)”
+      # methods to parse the authentication response header (thanks Andy,
+      # i.e., @adrecord on GitHub).
+      (auth_scheme, auth_d) = auth_h.split(maxsplit=1)
+      auth_d = urllib.request.parse_keqv_list(
+                  urllib.request.parse_http_list(auth_d))
+      VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_scheme, auth_d))
+      # Is escalation possible in principle?
+      if (len(self.escalators) == 0):
+         FATAL("no further authentication possible, giving up")
+      # Try to escalate.
+      for class_ in self.escalators:
+         if (class_.scheme == auth_scheme):
+            if (class_.reg_auth != reg_auth):
+               VERBOSE("skipping %s: auth mode mismatch" % class_.__name__)
+            else:
+               VERBOSE("authenticating using %s" % class_.__name__)
+               auth = class_.authenticate(reg, auth_d)
+               if (auth is None):
+                  VERBOSE("authentication failed; trying next")
+               elif (auth == self):
+                  VERBOSE("authentication did not escalate; trying next")
+               else:
+                  return auth  # success!
+      VERBOSE("no authentication left to try")
+      return None
+
+
+class Registry_Auth_Basic(Registry_Auth):
+   anon_p = False
+   scheme = "Basic"
+   reg_auth = True
+
+   __slots__ = ("basic")
+
+   def __call__(self, *args, **kwargs):
+      return self.basic(*args, **kwargs)
+
+   def __eq__(self, other):
+      return super().__eq__(other) and (self.basic == other.basic)
+
+   def __str__(self):
+      return self.basic.__str__()
+
+   @property
+   def escalators(self):
+      return ()
+
+   @classmethod
+   def authenticate(class_, reg, auth_d):
+      # Note: Basic does not validate the credentials until we try to use it.
+      if ("realm" not in auth_d):
+         FATAL("WWW-Authenticate missing realm")
+      (username, password) = reg.creds.get()
+      i = class_()
+      i.basic = requests.auth.HTTPBasicAuth(username, password)
+      return i
+
+
+class Registry_Auth_Bearer_IDed(Registry_Auth):
+   # https://stackoverflow.com/a/58055668
+   anon_p = False
+   scheme = "Bearer"
+   reg_auth = True
+   variant = "IDed"
+
+   __slots__ = ("auth_d",
+                "token")
+
+   def __init__(self, token, auth_d):
+      self.token = token
+      self.auth_d = auth_d
+
+   def __call__(self, req):
+      req.headers["Authorization"] = "Bearer %s" % self.token
+      return req
+
+   def __eq__(self, other):
+      return super().__eq__(other) and (self.auth_d == other.auth_d)
+
+   def __str__(self):
+      return ("Bearer (%s) %s" % (self.__class__.__name__.split("_")[-1],
+                                  self.token_short))
+
+   @property
+   def escalators(self):
+      # One can escalate to an authenticated Bearer with a greater scope. I’m
+      # pretty sure this doesn’t create an infinite loop because eventually
+      # the token request will fail.
+      return (Registry_Auth_Bearer_IDed,)
+
+   @property
+   def token_short(self):
+      return ("%s..%s" % (self.token[:8], self.token[-8:]))
+
+   @classmethod
+   def authenticate(class_, reg, auth_d):
+      # Registries and endpoints vary in what they put in WWW-Authenticate. We
+      # need realm because it's the URL to use for a token. Otherwise, just
+      # give back all the keys we got.
+      for k in ("realm",):
+         if (k not in auth_d):
+            FATAL("WWW-Authenticate missing key: %s" % k)
+      params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
+      # Request a Bearer token.
+      res = reg.request_raw("GET", auth_d["realm"], {200,401,403},
+                            auth=class_.token_auth(reg.creds), params=params)
+      if (res.status_code != 200):
+         VERBOSE("bearer token request rejected")
+         return None
+      # Create new instance.
+      i = class_(res.json()["token"], auth_d)
+      VERBOSE("received bearer token: %s" % (i.token_short))
+      return i
+
+   @classmethod
+   def token_auth(class_, creds):
+      """Return a requests.auth.AuthBase object used to authenticate the token
+         request."""
+      (username, password) = creds.get()
+      return requests.auth.HTTPBasicAuth(username, password)
+
+
+class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
+   anon_p = True
+   scheme = "Bearer"
+   reg_auth = False
+
+   __slots__ = ()
+
+   @property
+   def escalators(self):
+      return (Registry_Auth_Bearer_IDed,)
+
+   @classmethod
+   def token_auth(class_, creds):
+      # The way to get an anonymous Bearer token is to give no Basic auth
+      # header in the token request.
+      return None
+
+
+class Registry_Auth_None(Registry_Auth):
+   anon_p = True
+   scheme = None
+   #reg_auth =   # not meaningful b/c we start here in both modes
+
+   def __call__(self, req):
+      return req
+
+   def __str__(self):
+      return "no authorization"
+
+   @property
+   def escalators(self):
+      return (Registry_Auth_Basic,
+              Registry_Auth_Bearer_Anon,
+              Registry_Auth_Bearer_IDed)
+
+
 class Registry_HTTP:
    """Transfers image data to and from a remote image repository via HTTPS.
 
       Note that ref refers to the *remote* image. Objects of this class have
       no information about the local image."""
 
-   # Note that with some registries, authentication is required even for
-   # anonymous downloads of public images. In this case, we just fetch an
-   # authentication token anonymously.
-
    __slots__ = ("auth",
                 "creds",
                 "ref",
                 "session")
 
-   # https://stackoverflow.com/a/58055668
-   class Bearer_Auth(requests.auth.AuthBase):
-      __slots__ = ("token",)
-      def __init__(self, token):
-         self.token = token
-      def __call__(self, req):
-         req.headers["Authorization"] = "Bearer %s" % self.token
-         return req
-      def __str__(self):
-         return ("Bearer %s" % self.token[:32])
-
-   class Null_Auth(requests.auth.AuthBase):
-      def __call__(self, req):
-         return req
-      def __str__(self):
-         return "no authorization"
-
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
       self.ref = ref.canonical
-      self.auth = self.Null_Auth()
+      self.auth = Registry_Auth_None()
       self.creds = Credentials()
       self.session = None
       # This is commented out because it prints full request and response
@@ -1309,75 +1593,6 @@ class Registry_HTTP:
       "Return an appropriate repository URL."
       url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
       return "/".join((url_base, self.ref.path_full, type_, address))
-
-   def authenticate_basic(self, res, auth_d):
-      VERBOSE("authenticating using Basic")
-      if ("realm" not in auth_d):
-         FATAL("WWW-Authenticate missing realm")
-      (username, password) = self.creds.get()
-      self.auth = requests.auth.HTTPBasicAuth(username, password)
-
-   def authenticate_bearer(self, res, auth_d):
-      VERBOSE("authenticating using Bearer")
-      # Registries vary in what they put in WWW-Authenticate. Specifically,
-      # for everything except NGC, we get back realm, service, and scope. NGC
-      # just gives service and scope. We need realm because it's the URL to
-      # use for a token. scope also seems critical, so check we have that.
-      # Otherwise, just give back all the keys we got.
-      for k in ("realm", "scope"):
-         if (k not in auth_d):
-            FATAL("WWW-Authenticate missing key: %s" % k)
-      params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
-      # Request anonymous auth token first, but only for the “safe” methods.
-      # We assume no registry will accept anonymous pushes. This is because
-      # GitLab registries don't seem to honor the scope argument (issue #975);
-      # e.g., for scope “repository:reidpr/foo/00_tiny:pull,push”, GitLab
-      # 13.6.3-ee will hand out an anonymous token, but that token is rejected
-      # with ‘error="insufficient_scope"’ when the request is re-tried.
-      token = None
-      if (res.request.method not in ("GET", "HEAD")):
-         VERBOSE("won't request anonymous token for %s" % res.request.method)
-      else:
-         VERBOSE("requesting anonymous auth token")
-         res = self.request_raw("GET", auth_d["realm"], {200,401,403},
-                                params=params)
-         if (res.status_code != 200):
-            VERBOSE("anonymous access rejected")
-         else:
-            token = res.json()["token"]
-      # If that failed or was inappropriate, try for an authenticated token.
-      if (token is None):
-         (username, password) = self.creds.get()
-         auth = requests.auth.HTTPBasicAuth(username, password)
-         res = self.request_raw("GET", auth_d["realm"], {200}, auth=auth,
-                                params=params)
-         token = res.json()["token"]
-      VERBOSE("received auth token: %s" % (token[:32]))
-      self.auth = self.Bearer_Auth(token)
-
-   def authorize(self, res):
-      "Authorize using the WWW-Authenticate header in failed response res."
-      VERBOSE("authorizing")
-      assert (res.status_code == 401)
-      # Get authentication instructions.
-      if ("WWW-Authenticate" not in res.headers):
-         FATAL("WWW-Authenticate header not found")
-      auth_h = res.headers["WWW-Authenticate"]
-      VERBOSE("WWW-Authenticate raw: %s" % auth_h)
-      # We use two “undocumented (although very stable and frequently cited)”
-      # methods to parse the authentication response header (thanks Andy,
-      # i.e., @adrecord on GitHub).
-      (auth_type, auth_d) = auth_h.split(maxsplit=1)
-      auth_d = urllib.request.parse_keqv_list(
-                  urllib.request.parse_http_list(auth_d))
-      VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_type, auth_d))
-      # Dispatch to proper method.
-      if   (auth_type == "Bearer"):
-         self.authenticate_bearer(res, auth_d)
-      elif (auth_type == "Basic"):
-         self.authenticate_basic(res, auth_d)
-      else:
-         FATAL("unknown auth scheme: %s" % auth_h, "expected Basic or Bearer")
 
    def blob_exists_p(self, digest):
       """Return true if a blob with digest (hex string) exists in the
@@ -1445,9 +1660,18 @@ class Registry_HTTP:
       "Upload config (sequence of bytes)."
       self.blob_upload(bytes_hash(config), config, "config: ")
 
+   def escalate(self, res):
+      "Try to escalate authorization; return True if successful, else False."
+      auth = self.auth.escalate(self, res)
+      if (auth is None):
+         return False
+      else:
+         self.auth = auth
+         return True
+
    def fatman_to_file(self, path, msg):
       """GET the manifest for self.image and save it at path. This seems to
-         have three possible results:
+         have four possible results:
 
             1. HTTP 200, and body is a fat manifest: image exists and is
                architecture-aware.
@@ -1455,9 +1679,11 @@ class Registry_HTTP:
             2. HTTP 200, but body is a skinny manifest: image exists but is
                not architecture-aware.
 
-            3. HTTP 401/404: image does not exist.
+            3. HTTP 401/404: image does not exist or is unauthorized.
 
-         This method raises Not_In_Registry_Error in case 3. The caller is
+            4. HTTP 429: rate limite exceeded.
+
+         This method raises Image_Unavailable_Error in case 3. The caller is
          responsible for distinguishing cases 1 and 2."""
       url = self._url_of("manifests", self.ref.version)
       pw = Progress_Writer(path, msg)
@@ -1467,12 +1693,18 @@ class Registry_HTTP:
       # when trying to create schema1 manifest”.
       accept = "%s;q=0.5" % ",".join(  list(TYPES_INDEX.values())
                                      + list(TYPES_MANIFEST.values()))
-      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404, 429},
                          headers={ "Accept" : accept })
       pw.close()
-      if (res.status_code != 200):
+      if (res.status_code == 429):
+         if (self.auth.anon_p):
+            hint = "consider --auth"
+         else:
+            hint = None
+         FATAL("registry rate limit exceeded (HTTP 429)", hint)
+      elif (res.status_code != 200):
          DEBUG(res.content)
-         raise Not_In_Registry_Error()
+         raise Image_Unavailable_Error()
 
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
@@ -1498,7 +1730,7 @@ class Registry_HTTP:
       pw.close()
       if (res.status_code != 200):
          DEBUG(res.content)
-         raise Not_In_Registry_Error()
+         raise Image_Unavailable_Error()
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
@@ -1516,18 +1748,27 @@ class Registry_HTTP:
          must be non-zero length.
 
          Use current session if there is one, or start a new one if not. If
-         authentication fails (or isn't initialized), then authenticate and
-         re-try the request."""
+         authentication fails (or isn't initialized), then authenticate harder
+         and re-try the request."""
+      # Set up.
       self.session_init_maybe()
       VERBOSE("auth: %s" % self.auth)
       if (out is not None):
          kwargs["stream"] = True
-      res = self.request_raw(method, url, statuses | {401}, **kwargs)
-      if (res.status_code == 401):
-         VERBOSE("HTTP 401 unauthorized")
-         self.authorize(res)
-         VERBOSE("retrying with auth: %s" % self.auth)
-         res = self.request_raw(method, url, statuses, **kwargs)
+      # Make the request.
+      while True:
+         res = self.request_raw(method, url, statuses | {401}, **kwargs)
+         if (res.status_code != 401):
+            break
+         else:
+            VERBOSE("HTTP 401 unauthorized")
+            if (self.escalate(res)):   # success
+               VERBOSE("retrying with auth: %s" % self.auth)
+            elif (401 in statuses):    # caller can deal with it
+               break
+            else:
+               FATAL("unhandled authentication failure")
+      # Stream response if needed.
       if (out is not None and res.status_code == 200):
          try:
             length = int(res.headers["Content-Length"])
@@ -1538,6 +1779,7 @@ class Registry_HTTP:
          out.start(length)
          for chunk in res.iter_content(HTTP_CHUNK_SIZE):
             out.write(chunk)
+      # Done.
       return res
 
    def request_raw(self, method, url, statuses, auth=None, **kwargs):
@@ -1559,10 +1801,15 @@ class Registry_HTTP:
                   % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("%s failed: %s" % (method, x))
-      # Log the rate limit headers if present.
-      for h in ("RateLimit-Limit", "RateLimit-Remaining"):
-         if (h in res.headers):
-            VERBOSE("%s: %s" % (h, res.headers[h]))
+      # Log some headers if needed.
+      for h in res.headers:
+         h = h.lower()
+         if (   "ratelimit" in h
+             or h == "www-authenticate"):
+            f = VERBOSE
+         else:
+            f = DEBUG
+         f("%s: %s" % (h, res.headers[h]))
       return res
 
    def session_init_maybe(self):
@@ -1588,6 +1835,8 @@ class Storage:
       if (self.root is None):
          self.root = self.root_default()
       self.root = Path(self.root)
+      if (not self.root.is_absolute()):
+         self.root = os.getcwd() // self.root
 
    @property
    def build_cache(self):
@@ -1644,10 +1893,12 @@ class Storage:
       if ("CH_GROW_STORAGE" in os.environ):
          # Avoid surprises if user still has $CH_GROW_STORAGE set (see #906).
          FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
-      try:
-         return os.environ["CH_IMAGE_STORAGE"]
-      except KeyError:
+      if (not "CH_IMAGE_STORAGE" in os.environ):
          return None
+      path = Path(os.environ["CH_IMAGE_STORAGE"])
+      if (not path.is_absolute()):
+         FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
+      return path
 
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
@@ -1680,6 +1931,12 @@ class Storage:
          mkdir(self.build_cache)
          mkdir(self.unpack_base)
          mkdir(self.upload_cache)
+         for old in self.unpack_base.iterdir():
+            new = old.parent // str(old.name).replace(":", "+")
+            if (old != new):
+               if (new.exists()):
+                  FATAL("can't upgrade: already exists: %s" % new)
+               old.rename(new)
          file_write(self.version_file, "%d\n" % STORAGE_VERSION)
       else:                         # can't upgrade
          FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
@@ -1740,6 +1997,8 @@ class Storage:
       # [1]: https://apenwarr.ca/log/20101213
       # [2]: http://0pointer.de/blog/projects/locking.html
       # [3]: https://stackoverflow.com/a/22411531
+      if (not storage_lock):
+         return
       self.lockfile_fp = open_(self.lockfile, "w")
       try:
          fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -1765,9 +2024,6 @@ class Storage:
          self.init()  # largely for debugging
       else:
          FATAL("%s not a builder storage" % (self.root));
-
-   def unlock(self):
-      close_(self.lockfile_fp)
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
@@ -1971,7 +2227,7 @@ def FATAL(msg, hint=None, **kwargs):
                                    f.lineno, f.name)
                      for f in reversed(traceback.extract_stack()[1:-1]))
       hint = tr if hint is None else "%s: %s" % (hint, tr)
-   log(msg, hint, "1;31m", "error: ", **kwargs)  # bold red
+   ERROR(msg, hint, **kwargs)
    sys.exit(1)
 
 def INFO(msg, hint=None, **kwargs):
@@ -1988,6 +2244,9 @@ def VERBOSE(msg, hint=None, **kwargs):
 
 def WARNING(msg, hint=None, **kwargs):
    log(msg, hint, "31m", "warning: ", **kwargs)  # red
+
+def ERROR(msg, hint=None, **kwargs):
+   log(msg, hint, "1;31m", "error: ", **kwargs)  # bold red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -2028,7 +2287,7 @@ def chmod_min(path, mode, st=None):
    mode_old = stat.S_IMODE(st.st_mode)
    if (mode & mode_old != mode):
       mode |= mode_old
-      VERBOSE("fixing permisssions: %s: %03o -> %03o" % (path, mode_old, mode))
+      VERBOSE("fixing permissions: %s: %03o -> %03o" % (path, mode_old, mode))
       ossafe(os.chmod, "can't chmod: %s" % path, path, mode)
 
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
@@ -2279,9 +2538,10 @@ def init(cli):
       log_fp = open_(file_, "at")
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
-   # storage object
-   global storage
+   # storage directory
+   global storage, storage_lock
    storage = Storage(cli.storage)
+   storage_lock = not cli.no_lock
    # architecture
    global arch, arch_host
    assert (cli.arch is not None)
@@ -2297,7 +2557,17 @@ def init(cli):
       dlcache = Download_Mode.ENABLED
    global dlcache_p
    dlcache_p = (dlcache == Download_Mode.ENABLED)
-
+   # registry authentication
+   global reg_auth
+   if (cli.func.__module__ == "push"):
+      reg_auth = True
+   elif (cli.auth):
+      reg_auth = True
+   elif ("CH_IMAGE_AUTH" in os.environ):
+      reg_auth = (os.environ["CH_IMAGE_AUTH"] == "yes")
+   else:
+      reg_auth = False
+   VERBOSE("registry authentication: %s" % reg_auth)
    # misc
    global password_many, tls_verify
    password_many = cli.password_many
@@ -2316,6 +2586,30 @@ def json_from_file(path, msg):
    except json.JSONDecodeError as x:
       FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
    return data
+
+def kill_blocking(pid, timeout=10):
+   """Kill process pid with SIGTERM (the friendly one) and wait for it to
+      exit. If timeout (in seconds) is exceeded and it’s still running, exit
+      with a fatal error. It is *not* an error if pid does not exist, to avoid
+      race conditions where we decide to kill a process and it exits before we
+      can send the signal."""
+   sig = signal.SIGTERM
+   try:
+      os.kill(pid, sig)
+   except ProcessLookupError:  # ESRCH, no such process
+      return
+   except OSError as x:
+      FATAL("can’t signal PID %d with %d: %s" % (pid, sig, x.strerror))
+   for i in range(timeout*2):
+      try:
+         os.kill(pid, 0)  # no effect on process
+      except ProcessLookupError:  # done
+         return
+      except OSError as x:
+         FATAL("can’t signal PID %s with 0: %s" % (pid, x.strerror))
+      time.sleep(0.5)
+   FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid),
+         BUG_REPORT_PLZ)
 
 def listdir(path):
    "Return set of entries in directory path, without self (.) and parent (..)."
