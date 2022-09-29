@@ -793,12 +793,11 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
-    [[ $output = *'FROM $os'* ]]
     if [[ $CH_TEST_BUILDER = docker ]]; then
         # shellcheck disable=SC2016
         [[ $output = *'base name ($os) should not be blank'* ]]
     else
-        [[ $output = *'error: not in registry'* ]]
+        [[ $output = *'error: $os contains an undefined variable'* ]]
     fi
 
     # set with --build-arg

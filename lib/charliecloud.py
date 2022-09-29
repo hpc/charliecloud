@@ -134,16 +134,9 @@ GRAMMAR = r"""
 // is wrong; it should be the first path component. We patch this error later.
 // FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
 // to work with brief trying.
-image_ref: ir_hostport? ir_path? ir_name ( ir_tag | ir_digest )?
-ir_hostport: IR_HOST ( ":" IR_PORT )? "/"
-ir_path: ( IR_PATH_COMPONENT "/" )+
-ir_name: IR_PATH_COMPONENT
-ir_tag: ":" IR_TAG
-ir_digest: "@sha256:" HEX_STRING
-IR_HOST: /[A-Za-z0-9$_.-]+/
-IR_PORT: /[0-9$]+/
-IR_PATH_COMPONENT: /[a-z0-9$_.-]+/
-IR_TAG: /[A-Za-z0-9$_.-]+/
+image_ref: IMAGE_REF
+IMAGE_REF: /[A-Za-z0-9$:._]+/
+IR_PATH_COMPONENT: /[a-z0-9_.-]+/
 
 /// Dockerfile ///
 
@@ -223,6 +216,20 @@ _WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
 _NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
+"""
+
+GRAMMAR_IMAGE_REF = r"""
+image_ref: ir_hostport? ir_path? ir_name ( ir_tag | ir_digest )?
+ir_hostport: IR_HOST ( ":" IR_PORT )? "/"
+ir_path: ( IR_PATH_COMPONENT "/" )+
+ir_name: IR_PATH_COMPONENT
+ir_tag: ":" IR_TAG
+ir_digest: "@sha256:" HEX_STRING
+IR_HOST: /[A-Za-z0-9_.-]+/
+IR_PORT: /[0-9]+/
+IR_PATH_COMPONENT: /[a-z0-9_.-]+/
+IR_TAG: /[A-Za-z0-9_.-]+/
+HEX_STRING: /[0-9A-Fa-f]+/
 """
 
 # Chunk size in bytes when streaming HTTP. Progress meter is updated once per
@@ -897,11 +904,13 @@ class Image_Ref:
    @classmethod
    def parse(class_, s, variables):
       if (class_.parser is None):
-         class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR,
+         class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR_IMAGE_REF,
                                    parser="earley", propagate_positions=True)
       s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       s = variables_sub(s, variables)
+      if "$" in s:
+         FATAL("%s contains an undefined variable" % s)
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
@@ -997,15 +1006,8 @@ fields:
       self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
       self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
       self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
-      list = ["host", "port", "name", "tag", "digest"]
-      for a in range(len(list)):
-         tmp = variables_sub(getattr(self, list[a]), self.variables)
-         if tmp is not None and ":" in tmp:
-            split = tmp.split(":")
-            setattr(self, list[a], split[0])
-            setattr(self, list[a+1], split[1])
-         else:
-            setattr(self, list[a], tmp)
+      for a in ("host", "port", "name", "tag", "digest"):
+         setattr(self, a, variables_sub(getattr(self, a), self.variables))
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host
@@ -2448,6 +2450,11 @@ def tree_child_terminals(tree, cname, tname):
       if (d.data == cname):
          return tree_terminals(d, tname)
    return []
+
+def tree_child_terminals_cat(tree, cname, tname):
+   """Return the concatenated values of all child terminals named tname as a
+      string, with no delimiters. If none, return the empty string."""
+   return "".join(tree_child_terminals(tree, cname, tname))
 
 def tree_children(tree, cname):
    "Yield children of tree named cname using breadth-first search."

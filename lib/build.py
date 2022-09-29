@@ -961,7 +961,7 @@ class I_from_(Instruction):
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
       #
-      image_ref = ch.Image_Ref(ch.tree_child(self.tree, "image_ref"), argfrom)
+      image_ref = ch.Image_Ref(ch.tree_child_terminals_cat(self.tree, "image_ref", "IMAGE_REF"), argfrom)
       self.base_image = ch.Image(image_ref)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
