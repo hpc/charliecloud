@@ -496,7 +496,7 @@ class Image:
          src_path = other.unpack_path
       VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
       #copytree(src_path, self.unpack_path, symlinks=True, ignore=ignore)
-      src_path.copytree(self.unpack_path, symlinks=True, ignore=ignore)
+      ch.Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
@@ -750,7 +750,7 @@ class Image:
          if (not os.path.lexists(d)):
             d.mkdirs()
       (self.unpack_path // "etc/hosts").file_ensure_exists()
-      (self.unpack_path // "etc/reolv.conf").file_ensure_exists()
+      (self.unpack_path // "etc/resolv.conf").file_ensure_exists()
 
    def unpack_layers(self, layer_tars, last_layer):
       layers = self.layers_open(layer_tars)
@@ -1423,8 +1423,7 @@ class Path(pathlib.PosixPath):
                     mode, *args, **kwargs) # note: removed 'self' from front of this line
 
    def rename(self, name_new):
-      #print("ATTN: calling rename")
-      if (self.exists()): # is this check necessary? necessary to use ossafe here?
+      if (Path(name_new).exists()): # is this check necessary? necessary to use ossafe here?
          FATAL("can't rename: destination exists: %s" % name_new)
       ossafe(super().rename, "can't rename: %s -> %s" % (self.name, name_new),
              name_new)
@@ -2391,15 +2390,15 @@ class TarFile(tarfile.TarFile):
          if (stat.S_ISREG(st.st_mode)):
             if (regulars):
                #unlink(targetpath)
-               targetpath.unlink_()
+               Path(targetpath).unlink_()
          elif (stat.S_ISLNK(st.st_mode)):
             if (symlinks):
                #unlink(targetpath)
-               targetpath.unlink_()
+               Path(targetpath).unlink_()
          elif (stat.S_ISDIR(st.st_mode)):
             if (dirs):
                #rmtree(targetpath)
-               targetpath.rmtree()
+               Path(targetpath).rmtree()
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))

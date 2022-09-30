@@ -569,6 +569,7 @@ class Enabled_Cache:
          name_new = fm.name.replace(".git", ".weirdal_")
          ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
          f_path.rename(name_new) # f_path -> fm.path (issue #1455)
+         #ch.rename(fm.name, name_new)
       # Done.
       return fm
 
@@ -847,9 +848,9 @@ class Enabled_Cache:
          #ch.rename(image.unpack_path // i, ch.storage.image_tmp // i)
          (image.unpack_path // i).rename(ch.storage.image_tmp // i)
       #ch.rmdir(image.unpack_path)
-      image.unpack_path.rmidr()
+      image.unpack_path.rmdir()
       #ch.rename(ch.storage.image_tmp, image.unpack_path)
-      ch.storage.image_mp.rename(image.unpack_path)
+      ch.storage.image_tmp.rename(image.unpack_path)
 
    def worktree_get_head(self, image):
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"],

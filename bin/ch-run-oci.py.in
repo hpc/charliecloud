@@ -150,7 +150,7 @@ nogroup:x:65534:
    # Debian apt/dpkg/etc. want to chown(1), chgrp(1), etc. in various ways.
    #ch.symlink("/bin/true", "%s/ch/bin/chgrp" % path)
    #ch.symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
-   ch.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path).
+   ch.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path)
    ch.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
    # Debian package management also wants to mess around with users. This is
    # causing problems with /etc/gshadow and other files. These links don't
