@@ -495,7 +495,8 @@ class Image:
       else:
          src_path = other.unpack_path
       VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
-      copytree(src_path, self.unpack_path, symlinks=True, ignore=ignore)
+      #copytree(src_path, self.unpack_path, symlinks=True, ignore=ignore)
+      src_path.copytree(self.unpack_path, symlinks=True, ignore=ignore)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
@@ -565,7 +566,7 @@ class Image:
          WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
-      self.metadata = json_from_file(path, "metadata")
+      self.metadata = path.json_from_file("metadata")
       # upgrade old metadata
       self.metadata.setdefault("arg", dict())
       self.metadata.setdefault("history", list())
@@ -628,7 +629,8 @@ class Image:
          path = self.metadata_path // "config.pulled.json"
          copy2(config_json, path)
          VERBOSE("pulled config path: %s" % path)
-         self.metadata_merge_from_config(json_from_file(path, "config"))
+         self.metadata_merge_from_config(path.json_from_file("config"))
+         
       self.metadata_save()
 
    def metadata_save(self):
@@ -645,17 +647,22 @@ class Image:
       # Main metadata file.
       path = self.metadata_path // "metadata.json"
       VERBOSE("writing metadata file: %s" % path)
-      file_write(path, out + "\n")
+      path.file_write(out + "\n")
       # /ch/environment
       path = self.metadata_path // "environment"
       VERBOSE("writing environment file: %s" % path)
+      """
       file_write(path, (  "\n".join("%s=%s" % (k,v) for (k,v)
+                                    in sorted(metadata["env"].items()))
+                        + "\n"))
+      """
+      path.file_write( (  "\n".join("%s=%s" % (k,v) for (k,v)
                                     in sorted(metadata["env"].items()))
                         + "\n"))
       # mkdir volumes
       VERBOSE("ensuring volume directories exist")
       for path in metadata["volumes"]:
-         mkdirs(self.unpack_path // path)
+         (self.unpack_path // path).mkdirs()
 
    def tarballs_write(self, tarball_dir):
       """Write one uncompressed tarball per layer to tarball_dir. Return a
@@ -706,7 +713,8 @@ class Image:
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("removing image: %s" % self.unpack_path)
-         rmtree(self.unpack_path)
+         #rmtree(self.unpack_path)
+         self.unpack_path.rmtree()
 
    def unpack_delete(self):
       VERBOSE("unpack path: %s" % self.unpack_path)
@@ -714,12 +722,13 @@ class Image:
          FATAL("image not found, can’t delete: %s" % self.ref)
       if (self.deleteable):
          INFO("deleting image: %s" % self.ref)
-         chmod_min(self.unpack_path, 0o700)
+         self.unpack_path.chmod_min(0o700)
          for (dir_, subdirs, _) in os.walk(self.unpack_path):
             # must fix as subdirs so we can traverse into them
             for subdir in subdirs:
-               chmod_min(Path(dir_) // subdir, 0o700)
-         rmtree(self.unpack_path)
+               (Path(dir_) // subdir).chmod_min(0o700)
+         #rmtree(self.unpack_path)
+         self.unpack_path.rmtree()
       else:
          FATAL("storage directory seems broken: not an image: %s" % self.ref)
 
@@ -729,7 +738,7 @@ class Image:
          valid Charliecloud image directory."""
       # Metadata directory.
       (self.unpack_path // "ch").mkdir_()
-      file_ensure_exists(self.unpack_path // "ch/environment")
+      (self.unpack_path // "ch/environment").file_ensure_exists()
       # Essential directories & mount points. Do nothing if something already
       # exists, without dereferencing, in case it's a symlink, which will work
       # for bind-mount later but won't resolve correctly now outside the
@@ -739,9 +748,9 @@ class Image:
       for d in list(STANDARD_DIRS) + ["mnt/%d" % i for i in range(10)]:
          d = self.unpack_path // d
          if (not os.path.lexists(d)):
-            mkdirs(d)
-      file_ensure_exists(self.unpack_path // "etc/hosts")
-      file_ensure_exists(self.unpack_path // "etc/resolv.conf")
+            d.mkdirs()
+      (self.unpack_path // "etc/hosts").file_ensure_exists()
+      (self.unpack_path // "etc/reolv.conf").file_ensure_exists()
 
    def unpack_layers(self, layer_tars, last_layer):
       layers = self.layers_open(layer_tars)
@@ -1200,9 +1209,11 @@ class Path(pathlib.PosixPath):
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
-      old = ossafe(os.getcwd, "can't get cwd(2)")
-      ossafe(os.chdir, "can't chdir: %s" % self.name, self)
-      return Path(old)
+      #print("ATTN: calling chdir")
+      #old = ossafe(os.getcwd, "can't get cwd(2)")
+      #ossafe(os.chdir, "can't chdir: %s" % self.name, self)
+      #return Path(old)
+      return chdir(self)
 
    def chmod_min(self, mode, st=None):
       """Set permissions on path so they are at least mode. For symlinks, do
@@ -1210,40 +1221,46 @@ class Path(pathlib.PosixPath):
          follow_symlinks=False (or os.lchmod) is not supported on some
          (all?)  Linux. (Also, symlink permissions are ignored on Linux,
          so it doesn't matter anyway.)"""
-      if (st is None):
-         st = os.lstat(self)
-      if (stat.S_ISLNK(st.st_mode)):
-         return
-      mode_old = stat.S_IMODE(st.st_mode)
-      if (mode & mode_old != mode):
-         mode |= mode_old
-         VERBOSE("fixing permisssions: %s: %03o -> %03o" % (self, mode_old, mode))
-         ossafe(os.chmod, "can't chmod: %s" % self, self, mode)
+      #print("ATTN: calling chmod_min")
+      #if (st is None):
+      #   st = os.lstat(self)
+      #if (stat.S_ISLNK(st.st_mode)):
+      #   return
+      #mode_old = stat.S_IMODE(st.st_mode)
+      #if (mode & mode_old != mode):
+      #   mode |= mode_old
+      #   VERBOSE("fixing permisssions: %s: %03o -> %03o" % (self, mode_old, mode))
+      #   ossafe(os.chmod, "can't chmod: %s" % self, self, mode)
+      return chmod_min(self, mode, st=st)
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exists the program on the first error."
-      print("calling copytree")
+      #print("ATTN: calling copytree")
       shutil.copytree(str(self), copy_function=copy2, *args, **kwargs)
 
    def disk_bytes(self):
       """Return the number of disk bytes consumed by path. Note this is probably
          different from the file size."""
+      #print("ATTN: calling disk_bytes")
       return self.stat().st_blocks * 512
 
    def du(self):
       """Return a tuple (number of files, total bytes on disk) for everything 
          under path. Warning: double-counts files with multiple hard links."""
+      #print("ATTN: calling du")
       file_ct = 1
-      byte_ct = disk_bytes(path)
+      byte_ct = path.disk_bytes()
       for (dir_, subdirs, files) in os.walk(self):
          file_ct += len(subdirs) + len(files)
-         byte_ct += sum(disk_bytes(dir_ + "/" + i) for i in subdirs + files)
+         byte_ct += sum(Path(dir_ + "/" + i).disk_bytes()
+                        for i in subdirs + files)
       return (file_ct, byte_ct)
 
-   def file_ensure_exists(self): # change name? e.g. ensure_exists(self)
+   def file_ensure_exists(self): # change name? e.g. ensure_exists()
       """If the final element of path exists (without dereferencing if it's a
          symlink), do nothing; otherwise, create it as an empty regular file."""
-      if (not os.path.lexists(self)):
+      #print("ATTN: calling file_ensure_exists")
+      if (not os.path.lexists(self)): # no substitute for lexists() in pathlib.
          fp = self.open("w")
          close_(fp)
 
@@ -1252,6 +1269,7 @@ class Path(pathlib.PosixPath):
          the file's new name. Pass args to the gzip executable. This lets us gzip
          files (a) in parallel if pigz is installed and (b) without reading them
          into memory."""
+      #print("ATTN: calling file_gzip")
       path_c = self.add_suffix(".gz")
       # On first call, remember first available of pigz and gzip using class
       # attribute 'gzip'.
@@ -1260,6 +1278,7 @@ class Path(pathlib.PosixPath):
       # turned out that this would only set the attribute for the single instance.
       # To set 'self.gzip' for all instances, we need the class method.
       if (self.gzip is None):
+         print("This message should only appear ONCE")
          Path.gzip_set()
       # Remove destination file if it already exists, because gzip --force does
       # several other things too. (Note: pigz sometimes confusingly reports
@@ -1282,6 +1301,7 @@ class Path(pathlib.PosixPath):
       """Return the hash of data in file at path, as a hex string with no
          algorithm tag. File is read in chunks and can be larger than memory."""
       #fp = open_(path, "rb")
+      #print("ATTN: calling file_hash")
       fp = self.open("rb")
       h = hashlib.sha256()
       while True:
@@ -1295,25 +1315,29 @@ class Path(pathlib.PosixPath):
    def file_read_all(self, text=True):
       """Return the contents of file at path, or exit with error. If text, read
          in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
-      if (text):
-         mode = "rt"
-         encoding = "UTF-8"
-      else:
-         mode = "rb"
-         encoding = None
-      #fp = open_(path, mode, encoding=encoding)
-      fp = self.open(mode, encoding=encoding)
-      data = ossafe(fp.read, "can't read: %s" % self.name)
-      close_(fp)
-      return data
+      #print("ATTN: calling file_read_all")
+      #if (text):
+      #   mode = "rt"
+      #   encoding = "UTF-8"
+      #else:
+      #   mode = "rb"
+      #   encoding = None
+      ##fp = open_(str(self), mode, encoding=encoding)
+      #fp = self.open(mode, encoding=encoding)
+      #data = ossafe(fp.read, "can't read: %s" % self.name)
+      #close_(fp)
+      #return data
+      return file_read_all(self, text=text)
 
    def file_size(self, follow_symlinks=False):
       "Return the size of file at path in bytes."
+      #print("ATTN: calling file_size")
       st = ossafe(os.stat, "can't stat: %s" % self.name,
                   self, follow_symlinks=follow_symlinks)
       return st.st_size
 
    def file_write(self, content):
+      #print("ATTN: calling file_write")
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
       fp = self.open("wb")
@@ -1323,6 +1347,7 @@ class Path(pathlib.PosixPath):
    def grep_p(self, rx):
       """Return True if file at path contains a line matching regular expression
          rx, False if it does not."""
+      #print("ATTN: calling grep_p")
       rx = re.compile(rx)
       try:
          with open(self, "rt") as fp:
@@ -1344,6 +1369,7 @@ class Path(pathlib.PosixPath):
       return self.joinpath(*others2)
          
    def json_from_file(self, msg):
+      #print("ATTN: calling json_from_file")
       DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
       TRACE("text:\n%s" % text)
@@ -1359,6 +1385,7 @@ class Path(pathlib.PosixPath):
          parent (..). We considered changing this to use os.scandir()
          for #992, but decided that the advantages it offered didn't
          warrant the effort required to make the change."""
+      #print("ATTN: calling listdir")
       return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % self.name, self))
 
    def lstrip(self, n):
@@ -1368,10 +1395,12 @@ class Path(pathlib.PosixPath):
            Path("b/c")
 
          It is an error if I don’t have at least n+1 components."""
+      #print("ATTN: calling lstrip")
       assert (len(self.parts) >= n + 1)
       return Path(".").joinpath(*self.parts[n:])
 
    def mkdir_(self):
+      #print("ATTN: calling mkdir_")
       TRACE("ensuring directory: %s" % self)
       try:
          super().mkdir(exist_ok=True)
@@ -1388,20 +1417,25 @@ class Path(pathlib.PosixPath):
          FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
          
    def open(self, mode, *args, **kwargs):
+      #print("ATTN: calling open")
       "Error-checking wrapper for open()."
       return ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
                     mode, *args, **kwargs) # note: removed 'self' from front of this line
 
    def rename(self, name_new):
+      #print("ATTN: calling rename")
       if (self.exists()): # is this check necessary? necessary to use ossafe here?
          FATAL("can't rename: destination exists: %s" % name_new)
       ossafe(super().rename, "can't rename: %s -> %s" % (self.name, name_new),
              name_new)
 
    def rmdir(self):
-      ossafe(super().rmdir, "can't rmdir: %s" % self.name)
+      #print("ATTN: calling rmdir")
+      return rmdir(self)
+      #ossafe(super().rmdir, "can't rmdir: %s" % self.name)
 
    def rmtree(self):
+      #print("ATTN: calling rmtree")
       if (self.is_dir()):
          TRACE("deleting directory: %s" % self.name)
          try:
@@ -1412,16 +1446,20 @@ class Path(pathlib.PosixPath):
       else:
          assert False, "unimplemented"
 
-   def stat_(self, **kwargs):
+   def stat_(self, links=False):
+      #print("ATTN: calling stat_")
       """An error-checking version of stat(). Note that we cannot simply change
          the definition of stat() to be ossafe, as the exists() method in pathlib
          relies on an OSError check.    
          See: https://github.com/python/cpython/blob/3.10/Lib/pathlib.py#L1291"""
-      return ossafe(super().stat, "can't stat: %s" %self.name, **kwargs)
+      #return ossafe(super().stat, "can't stat: %s" %self.name, follow_symlinks=links)
+      return stat_(self, links=links)
 
    def symlink(self, target, clobber=False):
+      #print("ATTN: calling symlink")
       if (clobber and self.is_file()):
-         unlink(self)
+         #unlink(self)
+         self.unlink_()
       try:
          #os.symlink(target, source)
          super().symlink_to(target)
@@ -1435,6 +1473,7 @@ class Path(pathlib.PosixPath):
          FATAL("can't symlink: %s -> %s: %s" % (self.name, target, x.strerror))
 
    def unlink_(self, *args, **kwargs):
+      #print("ATTN: calling unlink")
       "Error-checking wrapper for unlink method"
       ossafe(super().unlink, "can't unlink: %s" % self.name)
 
@@ -1569,7 +1608,7 @@ class Progress_Writer:
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
-      self.fp = open_(self.path, "wb")
+      self.fp = self.path.open("wb")
 
    def write(self, data):
       self.progress.update(len(data))
@@ -1935,7 +1974,7 @@ class Registry_HTTP:
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don't verify the digest b/c that means reading the whole file.
       VERBOSE("layer tarball: %s" % path)
-      fp = open_(path, "rb")  # open file avoids reading it all into memory
+      fp = path.open("rb") # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
       close_(fp)
 
@@ -2138,7 +2177,7 @@ class Storage:
       else:
          op = "upgrading"
          if (not self.valid_p):
-            if (os.path.exists(self.root) and not listdir(self.root)):
+            if (os.path.exists(self.root) and not self.root.listdir()):
                hint = "let Charliecloud create %s; see FAQ" % self.root.name
             else:
                hint = None
@@ -2161,7 +2200,7 @@ class Storage:
                if (new.exists()):
                   FATAL("can't upgrade: already exists: %s" % new)
                old.rename(new)
-         file_write(self.version_file, "%d\n" % STORAGE_VERSION)
+         self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can't upgrade
          FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
                'you can delete and re-initialize with "ch-image reset"')
@@ -2205,7 +2244,8 @@ class Storage:
             except OSError as x:
                FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
-      rmdir(old.root)
+      #rmdir(old.root)
+      old.root.rmdir()
       if (not listdir(old.root.parent)):
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
@@ -2223,7 +2263,7 @@ class Storage:
       # [3]: https://stackoverflow.com/a/22411531
       if (not storage_lock):
          return
-      self.lockfile_fp = open_(self.lockfile, "w")
+      self.lockfile_fp = self.lockfile.open("w")
       try:
          fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
       except OSError as x:
@@ -2244,7 +2284,8 @@ class Storage:
 
    def reset(self):
       if (self.valid_p):
-         rmtree(self.root)
+         #rmtree(self.root)
+         self.root.rmtree()
          self.init()  # largely for debugging
       else:
          FATAL("%s not a builder storage" % (self.root));
@@ -2263,7 +2304,7 @@ class Storage:
       msg_prefix = "invalid storage directory"
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
-      entries = listdir(self.root)
+      entries = self.root.listdir()
       for entry in { i.path_name for i in (self.build_cache,
                                           self.download_cache,
                                           self.unpack_base,
@@ -2292,7 +2333,9 @@ class Storage:
 
    def version_read(self):
       if (os.path.isfile(self.version_file)):
-         text = file_read_all(self.version_file)
+         #text = file_read_all(self.version_file)
+         text = self.version_file.file_read_all() # WARNING: version_file might not
+                                                  # be Path
          try:
             return int(text)
          except ValueError:
@@ -2347,13 +2390,16 @@ class TarFile(tarfile.TarFile):
       if (st is not None):
          if (stat.S_ISREG(st.st_mode)):
             if (regulars):
-               unlink(targetpath)
+               #unlink(targetpath)
+               targetpath.unlink_()
          elif (stat.S_ISLNK(st.st_mode)):
             if (symlinks):
-               unlink(targetpath)
+               #unlink(targetpath)
+               targetpath.unlink_()
          elif (stat.S_ISDIR(st.st_mode)):
             if (dirs):
-               rmtree(targetpath)
+               #rmtree(targetpath)
+               targetpath.rmtree()
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
@@ -2520,6 +2566,7 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
+   #print("ATTN: ch_run_modify fail_ok: %s" % fail_ok)
    return cmd(args, env=env, fail_ok=fail_ok)
 
 def close_(fp):
@@ -2541,6 +2588,7 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       the command does not exit with code zero. If logging is verbose or
       higher, first print the command line arguments; if debug or higher, the
       environment as well (if given). Return the CompletedProcess object."""
+   #print("ATTN: cmd_base fail_ok: %s" % fail_ok)
    argv = [str(i) for i in argv]
    VERBOSE("executing: %s" % argv_to_string(argv))
    if ("env" in kwargs):
@@ -2558,6 +2606,8 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       # [1]: https://devdocs.io/bash/exit-status#Exit-Status
       cp = subprocess.CompletedProcess(argv, 127)
    if (not fail_ok and cp.returncode != 0):
+      print("FAIL OK: %s" % fail_ok)
+      print("CP RETURN CODE: %s" % cp.returncode)
       FATAL("command failed with code %d: %s"
             % (cp.returncode, argv_to_string(argv)))
    return cp
@@ -2639,7 +2689,8 @@ def digest_trim(d):
 def disk_bytes(path):
    """Return the number of disk bytes consumed by path. Note this is probably
       different from the file size."""
-   return stat_(path).st_blocks * 512
+   #return stat_(path).st_blocks * 512
+   return path.stat_().st_blocks * 512
 
 def du(path):
    """Return a tuple (number of files, total bytes on disk) for everything
@@ -2661,7 +2712,7 @@ def file_ensure_exists(path):
    """If the final element of path exists (without dereferencing if it's a
       symlink), do nothing; otherwise, create it as an empty regular file."""
    if (not os.path.lexists(path)):
-      fp = open_(path, "w")
+      fp = path.open("w")
       close_(fp)
 
 def file_gzip(path, args=[]):
@@ -2683,7 +2734,8 @@ def file_gzip(path, args=[]):
    # several other things too. (Note: pigz sometimes confusingly reports
    # "Inappropriate ioctl for device" if destination already exists.)
    if (os.path.exists(path_c)):
-      unlink(path_c)
+      #unlink(path_c)
+      path_c.unlink_()
    # Compress.
    cmd([file_gzip.gzip] + args + [str(path)])
    # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1], to
@@ -2759,7 +2811,7 @@ def init(cli):
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
       verbose = max(verbose, 1)
-      log_fp = open_(file_, "at")
+      log_fp = file_.open("at")
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
    # storage directory
@@ -2802,7 +2854,7 @@ def init(cli):
 
 def json_from_file(path, msg):
    DEBUG("loading JSON: %s: %s" % (msg, path))
-   text = file_read_all(path)
+   text = path.file_read_all()
    TRACE("text:\n%s" % text)
    try:
       data = json.loads(text)
@@ -2938,7 +2990,8 @@ def stat_(path, links=False):
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):
-      unlink(source)
+      #unlink(source)
+      source.unlink_()
    try:
       os.symlink(target, source)
    except FileExistsError:

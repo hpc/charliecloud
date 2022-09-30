@@ -111,7 +111,9 @@ def main(cli_):
    if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
    else:
-      fp = ch.open_(cli.file, "rt")
+      print("Got Past 'ELSE' in build.py")
+      fp = ch.Path(cli.file).open("rt")
+      #fp = ch.open_(cli.file, "rt")
       text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
       ch.close_(fp)
 
@@ -601,7 +603,8 @@ class I_copy(Instruction):
                   ch.TRACE("dst_path exists and is a directory")
                else:
                   ch.TRACE("dst_path exists, not a directory, removing")
-                  ch.unlink(dst_path)
+                  #ch.unlink(dst_path)
+                  dst_path.unlink_()
             # If destination directory doesn't exist, create it.
             if (not os.path.exists(dst_path)):
                ch.TRACE("mkdir dst_path")
@@ -621,9 +624,11 @@ class I_copy(Instruction):
             if (os.path.exists(dst_path)):
                ch.TRACE("destination exists, removing")
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
-                  ch.rmtree(dst_path)
+                  #ch.rmtree(dst_path)
+                  dst_path.rmtree()
                else:
-                  ch.unlink(dst_path)
+                  #ch.unlink(dst_path)
+                  dst_path.unlink_()
             ch.copy2(src_path, dst_path, follow_symlinks=False)
 
    def copy_src_file(self, src, dst):
@@ -693,7 +698,7 @@ class I_copy(Instruction):
           or len(self.srcs) > 1
              or self.srcs[0].is_dir()):
          if (not os.path.exists(dst_canon)):
-            ch.mkdirs(dst_canon)
+            dst_canon.mkdirs()
          elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
             ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
       # Copy each source.
@@ -707,7 +712,8 @@ class I_copy(Instruction):
 
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
-         st = ch.stat_(path, links=links)
+         #st = ch.stat_(path, links=links)
+         st = path.stat_(links=links)
          return (  str(path).encode("UTF-8")
                  + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.
@@ -765,10 +771,10 @@ class I_copy(Instruction):
       for src in self.srcs:
          self.src_metadata += stat_bytes(src, links=True)
          if (src.is_dir()):
-            for (dir_, dirs, files) in os.walk(src):
+            for (dir_, dirs, files) in ch.walk(src):
                self.src_metadata += stat_bytes(dir_)
                for f in sorted(files):
-                  self.src_metadata += stat_bytes(os.path.join(dir_, f))
+                  self.src_metadata += stat_bytes(dir_ // f)
                dirs.sort()
       # Pass on to superclass.
       return super().prepare(miss_ct)
@@ -802,7 +808,8 @@ class Env(Instruction):
       return "%s='%s'" % (self.key, self.value)
 
    def execute(self):
-      with ch.open_(self.image.unpack_path // "/ch/environment", "wt") \
+      #with ch.open_(self.image.unpack_path // "/ch/environment", "wt") \
+      with (self.image.unpack_path // "/ch/environment").open("wt") \
            as fp:
          for (k, v) in self.env_env.items():
             print("%s=%s" % (k, v), file=fp)
@@ -1025,7 +1032,7 @@ class I_workdir(Instruction):
       return str(self.path)
 
    def execute(self):
-      ch.mkdirs(self.image.unpack_path // self.workdir)
+      (self.image.unpack_path // self.workdir).mkdirs()
 
    def prepare(self, *args):
       self.path = ch.Path(variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),

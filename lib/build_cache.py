@@ -257,7 +257,7 @@ class Enabled_Cache:
       self.bootstrap_ct = 0
       if (not os.path.isdir(self.root)):
          self.root.mkdir()
-      ls = ch.listdir(self.root)
+      ls = self.root.listdir()
       if (len(ls) == 0):
          self.bootstrap()  # empty; initialize a new cache
       elif (not {ch.Path(i) for i in ["HEAD", "objects", "refs"]} <= ls):
@@ -300,18 +300,14 @@ class Enabled_Cache:
       try:
          with tempfile.TemporaryDirectory(prefix="weirdal.") as td:
             ch.cmd_quiet(["git", "clone", "-q", self.root, td])
-            #cwd = ch.chdir(td) # td is file like object, not path
-            cwd = ch.Path(td).chdir()
-            #print(type(td))
-            #cwd = td.chdir()
+            cwd = ch.Path(td).chdir() # check if we can move this conversion up
             ch.cmd_quiet(["git", "checkout", "-q", "-b", "root"])
             # Git has no default gitignore, but cancel any global gitignore
             # rules the user might have. https://stackoverflow.com/a/26681066
-            ch.file_write(".gitignore", "!*\n")
+            ch.Path(".gitignore").file_write("!*\n")
             ch.cmd_quiet(["git", "add", ".gitignore"])
             ch.cmd_quiet(["git", "commit", "-m", "ROOT\n\n%s" % self.root_id])
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
-            #ch.chdir(cwd)
             cwd.chdir()
       except OSError as x:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
@@ -346,7 +342,6 @@ class Enabled_Cache:
       #
       # WARNING: files must be empty for the first image commit.
       self.git_prepare(path, files)
-      #cwd = ch.chdir(path)
       cwd = path.chdir()
       t = ch.Timer()
       if (len(files) == 0):
@@ -364,15 +359,13 @@ class Enabled_Cache:
       # Therefore, retrieve the hash separately.
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
       git_hash = cp.stdout.strip()
-      print(type(cwd))
       cwd.chdir()
-      #ch.chdir(cwd)
       self.git_restore(path, files, True)
       return git_hash
 
    def configure(self):
       path = self.root // "config"
-      fp = ch.open_(path, "r+")
+      fp = path.open("r+")
       config = configparser.ConfigParser()
       config.read_file(fp, source=path)
       changed = False
@@ -496,7 +489,6 @@ class Enabled_Cache:
 
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
-      #cwd = ch.chdir(unpack_path)
       cwd = unpack_path.chdir()
       if (len(files) == 0):
          self.file_metadata = self.git_prepare_walk(dict(), None, ch.Path("."),
@@ -505,9 +497,8 @@ class Enabled_Cache:
          for path in files:
             self.file_metadata.set(path, File_Metadata(path, path.lstat()))
       if (write):
-         ch.file_write("ch/git.pickle", pickle.dumps(self.file_metadata,
+         ch.Path("ch/git.pickle").file_write(pickle.dumps(self.file_metadata,
                                                      protocol=4))
-      #ch.chdir(cwd)
       cwd.chdir()
       t.log("gathered file metadata")
 
@@ -521,7 +512,7 @@ class Enabled_Cache:
       path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
       # Ensure minimum permissions. Some tools like to make files with mode
       # 000, because root ignores the permissions bits.
-      ch.chmod_min(path, 0o700 if stat.S_ISDIR(st.st_mode) else 0o400, st)
+      f_path.chmod_min(0o700 if stat.S_ISDIR(st.st_mode) else 0o400, st) # see #1455
       # Validate file type and recurse if necessary.
       if   (   stat.S_ISREG(st.st_mode)
             or stat.S_ISLNK(st.st_mode)
@@ -539,15 +530,13 @@ class Enabled_Cache:
             or stat.S_ISBLK(st.st_mode)):
          ch.FATAL("device files invalid in image: %s" % path)
       elif (   stat.S_ISDIR(st.st_mode)):
-         entries = sorted(ch.listdir(fm.name))
-         #cwd = ch.chdir(fm.name)
+         entries = sorted(f_path.listdir()) # FIX: see issue #1455
          cwd = f_path.chdir() # once #1455 is closed, this line should get
                               # changed to 'fm.path.chdir()'.
          for i in entries:
             if (not (parent is None and str(i).startswith(".git"))):
                fm.children.append(self.git_prepare_walk(hardlinks, path,
                                                         i, os.lstat(i)))
-         #ch.chdir(cwd)
          cwd.chdir()
       else:
          ch.FATAL("unexpected file type in image: %x: %s"
@@ -558,7 +547,6 @@ class Enabled_Cache:
             ch.TRACE("hard link: deleting subsequent: %d %d %s"
                      % (st.st_dev, st.st_ino, path))
             fm.hardlink_to = hardlinks[(st.st_dev, st.st_ino)]
-            #ch.unlink(fm.name)
             f_path.unlink() # f_path -> fm.path (issue #1455)
          else:
             ch.TRACE("hard link: recording first: %d %d %s"
@@ -567,7 +555,8 @@ class Enabled_Cache:
       # Remove empty directories. Git will ignore them, including leaving them
       # there if switch the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
-         ch.rmdir(fm.name)
+         #ch.rmdir(fm.name)
+         f_path.rmdir() # f_path -> fm.path (issue #1455)
          return fm  # can't do anything else after it's gone
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(st.st_mode)):
@@ -579,7 +568,7 @@ class Enabled_Cache:
       if (fm.name.startswith(".git")):
          name_new = fm.name.replace(".git", ".weirdal_")
          ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
-         ch.rename(fm.name, name_new)
+         f_path.rename(name_new) # f_path -> fm.path (issue #1455)
       # Done.
       return fm
 
@@ -594,18 +583,15 @@ class Enabled_Cache:
          unpack_path and do a full restore. This method will dirty the Git
          working directory."""
       t = ch.Timer()
-      #cwd = ch.chdir(unpack_path)
       cwd = unpack_path.chdir()
       if (not quick):
-         self.file_metadata = pickle.loads(ch.file_read_all("ch/git.pickle",
-                                                            text=False))
+         self.file_metadata = pickle.loads(ch.Path("ch/git.pickle").file_read_all(text=False))
       if (len(files) == 0):
          self.git_restore_walk(unpack_path, None, self.file_metadata, quick)
       else:
          for path in files:
             self.git_restore_walk(path, path.parent,
                                   self.file_metadata.get(path), quick)
-      #ch.chdir(cwd)
       cwd.chdir()
       t.log("restored file metadata (%s)" % ("quick" if quick else "full"))
 
@@ -636,17 +622,16 @@ class Enabled_Cache:
          ch.ossafe(os.link, "can't hardlink: %s -> %s" % (path, target),
                    target, fm.name, follow_symlinks=False)
       if (str(fm.name).startswith(".git")):
-         ch.rename(str(fm.name).replace(".git", ".weirdal_"), str(fm.name))
+         #ch.rename(str(fm.name).replace(".git", ".weirdal_"), str(fm.name))
+         ch.Path(str(fm.name).replace(".git", ".weirdal_")).rename(fm.name)
       if (not quick):
          if (stat.S_ISSOCK(fm.mode)):
             ch.WARNING("ignoring socket in image: %s" % path)
       # Recurse children.
       if (len(fm.children) > 0):
-         #cwd = ch.chdir(fm.name)  # works at top level b/c fm.name is "."
-         cwd = ch.Path(fm.name).chdir() 
+         cwd = ch.Path(fm.name).chdir() # works at top level b/c fm.name is "."
          for child in fm.children:
             self.git_restore_walk(root, path, child, quick)
-         #ch.chdir(cwd)
          cwd.chdir()
       # Restore my metadata.
       if ((   not quick                     # Git broke metadata
@@ -724,13 +709,15 @@ class Enabled_Cache:
             FATAL("can’t open GC PID file: %s: %s" % (pid_path, x.strerror))
          # Delete images that are worktrees referring back to the build cache.
          ch.INFO("deleting build cache")
-         for d in ch.listdir(ch.storage.unpack_base):
+         for d in ch.storage.unpack_base.listdir():
             dotgit = ch.storage.unpack_base // d // ".git"
             if (os.path.exists(dotgit)):
                ch.VERBOSE("deleting cached image: %s" % d)
-               ch.rmtree(ch.storage.unpack_base // d)
+               #ch.rmtree(ch.storage.unpack_base // d)
+               (ch.storage.unpack_base // d).rmtree()
          # Create new build cache.
-         ch.rmtree(self.root)
+         #ch.rmtree(self.root)
+         self.root.rmtree()
          self.root.mkdir()
          self.bootstrap()
 
@@ -757,7 +744,6 @@ class Enabled_Cache:
          return "*"
 
    def summary_print(self):
-      #cwd = ch.chdir(self.root)
       cwd = ch.Path(self.root).chdir()
       # state IDs
       msgs = ch.cmd_stdout(["git", "log",
@@ -769,7 +755,7 @@ class Enabled_Cache:
       # branches (FIXME: how to count unnamed branch tips?)
       image_ct = ch.cmd_stdout(["git", "branch", "--list"]).stdout.count("\n")
       # file count and size on disk
-      (file_ct, byte_ct) = ch.du(self.root)
+      (file_ct, byte_ct) = ch.Path(self.root).du()
       commit_ct = int(ch.cmd_stdout(["git", "rev-list",
                                      "--all", "--reflog", "--count"]).stdout)
       (file_ct, file_suffix) = ch.si_decimal(file_ct)
@@ -785,7 +771,7 @@ class Enabled_Cache:
          out = ch.cmd_stdout(["git", "count-objects", "-vH"]).stdout
          print("Git statistics:")
          print(textwrap.indent(out, "  "), end="")
-         out = ch.file_read_all(self.root // "config")
+         out = (self.root // "config").file_read_all()
          print("Git config:")
          print(textwrap.indent(out, "  "), end="")
 
@@ -852,13 +838,18 @@ class Enabled_Cache:
       if (os.path.isdir(ch.storage.image_tmp)):
          ch.WARNING("temporary image still exists, deleting",
                     "maybe a previous command crashed?")
-         ch.rmtree(ch.storage.image_tmp)
-      ch.rename(image.unpack_path, ch.storage.image_tmp)
+         #ch.rmtree(ch.storage.image_tmp)
+         ch.storage.image_tmp.rmtree()
+      #ch.rename(image.unpack_path, ch.storage.image_tmp)
+      image.unpack_path.rename(ch.storage.image_tmp)
       self.worktree_add(image, base)
       for i in { ".git", ".gitignore" }:
-         ch.rename(image.unpack_path // i, ch.storage.image_tmp // i)
-      ch.rmdir(image.unpack_path)
-      ch.rename(ch.storage.image_tmp, image.unpack_path)
+         #ch.rename(image.unpack_path // i, ch.storage.image_tmp // i)
+         (image.unpack_path // i).rename(ch.storage.image_tmp // i)
+      #ch.rmdir(image.unpack_path)
+      image.unpack_path.rmidr()
+      #ch.rename(ch.storage.image_tmp, image.unpack_path)
+      ch.storage.image_mp.rename(image.unpack_path)
 
    def worktree_get_head(self, image):
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"],

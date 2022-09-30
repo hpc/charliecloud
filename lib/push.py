@@ -83,7 +83,8 @@ class Image_Pusher:
       # Delete the tarballs since we can't yet cache them.
       for (_, tar_c) in self.layers:
          ch.VERBOSE("deleting tarball: %s" % tar_c)
-         ch.unlink(tar_c)
+         #ch.unlink(tar_c)
+         tar_c.unlink_()
 
    def prepare(self):
       """Prepare self.image for pushing to self.dst_ref. Return tuple: (list
@@ -101,13 +102,15 @@ class Image_Pusher:
       for (i, tar_uc) in enumerate(tars_uc, start=1):
          ch.INFO("layer %d/%d: preparing" % (i, len(tars_uc)))
          path_uc = ch.storage.upload_cache // tar_uc
-         hash_uc = ch.file_hash(path_uc)
+         hash_uc = path_uc.file_hash()
          config["rootfs"]["diff_ids"].append("sha256:" + hash_uc)
-         #size_uc = ch.file_size(path_uc)
-         path_c = ch.file_gzip(path_uc, ["-9", "--no-name"])
+         size_uc = path_uc.file_size()
+         path_c = path_uc.file_gzip(["-9", "--no-name"]) # won't work if not
+                                                         # path_uc isn't path
+                                                         # object...
          tar_c = path_c.name
-         hash_c = ch.file_hash(path_c)
-         size_c = ch.file_size(path_c)
+         hash_c = path_c.file_hash()
+         size_c = path_c.file_size()
          tars_c.append((hash_c, path_c))
          manifest["layers"].append({ "mediaType": ch.TYPE_LAYER,
                                      "size": size_c,

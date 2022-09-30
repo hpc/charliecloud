@@ -131,16 +131,16 @@ def debug_lines(s):
 def image_fixup(path):
    ch.VERBOSE("fixing up image: %s" % path)
    # Metadata directory.
-   ch.mkdirs("%s/ch/bin" % path)
+   ch.Path("%s/ch/bin" % path).mkdirs()
    # Mount points.
-   ch.file_ensure_exists("%s/etc/hosts" % path)
-   ch.file_ensure_exists("%s/etc/resolv.conf" % path)
+   ch.Path("%s/etc/hosts" % path).file_ensure_exists()
+   ch.Path("%s/etc/resolv.conf" % path).file_ensure_exists()
    # /etc/{passwd,group}
-   ch.file_write("%s/etc/passwd" % path, """\
+   ch.Path("%s/etc/passwd" % path).file_write("""\
 root:x:0:0:root:/root:/bin/sh
 nobody:x:65534:65534:nobody:/:/bin/false
 """)
-   ch.file_write("%s/etc/group" % path, """\
+   ch.Path("%s/etc/group" % path).file_write("""\
 root:x:0:
 nogroup:x:65534:
 """)
@@ -148,18 +148,25 @@ nogroup:x:65534:
    # unprivileged user namespace. See also the default environment.
    #
    # Debian apt/dpkg/etc. want to chown(1), chgrp(1), etc. in various ways.
-   ch.symlink("/bin/true", "%s/ch/bin/chgrp" % path)
-   ch.symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
+   #ch.symlink("/bin/true", "%s/ch/bin/chgrp" % path)
+   #ch.symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
+   ch.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path).
+   ch.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
    # Debian package management also wants to mess around with users. This is
    # causing problems with /etc/gshadow and other files. These links don't
    # work if they are in /ch/bin, I think because dpkg is resetting the path?
    # For now we'll do this, but I don't like it. fakeroot(1) also solves the
    # problem (see issue #472).
-   ch.symlink("/bin/true", "%s/bin/chown" % path, clobber=True)
-   ch.symlink("/bin/true", "%s/usr/sbin/groupadd" % path, clobber=True)
-   ch.symlink("/bin/true", "%s/usr/sbin/useradd" % path, clobber=True)
-   ch.symlink("/bin/true", "%s/usr/sbin/usermod" % path, clobber=True)
-   ch.symlink("/bin/true", "%s/usr/bin/chage" % path, clobber=True)
+   #ch.symlink("/bin/true", "%s/bin/chown" % path, clobber=True)
+   #ch.symlink("/bin/true", "%s/usr/sbin/groupadd" % path, clobber=True)
+   #ch.symlink("/bin/true", "%s/usr/sbin/useradd" % path, clobber=True)
+   #ch.symlink("/bin/true", "%s/usr/sbin/usermod" % path, clobber=True)
+   #ch.symlink("/bin/true", "%s/usr/bin/chage" % path, clobber=True)
+   ch.Path("/bin/true").symlink("%s/bin/chown" % path, clobber=True)
+   ch.Path("/bin/true").symlink("%s/usr/sbin/groupadd" % path, clobber=True)
+   ch.Path("/bin/true").symlink("%s/usr/sbin/useradd" % path, clobber=True)
+   ch.Path("/bin/true").symlink("%s/usr/sbin/usermod" % path, clobber=True)
+   ch.Path("/bin/true").symlink("%s/usr/bin/chage" % path, clobber=True)
 
 def op_create():
    # Validate arguments.
@@ -184,7 +191,7 @@ def op_create():
       sleep_forever()
    else:
       state.pid = pid
-      with ch.open_(args.pid_file, "wt") as fp:
+      with args.pid_file.open("wt") as fp:
          print("%d" % pid, file=fp)
       ch.VERBOSE("dummy supervisor started with pid %d" % pid)
 
@@ -219,7 +226,7 @@ def op_start():
    #
    # GNU tar, when it thinks it's running as root, tries to chown(2) and
    # chgrp(2) files to whatever's in the tarball. --no-same-owner avoids this.
-   with ch.open_(args.bundle + "/environment", "wt") as fp:
+   with ch.Path(args.bundle + "/environment").open("wt") as fp:
       for line in (  c["process"]["env"]                  # from Dockerfile
                    + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
          line = re.sub(r"^(PATH=)", "\\1/ch/bin:", line)
@@ -245,11 +252,11 @@ def op_start():
 
    # Execute user command. We can't execv(2) because we have to do cleanup
    # after it exits.
-   ch.file_ensure_exists(args.bundle + "/user_started")
+   ch.Path(args.bundle + "/user_started").file_ensure_exists()
    ch.VERBOSE("user command: %s" % ca)
    # Standard output disappears, so send stdout to stderr.
    cp = subprocess.run(ca, stdout=2)
-   ch.file_ensure_exists(args.bundle + "/user_done")
+   ch.Path(args.bundle + "/user_done").file_ensure_exists()
    ch.VERBOSE("user command done")
 
    # Stop dummy supervisor.
@@ -297,7 +304,7 @@ def pid_file_from_bundle(bundle):
 def state_load():
    st = types.SimpleNamespace()
 
-   st.config = json.load(ch.open_(args.bundle + "/config.json", "rt"))
+   st.config = json.load(ch.Path(args.bundle + "/config.json").open("rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
