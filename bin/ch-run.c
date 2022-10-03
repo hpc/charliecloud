@@ -48,7 +48,7 @@ const struct argp_option options[] = {
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
    { "ch-ssh",         -8, 0,      0, "bind ch-ssh into image"},
    { "cray-ugni",     -12, 0,      0, "bind cray host ugni paths"},
-   { "cray-ss",       -13, 0,      0, "bind cray host slingshot paths"},
+   { "cray-shasta",   -13, 0,      0, "bind cray shasta host paths"},
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },

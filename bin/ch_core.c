@@ -58,6 +58,7 @@ struct bind BINDS_CRAY[] = {
 /* Cray Gemini/Aries interconnect bind-mounts. */
 struct bind BINDS_CRAY_UGNI[] = {
    { "/etc/opt/cray/wlm_detect", "/etc/opt/cray/wlm_detect", BD_REQUIRED },
+   { "/opt/cray/wlm_detect",     "/opt/cray/wlm_detect",     BD_REQUIRED },
    { "/opt/cray/alps",           "/opt/cray/alps",           BD_REQUIRED },
    { "/opt/cray/udreg",          "/opt/cray/udreg",          BD_REQUIRED },
    { "/opt/cray/ugni",           "/opt/cray/ugni",           BD_REQUIRED },
@@ -67,7 +68,7 @@ struct bind BINDS_CRAY_UGNI[] = {
 
 /* Known Cray Shasta bind-mounts. */
 struct bind BINDS_CRAY_SHASTA[] = {
-   { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_REQUIRED },
+   { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_OPTIONAL },
 };
 
 /** Global variables **/
