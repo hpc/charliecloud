@@ -80,7 +80,9 @@ count_ranks () {
     echo "guest MPI: ${guest_mpi}"
 
     # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" -- /hello/hello
+    run $ch_mpirun_core ch-run $bind_ugni \
+                               $bind_shasta \
+                               --join "$ch_img" -- /hello/hello
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")
@@ -93,7 +95,7 @@ count_ranks () {
 @test "${ch_tag}/Cray bind mounts" {
     [[ $ch_cray ]] || skip 'host is not a Cray'
 
-    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
+    ch-run "$ch_img" -- mount | grep -F /var/lib/hugetlbfs
     ch-run "$ch_img" -- mount | grep -F /dev/hugepages
 }
 

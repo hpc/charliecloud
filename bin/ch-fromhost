@@ -87,13 +87,13 @@ lib_found=
 no_ldconfig=
 
 debug () {
-    if [ "$verbose" == 'yes' ]; then
+    if [ "$verbose" = 'yes' ]; then
         printf '[ debug ] %s\n' "$1" 1>&2
     fi
 }
 
 debug_indent () {
-    if [ "$verbose" == 'yes' ]; then
+    if [ "$verbose" = 'yes' ]; then
         printf '[ debug ]    %s\n' "$1" 1>&2
     fi
 }
@@ -341,7 +341,7 @@ if [ $ofi_found ] && [ -z "$dest" ]; then
     #
     # Note that if the host FI_PROVIDER_PATH is set, --dest is required.
     debug "searching ${image} for libfabric dso provider destination..."
-    ch_env_p=$(grep -F FI_PROVIDER_PATH ${image}/ch/environment) \
+    ch_env_p=$(grep -F FI_PROVIDER_PATH "${image}/ch/environment") \
              || true # avoid -e exit
     ch_env_p=${ch_env_p##*=}
     if  [ -n "$ch_env_p" ]; then

@@ -47,7 +47,7 @@ check_process_ct () {
 @test "${ch_tag}/pingpong (guest launch)" {
     openmpi_or_skip
     # shellcheck disable=SC2086
-    run ch-run $ch_unslurm "$ch_img" -- \
+    run ch-run $ch_unslurm "$ch_img" $bind_ugni $bind_shasta -- \
                "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
@@ -60,7 +60,7 @@ check_process_ct () {
 @test "${ch_tag}/sendrecv (guest launch)" {
     openmpi_or_skip
     # shellcheck disable=SC2086
-    run ch-run $ch_unslurm "$ch_img" -- \
+    run ch-run $ch_unslurm "$ch_img" $bind_ugni $bind_shasta -- \
                "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
@@ -73,7 +73,7 @@ check_process_ct () {
 @test "${ch_tag}/allreduce (guest launch)" {
     openmpi_or_skip
     # shellcheck disable=SC2086
-    run ch-run $ch_unslurm "$ch_img" -- \
+    run ch-run $ch_unslurm "$ch_img" $bind_ugni $bind_shasta -- \
                "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
@@ -116,7 +116,7 @@ check_process_ct () {
 @test "${ch_tag}/pingpong (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" -- \
+    run $ch_mpirun_core ch-run --join "$ch_img" $bind_ugni $bind_shasta -- \
                                "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
@@ -128,7 +128,7 @@ check_process_ct () {
 @test "${ch_tag}/sendrecv (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" -- \
+    run $ch_mpirun_core ch-run --join "$ch_img" $bind_ugni $bind_shasta -- \
                                "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
@@ -140,7 +140,7 @@ check_process_ct () {
 @test "${ch_tag}/allreduce (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" -- \
+    run $ch_mpirun_core ch-run --join "$ch_img" $bind_ugni $bind_shasta -- \
                                "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]

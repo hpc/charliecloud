@@ -350,6 +350,16 @@ fi
 # Crays are special.
 if [[ -f /etc/opt/cray/release/cle-release ]]; then
     ch_cray=yes
+    if [ -d /opt/cray/ugni ]; then
+        bind_ugni='--cray-ugni'
+    else
+        bind_ugni=
+    fi
+    if [ -d /var/spool/slurmd ]; then
+        bind_shasta='--cray-shasta'
+    else
+        bind_shasta=
+    fi
 else
     ch_cray=
 fi
