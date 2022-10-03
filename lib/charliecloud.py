@@ -496,7 +496,7 @@ class Image:
          src_path = other.unpack_path
       VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
       #copytree(src_path, self.unpack_path, symlinks=True, ignore=ignore)
-      ch.Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
+      Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
