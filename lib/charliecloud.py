@@ -1249,7 +1249,7 @@ class Path(pathlib.PosixPath):
          under path. Warning: double-counts files with multiple hard links."""
       #print("ATTN: calling du")
       file_ct = 1
-      byte_ct = path.disk_bytes()
+      byte_ct = self.disk_bytes()
       for (dir_, subdirs, files) in os.walk(self):
          file_ct += len(subdirs) + len(files)
          byte_ct += sum(Path(dir_ + "/" + i).disk_bytes()
