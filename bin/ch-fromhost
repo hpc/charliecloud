@@ -1,15 +1,5 @@
 #!/bin/sh
 #
-# There are three primary uses of ch-fromhost:
-#
-#   1) inject arbitrary files from the host into the container;
-#
-#   2) inject host-built, loadable libfabric (OFI) dynamic shared object (dso)
-#      providers into an image with a MPI built against libfabric to use; and
-#
-#   3) inject nvidia libraries necessary to leverage GPUs with
-#      nvidiia-container-cli.
-#
 # The basic algorithm here is that we build up a list of file
 # source:destination pairs separated by newlines, then walk through them and
 # copy them into the image. We also maintain a list of directories and ldconfig
@@ -60,11 +50,11 @@ Usage:
 
 Which files to inject (one or more required; can be repeated):
 
-  -c, --cmd CMD    listed in the stdout of CMD
+  -c, --cmd  CMD   listed in the stdout of CMD
   -f, --file FILE  listed in file FILE
   -p, --path PATH  inject the file at PATH
-  -o, --ofi  PATH  add host compiled OFI DSO provider(s) to image libfabric
-  --host-ofi       ofi providers at path CH_FROMHOST_OFI
+  -o, --ofi  PATH  inject host compiled loadable OFI provider(s) at PATH
+
   --nvidia         recommended by nVidia (via \"nvidia-container-cli list\")
 
 Destination within image:
@@ -73,7 +63,7 @@ Destination within image:
 
 Options:
 
-  --ofi-dest       print the inferred destination for loadable ofi providers
+  --ofi-path       print the inferred destination for loadable ofi providers
   --lib-path       print the inferred destination for shared libraries
   --no-ldconfig    don\'t run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
@@ -97,9 +87,18 @@ lib_found=
 no_ldconfig=
 
 debug () {
-    if [ "$verbose" ]; then
+    if [ "$verbose" == 'yes' ]; then
         printf '[ debug ] %s\n' "$1" 1>&2
     fi
+}
+
+debug_indent () {
+    if [ "$verbose" == 'yes' ]; then
+        printf '[ debug ]    %s\n' "$1" 1>&2
+    fi
+}
+warn () {
+    printf '< warn >! %s\n' "$1" 1>&2
 }
 
 ensure_nonempty () {
@@ -107,7 +106,7 @@ ensure_nonempty () {
 }
 
 fatal () {
-    printf 'ch-fromhost: %s\n' "$1" 1>&2
+    printf 'error: ch-fromhost: %s\n' "$1" 1>&2
     exit 1
 }
 
@@ -184,7 +183,7 @@ queue_ofi_dso () {
        [ -n "$ofi_found" ] || "no ofi providers found in $1"
     # Single OFI dso provider.
     elif is_ofi "$1"; then
-        debug "  found $1"
+        debug_indent "found $1"
         inject_ofi="${inject_ofi:+$inject_ofi$newline}$1:$d"
         ofi_found=yes
         # process ofi dso link paths
@@ -239,14 +238,6 @@ while [ $# -gt 0 ]; do
             queue_files "$out"
             shift
             ;;
-        --host-ofi)
-            if [ -z "$CH_FROMHOST_OFI" ]; then
-                hint_1="hint: use --ofi to target specific -fi.so provider; or"
-                hint_2="hint: see FAQ: site OFI providers (FIXME:)"
-                fatal "CH_FROMHOST_OFI not set\n%s\%s" "$hint_1" "$hint_2"
-            fi
-            queue_ofi_dso "$CH_FROMHOST_OFI"
-            ;;
         --lib-path)
             # Note: If this is specified along with one of the file
             # specification options, all the file gathering and checking work
@@ -263,11 +254,17 @@ while [ $# -gt 0 ]; do
             queue_files "$out"
             ;;
         -o|--ofi)
+            if [ -n "$FI_PROVIDER" ]; then
+                warn "FI_PROVIDER is set; may cause undesired run time behavior"
+            fi
+            if [ -n "$FI_PROVIDER_PATH" ]; then
+                warn "FI_PROVIDER_PATH is set; --dest required"
+            fi
             ensure_nonempty --ofi "$1"
             queue_ofi_dso "$1"
             shift
             ;;
-        --ofi-dest)
+        --ofi-path)
             ofi_found=yes
             ofi_dest_print=yes
             ;;
@@ -292,13 +289,19 @@ while [ $# -gt 0 ]; do
     esac
 done
 
+if [ -n "$FI_PROVIDER_PATH" ]; then
+    if [ -n "$ofi_found" ] && [ -z "$dest" ]; then
+        fatal "FI_PROVIDER_PATH set; missing --dest"
+    fi
+fi
+
 [ "$image" ] || fatal "no image specified"
 
 if [ $lib_found ]; then
     # We want to put the libraries in the first directory that ldconfig
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
-    debug "[ debug ] asking ldconfig for shared library destination"
+    debug "asking ldconfig for shared library destination"
     # "ldconfig -Nv" gives some pointless warnings on stderr even if
     # successful; we don't want to show those to users. However, we don't want
     # to simply pipe stderr to /dev/null because this hides real errors. Thus,
@@ -309,35 +312,61 @@ if [ $lib_found ]; then
                 3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
     [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
     [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
-    debug "[ debug ] shared library destination: ${image}/${lib_dest}"
+    debug "shared library destination: ${image}/${lib_dest}"
 fi
 
-if [ $ofi_found ]; then
-    # libfabric will store, and pick up, loadable DSOs in the directory:
-    # $PREFIX/lib/libfabric. This directory is automatically created
-    # when configuring libfabric to built any provider(s) with loadable option,
-    # e.g.,
+if [ $ofi_found ] && [ -z "$dest" ]; then
+    # By default, libfabric will create and use loadable providers in the
+    # in the $PREFIX/lib/libfabric directory, where PREFIX is the --prefix
+    # argument (path) specified at libfabric configure.
     #
-    #   ./configure --enable-cray-gni=dl
+    # However, the target libfabric provider, and/or provider path, can also be
+    # specified with:
     #
-    # If it doesn't exist we need to create it where the libfabric.so library
-    # is found.
+    #   - FI_PROVIDER, and
+    #   - FI_PROVIDER_PATH (undocumented)
+    #
+    # respectively. This complicates things because these variables can be
+    # inherited from the host or explicitly set in the image's /ch/environment
+    # file. ch-run, by default, inherits and prefers all host variables to any
+    # listed in /ch/environment.
+    #
+    # The injection destination is then determined as follows.
+    #
+    #   1. --dest DST if provided
+    #   2. FI_PROVIDER_PATH from image /ch/environment file; warn about
+    #      --set-env requirement
+    #   3. the image's /libfabric directory at the path where libfabric.so
+    #      is found; if the directory doesn't exist, create it.
+    #
+    # Note that if the host FI_PROVIDER_PATH is set, --dest is required.
     debug "searching ${image} for libfabric dso provider destination..."
-    ofi_so=$("${ch_bin}/ch-run" --no-home "$image" -- find / \
+    ch_env_p=$(grep -F FI_PROVIDER_PATH ${image}/ch/environment) \
+             || true # avoid -e exit
+    ch_env_p=${ch_env_p##*=}
+    if  [ -n "$ch_env_p" ]; then
+       warn "found FI_PROVIDER_PATH=$ch_env_p in ${image}/ch/environment"
+       ofi_dest=$ch_env_p
+       warn "using ${image}${ch_env_p}; --set-env required at run time"
+    else
+       ofi_so=$("${ch_bin}/ch-run" --no-home "$image" -- find / \
                                                 -not \( -path /proc -prune \) \
                                                 -not \( -path /dev -prune \) \
                                                 -not \( -path /tmp -prune \) \
                                                 -not \( -path /sys -prune \) \
                                                 -not \( -path /var/opt/cray -prune \) \
                                                 -not \( -path /etc/opt/cray -prune \) \
-                                                -not \( -path /opt/cray -prune \) \
                                                 -name  "libfabric.so")
-    [ -n "$ofi_so" ] || fatal "libfabric.so not found in $image"
-    debug "  found: $image/$ofi_so"
-    ofi_dest=$(dirname "$ofi_so")
-    ofi_dest="${ofi_dest}/libfabric"
-    queue_mkdir "$ofi_dest"
-    debug "using libfabric dso provider destination: $ofi_dest"
+       [ -n "$ofi_so" ] || fatal "libfabric.so not found in $image"
+       debug_indent "found: ${image}${ofi_so}"
+       ofi_dest=$(dirname "$ofi_so")
+       ofi_dest="${ofi_dest}/libfabric"
+       queue_mkdir "$ofi_dest"
+    fi
+    debug "ofi dso provider injection destination: $ofi_dest"
+elif [ -n "$dest" ]; then
+    ofi_dest=$dest
+    debug "ofi dso provider injection destination: $ofi_dest"
 fi
 
 if [ $lib_dest_print ]; then
@@ -356,21 +385,30 @@ if [ -f /etc/opt/cray/release/cle-release ]; then
     # bind-mounts it later.
     queue_mkdir /var/opt/cray/alps/spool
 
-    # libwlm_detect.so requires this file to be present.
+    # The cray-ugni provider will link against cray's libwlm_detect so. Create
+    # the mount point for ch-run.
+    queue_mkdir /opt/cray/wlm_detect
+
+    # libwlm_detect.so requires file(s) to present at the same path as the host.
+    # Create mount point for ch-run.
     queue_mkdir /etc/opt/cray/wlm_detect
-    queue_files /etc/opt/cray/wlm_detect/active_wlm /etc/opt/cray/wlm_detect
 
-    # uGNI needs a pile of hugetlbfs filesystems at paths that are arbitrary
-    # but in a specific order in /proc/mounts. ch-run bind-mounts here later.
-    queue_mkdir /var/opt/cray/hugetlbfs
+    # Cray needs a pile of hugetlbfs filesystems mounted at
+    # /var/lib/hugetlbfs/global. Create mount point for ch-run.
+    queue_mkdir /var/lib/hugetlbfs
 
-    # OFI uGNI provider, libgnix-fi.so, links against libxpmem, libudreg,
-    # libalpsutil, libalpslli, and libugni, provided by the Cray host in various
-    # subdirectories in /opt/cray.
+    # OFI uGNI provider, libgnix-fi.so, links against the Cray host's
+    # libxpmem, libudreg, libalpsutil, libalpslli, and libugni; create mount
+    # points for ch-run to use later.
     queue_mkdir /opt/cray/udreg
     queue_mkdir /opt/cray/xpmem
     queue_mkdir /opt/cray/ugni
     queue_mkdir /opt/cray/alps
+
+    # Newer Cray Shasta environments require the contents of this directory
+    # to be present at the same path as the host. Create mount points for
+    # ch-run to use later.
+    queue_mkdir /var/spool/slurmd
 fi
 
 [ "$inject_files" ] || [ "$inject_ofi" ] || fatal "empty file list"
@@ -382,13 +420,13 @@ IFS="$newline"
 
 # Process unlink list.
 for u in $inject_unlinks; do
-    debug "  rm -f ${image}${u}"
+    debug_indent "rm -f ${image}${u}"
     rm -f "${image}${u}"
 done
 
 # Process bind-mount destination targets.
 for d in $inject_mkdirs; do
-    debug "  mkdir -p ${image}${d}"
+    debug_indent "mkdir -p ${image}${d}"
     mkdir -p "${image}${d}"
 done
 
@@ -398,7 +436,7 @@ if [ $ofi_found ]; then
     printf '' > "$ch_conf"
     # add ofi dso provider ld library dirs.
     for c in $ld_conf; do
-        debug "   echo '$c' >> $ch_conf"
+        debug_indent "echo '$c' >> $ch_conf"
         echo "$c" >> "$ch_conf"
     done
 fi
@@ -414,7 +452,7 @@ for file in $inject_files; do
         d=$lib_dest
         infer=" (inferred)"
     fi
-    debug "  ${f} -> ${d}${infer}"
+    debug_indent "${f} -> ${d}${infer}"
     [ "$d" ] || fatal "no destination for: ${f}"
     [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
     [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
@@ -436,7 +474,7 @@ for file in $inject_ofi; do
         d=$ofi_dest
         infer=" (inferred)"
     fi
-    debug "  ${f} -> ${d}${infer}"
+    debug_indent "${f} -> ${d}${infer}"
     [ "$d" ] || fatal "no destination for: ${f}"
     [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
     [ -d "${image}/${d}" ] || fatal "not a directory: ${image}/${d}"
@@ -455,7 +493,19 @@ IFS="$old_ifs"
 
 if [ -z "$no_ldconfig" ] && { [ $lib_found ] || [ $ofi_found ] ;} then
     debug "running ldconfig"
-    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
+    if [ -f /etc/opt/cray/release/cle-release ]; then
+       if [ -d /opt/cray/ugni ]; then
+         debug_indent "${ch_bin}/ch-run -w --cray-ugni $image -- /sbin/ldconfig"
+         "${ch_bin}/ch-run" -w --cray-ugni "$image" -- /sbin/ldconfig
+       fi
+       if [ -d /var/spool/slurmd ]; then
+         debug_indent "${ch_bin}/ch-run -w --cray-ugni $image -- /sbin/ldconfig"
+         "${ch_bin}/ch-run" -w --cray-shasta "$image" -- /sbin/ldconfig
+       fi
+    else
+      debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
+      "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
+    fi
 else
     debug "not running ldconfig"
 fi

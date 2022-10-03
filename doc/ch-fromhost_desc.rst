@@ -36,15 +36,13 @@ Loadable Libfabric providers
 ----------------------------
 
 Loadable Libfabric providers, e.g., files that end in :code:`-fi.so`, are copied
-to a sepcific directory, :code:`libfabric`, inside the image where
-:code:`libfabric.so` is found. If the directory doesn't exist it is created.
+to a specified or determined path inside the image. See ofi section for details.
 
-Paths listed in the provider's :code:`ldd` output that do not exist
-within the image are created and assumed to be used as bind-mount targets for
-corresponding host paths at run time.
-
-:code:`ldconfig` is executed in the container, using :code:`ch-run -w`, after
-injection.
+Paths listed in the provider's :code:`ldd` output that do not exist within the
+image are created and assumed to be used as bind-mount targets for
+corresponding host paths at run time. These paths are added to the image at
+:code:`/etc/ld.so.conf.d/ch-fi.conf`; :code:`ldconfig` is executed in the
+container, using :code:`ch-run -w`, after injection.
 
 Arbitrary files
 ---------------
@@ -79,10 +77,6 @@ To specify which files to inject
   :code:`-o`. :code:`--ofi PATH`
     Inject the loadable Libfabric provider(s) at :code:`PATH`.
 
-  :code:`--host-ofi`
-    Inject all loadable providers found at :code:`CH_FROMHOST_OFI`. See
-    important details below.
-
   :code:`--nvidia`
     Use :code:`nvidia-container-cli list` (from :code:`libnvidia-container`)
     to find executables and libraries to inject.
@@ -105,7 +99,7 @@ Additional arguments
     Print the guest destination path for shared libraries inferred as
     described above.
 
-  :code:`--lib-ofi-path`
+  :code:`--ofi-path`
     Print the guest destination path for loadable libfabric providers as
     described above.
 
@@ -167,13 +161,35 @@ The implementation of :code:`--ofi` is experimental and has a couple quirks.
       See :code:`charliecloud/examples/Dockerfile.mpich` and
       :code:`charliecloud/examples/Dockerfile.openmpi`.
 
-2. The Cray UGNI loadable provider, :code:`libgnix-fi.so`, will link to
+2. Libfabric will create and use loadable providers in the
+   :code:`PREFIX/lib/libfabric` directory, where :code:`PREFIX` is the
+   :code:`--prefix` argument (path) specified at libfabric configure time.
+
+   The specific provider to use, and the path to search for providers, can
+   be specified with the :code:`FI_PROVIDER` and :code:`FI_PROVIDER_PATH`
+   variables respectively. These variables complicate injection because they can
+   be inherited from the host at run time or explicitly set in the container's
+   environment via the file :code:`/ch/environent` in conjunction with
+   :code:`--set-env`.
+
+   The injection destination is then determined with the following precedence.
+
+   a. use path specified by :code:`--dest DST`; if host :code:`FI_PROVIDER_PATH`
+      is set, require :code:`--dest`
+
+   b. use :code:`FI_PROVIDER_PATH` from the image's :code:`/ch/environment`
+      file; warn about `--set-env` requirement
+
+   c. the :code:`/libfabric` directory in image where :code:`libfabric.so` is
+      found; if the directory doesn't exist, create it.
+
+3. The Cray UGNI loadable provider, :code:`libgnix-fi.so`, will link to
    compiler(s) in the programming environment by default. For example, if it
    is built under the :code:`PrgEnv-intel` PE, the provider will have links to
    files at paths :code:`/opt/gcc` and :code:`/opt/intel` that :code:`ch-run`
    will not bind automatically.
 
-   Managing all possible bind-mount paths is untenable. Thus, this experimental
+   Managing all possible bind mount paths is untenable. Thus, this experimental
    implementation works only with Cray UGNI provider(s) built on XC series
    systems with the minimal modules necessary to compile provider and
    leverage the Aries interconnect at run-time, e.g.,:
@@ -198,20 +214,6 @@ The implementation of :code:`--ofi` is experimental and has a couple quirks.
 
 Please file a bug if we missed anything above or if you know how to make the
 code better.
-
-:code:`--host-ofi` usage
-========================
-
-This option leverages the variable, :code:`CH_FROMHOST_OFI`, intended to be set
-by admins or site Charliecloud curators, to give users abstracted access to
-common host-specific providers, e.g, :code:`libgnix-fi.so` for Cray's XC system
-series with the Aries interconnect.
-
-For example, assuming :code:`libgnix-fi.so` is built and available on the XC
-system at path: :code:`/opt/mysite/lib/libfabric/libnginx-si.so`, setting
-:code:`CH_FROMHOST_OFI=/opt/mysite/lib/libfabric` for Charliecloud users will
-enable them to inject on said system without having to know which provider to
-use or where to find it.
 
 Notes
 =====
