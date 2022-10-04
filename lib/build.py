@@ -603,7 +603,6 @@ class I_copy(Instruction):
                   ch.TRACE("dst_path exists and is a directory")
                else:
                   ch.TRACE("dst_path exists, not a directory, removing")
-                  #ch.unlink(dst_path)
                   dst_path.unlink_()
             # If destination directory doesn't exist, create it.
             if (not os.path.exists(dst_path)):
@@ -624,10 +623,8 @@ class I_copy(Instruction):
             if (os.path.exists(dst_path)):
                ch.TRACE("destination exists, removing")
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
-                  #ch.rmtree(dst_path)
                   dst_path.rmtree()
                else:
-                  #ch.unlink(dst_path)
                   dst_path.unlink_()
             ch.copy2(src_path, dst_path, follow_symlinks=False)
 
@@ -712,7 +709,6 @@ class I_copy(Instruction):
 
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
-         #st = ch.stat_(path, links=links)
          st = path.stat_(links=links)
          return (  str(path).encode("UTF-8")
                  + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
@@ -808,7 +804,6 @@ class Env(Instruction):
       return "%s='%s'" % (self.key, self.value)
 
    def execute(self):
-      #with ch.open_(self.image.unpack_path // "/ch/environment", "wt") \
       with (self.image.unpack_path // "/ch/environment").open("wt") \
            as fp:
          for (k, v) in self.env_env.items():

@@ -498,7 +498,6 @@ class Image:
       else:
          src_path = other.unpack_path
       VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
-      #copytree(src_path, self.unpack_path, symlinks=True, ignore=ignore)
       Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
       self.unpack_init()
 
@@ -700,7 +699,6 @@ class Image:
       self.unpack_init()
 
    def unpack_cache_unlink(self):
-      #unlink(self.unpack_path // ".git")
       (self.unpack_path // ".git").unlink()
 
    def unpack_clear(self):
@@ -716,7 +714,6 @@ class Image:
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("removing image: %s" % self.unpack_path)
-         #rmtree(self.unpack_path)
          self.unpack_path.rmtree()
 
    def unpack_delete(self):
@@ -730,7 +727,6 @@ class Image:
             # must fix as subdirs so we can traverse into them
             for subdir in subdirs:
                (Path(dir_) // subdir).chmod_min(0o700)
-         #rmtree(self.unpack_path)
          self.unpack_path.rmtree()
       else:
          FATAL("storage directory seems broken: not an image: %s" % self.ref)
@@ -1238,19 +1234,16 @@ class Path(pathlib.PosixPath):
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exists the program on the first error."
-      #print("ATTN: calling copytree")
       shutil.copytree(str(self), copy_function=copy2, *args, **kwargs)
 
    def disk_bytes(self):
       """Return the number of disk bytes consumed by path. Note this is probably
          different from the file size."""
-      #print("ATTN: calling disk_bytes")
       return self.stat().st_blocks * 512
 
    def du(self):
-      """Return a tuple (number of files, total bytes on disk) for everything 
+      """Return a tuple (number of files, total bytes on disk) for everything
          under path. Warning: double-counts files with multiple hard links."""
-      #print("ATTN: calling du")
       file_ct = 1
       byte_ct = self.disk_bytes()
       for (dir_, subdirs, files) in os.walk(self):
@@ -1262,7 +1255,6 @@ class Path(pathlib.PosixPath):
    def file_ensure_exists(self): # change name? e.g. ensure_exists()
       """If the final element of path exists (without dereferencing if it's a
          symlink), do nothing; otherwise, create it as an empty regular file."""
-      #print("ATTN: calling file_ensure_exists")
       if (not os.path.lexists(self)): # no substitute for lexists() in pathlib.
          fp = self.open("w")
          close_(fp)
@@ -1272,7 +1264,6 @@ class Path(pathlib.PosixPath):
          the file's new name. Pass args to the gzip executable. This lets us gzip
          files (a) in parallel if pigz is installed and (b) without reading them
          into memory."""
-      #print("ATTN: calling file_gzip")
       path_c = self.add_suffix(".gz")
       # On first call, remember first available of pigz and gzip using class
       # attribute 'gzip'.
@@ -1303,8 +1294,6 @@ class Path(pathlib.PosixPath):
    def file_hash(self):
       """Return the hash of data in file at path, as a hex string with no
          algorithm tag. File is read in chunks and can be larger than memory."""
-      #fp = open_(path, "rb")
-      #print("ATTN: calling file_hash")
       fp = self.open("rb")
       h = hashlib.sha256()
       while True:
@@ -1318,7 +1307,6 @@ class Path(pathlib.PosixPath):
    def file_read_all(self, text=True):
       """Return the contents of file at path, or exit with error. If text, read
          in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
-      #print("ATTN: calling file_read_all")
       #if (text):
       #   mode = "rt"
       #   encoding = "UTF-8"
@@ -1334,13 +1322,11 @@ class Path(pathlib.PosixPath):
 
    def file_size(self, follow_symlinks=False):
       "Return the size of file at path in bytes."
-      #print("ATTN: calling file_size")
       st = ossafe(os.stat, "can't stat: %s" % self.name,
                   self, follow_symlinks=follow_symlinks)
       return st.st_size
 
    def file_write(self, content):
-      #print("ATTN: calling file_write")
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
       fp = self.open("wb")
@@ -1350,7 +1336,6 @@ class Path(pathlib.PosixPath):
    def grep_p(self, rx):
       """Return True if file at path contains a line matching regular expression
          rx, False if it does not."""
-      #print("ATTN: calling grep_p")
       rx = re.compile(rx)
       try:
          with open(self, "rt") as fp:
@@ -1372,7 +1357,6 @@ class Path(pathlib.PosixPath):
       return self.joinpath(*others2)
          
    def json_from_file(self, msg):
-      #print("ATTN: calling json_from_file")
       DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
       TRACE("text:\n%s" % text)
@@ -1388,7 +1372,6 @@ class Path(pathlib.PosixPath):
          parent (..). We considered changing this to use os.scandir()
          for #992, but decided that the advantages it offered didn't
          warrant the effort required to make the change."""
-      #print("ATTN: calling listdir")
       return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % self.name, self))
 
    def lstrip(self, n):
@@ -1398,12 +1381,10 @@ class Path(pathlib.PosixPath):
            Path("b/c")
 
          It is an error if I don’t have at least n+1 components."""
-      #print("ATTN: calling lstrip")
       assert (len(self.parts) >= n + 1)
       return Path(".").joinpath(*self.parts[n:])
 
    def mkdir_(self):
-      #print("ATTN: calling mkdir_")
       TRACE("ensuring directory: %s" % self)
       try:
          super().mkdir(exist_ok=True)
@@ -1420,7 +1401,6 @@ class Path(pathlib.PosixPath):
          FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
          
    def open(self, mode, *args, **kwargs):
-      #print("ATTN: calling open")
       "Error-checking wrapper for open()."
       return ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
                     mode, *args, **kwargs) # note: removed 'self' from front of this line
@@ -1432,12 +1412,10 @@ class Path(pathlib.PosixPath):
              name_new)
 
    def rmdir(self):
-      #print("ATTN: calling rmdir")
       return rmdir(self)
       #ossafe(super().rmdir, "can't rmdir: %s" % self.name)
 
    def rmtree(self):
-      #print("ATTN: calling rmtree")
       if (self.is_dir()):
          TRACE("deleting directory: %s" % self.name)
          try:
@@ -1449,7 +1427,6 @@ class Path(pathlib.PosixPath):
          assert False, "unimplemented"
 
    def stat_(self, links=False):
-      #print("ATTN: calling stat_")
       """An error-checking version of stat(). Note that we cannot simply change
          the definition of stat() to be ossafe, as the exists() method in pathlib
          relies on an OSError check.    
@@ -1458,12 +1435,9 @@ class Path(pathlib.PosixPath):
       return stat_(self, links=links)
 
    def symlink(self, target, clobber=False):
-      #print("ATTN: calling symlink")
       if (clobber and self.is_file()):
-         #unlink(self)
          self.unlink_()
       try:
-         #os.symlink(target, source)
          super().symlink_to(target)
       except FileExistsError:
          if (not self.is_symlink()):
@@ -1475,7 +1449,6 @@ class Path(pathlib.PosixPath):
          FATAL("can't symlink: %s -> %s: %s" % (self.name, target, x.strerror))
 
    def unlink_(self, *args, **kwargs):
-      #print("ATTN: calling unlink")
       "Error-checking wrapper for unlink method"
       ossafe(super().unlink, "can't unlink: %s" % self.name)
 

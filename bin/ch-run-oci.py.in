@@ -148,8 +148,6 @@ nogroup:x:65534:
    # unprivileged user namespace. See also the default environment.
    #
    # Debian apt/dpkg/etc. want to chown(1), chgrp(1), etc. in various ways.
-   #ch.symlink("/bin/true", "%s/ch/bin/chgrp" % path)
-   #ch.symlink("/bin/true", "%s/ch/bin/dpkg-statoverride" % path)
    ch.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path)
    ch.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
    # Debian package management also wants to mess around with users. This is
@@ -157,11 +155,6 @@ nogroup:x:65534:
    # work if they are in /ch/bin, I think because dpkg is resetting the path?
    # For now we'll do this, but I don't like it. fakeroot(1) also solves the
    # problem (see issue #472).
-   #ch.symlink("/bin/true", "%s/bin/chown" % path, clobber=True)
-   #ch.symlink("/bin/true", "%s/usr/sbin/groupadd" % path, clobber=True)
-   #ch.symlink("/bin/true", "%s/usr/sbin/useradd" % path, clobber=True)
-   #ch.symlink("/bin/true", "%s/usr/sbin/usermod" % path, clobber=True)
-   #ch.symlink("/bin/true", "%s/usr/bin/chage" % path, clobber=True)
    ch.Path("/bin/true").symlink("%s/bin/chown" % path, clobber=True)
    ch.Path("/bin/true").symlink("%s/usr/sbin/groupadd" % path, clobber=True)
    ch.Path("/bin/true").symlink("%s/usr/sbin/useradd" % path, clobber=True)

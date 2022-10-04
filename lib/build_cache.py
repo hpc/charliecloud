@@ -555,12 +555,10 @@ class Enabled_Cache:
       # Remove empty directories. Git will ignore them, including leaving them
       # there if switch the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
-         #ch.rmdir(fm.name)
          f_path.rmdir() # f_path -> fm.path (issue #1455)
          return fm  # can't do anything else after it's gone
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(st.st_mode)):
-         #ch.unlink(fm.name)
          f_path.unlink() # f_path -> fm.path (issue #1455)
       # Rename if necessary.
       if (fm.name.startswith(".weirdal_")):
@@ -569,7 +567,6 @@ class Enabled_Cache:
          name_new = fm.name.replace(".git", ".weirdal_")
          ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
          f_path.rename(name_new) # f_path -> fm.path (issue #1455)
-         #ch.rename(fm.name, name_new)
       # Done.
       return fm
 
@@ -623,7 +620,6 @@ class Enabled_Cache:
          ch.ossafe(os.link, "can't hardlink: %s -> %s" % (path, target),
                    target, fm.name, follow_symlinks=False)
       if (str(fm.name).startswith(".git")):
-         #ch.rename(str(fm.name).replace(".git", ".weirdal_"), str(fm.name))
          ch.Path(str(fm.name).replace(".git", ".weirdal_")).rename(fm.name)
       if (not quick):
          if (stat.S_ISSOCK(fm.mode)):
@@ -714,10 +710,8 @@ class Enabled_Cache:
             dotgit = ch.storage.unpack_base // d // ".git"
             if (os.path.exists(dotgit)):
                ch.VERBOSE("deleting cached image: %s" % d)
-               #ch.rmtree(ch.storage.unpack_base // d)
                (ch.storage.unpack_base // d).rmtree()
          # Create new build cache.
-         #ch.rmtree(self.root)
          self.root.rmtree()
          self.root.mkdir()
          self.bootstrap()
@@ -839,17 +833,12 @@ class Enabled_Cache:
       if (os.path.isdir(ch.storage.image_tmp)):
          ch.WARNING("temporary image still exists, deleting",
                     "maybe a previous command crashed?")
-         #ch.rmtree(ch.storage.image_tmp)
          ch.storage.image_tmp.rmtree()
-      #ch.rename(image.unpack_path, ch.storage.image_tmp)
       image.unpack_path.rename(ch.storage.image_tmp)
       self.worktree_add(image, base)
       for i in { ".git", ".gitignore" }:
-         #ch.rename(image.unpack_path // i, ch.storage.image_tmp // i)
          (image.unpack_path // i).rename(ch.storage.image_tmp // i)
-      #ch.rmdir(image.unpack_path)
       image.unpack_path.rmdir()
-      #ch.rename(ch.storage.image_tmp, image.unpack_path)
       ch.storage.image_tmp.rename(image.unpack_path)
 
    def worktree_get_head(self, image):
