@@ -46,31 +46,6 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
   :code:`--ch-ssh`
     Bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`.
 
-  :code:`--cray-ugni`
-    Bind the Cray host directories needed by the libfabric cray-ugni provider.
-    This is equivalent to manually passing the following.
-
-    :code:`-b /etc/alternatives:/etc/alternatives`
-    :code:`-b /etc/opt/cray/wlm_detect:/etc/opt/cray/wlm_detect`
-    :code:`-b /opt/cray/alps:/opt/cray/alps`
-    :code:`-b /opt/cray/udreg:/opt/cray/udreg`
-    :code:`-b /opt/cray/ugni:/opt/cray/ugni`
-    :code:`-b /opt/cray/xpmem:/opt/cray/xpmem`
-    :code:`-b /var/lib/hugetlbfs:/var/lib/hugetlbfs`
-    :code:`-b /var/opt/cray/alps/spool:/var/opt/cray/alps/spool`
-
-    Note that we intentionally do not oversimplify the mount point, e.g.,
-    `-b /opt/cray:/opt/cray`. Containers leveraging the Cray PE may have
-    need to preserve other files and directories at these paths.
-
-  :code:`--cray-shasta`
-    Bind the Cray host directories needed to run MPI applications. This is
-    equivalent to the following.
-
-    :code:`-b /etc/alternatives:/etc/alternatives`
-    :code:`-b /var/lib/hugetlbfs:/var/lib/hugetlbfs`
-    :code:`-b /var/spool/slurmd:/var/spool/slurmd`
-
   :code:`--env-no-expand`
     don't expand variables when using :code:`--set-env`
 

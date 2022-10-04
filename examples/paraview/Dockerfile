@@ -26,17 +26,6 @@ RUN pip3 install --no-binary=mpi4py \
 
 WORKDIR /usr/local/src
 
-# Install ImageMagick
-# The latest, 7.1.0, fails to install with a cryptic libtool error. ¯\_(ツ)_/¯
-ARG MAGICK_VERSION=7.0.11-14
-RUN wget -nv -O ImageMagick-${MAGICK_VERSION}.tar.gz \
-    "https://github.com/ImageMagick/ImageMagick/archive/refs/tags/${MAGICK_VERSION}.tar.gz" \
- && tar xf ImageMagick-${MAGICK_VERSION}.tar.gz \
- && cd ImageMagick-${MAGICK_VERSION} \
- && ./configure --prefix=/usr/local \
- && make -j $(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../ImageMagick-${MAGICK_VERSION}
-
 # ParaView. Use system libpng to work around issues linking with NEON specific
 # symbols on ARM.
 ARG PARAVIEW_MAJORMINOR=5.9
