@@ -483,7 +483,10 @@ class Image:
          the latter case other.unpack_path is used. other need not be a valid
          image; the essentials will be created if needed."""
       def ignore(path, names):
-         path = Path(path)
+         path = Path(path) # Need this path conversion, since shutil._copytree()
+                           # calls ignore() and doesn't pass a Path. See
+                           # https://github.com/python/cpython/blob/main/Lib/shutil.py#L456
+         assert isinstance(path, Path)
          ignore = list()
          if (path == src_path):
             for name in names:
