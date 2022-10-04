@@ -351,9 +351,6 @@ class Fakeroot:
       file_path = ch.Path("%s/%s" % (image_path, cfg["match"][0]))
       if  (not (    file_path.is_file()
                and file_path.grep_p(cfg["match"][1]))):
-      #file_path = "%s/%s" % (image_path, cfg["match"][0])
-      #if (not (    os.path.isfile(file_path)
-      #             and ch.grep_p(file_path, cfg["match"][1]))):
           raise Config_Aint_Matched(tag)
       self.tag = tag
       self.inject_ct = 0

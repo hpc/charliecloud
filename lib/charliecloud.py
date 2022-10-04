@@ -653,11 +653,6 @@ class Image:
       # /ch/environment
       path = self.metadata_path // "environment"
       VERBOSE("writing environment file: %s" % path)
-      """
-      file_write(path, (  "\n".join("%s=%s" % (k,v) for (k,v)
-                                    in sorted(metadata["env"].items()))
-                        + "\n"))
-      """
       path.file_write( (  "\n".join("%s=%s" % (k,v) for (k,v)
                                     in sorted(metadata["env"].items()))
                         + "\n"))
@@ -1208,11 +1203,9 @@ class Path(pathlib.PosixPath):
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
-      #print("ATTN: calling chdir")
-      #old = ossafe(os.getcwd, "can't get cwd(2)")
-      #ossafe(os.chdir, "can't chdir: %s" % self.name, self)
-      #return Path(old)
-      return chdir(self)
+      old = ossafe(os.getcwd, "can't get cwd(2)")
+      ossafe(os.chdir, "can't chdir: %s" % self.name, self)
+      return Path(old)
 
    def chmod_min(self, mode, st=None):
       """Set permissions on path so they are at least mode. For symlinks, do
@@ -1220,17 +1213,15 @@ class Path(pathlib.PosixPath):
          follow_symlinks=False (or os.lchmod) is not supported on some
          (all?)  Linux. (Also, symlink permissions are ignored on Linux,
          so it doesn't matter anyway.)"""
-      #print("ATTN: calling chmod_min")
-      #if (st is None):
-      #   st = os.lstat(self)
-      #if (stat.S_ISLNK(st.st_mode)):
-      #   return
-      #mode_old = stat.S_IMODE(st.st_mode)
-      #if (mode & mode_old != mode):
-      #   mode |= mode_old
-      #   VERBOSE("fixing permisssions: %s: %03o -> %03o" % (self, mode_old, mode))
-      #   ossafe(os.chmod, "can't chmod: %s" % self, self, mode)
-      return chmod_min(self, mode, st=st)
+      if (st is None):
+         st = os.lstat(self)
+      if (stat.S_ISLNK(st.st_mode)):
+         return
+      mode_old = stat.S_IMODE(st.st_mode)
+      if (mode & mode_old != mode):
+         mode |= mode_old
+         VERBOSE("fixing permisssions: %s: %03o -> %03o" % (self, mode_old, mode))
+         ossafe(os.chmod, "can't chmod: %s" % self, self, mode)
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exists the program on the first error."
@@ -1307,18 +1298,16 @@ class Path(pathlib.PosixPath):
    def file_read_all(self, text=True):
       """Return the contents of file at path, or exit with error. If text, read
          in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
-      #if (text):
-      #   mode = "rt"
-      #   encoding = "UTF-8"
-      #else:
-      #   mode = "rb"
-      #   encoding = None
-      ##fp = open_(str(self), mode, encoding=encoding)
-      #fp = self.open(mode, encoding=encoding)
-      #data = ossafe(fp.read, "can't read: %s" % self.name)
-      #close_(fp)
-      #return data
-      return file_read_all(self, text=text)
+      if (text):
+         mode = "rt"
+         encoding = "UTF-8"
+      else:
+         mode = "rb"
+         encoding = None
+      fp = self.open(mode, encoding=encoding)
+      data = ossafe(fp.read, "can't read: %s" % self.name)
+      close_(fp)
+      return data
 
    def file_size(self, follow_symlinks=False):
       "Return the size of file at path in bytes."
@@ -1412,8 +1401,7 @@ class Path(pathlib.PosixPath):
              name_new)
 
    def rmdir(self):
-      return rmdir(self)
-      #ossafe(super().rmdir, "can't rmdir: %s" % self.name)
+      ossafe(super().rmdir, "can't rmdir: %s" % self.name)
 
    def rmtree(self):
       if (self.is_dir()):
@@ -1431,8 +1419,7 @@ class Path(pathlib.PosixPath):
          the definition of stat() to be ossafe, as the exists() method in pathlib
          relies on an OSError check.    
          See: https://github.com/python/cpython/blob/3.10/Lib/pathlib.py#L1291"""
-      #return ossafe(super().stat, "can't stat: %s" %self.name, follow_symlinks=links)
-      return stat_(self, links=links)
+      return ossafe(super().stat, "can't stat: %s" %self.name, follow_symlinks=links)
 
    def symlink(self, target, clobber=False):
       if (clobber and self.is_file()):
@@ -2219,9 +2206,8 @@ class Storage:
             except OSError as x:
                FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
-      #rmdir(old.root)
       old.root.rmdir()
-      if (not listdir(old.root.parent)):
+      if (not old.root.parent.listdir()):
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
 
@@ -2259,7 +2245,6 @@ class Storage:
 
    def reset(self):
       if (self.valid_p):
-         #rmtree(self.root)
          self.root.rmtree()
          self.init()  # largely for debugging
       else:
@@ -2299,7 +2284,8 @@ class Storage:
          FATAL("%s: version mismatch: %d expected, %d found"
                % (msg_prefix, STORAGE_VERSION, v_found))
       # check that no image directories have “:” in filename
-      imgs = listdir(self.unpack_base)
+      assert isinstance(self.unpack_base, Path) # remove if test suite passes
+      imgs = self.unpack_base.listdir()
       imgs_bad = set()
       for img in imgs:
          if (":" in str(img)):  # bad char check b/c problem here is bad upgrade
@@ -2308,7 +2294,6 @@ class Storage:
 
    def version_read(self):
       if (os.path.isfile(self.version_file)):
-         #text = file_read_all(self.version_file)
          text = self.version_file.file_read_all() # WARNING: version_file might not
                                                   # be Path
          try:
@@ -2373,7 +2358,6 @@ class TarFile(tarfile.TarFile):
                Path(targetpath).unlink_()
          elif (stat.S_ISDIR(st.st_mode)):
             if (dirs):
-               #rmtree(targetpath)
                Path(targetpath).rmtree()
          else:
             FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
@@ -2664,7 +2648,6 @@ def digest_trim(d):
 def disk_bytes(path):
    """Return the number of disk bytes consumed by path. Note this is probably
       different from the file size."""
-   #return stat_(path).st_blocks * 512
    return path.stat_().st_blocks * 512
 
 def du(path):
@@ -2709,7 +2692,6 @@ def file_gzip(path, args=[]):
    # several other things too. (Note: pigz sometimes confusingly reports
    # "Inappropriate ioctl for device" if destination already exists.)
    if (os.path.exists(path_c)):
-      #unlink(path_c)
       path_c.unlink_()
    # Compress.
    cmd([file_gzip.gzip] + args + [str(path)])
@@ -2965,7 +2947,6 @@ def stat_(path, links=False):
 
 def symlink(target, source, clobber=False):
    if (clobber and os.path.isfile(source)):
-      #unlink(source)
       source.unlink_()
    try:
       os.symlink(target, source)

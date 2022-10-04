@@ -83,7 +83,6 @@ class Image_Pusher:
       # Delete the tarballs since we can't yet cache them.
       for (_, tar_c) in self.layers:
          ch.VERBOSE("deleting tarball: %s" % tar_c)
-         #ch.unlink(tar_c)
          tar_c.unlink_()
 
    def prepare(self):

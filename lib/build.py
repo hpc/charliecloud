@@ -113,7 +113,6 @@ def main(cli_):
    else:
       print("Got Past 'ELSE' in build.py")
       fp = ch.Path(cli.file).open("rt")
-      #fp = ch.open_(cli.file, "rt")
       text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
       ch.close_(fp)
 
