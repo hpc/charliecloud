@@ -486,7 +486,6 @@ class Image:
          path = Path(path) # Need this path conversion, since shutil._copytree()
                            # calls ignore() and doesn't pass a Path. See
                            # https://github.com/python/cpython/blob/main/Lib/shutil.py#L456
-         assert isinstance(path, Path)
          ignore = list()
          if (path == src_path):
             for name in names:
@@ -1239,19 +1238,19 @@ class Path(pathlib.PosixPath):
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exists the program on the first error."
-      #shutil.copytree(str(self), copy_function=copy2, *args, **kwargs)
-      return copytree(self, *args, **kwargs)
+      #print("ATTN: calling copytree")
+      shutil.copytree(str(self), copy_function=copy2, *args, **kwargs)
 
    def disk_bytes(self):
       """Return the number of disk bytes consumed by path. Note this is probably
          different from the file size."""
-      #return self.stat().st_blocks * 512
-      return disk_bytes(self)
+      #print("ATTN: calling disk_bytes")
+      return self.stat().st_blocks * 512
 
    def du(self):
       """Return a tuple (number of files, total bytes on disk) for everything 
          under path. Warning: double-counts files with multiple hard links."""
-      """
+      #print("ATTN: calling du")
       file_ct = 1
       byte_ct = self.disk_bytes()
       for (dir_, subdirs, files) in os.walk(self):
@@ -1259,18 +1258,14 @@ class Path(pathlib.PosixPath):
          byte_ct += sum(Path(dir_ + "/" + i).disk_bytes()
                         for i in subdirs + files)
       return (file_ct, byte_ct)
-      """
-      return du(self)
 
    def file_ensure_exists(self): # change name? e.g. ensure_exists()
       """If the final element of path exists (without dereferencing if it's a
          symlink), do nothing; otherwise, create it as an empty regular file."""
-      """
+      #print("ATTN: calling file_ensure_exists")
       if (not os.path.lexists(self)): # no substitute for lexists() in pathlib.
          fp = self.open("w")
          close_(fp)
-      """
-      file_ensure_exists(self)
 
    def file_gzip(self, args=[]):
       """Run pigz if it's available, otherwise gzip, on file at path and return
@@ -1308,7 +1303,8 @@ class Path(pathlib.PosixPath):
    def file_hash(self):
       """Return the hash of data in file at path, as a hex string with no
          algorithm tag. File is read in chunks and can be larger than memory."""
-      """
+      #fp = open_(path, "rb")
+      #print("ATTN: calling file_hash")
       fp = self.open("rb")
       h = hashlib.sha256()
       while True:
@@ -1318,8 +1314,6 @@ class Path(pathlib.PosixPath):
          h.update(data)
       close_(fp)
       return h.hexdigest()
-      """
-      return file_hash(self)
 
    def file_read_all(self, text=True):
       """Return the contents of file at path, or exit with error. If text, read
@@ -1340,27 +1334,23 @@ class Path(pathlib.PosixPath):
 
    def file_size(self, follow_symlinks=False):
       "Return the size of file at path in bytes."
-      """
+      #print("ATTN: calling file_size")
       st = ossafe(os.stat, "can't stat: %s" % self.name,
                   self, follow_symlinks=follow_symlinks)
       return st.st_size
-      """
-      return file_size(self, follow_symlinks=follow_symlinks)
 
    def file_write(self, content):
-      """
+      #print("ATTN: calling file_write")
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
       fp = self.open("wb")
       ossafe(fp.write, "can't write: %s" % self.name, content)
       close_(fp)
-      """
-      file_write(self, content)
 
    def grep_p(self, rx):
       """Return True if file at path contains a line matching regular expression
          rx, False if it does not."""
-      """
+      #print("ATTN: calling grep_p")
       rx = re.compile(rx)
       try:
          with open(self, "rt") as fp:
@@ -1370,8 +1360,6 @@ class Path(pathlib.PosixPath):
          return False
       except OSError as x:
          FATAL("error reading %s: %s" % (self.name, x.strerror))
-      """
-      return grep_p(self, rx)
 
    def joinpath_posix(self, *others):
       others2 = list()
@@ -1384,7 +1372,7 @@ class Path(pathlib.PosixPath):
       return self.joinpath(*others2)
          
    def json_from_file(self, msg):
-      """
+      #print("ATTN: calling json_from_file")
       DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
       TRACE("text:\n%s" % text)
@@ -1394,16 +1382,14 @@ class Path(pathlib.PosixPath):
       except json.JSONDecodeError as x:
          FATAL("can't parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
       return data
-      """
-      return json_from_file(self, msg)
 
    def listdir(self):
       """Return set of entries in directory path, without self (.) and
          parent (..). We considered changing this to use os.scandir()
          for #992, but decided that the advantages it offered didn't
          warrant the effort required to make the change."""
-      #return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % self.name, self))
-      return listdir(self)
+      #print("ATTN: calling listdir")
+      return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % self.name, self))
 
    def lstrip(self, n):
       """Return a copy of myself with n leading components removed. E.g.:
@@ -1412,10 +1398,12 @@ class Path(pathlib.PosixPath):
            Path("b/c")
 
          It is an error if I don’t have at least n+1 components."""
+      #print("ATTN: calling lstrip")
       assert (len(self.parts) >= n + 1)
       return Path(".").joinpath(*self.parts[n:])
 
    def mkdir_(self):
+      #print("ATTN: calling mkdir_")
       TRACE("ensuring directory: %s" % self)
       try:
          super().mkdir(exist_ok=True)
@@ -1425,38 +1413,31 @@ class Path(pathlib.PosixPath):
          FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
 
    def mkdirs(self, exist_ok=True):
-      """
       TRACE("ensuring directories: %s" % self.name)
       try:
          os.makedirs(self, exist_ok=exist_ok)
       except OSError as x:
          FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
-      """
-      return mkdirs(self, exist_ok=exist_ok)
          
    def open(self, mode, *args, **kwargs):
+      #print("ATTN: calling open")
       "Error-checking wrapper for open()."
-      """
       return ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
                     mode, *args, **kwargs) # note: removed 'self' from front of this line
-      """
-      return open_(self, mode, *args, **kwargs)
 
    def rename(self, name_new):
-      """
       if (Path(name_new).exists()): # is this check necessary? necessary to use ossafe here?
          FATAL("can't rename: destination exists: %s" % name_new)
       ossafe(super().rename, "can't rename: %s -> %s" % (self.name, name_new),
              name_new)
-       """
-      rename(self, name_new)
 
    def rmdir(self):
+      #print("ATTN: calling rmdir")
       return rmdir(self)
       #ossafe(super().rmdir, "can't rmdir: %s" % self.name)
 
    def rmtree(self):
-      """
+      #print("ATTN: calling rmtree")
       if (self.is_dir()):
          TRACE("deleting directory: %s" % self.name)
          try:
@@ -1466,8 +1447,6 @@ class Path(pathlib.PosixPath):
                   % (self.name, x.filename, x.strerror))
       else:
          assert False, "unimplemented"
-      """
-      rmtree(self)
 
    def stat_(self, links=False):
       #print("ATTN: calling stat_")
@@ -1479,7 +1458,7 @@ class Path(pathlib.PosixPath):
       return stat_(self, links=links)
 
    def symlink(self, target, clobber=False):
-      """
+      #print("ATTN: calling symlink")
       if (clobber and self.is_file()):
          #unlink(self)
          self.unlink_()
@@ -1494,13 +1473,11 @@ class Path(pathlib.PosixPath):
                   % (self.name, target, self.readlink()))
       except OSError as x:
          FATAL("can't symlink: %s -> %s: %s" % (self.name, target, x.strerror))
-      """
-      symlink(self, target, clobber=False)
 
    def unlink_(self, *args, **kwargs):
+      #print("ATTN: calling unlink")
       "Error-checking wrapper for unlink method"
-      #ossafe(super().unlink, "can't unlink: %s" % self.name)
-      unlink(self, *args, **kwargs)
+      ossafe(super().unlink, "can't unlink: %s" % self.name)
 
 class Progress:
    """Simple progress meter for countable things that updates at most once per
