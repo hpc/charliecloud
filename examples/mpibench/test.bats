@@ -47,7 +47,7 @@ check_process_ct () {
 @test "${ch_tag}/pingpong (guest launch)" {
     openmpi_or_skip
     # shellcheck disable=SC2086
-    run ch-run $ch_unslurm "$ch_img" $bind_ugni $bind_shasta -- \
+    run ch-run $ch_unslurm "$ch_img" -- \
                "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
@@ -60,7 +60,7 @@ check_process_ct () {
 @test "${ch_tag}/sendrecv (guest launch)" {
     openmpi_or_skip
     # shellcheck disable=SC2086
-    run ch-run $ch_unslurm "$ch_img" $bind_ugni $bind_shasta -- \
+    run ch-run $ch_unslurm "$ch_img" -- \
                "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
@@ -73,7 +73,7 @@ check_process_ct () {
 @test "${ch_tag}/allreduce (guest launch)" {
     openmpi_or_skip
     # shellcheck disable=SC2086
-    run ch-run $ch_unslurm "$ch_img" $bind_ugni $bind_shasta -- \
+    run ch-run $ch_unslurm "$ch_img" -- \
                "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
@@ -82,8 +82,24 @@ check_process_ct () {
     check_finalized "$output"
 }
 
-@test "${ch_tag}/inject host cray-gni ofi dso" {
+@test "${ch_tag}/inject libgnix-fi.so provider" {
     cray_ofi_or_skip "$ch_img"
+}
+
+@test "${ch_tag}/validate libgnix-fi.so provider" {
+    [[ -n "$ch_cray" ]] || skip "host is not cray"
+    [[ -n "$cray_ugni" ]] || skip "ugni only"
+    export FI_LOG_LEVEL=debug
+    export FI_LOG_PROV=core,gni
+    # shellcheck disable=SC2086
+    run $ch_mpirun_2_2node ch-run --join "$ch_img" -- \
+                               "$imb_mpi1" $imb_args PingPong 2>&1
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ "$output" == *' registering provider: gni'* ]]
+    [[ "$output" == *'gni:'*'GNIX_INT_TX_BUF_SZ'* ]]
+    unset FI_LOG_LEVEL
+    unset FI_LOG_PROV
 }
 
 # This test compares OpenMPI's point to point bandwidth with all high speed
@@ -116,7 +132,7 @@ check_process_ct () {
 @test "${ch_tag}/pingpong (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" $bind_ugni $bind_shasta -- \
+    run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
@@ -128,7 +144,7 @@ check_process_ct () {
 @test "${ch_tag}/sendrecv (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" $bind_ugni $bind_shasta -- \
+    run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
@@ -140,7 +156,7 @@ check_process_ct () {
 @test "${ch_tag}/allreduce (host launch)" {
     multiprocess_ok
     # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" $bind_ugni $bind_shasta -- \
+    run $ch_mpirun_core ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]

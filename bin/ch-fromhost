@@ -493,19 +493,8 @@ IFS="$old_ifs"
 
 if [ -z "$no_ldconfig" ] && { [ $lib_found ] || [ $ofi_found ] ;} then
     debug "running ldconfig"
-    if [ -f /etc/opt/cray/release/cle-release ]; then
-       if [ -d /opt/cray/ugni ]; then
-         debug_indent "${ch_bin}/ch-run -w --cray-ugni $image -- /sbin/ldconfig"
-         "${ch_bin}/ch-run" -w --cray-ugni "$image" -- /sbin/ldconfig
-       fi
-       if [ -d /var/spool/slurmd ]; then
-         debug_indent "${ch_bin}/ch-run -w --cray-ugni $image -- /sbin/ldconfig"
-         "${ch_bin}/ch-run" -w --cray-shasta "$image" -- /sbin/ldconfig
-       fi
-    else
-      debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
-      "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
-    fi
+    debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
+    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
 else
     debug "not running ldconfig"
 fi

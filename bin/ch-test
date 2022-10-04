@@ -63,10 +63,12 @@ Additional options:
   -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
   -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
+  --ofi-path PATH        path to libfabric provider injection target(s)
   --pack-dir DIR         packed image directory; same as \$CH_TEST_TARDIR
   --pack-fmt FMT         packed image format; same as \$CH_TEST_PACK_FMT
   --pedandic {yes,no}    set pedantic mode rather than guessing
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
+  --srun-mpi MPI         srun --mpi argument; see srun --mpi=list
   --sudo                 enable tests that need sudo
   --lustre DIR           run-phase Lustre test directory; \$CH_TEST_LUSTREDIR
   --version              print version and exit
@@ -839,6 +841,9 @@ while [[ $# -gt 0 ]]; do
     --is-sudo)      # undocumented; for CI
         is_sudo=yes
         ;;
+    --ofi-path=*)
+        ofi_path=${opt#*=}
+        ;;
     --pack-dir)
         require_unset tardir
         tardir=$1; shift
@@ -964,6 +969,8 @@ vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
 # test option output, is benign: $srun_mpi is only used in $ch_multinode.
 vset CH_TEST_SLURM_MPI "$srun_mpi"     "$CH_TEST_SLURM_MPI" "--mpi=$SLURM_MPI_TYPE" \
                       21 'srun mpi type'
+vset CH_TEST_OFI_PATH  "$ofi_path"     "$CH_TEST_OFI_PATH"  skip \
+                      21 'ofi provider(s) path'
 printf '\n'
 
 if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then
@@ -989,6 +996,23 @@ if [[ -z $CHTEST_INSTALLED ]]; then
     fi
 fi
 printf '\n'
+
+# Ensure OFI path looks sane.
+if [[ -n "$ofi_path" ]]; then
+    if [[ -d "$ofi_path" ]]; then
+           find "$ofi_path" -name "-fi.so" &> /dev/null \
+        || fatal "ofi: $ofi_path: *-fi.so not found"
+    fi
+    [[ "${ofi_path##*/}" == *"-fi.so" ]] || fatal "ofi: $ofi_path: not a -fi.so"
+fi
+
+# Don't allow FI_ variables.
+if [[ -n "$FI_PROVIDER" ]]; then
+    fatal 'host FI_PROVIDER set'
+fi
+if [[ -n "$FI_PROVIDER_PATH" ]]; then
+    fatal 'host FI_PROVIDER_PATH set'
+fi
 
 # Ensure BATS_TMPDIR is set to /tmp (issue #278).
 if [[ -n $BATS_TMPDIR && $BATS_TMPDIR != '/tmp' ]]; then

@@ -101,9 +101,12 @@ chtest_fixtures_ok () {
 cray_ofi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
-        [[ -n "$CH_FROMHOST_OFI" ]] || skip 'CH_FROMHOST_OFI not set'
-        [[ -f "${CH_FROMHOST_OFI}/libgnix-fi.so" ]] || skip 'libgnix-fi.so missing'
-        $ch_mpirun_node ch-fromhost --host-ofi "$1"
+        [[ -n "$CH_TEST_OFI_PATH" ]] || skip 'CH_TEST_OFI_PATH not set'
+        [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
+        if ! find "$CH_TEST_OFI_PATH" -name 'libgnix-fi.so' &> /dev/null; then
+           skip 'libgnix-fi.so not found $CH_TEST_OFI_PATH'
+        fi
+        $ch_mpirun_node ch-fromhost --ofi "$CH_TEST_OFI_PATH" "$1"
     else
         skip 'host is not a Cray'
     fi
@@ -350,15 +353,12 @@ fi
 # Crays are special.
 if [[ -f /etc/opt/cray/release/cle-release ]]; then
     ch_cray=yes
-    if [ -d /opt/cray/ugni ]; then
-        bind_ugni='--cray-ugni'
+    # Prefer gni provider on Cray ugni machines
+    if [[ -d /opt/cray/ugni ]]; then
+        cray_ugni=yes
+        export FI_PROVIDER=gni
     else
-        bind_ugni=
-    fi
-    if [ -d /var/spool/slurmd ]; then
-        bind_shasta='--cray-shasta'
-    else
-        bind_shasta=
+        cray_ugni=
     fi
 else
     ch_cray=

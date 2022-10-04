@@ -47,8 +47,6 @@ const struct argp_option options[] = {
      "mount SRC at guest DST (default: same as SRC)"},
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
    { "ch-ssh",         -8, 0,      0, "bind ch-ssh into image"},
-   { "cray-ugni",     -12, 0,      0, "bind cray host ugni paths"},
-   { "cray-shasta",   -13, 0,      0, "bind cray shasta host paths"},
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },
@@ -117,8 +115,6 @@ int main(int argc, char *argv[])
    args = (struct args){
       .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
                                .ch_ssh = false,
-                               .bind_ugni = false,
-                               .bind_shasta = false,
                                .container_gid = getegid(),
                                .container_uid = geteuid(),
                                .env_expand = true,
@@ -398,12 +394,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #endif
       } else
          FATAL("unknown feature: %s", arg);
-      break;
-   case -12: // --cray-ugni
-      args->c.bind_ugni = true;
-      break;
-   case -13: // --cray-shasta
-      args->c.bind_shasta = true;
       break;
    case 'b': {
          char *src, *dst;

@@ -28,8 +28,6 @@ enum img_type {
 
 struct container {
    struct bind *binds;
-   bool bind_ugni;       // bind cray aries interconnect paths
-   bool bind_shasta;     // bind cray shasta/slingshot paths
    bool ch_ssh;          // bind /usr/bin/ch-ssh?
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
