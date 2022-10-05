@@ -1418,8 +1418,11 @@ class Path(pathlib.PosixPath):
       """An error-checking version of stat(). Note that we cannot simply change
          the definition of stat() to be ossafe, as the exists() method in pathlib
          relies on an OSError check.    
-         See: https://github.com/python/cpython/blob/3.10/Lib/pathlib.py#L1291"""
-      return ossafe(super().stat, "can't stat: %s" %self.name, follow_symlinks=links)
+         See: https://github.com/python/cpython/blob/3.10/Lib/pathlib.py#L1291
+         NOTE: We also cannot just call super().stat here because the follow_symlinks
+         kwarg is absent in pathlib for Python 3.6, which we want to retain 
+         compatibility with."""
+      return ossafe(os.stat, "can't stat: %s" % self.name, self, follow_symlinks=links)
 
    def symlink(self, target, clobber=False):
       if (clobber and self.is_file()):
