@@ -1262,7 +1262,6 @@ class Path(pathlib.PosixPath):
       # turned out that this would only set the attribute for the single instance.
       # To set 'self.gzip' for all instances, we need the class method.
       if (self.gzip is None):
-         print("This message should only appear ONCE")
          Path.gzip_set()
       # Remove destination file if it already exists, because gzip --force does
       # several other things too. (Note: pigz sometimes confusingly reports
