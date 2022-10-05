@@ -2506,22 +2506,6 @@ def chdir(path):
    ossafe(os.chdir, "can't chdir: %s" % path, path)
    return Path(old)
 
-def chmod_min(path, mode, st=None):
-   """Set permissions on path so they are at least mode. For symlinks, do
-      nothing, because we don't want to follow symlinks and
-      follow_symlinks=False (or os.lchmod) is not supported on some (all?)
-      Linux. (Also, symlink permissions are ignored on Linux, so it doesn't
-      matter anyway.)"""
-   if (st is None):
-      st = os.lstat(path)
-   if (stat.S_ISLNK(st.st_mode)):
-      return
-   mode_old = stat.S_IMODE(st.st_mode)
-   if (mode & mode_old != mode):
-      mode |= mode_old
-      VERBOSE("fixing permissions: %s: %03o -> %03o" % (path, mode_old, mode))
-      ossafe(os.chmod, "can't chmod: %s" % path, path, mode)
-
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
@@ -2614,10 +2598,6 @@ def copy2(src, dst, **kwargs):
    "Wrapper for shutil.copy2() with error checking."
    ossafe(shutil.copy2, "can't copy: %s -> %s" % (src, dst), src, dst, **kwargs)
 
-def copytree(*args, **kwargs):
-   "Wrapper for shutil.copytree() that exits the program on the first error."
-   shutil.copytree(copy_function=copy2, *args, **kwargs)
-
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
       (e.g., lark module checked at import time), then complain and exit."""
@@ -2648,117 +2628,11 @@ def digest_trim(d):
    except IndexError:
       FATAL("no algorithm tag: %s" % d)
 
-def disk_bytes(path):
-   """Return the number of disk bytes consumed by path. Note this is probably
-      different from the file size."""
-   return path.stat_().st_blocks * 512
-
-def du(path):
-   """Return a tuple (number of files, total bytes on disk) for everything
-      under path. Warning: double-counts files with multiple hard links."""
-   file_ct = 1
-   byte_ct = disk_bytes(path)
-   for (dir_, subdirs, files) in os.walk(path):
-      file_ct += len(subdirs) + len(files)
-      byte_ct += sum(disk_bytes(dir_ + "/" + i) for i in subdirs + files)
-   return (file_ct, byte_ct)
-
 def done_notify():
    if (user() == "jogas"):
       INFO("!!! KOBE !!!")
    else:
       INFO("done")
-
-def file_ensure_exists(path):
-   """If the final element of path exists (without dereferencing if it's a
-      symlink), do nothing; otherwise, create it as an empty regular file."""
-   if (not os.path.lexists(path)):
-      fp = path.open("w")
-      close_(fp)
-
-def file_gzip(path, args=[]):
-   """Run pigz if it's available, otherwise gzip, on file at path and return
-      the file's new name. Pass args to the gzip executable. This lets us gzip
-      files (a) in parallel if pigz is installed and (b) without reading them
-      into memory."""
-   path_c = path.add_suffix(".gz")
-   # On first call, remember first available of pigz and gzip using an
-   # attribute of this function (yes, you can do that lol).
-   if (not hasattr(file_gzip, "gzip")):
-      if (shutil.which("pigz") is not None):
-         file_gzip.gzip = "pigz"
-      elif (shutil.which("gzip") is not None):
-         file_gzip.gzip = "gzip"
-      else:
-         FATAL("can't find path to gzip or pigz")
-   # Remove destination file if it already exists, because gzip --force does
-   # several other things too. (Note: pigz sometimes confusingly reports
-   # "Inappropriate ioctl for device" if destination already exists.)
-   if (os.path.exists(path_c)):
-      path_c.unlink_()
-   # Compress.
-   cmd([file_gzip.gzip] + args + [str(path)])
-   # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1], to
-   # ensure layer hash is consistent. See issue #1080.
-   # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
-   fp = open_(path_c, "r+b")
-   ossafe(fp.seek, "can't seek: %s" % fp, 4)
-   ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
-   close_(fp)
-   return path_c
-
-def file_hash(path):
-   """Return the hash of data in file at path, as a hex string with no
-      algorithm tag. File is read in chunks and can be larger than memory."""
-   fp = open_(path, "rb")
-   h = hashlib.sha256()
-   while True:
-      data = ossafe(fp.read, "can't read: %s" % path, 2**18)
-      if (len(data) == 0):
-         break  # EOF
-      h.update(data)
-   close_(fp)
-   return h.hexdigest()
-
-def file_read_all(path, text=True):
-   """Return the contents of file at path, or exit with error. If text, read
-      in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
-   if (text):
-      mode = "rt"
-      encoding = "UTF-8"
-   else:
-      mode = "rb"
-      encoding = None
-   fp = open_(path, mode, encoding=encoding)
-   data = ossafe(fp.read, "can't read: %s" % path)
-   close_(fp)
-   return data
-
-def file_size(path, follow_symlinks=False):
-   "Return the size of file at path in bytes."
-   st = ossafe(os.stat, "can't stat: %s" % path,
-               path, follow_symlinks=follow_symlinks)
-   return st.st_size
-
-def file_write(path, content):
-   if (isinstance(content, str)):
-      content = content.encode("UTF-8")
-   fp = open_(path, "wb")
-   ossafe(fp.write, "can't write: %s" % path, content)
-   close_(fp)
-
-def grep_p(path, rx):
-   """Return True if file at path contains a line matching regular expression
-      rx, False if it does not."""
-   rx = re.compile(rx)
-   try:
-      with open(path, "rt") as fp:
-         for line in fp:
-            if (rx.search(line) is not None):
-               return True
-      return False
-   except OSError as x:
-      FATAL("error reading %s: %s" % (path, x.strerror))
 
 def init(cli):
    # logging
