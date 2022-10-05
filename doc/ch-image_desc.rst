@@ -42,10 +42,10 @@ Options that print brief information and then exit:
 
 Common options placed before or after the sub-command:
 
-  :code:`-a`, :code:`--arch ARCH` 
-    Use architecture :code:`ARCH` for architecture-aware registry operations.
-    (see section Architecture for important details). 
- 
+  :code:`-a`, :code:`--arch ARCH`
+    Use :code:`ARCH` for architecture-aware registry operations. (See section
+    "Architecture" below for details.)
+
   :code:`--always-download`
     Download all files when pulling, even if they are already in builder
     storage. Note that :code:`ch-image pull` will always retrieve the most
@@ -92,12 +92,13 @@ Common options placed before or after the sub-command:
 Architecture
 ============
 
-Charliecloud provides the option –arch and the following arguments to specify
-the –arch command: (1) yolo, to bypass architecture-aware code and use the
-registry's default architecture; (2) host, to use the host's architecture, 
-obtained with the equivalent of uname -m (default if --arch not specified);
-or (3) an architecture name. If the specified architecture is not available,
-the error message will list which ones are.
+Charliecloud provides the option :code:`--arch ARCH` to specify the
+architecture for architecture-aware registry operations. The argument
+:code:`ARCH` can be: (1) :code:`yolo`, to bypass architecture-aware code and
+use the registry's default architecture; (2) :code:`host`, to use the host's
+architecture, obtained with the equivalent of :code:`uname -m` (default if
+:code:`--arch` not specified); or (3) an architecture name. If the specified
+architecture is not available, the error message will list which ones are.
 
 **Notes:**
 
