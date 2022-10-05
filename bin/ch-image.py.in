@@ -203,6 +203,14 @@ def main():
    sp.add_argument("--dot", nargs="?", metavar="PATH", const="build-cache",
                    help="write DOT and PDF tree summaries")
 
+   # convert
+   sp = ap.add_parser("convert", "convert an image from one format to another", add_help=False)
+   add_opts(sp, lambda x: False, deps_check=False, stog_init=False)
+   sp.add_argument("-h", "--help",
+                   nargs="*")
+   sp.add_argument("placeholder",
+                   nargs="*")
+
    # delete
    sp = ap.add_parser("delete", "delete image from internal storage")
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
@@ -278,7 +286,10 @@ def main():
    if (storage_init[cli.func]):
       ch.storage.init()
       bu.init(cli)
-   cli.func(cli)
+   if (cli.subcommand_name == "convert"):
+      misc.convert(sys.argv)
+   else:
+      cli.func(cli)
 
 
 ## Bootstrap ##

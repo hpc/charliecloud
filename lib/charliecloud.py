@@ -362,7 +362,7 @@ class ArgumentParser(argparse.ArgumentParser):
       super().__init__(formatter_class=self.HelpFormatter, *args, **kwargs)
       self._optionals.title = "options"  # https://stackoverflow.com/a/16981688
       if (sub_title is not None):
-         self.subs = self.add_subparsers(title=sub_title, metavar=sub_metavar)
+         self.subs = self.add_subparsers(title=sub_title, metavar=sub_metavar, dest="subcommand_name")
 
    def add_parser(self, title, desc, *args, **kwargs):
       return self.subs.add_parser(title, help=desc, description=desc,
@@ -2318,6 +2318,10 @@ def color_reset(*fps):
 def color_set(color, fp):
    if (fp.isatty()):
       print("\033[" + color, end="", flush=True, file=fp)
+
+def convert_wrapper(argv):
+   "Wrapper for ch-convert bash script"
+   cmd(argv)
 
 def copy2(src, dst, **kwargs):
    "Wrapper for shutil.copy2() with error checking."

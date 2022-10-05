@@ -32,6 +32,23 @@ setup () {
     [[ $output = *'verbose level: 1'* ]]
 }
 
+@test 'ch-image convert help page' {
+    run ch-image convert --help
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'convert an image from one format to another'* ]]
+}
+
+@test 'ch-image convert wrong arg' {
+    run ch-image convert --wrongarg
+    echo "$output"
+    [[ $status -eq 2 ]]
+    [[ $output = *'unrecognized arguments:'* ]]
+}
+
+@test 'ch-image convert working case' {
+    run ch-image convert 
+}
 
 @test 'ch-image delete' {
     # Verify image doesn't exist.

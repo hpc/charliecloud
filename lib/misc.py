@@ -53,6 +53,13 @@ def build_cache(cli):
       bu.cache.tree_dot()
    bu.cache.summary_print()
 
+def convert(argv):
+   convert_argv = argv.copy()
+   convert_argv.pop(0)
+   convert_argv[0] = "ch-convert"
+   convert_argv = ["--pyhelp" if i in ["-h", "--help"] else i for i in convert_argv]
+   ch.convert_wrapper(convert_argv)
+
 def delete(cli):
    img = ch.Image(ch.Image_Ref(cli.image_ref))
    img.unpack_delete()

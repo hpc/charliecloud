@@ -58,7 +58,7 @@ parse_basic_arg () {
             echo "$lib"
             exit 0
             ;;
-        --help)
+        -h|--help)
             usage 0   # exits
             ;;
         -v|--verbose)

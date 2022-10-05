@@ -12,10 +12,42 @@ Convert an image from one format to another.
 
 Usage:
 
-  $ $(basename "$0") [-i FMT] [-o FMT] [OPTION ...] IN OUT
+  $ $(basename "$0") [-v] [-h] [-i FMT] [-o FMT] [OPTION ...]
+               [-n] [--tmp DIR] [--no-clobber] IN OUT
 EOF
 )
 
+pyusage=$(cat <<EOF
+usage: ch-image convert [-v] [-h] [-i FMT] [-o FMT] [-n]
+                        [--tmp DIR] [--no-clobber] IN OUT
+
+convert an image from one format to another
+
+positional arguments:
+  IN                    image format of the source image
+  OUT                   image format of the destination image
+
+options:
+  -v, --verbose         Print extra chatter
+  -h, --help            Show this help message and exit
+  -i, --in-fmt FMT      Input image is FMT; if omitted, format is inferred
+  -o, --out-fmt FMT     Output image is FMT; if omitted, format is inferred
+  -n, --dry-run         Don\'t read the input or write the output; helpful for testing format inference
+  --tmp DIR             A sub-directory for temporary storage is created in DIR
+                        and removed at the end of a successful conversion. If this
+                        script crashes or errors out, the temporary directory is
+                        left behind to assist in debugging. Storage may be needed
+                        up to twice the uncompressed size of the image, depending
+                        on the input and output formats. Default: $TMPDIR if
+                        specified; otherwise /var/tmp.
+  --no-clobber          Error if OUT already exists, rather than replacing it
+EOF
+)
+
+pyusage () {
+    echo "${pyusage:?}" 1>&2
+    exit "${1:-1}"
+}
 
 ## conversion functions ######################################################
 
@@ -632,6 +664,9 @@ while true; do
             --tmp)
                 shift
                 tmpdir=$1
+                ;;
+            --pyhelp)
+                pyusage 0
                 ;;
             *)
                 break
