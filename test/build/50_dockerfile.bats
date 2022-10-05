@@ -793,12 +793,12 @@ FROM $os
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    # shellcheck disable=SC2016
     if [[ $CH_TEST_BUILDER = docker ]]; then
         # shellcheck disable=SC2016
         [[ $output = *'base name ($os) should not be blank'* ]]
     else
-        [[ $output = *'error: $os contains an undefined variable'* ]]
+        # shellcheck disable=SC2016
+        [[ ${lines[-1]} = 'error: image reference contains an undefined variable: $os' ]]
     fi
 
     # set with --build-arg
@@ -1174,10 +1174,11 @@ EOF
 }
 
 
-@test "COPY from previous stage, no context" {
+@test 'Dockerfile: COPY from previous stage, no context' {
     # Normally, COPY is disallowed if there’s no context directory, but if
     # it’s from a previous stage, it should work. See issue #1381.
 
+    scope standard
     [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
 
     run ch-image build --no-cache -t foo - <<'EOF'
@@ -1203,4 +1204,17 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'manifest: using internal library'* ]]
     [[ $output != *'layer 1'* ]]  # no layers
+}
+
+
+@test 'Dockerfile: bad image reference' {
+    scope standard
+    [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
+
+    run ch-image build -t tmpimg - <<'EOF'
+FROM /alpine:3.9
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ ${lines[-2]} = 'error: image ref syntax, char 1: /alpine:3.9' ]]
 }

@@ -118,8 +118,8 @@ def main(cli_):
       ch.close_(fp)
 
    # Parse it.
-   parser = lark.Lark("?start: dockerfile\n" + ch.GRAMMAR,
-                      parser="earley", propagate_positions=True)
+   parser = lark.Lark(ch.GRAMMAR_DOCKERFILE, parser="earley",
+                      propagate_positions=True)
    # Avoid Lark issue #237: lark.exceptions.UnexpectedEOF if the file does not
    # end in newline.
    text += "\n"
@@ -251,7 +251,7 @@ class Instruction(abc.ABC):
       self.commit_files = set()
       self.lineno = tree.meta.line
       self.options = dict()
-       # saving options with only 1 saved value
+      # saving options with only 1 saved value
       for st in ch.tree_children(tree, "option"):
          k = ch.tree_terminal(st, "OPTION_KEY")
          v = ch.tree_terminal(st, "OPTION_VALUE")
@@ -489,10 +489,6 @@ class Instruction_No_Image(Instruction):
    @property
    def miss(self):
       return True
-
-   #@property
-   #def sid_input(self):
-   #   return str(self).encode("UTF-8")
 
    @property
    def status_char(self):
@@ -968,7 +964,9 @@ class I_from_(Instruction):
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
       #
-      image_ref = ch.Image_Ref(ch.tree_child_terminals_cat(self.tree, "image_ref", "IMAGE_REF"), argfrom)
+      image_ref = ch.Image_Ref(
+         ch.tree_child_terminals_cat(self.tree, "image_ref", "IMAGE_REF"),
+         argfrom)
       self.base_image = ch.Image(image_ref)
       self.alias = ch.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
@@ -1132,9 +1130,8 @@ class I_workdir(Instruction):
       ch.mkdirs(self.image.unpack_path // self.workdir)
 
    def prepare(self, *args):
-      self.path = ch.variables_sub(ch.tree_terminals_cat(self.tree,
-                                                         "LINE_CHUNK"),
-                                   self.env_build)
+      self.path = ch.variables_sub(
+         ch.tree_terminals_cat(self.tree, "LINE_CHUNK"), self.env_build)
       self.chdir(self.path)
       return super().prepare(*args)
 
