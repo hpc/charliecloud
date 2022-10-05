@@ -111,7 +111,6 @@ def main(cli_):
    if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
    else:
-      print("Got Past 'ELSE' in build.py")
       fp = ch.Path(cli.file).open("rt")
       text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
       ch.close_(fp)

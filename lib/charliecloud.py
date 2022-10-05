@@ -631,8 +631,7 @@ class Image:
          path = self.metadata_path // "config.pulled.json"
          copy2(config_json, path)
          VERBOSE("pulled config path: %s" % path)
-         self.metadata_merge_from_config(path.json_from_file("config"))
-         
+         self.metadata_merge_from_config(path.json_from_file("config"))         
       self.metadata_save()
 
    def metadata_save(self):
@@ -2353,11 +2352,9 @@ class TarFile(tarfile.TarFile):
       if (st is not None):
          if (stat.S_ISREG(st.st_mode)):
             if (regulars):
-               #unlink(targetpath)
                Path(targetpath).unlink_()
          elif (stat.S_ISLNK(st.st_mode)):
             if (symlinks):
-               #unlink(targetpath)
                Path(targetpath).unlink_()
          elif (stat.S_ISDIR(st.st_mode)):
             if (dirs):
@@ -2506,7 +2503,6 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   #print("ATTN: ch_run_modify fail_ok: %s" % fail_ok)
    return cmd(args, env=env, fail_ok=fail_ok)
 
 def close_(fp):
@@ -2528,7 +2524,6 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       the command does not exit with code zero. If logging is verbose or
       higher, first print the command line arguments; if debug or higher, the
       environment as well (if given). Return the CompletedProcess object."""
-   #print("ATTN: cmd_base fail_ok: %s" % fail_ok)
    argv = [str(i) for i in argv]
    VERBOSE("executing: %s" % argv_to_string(argv))
    if ("env" in kwargs):
@@ -2546,8 +2541,6 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       # [1]: https://devdocs.io/bash/exit-status#Exit-Status
       cp = subprocess.CompletedProcess(argv, 127)
    if (not fail_ok and cp.returncode != 0):
-      print("FAIL OK: %s" % fail_ok)
-      print("CP RETURN CODE: %s" % cp.returncode)
       FATAL("command failed with code %d: %s"
             % (cp.returncode, argv_to_string(argv)))
    return cp
