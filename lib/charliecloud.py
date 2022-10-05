@@ -2500,12 +2500,6 @@ def bytes_hash(data):
    h.update(data)
    return h.hexdigest()
 
-def chdir(path):
-   "Change CWD to path and return previous CWD. Exit on error."
-   old = ossafe(os.getcwd, "can't getcwd(2)")
-   ossafe(os.chdir, "can't chdir: %s" % path, path)
-   return Path(old)
-
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
@@ -2686,17 +2680,6 @@ def init(cli):
       rpu = requests.packages.urllib3
       rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
 
-def json_from_file(path, msg):
-   DEBUG("loading JSON: %s: %s" % (msg, path))
-   text = path.file_read_all()
-   TRACE("text:\n%s" % text)
-   try:
-      data = json.loads(text)
-      DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
-   except json.JSONDecodeError as x:
-      FATAL("can't parse JSON: %s:%d: %s" % (path, x.lineno, x.msg))
-   return data
-
 def kill_blocking(pid, timeout=10):
    """Kill process pid with SIGTERM (the friendly one) and wait for it to
       exit. If timeout (in seconds) is exceeded and it’s still running, exit
@@ -2720,13 +2703,6 @@ def kill_blocking(pid, timeout=10):
       time.sleep(0.5)
    FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid),
          BUG_REPORT_PLZ)
-
-def listdir(path):
-   """Return set of entries in directory path, without self (.) and
-      parent (..). We considered changing this to use os.scandir() for #992,
-      but decided that the advantages it offered didn't warrant the effort
-      required to make the change."""
-   return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % path, path))
 
 def walk(*args, **kwargs): # Wrapper for os.walk()
    """Return a generator representing the files in a directory tree (root
@@ -2754,20 +2730,8 @@ def log(msg, hint, color, prefix, end="\n"):
    if (color is not None):
       color_reset(log_fp)
 
-def mkdirs(path, exist_ok=True):
-   TRACE("ensuring directories: %s" % path)
-   try:
-      os.makedirs(path, exist_ok=exist_ok)
-   except OSError as x:
-      FATAL("can't mkdir: %s: %s: %s" % (path, x.filename, x.strerror))
-
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
-
-def open_(path, mode, *args, **kwargs):
-   "Error-checking wrapper for open()."
-   return ossafe(open, "can't open for %s: %s" % (mode, path),
-                 path, mode, *args, **kwargs)
 
 def ossafe(f, msg, *args, **kwargs):
    """Call f with args and kwargs. Catch OSError and other problems and fail
@@ -2781,26 +2745,6 @@ def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
        Assume that prefix and path are strings."""
    return prefix == path or (prefix + '/' == path[:len(prefix) + 1])
-
-def rename(name_old, name_new):
-   if (os.path.exists(name_new)):
-      FATAL("can't rename: destination exists: %s" % name_new)
-   ossafe(os.rename, "can't rename: %s -> %s" % (name_old, name_new),
-          name_old, name_new)
-
-def rmdir(path):
-   ossafe(os.rmdir, "can't rmdir: %s" % path, path)
-
-def rmtree(path):
-   if (os.path.isdir(path)):
-      TRACE("deleting directory: %s" % path)
-      try:
-         shutil.rmtree(path)
-      except OSError as x:
-         FATAL("can't recursively delete directory %s: %s: %s"
-               % (path, x.filename, x.strerror))
-   else:
-      assert False, "unimplemented"
 
 def si_binary_bytes(ct):
    # FIXME: varies between 1 and 3 significant figures
@@ -2818,23 +2762,6 @@ def si_decimal(ct):
          return (ct, suffix)
       ct /= 1000
    assert False, "unreachable"
-
-def stat_(path, links=False):
-   return ossafe(os.stat, "can't stat: %s" % path, path, follow_symlinks=links)
-
-def symlink(target, source, clobber=False):
-   if (clobber and os.path.isfile(source)):
-      source.unlink_()
-   try:
-      os.symlink(target, source)
-   except FileExistsError:
-      if (not os.path.islink(source)):
-         FATAL("can't symlink: source exists and isn't a symlink: %s" % source)
-      if (os.readlink(source) != target):
-         FATAL("can't symlink: %s exists; want target %s but existing is %s"
-               % (source, target, os.readlink(source)))
-   except OSError as x:
-      FATAL("can't symlink: %s -> %s: %s" % (source, target, x.strerror))
 
 def tree_child(tree, cname):
    """Locate a descendant subtree named cname using breadth-first search and
@@ -2885,10 +2812,6 @@ def tree_terminals_cat(tree, tname):
    """Return the concatenated values of all child terminals named tname as a
       string, with no delimiters. If none, return the empty string."""
    return "".join(tree_terminals(tree, tname))
-
-def unlink(path, *args, **kwargs):
-   "Error-checking wrapper for os.unlink()."
-   ossafe(os.unlink, "can't unlink: %s" % path, path)
 
 def user():
    "Return the current username; exit with error if it can't be obtained."
