@@ -1187,12 +1187,13 @@ class Path(pathlib.PosixPath):
    @classmethod
    def gzip_set(cls):
       "Set gzip class attribute on first call to file_gzip()."
-      if (shutil.which("pigz") is not None):
-         cls.gzip = "pigz"
-      elif (shutil.which("gzip") is not None):
-         cls.gzip = "gzip"
-      else:
-         FATAL("can’t find path to gzip or pigz")
+      if (self.gzip is None):
+         if (shutil.which("pigz") is not None):
+            cls.gzip = "pigz"
+         elif (shutil.which("gzip") is not None):
+            cls.gzip = "gzip"
+         else:
+            FATAL("can’t find path to gzip or pigz")
 
    def add_suffix(self, suff):
       """Returns the path object restulting from appending the specified
@@ -1262,8 +1263,7 @@ class Path(pathlib.PosixPath):
       # class method (by setting the attribute, e.g. "self.gzip = 'foo'"), but it
       # turned out that this would only set the attribute for the single instance.
       # To set 'self.gzip' for all instances, we need the class method.
-      if (self.gzip is None):
-         Path.gzip_set()
+      Path.gzip_set()
       # Remove destination if it already exists, because “gzip --force” does
       # several other things too. Also, pigz(1) sometimes confusingly reports
       # “Inappropriate ioctl for device” if destination already exists.
@@ -1389,12 +1389,11 @@ class Path(pathlib.PosixPath):
          FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
          
    def open_(self, mode, *args, **kwargs):
-      "Error-checking wrapper for open()."
       return ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
-                    mode, *args, **kwargs) # note: removed 'self' from front of this line
+                    mode, *args, **kwargs)
 
    def rename_(self, name_new):
-      if (Path(name_new).exists()): # is this check necessary? necessary to use ossafe here?
+      if (Path(name_new).exists()):
          FATAL("can’t rename: destination exists: %s" % name_new)
       ossafe(super().rename, "can’t rename: %s -> %s" % (self.name, name_new),
              name_new)
@@ -1439,7 +1438,6 @@ class Path(pathlib.PosixPath):
          FATAL("can’t symlink: %s -> %s: %s" % (self.name, target, x.strerror))
 
    def unlink_(self, *args, **kwargs):
-      "Error-checking wrapper for unlink method"
       ossafe(super().unlink, "can't unlink: %s" % self.name)
 
 class Progress:
@@ -2174,7 +2172,7 @@ class Storage:
    def init_move_old(self):
       """If appropriate, move storage directory from old default path to new.
          See issues #1160 and #1243."""
-      old = Storage(Path("/var/tmp/%s/ch-image" % user()))
+      old = Storage(Path("/var/tmp" // user // "ch-image")
       moves = ( "dlcache", "img", "ulcache", "version" )
       if (self.root != self.root_default()):
          return  # do nothing silently unless using default storage dir

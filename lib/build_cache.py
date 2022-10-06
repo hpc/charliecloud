@@ -300,7 +300,7 @@ class Enabled_Cache:
       try:
          with tempfile.TemporaryDirectory(prefix="weirdal.") as td:
             ch.cmd_quiet(["git", "clone", "-q", self.root, td])
-            cwd = ch.Path(td).chdir() # check if we can move this conversion up
+            cwd = ch.Path(td).chdir()
             ch.cmd_quiet(["git", "checkout", "-q", "-b", "root"])
             # Git has no default gitignore, but cancel any global gitignore
             # rules the user might have. https://stackoverflow.com/a/26681066
