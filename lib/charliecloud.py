@@ -1186,7 +1186,12 @@ class Path(pathlib.PosixPath):
 
    @classmethod
    def gzip_set(cls):
-      "Set gzip class attribute on first call to file_gzip()."
+      """Set gzip class attribute on first call to file_gzip().
+         Note: We originally thought this could be accomplished WITHOUT
+         calling a class method (by setting the attribute,
+         e.g. "self.gzip = 'foo'"), but it turned out that this would
+         only set the attribute for the single instance.  To set
+         'self.gzip' for all instances, we need the class method."""
       if (self.gzip is None):
          if (shutil.which("pigz") is not None):
             cls.gzip = "pigz"
@@ -1244,7 +1249,7 @@ class Path(pathlib.PosixPath):
                         for i in subdirs + files)
       return (file_ct, byte_ct)
 
-   def file_ensure_exists(self): # change name? e.g. ensure_exists()
+   def file_ensure_exists(self):
       """If the final element of path exists (without dereferencing if it’s a
          symlink), do nothing; otherwise, create it as an empty regular file."""
       if (not os.path.lexists(self)): # no substitute for lexists() in pathlib.
@@ -1259,10 +1264,6 @@ class Path(pathlib.PosixPath):
       path_c = self.add_suffix(".gz")
       # On first call, remember first available of pigz and gzip using class
       # attribute 'gzip'.
-      # Note: We originally thought this could be accomplished WITHOUT calling a
-      # class method (by setting the attribute, e.g. "self.gzip = 'foo'"), but it
-      # turned out that this would only set the attribute for the single instance.
-      # To set 'self.gzip' for all instances, we need the class method.
       Path.gzip_set()
       # Remove destination if it already exists, because “gzip --force” does
       # several other things too. Also, pigz(1) sometimes confusingly reports

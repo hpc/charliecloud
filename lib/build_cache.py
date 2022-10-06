@@ -139,7 +139,9 @@ class File_Metadata:
                 'name')
 
    def __init__(self, path, st):
-      if (len(path.parts) < 1):
+      # The if/else here accounts for when 'path' represents '.', in which
+      # case path.name returns '' and str(path) returns '.'.
+      if (len(path.parts) < 1):     # path represents '.'
          self.name = str(path)
       else:
          self.name = path.parts[-1] # name is file basename
@@ -530,7 +532,7 @@ class Enabled_Cache:
             or stat.S_ISBLK(st.st_mode)):
          ch.FATAL("device files invalid in image: %s" % path)
       elif (   stat.S_ISDIR(st.st_mode)):
-         entries = sorted(f_path.listdir()) # FIX: see issue #1455
+         entries = sorted(f_path.listdir()) # FIXME: see issue #1455
          cwd = f_path.chdir() # once #1455 is closed, this line should get
                               # changed to 'fm.path.chdir()'.
          for i in entries:
