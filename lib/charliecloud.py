@@ -2172,7 +2172,7 @@ class Storage:
    def init_move_old(self):
       """If appropriate, move storage directory from old default path to new.
          See issues #1160 and #1243."""
-      old = Storage(Path("/var/tmp" // user // "ch-image"))
+      old = Storage(Path("/var/tmp") // user() // "ch-image")
       moves = ( "dlcache", "img", "ulcache", "version" )
       if (self.root != self.root_default()):
          return  # do nothing silently unless using default storage dir
