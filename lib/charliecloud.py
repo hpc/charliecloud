@@ -1192,7 +1192,7 @@ class Path(pathlib.PosixPath):
          e.g. "self.gzip = 'foo'"), but it turned out that this would
          only set the attribute for the single instance.  To set
          'self.gzip' for all instances, we need the class method."""
-      if (self.gzip is None):
+      if (cls.gzip is None):
          if (shutil.which("pigz") is not None):
             cls.gzip = "pigz"
          elif (shutil.which("gzip") is not None):
