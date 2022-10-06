@@ -709,7 +709,9 @@ class Image:
             FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
          VERBOSE("removing image: %s" % self.unpack_path)
+         t = Timer()
          self.unpack_path.rmtree()
+         t.log("removed image")
 
    def unpack_delete(self):
       VERBOSE("unpack path: %s" % self.unpack_path)
