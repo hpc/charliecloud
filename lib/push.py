@@ -104,9 +104,7 @@ class Image_Pusher:
          hash_uc = path_uc.file_hash()
          config["rootfs"]["diff_ids"].append("sha256:" + hash_uc)
          size_uc = path_uc.file_size()
-         path_c = path_uc.file_gzip(["-9", "--no-name"]) # won't work if not
-                                                         # path_uc isn't path
-                                                         # object...
+         path_c = path_uc.file_gzip(["-9", "--no-name"])
          tar_c = path_c.name
          hash_c = path_c.file_hash()
          size_c = path_c.file_size()

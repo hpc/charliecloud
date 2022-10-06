@@ -98,7 +98,7 @@ def list_(cli):
       if (not ch.storage.valid_p):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
       for img in sorted(imgdir.listdir()):
-         print(ch.Image_Ref(img.parts[-1])) # ensure consistent str coversion
+         print(ch.Image_Ref(img.parts[-1]))
    else:
       # list specified image
       img = ch.Image(ch.Image_Ref(cli.image_ref))
