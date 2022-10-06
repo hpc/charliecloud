@@ -365,7 +365,7 @@ class Enabled_Cache:
 
    def configure(self):
       path = self.root // "config"
-      fp = path.open("r+")
+      fp = path.open_("r+")
       config = configparser.ConfigParser()
       config.read_file(fp, source=path)
       changed = False
@@ -555,7 +555,7 @@ class Enabled_Cache:
       # Remove empty directories. Git will ignore them, including leaving them
       # there if switch the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
-         f_path.rmdir() # f_path -> fm.path (issue #1455)
+         f_path.rmdir_() # f_path -> fm.path (issue #1455)
          return fm  # can't do anything else after it's gone
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(st.st_mode)):
@@ -566,7 +566,7 @@ class Enabled_Cache:
       if (fm.name.startswith(".git")):
          name_new = fm.name.replace(".git", ".weirdal_")
          ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
-         f_path.rename(name_new) # f_path -> fm.path (issue #1455)
+         f_path.rename_(name_new) # f_path -> fm.path (issue #1455)
       # Done.
       return fm
 
@@ -620,7 +620,7 @@ class Enabled_Cache:
          ch.ossafe(os.link, "can't hardlink: %s -> %s" % (path, target),
                    target, fm.name, follow_symlinks=False)
       if (str(fm.name).startswith(".git")):
-         ch.Path(str(fm.name).replace(".git", ".weirdal_")).rename(fm.name)
+         ch.Path(str(fm.name).replace(".git", ".weirdal_")).rename_(fm.name)
       if (not quick):
          if (stat.S_ISSOCK(fm.mode)):
             ch.WARNING("ignoring socket in image: %s" % path)
@@ -834,12 +834,12 @@ class Enabled_Cache:
          ch.WARNING("temporary image still exists, deleting",
                     "maybe a previous command crashed?")
          ch.storage.image_tmp.rmtree()
-      image.unpack_path.rename(ch.storage.image_tmp)
+      image.unpack_path.rename_(ch.storage.image_tmp)
       self.worktree_add(image, base)
       for i in { ".git", ".gitignore" }:
-         (image.unpack_path // i).rename(ch.storage.image_tmp // i)
-      image.unpack_path.rmdir()
-      ch.storage.image_tmp.rename(image.unpack_path)
+         (image.unpack_path // i).rename_(ch.storage.image_tmp // i)
+      image.unpack_path.rmdir_()
+      ch.storage.image_tmp.rename_(image.unpack_path)
 
    def worktree_get_head(self, image):
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"],

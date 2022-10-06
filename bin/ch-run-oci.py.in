@@ -184,7 +184,7 @@ def op_create():
       sleep_forever()
    else:
       state.pid = pid
-      with args.pid_file.open("wt") as fp:
+      with args.pid_file.open_("wt") as fp:
          print("%d" % pid, file=fp)
       ch.VERBOSE("dummy supervisor started with pid %d" % pid)
 
@@ -219,7 +219,7 @@ def op_start():
    #
    # GNU tar, when it thinks it's running as root, tries to chown(2) and
    # chgrp(2) files to whatever's in the tarball. --no-same-owner avoids this.
-   with ch.Path(args.bundle + "/environment").open("wt") as fp:
+   with ch.Path(args.bundle + "/environment").open_("wt") as fp:
       for line in (  c["process"]["env"]                  # from Dockerfile
                    + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
          line = re.sub(r"^(PATH=)", "\\1/ch/bin:", line)
@@ -297,7 +297,7 @@ def pid_file_from_bundle(bundle):
 def state_load():
    st = types.SimpleNamespace()
 
-   st.config = json.load(ch.Path(args.bundle + "/config.json").open("rt"))
+   st.config = json.load(ch.Path(args.bundle + "/config.json").open_("rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)

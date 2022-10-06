@@ -1246,7 +1246,7 @@ class Path(pathlib.PosixPath):
       """If the final element of path exists (without dereferencing if it's a
          symlink), do nothing; otherwise, create it as an empty regular file."""
       if (not os.path.lexists(self)): # no substitute for lexists() in pathlib.
-         fp = self.open("w")
+         fp = self.open_("w")
          close_(fp)
 
    def file_gzip(self, args=[]):
@@ -1273,8 +1273,7 @@ class Path(pathlib.PosixPath):
       # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1], to
       # ensure layer hash is consistent. See issue #1080.
       # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
-      #fp = open_(path_c, "r+b")
-      fp = path_c.open("r+b")
+      fp = path_c.open_("r+b")
       ossafe(fp.seek, "can't seek: %s" % fp, 4)
       ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
       close_(fp)
@@ -1283,7 +1282,7 @@ class Path(pathlib.PosixPath):
    def file_hash(self):
       """Return the hash of data in file at path, as a hex string with no
          algorithm tag. File is read in chunks and can be larger than memory."""
-      fp = self.open("rb")
+      fp = self.open_("rb")
       h = hashlib.sha256()
       while True:
          data = ossafe(fp.read, "can't read: %s" % self.name, 2**18)
@@ -1302,7 +1301,7 @@ class Path(pathlib.PosixPath):
       else:
          mode = "rb"
          encoding = None
-      fp = self.open(mode, encoding=encoding)
+      fp = self.open_(mode, encoding=encoding)
       data = ossafe(fp.read, "can't read: %s" % self.name)
       close_(fp)
       return data
@@ -1316,7 +1315,7 @@ class Path(pathlib.PosixPath):
    def file_write(self, content):
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
-      fp = self.open("wb")
+      fp = self.open_("wb")
       ossafe(fp.write, "can't write: %s" % self.name, content)
       close_(fp)
 
@@ -1387,18 +1386,18 @@ class Path(pathlib.PosixPath):
       except OSError as x:
          FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
          
-   def open(self, mode, *args, **kwargs):
+   def open_(self, mode, *args, **kwargs):
       "Error-checking wrapper for open()."
       return ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
                     mode, *args, **kwargs) # note: removed 'self' from front of this line
 
-   def rename(self, name_new):
+   def rename_(self, name_new):
       if (Path(name_new).exists()): # is this check necessary? necessary to use ossafe here?
          FATAL("can't rename: destination exists: %s" % name_new)
       ossafe(super().rename, "can't rename: %s -> %s" % (self.name, name_new),
              name_new)
 
-   def rmdir(self):
+   def rmdir_(self):
       ossafe(super().rmdir, "can't rmdir: %s" % self.name)
 
    def rmtree(self):
@@ -1571,7 +1570,7 @@ class Progress_Writer:
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
-      self.fp = self.path.open("wb")
+      self.fp = self.path.open_("wb")
 
    def write(self, data):
       self.progress.update(len(data))
@@ -1937,7 +1936,7 @@ class Registry_HTTP:
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don't verify the digest b/c that means reading the whole file.
       VERBOSE("layer tarball: %s" % path)
-      fp = path.open("rb") # open file avoids reading it all into memory
+      fp = path.open_("rb") # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
       close_(fp)
 
@@ -2207,7 +2206,7 @@ class Storage:
             except OSError as x:
                FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
-      old.root.rmdir()
+      old.root.rmdir_()
       if (not old.root.parent.listdir()):
          WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
@@ -2225,7 +2224,7 @@ class Storage:
       # [3]: https://stackoverflow.com/a/22411531
       if (not storage_lock):
          return
-      self.lockfile_fp = self.lockfile.open("w")
+      self.lockfile_fp = self.lockfile.open_("w")
       try:
          fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
       except OSError as x:
@@ -2631,7 +2630,7 @@ def init(cli):
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
       verbose = max(verbose, 1)
-      log_fp = file_.open("at")
+      log_fp = file_.open_("at")
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
    # storage directory

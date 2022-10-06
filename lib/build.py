@@ -111,7 +111,7 @@ def main(cli_):
    if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
    else:
-      fp = ch.Path(cli.file).open("rt")
+      fp = ch.Path(cli.file).open_("rt")
       text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
       ch.close_(fp)
 
@@ -802,7 +802,7 @@ class Env(Instruction):
       return "%s='%s'" % (self.key, self.value)
 
    def execute(self):
-      with (self.image.unpack_path // "/ch/environment").open("wt") \
+      with (self.image.unpack_path // "/ch/environment").open_("wt") \
            as fp:
          for (k, v) in self.env_env.items():
             print("%s=%s" % (k, v), file=fp)
