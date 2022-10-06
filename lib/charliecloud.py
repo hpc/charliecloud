@@ -483,9 +483,10 @@ class Image:
          the latter case other.unpack_path is used. other need not be a valid
          image; the essentials will be created if needed."""
       def ignore(path, names):
-         path = Path(path) # Need this path conversion, since shutil._copytree()
-                           # calls ignore() and doesn't pass a Path. See
-                           # https://github.com/python/cpython/blob/main/Lib/shutil.py#L456
+         # Need this path conversion, since shutil._copytree() calls ignore()
+         # and passes a string, not a Path. See:
+         # https://github.com/python/cpython/blob/main/Lib/shutil.py#L456
+         path = Path(path)
          ignore = list()
          if (path == src_path):
             for name in names:
@@ -1152,9 +1153,8 @@ class Path(pathlib.PosixPath):
       to silently wrong results when the paths *were* strings (components
       concatenated with no slash)."""
 
-   gzip = None # class attribute that tells us whether or not file_gzip has 
-               # been called on an instance of this class yet (set on first
-               # call).
+   # Name of the gzip(1) to use; set on first call of file_gzip().
+   gzip = None
 
    def __floordiv__(self, right):
       return self.joinpath_posix(right)
@@ -1186,13 +1186,13 @@ class Path(pathlib.PosixPath):
 
    @classmethod
    def gzip_set(cls):
-      """Used to set gzip class attribute on first call to file_gzip method"""
+      "Set gzip class attribute on first call to file_gzip()."
       if (shutil.which("pigz") is not None):
          cls.gzip = "pigz"
       elif (shutil.which("gzip") is not None):
          cls.gzip = "gzip"
       else:
-         FATAL("can't find path to gzip or pigz")
+         FATAL("can’t find path to gzip or pigz")
 
    def add_suffix(self, suff):
       """Returns the path object restulting from appending the specified
@@ -1202,16 +1202,16 @@ class Path(pathlib.PosixPath):
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
-      old = ossafe(os.getcwd, "can't get cwd(2)")
-      ossafe(os.chdir, "can't chdir: %s" % self.name, self)
+      old = ossafe(os.getcwd, "can’t get cwd(2)")
+      ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
       return Path(old)
 
    def chmod_min(self, mode, st=None):
       """Set permissions on path so they are at least mode. For symlinks, do
-         nothing, because we don't want to follow symlinks and
+         nothing, because we don’t want to follow symlinks and
          follow_symlinks=False (or os.lchmod) is not supported on some
          (all?)  Linux. (Also, symlink permissions are ignored on Linux,
-         so it doesn't matter anyway.)"""
+         so it doesn’t matter anyway.)"""
       if (st is None):
          st = os.lstat(self)
       if (stat.S_ISLNK(st.st_mode)):
@@ -1219,11 +1219,12 @@ class Path(pathlib.PosixPath):
       mode_old = stat.S_IMODE(st.st_mode)
       if (mode & mode_old != mode):
          mode |= mode_old
-         VERBOSE("fixing permisssions: %s: %03o -> %03o" % (self, mode_old, mode))
+         VERBOSE("fixing permissions: %s: %03o -> %03o" % (self, mode_old,
+                                                            mode))
          ossafe(os.chmod, "can't chmod: %s" % self, self, mode)
 
    def copytree(self, *args, **kwargs):
-      "Wrapper for shutil.copytree() that exists the program on the first error."
+      "Wrapper for shutil.copytree() that exits on the first error."
       shutil.copytree(str(self), copy_function=copy2, *args, **kwargs)
 
    def disk_bytes(self):
@@ -1243,17 +1244,17 @@ class Path(pathlib.PosixPath):
       return (file_ct, byte_ct)
 
    def file_ensure_exists(self): # change name? e.g. ensure_exists()
-      """If the final element of path exists (without dereferencing if it's a
+      """If the final element of path exists (without dereferencing if it’s a
          symlink), do nothing; otherwise, create it as an empty regular file."""
       if (not os.path.lexists(self)): # no substitute for lexists() in pathlib.
          fp = self.open_("w")
          close_(fp)
 
    def file_gzip(self, args=[]):
-      """Run pigz if it's available, otherwise gzip, on file at path and return
-         the file's new name. Pass args to the gzip executable. This lets us gzip
-         files (a) in parallel if pigz is installed and (b) without reading them
-         into memory."""
+      """Run pigz(1) if it’s available, otherwise gzip(1), on file at path and
+         return the file's new name. Pass args to the gzip executable. This
+         lets us gzip files (a) in parallel if pigz(1) is installed and
+         (b) without reading them into memory."""
       path_c = self.add_suffix(".gz")
       # On first call, remember first available of pigz and gzip using class
       # attribute 'gzip'.
@@ -1263,9 +1264,9 @@ class Path(pathlib.PosixPath):
       # To set 'self.gzip' for all instances, we need the class method.
       if (self.gzip is None):
          Path.gzip_set()
-      # Remove destination file if it already exists, because gzip --force does
-      # several other things too. (Note: pigz sometimes confusingly reports
-      # "Inappropriate ioctl for device" if destination already exists.)
+      # Remove destination if it already exists, because “gzip --force” does
+      # several other things too. Also, pigz(1) sometimes confusingly reports
+      # “Inappropriate ioctl for device” if destination already exists.
       if (path_c.exists()):
          path_c.unlink()
       # Compress.
@@ -1285,7 +1286,7 @@ class Path(pathlib.PosixPath):
       fp = self.open_("rb")
       h = hashlib.sha256()
       while True:
-         data = ossafe(fp.read, "can't read: %s" % self.name, 2**18)
+         data = ossafe(fp.read, "can’t read: %s" % self.name, 2**18)
          if (len(data) == 0):
             break  # EOF
          h.update(data)
@@ -1308,7 +1309,7 @@ class Path(pathlib.PosixPath):
 
    def file_size(self, follow_symlinks=False):
       "Return the size of file at path in bytes."
-      st = ossafe(os.stat, "can't stat: %s" % self.name,
+      st = ossafe(os.stat, "can’t stat: %s" % self.name,
                   self, follow_symlinks=follow_symlinks)
       return st.st_size
 
@@ -1320,8 +1321,8 @@ class Path(pathlib.PosixPath):
       close_(fp)
 
    def grep_p(self, rx):
-      """Return True if file at path contains a line matching regular expression
-         rx, False if it does not."""
+      """Return True if file at path contains a line matching regular
+         expression rx, False if it does not."""
       rx = re.compile(rx)
       try:
          with open(self, "rt") as fp:
@@ -1330,7 +1331,7 @@ class Path(pathlib.PosixPath):
                   return True
          return False
       except OSError as x:
-         FATAL("error reading %s: %s" % (self.name, x.strerror))
+         FATAL("can’t read %s: %s" % (self.name, x.strerror))
 
    def joinpath_posix(self, *others):
       others2 = list()
@@ -1341,7 +1342,7 @@ class Path(pathlib.PosixPath):
             assert (not other.is_absolute())
          others2.append(other)
       return self.joinpath(*others2)
-         
+
    def json_from_file(self, msg):
       DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
@@ -1350,15 +1351,16 @@ class Path(pathlib.PosixPath):
          data = json.loads(text)
          DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
       except json.JSONDecodeError as x:
-         FATAL("can't parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
+         FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
       return data
 
    def listdir(self):
-      """Return set of entries in directory path, without self (.) and
-         parent (..). We considered changing this to use os.scandir()
-         for #992, but decided that the advantages it offered didn't
-         warrant the effort required to make the change."""
-      return set(Path(i) for i in ossafe(os.listdir, "can't list: %s" % self.name, self))
+      """Return set of entries in directory path, without self (.) and parent
+         (..). We considered changing this to use os.scandir() for #992, but
+         decided that the advantages it offered didn’t warrant the effort
+         required to make the change."""
+      return set(Path(i) for i in ossafe(os.listdir,
+                                         "can’t list: %s" % self.name, self))
 
    def lstrip(self, n):
       """Return a copy of myself with n leading components removed. E.g.:
@@ -1375,16 +1377,16 @@ class Path(pathlib.PosixPath):
       try:
          super().mkdir(exist_ok=True)
       except FileExistsError as x:
-          FATAL("can't mkdir: exists and not a directory: %s" % x.filename)
+          FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
-         FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
+         FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
 
    def mkdirs(self, exist_ok=True):
       TRACE("ensuring directories: %s" % self.name)
       try:
          os.makedirs(self, exist_ok=exist_ok)
       except OSError as x:
-         FATAL("can't mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
+         FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
          
    def open_(self, mode, *args, **kwargs):
       "Error-checking wrapper for open()."
@@ -1393,12 +1395,12 @@ class Path(pathlib.PosixPath):
 
    def rename_(self, name_new):
       if (Path(name_new).exists()): # is this check necessary? necessary to use ossafe here?
-         FATAL("can't rename: destination exists: %s" % name_new)
-      ossafe(super().rename, "can't rename: %s -> %s" % (self.name, name_new),
+         FATAL("can’t rename: destination exists: %s" % name_new)
+      ossafe(super().rename, "can’t rename: %s -> %s" % (self.name, name_new),
              name_new)
 
    def rmdir_(self):
-      ossafe(super().rmdir, "can't rmdir: %s" % self.name)
+      ossafe(super().rmdir, "can’t rmdir: %s" % self.name)
 
    def rmtree(self):
       if (self.is_dir()):
@@ -1406,7 +1408,7 @@ class Path(pathlib.PosixPath):
          try:
             shutil.rmtree(self)
          except OSError as x:
-            FATAL("can't recursively delete directory %s: %s: %s"
+            FATAL("can’t recursively delete directory %s: %s: %s"
                   % (self.name, x.filename, x.strerror))
       else:
          assert False, "unimplemented"
@@ -1428,12 +1430,13 @@ class Path(pathlib.PosixPath):
          super().symlink_to(target)
       except FileExistsError:
          if (not self.is_symlink()):
-            FATAL("can't symlink: source exists and isn't a symlink: %s" % self.name)
+            FATAL(  "can’t symlink: source exists and isn't a symlink: %s"
+                  % self.name)
          if (self.readlink() != target):
-            FATAL("can't symlink: %s exists; want target %s but existing is %s"
+            FATAL("can’t symlink: %s exists; want target %s but existing is %s"
                   % (self.name, target, self.readlink()))
       except OSError as x:
-         FATAL("can't symlink: %s -> %s: %s" % (self.name, target, x.strerror))
+         FATAL("can’t symlink: %s -> %s: %s" % (self.name, target, x.strerror))
 
    def unlink_(self, *args, **kwargs):
       "Error-checking wrapper for unlink method"
@@ -2695,13 +2698,13 @@ def kill_blocking(pid, timeout=10):
    FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid),
          BUG_REPORT_PLZ)
 
-def walk(*args, **kwargs): # Wrapper for os.walk()
-   """Return a generator representing the files in a directory tree (root
-      specified in *args). For each directroy in said tree, yield 3-tuple
-      (dirpath, dirnames, filenames), where dirpath is a Path object, and
-      dirnames and filenames are lists of Path objects. For insight into
-      the latter being lists rather than generators, see use of ch.walk()
-      in the copy_src_dir() method of the I_copy class (build.py)."""
+def walk(*args, **kwargs):
+   """Wrapper for os.walk(). Return a generator of the files in a directory
+      tree (root specified in *args). For each directory in said tree, yield a
+      3-tuple (dirpath, dirnames, filenames), where dirpath is a Path object,
+      and dirnames and filenames are lists of Path objects. For insight into
+      these being lists rather than generators, see use of ch.walk() in
+      I_copy.copy_src_dir()."""
    for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
       yield (Path(dirpath),
              [Path(dirname) for dirname in dirnames],

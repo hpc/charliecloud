@@ -498,7 +498,7 @@ class Enabled_Cache:
             self.file_metadata.set(path, File_Metadata(path, path.lstat()))
       if (write):
          ch.Path("ch/git.pickle").file_write(pickle.dumps(self.file_metadata,
-                                                     protocol=4))
+                                                          protocol=4))
       cwd.chdir()
       t.log("gathered file metadata")
 
