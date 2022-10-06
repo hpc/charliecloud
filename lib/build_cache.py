@@ -278,6 +278,14 @@ class Enabled_Cache:
    def branch_name_unready(ref):
       return ref.for_path + "#"
 
+   @staticmethod
+   def commit_hash_p(commit_ish):
+      """Return True if commit_ish looks like a commit hash, False otherwise.
+         Note this is a text-based heuristic only. It will return True for
+         hashes that don’t exist in the repo, and false positives for
+         branch/tag names that look like hashes."""
+      return (re.search(r"^[0-9a-f]{7,}$", commit_ish) is not None)
+
    def adopt(self, img):
       self.worktree_adopt(img, "root")
       img.metadata_load()
@@ -310,6 +318,13 @@ class Enabled_Cache:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
+   def branch_delete(self, branch):
+      "Delete branch branch if it exists; otherwise, do nothing."
+      if (ch.cmd_quiet(["git", "show-ref", "--quiet", "--heads", branch],
+                       cwd=self.root, fail_ok=True) == 0):
+         ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
+
+
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Image_Ref src_ref pointing to dest, which can
          be either an Image_Ref or a Git commit reference (as a string)."""
@@ -325,7 +340,6 @@ class Enabled_Cache:
 
    def checkout(self, image, git_hash, base_image):
       # base_image used in other subclasses
-      ch.INFO("copying image ...")
       self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path, [], False)
 
@@ -382,23 +396,26 @@ class Enabled_Cache:
          ch.ossafe(config.write, "can’t write Git config: %s" % path, fp)
       ch.close_(fp)
 
-   def find_image(self, image):
-      """Return (state ID, commit) of branch tip for image, or (None, None) if
-         no such branch."""
+   def find_commit(self, path, git_id):
+      """Return (state ID, commit) of commit-ish git_id in directory path, or
+         (None, None) if it doesn’t exist.."""
       # Note abbreviated commit hash %h is automatically long enough to avoid
       # collisions.
-      cp = ch.cmd_stdout(["git", "log", "--format=%h%n%B", "-n", "1",
-                          image.ref.for_path], fail_ok=True, cwd=self.root)
+      cp = ch.cmd_stdout(["git", "log", "--format=%h%n%B", "-n", "1", git_id],
+                         fail_ok=True, cwd=path)
       if (cp.returncode == 0):  # branch exists
          sid = State_ID.from_text(cp.stdout)
          commit = cp.stdout.split("\n", maxsplit=1)[0]
-         commit_short = commit[:7]
       else:
          sid = None
          commit = None
-         commit_short = 'nada'
-      ch.VERBOSE("branch: %s: %s %s" % (image.ref.for_path, commit_short, sid))
+      ch.VERBOSE("commit-ish %s in %s: %s %s" % (git_id, path, commit, sid))
       return (sid, commit)
+
+   def find_image(self, image):
+      """Return (state ID, commit) of branch tip for image, or (None, None) if
+         no such branch."""
+      return self.find_commit(self.root, image.ref.for_path)
 
    def find_sid(self, sid, branch):
       """Return the hash of the commit matching State_ID, or None if no such
@@ -677,8 +694,7 @@ class Enabled_Cache:
    def ready(self, image):
       ch.cmd_quiet(["git", "checkout", "-B", self.branch_name_ready(image.ref)],
                    cwd=image.unpack_path)
-      ch.cmd_quiet(["git", "branch", "-D", self.branch_name_unready(image.ref)],
-                   cwd=self.root)
+      self.branch_delete(self.branch_name_unready(image.ref))
 
    def reset(self):
       if (self.bootstrap_ct >= 1):
@@ -717,8 +733,10 @@ class Enabled_Cache:
          untracked files."""
       ch.INFO("rolling back ...")
       self.git_prepare(path, [], write=False)
+      t = ch.Timer()
       ch.cmd_quiet(["git", "reset", "--hard", "HEAD"], cwd=path)
       ch.cmd_quiet(["git", "clean", "-fdq"], cwd=path)
+      t.log("reverted worktree")
       self.git_restore(path, [], False)
 
    def sid_from_parent(self, *args):
@@ -805,20 +823,26 @@ class Enabled_Cache:
       ch.cmd_quiet(["dot", "-Tpdf", "-o%s" % path_pdf, str(path_gv)])
 
    def worktree_add(self, image, base):
-      t = ch.Timer()
       if (image.unpack_cache_linked):
          self.git_prepare(image.unpack_path, [], write=False)  # clean worktree
-         ch.cmd_quiet(["git", "checkout",
-                       "-B", self.branch_name_unready(image.ref), base],
-                      cwd=image.unpack_path)
-         op = "adjusted"
+         if (    self.commit_hash_p(base)
+             and base == self.find_commit(image.unpack_path, "HEAD")[1]):
+            ch.VERBOSE("already checked out: %s %s" % (image.unpack_path, base))
+         else:
+            ch.INFO("updating existing image ...")
+            t = ch.Timer()
+            ch.cmd_quiet(["git", "checkout",
+                          "-B", self.branch_name_unready(image.ref), base],
+                         cwd=image.unpack_path)
+            t.log("adjusted worktree")
       else:
+         ch.INFO("copying image from cache ...")
          image.unpack_clear()
+         t = ch.Timer()
          ch.cmd_quiet(["git", "worktree", "add", "-f",
                        "-B", self.branch_name_unready(image.ref),
                        image.unpack_path, base], cwd=self.root)
-         op = "created"
-      t.log("%s worktree" % op)
+         t.log("created worktree")
 
    def worktree_adopt(self, image, base):
       """Create a new worktree with the contents of existing directory
