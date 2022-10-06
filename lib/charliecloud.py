@@ -1191,11 +1191,12 @@ class Path(pathlib.PosixPath):
    @classmethod
    def gzip_set(cls):
       """Set gzip class attribute on first call to file_gzip().
+
          Note: We originally thought this could be accomplished WITHOUT
-         calling a class method (by setting the attribute,
-         e.g. "self.gzip = 'foo'"), but it turned out that this would
-         only set the attribute for the single instance.  To set
-         'self.gzip' for all instances, we need the class method."""
+         calling a class method (by setting the attribute, e.g. “self.gzip =
+         'foo'’), but it turned out that this would only set the attribute for
+         the single instance. To set self.gzip for all instances, we need the
+         class method."""
       if (cls.gzip is None):
          if (shutil.which("pigz") is not None):
             cls.gzip = "pigz"
@@ -1280,8 +1281,8 @@ class Path(pathlib.PosixPath):
       # ensure layer hash is consistent. See issue #1080.
       # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
       fp = path_c.open_("r+b")
-      ossafe(fp.seek, "can't seek: %s" % fp, 4)
-      ossafe(fp.write, "can't write: %s" % fp, b'\x00\x00\x00\x00')
+      ossafe(fp.seek, "can’t seek: %s" % fp, 4)
+      ossafe(fp.write, "can’t write: %s" % fp, b'\x00\x00\x00\x00')
       close_(fp)
       return path_c
 
@@ -1322,7 +1323,7 @@ class Path(pathlib.PosixPath):
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
       fp = self.open_("wb")
-      ossafe(fp.write, "can't write: %s" % self.name, content)
+      ossafe(fp.write, "can’t write: %s" % self.name, content)
       close_(fp)
 
    def grep_p(self, rx):
@@ -1392,7 +1393,7 @@ class Path(pathlib.PosixPath):
          os.makedirs(self, exist_ok=exist_ok)
       except OSError as x:
          FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
-         
+
    def open_(self, mode, *args, **kwargs):
       return ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
                     mode, *args, **kwargs)

@@ -144,7 +144,7 @@ class File_Metadata:
       if (len(path.parts) < 1):     # path represents '.'
          self.name = str(path)
       else:
-         self.name = path.parts[-1] # name is file basename
+         self.name = path.parts[-1]
       self.atime_ns = st.st_atime_ns
       self.dont_restore = False
       self.children = list()  # so we can keep it sorted
