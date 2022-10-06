@@ -621,8 +621,8 @@ class Enabled_Cache:
          ch.TRACE("hard link: restoring: %s -> %s" % (path, target))
          ch.ossafe(os.link, "can't hardlink: %s -> %s" % (path, target),
                    target, fm.name, follow_symlinks=False)
-      if (str(fm.name).startswith(".git")):
-         ch.Path(str(fm.name).replace(".git", ".weirdal_")).rename_(fm.name)
+      if (fm.name.startswith(".git")):
+         ch.Path(fm.name.replace(".git", ".weirdal_")).rename_(fm.name)
       if (not quick):
          if (stat.S_ISSOCK(fm.mode)):
             ch.WARNING("ignoring socket in image: %s" % path)

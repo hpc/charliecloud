@@ -1181,7 +1181,9 @@ class Path(pathlib.PosixPath):
    @property
    def path_name(self):
       """Return path object representing file basename. For example,
-         Path("foo/bar/baz").path_name returns Path("baz")"""
+         Path("foo/bar/baz").path_name returns Path("baz"). This allows us to
+         replace path conversions of the 'name' attribute (previously found in
+         multiple places throughout the code) with calls to this property."""
       return Path(self.name)
 
    @classmethod
