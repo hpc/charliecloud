@@ -58,6 +58,9 @@ def delete(cli):
    for img in ch.Image.glob(cli.image_ref):
       img.unpack_delete()
       delete_ct += 1
+   for img in ch.Image.glob(cli.image_ref + "_stage*"):
+      img.unpack_delete()
+      delete_ct += 1
    if (delete_ct == 0):
       ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
    bu.cache.worktrees_prune()
