@@ -187,7 +187,7 @@ pict_assert_equal () {
     pixel_ct=$(ch-run "$ch_img" -b "$ref_bind" \
                                 -b "$sample_bind" \
                                 -b "$diff_bind" -- \
-                      compare -metric AE /inp_a /inp_b "$diff_" 2>&1 || true)
+                      compare -metric AE /a.png /b.png "$diff_" 2>&1 || true)
     echo "diff count:  ${pixel_ct} pixels, max ${pixel_max_ct}"
     [[ $pixel_ct -le $pixel_max_ct ]]
 }

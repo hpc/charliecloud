@@ -5,7 +5,6 @@ WORKDIR /usr/local/src
 RUN dnf install -y --setopt=install_weak_deps=false \
                 cmake \
                 expat-devel \
-                libpng-devel \
                 llvm \
                 llvm-devel \
                 mesa-libGL \
@@ -16,7 +15,6 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 python3-devel \
                 python3-mako \
                 python3-pip \
-                which \
                 zlib-devel \
  && dnf clean all
 
@@ -51,8 +49,3 @@ RUN wget -nv -O ParaView-v${PARAVIEW_VERSION}.tar.xz "https://www.paraview.org/p
     ../ParaView-v${PARAVIEW_VERSION} \
  && make -j $(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../ParaView-v${PARAVIEW_VERSION}*
-
-# Add bind-mount DST files and directories for example tests.
-RUN mkdir /diff \
- && echo "example bind mount DST file" > /inp_a \
- && echo "example bind mount DST file" > /inp_b
