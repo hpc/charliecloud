@@ -451,6 +451,14 @@ class Image:
       return False
 
    @property
+   def last_modified(self):
+      # Return the last modified time of self as a datetime.datetime object in
+      # the local time zone.
+      return datetime.datetime.fromtimestamp(
+                 stat_(self.metadata_path // "metadata.json").st_mtime,
+                 datetime.timezone.utc).astimezone()
+
+   @property
    def metadata_path(self):
       return self.unpack_path // "ch"
 

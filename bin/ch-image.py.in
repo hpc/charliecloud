@@ -236,6 +236,8 @@ def main():
    # list
    sp = ap.add_parser("list", "print information about image(s)")
    add_opts(sp, misc.list_, deps_check=True, stog_init=True)
+   sp.add_argument("-l", "--long", action="store_true",
+                   help="use long listing format")
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
 
