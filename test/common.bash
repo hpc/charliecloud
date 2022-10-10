@@ -173,8 +173,8 @@ pict_assert_equal () {
     sample_base=$(basename "${sample%.*}")
     sample_ext=${sample##*.}
     diff_dir=${BATS_TMPDIR}/"$(basename "$(dirname "$sample")")"
-    ref_bind="${ref}:/inp_a"
-    sample_bind="${sample}:/inp_b"
+    ref_bind="${ref}:/a.png"
+    sample_bind="${sample}:/b.png"
     diff_bind="${diff_dir}:/diff"
     diff_="/diff/${sample_base}.diff.${sample_ext}"
     echo "reference: $ref"
