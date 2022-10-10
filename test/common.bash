@@ -98,13 +98,14 @@ chtest_fixtures_ok () {
     [[ $(stat -c %a "${1}/maxperms_dir") = 1777 ]]
     [[ $(stat -c %a "${1}/maxperms_file") = 777 ]]
 }
+
 cray_ofi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
         [[ -n "$CH_TEST_OFI_PATH" ]] || skip 'CH_TEST_OFI_PATH not set'
         [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
         if ! find "$CH_TEST_OFI_PATH" -name 'libgnix-fi.so' &> /dev/null; then
-           skip 'libgnix-fi.so not found $CH_TEST_OFI_PATH'
+           skip 'libgnix-fi.so not found \$CH_TEST_OFI_PATH'
         fi
         $ch_mpirun_node ch-fromhost --ofi "$CH_TEST_OFI_PATH" "$1"
     else
@@ -358,6 +359,7 @@ if [[ -f /etc/opt/cray/release/cle-release ]]; then
         cray_ugni=yes
         export FI_PROVIDER=gni
     else
+        # shellcheck disable=SC2034
         cray_ugni=
     fi
 else
