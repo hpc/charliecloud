@@ -54,6 +54,7 @@ Who is responsible?
 
 Contributors:
 
+* Richard Berger <rberger@lanl.gov>
 * Lucas Caudill <lcaudill@lanl.gov>
 * Rusty Davis <rustyd@lanl.gov>
 * Hunter Easterday <heasterday@lanl.gov>
@@ -132,4 +133,4 @@ should be clearly marked, so as not to confuse it with the version available
 from LANL.
 
 
-..  LocalWords:  USENIX's CNA
+..  LocalWords:  USENIX's CNA Meisam
