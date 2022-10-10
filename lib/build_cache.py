@@ -23,8 +23,24 @@ GIT2DOT_MIN = (0, 8, 3)
 # Git configuration. Note some of these are overridden in specific commands.
 # Documentation for these variables: https://git-scm.com/docs/git-config
 GIT_CONFIG = {
+   # Do parallel checkouts with all cores.
+   "checkout.workers":       "-1",
+   # Prioritize write speed over data safety; i.e., increase the risk of cache
+   # corruption on system crash while (hopefully) decreasing write speed.
+   "core.fsync":             "none",
    # Try to maximize “git add” speed.
    "core.looseCompression":  "0",
+   # Enable incremental indexes [1]; it should speed things like “git add”.
+   # [1]: https://git-scm.com/docs/git-update-index
+   "core.splitIndex":        "true",
+   # “ctime” marks when the file *or its inode* was last changed. Twiddling
+   # the various metadata will alter this, so Git shouldn’t use it when
+   # deciding if a file may have changed.
+   "core.trustctime":        "false",
+   # Enable the “untracked cache” [1], which saves directory mtimes to
+   # eliminate the need to re-stat(2) in some cases.
+   # [1]: https://git-scm.com/docs/git-update-index
+   "core.untrackedCache":    "true",
    # Quick-and-dirty results suggest that commit is not faster after garbage
    # collection, and checkout is actually a little faster if *not* garbage
    # collected. Therefore, it's not a high priority to run garbage collection.
@@ -39,6 +55,10 @@ GIT_CONFIG = {
    # the build cache, so we may as well delete it immediately. However, there
    # might be a concurrent Git operation in progress, so don’t use “now”.
    "gc.pruneExpire":         "12.hours.ago",
+   # Use the newest index version, which does “simple pathname compression
+   # that reduces index size by 30%-50% on large repositories” [1].
+   # [1]: https://git-scm.com/docs/git-update-index
+   "index.version":          "4",
    # States on the reflog are available to the build cache, but the default
    # prune time is 90 and 30 days respectively, which seems too long.
    #"gc.reflogExpire":        "14.days.ago",  # changed my mind
