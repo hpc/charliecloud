@@ -51,7 +51,6 @@ struct bind BINDS_DEFAULT[] = {
 
 /* Cray bind-mounts. */
 struct bind BINDS_CRAY[] = {
-   { "/etc/alternatives",        "/etc/alternatives",        BD_OPTIONAL },
    { "/var/lib/hugetlbfs",       "/var/lib/hugetlbfs",       BD_OPTIONAL },
 };
 
