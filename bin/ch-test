@@ -1000,10 +1000,12 @@ printf '\n'
 # Ensure OFI path looks sane.
 if [[ -n "$ofi_path" ]]; then
     if [[ -d "$ofi_path" ]]; then
-           find "$ofi_path" -name "-fi.so" &> /dev/null \
+           find "$ofi_path" -name "*-fi.so" &> /dev/null \
         || fatal "ofi: $ofi_path: *-fi.so not found"
+    else
+           [[ "${ofi_path##*/}" == *"-fi.so" ]] \
+        || fatal "ofi: $ofi_path: not a -fi.so"
     fi
-    [[ "${ofi_path##*/}" == *"-fi.so" ]] || fatal "ofi: $ofi_path: not a -fi.so"
 fi
 
 # Don't allow FI_ variables.
