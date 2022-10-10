@@ -105,7 +105,7 @@ cray_ofi_or_skip () {
         [[ -n "$CH_TEST_OFI_PATH" ]] || skip 'CH_TEST_OFI_PATH not set'
         [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
         if ! find "$CH_TEST_OFI_PATH" -name 'libgnix-fi.so' &> /dev/null; then
-           skip 'libgnix-fi.so not found \$CH_TEST_OFI_PATH'
+           skip 'libgnix-fi.so not found'
         fi
         $ch_mpirun_node ch-fromhost --ofi "$CH_TEST_OFI_PATH" "$1"
     else
