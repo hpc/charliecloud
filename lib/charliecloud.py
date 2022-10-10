@@ -1191,6 +1191,7 @@ class Path(pathlib.PosixPath):
    @classmethod
    def gzip_set(cls):
       """Set gzip class attribute on first call to file_gzip().
+
          Note: We originally thought this could be accomplished WITHOUT
          calling a class method (by setting the attribute, e.g. “self.gzip =
          'foo'”), but it turned out that this would only set the attribute for
