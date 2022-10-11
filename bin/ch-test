@@ -13,6 +13,8 @@ else
     export LC_ALL=C
 fi
 
+# Set environment variable for ch-image --debug flag
+export CH_IMAGE_DEBUG=true
 
 ### Functions we need right away
 
