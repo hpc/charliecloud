@@ -22,23 +22,14 @@ EXTRA_DIST = \
 _loc.rst \
 bugs.rst \
 charliecloud.rst \
-ch-checkns_desc.rst \
 ch-checkns.rst \
-ch-convert_desc.rst \
 ch-convert.rst \
-ch-fromhost_desc.rst \
 ch-fromhost.rst \
-ch-image_desc.rst \
 ch-image.rst \
-ch-run_desc.rst \
-ch-run-oci_desc.rst \
-ch-run-oci.rst \
 ch-run.rst \
-ch-ssh_desc.rst \
+ch-run-oci.rst \
 ch-ssh.rst \
-ch-test_desc.rst \
 ch-test.rst \
-command-usage.rst \
 conf.py \
 dev.rst \
 faq.rst \
@@ -70,6 +61,14 @@ if ENABLE_HTML
 nobase_html_DATA = \
 html/searchindex.js \
 html/_images/rd100-winner.png \
+html/ch-checkns.html \
+html/ch-convert.html \
+html/ch-fromhost.html \
+html/ch-image.html \
+html/ch-run.html \
+html/ch-run-oci.html \
+html/ch-ssh.html \
+html/ch-test.html \
 html/command-usage.html \
 html/dev.html \
 html/faq.html \
@@ -148,7 +147,6 @@ if ENABLE_HTML
 #       remove unused files that Sphinx made
 	rm -f $(BUILDDIR)/html/_deps.html \
 	      $(BUILDDIR)/html/charliecloud.html \
-	      $(BUILDDIR)/html/ch-*.html \
 	      $(BUILDDIR)/html/bugs.html \
 	      $(BUILDDIR)/html/_loc.html \
 	      $(BUILDDIR)/html/objects.inv \

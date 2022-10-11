@@ -25,7 +25,7 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx.ext.mathjax', 'sphinx.ext.todo']
+extensions = ['sphinx_reredirects', 'sphinx.ext.mathjax', 'sphinx.ext.todo']
 todo_include_todos = True
 
 # Add any paths that contain templates here, relative to this directory.
@@ -113,6 +113,11 @@ except ImportError:
    pass  # error caught elsewhere
 
 highlight_language = 'console'
+
+# Don’t break links to the old command-usage.html. (#1461)
+redirects = {
+   "command-usage": "index.html"
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

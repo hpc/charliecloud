@@ -548,8 +548,8 @@ So what can you do? There are a few options:
 
 * We recommend simply using the :code:`--join` family of arguments to
   :code:`ch-run`. This puts a group of :code:`ch-run` peers in the same
-  namespaces; then, the system calls work. See the :ref:`man_ch-run` man page
-  for details.
+  namespaces; then, the system calls work. See the :doc:`ch-run` man page for
+  details.
 
 * You can also sometimes turn off single-copy. For example, for :code:`vader`,
   set the MCA variable :code:`btl_vader_single_copy_mechanism` to
