@@ -97,11 +97,11 @@ def list_(cli):
          ch.FATAL("does not exist: %s" % ch.storage.root)
       if (not ch.storage.valid_p):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
-      images = sorted(ch.listdir(imgdir))
+      images = sorted(imgdir.listdir())
       if (len(images) >= 1):
          img_width = max(len(str(ref)) for ref in images)
          for ref in images:
-            img = ch.Image(ch.Image_Ref(ref))
+            img = ch.Image(ch.Image_Ref(ref.parts[-1]))
             if cli.long:
                print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
             else:

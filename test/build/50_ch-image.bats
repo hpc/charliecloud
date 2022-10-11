@@ -824,7 +824,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"storage dir: valid at old default: ${old}"* ]]
     [[ $output = *"initializing storage directory: v3 ${new}"* ]]
-    [[ $output = *"error: can't mkdir: exists and not a directory: ${new}"* ]]
+    [[ $output = *"error: can’t mkdir: exists and not a directory: ${new}"* ]]
     [[ -d $old ]]
     [[ -f $new ]]
     rm -v "$new"

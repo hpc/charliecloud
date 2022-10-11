@@ -65,12 +65,12 @@ def check_man():
    sect_matches = set(re.finditer(r"\n([a-z0-9-]+)\n\++\n\n([^\n]+)\n",
                                   open("command-usage.rst").read()))
 
-   sects = { m.group(1) for m in sect_matches }
+   sects = { m[1] for m in sect_matches }
    sects_expected = execs
    lose_lots("unexpected § in command-usage.rst", sects - sects_expected)
    lose_lots("missing § in command-usage.rst",    sects_expected - sects)
 
-   sect_helps = { m.group(1): m.group(2) for m in sect_matches }
+   sect_helps = { m[1]: m[2] for m in sect_matches }
    lose_lots("bad summary in command-usage.rst",
              {     "%s: %s" % (p, s)
                for (p, s) in sect_helps.items()
@@ -78,7 +78,7 @@ def check_man():
                    and summary_unrest(s) != helps[p])
                    and "deprecated" not in s.lower() })
 
-   sees = { m.group(0) for m in re.finditer(r"ch-[a-z0-9-]+\(1\)",
+   sees = { m[0] for m in re.finditer(r"ch-[a-z0-9-]+\(1\)",
                                             open("charliecloud.rst").read()) }
    sees_expected = { i + "(1)" for i in execs }
    lose_lots("unexpected see-also in charliecloud.rst", sees - sees_expected)
@@ -132,7 +132,7 @@ def help_get(prog):
       lose("%s --help: no summary found" % prog)
       return None
    else:
-      return m.group(1)
+      return m[1]
 
 def lose(msg):
    print(msg)

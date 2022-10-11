@@ -61,7 +61,7 @@ def expected(path):
    if (m is None):
       return '*'
    else:
-      return m.group(1)
+      return m[1]
 
 def test(path):
    filetype = (os.path.isdir(path),
