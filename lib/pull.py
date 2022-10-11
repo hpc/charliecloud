@@ -165,7 +165,7 @@ class Image_Puller:
       # raises Image_Unavailable_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
                                    "manifest list: downloading")
-      fm = ch.json_from_file(self.fatman_path, "fat manifest")
+      fm = self.fatman_path.json_from_file("fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
          # FIXME (issue #1101): If it's a v2 manifest we could use it instead
          # of re-requesting later. Maybe we could here move/copy it over to
@@ -225,7 +225,7 @@ class Image_Puller:
          self.registry.manifest_to_file(self.manifest_path,
                                         "manifest: downloading",
                                         digest=digest)
-         manifest = ch.json_from_file(self.manifest_path, "manifest")
+         manifest = self.manifest_path.json_from_file("manifest")
       # validate schema version
       try:
          version = manifest['schemaVersion']
@@ -270,7 +270,7 @@ class Image_Puller:
 
    def manifest_digest_by_arch(self):
       "Return skinny manifest digest for target architecture."
-      fatman  = ch.json_from_file(self.fat_manifest_path)
+      fatman  = self.fat_manifest_path.json_from_file()
       arch    = None
       digest  = None
       variant = None

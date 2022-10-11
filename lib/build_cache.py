@@ -138,8 +138,13 @@ class File_Metadata:
                 'mode',
                 'name')
 
-   def __init__(self, name, st):
-      self.name = name
+   def __init__(self, path, st):
+      # The if/else here accounts for when 'path' represents '.', in which
+      # case path.name returns '' and str(path) returns '.'.
+      if (len(path.parts) < 1):     # path represents '.'
+         self.name = str(path)
+      else:
+         self.name = path.parts[-1]
       self.atime_ns = st.st_atime_ns
       self.dont_restore = False
       self.children = list()  # so we can keep it sorted
@@ -253,11 +258,11 @@ class Enabled_Cache:
    def __init__(self):
       self.bootstrap_ct = 0
       if (not os.path.isdir(self.root)):
-         ch.mkdir(self.root)
-      ls = ch.listdir(self.root)
+         self.root.mkdir()
+      ls = self.root.listdir()
       if (len(ls) == 0):
          self.bootstrap()  # empty; initialize a new cache
-      elif (not {"HEAD", "objects", "refs"} <= ls):
+      elif (not {ch.Path(i) for i in ["HEAD", "objects", "refs"]} <= ls):
          # Non-empty but not an existing cache.
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
@@ -278,6 +283,14 @@ class Enabled_Cache:
    def branch_name_unready(ref):
       return ref.for_path + "#"
 
+   @staticmethod
+   def commit_hash_p(commit_ish):
+      """Return True if commit_ish looks like a commit hash, False otherwise.
+         Note this is a text-based heuristic only. It will return True for
+         hashes that don’t exist in the repo, and false positives for
+         branch/tag names that look like hashes."""
+      return (re.search(r"^[0-9a-f]{7,}$", commit_ish) is not None)
+
    def adopt(self, img):
       self.worktree_adopt(img, "root")
       img.metadata_load()
@@ -297,18 +310,25 @@ class Enabled_Cache:
       try:
          with tempfile.TemporaryDirectory(prefix="weirdal.") as td:
             ch.cmd_quiet(["git", "clone", "-q", self.root, td])
-            cwd = ch.chdir(td)
+            cwd = ch.Path(td).chdir()
             ch.cmd_quiet(["git", "checkout", "-q", "-b", "root"])
             # Git has no default gitignore, but cancel any global gitignore
             # rules the user might have. https://stackoverflow.com/a/26681066
-            ch.file_write(".gitignore", "!*\n")
+            ch.Path(".gitignore").file_write("!*\n")
             ch.cmd_quiet(["git", "add", ".gitignore"])
             ch.cmd_quiet(["git", "commit", "-m", "ROOT\n\n%s" % self.root_id])
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
-            ch.chdir(cwd)
+            cwd.chdir()
       except OSError as x:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
+
+   def branch_delete(self, branch):
+      "Delete branch branch if it exists; otherwise, do nothing."
+      if (ch.cmd_quiet(["git", "show-ref", "--quiet", "--heads", branch],
+                       cwd=self.root, fail_ok=True) == 0):
+         ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
+
 
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Image_Ref src_ref pointing to dest, which can
@@ -325,7 +345,6 @@ class Enabled_Cache:
 
    def checkout(self, image, git_hash, base_image):
       # base_image used in other subclasses
-      ch.INFO("copying image ...")
       self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path, [], False)
 
@@ -339,7 +358,7 @@ class Enabled_Cache:
       #
       # WARNING: files must be empty for the first image commit.
       self.git_prepare(path, files)
-      cwd = ch.chdir(path)
+      cwd = path.chdir()
       t = ch.Timer()
       if (len(files) == 0):
          git_files = ["-A"]
@@ -356,13 +375,13 @@ class Enabled_Cache:
       # Therefore, retrieve the hash separately.
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
       git_hash = cp.stdout.strip()
-      ch.chdir(cwd)
+      cwd.chdir()
       self.git_restore(path, files, True)
       return git_hash
 
    def configure(self):
       path = self.root // "config"
-      fp = ch.open_(path, "r+")
+      fp = path.open_("r+")
       config = configparser.ConfigParser()
       config.read_file(fp, source=path)
       changed = False
@@ -382,23 +401,26 @@ class Enabled_Cache:
          ch.ossafe(config.write, "can’t write Git config: %s" % path, fp)
       ch.close_(fp)
 
-   def find_image(self, image):
-      """Return (state ID, commit) of branch tip for image, or (None, None) if
-         no such branch."""
+   def find_commit(self, path, git_id):
+      """Return (state ID, commit) of commit-ish git_id in directory path, or
+         (None, None) if it doesn’t exist.."""
       # Note abbreviated commit hash %h is automatically long enough to avoid
       # collisions.
-      cp = ch.cmd_stdout(["git", "log", "--format=%h%n%B", "-n", "1",
-                          image.ref.for_path], fail_ok=True, cwd=self.root)
+      cp = ch.cmd_stdout(["git", "log", "--format=%h%n%B", "-n", "1", git_id],
+                         fail_ok=True, cwd=path)
       if (cp.returncode == 0):  # branch exists
          sid = State_ID.from_text(cp.stdout)
          commit = cp.stdout.split("\n", maxsplit=1)[0]
-         commit_short = commit[:7]
       else:
          sid = None
          commit = None
-         commit_short = 'nada'
-      ch.VERBOSE("branch: %s: %s %s" % (image.ref.for_path, commit_short, sid))
+      ch.VERBOSE("commit-ish %s in %s: %s %s" % (git_id, path, commit, sid))
       return (sid, commit)
+
+   def find_image(self, image):
+      """Return (state ID, commit) of branch tip for image, or (None, None) if
+         no such branch."""
+      return self.find_commit(self.root, image.ref.for_path)
 
    def find_sid(self, sid, branch):
       """Return the hash of the commit matching State_ID, or None if no such
@@ -486,30 +508,30 @@ class Enabled_Cache:
 
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       t = ch.Timer()
-      cwd = ch.chdir(unpack_path)
+      cwd = unpack_path.chdir()
       if (len(files) == 0):
-         self.file_metadata = self.git_prepare_walk(dict(), None, ".",
+         self.file_metadata = self.git_prepare_walk(dict(), None, ch.Path("."),
                                                     os.lstat("."))
       else:
          for path in files:
-            self.file_metadata.set(path, File_Metadata(path.name, path.lstat()))
+            self.file_metadata.set(path, File_Metadata(path, path.lstat()))
       if (write):
-         ch.file_write("ch/git.pickle", pickle.dumps(self.file_metadata,
-                                                     protocol=4))
-      ch.chdir(cwd)
+         ch.Path("ch/git.pickle").file_write(pickle.dumps(self.file_metadata,
+                                                          protocol=4))
+      cwd.chdir()
       t.log("gathered file metadata")
 
-   def git_prepare_walk(self, hardlinks, parent, name, st):
+   def git_prepare_walk(self, hardlinks, parent, f_path, st):
       """Return a File_Metadata object describing file name and its children
          (if name is a directory), and rename files as described in
          git_prepare(). Changes CWD during operation but does restore it."""
       # While the standard library provides a similar function os.walk() that
       # is internally recursive, it must be used iteratively.
-      fm = File_Metadata(name, st)
-      path = name if parent is None else "%s/%s" % (parent, name)
+      fm = File_Metadata(f_path, st)
+      path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
       # Ensure minimum permissions. Some tools like to make files with mode
       # 000, because root ignores the permissions bits.
-      ch.chmod_min(path, 0o700 if stat.S_ISDIR(st.st_mode) else 0o400, st)
+      f_path.chmod_min(0o700 if stat.S_ISDIR(st.st_mode) else 0o400, st) # see #1455
       # Validate file type and recurse if necessary.
       if   (   stat.S_ISREG(st.st_mode)
             or stat.S_ISLNK(st.st_mode)
@@ -517,7 +539,8 @@ class Enabled_Cache:
          # normally nothing to do here on these file types
          if (path.startswith("./var/lib/rpm/__db.")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
-            ch.unlink(name)
+            f_path.unlink() # change to fm.path.unlink() once issue #1455 is
+                            # closed
             fm.dont_restore = True
             return fm
       elif (   stat.S_ISSOCK(st.st_mode)):
@@ -526,13 +549,14 @@ class Enabled_Cache:
             or stat.S_ISBLK(st.st_mode)):
          ch.FATAL("device files invalid in image: %s" % path)
       elif (   stat.S_ISDIR(st.st_mode)):
-         entries = sorted(ch.listdir(name))
-         cwd = ch.chdir(name)
+         entries = sorted(f_path.listdir()) # FIXME: see issue #1455
+         cwd = f_path.chdir() # once #1455 is closed, this line should get
+                              # changed to 'fm.path.chdir()'.
          for i in entries:
-            if (not (parent is None and i.startswith(".git"))):
+            if (not (parent is None and str(i).startswith(".git"))):
                fm.children.append(self.git_prepare_walk(hardlinks, path,
                                                         i, os.lstat(i)))
-         ch.chdir(cwd)
+         cwd.chdir()
       else:
          ch.FATAL("unexpected file type in image: %x: %s"
                   % (stat.IFMT(st.st_mode), path))
@@ -542,7 +566,7 @@ class Enabled_Cache:
             ch.TRACE("hard link: deleting subsequent: %d %d %s"
                      % (st.st_dev, st.st_ino, path))
             fm.hardlink_to = hardlinks[(st.st_dev, st.st_ino)]
-            ch.unlink(name)
+            f_path.unlink() # f_path -> fm.path (issue #1455)
          else:
             ch.TRACE("hard link: recording first: %d %d %s"
                      % (st.st_dev, st.st_ino, path))
@@ -550,18 +574,18 @@ class Enabled_Cache:
       # Remove empty directories. Git will ignore them, including leaving them
       # there if switch the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
-         ch.rmdir(fm.name)
+         f_path.rmdir_() # f_path -> fm.path (issue #1455)
          return fm  # can't do anything else after it's gone
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(st.st_mode)):
-         ch.unlink(fm.name)
+         f_path.unlink() # f_path -> fm.path (issue #1455)
       # Rename if necessary.
-      if (name.startswith(".weirdal_")):
-         ch.WARNING("file starts with sentinel, will be renamed: %s" % name)
-      if (name.startswith(".git")):
-         name_new = name.replace(".git", ".weirdal_")
-         ch.VERBOSE("renaming: %s -> %s" % (name, name_new))
-         ch.rename(name, name_new)
+      if (fm.name.startswith(".weirdal_")):
+         ch.WARNING("file starts with sentinel, will be renamed: %s" % fm.name)
+      if (fm.name.startswith(".git")):
+         name_new = fm.name.replace(".git", ".weirdal_")
+         ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
+         f_path.rename_(name_new) # f_path -> fm.path (issue #1455)
       # Done.
       return fm
 
@@ -576,17 +600,16 @@ class Enabled_Cache:
          unpack_path and do a full restore. This method will dirty the Git
          working directory."""
       t = ch.Timer()
-      cwd = ch.chdir(unpack_path)
+      cwd = unpack_path.chdir()
       if (not quick):
-         self.file_metadata = pickle.loads(ch.file_read_all("ch/git.pickle",
-                                                            text=False))
+         self.file_metadata = pickle.loads(ch.Path("ch/git.pickle").file_read_all(text=False))
       if (len(files) == 0):
          self.git_restore_walk(unpack_path, None, self.file_metadata, quick)
       else:
          for path in files:
             self.git_restore_walk(path, path.parent,
                                   self.file_metadata.get(path), quick)
-      ch.chdir(cwd)
+      cwd.chdir()
       t.log("restored file metadata (%s)" % ("quick" if quick else "full"))
 
    def git_restore_walk(self, root, parent, fm, quick):
@@ -616,16 +639,16 @@ class Enabled_Cache:
          ch.ossafe(os.link, "can't hardlink: %s -> %s" % (path, target),
                    target, fm.name, follow_symlinks=False)
       if (fm.name.startswith(".git")):
-         ch.rename(fm.name.replace(".git", ".weirdal_"), fm.name)
+         ch.Path(fm.name.replace(".git", ".weirdal_")).rename_(fm.name)
       if (not quick):
          if (stat.S_ISSOCK(fm.mode)):
             ch.WARNING("ignoring socket in image: %s" % path)
       # Recurse children.
       if (len(fm.children) > 0):
-         cwd = ch.chdir(fm.name)  # works at top level b/c fm.name is "."
+         cwd = ch.Path(fm.name).chdir() # works at top level b/c fm.name is "."
          for child in fm.children:
             self.git_restore_walk(root, path, child, quick)
-         ch.chdir(cwd)
+         cwd.chdir()
       # Restore my metadata.
       if ((   not quick                     # Git broke metadata
            or fm.hardlink_to is not None    # we just made the hardlink
@@ -677,8 +700,7 @@ class Enabled_Cache:
    def ready(self, image):
       ch.cmd_quiet(["git", "checkout", "-B", self.branch_name_ready(image.ref)],
                    cwd=image.unpack_path)
-      ch.cmd_quiet(["git", "branch", "-D", self.branch_name_unready(image.ref)],
-                   cwd=self.root)
+      self.branch_delete(self.branch_name_unready(image.ref))
 
    def reset(self):
       if (self.bootstrap_ct >= 1):
@@ -702,14 +724,14 @@ class Enabled_Cache:
             FATAL("can’t open GC PID file: %s: %s" % (pid_path, x.strerror))
          # Delete images that are worktrees referring back to the build cache.
          ch.INFO("deleting build cache")
-         for d in ch.listdir(ch.storage.unpack_base):
+         for d in ch.storage.unpack_base.listdir():
             dotgit = ch.storage.unpack_base // d // ".git"
             if (os.path.exists(dotgit)):
                ch.VERBOSE("deleting cached image: %s" % d)
-               ch.rmtree(ch.storage.unpack_base // d)
+               (ch.storage.unpack_base // d).rmtree()
          # Create new build cache.
-         ch.rmtree(self.root)
-         ch.mkdir(self.root)
+         self.root.rmtree()
+         self.root.mkdir()
          self.bootstrap()
 
    def rollback(self, path):
@@ -717,8 +739,10 @@ class Enabled_Cache:
          untracked files."""
       ch.INFO("rolling back ...")
       self.git_prepare(path, [], write=False)
+      t = ch.Timer()
       ch.cmd_quiet(["git", "reset", "--hard", "HEAD"], cwd=path)
       ch.cmd_quiet(["git", "clean", "-fdq"], cwd=path)
+      t.log("reverted worktree")
       self.git_restore(path, [], False)
 
    def sid_from_parent(self, *args):
@@ -735,7 +759,7 @@ class Enabled_Cache:
          return "*"
 
    def summary_print(self):
-      cwd = ch.chdir(self.root)
+      cwd = ch.Path(self.root).chdir()
       # state IDs
       msgs = ch.cmd_stdout(["git", "log",
                             "--all", "--reflog", "--format=format:%b"]).stdout
@@ -746,7 +770,7 @@ class Enabled_Cache:
       # branches (FIXME: how to count unnamed branch tips?)
       image_ct = ch.cmd_stdout(["git", "branch", "--list"]).stdout.count("\n")
       # file count and size on disk
-      (file_ct, byte_ct) = ch.du(self.root)
+      (file_ct, byte_ct) = ch.Path(self.root).du()
       commit_ct = int(ch.cmd_stdout(["git", "rev-list",
                                      "--all", "--reflog", "--count"]).stdout)
       (file_ct, file_suffix) = ch.si_decimal(file_ct)
@@ -762,7 +786,7 @@ class Enabled_Cache:
          out = ch.cmd_stdout(["git", "count-objects", "-vH"]).stdout
          print("Git statistics:")
          print(textwrap.indent(out, "  "), end="")
-         out = ch.file_read_all(self.root // "config")
+         out = (self.root // "config").file_read_all()
          print("Git config:")
          print(textwrap.indent(out, "  "), end="")
 
@@ -805,20 +829,26 @@ class Enabled_Cache:
       ch.cmd_quiet(["dot", "-Tpdf", "-o%s" % path_pdf, str(path_gv)])
 
    def worktree_add(self, image, base):
-      t = ch.Timer()
       if (image.unpack_cache_linked):
          self.git_prepare(image.unpack_path, [], write=False)  # clean worktree
-         ch.cmd_quiet(["git", "checkout",
-                       "-B", self.branch_name_unready(image.ref), base],
-                      cwd=image.unpack_path)
-         op = "adjusted"
+         if (    self.commit_hash_p(base)
+             and base == self.find_commit(image.unpack_path, "HEAD")[1]):
+            ch.VERBOSE("already checked out: %s %s" % (image.unpack_path, base))
+         else:
+            ch.INFO("updating existing image ...")
+            t = ch.Timer()
+            ch.cmd_quiet(["git", "checkout",
+                          "-B", self.branch_name_unready(image.ref), base],
+                         cwd=image.unpack_path)
+            t.log("adjusted worktree")
       else:
+         ch.INFO("copying image from cache ...")
          image.unpack_clear()
+         t = ch.Timer()
          ch.cmd_quiet(["git", "worktree", "add", "-f",
                        "-B", self.branch_name_unready(image.ref),
                        image.unpack_path, base], cwd=self.root)
-         op = "created"
-      t.log("%s worktree" % op)
+         t.log("created worktree")
 
    def worktree_adopt(self, image, base):
       """Create a new worktree with the contents of existing directory
@@ -829,13 +859,13 @@ class Enabled_Cache:
       if (os.path.isdir(ch.storage.image_tmp)):
          ch.WARNING("temporary image still exists, deleting",
                     "maybe a previous command crashed?")
-         ch.rmtree(ch.storage.image_tmp)
-      ch.rename(image.unpack_path, ch.storage.image_tmp)
+         ch.storage.image_tmp.rmtree()
+      image.unpack_path.rename_(ch.storage.image_tmp)
       self.worktree_add(image, base)
       for i in { ".git", ".gitignore" }:
-         ch.rename(image.unpack_path // i, ch.storage.image_tmp // i)
-      ch.rmdir(image.unpack_path)
-      ch.rename(ch.storage.image_tmp, image.unpack_path)
+         (image.unpack_path // i).rename_(ch.storage.image_tmp // i)
+      image.unpack_path.rmdir_()
+      ch.storage.image_tmp.rename_(image.unpack_path)
 
    def worktree_get_head(self, image):
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"],
