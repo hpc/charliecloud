@@ -25,8 +25,16 @@ import sys, os
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ['sphinx_reredirects', 'sphinx.ext.mathjax', 'sphinx.ext.todo']
+extensions = ['sphinx.ext.mathjax', 'sphinx.ext.todo']
 todo_include_todos = True
+# Workaround for EPEL, which prohibits pip and doesn’t have
+# sphinx_reredirects. The result will be no redirect, but a lot about the
+# EPEL-built docs is crappy.
+try:
+   import sphinx_reredirects
+   extensions.append('sphinx_reredirects')
+except ImportError:
+   pass
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

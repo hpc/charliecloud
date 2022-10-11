@@ -138,6 +138,10 @@ _deps.rst: ../config.log make-deps-overview
 # [1]: https://www.gnu.org/software/make/manual/html_node/Multiple-Targets.html
 $(nobase_html_DATA) $(man_MANS): ../lib/version.txt ../README.rst _deps.rst $(EXTRA_DIST)
 if ENABLE_HTML
+#       Create dummy file in case the redirect is disabled for EPEL.
+	mkdir -p html
+	touch html/command-usage.html
+#       Build.
 	$(SPHINXBUILD) -b html $(ALLSPHINXOPTS) $(BUILDDIR)/html
 #       Avoid GitHub messing things up with Jekyll.
 	touch html/.nojekyll
