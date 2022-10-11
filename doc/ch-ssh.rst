@@ -1,5 +1,5 @@
-ch-ssh man page
-+++++++++++++++
+:code:`ch-ssh`
+++++++++++++++
 
 .. only:: not man
 
