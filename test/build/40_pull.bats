@@ -518,7 +518,7 @@ EOF
         run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo' ]]
+        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo'* ]]
     fi
 }
 
