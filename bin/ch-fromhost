@@ -430,13 +430,21 @@ for d in $inject_mkdirs; do
     mkdir -p "${image}${d}"
 done
 
+# Process ldconfig targets.
 if [ $ofi_found ]; then
-    ch_conf=${image}/etc/ld.so.conf.d/ch-ofi.conf
-    # Create or replace repare image ch-ofi.conf.
-    printf '' > "$ch_conf"
+    if [ ! -f "${image}/etc/ld.so.conf" ]; then
+        debug_indent "touch ${image}/etc/ld.so.conf"
+        touch "${image}/etc/ld.so.conf"
+    fi
+    if ! grep -F 'include ld.so.conf.d/*.conf' "${image}/etc/ld.so.conf" 2>&1 > /dev/null; then
+        debug_indent "echo 'include ld.so.conf.d/*.conf' >> ${image}/etc/ld.so.conf"
+        echo 'include ld.so.conf.d/*.conf' >> "${image}/etc/ld.so.conf"
+    fi
+    # Prepare image ch-ofi.conf.
+    printf '' > "${image}/etc/ld.so.conf.d/ch-ofi.conf"
     # add ofi dso provider ld library dirs.
     for c in $ld_conf; do
-        debug_indent "echo '$c' >> $ch_conf"
+        debug_indent "echo '$c' >> ${image}/etc/ld.so.conf.d/ch-ofi.conf"
         echo "$c" >> "$ch_conf"
     done
 fi
