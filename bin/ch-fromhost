@@ -177,7 +177,7 @@ queue_ofi_dso () {
     # Directory of OFI provider dsos (*-fi.so's).
     if [ -d "$1" ]; then
        debug "searching $1 for ofi providers"
-       for f in "${1}/"*.so; do
+       for f in "${1}/"*-fi.so; do
            queue_ofi_dso "$f"
        done
        [ -n "$ofi_found" ] || "no ofi providers found in $1"
@@ -197,7 +197,7 @@ queue_ofi_dso () {
             fi
         done
     else
-        fatal "$1 is not, or does not contain, valid OFI dso(s)"
+        fatal "$1 is not a directory or file ending -fi.so"
     fi
 }
 

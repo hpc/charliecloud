@@ -250,6 +250,7 @@ unpack_img_all_nodes () {
     if [[ $1 ]]; then
         case $CH_TEST_PACK_FMT in
             squash-mount)
+                # Lots of things expect no extension here, so go with that even 
                 # though it's a file, not a directory.
                 $ch_mpirun_node ln -s "${ch_tardir}/${ch_tag}.sqfs" "${ch_imgdir}/${ch_tag}"
                 ;;

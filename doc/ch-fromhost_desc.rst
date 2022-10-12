@@ -32,18 +32,6 @@ change in the future.
 
 Arbitrary file and Libfabric injection are handled differently.
 
-Loadable Libfabric providers
-----------------------------
-
-Loadable Libfabric providers, e.g., files that end in :code:`-fi.so`, are copied
-to a specified or determined path inside the image. See ofi section for details.
-
-Paths listed in the provider's :code:`ldd` output that do not exist within the
-image are created and assumed to be used as bind-mount targets for
-corresponding host paths at run time. These paths are added to the image at
-:code:`/etc/ld.so.conf.d/ch-fi.conf`; :code:`ldconfig` is executed in the
-container, using :code:`ch-run -w`, after injection.
-
 Arbitrary files
 ---------------
 
@@ -57,6 +45,27 @@ directory specified by :code:`--dest`.
 
 If any shared libraries are injected, run :code:`ldconfig` inside the
 container (using :code:`ch-run -w`) after injection.
+
+Loadable Libfabric providers
+----------------------------
+
+MPI implementations have numerous ways of communicating messages over
+interconnects. We use Libfabric (OFI), an OpenFabric framework that
+exports fabric communication services to applications, to manage these
+communcations with built-in, or loadable, fabric providers.
+
+   - https://ofiwg.github.io/libfabric
+   - https://ofiwg.github.io/libfabric/v1.14.0/man/fi_provider.3.html
+
+Using OFI, we can: 1) uniformly manage fabric communcations services for both
+OpenMPI and MPICH; and 2) leverage host-built loadable dynamic shared object
+(dso) providers to give our container examples access to proprietary host
+hardware, e.g., Cray Gemini/Aries.
+
+OFI providers implement the application facing software interfaces needed to
+access network specific protocols, drivers, and hardware. Loadable providers,
+e.g., files that end in :code:`-fi.so`, can be copied into, and used, by an
+image with a MPI configured with Libfabric. See details below.
 
 
 Options
@@ -192,7 +201,7 @@ The implementation of :code:`--ofi` is experimental and has a couple quirks.
    Managing all possible bind mount paths is untenable. Thus, this experimental
    implementation works only with Cray UGNI provider(s) built on XC series
    systems with the minimal modules necessary to compile provider and
-   leverage the Aries interconnect at run-time, e.g.,:
+   leverage the Aries interconnect at run-time, i.e.,:
 
    - modules
    - craype-network-aries
@@ -207,7 +216,13 @@ The implementation of :code:`--ofi` is experimental and has a couple quirks.
    provider's :code:`ldd` output, and 2) all such paths do not conflict with
    container functionality, e.g., :code:`/usr/bin/`, etc.
 
-4. Tested only for C programs compiled with GCC, and it probably won't work
+4. At the time of this writing, a Cray Slingshot optimized provider is not
+   available. We are working with HPE to get this feature added sooner, rather
+   than later; however, we may need to implement more complicated injection
+   techniques, e.g., complete replacement of the container's libfabric with
+   hosts, for future Cray systems with Slingshot.
+
+5. Tested only for C programs compiled with GCC, and it probably won't work
    without extensive bind-mounts and kluding. If you'd like to use another
    compiler or programming environment, please get in touch so we can implement
    the necessary support.
@@ -242,10 +257,6 @@ There are two alternate approaches for nVidia GPU libraries:
 Further, while these alternate approaches would simplify or eliminate this
 script for nVidia GPUs, they would not solve the problem for other situations.
 
-At the time of this writing, a Cray Slingshot optimized provider is not
-available. We are working with HPE to get this feature added sooner, rather
-than later, however, we may need to revert to more complicated injection
-techniques for future Cray systems with Slingshot.
 
 Bugs
 ====
