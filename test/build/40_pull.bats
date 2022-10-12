@@ -22,7 +22,7 @@ image_ref_parse () {
         echo "fail: return code differs from expected ${retcode_expected}"
         exit 1
     fi
-    diff -u - <(echo "$out")
+    diff -u -I '^hint: https://' - <(echo "$out")
 }
 
 
