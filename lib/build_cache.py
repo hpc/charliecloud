@@ -139,6 +139,8 @@ class File_Metadata:
 
    # Note: ctime cannot be restored: https://unix.stackexchange.com/a/36105
 
+   PICKLE_PATH_DEFAULT = ch.Path("ch/git.pickle")
+
    # Note/FIXME: Because children is a list, rather than e.g. a dictionary
    # that maps names to child objects, we cannot efficiently access the
    # children by name. See get() and set(). Changing that attribute's type
@@ -146,9 +148,6 @@ class File_Metadata:
    # converting on un-pickle. Because currently (9/19/2022) our performance
    # requirements are not large, I don't think the hassle of doing either of
    # these is merited.
-   #
-   # A related design problem is that this class is externally mucked with a
-   # lot, e.g. by build_cache.git_prepare_walk() and .git_restore_walk().
 
    __slots__ = ('atime_ns',
                 'children',
@@ -171,6 +170,127 @@ class File_Metadata:
       self.hardlink_to = None
       self.mtime_ns = st.st_mtime_ns
       self.mode = st.st_mode
+
+   @classmethod
+   def git_prepare(class_, path, hardlinks=None):
+      """Recursively walk the given path, prepare it for a Git commit, and
+         return the resulting File_Metadata tree describing it. Most of this
+         is reversed by git_restore_walk(); anything not reversed is noted.
+
+         For each file, in this order:
+
+           1. Record file metadata, specifically mode and timestamps, because
+              Git does not save metadata beyond a limited executable bit.
+              (More may be saved in the future; see issue #1287.)
+
+              This captures FIFOs (named pipes), which are ignored by Git.
+
+              Exception: Sockets are ignored. Like FIFOs, sockets are ignored
+              by Git, but there isn’t a meaningful way to re-create them.
+              Their presence in a container image that is not in use, which
+              this image shouldn’t be, most likely reflects a bug in
+              something. We do print a warning in this case.
+
+           2. For directories, record the number of children. Git does not
+              save empty directories, so this is used to re-create them.
+
+           3. For devices, exit with error. Such files should not appear in
+              unprivileged container images, so their presence means something
+              is wrong.
+
+           4. For non-directories with link count greater than 1 (i.e., hard
+              links), do nothing when the first link is encountered, but
+              second and subsequent links are deleted, to be restored on
+              checkout. (Git splits multiply-linked files into separate
+              files, and directories cannot be hard-linked [1].)
+
+           5. Files special due to their name:
+
+              a. Names starting in “.git” are special to Git. Therefore,
+                 except at the root where “.git” files support the cache’s Git
+                 worktree, rename them to begin with “.weirdal_” instead.
+
+              b. Files matching the pattern /var/lib/rpm/__db.* are Berkeley
+                 DB database support files used by RPM. Sometimes, something
+                 mishandles the last-modified dates on these files, fooling
+                 Git into thinking they have not been modified, and so they
+                 don't get committed or restored, which confuses BDB/RPM.
+                 Fortunately, they can be safely deleted, and that's a simple
+                 workaround, so we do it. See issue #1351.
+
+         Return the File_Metadata tree, and if write is True, also save it in
+         “ch/git.pickle”.
+
+         [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
+      # Setup.
+      if (hardlinks is None):
+         hardlinks = dict()
+      # Initialize root File_Metadata object.
+      st = path.stat_(False)
+      fm = class_(path, st)
+      # Ensure minimum permissions. Some tools like to make files with mode
+      # 000, because root ignores the permissions bits.
+      path.chmod_min(0o700 if stat.S_ISDIR(st.st_mode) else 0o400, st) #1455
+      # Validate file type and recurse if needed. (Don’t use os.walk() because
+      # it’s iterative, and our algorithm is better expressed recursively.)
+      if   (   stat.S_ISREG(st.st_mode)
+            or stat.S_ISLNK(st.st_mode)
+            or stat.S_ISFIFO(st.st_mode)):
+         # Normally nothing to do here on these file types, but RPM databases
+         # get corrupted. The easy fix is to delete them. See issue #1351.
+         # FIXME: YOU ARE HERE
+         path_s = fm.name if parent is None else "%s/%s" % (parent, fm.name)
+         if (path_s.startswith("./var/lib/rpm/__db.")):
+            ch.VERBOSE("deleting, see issue #1351: %s" % path)
+            path.unlink() # change to fm.path.unlink() once #1455 is closed
+            fm.dont_restore = True
+            return fm
+      elif (   stat.S_ISSOCK(st.st_mode)):
+         ch.WARNING("socket in image, will be ignored: %s" % path)
+      elif (   stat.S_ISCHR(st.st_mode)
+            or stat.S_ISBLK(st.st_mode)):
+         ch.FATAL("device files invalid in image: %s" % path)
+      elif (   stat.S_ISDIR(st.st_mode)):
+         entries = sorted(path.listdir()) # FIXME: see issue #1455
+         for i in entries:
+            if (not (parent is None and str(i).startswith(".git"))):
+               fm.children.append(
+                  self.git_prepare_walk(path // i, hardlinks))
+      else:
+         ch.FATAL("unexpected file type in image: %x: %s"
+                  % (stat.IFMT(st.st_mode), path))
+      # Deal with hard links.
+      if (not stat.S_ISDIR(st.st_mode) and st.st_nlink > 1):
+         if ((st.st_dev, st.st_ino) in hardlinks):
+            ch.TRACE("hard link: deleting subsequent: %d %d %s"
+                     % (st.st_dev, st.st_ino, path))
+            fm.hardlink_to = hardlinks[(st.st_dev, st.st_ino)]
+            path.unlink() # -> fm.path (issue #1455)
+         else:
+            ch.TRACE("hard link: recording first: %d %d %s"
+                     % (st.st_dev, st.st_ino, path))
+            hardlinks[(st.st_dev, st.st_ino)] = path
+      # Remove empty directories. Git will ignore them, including leaving them
+      # there when switching the worktree to a different branch, which is bad.
+      if (fm.empty_dir_p):
+         path.rmdir_() # path -> fm.path (issue #1455)
+         return fm  # can't do anything else after it's gone
+      # Remove FIFOs for the same reason.
+      if (stat.S_ISFIFO(st.st_mode)):
+         path.unlink() # path -> fm.path (issue #1455)
+      # Rename if necessary.
+      if (fm.name.startswith(".weirdal_")):
+         ch.WARNING("file starts with sentinel, will be renamed: %s" % fm.name)
+      if (fm.name.startswith(".git")):
+         name_new = fm.name.replace(".git", ".weirdal_")
+         ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
+         path.rename_(name_new) # path -> fm.path (issue #1455)
+      # Done.
+      return fm
+
+   @classmethod
+   def unpickle(self, path=PICKLE_PATH_DEFAULT):
+      return pickle.loads(path.file_read_all(text=False))
 
    @property
    def unstored(self):
@@ -205,6 +325,9 @@ class File_Metadata:
                return c.get(path.lstrip(1))
       assert False, "unreachable code reached"
 
+   def pickle(self):
+      PICKLE_PATH_DEFAULT.file_write(pickle.dumps(self, protocol=4))
+
    def set(self, path, fm):
       """Set the File_Metadata object at path to fm. Slow; see comment."""
       assert (len(path.parts) >= 1)
@@ -213,7 +336,7 @@ class File_Metadata:
             if (len(path.parts) == 1):
                self.children[i] = fm  # WARNING: iteration now broken
             else:
-               c.set(path.lstrip(1), fm)
+               c.update(path.lstrip(1))
             break
 
 
@@ -480,134 +603,19 @@ class Enabled_Cache:
       t.log("collected garbage")
 
    def git_prepare(self, unpack_path, files, write=True):
-      """Recursively walk the given unpack path and prepare it for a Git
-         commit. Most of this is reversed by git_restore(); anything not
-         reversed is noted. For each file, in this order:
-
-           1. Record file metadata, specifically mode and timestamps, because
-              Git does not save metadata beyond a limited executable bit.
-              (More may be saved in the future; see issue #1287.)
-
-              This captures FIFOs (named pipes), which are ignored by Git.
-
-              Exception: Sockets are ignored. Like FIFOs, sockets are ignored
-              by Git, but there isn’t a meaningful way to re-create them.
-              Their presence in a container image that is not in use, which
-              this image shouldn’t be, most likely reflects a bug in
-              something. We do print a warning in this case.
-
-           2. For directories, record the number of children. Git does not
-              save empty directories, so this is used to re-create them.
-
-           3. For devices, exit with error. Such files should not appear in
-              unprivileged container images, so their presence means something
-              is wrong.
-
-           4. For non-directories with link count greater than 1 (i.e., hard
-              links), do nothing when the first link is encountered, but
-              second and subsequent links are deleted, to be restored on
-              checkout. (Git splits multiply-linked files into separate
-              files, and directories cannot be hard-linked [1].)
-
-           5. Files special due to their name:
-
-              a. Names starting in “.git” are special to Git. Therefore,
-                 except at the root where “.git” files support the cache’s Git
-                 worktree, rename them to begin with “.weirdal_” instead.
-
-              b. Files matching the pattern /var/lib/rpm/__db.* are Berkeley
-                 DB database support files used by RPM. Sometimes, something
-                 mishandles the last-modified dates on these files, fooling
-                 Git into thinking they have not been modified, and so they
-                 don't get committed or restored, which confuses BDB/RPM.
-                 Fortunately, they can be safely deleted, and that's a simple
-                 workaround, so we do it. See issue #1351.
-
-         Return the File_Metadata tree, and if write is True, also save it in
-         “ch/git.pickle”.
-
-         [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
+      """Prepare unpack_path for Git operations (see
+         File_Metadata.git_prepare() for lots of details). If files is None,
+         regenerate self.file_metadata by walking the directory tree.
+         Otherwise, update metadata only for files in files."""
       t = ch.Timer()
-      cwd = unpack_path.chdir()
       if (len(files) == 0):
-         self.file_metadata = self.git_prepare_walk(dict(), None, ch.Path("."),
-                                                    os.lstat("."))
+         self.file_metadata = File_Metadata.git_prepare(unpack_path)
       else:
          for path in files:
-            self.file_metadata.set(path, File_Metadata(path, path.lstat()))
-      if (write):
-         ch.Path("ch/git.pickle").file_write(pickle.dumps(self.file_metadata,
-                                                          protocol=4))
-      cwd.chdir()
+            self.file_metadata.set(path, File_Metadata(path, path.stat_(False)))
       t.log("gathered file metadata")
-
-   def git_prepare_walk(self, hardlinks, parent, f_path, st):
-      """Return a File_Metadata object describing file name and its children
-         (if name is a directory), and rename files as described in
-         git_prepare(). Changes CWD during operation but does restore it."""
-      # While the standard library provides a similar function os.walk() that
-      # is internally recursive, it must be used iteratively.
-      fm = File_Metadata(f_path, st)
-      path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
-      # Ensure minimum permissions. Some tools like to make files with mode
-      # 000, because root ignores the permissions bits.
-      f_path.chmod_min(0o700 if stat.S_ISDIR(st.st_mode) else 0o400, st) # see #1455
-      # Validate file type and recurse if necessary.
-      if   (   stat.S_ISREG(st.st_mode)
-            or stat.S_ISLNK(st.st_mode)
-            or stat.S_ISFIFO(st.st_mode)):
-         # normally nothing to do here on these file types
-         if (path.startswith("./var/lib/rpm/__db.")):
-            ch.VERBOSE("deleting, see issue #1351: %s" % path)
-            f_path.unlink() # change to fm.path.unlink() once issue #1455 is
-                            # closed
-            fm.dont_restore = True
-            return fm
-      elif (   stat.S_ISSOCK(st.st_mode)):
-         ch.WARNING("socket in image, will be ignored: %s" % path)
-      elif (   stat.S_ISCHR(st.st_mode)
-            or stat.S_ISBLK(st.st_mode)):
-         ch.FATAL("device files invalid in image: %s" % path)
-      elif (   stat.S_ISDIR(st.st_mode)):
-         entries = sorted(f_path.listdir()) # FIXME: see issue #1455
-         cwd = f_path.chdir() # once #1455 is closed, this line should get
-                              # changed to 'fm.path.chdir()'.
-         for i in entries:
-            if (not (parent is None and str(i).startswith(".git"))):
-               fm.children.append(self.git_prepare_walk(hardlinks, path,
-                                                        i, os.lstat(i)))
-         cwd.chdir()
-      else:
-         ch.FATAL("unexpected file type in image: %x: %s"
-                  % (stat.IFMT(st.st_mode), path))
-      # Deal with hard links.
-      if (not stat.S_ISDIR(st.st_mode) and st.st_nlink > 1):
-         if ((st.st_dev, st.st_ino) in hardlinks):
-            ch.TRACE("hard link: deleting subsequent: %d %d %s"
-                     % (st.st_dev, st.st_ino, path))
-            fm.hardlink_to = hardlinks[(st.st_dev, st.st_ino)]
-            f_path.unlink() # f_path -> fm.path (issue #1455)
-         else:
-            ch.TRACE("hard link: recording first: %d %d %s"
-                     % (st.st_dev, st.st_ino, path))
-            hardlinks[(st.st_dev, st.st_ino)] = path
-      # Remove empty directories. Git will ignore them, including leaving them
-      # there if switch the worktree to a different branch, which is bad.
-      if (fm.empty_dir_p):
-         f_path.rmdir_() # f_path -> fm.path (issue #1455)
-         return fm  # can't do anything else after it's gone
-      # Remove FIFOs for the same reason.
-      if (stat.S_ISFIFO(st.st_mode)):
-         f_path.unlink() # f_path -> fm.path (issue #1455)
-      # Rename if necessary.
-      if (fm.name.startswith(".weirdal_")):
-         ch.WARNING("file starts with sentinel, will be renamed: %s" % fm.name)
-      if (fm.name.startswith(".git")):
-         name_new = fm.name.replace(".git", ".weirdal_")
-         ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
-         f_path.rename_(name_new) # f_path -> fm.path (issue #1455)
-      # Done.
-      return fm
+      if (write):
+         self.file_metadata.pickle()
 
    def git_restore(self, unpack_path, files, quick):
       """Opposite of git_prepare. If files is non-empty, only restore those
@@ -620,16 +628,14 @@ class Enabled_Cache:
          unpack_path and do a full restore. This method will dirty the Git
          working directory."""
       t = ch.Timer()
-      cwd = unpack_path.chdir()
       if (not quick):
-         self.file_metadata = pickle.loads(ch.Path("ch/git.pickle").file_read_all(text=False))
+         self.file_metadata = File_Metadata.unpickle()
       if (len(files) == 0):
-         self.git_restore_walk(unpack_path, None, self.file_metadata, quick)
+         self.file_metadata.git_restore(unpack_path, unpack_path, quick)
       else:
          for path in files:
-            self.git_restore_walk(path, path.parent,
-                                  self.file_metadata.get(path), quick)
-      cwd.chdir()
+            self.file_metadata.get(path).git_restore(unpack_path,
+                                                     unpack_path // path, quick)
       t.log("restored file metadata (%s)" % ("quick" if quick else "full"))
 
    def git_restore_walk(self, root, parent, fm, quick):

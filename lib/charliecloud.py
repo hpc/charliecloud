@@ -1391,7 +1391,7 @@ class Path(pathlib.PosixPath):
       try:
          super().mkdir(exist_ok=True)
       except FileExistsError as x:
-          FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
+         FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
          FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
 
@@ -1426,7 +1426,7 @@ class Path(pathlib.PosixPath):
       else:
          assert False, "unimplemented"
 
-   def stat_(self, links=False):
+   def stat_(self, links):
       """An error-checking version of stat(). Note that we cannot simply
          change the definition of stat() to be ossafe, as the exists() method
          in pathlib relies on an OSError check.
