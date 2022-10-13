@@ -22,7 +22,7 @@ image_ref_parse () {
         echo "fail: return code differs from expected ${retcode_expected}"
         exit 1
     fi
-    diff -u - <(echo "$out")
+    diff -u -I '^hint: https://' - <(echo "$out")
 }
 
 
@@ -518,7 +518,7 @@ EOF
         run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo' ]]
+        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo'* ]]
     fi
 }
 
