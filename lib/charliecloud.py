@@ -135,53 +135,71 @@ ARG_DEFAULTS = \
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
 
-# This is a general grammar for all the parsing we need to do. As such, you
-# must prepend a start rule before use.
-GRAMMAR = r"""
+# Common grammar stuff.
+GRAMMAR_COMMON = r"""
+// Matching lines in the face of continuations is surprisingly hairy. Notes:
+//
+//   1. The underscore prefix means the rule is always inlined (i.e., removed
+//      and children become children of its parent).
+//
+//   2. LINE_CHUNK must not match any characters that _LINE_CONTINUE does.
+//
+//   3. This is very sensitive to the location of repetition. Moving the plus
+//      either to the entire regex (i.e., “/(...)+/”) or outside the regex
+//      (i.e., ”/.../+”) gave parse errors.
+//
+_line: ( _LINE_CONTINUE | LINE_CHUNK )+
+LINE_CHUNK: /[^\\\n]+|(\\(?![ \t]+\n))+/
 
-/// Image references ///
+HEX_STRING: /[0-9A-Fa-f]+/
+WORD: /[^ \t\n=]/+
 
-// Note: Hostnames with no dot and no port get parsed as a hostname, which
-// is wrong; it should be the first path component. We patch this error later.
-// FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
-// to work with brief trying.
-image_ref: ir_hostport? ir_path? ir_name ( ir_tag | ir_digest )?
-ir_hostport: IR_HOST ( ":" IR_PORT )? "/"
-ir_path: ( IR_PATH_COMPONENT "/" )+
-ir_name: IR_PATH_COMPONENT
-ir_tag: ":" IR_TAG
-ir_digest: "@sha256:" HEX_STRING
-IR_HOST: /[A-Za-z0-9_.-]+/
-IR_PORT: /[0-9]+/
 IR_PATH_COMPONENT: /[a-z0-9_.-]+/
-IR_TAG: /[A-Za-z0-9_.-]+/
 
-/// Dockerfile ///
+_string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
+
+_WSH: /[ \t]/+                   // sequence of horizontal whitespace
+_LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
+_WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
+_NEWLINES: ( _WS? "\n" )+        // sequence of newlines
+
+%import common.ESCAPED_STRING -> STRING_QUOTED
+"""
+
+# Dockerfile grammar. Note image references are not parsed during Dockerfile
+# parsing.
+GRAMMAR_DOCKERFILE = r"""
+start: dockerfile
 
 // First instruction must be ARG or FROM, but that is not a syntax error.
-dockerfile: _NEWLINES? ( directive | comment )* ( instruction | comment )*
+dockerfile: _NEWLINES? ( arg_first | directive | comment )* ( instruction | comment )*
 
 ?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
+
 comment: _WS? _COMMENT_BODY _NEWLINES
 _COMMENT_BODY: /#[^\n]*/
-
-copy: "COPY"i ( _WS option )* _WS ( copy_list | copy_shell ) _NEWLINES
-copy_list.2: _string_list
-copy_shell: WORD ( _WS WORD )+
 
 arg: "ARG"i _WS ( arg_bare | arg_equals ) _NEWLINES
 arg_bare: WORD
 arg_equals: WORD "=" ( WORD | STRING_QUOTED )
+
+arg_first.2: "ARG"i _WS ( arg_first_bare | arg_first_equals ) _NEWLINES
+arg_first_bare: WORD
+arg_first_equals: WORD "=" ( WORD | STRING_QUOTED )
+
+copy: "COPY"i ( _WS option )* _WS ( copy_list | copy_shell ) _NEWLINES
+copy_list.2: _string_list
+copy_shell: WORD ( _WS WORD )+
 
 env: "ENV"i _WS ( env_space | env_equalses ) _NEWLINES
 env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i ( _WS option )* _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
@@ -201,35 +219,34 @@ UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
 /// Common ///
 
 option: "--" OPTION_KEY "=" OPTION_VALUE
+option_keypair: "--" OPTION_KEY "=" OPTION_VAR "=" OPTION_VALUE
 OPTION_KEY: /[a-z]+/
-OPTION_VALUE: /[^ \t\n]+/
+OPTION_VALUE: /[^= \t\n]+/
+OPTION_VAR: /[a-z]+/
 
-// Matching lines in the face of continuations is surprisingly hairy. Notes:
-//
-//   1. The underscore prefix means the rule is always inlined (i.e., removed
-//      and children become children of its parent).
-//
-//   2. LINE_CHUNK must not match any characters that _LINE_CONTINUE does.
-//
-//   3. This is very sensitive to the location of repetition. Moving the plus
-//      either to the entire regex (i.e., “/(...)+/”) or outside the regex
-//      (i.e., ”/.../+”) gave parse errors.
-//
-_line: ( _LINE_CONTINUE | LINE_CHUNK )+
-LINE_CHUNK: /[^\\\n]+|(\\(?![ \t]+\n))+/
+image_ref: IMAGE_REF
+IMAGE_REF: /[A-Za-z0-9$:._\/-]+/
+""" + GRAMMAR_COMMON
 
-HEX_STRING: /[0-9A-Fa-f]+/
-WORD: /[^ \t\n=]/+
+# Grammar for image references.
+GRAMMAR_IMAGE_REF = r"""
+// Note: Hostnames with no dot and no port get parsed as a hostname, which
+// is wrong; it should be the first path component. We patch this error later.
+// FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
+// to work with brief trying.
 
-_string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
+start: image_ref
 
-_WSH: /[ \t]/+                   // sequence of horizontal whitespace
-_LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
-_WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
-_NEWLINES: ( _WS? "\n" )+        // sequence of newlines
-
-%import common.ESCAPED_STRING -> STRING_QUOTED
-"""
+image_ref: ir_hostport? ir_path? ir_name ( ir_tag | ir_digest )?
+ir_hostport: IR_HOST ( ":" IR_PORT )? "/"
+ir_path: ( IR_PATH_COMPONENT "/" )+
+ir_name: IR_PATH_COMPONENT
+ir_tag: ":" IR_TAG
+ir_digest: "@sha256:" HEX_STRING
+IR_HOST: /[A-Za-z0-9_.-]+/
+IR_PORT: /[0-9]+/
+IR_TAG: /[A-Za-z0-9_.-]+/
+""" + GRAMMAR_COMMON
 
 # Chunk size in bytes when streaming HTTP. Progress meter is updated once per
 # chunk, which means the display is updated roughly every 20s at 100 Kbit/s
@@ -927,7 +944,8 @@ class Image_Ref:
                 "path",
                 "name",
                 "tag",
-                "digest")
+                "digest",
+                "variables")
 
    # Reference parser object. Instantiating a parser took 100ms when we tested
    # it, which means we can't really put it in a loop. But, at parse time,
@@ -936,15 +954,16 @@ class Image_Ref:
    # first use.
    parser = None
 
-   def __init__(self, src=None):
+   def __init__(self, src=None, variables=None):
       self.host = None
       self.port = None
       self.path = []
       self.name = None
       self.tag = None
       self.digest = None
+      self.variables = dict() if variables is None else variables
       if (isinstance(src, str)):
-         src = self.parse(src)
+         src = self.parse(src, self.variables)
       if (isinstance(src, lark.tree.Tree)):
          self.from_tree(src)
       elif (src is not None):
@@ -983,12 +1002,15 @@ class Image_Ref:
          yield class_(class_.path_to_ref(path))
 
    @classmethod
-   def parse(class_, s):
+   def parse(class_, s, variables):
       if (class_.parser is None):
-         class_.parser = lark.Lark("?start: image_ref\n" + GRAMMAR,
-                                   parser="earley", propagate_positions=True)
+         class_.parser = lark.Lark(GRAMMAR_IMAGE_REF, parser="earley",
+                                   propagate_positions=True)
       s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
+      s = variables_sub(s, variables)
+      if "$" in s:
+         FATAL("image reference contains an undefined variable: %s" % s)
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
@@ -1078,10 +1100,14 @@ fields:
       self.port = tree_child_terminal(t, "ir_hostport", "IR_PORT")
       if (self.port is not None):
          self.port = int(self.port)
-      self.path = list(tree_child_terminals(t, "ir_path", "IR_PATH_COMPONENT"))
+      self.path = [    variables_sub(s, self.variables)
+                   for s in tree_child_terminals(t, "ir_path",
+                                                 "IR_PATH_COMPONENT")]
       self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
       self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
       self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
+      for a in ("host", "port", "name", "tag", "digest"):
+         setattr(self, a, variables_sub(getattr(self, a), self.variables))
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host
@@ -2796,6 +2822,11 @@ def tree_child_terminals(tree, cname, tname):
          return tree_terminals(d, tname)
    return []
 
+def tree_child_terminals_cat(tree, cname, tname):
+   """Return the concatenated values of all child terminals named tname as a
+      string, with no delimiters. If none, return the empty string."""
+   return "".join(tree_child_terminals(tree, cname, tname))
+
 def tree_children(tree, cname):
    "Yield children of tree named cname using breadth-first search."
    for st in tree.iter_subtrees_topdown():
@@ -2828,6 +2859,22 @@ def user():
       return os.environ["USER"]
    except KeyError:
       FATAL("can't get username: $USER not set")
+
+def variables_sub(s, variables):
+   if (s is None):
+      return s
+   # FIXME: This should go in the grammar rather than being a regex kludge.
+   #
+   # Dockerfile spec does not say what to do if substituting a value that's
+   # not set. We ignore those subsitutions. This is probably wrong (the shell
+   # substitutes the empty string).
+   for (k, v) in variables.items():
+      # FIXME: remove when issue #774 is fixed
+      m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
+      if (m is not None):
+         FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
+      s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
+   return s
 
 def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
    """Return True if the version number of program exected as argv is at least

@@ -34,6 +34,8 @@ images = dict()
 # parse tree, so we can use it for error checking.
 image_ct = None
 
+# ARG values that are set before FROM.
+argfrom = {}
 
 ## Imports not in standard library ##
 
@@ -116,8 +118,8 @@ def main(cli_):
       ch.close_(fp)
 
    # Parse it.
-   parser = lark.Lark("?start: dockerfile\n" + ch.GRAMMAR,
-                      parser="earley", propagate_positions=True)
+   parser = lark.Lark(ch.GRAMMAR_DOCKERFILE, parser="earley",
+                      propagate_positions=True)
    # Avoid Lark issue #237: lark.exceptions.UnexpectedEOF if the file does not
    # end in newline.
    text += "\n"
@@ -202,13 +204,9 @@ class Main_Loop(lark.Visitor):
       if (class_ in globals()):
          inst = globals()[class_](tree)
          if (self.instruction_total_ct == 0):
-            if (   isinstance(inst, I_directive)
-                or isinstance(inst, I_from_)):
-               pass
-            elif (isinstance(inst, Arg)):
-               ch.WARNING("ARG before FROM not yet supported; see issue #779")
-               return
-            else:
+            if (not (isinstance(inst, I_directive)
+                  or isinstance(inst, I_from_)
+                  or isinstance(inst, Instruction_No_Image))):
                ch.FATAL("first instruction must be ARG or FROM")
          inst.init(self.inst_prev)
          try:
@@ -249,10 +247,11 @@ class Instruction(abc.ABC):
    def __init__(self, tree):
       """Note: When this is called, all we know about the instruction is
          what's in the parse tree. In particular, you must not call
-         variables_sub() here."""
+         ch.variables_sub() here."""
       self.commit_files = set()
       self.lineno = tree.meta.line
       self.options = dict()
+      # saving options with only 1 saved value
       for st in ch.tree_children(tree, "option"):
          k = ch.tree_terminal(st, "OPTION_KEY")
          v = ch.tree_terminal(st, "OPTION_VALUE")
@@ -260,8 +259,23 @@ class Instruction(abc.ABC):
             ch.FATAL("%3d %s: repeated option --%s"
                      % (self.lineno, self.str_name, k))
          self.options[k] = v
-      self.options_str = " ".join("--%s=%s" % (k,v)
-                                  for (k,v) in self.options.items())
+
+      # saving keypair options in a dictionary
+      for st in ch.tree_children(tree, "option_keypair"):
+         k = ch.tree_terminal(st, "OPTION_KEY")
+         s = ch.tree_terminal(st, "OPTION_VAR")
+         v = ch.tree_terminal(st, "OPTION_VALUE")
+         # assuming all key pair options allow multiple options
+         self.options.setdefault(k, {}).update({s: v})
+
+      ol = list()
+      for (k, v) in self.options.items():
+         if (isinstance(v, dict)):
+            for (k2, v) in v.items():
+               ol.append("--%s=%s=%s" % (k, k2, v))
+         else:
+            ol.append("--%s=%s" % (k, v))
+      self.options_str = " ".join(ol)
       self.tree = tree
       # These are set in init().
       self.image = None
@@ -307,6 +321,10 @@ class Instruction(abc.ABC):
       return str(self).encode("UTF-8")
 
    @property
+   def status_char(self):
+      return bu.cache.status_char(self.miss)
+
+   @property
    @abc.abstractmethod
    def str_(self):
       ...
@@ -317,7 +335,7 @@ class Instruction(abc.ABC):
 
    @property
    def str_log(self):
-      return ("%3s%s %s" % (self.lineno, bu.cache.status_char(self.miss), self))
+      return ("%3s%s %s" % (self.lineno, self.status_char, self))
 
    @property
    def workdir(self):
@@ -331,7 +349,7 @@ class Instruction(abc.ABC):
       options = self.options_str
       if (options != ""):
          options = " " + options
-      return "%s %s%s" % (self.str_name, options, self.str_)
+      return "%s%s %s" % (self.str_name, options, self.str_)
 
    def chdir(self, path):
       if (path.is_absolute()):
@@ -458,6 +476,35 @@ class Instruction_Supported_Never(Instruction_Unsupported):
       self.ignore()
 
 
+class Instruction_No_Image(Instruction):
+   # This is a class for instructions that do not affect the image, i.e.,
+   # no-op from the image’s perspective, but executed for their side effects,
+   # e.g., changing some configuration. These instructions do not interact
+   # with the build cache and can be executed when no image exists (i.e.,
+   # before FROM).
+
+   # FIXME: Only tested with instructions before the first FROM. I doubt it
+   # works for instructions elsewhere.
+
+   @property
+   def miss(self):
+      return True
+
+   @property
+   def status_char(self):
+      return " "
+
+   def checkout_for_build(self):
+      pass
+
+   def commit(self):
+      pass
+
+   def prepare(self, miss_ct):
+      ch.INFO(self.str_log)
+      return miss_ct + int(self.miss)
+
+
 class Arg(Instruction):
 
    __slots__ = ("key",
@@ -491,7 +538,7 @@ class Arg(Instruction):
 
    def prepare(self, *args):
       if (self.value is not None):
-         self.value = variables_sub(self.value, self.env_build)
+         self.value = ch.variables_sub(self.value, self.env_build)
          self.env_arg[self.key] = self.value
       return super().prepare(*args)
 
@@ -505,6 +552,54 @@ class I_arg_bare(Arg):
 
 
 class I_arg_equals(Arg):
+
+   __slots__ = ()
+
+   def value_default(self):
+      v = ch.tree_terminal(self.tree, "WORD", 1)
+      if (v is None):
+         v = unescape(ch.tree_terminal(self.tree, "STRING_QUOTED"))
+      return v
+
+
+class Arg_First(Instruction_No_Image):
+
+   __slots__ = ("key",
+                "value")
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = ch.tree_terminal(self.tree, "WORD", 0)
+      if (self.key in cli.build_arg):
+         self.value = cli.build_arg[self.key]
+         del cli.build_arg[self.key]
+      else:
+         self.value = self.value_default()
+
+   @property
+   def str_(self):
+      s = "%s=" % self.key
+      if (self.value is not None):
+         s += "'%s'" % self.value
+      if (self.key in ch.ARGS_MAGIC):
+         s += " [special]"
+      return s
+
+   def prepare(self, *args):
+      if (self.value is not None):
+         argfrom.update({self.key: self.value})
+      return super().prepare(*args)
+
+
+class I_arg_first_bare(Arg_First):
+
+   __slots__ = ()
+
+   def value_default(self):
+      return None
+
+
+class I_arg_first_equals(Arg_First):
 
    __slots__ = ()
 
@@ -742,15 +837,16 @@ class I_copy(Instruction):
       ch.VERBOSE("context: %s" % context)
       # Expand sources.
       self.srcs = list()
-      for src in [variables_sub(i, self.env_build) for i in self.srcs_raw]:
-         matches = [ch.Path(i) for i in glob.glob("%s/%s" % (context, src))]  # glob can't take Path
+      for src in (ch.variables_sub(i, self.env_build) for i in self.srcs_raw):
+         # glob can’t take Path
+         matches = [ch.Path(i) for i in glob.glob("%s/%s" % (context, src))]
          if (len(matches) == 0):
             ch.FATAL("can't copy: source file not found: %s" % src)
          for i in matches:
             self.srcs.append(i)
             ch.VERBOSE("source: %s" % i)
       # Expand destination.
-      self.dst = variables_sub(self.dst_raw, self.env_build)
+      self.dst = ch.variables_sub(self.dst_raw, self.env_build)
       # Validate sources are within context directory. (Can't convert to
       # canonical paths yet because we need the source path as given.)
       for src in self.srcs:
@@ -808,7 +904,7 @@ class Env(Instruction):
             print("%s=%s" % (k, v), file=fp)
 
    def prepare(self, *args):
-      self.value = variables_sub(unescape(self.value), self.env_build)
+      self.value = ch.variables_sub(unescape(self.value), self.env_build)
       self.env_env[self.key] = self.value
       return super().prepare(*args)
 
@@ -842,10 +938,7 @@ class I_from_(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.base_image = ch.Image(ch.Image_Ref(ch.tree_child(self.tree,
-                                                            "image_ref")))
-      self.alias = ch.tree_child_terminal(self.tree, "from_alias",
-                                          "IR_PATH_COMPONENT")
+      argfrom.update(self.options.pop("arg", {}))
 
    # Not meaningful for FROM.
    sid_input = None
@@ -870,6 +963,12 @@ class I_from_(Instruction):
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
       #
+      image_ref = ch.Image_Ref(
+         ch.tree_child_terminals_cat(self.tree, "image_ref", "IMAGE_REF"),
+         argfrom)
+      self.base_image = ch.Image(image_ref)
+      self.alias = ch.tree_child_terminal(self.tree, "from_alias",
+                                          "IR_PATH_COMPONENT")
       # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
@@ -925,6 +1024,8 @@ class I_from_(Instruction):
          ch.WARNING("base image also exists non-cached; using cache")
       # Load metadata
       self.image.metadata_load(self.base_image)
+      self.env_arg.update(argfrom)  # from pre-FROM ARG
+
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 
@@ -976,7 +1077,7 @@ class I_run_exec(Run):
       return json.dumps(self.cmd)  # double quotes, shlex.quote is less verbose
 
    def prepare(self, *args):
-      self.cmd = [    variables_sub(unescape(i), self.env_build)
+      self.cmd = [    ch.variables_sub(unescape(i), self.env_build)
                   for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
       return super().prepare(*args)
 
@@ -1011,7 +1112,7 @@ class I_shell(Instruction):
       return str(self.shell)
 
    def prepare(self, *args):
-      self.shell = [variables_sub(unescape(i), self.env_build)
+      self.shell = [    ch.variables_sub(unescape(i), self.env_build)
                     for i in ch.tree_terminals(self.tree, "STRING_QUOTED")]
       return super().prepare(*args)
 
@@ -1028,8 +1129,8 @@ class I_workdir(Instruction):
       (self.image.unpack_path // self.workdir).mkdirs()
 
    def prepare(self, *args):
-      self.path = ch.Path(variables_sub(ch.tree_terminals_cat(self.tree, "LINE_CHUNK"),
-                                self.env_build))
+      self.path = ch.Path(ch.variables_sub(
+         ch.tree_terminals_cat(self.tree, "LINE_CHUNK"), self.env_build))
       self.chdir(self.path)
       return super().prepare(*args)
 
@@ -1084,7 +1185,7 @@ class Environment:
    #      image metadata then
    #      - could get it from Git if needed, but that seems complicated
    # - valid during prepare() and execute() but not __init__()
-   #   - in particular, don't variables_sub() in __init__()
+   #   - in particular, don't ch.variables_sub() in __init__()
    # - instructions that update it need to change the env object in prepare()
    #   - WORKDIR SHELL ARG ENV
    #   - FROM
@@ -1095,20 +1196,6 @@ class Environment:
 
 
 ## Supporting functions ###
-
-def variables_sub(s, variables):
-   # FIXME: This should go in the grammar rather than being a regex kludge.
-   #
-   # Dockerfile spec does not say what to do if substituting a value that's
-   # not set. We ignore those subsitutions. This is probably wrong (the shell
-   # substitutes the empty string).
-   for (k, v) in variables.items():
-      # FIXME: remove when issue #774 is fixed
-      m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
-      if (m is not None):
-         ch.FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
-      s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
-   return s
 
 def unescape(sl):
    # FIXME: This is also ugly and should go in the grammar.
