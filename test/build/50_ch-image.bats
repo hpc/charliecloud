@@ -44,11 +44,19 @@ setup () {
     # slash present.
     ch-image build -t delete/test -f - . << 'EOF'
 FROM 00_tiny
+FROM 00_tiny
+FROM 00_tiny
+FROM 00_tiny
+FROM 00_tiny
 EOF
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"delete/test"* ]]
+    [[ $output = *"delete/test_stage0"* ]]
+    [[ $output = *"delete/test_stage1"* ]]
+    [[ $output = *"delete/test_stage2"* ]]
+    [[ $output = *"delete/test_stage3"* ]]
 
     # Delete image.
     ch-image delete delete/test
@@ -56,6 +64,10 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"delete/test"* ]]
+    [[ $output != *"delete/test_stage0"* ]]
+    [[ $output != *"delete/test_stage1"* ]]
+    [[ $output != *"delete/test_stage2"* ]]
+    [[ $output != *"delete/test_stage3"* ]]
 }
 
 
