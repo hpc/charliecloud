@@ -798,7 +798,7 @@ EOF
         [[ $output = *'base name ($os) should not be blank'* ]]
     else
         # shellcheck disable=SC2016
-        [[ ${lines[-1]} = 'error: image reference contains an undefined variable: $os' ]]
+        [[ ${lines[-2]} = 'error: image reference contains an undefined variable: $os' ]]
     fi
 
     # set with --build-arg
