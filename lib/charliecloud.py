@@ -2460,11 +2460,6 @@ class Timer:
 
 ## Supporting functions ##
 
-def CONTEXT(msg, hint=None, **kwargs):
-   # Used when context is not a directory.
-   log(msg, hint, "1;31m", "error: ", **kwargs) # bold red
-   sys.exit(1)
-
 def DEBUG(msg, hint=None, **kwargs):
    if (verbose >= 2):
       log(msg, hint, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)

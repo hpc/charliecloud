@@ -111,7 +111,7 @@ def main(cli_):
    if (cli.file == "-" or cli.context == "-"):
       text = ch.ossafe(sys.stdin.read, "can't read stdin")
    elif (not os.path.isdir(cli.context)):
-      ch.CONTEXT("context must be a directory: %s" % cli.context)
+      ch.FATAL("context must be a directory: %s" % cli.context)
    else:
       fp = ch.Path(cli.file).open_("rt")
       text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
