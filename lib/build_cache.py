@@ -87,6 +87,9 @@ cache = None
 # Path to DOT output (.gv and .pdf will be appended)
 dot_base = None
 
+# Default path within image to metadata pickle.
+PICKLE_PATH_DEFAULT = ch.Path("ch/git.pickle")
+
 
 ## Functions ##
 
@@ -137,45 +140,104 @@ def init(cli):
 
 class File_Metadata:
 
-   # Note: ctime cannot be restored: https://unix.stackexchange.com/a/36105
+   # This class holds metadata we care about for a file (in the general sense,
+   # not necessarily a regular file), along with methods for dealing with that
+   # metadata for the build cache. This includes re-creating some files from
+   # their metadata, for files that Git can’t store or breaks.
+   #
+   # Importantly, this class must support un-pickling of old versions of
+   # itself, to support existing build caches on upgrade. At present, we do
+   # this attribute-by-attribute, without explicit versioning. We omit
+   # __slots__ so old versions with since-deleted attributes can be unpickled.
+   #
+   # Note that ctime can’t be restored: https://unix.stackexchange.com/a/36105
+   #
+   # Attributes corresponding directly to inode(7) fields (and pickled):
+   #
+   #   atime_ns
+   #   mtime_ns
+   #   mode
+   #
+   #   size .......... Size of the file in bytes. WARNING: May be None if read
+   #                   from an old pickle.
+   #
+   # Other attributes stored in pickle:
+   #
+   #   children ...... Insertion-ordered mapping from child names to their
+   #                   File_Metadata objects. Empty if non-directory, or upon
+   #                   object creation (i.e., caller must assemble the tree).
+   #
+   #   dont_restore .. If True, file should not be restored (e.g., RPM
+   #                   database cache files).
+   #
+   #   hardlink_to ... If non-None, file is a hard link to this other file,
+   #                   stored as a Path object relative to the image root.
+   #
+   # Attributes not stored (recomputed on unpickle):
+   #
+   #   image_root .... Absolute path to the image directory to which path is
+   #                   relative. That is, image_root // path is the absolute
+   #                   version of path.
+   #
+   #   path .......... Path to the file within the image, relative to the
+   #                   image root. Empty for the image root itself. For
+   #                   example, an image’s “/bin/true” has path “bin/true”.
+   #
+   #   st ............ Stat object for the file. Absent after un-pickling.
 
-   PICKLE_PATH_DEFAULT = ch.Path("ch/git.pickle")
+   # FIXME: large file hash components: mtime_ns mode size image_root.name path
+   #        followed by transformed path for debuggability
 
-   # Note/FIXME: Because children is a list, rather than e.g. a dictionary
-   # that maps names to child objects, we cannot efficiently access the
-   # children by name. See get() and set(). Changing that attribute's type
-   # requires either bumping the storage directory version or automagically
-   # converting on un-pickle. Because currently (9/19/2022) our performance
-   # requirements are not large, I don't think the hassle of doing either of
-   # these is merited.
-
-   __slots__ = ('atime_ns',
-                'children',
-                'dont_restore',
-                'hardlink_to',
-                'mtime_ns',
-                'mode',
-                'name')
-
-   def __init__(self, path, st):
-      # The if/else here accounts for when 'path' represents '.', in which
-      # case path.name returns '' and str(path) returns '.'.
-      if (len(path.parts) < 1):     # path represents '.'
-         self.name = str(path)
-      else:
-         self.name = path.parts[-1]
-      self.atime_ns = st.st_atime_ns
+   def __init__(self, image_root, path):
+      self.image_root = image_root
+      self.path = path
+      self.st = self.path_abs.stat_(False)
+      # Note: Constructor not called during unpickle.
+      for attr in ("atime_ns", "mtime_ns", "mode", "size"):
+         setattr(self, attr, getattr(self.st, "st_" + attr))
+      self.children = dict()
       self.dont_restore = False
-      self.children = list()  # so we can keep it sorted
       self.hardlink_to = None
-      self.mtime_ns = st.st_mtime_ns
-      self.mode = st.st_mode
+
+   def __getstate__(self):
+      return { a:v for (a,v) in self.__dict__.items()
+                   if (a not in { "image_root", "path", "st" }) }
+
+   @property
+   def unstored(self):
+      """True if I represent something not stored, either ignored by Git or
+         deleted by us before committing."""
+      return (   stat.S_ISFIFO(self.mode)
+              or stat.S_ISSOCK(self.mode)
+              or self.hardlink_to is not None)
+
+   @property
+   def empty_dir_p(self):
+      """True if I represent either an empty directory, or a directory that
+         contains only children where empty_dir_p is true. E.g., the root of a
+         directory tree containing only empty directories returns true."""
+      # In principle this could do a lot of recursion, but in practice I'm
+      # guessing it's not too much.
+      if (not stat.S_ISDIR(self.mode)):
+         return False  # not a directory
+      # True if no children (truly empty directory), or each child is unstored
+      # or empty_dir_p (recursively empty directory tree).
+      return all((c.hardlink_to is not None or c.empty_dir_p)
+                 for c in self.children.values())
+
+   @property
+   def path_abs(self):
+      return (self.image_root // self.path)
 
    @classmethod
-   def git_prepare(class_, path, hardlinks=None):
-      """Recursively walk the given path, prepare it for a Git commit, and
-         return the resulting File_Metadata tree describing it. Most of this
-         is reversed by git_restore_walk(); anything not reversed is noted.
+   def git_prepare(class_, image_root, path=None, hardlinks=None):
+      """Recursively walk the given image root, prepare it for a Git commit,
+         and return the resulting File_Metadata tree describing it. This is
+         mostly reversed by git_restore_walk(); anything not is noted.
+
+         path is the path relative to image_root currently being examined;
+         hardlinks is a dictionary used to track what hard link groups have
+         been seen already. External callers should pass None.
 
          For each file, in this order:
 
@@ -223,121 +285,154 @@ class File_Metadata:
 
          [1]: https://en.wikipedia.org/wiki/Hard_link#Limitations"""
       # Setup.
-      if (hardlinks is None):
+      if (path is None):
+         assert (hardlinks is None)
+         path = ch.Path()
          hardlinks = dict()
-      # Initialize root File_Metadata object.
-      st = path.stat_(False)
-      fm = class_(path, st)
+      fm = class_(image_root, path)
+      if (fm.path.name.startswith(".git") and len(fm.path) == 1):
+         # skip Git stuff at image root
+         fm.dont_restore = True
+         return fm
       # Ensure minimum permissions. Some tools like to make files with mode
       # 000, because root ignores the permissions bits.
-      path.chmod_min(0o700 if stat.S_ISDIR(st.st_mode) else 0o400, st) #1455
+      fm.path_abs.chmod_min(0o700 if stat.S_ISDIR(fm.mode) else 0o400, fm.st)
       # Validate file type and recurse if needed. (Don’t use os.walk() because
       # it’s iterative, and our algorithm is better expressed recursively.)
-      if   (   stat.S_ISREG(st.st_mode)
-            or stat.S_ISLNK(st.st_mode)
-            or stat.S_ISFIFO(st.st_mode)):
+      if   (   stat.S_ISREG(fm.mode)
+            or stat.S_ISLNK(fm.mode)
+            or stat.S_ISFIFO(fm.mode)):
          # Normally nothing to do here on these file types, but RPM databases
          # get corrupted. The easy fix is to delete them. See issue #1351.
-         # FIXME: YOU ARE HERE
-         path_s = fm.name if parent is None else "%s/%s" % (parent, fm.name)
-         if (path_s.startswith("./var/lib/rpm/__db.")):
+         if (path.match("*/var/lib/rpm/__db.*")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
-            path.unlink() # change to fm.path.unlink() once #1455 is closed
+            fm.path_abs.unlink()
             fm.dont_restore = True
             return fm
-      elif (   stat.S_ISSOCK(st.st_mode)):
+      elif (   stat.S_ISSOCK(fm.mode)):
          ch.WARNING("socket in image, will be ignored: %s" % path)
-      elif (   stat.S_ISCHR(st.st_mode)
-            or stat.S_ISBLK(st.st_mode)):
+      elif (   stat.S_ISCHR(fm.mode)
+            or stat.S_ISBLK(fm.mode)):
          ch.FATAL("device files invalid in image: %s" % path)
-      elif (   stat.S_ISDIR(st.st_mode)):
-         entries = sorted(path.listdir()) # FIXME: see issue #1455
+      elif (   stat.S_ISDIR(fm.mode)):
+         entries = sorted(fm.path_abs.listdir())
          for i in entries:
-            if (not (parent is None and str(i).startswith(".git"))):
-               fm.children.append(
-                  self.git_prepare_walk(path // i, hardlinks))
+            # Recurse
+            fm.children[i] = class_.git_prepare(image_root, path // i,
+                                                hardlinks)
       else:
          ch.FATAL("unexpected file type in image: %x: %s"
-                  % (stat.IFMT(st.st_mode), path))
-      # Deal with hard links.
-      if (not stat.S_ISDIR(st.st_mode) and st.st_nlink > 1):
-         if ((st.st_dev, st.st_ino) in hardlinks):
+                  % (stat.IFMT(fm.mode), path))
+      # Deal with hard links (directories can’t be hard-linked).
+      if (fm.st.st_nlink > 1 and not stat.S_ISDIR(fm.mode)):
+         if ((fm.st.st_dev, fm.st.st_ino) in hardlinks):
             ch.TRACE("hard link: deleting subsequent: %d %d %s"
-                     % (st.st_dev, st.st_ino, path))
-            fm.hardlink_to = hardlinks[(st.st_dev, st.st_ino)]
-            path.unlink() # -> fm.path (issue #1455)
+                     % (fm.st.st_dev, fm.st.st_ino, path))
+            fm.hardlink_to = hardlinks[(fm.st.st_dev, fm.st.st_ino)]
+            fm.path_abs.unlink()
          else:
             ch.TRACE("hard link: recording first: %d %d %s"
-                     % (st.st_dev, st.st_ino, path))
-            hardlinks[(st.st_dev, st.st_ino)] = path
+                     % (fm.st.st_dev, fm.st.st_ino, path))
+            hardlinks[(fm.st.st_dev, fm.st.st_ino)] = path
       # Remove empty directories. Git will ignore them, including leaving them
       # there when switching the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
-         path.rmdir_() # path -> fm.path (issue #1455)
-         return fm  # can't do anything else after it's gone
+         fm.path_abs.rmdir_()
+         return fm  # can’t do anything else after it’s gone
       # Remove FIFOs for the same reason.
-      if (stat.S_ISFIFO(st.st_mode)):
-         path.unlink() # path -> fm.path (issue #1455)
+      if (stat.S_ISFIFO(fm.mode)):
+         fm.path_abs.unlink()
       # Rename if necessary.
-      if (fm.name.startswith(".weirdal_")):
-         ch.WARNING("file starts with sentinel, will be renamed: %s" % fm.name)
-      if (fm.name.startswith(".git")):
-         name_new = fm.name.replace(".git", ".weirdal_")
-         ch.VERBOSE("renaming: %s -> %s" % (fm.name, name_new))
-         path.rename_(name_new) # path -> fm.path (issue #1455)
+      if (path.git_incompatible_p):
+         ch.VERBOSE("renaming: %s -> %s" % (path, path.git_escaped))
+         fm.path_abs.rename_(fm.path_abs.git_escaped)
       # Done.
       return fm
 
    @classmethod
-   def unpickle(self, path=PICKLE_PATH_DEFAULT):
-      return pickle.loads(path.file_read_all(text=False))
-
-   @property
-   def unstored(self):
-      """True if I represent something not stored, either ignored by Git or
-         deleted by us before committing."""
-      return (   stat.S_ISFIFO(self.mode)
-              or stat.S_ISSOCK(self.mode)
-              or self.hardlink_to is not None)
-
-   @property
-   def empty_dir_p(self):
-      """True if I represent either an empty directory, or a directory that
-         contains only children where empty_dir_p is true. E.g., the root of a
-         directory tree containing only empty directories returns true."""
-      # In principle this could do a lot of recursion, but in practice I'm
-      # guessing it's not too much.
-      if (not stat.S_ISDIR(self.mode)):
-         return False  # not a directory
-      # True if no children (truly empty directory), or each child is unstored
-      # or empty_dir_p (recursively empty directory tree).
-      return all((c.hardlink_to is not None or c.empty_dir_p)
-                 for c in self.children)
+   def unpickle(self, image_root, path=PICKLE_PATH_DEFAULT):
+      fm_tree = pickle.loads((image_root // path).file_read_all(text=False))
+      fm_tree.unpickle_fix(image_root, path=ch.Path("."))
+      return fm_tree
 
    def get(self, path):
-      """Return the File_Metadata object at path. Slow; see comment."""
-      assert (len(path.parts) >= 1)
-      for c in self.children:
-         if (c.name == path.first):
-            if (len(path.parts) == 1):
-               return c
-            else:
-               return c.get(path.lstrip(1))
-      assert False, "unreachable code reached"
+      "Return the File_Metadata object at path."
+      fm = self
+      for name in path.parts:
+         fm = fm.children[name]
+      return fm
+
+   def git_restore(self, quick):
+      # Do-nothing case.
+      if (self.dont_restore):
+         return
+      # Make sure I exist, and with the correct name.
+      if (self.empty_dir_p):
+         ch.ossafe(os.mkdir, "can’t mkdir: %s" % self.path, self.path_abs)
+      if (stat.S_ISFIFO(self.mode)):
+         ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
+      if (self.hardlink_to is not None):
+         # This relies on prepare and restore having the same traversal order,
+         # so the first (stored) link is always available by the time we get
+         # to subsequent (unstored) links.
+         target = self.image_root // self.hardlink_to
+         assert (not os.path.exists(target.exists()))
+         ch.TRACE("hard link: restoring: %s -> %s" % (self.path_abs, target))
+         ch.ossafe(os.link, "can’t hardlink: %s -> %s" % (self.path, target),
+                   target, self.path_abs, follow_symlinks=False)
+      if (self.path.git_incompatible_p):
+         self.path_abs.git_escaped.rename_(self.path_abs)
+      if (not quick):
+         if (stat.S_ISSOCK(self.mode)):
+            ch.WARNING("ignoring socket in image: %s" % self.path)
+      # Recurse children.
+      if (len(self.children) > 0):
+         for child in self.children.values():
+            child.git_restore(quick)
+      # Restore my metadata.
+      if ((   not quick                      # Git broke metadata
+           or self.hardlink_to is not None   # we just made the hardlink
+           or stat.S_ISDIR(self.mode)        # maybe just created or modified
+           or stat.S_ISFIFO(self.mode))      # we just made the FIFO
+          and not stat.S_ISLNK(self.mode)):  # can’t not follow symlinks
+         ch.ossafe(os.utime, "can’t restore times: %s" % self.path,
+                   self.path_abs, ns=(self.atime_ns, self.mtime_ns))
+         ch.ossafe(os.chmod, "can’t restore mode: %s" % self.path,
+                   self.path_abs, stat.S_IMODE(self.mode))
 
    def pickle(self):
-      PICKLE_PATH_DEFAULT.file_write(pickle.dumps(self, protocol=4))
+      (self.image_root // PICKLE_PATH_DEFAULT) \
+         .file_write(pickle.dumps(self, protocol=4))
 
-   def set(self, path, fm):
-      """Set the File_Metadata object at path to fm. Slow; see comment."""
-      assert (len(path.parts) >= 1)
-      for (i, c) in enumerate(self.children):
-         if (c.name == path.first):
-            if (len(path.parts) == 1):
-               self.children[i] = fm  # WARNING: iteration now broken
-            else:
-               c.update(path.lstrip(1))
-            break
+   def unpickle_fix(self, image_root, path):
+      # old: size: no such attribute
+      if (not (hasattr(self, "size"))):
+         self.size = None
+      # old: hardlink_to: stored as string
+      if (isinstance(self.hardlink_to, str)):
+         self.hardlink_to = ch.Path(self.hardlink_to)
+      # old: children, name: just a list, and instances know their names
+      if (isinstance(self.children, list)):
+         children_new = dict()
+         for c in self.children:
+            children_new[c.name] = c
+            delattr(c, "name")
+         self.children = children_new
+      # all: set non-stored attributes
+      self.image_root = image_root
+      self.path = path
+      # recurse
+      for (name, child) in self.children.items():
+         child.unpickle_fix(image_root, path // name)
+
+   def update(self, path):
+      "Recompute the File_Metadata object at path in the tree rooted by me."
+      assert (stat.S_ISDIR(self.mode) and len(path) >= 1)
+      fm = self
+      for name in path.parts[:-1]:
+         fm = fm.children[name]
+      self.children[path.name] = self.__class__(self.image_root, path)
+      assert (not stat.S_ISDIR(self.children[path.name].mode))
 
 
 class State_ID:
@@ -405,7 +500,7 @@ class Enabled_Cache:
       ls = self.root.listdir()
       if (len(ls) == 0):
          self.bootstrap()  # empty; initialize a new cache
-      elif (not {ch.Path(i) for i in ["HEAD", "objects", "refs"]} <= ls):
+      elif (not {"HEAD", "objects", "refs"} <= ls):
          # Non-empty but not an existing cache.
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
@@ -612,7 +707,7 @@ class Enabled_Cache:
          self.file_metadata = File_Metadata.git_prepare(unpack_path)
       else:
          for path in files:
-            self.file_metadata.set(path, File_Metadata(path, path.stat_(False)))
+            self.file_metadata.update(path)
       t.log("gathered file metadata")
       if (write):
          self.file_metadata.pickle()
@@ -621,70 +716,20 @@ class Enabled_Cache:
       """Opposite of git_prepare. If files is non-empty, only restore those
          files. If quick, assuming that unpack_path is unchanged since
          file_metadata was collected earlier in this process, rather than the
-         directory being checked out from Git. I.e. only restore things that
+         directory being checked out from Git, i.e., only restore things that
          we broke in git_prepare() (e.g., renaming .git files), not things
          that Git breaks (e.g., file permissions). Otherwise (i.e., not
-         quick), read the File_Metadata tree from “ch/git.pickle” under
-         unpack_path and do a full restore. This method will dirty the Git
-         working directory."""
+         quick), read the File_Metadata tree the pickled file and do a full
+         restore. This method will dirty the Git working directory."""
       t = ch.Timer()
       if (not quick):
-         self.file_metadata = File_Metadata.unpickle()
+         self.file_metadata = File_Metadata.unpickle(unpack_path)
       if (len(files) == 0):
-         self.file_metadata.git_restore(unpack_path, unpack_path, quick)
+         self.file_metadata.git_restore(quick)
       else:
          for path in files:
-            self.file_metadata.get(path).git_restore(unpack_path,
-                                                     unpack_path // path, quick)
+            self.file_metadata.get(path).git_restore(quick)
       t.log("restored file metadata (%s)" % ("quick" if quick else "full"))
-
-   def git_restore_walk(self, root, parent, fm, quick):
-      "Changes CWD but restores it."
-      assert (parent is not None or fm.name == ".")
-      path = fm.name if parent is None else "%s/%s" % (parent, fm.name)
-      if (fm.dont_restore):
-         assert (not stat.S_ISDIR(fm.mode))  # directories need recursion
-         return
-      # Make sure I exist, and with the correct name.
-      if (not quick):
-         if (fm.name.startswith(".git")):
-            # re-create with escaped name so renaming need not be conditional
-            name = fm.name.replace(".git", ".weirdal_")
-         else:
-            name = fm.name
-      if (fm.empty_dir_p):
-         ch.ossafe(os.mkdir, "can't mkdir: %s" % path, fm.name)
-      if (stat.S_ISFIFO(fm.mode)):
-         ch.ossafe(os.mkfifo, "can't make FIFO: %s" % path, fm.name)
-      if (fm.hardlink_to is not None and not os.path.exists(fm.name)):
-         # This relies on prepare and restore having the same traversal order,
-         # so the first (stored) link is always available by the time we get
-         # to subsequent (unstored) links.
-         target = root // fm.hardlink_to
-         ch.TRACE("hard link: restoring: %s -> %s" % (path, target))
-         ch.ossafe(os.link, "can't hardlink: %s -> %s" % (path, target),
-                   target, fm.name, follow_symlinks=False)
-      if (fm.name.startswith(".git")):
-         ch.Path(fm.name.replace(".git", ".weirdal_")).rename_(fm.name)
-      if (not quick):
-         if (stat.S_ISSOCK(fm.mode)):
-            ch.WARNING("ignoring socket in image: %s" % path)
-      # Recurse children.
-      if (len(fm.children) > 0):
-         cwd = ch.Path(fm.name).chdir() # works at top level b/c fm.name is "."
-         for child in fm.children:
-            self.git_restore_walk(root, path, child, quick)
-         cwd.chdir()
-      # Restore my metadata.
-      if ((   not quick                     # Git broke metadata
-           or fm.hardlink_to is not None    # we just made the hardlink
-           or stat.S_ISDIR(fm.mode)         # maybe just created / new hardlink
-           or stat.S_ISFIFO(fm.mode))       # we just made the FIFO
-          and not stat.S_ISLNK(fm.mode)):   # can't not follow symlinks
-         ch.ossafe(os.utime, "can't restore times: %s" % path, fm.name,
-                   ns=(fm.atime_ns, fm.mtime_ns))
-         ch.ossafe(os.chmod, "can't restore mode: %s" % path, fm.name,
-                   stat.S_IMODE(fm.mode))
 
    def pull_eager(self, img, src_ref, last_layer=None):
       """Pull image, always checking if the repository version is newer. This

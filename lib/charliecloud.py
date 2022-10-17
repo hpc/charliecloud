@@ -1169,14 +1169,17 @@ class Path(pathlib.PosixPath):
    def __floordiv__(self, right):
       return self.joinpath_posix(right)
 
+   def __len__(self):
+      return self.parts.__len__()
+
    def __rfloordiv__(self, left):
       left = Path(left)
       return left.joinpath_posix(self)
 
-   def __truediv__(self, right):
+   def __rtruediv__(self, left):
       return NotImplemented
 
-   def __rtruediv__(self, left):
+   def __truediv__(self, right):
       return NotImplemented
 
    @property
@@ -1189,12 +1192,15 @@ class Path(pathlib.PosixPath):
          return None
 
    @property
-   def path_name(self):
-      """Return path object representing file basename. For example,
-         Path("foo/bar/baz").path_name returns Path("baz"). This allows us to
-         replace path conversions of the 'name' attribute (previously found in
-         multiple places throughout the code) with calls to this property."""
-      return Path(self.name)
+   def git_escaped(self):
+      "Return a copy of me escaped for Git storage."
+      assert (self.git_incompatible_p)
+      return self.with_name(self.name.replace(".git", ".weirdal_"))
+
+   @property
+   def git_incompatible_p(self):
+      "Return True if I can’t be stored in Git because of my name."
+      return self.name.startswith(".git")
 
    @classmethod
    def gzip_set(cls):
@@ -1225,22 +1231,26 @@ class Path(pathlib.PosixPath):
       ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
       return Path(old)
 
-   def chmod_min(self, mode, st=None):
-      """Set permissions on path so they are at least mode. For symlinks, do
-         nothing, because we don’t want to follow symlinks and
-         follow_symlinks=False (or os.lchmod) is not supported on some
-         (all?)  Linux. (Also, symlink permissions are ignored on Linux,
-         so it doesn’t matter anyway.)"""
+   def chmod_min(self, perms_new, st=None):
+      """Set permissions on path so they are at least mode. If given, st is a
+         stat object for self, to avoid another stat(2) call if unneeded.
+         Return the new file mode (complete, not just permission bits).
+
+         For symlinks, do nothing, because we don’t want to follow symlinks
+         and follow_symlinks=False (or os.lchmod) is not supported on some
+         (all?) Linux. (Also, symlink permissions are ignored on Linux, so it
+         doesn’t matter anyway.)"""
       if (st is None):
-         st = os.lstat(self)
+         st = self.stat_(False)
       if (stat.S_ISLNK(st.st_mode)):
-         return
-      mode_old = stat.S_IMODE(st.st_mode)
-      if (mode & mode_old != mode):
-         mode |= mode_old
-         VERBOSE("fixing permissions: %s: %03o -> %03o" % (self, mode_old,
-                                                            mode))
-         ossafe(os.chmod, "can't chmod: %s" % self, self, mode)
+         return st.st_mode
+      perms_old = stat.S_IMODE(st.st_mode)
+      perms_new |= perms_old
+      if (perms_new != perms_old):
+         VERBOSE("fixing permissions: %s: %03o -> %03o"
+                 % (self, perms_old, perms_new))
+         ossafe(os.chmod, "can’t chmod: %s" % self, self, perms_new)
+      return (st.st_mode | perms_new)
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exits on the first error."
@@ -1369,12 +1379,11 @@ class Path(pathlib.PosixPath):
       return data
 
    def listdir(self):
-      """Return set of entries in directory path, without self (.) and parent
-         (..). We considered changing this to use os.scandir() for #992, but
-         decided that the advantages it offered didn’t warrant the effort
-         required to make the change."""
-      return set(Path(i) for i in ossafe(os.listdir,
-                                         "can’t list: %s" % self.name, self))
+      """Return set of entries in directory path, as strings, without self (.)
+         and parent (..). We considered changing this to use os.scandir() for
+         #992, but decided that the advantages it offered didn’t warrant the
+         effort required to make the change."""
+      return set(ossafe(os.listdir, "can’t list: %s" % self.name, self))
 
    def lstrip(self, n):
       """Return a copy of myself with n leading components removed. E.g.:
@@ -1436,7 +1445,7 @@ class Path(pathlib.PosixPath):
          NOTE: We also cannot just call super().stat here because the
          follow_symlinks kwarg is absent in pathlib for Python 3.6, which we
          want to retain compatibility with."""
-      return ossafe(os.stat, "can't stat: %s" % self.name, self,
+      return ossafe(os.stat, "can't stat: %s" % self, self,
                     follow_symlinks=links)
 
    def symlink(self, target, clobber=False):
@@ -2283,19 +2292,19 @@ class Storage:
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
       entries = self.root.listdir()
-      for entry in { i.path_name for i in (self.build_cache,
-                                          self.download_cache,
-                                          self.unpack_base,
-                                          self.upload_cache,
-                                          self.version_file) }:
+      for entry in { i.name for i in (self.build_cache,
+                                      self.download_cache,
+                                      self.unpack_base,
+                                      self.upload_cache,
+                                      self.version_file) }:
          try:
             entries.remove(entry)
          except KeyError:
-            FATAL("%s: missing file or directory: %s" % (msg_prefix, str(entry)))
-      entries -= { i.path_name for i in (self.lockfile, self.mount_point) }
+            FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      entries -= { i.name for i in (self.lockfile, self.mount_point) }
       if (len(entries) > 0):
          FATAL("%s: extraneous file(s): %s"
-               % (msg_prefix, " ".join(str(i) for i in sorted(entries))))
+               % (msg_prefix, " ".join(sorted(entries))))
       # check version
       v_found = self.version_read()
       if (v_found != STORAGE_VERSION):
@@ -2306,7 +2315,7 @@ class Storage:
       imgs = self.unpack_base.listdir()
       imgs_bad = set()
       for img in imgs:
-         if (":" in str(img)):  # bad char check b/c problem here is bad upgrade
+         if (":" in img):  # bad char check b/c problem here is bad upgrade
             FATAL("%s: storage directory broken: bad image dir name: %s"
                   % (msg_prefix, img), BUG_REPORT_PLZ)
 
