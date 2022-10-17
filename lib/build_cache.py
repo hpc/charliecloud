@@ -376,9 +376,9 @@ class File_Metadata:
          # so the first (stored) link is always available by the time we get
          # to subsequent (unstored) links.
          target = self.image_root // self.hardlink_to
-         assert (not os.path.exists(target.exists()))
          ch.TRACE("hard link: restoring: %s -> %s" % (self.path_abs, target))
-         ch.ossafe(os.link, "can’t hardlink: %s -> %s" % (self.path, target),
+         ch.ossafe(os.link, "can’t hardlink: %s -> %s" % (self.path_abs,
+                                                          target),
                    target, self.path_abs, follow_symlinks=False)
       if (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
@@ -395,9 +395,9 @@ class File_Metadata:
            or stat.S_ISDIR(self.mode)        # maybe just created or modified
            or stat.S_ISFIFO(self.mode))      # we just made the FIFO
           and not stat.S_ISLNK(self.mode)):  # can’t not follow symlinks
-         ch.ossafe(os.utime, "can’t restore times: %s" % self.path,
+         ch.ossafe(os.utime, "can’t restore times: %s" % self.path_abs,
                    self.path_abs, ns=(self.atime_ns, self.mtime_ns))
-         ch.ossafe(os.chmod, "can’t restore mode: %s" % self.path,
+         ch.ossafe(os.chmod, "can’t restore mode: %s" % self.path_abs,
                    self.path_abs, stat.S_IMODE(self.mode))
 
    def pickle(self):
@@ -431,8 +431,8 @@ class File_Metadata:
       fm = self
       for name in path.parts[:-1]:
          fm = fm.children[name]
-      self.children[path.name] = self.__class__(self.image_root, path)
-      assert (not stat.S_ISDIR(self.children[path.name].mode))
+      fm.children[path.name] = self.__class__(self.image_root, path)
+      assert (not stat.S_ISDIR(fm.children[path.name].mode))
 
 
 class State_ID:

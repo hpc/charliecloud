@@ -804,7 +804,7 @@ class I_copy(Instruction):
 
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
-         st = path.stat_(links=links)
+         st = path.stat_(links)
          return (  str(path).encode("UTF-8")
                  + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.

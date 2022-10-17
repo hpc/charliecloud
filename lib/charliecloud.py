@@ -473,7 +473,7 @@ class Image:
       # Return the last modified time of self as a datetime.datetime object in
       # the local time zone.
       return datetime.datetime.fromtimestamp(
-                 (self.metadata_path // "metadata.json").stat_().st_mtime,
+                 (self.metadata_path // "metadata.json").stat_(False).st_mtime,
                  datetime.timezone.utc).astimezone()
 
    @property
@@ -1298,6 +1298,18 @@ class Path(pathlib.PosixPath):
                         for i in subdirs + files)
       return (file_ct, byte_ct)
 
+   def exists_(self, links=False):
+      "Return True if I exist, False otherwise. Iff links, follow symlinks."
+      try:
+         # Don’t wrap self.exists() because that always follows symlnks. Use
+         # os.stat() b/c it has follow_symlinks in 3.6, unlike self.stat().
+         os.stat(self, follow_symlinks=links)
+      except FileNotFoundError:
+         return False
+      except OSError as x:
+         FATAL("can’t stat: %s: %s" % (self, x.strerror))
+      return True
+
    def file_ensure_exists(self):
       """If the final element of path exists (without dereferencing if it’s a
          symlink), do nothing; otherwise, create it as an empty regular file."""
@@ -1471,7 +1483,7 @@ class Path(pathlib.PosixPath):
          NOTE: We also cannot just call super().stat here because the
          follow_symlinks kwarg is absent in pathlib for Python 3.6, which we
          want to retain compatibility with."""
-      return ossafe(os.stat, "can't stat: %s" % self, self,
+      return ossafe(os.stat, "can’t stat: %s" % self, self,
                     follow_symlinks=links)
 
    def symlink(self, target, clobber=False):

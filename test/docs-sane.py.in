@@ -69,7 +69,7 @@ def check_man():
    lose_lots("missing synopsis", execs - set(man_synopses))
 
    lose_lots("bad synopsis in man page",
-             {     "%s: %s" % (p, s)
+             {     "%s: %s (expected: %s)" % (p, s, helps[p])
                for (p, s) in man_synopses.items()
                if (    p in helps
                    and summary_unrest(s) != helps[p])
