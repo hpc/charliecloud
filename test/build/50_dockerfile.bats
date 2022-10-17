@@ -1,5 +1,9 @@
 load ../common
 
+setup () {
+    [[ $CH_TEST_BUILDER != none ]] || skip 'no builder'
+}
+
 
 @test 'Dockerfile: syntax quirks' {
     # These should all yield an output image, but we don't actually care about
@@ -268,15 +272,6 @@ EOF
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
-    # ARG before FROM
-    run ch-image build -t tmpimg -f - . <<'EOF'
-ARG foo=bar
-FROM 00_tiny
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warning: ARG before FROM not yet supported; see issue #779'* ]]
-
     # FROM --platform
     run ch-image build -t tmpimg -f - . <<'EOF'
 FROM --platform=foo 00_tiny
@@ -404,7 +399,6 @@ EOF
 
 @test 'Dockerfile: ENV parsing' {
     scope standard
-    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
 
     env_expected=$(cat <<'EOF'
 ('chse_0a', 'value 0a')
@@ -484,7 +478,6 @@ EOF
 
 @test 'Dockerfile: SHELL' {
    scope standard
-   [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
    [[ $CH_TEST_BUILDER = buildah* ]] && skip "Buildah doesn't support SHELL"
 
    # test that SHELL command can change executables and parameters
@@ -549,8 +542,6 @@ EOF
     # seconds for ch-image.
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
         scope standard
-    elif [[ $CH_TEST_BUILDER = none ]]; then
-        skip 'no builder'
     else
         scope full
     fi
@@ -739,6 +730,146 @@ EOF
     fi
 }
 
+
+@test 'Dockerfile: ARG before FROM' {
+    scope standard
+
+    # single-stage
+    run build_ --no-cache -t tmpimg - <<'EOF'
+ARG os=alpine:3.9
+ARG foo=bar
+FROM $os
+ARG baz=qux
+RUN echo "os=$os foo=$foo baz=$baz"
+RUN echo alpine=$(cat /etc/alpine-release | cut -d. -f1-2)
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # WTF, Docker?
+        # shellcheck disable=SC2016
+        [[ $output = *'FROM $os'* ]]
+        [[ $output = *'os= foo= baz=qux'* ]]
+    else
+        [[ $output = *'FROM alpine:3.9'* ]]
+        [[ $output = *'os=alpine:3.9 foo=bar baz=qux'* ]]
+    fi
+    [[ $output = *'alpine=3.9'* ]]
+
+    # multi-stage
+    run build_ --no-cache -t tmpimg - <<'EOF'
+ARG os1=alpine:3.9
+ARG os2=alpine:3.16
+FROM $os1
+RUN echo "1: os1=$os1 os2=$os2"
+RUN echo alpine1=$(cat /etc/alpine-release | cut -d. -f1-2)
+FROM $os2
+RUN echo "2: os1=$os1 os2=$os2"
+RUN echo alpine2=$(cat /etc/alpine-release | cut -d. -f1-2)
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # WTF, Docker?
+        # shellcheck disable=SC2016
+        [[ $output = *'FROM $os1'* ]]
+        # shellcheck disable=SC2016
+        [[ $output = *'FROM $os2'* ]]
+        [[ $output = *'1: os1= os2='* ]]
+        [[ $output = *'2: os1= os2='* ]]
+    else
+        [[ $output = *'FROM alpine:3.9'* ]]
+        [[ $output = *'FROM alpine:3.16'* ]]
+        [[ $output = *'1: os1=alpine:3.9 os2=alpine:3.16'* ]]
+        [[ $output = *'2: os1=alpine:3.9 os2=alpine:3.16'* ]]
+    fi
+    [[ $output = *'alpine1=3.9'* ]]
+    [[ $output = *'alpine2=3.16'* ]]
+
+    # no default value
+    run build_ --no-cache -t tmpimg - <<'EOF'
+ARG os
+FROM $os
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # shellcheck disable=SC2016
+        [[ $output = *'base name ($os) should not be blank'* ]]
+    else
+        # shellcheck disable=SC2016
+        [[ ${lines[-2]} = 'error: image reference contains an undefined variable: $os' ]]
+    fi
+
+    # set with --build-arg
+    run build_ --no-cache --build-arg=os=alpine:3.16 -t tmpimg - <<'EOF'
+ARG os=alpine:3.9
+FROM $os
+RUN echo "os=$os"
+RUN echo alpine=$(cat /etc/alpine-release | cut -d. -f1-2)
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    if [[ $CH_TEST_BUILDER = docker ]]; then
+        # WTF, Docker?
+        # shellcheck disable=SC2016
+        [[ $output = *'FROM $os'* ]]
+        [[ $output = *'os='* ]]
+    else
+        [[ $output = *'FROM alpine:3.16'* ]]
+        [[ $output = *'os=alpine:3.16'* ]]
+    fi
+    [[ $output = *'alpine=3.16'* ]]
+
+    # both before and after FROM
+    run build_ --no-cache -t tmpimg - <<'EOF'
+ARG foo=bar
+FROM alpine:3.9
+ARG foo=baz
+RUN echo "foo=$foo"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'foo=baz'* ]]  # second wins
+}
+
+
+@test 'Dockerfile: FROM --arg' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    # --arg present but not used in image name
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
+FROM --arg=foo=bar 00_tiny
+RUN echo "1: foo=$foo"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'FROM --arg=foo=bar 00_tiny'* ]]
+    [[ $output = *'1: foo=bar'* ]]
+
+    # --arg used in image name
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
+FROM --arg=os=00_tiny $os
+RUN echo "1: os=$os"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'FROM --arg=os=00_tiny 00_tiny'* ]]
+    [[ $output = *'1: os=00_tiny'* ]]
+
+    # multiple --arg
+    run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
+FROM --arg=foo=bar --arg=os=00_tiny $os
+RUN echo "1: foo=$foo os=$os"
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'FROM --arg=foo=bar --arg=os=00_tiny 00_tiny'* ]]
+    [[ $output = *'1: foo=bar os=00_tiny'* ]]
+}
+
+
 @test 'Dockerfile: COPY list form' {
     scope standard
     [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
@@ -767,7 +898,6 @@ EOF
 
 @test 'Dockerfile: COPY errors' {
     scope standard
-    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
     [[ $CH_TEST_BUILDER = buildah* ]] && skip 'Buildah untested'
 
     # Dockerfile on stdin, so no context directory.
@@ -909,7 +1039,6 @@ EOF
 
 @test 'Dockerfile: COPY --from errors' {
     scope standard
-    [[ $CH_TEST_BUILDER = none ]] && skip 'no builder'
     [[ $CH_TEST_BUILDER = buildah* ]] && skip 'Buildah untested'
 
     # Note: Docker treats several types of erroneous --from names as another
@@ -1045,10 +1174,11 @@ EOF
 }
 
 
-@test "COPY from previous stage, no context" {
+@test 'Dockerfile: COPY from previous stage, no context' {
     # Normally, COPY is disallowed if there’s no context directory, but if
     # it’s from a previous stage, it should work. See issue #1381.
 
+    scope standard
     [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
 
     run ch-image build --no-cache -t foo - <<'EOF'
@@ -1074,4 +1204,17 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'manifest: using internal library'* ]]
     [[ $output != *'layer 1'* ]]  # no layers
+}
+
+
+@test 'Dockerfile: bad image reference' {
+    scope standard
+    [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
+
+    run ch-image build -t tmpimg - <<'EOF'
+FROM /alpine:3.9
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ ${lines[-2]} = 'error: image ref syntax, char 1: /alpine:3.9' ]]
 }
