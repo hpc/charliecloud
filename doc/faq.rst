@@ -80,53 +80,6 @@ There is a lot of information here, and it comes in this order:
 *Note:* Despite the structured format, the error messages are not guaranteed
 to be machine-readable.
 
-:code:`ch-run` fails with “can't execve(2): permission denied”
---------------------------------------------------------------
-
-Example::
-
-  $ ch-run /foo/hello -- echo "foo"
-  ch-run[154334]: error: can't execve(2): echo: Permission denied (ch_core.c:387 13)
-
-This error indicates that the container image you are trying to run is stored
-in a filesystem that has been mounted with the :code:`noexec` option. To verify
-this, you can use the :code:`findmnt` command::
-  
-  $ findmnt
-  TARGET                          SOURCE           FSTYPE     OPTIONS
-  [...]
-  └─/foo                          tmpfs            tmpfs      rw,noexec,relatime,size=614400k,inode64
-
-Here we can see in the :code:`OPTIONS` column that :code:`noexec` is specified
-for :code:`/foo`, hence the error.
-
-To fix this, you need to remount the filesystem. First, check the mount
-location using the :code:`df` command::
-
-  $ df -h /foo
-  Filesystem      Size  Used Avail Use% Mounted on
-  tmpfs           600M  201M  400M  34% /foo
-
-In this case, the mount location (found under the :code:`Mounted on` column) is
-the same as the directory path: :code:`/foo`. Note that this will not always be
-true. Next, run the following command on the :strong:`mount location` (not the
-directory path) to remount the filesystem with execute privileges::
-
-  $ mount -o remount, exec /foo
-
-We can check that the remount was successful using :code:`findmnt` again::
-
-  $ findmnt
-  TARGET                          SOURCE           FSTYPE     OPTIONS
-  [...]
-  └─/foo                          tmpfs            tmpfs      rw,relatime,size=614400k,inode64
-
-We can see that :code:`noexec` is no longer present in the :code:`OPTIONS`
-column. Finally, retry :code:`ch-run`::
-
-  $ ch-run /foo/hello -- echo "foo"
-  foo
-
 :code:`ch-run` fails with “can't re-mount image read-only”
 ----------------------------------------------------------
 
@@ -241,6 +194,41 @@ system level, not the user level. In the example above, this means changing
 
 See the man page for :code:`ch-run` for more on environment variable
 handling.
+
+:code:`ch-run` fails with “can't execve(2): permission denied”
+--------------------------------------------------------------
+
+For example::
+
+  $ ch-run /var/tmp/hello -- /bin/echo foo
+  ch-run[154334]: error: can't execve(2): /bin/echo: Permission denied (ch_core.c:387 13)
+
+But :code:`/bin/echo` *does* have execute permission::
+
+  $ ls -lh /var/tmp/hello/bin/echo
+  -rwxr-xr-x 1 charlie charlie 51 Oct  8  2021 /var/tmp/hello/bin/echo
+
+In this case, the error indicates the container image is on a filesystem
+mounted with :code:`noexec`. To verify this, you can use e.g.
+:code:`findmnt(8)`::
+
+  $ findmnt
+  TARGET      SOURCE  FSTYPE  OPTIONS
+  [...]
+  └─/var/tmp  tmpfs   tmpfs   rw,noexec,relatime,size=8675309k
+
+Note :code:`noexec` under :code:`OPTIONS`.
+
+To fix this, you can:
+
+  1. Use a different filesystem mounted :code:`exec` (i.e., the opposite
+     of :code:`noexec` and typically the default).
+
+  2. Change the mount options for the filesystem.
+
+  3. Use SquashFS format images (only for images exported from Charliecloud's
+     storage directory).
+
 
 Unexpected behavior
 ===================
@@ -1121,4 +1109,4 @@ linuxcontainers.org uses the opposite order for “le” in the architecture nam
 
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
-..  LocalWords:  VirtualSize linuxcontainers jour uk lxd
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr
