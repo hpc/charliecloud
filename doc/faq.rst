@@ -177,7 +177,7 @@ they have other means to be confident in the registry's identity.
 "storage directory seems invalid"
 ---------------------------------
 
-Charliecloud uses its *storage directory* (:code:`/var/tmp/$USER.sh` by
+Charliecloud uses its *storage directory* (:code:`/var/tmp/$USER.ch` by
 default) for various internal uses. As such, Charliecloud needs complete
 control over this directory's contents. This error happens when the storage
 directory exists but its contents do not match what's expected, including if
