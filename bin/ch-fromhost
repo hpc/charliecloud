@@ -177,8 +177,8 @@ queue_ofi_dso () {
     # Directory of OFI provider dsos (*-fi.so's).
     if [ -d "$1" ]; then
        debug "searching $1 for ofi providers"
-       for f in "$(find "$1" -maxdepth 1 -name '*-fi.so')"; do
-           [[ -z "$f" ]] || queue_ofi_dso "$f"
+       for f in $(find "$1" -maxdepth 1 -name '*-fi.so'); do
+           [ -z "$f" ] || queue_ofi_dso "$f"
        done
        [ -n "$ofi_found" ] || fatal "no loadable ofi provider(s) in $1"
     # Single OFI dso provider.
@@ -503,7 +503,7 @@ if [ -z "$no_ldconfig" ] && { [ $lib_found ] || [ $ofi_found ] ;} then
     debug "running ldconfig"
     debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
-    if [[ -n "$ofi_found" ]]; then
+    if [ -n "$ofi_found" ]; then
         debug "validating ldconfig cache"
         for l in $ld_conf; do
             debug_indent "${ch_bin}/ch-run $image -- /sbin/ldconfig -p | grep -F $l > /dev/null 2>&1"
