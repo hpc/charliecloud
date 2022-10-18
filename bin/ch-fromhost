@@ -197,7 +197,7 @@ queue_ofi_dso () {
             fi
         done
     else
-        fatal "$1 is not a directory or file ending -fi.so"
+        fatal "$1 is not a directory or file ending '-fi.so'"
     fi
 }
 

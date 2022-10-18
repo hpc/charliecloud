@@ -243,17 +243,17 @@ fromhost_ls () {
     run ch-fromhost "$img" --ofi /rando/path
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'is not, or does not contain, valid OFI dso(s)'* ]]
+    [[ $output = *"is not a directory or file ending '-fi.so'"* ]]
     # --ofi path has no -fi.so
     run ch-fromhost "$img" --ofi "$CHTEST_DIR"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'is not, or does not contain, valid OFI dso(s)'* ]]
+    [[ $output = *"is not a directory or file ending '-fi.so'"* ]]
     # --ofi file is not a -fi.so
     run ch-fromhost "$img" --ofi "$CHTEST_DIR/sotest/libsotest.so"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'is not, or does not contain, valid OFI dso(s)'* ]]
+    [[ $output = *"is not a directory or file ending '-fi.so'"* ]]
     # --ofi host FI_PROVIDER_PATH set without --dest
     unset FI_PROVIDER_PATH
     export FI_PROVIDER_PATH=/usr/foo
