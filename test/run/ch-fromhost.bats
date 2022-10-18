@@ -248,7 +248,7 @@ fromhost_ls () {
     run ch-fromhost "$img" --ofi "$CHTEST_DIR"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"is not a directory or file ending '-fi.so'"* ]]
+    [[ $output = *'no loadable ofi provider(s) in'* ]]
     # --ofi file is not a -fi.so
     run ch-fromhost "$img" --ofi "$CHTEST_DIR/sotest/libsotest.so"
     echo "$output"

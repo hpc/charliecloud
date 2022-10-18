@@ -46,16 +46,9 @@ struct bind BINDS_DEFAULT[] = {
    { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
    { "/etc/machine-id",          "/etc/machine-id",          BD_OPTIONAL },
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
-   { 0 }
-};
-
-/* Cray bind-mounts. */
-struct bind BINDS_CRAY[] = {
+   /* Cray bind-mounts. See #1473. */
    { "/var/lib/hugetlbfs",       "/var/lib/hugetlbfs",       BD_OPTIONAL },
-};
-
-/* Cray Gemini/Aries interconnect bind-mounts. */
-struct bind BINDS_CRAY_UGNI[] = {
+   /* Cray Gemini/Aries interconnect bind-mounts. */
    { "/etc/opt/cray/wlm_detect", "/etc/opt/cray/wlm_detect", BD_OPTIONAL },
    { "/opt/cray/wlm_detect",     "/opt/cray/wlm_detect",     BD_OPTIONAL },
    { "/opt/cray/alps",           "/opt/cray/alps",           BD_OPTIONAL },
@@ -63,12 +56,11 @@ struct bind BINDS_CRAY_UGNI[] = {
    { "/opt/cray/ugni",           "/opt/cray/ugni",           BD_OPTIONAL },
    { "/opt/cray/xpmem",          "/opt/cray/xpmem",          BD_OPTIONAL },
    { "/var/opt/cray/alps",       "/var/opt/cray/alps",       BD_OPTIONAL },
+   /* Cray Shasta/Slingshot bind-mounts. */
+   { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_OPTIONAL },
+   { 0 }
 };
 
-/* Known Cray Shasta bind-mounts. */
-struct bind BINDS_CRAY_SHASTA[] = {
-   { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_OPTIONAL },
-};
 
 /** Global variables **/
 
@@ -201,10 +193,6 @@ void enter_udss(struct container *c)
    bind_mount(newroot_parent, newroot_parent, BD_REQUIRED, "/", MS_PRIVATE);
    // Bind-mount default files and directories.
    bind_mounts(BINDS_DEFAULT, c->newroot, MS_RDONLY);
-   // Bind-mount cray host files.
-   bind_mounts(BINDS_CRAY, c->newroot, MS_RDONLY);
-   bind_mounts(BINDS_CRAY_UGNI, c->newroot, MS_RDONLY);
-   bind_mounts(BINDS_CRAY_SHASTA, c->newroot, MS_RDONLY);
    // /etc/passwd and /etc/group.
    if (!c->private_passwd)
       setup_passwd(c);
