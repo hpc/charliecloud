@@ -224,7 +224,8 @@ To fix this, you can:
   1. Use a different filesystem mounted :code:`exec` (i.e., the opposite
      of :code:`noexec` and typically the default).
 
-  2. Change the mount options for the filesystem.
+  2. Change the mount options for the filesystem (e.g., update
+     :code:`/etc/fstab` or remount with :code:`exec`).
 
   3. Use SquashFS format images (only for images exported from Charliecloud's
      storage directory).
