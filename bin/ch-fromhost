@@ -436,7 +436,7 @@ if [ $ofi_found ]; then
         debug_indent "touch ${image}/etc/ld.so.conf"
         touch "${image}/etc/ld.so.conf"
     fi
-    if ! grep -F 'include ld.so.conf.d/*.conf' "${image}/etc/ld.so.conf" 2>&1 > /dev/null; then
+    if ! grep -F 'include ld.so.conf.d/*.conf' "${image}/etc/ld.so.conf" > /dev/null 2>&1; then
         debug_indent "echo 'include ld.so.conf.d/*.conf' >> ${image}/etc/ld.so.conf"
         echo 'include ld.so.conf.d/*.conf' >> "${image}/etc/ld.so.conf"
     fi
