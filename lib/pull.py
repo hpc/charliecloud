@@ -43,6 +43,7 @@ class Image_Puller:
 
    __slots__ = ("architectures",  # key: architecture, value: manifest digest
                 "config_hash",
+                "digests",
                 "image",
                 "layer_hashes",
                 "registry",
@@ -52,6 +53,7 @@ class Image_Puller:
    def __init__(self, image, src_ref):
       self.architectures = None
       self.config_hash = None
+      self.digests = dict()
       self.image = image
       self.layer_hashes = None
       self.registry = ch.Registry_HTTP(src_ref)
@@ -195,6 +197,7 @@ class Image_Puller:
          if (arch in self.architectures):
             ch.FATAL("manifest list: duplicate architecture: %s" % arch)
          self.architectures[arch] = ch.digest_trim(digest)
+         self.digests[arch] = digest[7:]
       if (len(self.architectures) == 0):
          ch.WARNING("no valid architectures found")
 

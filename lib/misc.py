@@ -138,7 +138,12 @@ def list_(cli):
          pullet.fatman_load()
          remote = "yes"
          arch_aware = "yes"
-         arch_avail = " ".join(sorted(pullet.architectures.keys()))
+         digests = pullet.digests
+         arch_keys = sorted(pullet.architectures.keys())
+         max_key = max(arch_keys)
+         arch_avail = arch_keys[0] + " (" + pullet.digests[arch_keys[0]][:11] + ")\n"
+         for i in arch_keys[1:]:
+            arch_avail += (" " * 21) + i + " (" + pullet.digests[i][:11] + ")\n"
       except ch.Image_Unavailable_Error:
          remote = "no (or you are not authorized)"
          arch_aware = "n/a"
