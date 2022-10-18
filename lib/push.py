@@ -50,6 +50,7 @@ class Image_Pusher:
       self.image = image
       self.layers = None
       self.manifest = None
+      self.ul = None
 
    @classmethod
    def config_new(class_):
@@ -97,6 +98,7 @@ class Image_Pusher:
       tars_c = list()
       config = self.config_new()
       manifest = self.manifest_new()
+      self.ul = ch.Registry_HTTP(self.dst_ref) # authenticate registry
       # Prepare layers.
       for (i, tar_uc) in enumerate(tars_uc, start=1):
          ch.INFO("layer %d/%d: preparing" % (i, len(tars_uc)))
@@ -167,10 +169,10 @@ class Image_Pusher:
 
    def upload(self):
       ch.INFO("starting upload")
-      ul = ch.Registry_HTTP(self.dst_ref)
+      #ul = ch.Registry_HTTP(self.dst_ref)
       for (i, (digest, tarball)) in enumerate(self.layers, start=1):
-         ul.layer_from_file(digest, tarball,
+         self.ul.layer_from_file(digest, tarball,
                             "layer %d/%d: " % (i, len(self.layers)))
-      ul.config_upload(self.config)
-      ul.manifest_upload(self.manifest)
-      ul.close()
+      self.ul.config_upload(self.config)
+      self.ul.manifest_upload(self.manifest)
+      self.ul.close()
