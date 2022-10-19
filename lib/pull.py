@@ -12,7 +12,8 @@ import build_cache as bu
 manifests_internal = {
    "scratch": {  # magic empty image
       "schemaVersion": 2,
-      "config": { "digest": "no digest" },
+      "config": { "digest": None },
+      "digest": "no digest",
       "layers": []
    }
 }
@@ -163,7 +164,7 @@ class Image_Puller:
       if (str(self.src_ref) in manifests_internal):
          # cheat; internal manifest library matches every architecture
          self.architectures = ch.Arch_Dict({ ch.arch_host: None })
-         self.digests[ch.arch_host] = manifests_internal[self.src_ref.name]['config']['digest']
+         self.digests[ch.arch_host] = manifests_internal[self.src_ref.name]['digest']
          return
       # raises Image_Unavailable_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
