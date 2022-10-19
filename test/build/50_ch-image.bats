@@ -47,7 +47,6 @@ FROM 00_tiny
 FROM 00_tiny
 FROM 00_tiny
 FROM 00_tiny
-FROM 00_tiny
 EOF
     run ch-image list
     echo "$output"
