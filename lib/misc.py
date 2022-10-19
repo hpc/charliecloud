@@ -136,7 +136,6 @@ def list_(cli):
       pullet = pull.Image_Puller(img, img.ref)
       try:
          pullet.fatman_load()
-         print(img)
          remote = "yes"
          arch_aware = "yes"
          digests = pullet.digests
