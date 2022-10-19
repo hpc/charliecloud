@@ -296,7 +296,7 @@ EOF
     [[ $output = *'in local storage:    no'* ]]
     [[ $output = *'available remotely:  yes'* ]]
     [[ $output = *'remote arch-aware:   yes'* ]]
-    [[ $output = *'archs available:     386 amd64 arm/v7 arm64/v8'* ]]
+    [[ $output = *'archs available:'*'386'*'amd64'*'arm/v7'*'arm64/v8'* ]]
 
     # in storage, exists remotely, no fat manifest
     run ch-image list charliecloud/metadata:2021-01-15
