@@ -130,7 +130,7 @@ they have other means to be confident in the registry's identity.
 "storage directory seems invalid"
 ---------------------------------
 
-Charliecloud uses its *storage directory* (:code:`/var/tmp/$USER.sh` by
+Charliecloud uses its *storage directory* (:code:`/var/tmp/$USER.ch` by
 default) for various internal uses. As such, Charliecloud needs complete
 control over this directory's contents. This error happens when the storage
 directory exists but its contents do not match what's expected, including if
@@ -194,6 +194,42 @@ system level, not the user level. In the example above, this means changing
 
 See the man page for :code:`ch-run` for more on environment variable
 handling.
+
+:code:`ch-run` fails with “can't execve(2): permission denied”
+--------------------------------------------------------------
+
+For example::
+
+  $ ch-run /var/tmp/hello -- /bin/echo foo
+  ch-run[154334]: error: can't execve(2): /bin/echo: Permission denied (ch_core.c:387 13)
+
+But :code:`/bin/echo` *does* have execute permission::
+
+  $ ls -lh /var/tmp/hello/bin/echo
+  -rwxr-xr-x 1 charlie charlie 51 Oct  8  2021 /var/tmp/hello/bin/echo
+
+In this case, the error indicates the container image is on a filesystem
+mounted with :code:`noexec`. To verify this, you can use e.g.
+:code:`findmnt(8)`::
+
+  $ findmnt
+  TARGET      SOURCE  FSTYPE  OPTIONS
+  [...]
+  └─/var/tmp  tmpfs   tmpfs   rw,noexec,relatime,size=8675309k
+
+Note :code:`noexec` under :code:`OPTIONS`.
+
+To fix this, you can:
+
+  1. Use a different filesystem mounted :code:`exec` (i.e., the opposite
+     of :code:`noexec` and typically the default).
+
+  2. Change the mount options for the filesystem (e.g., update
+     :code:`/etc/fstab` or remount with :code:`exec`).
+
+  3. Use SquashFS format images (only for images exported from Charliecloud's
+     storage directory).
+
 
 Unexpected behavior
 ===================
@@ -1074,4 +1110,4 @@ linuxcontainers.org uses the opposite order for “le” in the architecture nam
 
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
-..  LocalWords:  VirtualSize linuxcontainers jour uk lxd
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr
