@@ -65,7 +65,6 @@ EOF
     [[ $output != *"delete/test_stage0"* ]]
     [[ $output != *"delete/test_stage1"* ]]
     [[ $output != *"delete/test_stage2"* ]]
-    [[ $output != *"delete/test_stage3"* ]]
 }
 
 
