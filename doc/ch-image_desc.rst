@@ -936,8 +936,15 @@ Print details about Debian Buster image::
    available remotely:  yes
    remote arch-aware:   yes
    host architecture:   amd64
-   archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x
+   archs available:     386      (bae2738ed83)
+                        amd64    (98285d32477)
+                        arm/v7   (97247fd4822)
+                        arm64/v8 (122a0342878)
 
+For remotely available images like Debian Buster, the associated
+:code:`sha256` hash is listed beside each available architecture.
+Importantly, this feature does :strong:`not` provide the
+hash of the local image, which is only calculated on upload.
 
 :code:`import`
 ==============

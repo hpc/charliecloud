@@ -86,7 +86,7 @@ class Image_Puller:
          else:
             digest = self.architectures[ch.arch]
          return ch.storage.manifest_for_download(self.image.ref, digest)
-      
+
    def done(self):
       self.registry.close()
 
