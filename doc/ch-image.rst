@@ -69,6 +69,11 @@ Common options placed before or after the sub-command:
   :code:`--cache`
     Enable build cache. Default if a sufficiently new Git is available.
 
+  :code:`--cache-large SIZE`
+    Set the cache's large file threshold to :code:`SIZE` MiB, or :code:`-1`
+    for unlimited, which is the default. This can speed up some builds.
+    **Experimental.** See section "Build cache" for details.
+
   :code:`--no-cache`
     Disable build cache. Default if a sufficiently new Git is not available.
     This option turns off the cache completely; if you want to re-execute a
@@ -134,7 +139,7 @@ architecture is not available, the error message will list which ones are.
 4. Registries treat architecture as a pair of items, architecture and
    sometimes variant (e.g., "arm" and "v7"). Charliecloud treats
    architecture as a simple string and converts to/from the registry view
-   transparently.   
+   transparently.
 
 
 Authentication
@@ -364,6 +369,32 @@ files. In both cases, garbage uses all available cores.
 
 :code:`git build-cache` prints the specific garbage collection parameters in
 use, and :code:`-v` can be added for more detail.
+
+Large file threshold
+--------------------
+
+Because Git uses content-addressed storage, upon commit, it must read in full
+all files modified by an instruction. This I/O cost can be a significant
+fraction of build time for some large images. Therefore, experimental option
+:code:`--cache-large` sets the *large file threshold*. Regular files larger
+than this size (in MiB) are stored outside the Git repository, somewhat like
+`Git Large File Storage <https://git-lfs.github.com/>`_. :code:`ch-image` uses
+hard links to bring large files in and out of images as needed, which is a
+fast metadata operation that ignores file content.
+
+A threshold of :code:`-1`, which is the default, indicates that no files are
+considered large.
+
+There are two trade-offs. First, large files with the same mode, size, mtime,
+and path in the image are considered identical, *even if their content is not
+actually identical*; e.g., :code:`touch(1)` shenanigans can corrupt an image.
+Second, every version of a large file is stored verbatim and uncompressed
+(e.g., a large file with a one-byte change will be stored in full twice), and
+large files do not participate in the build cache's de-duplication, so more
+storage space will likely be used. Unused versions *are* deleted by
+:code:`ch-image build-cache --gc`.
+
+(Note that Git has an unrelated setting called :code:`core.bigFileThreshold`.)
 
 Example
 -------
@@ -1221,4 +1252,4 @@ Environment variables
 .. include:: ./see_also.rst
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc
-..  LocalWords:  dlcache graphviz packfile packfiles
+..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold

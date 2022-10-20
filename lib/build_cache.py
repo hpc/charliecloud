@@ -116,18 +116,18 @@ def init(cli):
       if (cli.bucache != ch.Build_Mode.DISABLED and not ok):
          ch.FATAL("insufficient Git for build cache mode: %s"
                   % cli.bucache.value)
-   ch.VERBOSE("build cache mode: %s" % cli.bucache.value)
    # Set cache appropriately. We could also do this with a factory method, but
    # that seems overkill.
    global cache
    if (cli.bucache == ch.Build_Mode.ENABLED):
-      cache = Enabled_Cache()
+      cache = Enabled_Cache(cli.cache_large)
    elif (cli.bucache == ch.Build_Mode.REBUILD):
-      cache = Rebuild_Cache()
+      cache = Rebuild_Cache(cli.cache_large)
    elif (cli.bucache == ch.Build_Mode.DISABLED):
-      cache = Disabled_Cache()
+      cache = Disabled_Cache(cli.cache_large)
    else:
       assert False, "unreachable"
+   ch.VERBOSE("build cache mode: %s" % cache)
    # DOT output path
    try:
       global dot_base
@@ -158,8 +158,10 @@ class File_Metadata:
    #   mtime_ns
    #   mode
    #
-   #   size .......... Size of the file in bytes. WARNING: May be None if read
-   #                   from an old pickle.
+   #   size .......... Size of the file in bytes. Note large file thresholds
+   #                   vary between builds, so this attribute should not be
+   #                   used to determine if a file is in large file storage.
+   #                   WARNING: May be -1 if read from an old pickle.
    #
    # Other attributes stored in pickle:
    #
@@ -169,6 +171,11 @@ class File_Metadata:
    #
    #   dont_restore .. If True, file should not be restored (e.g., RPM
    #                   database cache files).
+   #
+   #   large_name .... If non-None, file is stored out-of-band as a large file
+   #                   with this name. This is a function of all the
+   #                   attributes that make file large-unique, i.e., two files
+   #                   with the same large_name are considered the same file.
    #
    #   hardlink_to ... If non-None, file is a hard link to this other file,
    #                   stored as a Path object relative to the image root.
@@ -185,7 +192,7 @@ class File_Metadata:
    #
    #   st ............ Stat object for the file. Absent after un-pickling.
 
-   # FIXME: large file hash components: mtime_ns mode size image_root.name path
+   # FIXME: large file hash components: mtime_ns mode size path
    #        followed by transformed path for debuggability
 
    def __init__(self, image_root, path):
@@ -198,6 +205,7 @@ class File_Metadata:
       self.children = dict()
       self.dont_restore = False
       self.hardlink_to = None
+      self.large_name = None
 
    def __getstate__(self):
       return { a:v for (a,v) in self.__dict__.items()
@@ -230,7 +238,8 @@ class File_Metadata:
       return (self.image_root // self.path)
 
    @classmethod
-   def git_prepare(class_, image_root, path=None, hardlinks=None):
+   def git_prepare(class_, image_root, large_file_thresh,
+                   path=None, hardlinks=None):
       """Recursively walk the given image root, prepare it for a Git commit,
          and return the resulting File_Metadata tree describing it. This is
          mostly reversed by git_restore_walk(); anything not is noted.
@@ -302,13 +311,15 @@ class File_Metadata:
       if   (   stat.S_ISREG(fm.mode)
             or stat.S_ISLNK(fm.mode)
             or stat.S_ISFIFO(fm.mode)):
-         # Normally nothing to do here on these file types, but RPM databases
-         # get corrupted. The easy fix is to delete them. See issue #1351.
+         # RPM databases get corrupted. Easy fix is delete them. See #1351.
          if (path.match("*/var/lib/rpm/__db.*")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
             fm.path_abs.unlink()
             fm.dont_restore = True
             return fm
+         # Deal with large files.
+         elif (fm.size > large_file_thresh):
+            fm.large_prepare()
       elif (   stat.S_ISSOCK(fm.mode)):
          ch.WARNING("socket in image, will be ignored: %s" % path)
       elif (   stat.S_ISCHR(fm.mode)
@@ -318,8 +329,8 @@ class File_Metadata:
          entries = sorted(fm.path_abs.listdir())
          for i in entries:
             # Recurse
-            fm.children[i] = class_.git_prepare(image_root, path // i,
-                                                hardlinks)
+            fm.children[i] = class_.git_prepare(image_root, large_file_thresh,
+                                                path // i, hardlinks)
       else:
          ch.FATAL("unexpected file type in image: %x: %s"
                   % (stat.IFMT(fm.mode), path))
@@ -371,6 +382,8 @@ class File_Metadata:
          ch.ossafe(os.mkdir, "can’t mkdir: %s" % self.path, self.path_abs)
       if (stat.S_ISFIFO(self.mode)):
          ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
+      if (self.large_name is not None):
+         self.large_restore()
       if (self.hardlink_to is not None):
          # This relies on prepare and restore having the same traversal order,
          # so the first (stored) link is always available by the time we get
@@ -400,14 +413,45 @@ class File_Metadata:
          ch.ossafe(os.chmod, "can’t restore mode: %s" % self.path_abs,
                    self.path_abs, stat.S_IMODE(self.mode))
 
+   def large_name_get(self):
+      "Return my name for use in large file storage."
+      assert (self.size >= 0)
+      h = hashlib.md5()
+      for attr in ("mtime_ns", "mode", "size", "path"):
+         h.update(bytes(repr(getattr(self, attr)).encode("UTF-8")))
+      # The digest is unique, but add an encoded path to aid debugging.
+      return (h.hexdigest() + "!" + str(self.path).replace("/", "!"))
+
+   def large_prepare(self):
+      """Set large_name, then move my file to large file storage, or delete it
+         if it already exists."""
+      self.large_name = self.large_name_get()
+      target = ch.storage.build_large_path(self.large_name)
+      if (target.exists_()):
+         op = "found"
+         self.path_abs.unlink_()
+      else:
+         op = "moving to"
+         self.path_abs.rename_(target)
+      ch.DEBUG("large file: %s: %s: %s" % (self.path, op, self.large_name))
+
+   def large_restore(self):
+      "Hard link my file to the copy in large file storage."
+      target = ch.storage.build_large_path(self.large_name)
+      ch.DEBUG("large file: %s: linking: %s" % (self.path_abs, self.large_name))
+      self.path_abs.hardlink(target)
+      del self.large_name  # prevent double use
+
    def pickle(self):
       (self.image_root // PICKLE_PATH_DEFAULT) \
          .file_write(pickle.dumps(self, protocol=4))
 
    def unpickle_fix(self, image_root, path):
-      # old: size: no such attribute
+      # old: large_name, size: no such attribute
+      if (not (hasattr(self, "large_name"))):
+         self.large_name = None
       if (not (hasattr(self, "size"))):
-         self.size = None
+         self.size = -1
       # old: hardlink_to: stored as string
       if (isinstance(self.hardlink_to, str)):
          self.hardlink_to = ch.Path(self.hardlink_to)
@@ -427,12 +471,14 @@ class File_Metadata:
 
    def update(self, path):
       "Recompute the File_Metadata object at path in the tree rooted by me."
+      # FIXME: Can’t handle anything other than regular, non-large files that
+      # don’t need renaming.
       assert (stat.S_ISDIR(self.mode) and len(path) >= 1)
       fm = self
       for name in path.parts[:-1]:
          fm = fm.children[name]
       fm.children[path.name] = self.__class__(self.image_root, path)
-      assert (not stat.S_ISDIR(fm.children[path.name].mode))
+      assert (stat.S_ISREG(fm.children[path.name].mode))
 
 
 class State_ID:
@@ -491,10 +537,12 @@ class Enabled_Cache:
    import_id = State_ID.from_text("5061:756C:204D6F72:70687900:00000000")
 
    __slots__ = ("bootstrap_ct",
-                "file_metadata")
+                "file_metadata",
+                "large_threshold")
 
-   def __init__(self):
+   def __init__(self, large_threshold):
       self.bootstrap_ct = 0
+      self.large_threshold = large_threshold
       if (not os.path.isdir(self.root)):
          self.root.mkdir()
       ls = self.root.listdir()
@@ -508,6 +556,9 @@ class Enabled_Cache:
       # Prune stale worktrees that might have been left around after failed
       # builds or other interruptions.
       ch.cmd_quiet(["git", "worktree", "prune"], cwd=self.root)
+
+   def __str__(self):
+      return ("enabled (large=%d)" % self.large_threshold)
 
    @property
    def root(self):
@@ -704,7 +755,8 @@ class Enabled_Cache:
          Otherwise, update metadata only for files in files."""
       t = ch.Timer()
       if (len(files) == 0):
-         self.file_metadata = File_Metadata.git_prepare(unpack_path)
+         self.file_metadata = File_Metadata.git_prepare(unpack_path,
+                                                        self.large_threshold)
       else:
          for path in files:
             self.file_metadata.update(path)
@@ -953,14 +1005,20 @@ class Enabled_Cache:
 
 class Rebuild_Cache(Enabled_Cache):
 
+   def __str__(self):
+      return ("rebuild (large=%d)" % self.large_threshold)
+
    def find_sid(self, sid, branch):
       return None
 
 
 class Disabled_Cache(Rebuild_Cache):
 
-   def __init__(self):
+   def __init__(self, *args):
       pass
+
+   def __str__(self):
+      return "disabled"
 
    def checkout(self, image, git_hash, base_image):
       ch.INFO("copying image ...")

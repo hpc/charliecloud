@@ -21,6 +21,7 @@ import shlex
 import shutil
 import signal
 import stat
+import struct
 import subprocess
 import sys
 import tarfile
@@ -274,7 +275,7 @@ STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 # Storage directory format version. We refuse to operate on storage
 # directories with non-matching versions. Increment this number when the
 # format changes non-trivially.
-STORAGE_VERSION = 3
+STORAGE_VERSION = 4
 
 
 ## Globals ##
@@ -1395,6 +1396,12 @@ class Path(pathlib.PosixPath):
       except OSError as x:
          FATAL("can’t read %s: %s" % (self.name, x.strerror))
 
+   def hardlink(self, target):
+      try:
+         os.link(target, self)  # no super().hardlink_to() until 3.10
+      except OSError:
+         FATAL("can’t hard link: %s -> %s: %s" % (self, target, x.strerror))
+
    def joinpath_posix(self, *others):
       others2 = list()
       for other in others:
@@ -2133,6 +2140,10 @@ class Storage:
       return self.root // "bucache"
 
    @property
+   def build_large(self):
+      return self.root // "bularge"
+
+   @property
    def download_cache(self):
       return self.root // "dlcache"
 
@@ -2190,6 +2201,9 @@ class Storage:
          FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
       return path
 
+   def build_large_path(self, name):
+      return self.build_large // name
+
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
@@ -2202,7 +2216,7 @@ class Storage:
          op = "initializing"
          v_found = None
       else:
-         op = "upgrading"
+         op = "upgrading"  # not used unless upgrading
          if (not self.valid_p):
             if (os.path.exists(self.root) and not self.root.listdir()):
                hint = "let Charliecloud create %s; see FAQ" % self.root.name
@@ -2213,12 +2227,13 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 1, 2}):  # initialize/upgrade
+      elif (v_found in {None, 1, 2, 3}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
          self.lock()
          self.download_cache.mkdir_()
          self.build_cache.mkdir_()
+         self.build_large.mkdir_()
          self.unpack_base.mkdir_()
          self.upload_cache.mkdir_()
          for old in self.unpack_base.iterdir():
@@ -2331,6 +2346,7 @@ class Storage:
       # verify file *type*, assuming that kind of error is rare.
       entries = self.root.listdir()
       for entry in { i.name for i in (self.build_cache,
+                                      self.build_large,
                                       self.download_cache,
                                       self.unpack_base,
                                       self.upload_cache,
@@ -2873,6 +2889,12 @@ def tree_terminals_cat(tree, tname):
    """Return the concatenated values of all child terminals named tname as a
       string, with no delimiters. If none, return the empty string."""
    return "".join(tree_terminals(tree, tname))
+
+def unsigned(i, bits=32):
+   """Convert i to int, then re-interpret it as unsigned of length bits. The
+      main point here is to turn -1 into a large positive value."""
+   assert (bits == 32)  # future expansion?
+   return struct.unpack("=I", struct.pack("=i", int(i)))[0]
 
 def user():
    "Return the current username; exit with error if it can't be obtained."
