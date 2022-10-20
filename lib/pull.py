@@ -13,6 +13,10 @@ manifests_internal = {
    "scratch": {  # magic empty image
       "schemaVersion": 2,
       "config": { "digest": None },
+      # Add 'digest' field to 'scratch' dict to be used in 'fatman_load()'.
+      # This is a kludge. Now the dictionary doesn't follow the format of
+      # a skinny manifest OR a fat manifest, but it makes my solution to
+      # issue #1365 work so ¯\_(ツ)_/¯
       "digest": "no digest",
       "layers": []
    }
