@@ -848,8 +848,8 @@ this order.
 
    $ ch-image [...] delete IMAGE_GLOB
 
-Delete the image(s) and respective build stages described by :code:`IMAGE_GLOB`
-from the storage directory.
+Delete the image(s) described by :code:`IMAGE_GLOB` from the storage directory
+(including all build stages).
 
 :code:`IMAGE_GLOB` can be either a plain image reference or an image reference
 with glob characters to match multiple images. For example, :code:`ch-image

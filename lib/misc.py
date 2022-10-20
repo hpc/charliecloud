@@ -58,7 +58,7 @@ def delete(cli):
    for img in ch.Image.glob(cli.image_ref):
       img.unpack_delete()
       delete_ct += 1
-   for img in ch.Image.glob(cli.image_ref + "_stage*"):
+   for img in ch.Image.glob(cli.image_ref + "_stage[0-9]*"):
       img.unpack_delete()
       delete_ct += 1
    if (delete_ct == 0):
