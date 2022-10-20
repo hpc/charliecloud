@@ -941,10 +941,9 @@ Print details about Debian Buster image::
                         arm/v7   (97247fd4822)
                         arm64/v8 (122a0342878)
 
-For remotely available images like Debian Buster, the associated
-:code:`sha256` hash is listed beside each available architecture.
-Importantly, this feature does :strong:`not` provide the
-hash of the local image, which is only calculated on upload.
+For remotely available images like Debian Buster, the associated digest is
+listed beside each available architecture. Importantly, this feature does
+*not* provide the hash of the local image, which is only calculated on push.
 
 :code:`import`
 ==============

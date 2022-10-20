@@ -141,11 +141,11 @@ def list_(cli):
          digests = pullet.digests
          arch_keys = sorted(pullet.architectures.keys())
          try:
-            fmt_space = len(max(arch_keys,key=len)) + 1
+            fmt_space = len(max(arch_keys,key=len))
             arch_avail = []
             for key in arch_keys:
-               arch_avail.append("%-*s" % (fmt_space, key) + "("
-                                 + pullet.digests[key][:11] + ")")
+               arch_avail.append("%-*s %s" % (fmt_space, key,
+                                              pullet.digests[key][:11]))
          except ValueError:
             # handles case where arch_keys is empty, e.g.
             # mcr.microsoft.com/windows:20H2.
