@@ -13,10 +13,6 @@ manifests_internal = {
    "scratch": {  # magic empty image
       "schemaVersion": 2,
       "config": { "digest": None },
-      # Add ‘digest’ field to be used in ‘fatman_load()’. This is a kludge.
-      # Now the dictionary doesn’t follow the format of a skinny manifest OR a
-      # fat manifest, but it makes my solution to issue #1365 work so ¯\_(ツ)_/¯
-      "digest": "no digest",
       "layers": []
    }
 }
@@ -166,7 +162,9 @@ class Image_Puller:
       if (str(self.src_ref) in manifests_internal):
          # cheat; internal manifest library matches every architecture
          self.architectures = ch.Arch_Dict({ ch.arch_host: None })
-         self.digests[ch.arch_host] = manifests_internal[self.src_ref.name]['digest']
+         # Assume that image has no digest. This is a kludge, but it makes my
+         # solution to issue #1365 work so ¯\_(ツ)_/¯
+         self.digests[ch.arch_host] = "no digest"
          return
       # raises Image_Unavailable_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
@@ -201,7 +199,7 @@ class Image_Puller:
          if (arch in self.architectures):
             ch.FATAL("manifest list: duplicate architecture: %s" % arch)
          self.architectures[arch] = ch.digest_trim(digest)
-         self.digests[arch] = digest[7:]
+         self.digests[arch] = digest.split(":")[1]
       if (len(self.architectures) == 0):
          ch.WARNING("no valid architectures found")
 

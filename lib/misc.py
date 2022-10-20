@@ -138,7 +138,6 @@ def list_(cli):
          pullet.fatman_load()
          remote = "yes"
          arch_aware = "yes"
-         digests = pullet.digests
          arch_keys = sorted(pullet.architectures.keys())
          try:
             fmt_space = len(max(arch_keys,key=len))
@@ -149,7 +148,7 @@ def list_(cli):
          except ValueError:
             # handles case where arch_keys is empty, e.g.
             # mcr.microsoft.com/windows:20H2.
-            arch_avail = ['']
+            arch_avail = [None]
       except ch.Image_Unavailable_Error:
          remote = "no (or you are not authorized)"
          arch_aware = "n/a"
