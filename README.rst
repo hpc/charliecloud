@@ -67,7 +67,7 @@ Contributors:
 * Megan Phinney <mphinney@lanl.gov>
 * Reid Priedhorsky <reidpr@lanl.gov>, co-founder and project lead
 * Tim Randles <trandles@lanl.gov>, co-founder
-* Benjamin Stormer <bstormer@lanl.gov>
+* Benjamin "The Storm" Stormer <bstormer@lanl.gov>
 * Meisam Tabriz <meisam.tabriz@mpcdf.mpg.de>
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Peter Wienemann <wienemann@physik.uni-bonn.de>
