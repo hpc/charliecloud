@@ -238,13 +238,14 @@ In descending order of priority, this directory is located at:
 Unlike many container implementations, there is no notion of storage drivers,
 graph drivers, etc., to select and/or configure.
 
-The storage directory can reside on any filesystem. However, it contains lots
-of small files and metadata traffic can be intense. For example, the
-Charliecloud test suite uses approximately 400,000 files and directories in
-the storage directory as of this writing. Place it on a filesystem appropriate
-for this; tmpfs'es such as :code:`/var/tmp` are a good choice if you have
-enough RAM (:code:`/tmp` is not recommended because :code:`ch-run` bind-mounts
-it into containers by default).
+The storage directory can reside on any single filesystem (i.e., it cannot be
+split across multiple filesystems). However, it contains lots of small files
+and metadata traffic can be intense. For example, the Charliecloud test suite
+uses approximately 400,000 files and directories in the storage directory as
+of this writing. Place it on a filesystem appropriate for this; tmpfs'es such
+as :code:`/var/tmp` are a good choice if you have enough RAM (:code:`/tmp` is
+not recommended because :code:`ch-run` bind-mounts it into containers by
+default).
 
 While you can currently poke around in the storage directory and find unpacked
 images runnable with :code:`ch-run`, this is not a supported use case. The
@@ -386,14 +387,15 @@ environment variable :code:`CH_IMAGE_CACHE_LARGE` is used; if that is not set
 either, the default value :code:`-1` indicates that no files are considered
 large.
 
-There are two trade-offs. First, large files with the same mode, size, mtime,
-and path in the image are considered identical, *even if their content is not
-actually identical*; e.g., :code:`touch(1)` shenanigans can corrupt an image.
-Second, every version of a large file is stored verbatim and uncompressed
-(e.g., a large file with a one-byte change will be stored in full twice), and
-large files do not participate in the build cache's de-duplication, so more
-storage space will likely be used. Unused versions *are* deleted by
-:code:`ch-image build-cache --gc`.
+There are two trade-offs. First, large files in any image with the same path,
+mode, size, and mtime (to nanosecond precision if possible) are considered
+identical, *even if their content is not actually identical*; e.g.,
+:code:`touch(1)` shenanigans can corrupt an image. Second, every version of a
+large file is stored verbatim and uncompressed (e.g., a large file with a
+one-byte change will be stored in full twice), and large files do not
+participate in the build cache's de-duplication, so more storage space will
+likely be used. Unused versions *are* deleted by :code:`ch-image build-cache
+--gc`.
 
 (Note that Git has an unrelated setting called :code:`core.bigFileThreshold`.)
 
