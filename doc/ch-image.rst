@@ -375,15 +375,16 @@ Large file threshold
 
 Because Git uses content-addressed storage, upon commit, it must read in full
 all files modified by an instruction. This I/O cost can be a significant
-fraction of build time for some large images. Therefore, experimental option
-:code:`--cache-large` sets the *large file threshold*. Regular files larger
-than this size (in MiB) are stored outside the Git repository, somewhat like
-`Git Large File Storage <https://git-lfs.github.com/>`_. :code:`ch-image` uses
-hard links to bring large files in and out of images as needed, which is a
-fast metadata operation that ignores file content.
+fraction of build time for some large images. Regular files larger than the
+experimental *large file threshold* are stored outside the Git repository,
+somewhat like `Git Large File Storage <https://git-lfs.github.com/>`_.
+:code:`ch-image` uses hard links to bring large files in and out of images as
+needed, which is a fast metadata operation that ignores file content.
 
-A threshold of :code:`-1`, which is the default, indicates that no files are
-considered large.
+Option :code:`--cache-large` sets the threshold in MiB; if not set,
+environment variable :code:`CH_IMAGE_CACHE_LARGE` is used; if that is not set
+either, the default value :code:`-1` indicates that no files are considered
+large.
 
 There are two trade-offs. First, large files with the same mode, size, mtime,
 and path in the image are considered identical, *even if their content is not
