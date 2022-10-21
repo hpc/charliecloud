@@ -109,8 +109,8 @@ def main():
            [["--cache-large"],
             { "metavar": "SIZE",
               "type": lambda s: ch.unsigned(s) * 2**20,  # internal unit: bytes
-              "default": ch.unsigned(os.environ.get("CH_IMAGE_CACHE_LARGE", -1)
-                                     * 2**20,
+              "default": ch.unsigned(
+                 os.environ.get("CH_IMAGE_CACHE_LARGE", -1)) * 2**20,
               "help": "large file threshold in MiB" }],
            [["--debug"],
             { "action": "store_true",

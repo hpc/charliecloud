@@ -193,9 +193,6 @@ class File_Metadata:
    #
    #   st ............ Stat object for the file. Absent after un-pickling.
 
-   # FIXME: large file hash components: mtime_ns mode size path
-   #        followed by transformed path for debuggability
-
    def __init__(self, image_root, path):
       self.image_root = image_root
       self.path = path
@@ -318,8 +315,10 @@ class File_Metadata:
             fm.path_abs.unlink()
             fm.dont_restore = True
             return fm
-         # Deal with large files.
-         elif (fm.size > large_file_thresh):
+         # Deal with large files, except the pickled metadata file is never
+         # large. (The comparison is a little sloppy but it works for now.)
+         elif (    fm.size > large_file_thresh
+               and fm.name != PICKLE_PATH_DEFAULT.name):
             fm.large_prepare()
       elif (   stat.S_ISSOCK(fm.mode)):
          ch.WARNING("socket in image, will be ignored: %s" % path)
