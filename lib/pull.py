@@ -18,7 +18,6 @@ manifests_internal = {
 }
 
 
-
 ## Main ##
 
 def main(cli):
@@ -43,6 +42,7 @@ class Image_Puller:
 
    __slots__ = ("architectures",  # key: architecture, value: manifest digest
                 "config_hash",
+                "digests",
                 "image",
                 "layer_hashes",
                 "registry",
@@ -52,6 +52,7 @@ class Image_Puller:
    def __init__(self, image, src_ref):
       self.architectures = None
       self.config_hash = None
+      self.digests = dict()
       self.image = image
       self.layer_hashes = None
       self.registry = ch.Registry_HTTP(src_ref)
@@ -161,6 +162,9 @@ class Image_Puller:
       if (str(self.src_ref) in manifests_internal):
          # cheat; internal manifest library matches every architecture
          self.architectures = ch.Arch_Dict({ ch.arch_host: None })
+         # Assume that image has no digest. This is a kludge, but it makes my
+         # solution to issue #1365 work so ¯\_(ツ)_/¯
+         self.digests[ch.arch_host] = "no digest"
          return
       # raises Image_Unavailable_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
@@ -195,6 +199,7 @@ class Image_Puller:
          if (arch in self.architectures):
             ch.FATAL("manifest list: duplicate architecture: %s" % arch)
          self.architectures[arch] = ch.digest_trim(digest)
+         self.digests[arch] = digest.split(":")[1]
       if (len(self.architectures) == 0):
          ch.WARNING("no valid architectures found")
 
