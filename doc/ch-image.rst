@@ -900,8 +900,8 @@ this order.
 
    $ ch-image [...] delete IMAGE_GLOB
 
-Delete the image(s) described by :code:`IMAGE_GLOB` from the storage
-directory.
+Delete the image(s) described by :code:`IMAGE_GLOB` from the storage directory
+(including all build stages).
 
 :code:`IMAGE_GLOB` can be either a plain image reference or an image reference
 with glob characters to match multiple images. For example, :code:`ch-image
@@ -988,7 +988,14 @@ Print details about Debian Buster image::
    available remotely:  yes
    remote arch-aware:   yes
    host architecture:   amd64
-   archs available:     386 amd64 arm/v5 arm/v7 arm64/v8 mips64le ppc64le s390x
+   archs available:     386       bae2738ed83
+                        amd64     98285d32477
+                        arm/v7    97247fd4822
+                        arm64/v8  122a0342878
+
+For remotely available images like Debian Buster, the associated digest is
+listed beside each available architecture. Importantly, this feature does
+*not* provide the hash of the local image, which is only calculated on push.
 
 
 :code:`import`
@@ -1251,5 +1258,5 @@ Environment variables
 .. include:: ./bugs.rst
 .. include:: ./see_also.rst
 
-..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc
-..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold
+..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc bae
+..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd

@@ -58,6 +58,9 @@ def delete(cli):
    for img in ch.Image.glob(cli.image_ref):
       img.unpack_delete()
       delete_ct += 1
+   for img in ch.Image.glob(cli.image_ref + "_stage[0-9]*"):
+      img.unpack_delete()
+      delete_ct += 1
    if (delete_ct == 0):
       ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
    bu.cache.worktrees_fix()
@@ -138,20 +141,32 @@ def list_(cli):
          pullet.fatman_load()
          remote = "yes"
          arch_aware = "yes"
-         arch_avail = " ".join(sorted(pullet.architectures.keys()))
+         arch_keys = sorted(pullet.architectures.keys())
+         try:
+            fmt_space = len(max(arch_keys,key=len))
+            arch_avail = []
+            for key in arch_keys:
+               arch_avail.append("%-*s  %s" % (fmt_space, key,
+                                               pullet.digests[key][:11]))
+         except ValueError:
+            # handles case where arch_keys is empty, e.g.
+            # mcr.microsoft.com/windows:20H2.
+            arch_avail = [None]
       except ch.Image_Unavailable_Error:
          remote = "no (or you are not authorized)"
          arch_aware = "n/a"
-         arch_avail = "n/a"
+         arch_avail = ["n/a"]
       except ch.No_Fatman_Error:
          remote = "yes"
          arch_aware = "no"
-         arch_avail = "unknown"
+         arch_avail = ["unknown"]
       pullet.done()
       print("available remotely:  %s" % remote)
       print("remote arch-aware:   %s" % arch_aware)
       print("host architecture:   %s" % ch.arch_host)
-      print("archs available:     %s" % arch_avail)
+      print("archs available:     %s" % arch_avail[0])
+      for arch in arch_avail[1:]:
+         print((" " * 21) + arch)
 
 def reset(cli):
    ch.storage.reset()
