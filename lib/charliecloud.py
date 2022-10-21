@@ -1402,6 +1402,19 @@ class Path(pathlib.PosixPath):
       except OSError:
          FATAL("can’t hard link: %s -> %s: %s" % (self, target, x.strerror))
 
+   def is_relative_to(self, *other):
+      try:
+         return super().is_relative_to(*other)
+      except AttributeError:
+         # pathlib.Path.is_relative_to() was introduced in 3.9. If not
+         # available, use the standard library’s trivial definition in terms
+         # of relative_to().
+         try:
+            self.relative_to(*other)
+            return True
+         except ValueError:
+            return False
+
    def joinpath_posix(self, *others):
       others2 = list()
       for other in others:
