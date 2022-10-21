@@ -2724,7 +2724,7 @@ def init(cli):
    global log_festoon, log_fp, trace_fatal, verbose
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
-   trace_fatal = (cli.debug | bool(os.environ.get('CH_IMAGE_DEBUG', False)))
+   trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
