@@ -60,7 +60,7 @@ def delete(cli):
       delete_ct += 1
    if (delete_ct == 0):
       ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
-   bu.cache.worktrees_prune()
+   bu.cache.worktrees_fix()
 
 def gestalt_bucache(cli):
    bu.have_deps()

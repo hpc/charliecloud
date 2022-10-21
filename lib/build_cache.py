@@ -1,5 +1,6 @@
 import configparser
 import enum
+import glob
 import hashlib
 import os
 import pickle
@@ -547,15 +548,13 @@ class Enabled_Cache:
          self.root.mkdir()
       ls = self.root.listdir()
       if (len(ls) == 0):
-         self.bootstrap()  # empty; initialize a new cache
+         self.bootstrap()      # empty; initialize a new cache
       elif (not {"HEAD", "objects", "refs"} <= ls):
          # Non-empty but not an existing cache.
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
-      self.configure()  # every open so configuration is up to date
-      # Prune stale worktrees that might have been left around after failed
-      # builds or other interruptions.
-      ch.cmd_quiet(["git", "worktree", "prune"], cwd=self.root)
+      self.configure()         # updates config if needed
+      self.worktrees_fix()
 
    def __str__(self):
       return ("enabled (large=%d)" % self.large_threshold)
@@ -998,9 +997,57 @@ class Enabled_Cache:
       else:
          return cp.stdout.strip()
 
-   def worktrees_prune(self):
-      "Remove Git metadata for deleted worktrees."
-      ch.cmd_quiet(["git", "worktree", "prune"], cwd=self.root)
+   def worktrees_fix(self):
+      """Git stores pointers (paths) both from the main repository to each
+         worktree, and in the other direction from each worktree back to the
+         main repo. These are absolute paths, so if the storage directory gets
+         moved, they need updating. Also, worktrees can disappear without
+         telling Git. This method cleans all that up.
+
+         This method does roughly the same thing as “git worktree repair” and
+         “git worktree prune”, but we do it manually [1,2] because we know more
+         about what is going on than Git does: (1) which images are worktrees
+         vs. plain directories; (2) which images changed from worktree to plain
+         directory w/o telling Git; (3) where the worktrees and main repo are
+         relative to one another.
+
+         In particular, I don’t see a simple way to trust the exit code of
+         “git worktree repair” without doing most of this work first anyway.
+
+         [1]: https://git-scm.com/docs/git-worktree
+         [2]: https://git-scm.com/docs/gitrepository-layout"""
+      # (1) worktree metadata must exist
+      # (2) worktree itself (image) must exist
+      # (3) image must be git-enabled"""
+      t = ch.Timer()
+      wt_actuals = { ch.Path(i).parts[-2]
+                     for i in glob.iglob("%s/*/.git"
+                                         % ch.storage.unpack_base) }
+      wt_gits =    { ch.Path(i).name
+                     for i in glob.iglob("%s/worktrees/*"
+                                         % ch.storage.build_cache) }
+      # Delete worktree data for images that no longer exist or aren’t
+      # Git-enabled any more.
+      wt_gits_deleted = wt_gits - wt_actuals
+      for wt in wt_gits_deleted:
+         (ch.storage.build_cache // "worktrees" // wt).rmtree()
+      ch.VERBOSE("deleted %d stale worktree metadatas" % len(wt_gits_deleted))
+      wt_gits -= wt_gits_deleted
+      assert (wt_gits == wt_actuals)
+      # If storage directory moved, repair all the paths.
+      if (len(wt_gits) > 0):
+         wt_dir_stored = ch.Path((   ch.storage.build_cache
+                                  // "worktrees"
+                                  // next(iter(wt_gits))
+                                  // "gitdir").file_read_all())
+         if (not wt_dir_stored.is_relative_to(ch.storage.root)):
+            for wt in wt_actuals:
+               wt_repo_dir = ch.storage.build_cache // "worktrees" // wt
+               wt_img_git = ch.storage.unpack_base // wt // ".git"
+               wt_img_git.file_write("gitdir: %s\n" % str(wt_repo_dir))
+               (wt_repo_dir // "gitdir").file_write(str(wt_img_git) + "\n")
+            ch.VERBOSE("fixed %d worktrees" % len(wt_actuals))
+      t.log("re-linked worktrees")
 
 
 class Rebuild_Cache(Enabled_Cache):

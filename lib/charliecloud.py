@@ -1430,15 +1430,21 @@ class Path(pathlib.PosixPath):
          effort required to make the change."""
       return set(ossafe(os.listdir, "can’t list: %s" % self.name, self))
 
-   def lstrip(self, n):
+   def strip(self, left=0, right=0):
       """Return a copy of myself with n leading components removed. E.g.:
 
-           >>> Path("a/b/c").lstrip(1)
-           Path("b/c")
+           >>> a = Path("/a/b/c")
+           >>> a.strip(left=1)
+           Path("a/b/c")
+           >>> a.strip(right=1)
+           Path("/a/b")
+           >>> a.strip(left=1, right=1)
+           Path("a/b")
 
-         It is an error if I don’t have at least n+1 components."""
-      assert (len(self.parts) >= n + 1)
-      return Path(".").joinpath(*self.parts[n:])
+         It is an error if I don’t have at least left + right components,
+         i.e., you can strip a path down to nothing but not further."""
+      assert (len(self.parts) >= left + right)
+      return Path(*self.parts[left:len(self.parts)-right])
 
    def mkdir_(self):
       TRACE("ensuring directory: %s" % self)
