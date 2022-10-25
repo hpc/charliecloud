@@ -2643,14 +2643,14 @@ def cmd_base(argv, fail_ok=False, **kwargs):
             % (cp.returncode, argv_to_string(argv)))
    return cp
 
-def cmd_stdout(argv, **kwargs):
+def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
       CompletedProcess object (its stdout is available in the "stdout"
       attribute). If logging is info, discard stderr; otherwise send it to the
       existing stderr. If logging is debug or higher, print stdout."""
    if (verbose == 0 and "stderr" not in kwargs):  # info or lower
       kwargs["stderr"] = subprocess.DEVNULL
-   cp = cmd_base(argv, encoding="UTF-8", stdout=subprocess.PIPE, **kwargs)
+   cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
    if (verbose >= 2):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
       sys.stdout.write(cp.stdout)

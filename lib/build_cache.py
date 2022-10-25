@@ -89,7 +89,7 @@ cache = None
 dot_base = None
 
 # Default path within image to metadata pickle.
-PICKLE_PATH_DEFAULT = ch.Path("ch/git.pickle")
+PICKLE_PATH = ch.Path("ch/git.pickle")
 
 
 ## Functions ##
@@ -317,8 +317,7 @@ class File_Metadata:
             return fm
          # Deal with large files, except the pickled metadata file is never
          # large. (The comparison is a little sloppy but it works for now.)
-         elif (    fm.size > large_file_thresh
-               and fm.name != PICKLE_PATH_DEFAULT.name):
+         elif (fm.size > large_file_thresh and fm.name != PICKLE_PATH.name):
             fm.large_prepare()
       elif (   stat.S_ISSOCK(fm.mode)):
          ch.WARNING("socket in image, will be ignored: %s" % path)
@@ -361,8 +360,10 @@ class File_Metadata:
       return fm
 
    @classmethod
-   def unpickle(self, image_root, path=PICKLE_PATH_DEFAULT):
-      fm_tree = pickle.loads((image_root // path).file_read_all(text=False))
+   def unpickle(self, image_root, data=None):
+      if (data is None):
+         data = (image_root // path).file_read_all(text=False)
+      fm_tree = pickle.loads(data)
       fm_tree.unpickle_fix(image_root, path=ch.Path("."))
       return fm_tree
 
@@ -422,6 +423,16 @@ class File_Metadata:
       # The digest is unique, but add an encoded path to aid debugging.
       return (h.hexdigest() + "!" + str(self.path).replace("/", "!"))
 
+   def large_names(self):
+      "Return a set containing the large names of myself and all descendants."
+      if (self.large_name is None):
+         names = set()
+      else:
+         names = { self.large_name }
+      for c in self.children.values():
+         names |= c.large_names()
+      return names
+
    def large_prepare(self):
       """Set large_name, then move my file to large file storage, or delete it
          if it already exists."""
@@ -443,10 +454,11 @@ class File_Metadata:
       del self.large_name  # prevent double use
 
    def pickle(self):
-      (self.image_root // PICKLE_PATH_DEFAULT) \
+      (self.image_root // PICKLE_PATH) \
          .file_write(pickle.dumps(self, protocol=4))
 
    def unpickle_fix(self, image_root, path):
+      "Does no I/O."
       # old: large_name, size: no such attribute
       if (not (hasattr(self, "large_name"))):
          self.large_name = None
@@ -745,6 +757,27 @@ class Enabled_Cache:
       ch.cmd(["git", "-c", "gc.bigPackthreshold=0", "-c", "gc.pruneExpire=now",
                      "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
       t.log("collected garbage")
+      t = ch.Timer()
+      digests = ch.cmd_stdout(["git", "rev-list", "--all", "--reflog"],
+                              cwd=self.root).stdout.split("\n")
+      assert (digests[-1] == "")  # trailing newline
+      digests[-2:] = []           # discard root commit and trailing newline
+      p = ch.Progress("enumerating large files", "commits", 1, len(digests))
+      larges_used = set()
+      for d in digests:
+         data = ch.cmd_stdout(["git", "show", "%s:%s" % (d, PICKLE_PATH)],
+                              cwd=self.root, encoding=None).stdout
+         fm = File_Metadata.unpickle(ch.Path("/DUMMY"), data)
+         larges_used |= fm.large_names()
+         p.update(1)
+      p.done()
+      t.log("enumerated large files")
+      t = ch.Timer()
+      ch.INFO("found %d large files used; deleting others" % len(larges_used))
+      for l in ch.storage.build_large.listdir():
+         if (l not in larges_used):
+            (self.build_large // l).unlink_()
+      t.log("deleted unused large files")
 
    def git_prepare(self, unpack_path, files, write=True):
       """Prepare unpack_path for Git operations (see
@@ -897,11 +930,12 @@ class Enabled_Cache:
       (file_ct, file_suffix) = ch.si_decimal(file_ct)
       (byte_ct, byte_suffix) = ch.si_binary_bytes(byte_ct)
       # print it
-      print("named images:  %4d" % image_ct)
-      print("state IDs:     %4d" % len(states))
-      print("commits:       %4d" % commit_ct)
-      print("files:         %4d %s" % (file_ct, file_suffix))
-      print("disk used:     %4d %s" % (byte_ct, byte_suffix))
+      print("named images:   %5d" % image_ct)
+      print("state IDs:      %5d" % len(states))
+      print("large files:    %5d" % len(ch.storage.build_large.listdir()))
+      print("commits:        %5d" % commit_ct)
+      print("internal files: %5d %s" % (file_ct, file_suffix))
+      print("disk used:      %5d %s" % (byte_ct, byte_suffix))
       # some information directly from Git
       if (ch.verbose >= 1):
          out = ch.cmd_stdout(["git", "count-objects", "-vH"]).stdout
