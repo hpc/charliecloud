@@ -465,7 +465,7 @@ fmt_validate () {
             fi
             ;;
 	podman)
-	    if [-z "$have_podman" ]; then
+	    if [ -z "$have_podman" ]; then
 		FATAL "format podman invalid: podman not found"
 	    fi
 	    ;;
