@@ -325,6 +325,18 @@ docker_out_validate () {
     fi
 }
 
+podman_in_validate () {
+    digest=$(podman_ images -q "$1")
+    [ -n "$digest" ] || FATAL "source not found in podman sotrage: ${1}"
+}
+
+podman_out_validate () {
+    digest=$(podman_ images -q "$1")
+    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
+	FATAL "exists in podman storage, not deleting per --no-clobber: ${1}"
+    fi
+}
+
 squash_in_validate () {
     [ -e "$1" ] || FATAL "not found: ${1}"
 }
