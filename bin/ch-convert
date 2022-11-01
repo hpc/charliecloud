@@ -659,6 +659,12 @@ if command -v docker > /dev/null 2>&1; then
 else
     VERBOSE 'docker: not found'
 fi
+if command -v podman > /dev/null 2>&1; then
+    have_podman=yes
+    VERBOSE 'podman: found'
+else
+    VERBOSE 'podman: not found'
+fi
 
 in_fmt=$(fmt_validate "$in_fmt" "$in_desc")
 out_fmt=$(fmt_validate "$out_fmt" "$out_desc")
