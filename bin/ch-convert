@@ -156,6 +156,26 @@ cv_docker_tar () {
     rm "$tmpenv"
 }
 
+cv_podman_tar () {
+    podman_in_validate "$1"
+    tar_out_validate "$2"
+    tmptar=${tmpdir}/weirdal.tar
+    tmpenv=${tmpdir}/weirdal.env
+    INFO 'exporting ...'
+    cid=$(podman_ create --read-only "$1" /bin/true)  # cmd needed but not run
+    size=$(podman_ image inspect "$1" --format='{{.Size}}')
+    podman_ export "$cid" | pv_ -s "$size" > "$tmptar"
+    podman_ rm "$cid" > /dev/null
+    INFO 'adding environment ...'
+    podman_ inspect "$1" \
+            --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
+    tar rf "$tmptar" -b1 -P --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
+    INFO 'compressing ...'
+    pv_ < "$tmptar" | gzip_ -6 > "$2"
+    rm "$tmptar"
+    rm "$tmpenv"
+}
+
 cv_squash_chimage () {
     squash_in_validate "$1"
     chimage_out_validate "$2"
