@@ -413,6 +413,8 @@ fmt_validate () {
                     fmt=ch-image
                 elif [ -n "$have_docker" ]; then
                     fmt=docker
+		elif [ -n "$have_podman" ]; then
+		    fmt=podman
                 else
                     FATAL "descriptor looks like builder storage but no builder found: ${dsc}"
                 fi
@@ -430,6 +432,11 @@ fmt_validate () {
                 FATAL "format docker invalid: docker not found"
             fi
             ;;
+	podman)
+	    if [-z "$have_podman" ]; then
+		FATAL "format podman invalid: podman not found"
+	    fi
+	    ;;
         dir|squash|tar)
             ;;
         *)
