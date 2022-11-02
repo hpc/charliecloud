@@ -281,6 +281,13 @@ cv_tar_docker () {
     docker_ import "$1" "$2"  # FIXME: no progress meter
 }
 
+cv_tar_podman () {
+    tar_in_validate "$1"
+    podman_out_validate "$2"
+    INFO "importing ..."
+    podman_ import "$1" "$2"
+}
+
 cv_tar_squash () {
     tar_in_validate "$1"
     squash_out_validate "$2"
