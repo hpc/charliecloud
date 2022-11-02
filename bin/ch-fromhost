@@ -63,6 +63,7 @@ Destination within image:
 
 Options:
 
+  --cray-ugni      bind cray libraries for gemini/aries on xc40 machines
   --ofi-path       print the inferred destination for loadable ofi providers
   --lib-path       print the inferred destination for shared libraries
   --no-ldconfig    don\'t run ldconfig even if we injected shared libraries
@@ -96,9 +97,6 @@ debug_indent () {
     if [ "$verbose" = 'yes' ]; then
         printf '[ debug ]    %s\n' "$1" 1>&2
     fi
-}
-warn () {
-    printf '< warn >! %s\n' "$1" 1>&2
 }
 
 ensure_nonempty () {
@@ -217,6 +215,19 @@ queue_unlink () {
     inject_unlinks="${inject_unlinks:+$inject_unlinks$newline}$1"
 }
 
+warn () {
+    printf '< warn >! %s\n' "$1" 1>&2
+}
+
+warn_fi_var () {
+    if [ -n "$FI_PROVIDER" ]; then
+        warn "FI_PROVIDER is set; may cause undesired run time behavior"
+    fi
+    if [ -n "$FI_PROVIDER_PATH" ]; then
+        warn "FI_PROVIDER_PATH is set; --dest required"
+    fi
+}
+
 parse_basic_args "$@"
 
 while [ $# -gt 0 ]; do
@@ -226,6 +237,14 @@ while [ $# -gt 0 ]; do
             ensure_nonempty --cmd "$1"
             out=$($1) || fatal "command failed: $1"
             queue_files "$out"
+            shift
+            ;;
+        --cray-ugni)
+            warn_fi_var
+            if [ -z "$CH_FROMHOST_OFI_UGNI" ]; then
+                fatal "CH_FROMHOST_OFI_UGNI is not set"
+            fi
+            queue_ofi_dso "$CH_FROMHOST_OFI_UGNI"
             shift
             ;;
         -d|--dest)
@@ -255,12 +274,7 @@ while [ $# -gt 0 ]; do
             queue_files "$out"
             ;;
         -o|--ofi)
-            if [ -n "$FI_PROVIDER" ]; then
-                warn "FI_PROVIDER is set; may cause undesired run time behavior"
-            fi
-            if [ -n "$FI_PROVIDER_PATH" ]; then
-                warn "FI_PROVIDER_PATH is set; --dest required"
-            fi
+            warn_fi_var
             ensure_nonempty --ofi "$1"
             queue_ofi_dso "$1"
             shift

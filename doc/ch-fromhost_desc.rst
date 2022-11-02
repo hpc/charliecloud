@@ -104,6 +104,10 @@ To specify the destination within the image
 Additional arguments
 --------------------
 
+  :code:`--cray-ugni`
+    Inject cray gemini/aries GNI provider :code:`libgnix-fi.so`; this is
+    equivalent to :code:`--ofi $CH_FROMHOST_OFI_UGNI`.
+
   :code:`--lib-path`
     Print the guest destination path for shared libraries inferred as
     described above.
