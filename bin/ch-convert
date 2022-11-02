@@ -112,68 +112,37 @@ cv_dir_tar () {
 cv_docker_chimage () {
    docker_in_validate "$1"
    chimage_out_validate "$2"
-   docker_out=${tmpdir}/weirdal.tar.gz
-   cv_docker_tar "$1" "$docker_out"  # FIXME: needlessly compresses
-   cv_tar_chimage "$docker_out" "$2"
-   rm "$docker_out"
+   dockman_to_chimage docker_ "$1" "$2"
 }
 
 cv_docker_dir () {
     docker_in_validate "$1"
     dir_out_validate "$2"
-    docker_out=${tmpdir}/weirdal.tar.gz
-    cv_docker_tar "$1" "$docker_out"  # FIXME: needlessly compresses
-    cv_tar_dir "$docker_out" "$2"
-    rm "$docker_out"
+    dockman_to_dir docker_ "$1" "$2"
 }
 
 cv_docker_squash () {
     docker_in_validate "$1"
     squash_out_validate "$2"
-    docker_dir=${tmpdir}/weirdal
-    cv_docker_dir "$1" "$docker_dir"  # FIXME: needlessly compresses
-    cv_dir_squash "$docker_dir" "$2"
-    rm -Rf --one-file-system "$docker_dir"
+    dockman_to_squash docker_ "$1" "$2"
 }
 
 cv_docker_tar () {
     docker_in_validate "$1"
     tar_out_validate "$2"
-    tmptar=${tmpdir}/weirdal.tar
-    tmpenv=${tmpdir}/weirdal.env
-    INFO 'exporting ...'
-    cid=$(docker_ create --read-only "$1" /bin/true)  # cmd needed but not run
-    size=$(docker_ image inspect "$1" --format='{{.Size}}')
-    docker_ export "$cid" | pv_ -s "$size" > "$tmptar"
-    docker_ rm "$cid" > /dev/null
-    INFO 'adding environment ...'
-    docker_ inspect "$1" \
-            --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
-    tar rf "$tmptar" -b1 -P --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
-    INFO 'compressing ...'
-    pv_ < "$tmptar" | gzip_ -6 > "$2"
-    rm "$tmptar"
-    rm "$tmpenv"
+    dockman_to_tar docker_ "$1" "$2"
+}
+
+cv_podman_squash () {
+    podman_in_validate "$1"
+    squash_out_validate "$2"
+    dockman_to_squash podman_ "$1" "$2"
 }
 
 cv_podman_tar () {
     podman_in_validate "$1"
     tar_out_validate "$2"
-    tmptar=${tmpdir}/weirdal.tar
-    tmpenv=${tmpdir}/weirdal.env
-    INFO 'exporting ...'
-    cid=$(podman_ create --read-only "$1" /bin/true)  # cmd needed but not run
-    size=$(podman_ image inspect "$1" --format='{{.Size}}')
-    podman_ export "$cid" | pv_ -s "$size" > "$tmptar"
-    podman_ rm "$cid" > /dev/null
-    INFO 'adding environment ...'
-    podman_ inspect "$1" \
-            --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
-    tar rf "$tmptar" -b1 -P --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
-    INFO 'compressing ...'
-    pv_ < "$tmptar" | gzip_ -6 > "$2"
-    rm "$tmptar"
-    rm "$tmpenv"
+    dockman_to_tar podman_ "$1" "$2"
 }
 
 cv_squash_chimage () {
@@ -207,10 +176,7 @@ cv_squash_dir () {
 cv_squash_docker () {
     squash_in_validate "$1"
     docker_out_validate "$2"
-    unsquash_tar=${tmpdir}/weirdal.tar.gz
-    cv_squash_tar "$1" "$unsquash_tar"
-    cv_tar_docker "$unsquash_tar" "$2"
-    rm "$unsquash_tar"
+    squash_to_dockman docker "$1" "$2"
 }
 
 cv_squash_tar () {
@@ -277,8 +243,7 @@ cv_tar_dir () {
 cv_tar_docker () {
     tar_in_validate "$1"
     docker_out_validate "$2"
-    INFO "importing ..."
-    docker_ import "$1" "$2"  # FIXME: no progress meter
+    tar_to_dockman docker_ "$1" "$2"
 }
 
 cv_tar_podman () {
@@ -297,6 +262,72 @@ cv_tar_squash () {
     rm -Rf --one-file-system "$tar_dir"
 }
 
+# Dockman functions (alphabetize these)
+
+dockman_to_tar () {
+    tmptar=${tmpdir}/weirdal.tar
+    tmpenv=${tmpdir}/weirdal.env
+    INFO 'exporting ...'
+    cid=$("$1" create --read-only "$2" /bin/true)  # cmd needed but not run
+    size=$("$1" image inspect "$2" --format='{{.Size}}')
+    "$1" export "$cid" | pv_ -s "$size" > "$tmptar"
+    "$1" rm "$cid" > /dev/null
+    INFO 'adding environment ...'
+    "$1" inspect "$2" \
+            --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
+    tar rf "$tmptar" -b1 -P --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
+    INFO 'compressing ...'
+    pv_ < "$tmptar" | gzip_ -6 > "$3"
+    rm "$tmptar"
+    rm "$tmpenv"
+}
+
+dockman_to_sqash () {
+    dockman_dir=${tmpdir}/weirdal
+    #cv_docker_dir "$2" "$docker_dir"  # FIXME: needlessly compresses
+    "cv_${1}dir" "$2" "$dockman_dir"  # FIXME: needlessly compresses
+    cv_dir_squash "$dockman_dir" "$3"
+    rm -Rf --one-file-system "$dockman_dir"
+}
+
+dockman_to_dir () {
+    dockman_out=${tmpdir}/weirdal.tar.gz
+    #cv_docker_tar "$1" "$docker_out"  # FIXME: needlessly compresses
+    "cv_${1}tar" "$2" "$dockman_out"  # FIXME: needlessly compress
+    cv_tar_dir "$dockman_out" "$3"
+    rm "$dockman_out"
+}
+
+dockman_to_chimage () {
+   dockman_out=${tmpdir}/weirdal.tar.gz
+   #cv_docker_tar "$1" "$docker_out"  # FIXME: needlessly compresses
+   "cv_${1}tar" "$2" "$dockman_out"  # FIXME: needlessly compress
+   cv_tar_chimage "$dockman_out" "$3"
+   rm "$dockman_out"
+}
+
+tar_to_dockman () {
+    INFO "importing ..."
+    "${1}" import "$2" "$3"  # FIXME: no progress meter
+}
+
+squash_to_dockman () {
+    unsquash_tar=${tmpdir}/weirdal.tar.gz
+    cv_squash_tar "$2" "$unsquash_tar"
+    #cv_tar_docker "$unsquash_tar" "$3"
+    "cv_tar_${1}" "$unsquash_tar" "$3"
+    rm "$unsquash_tar"
+}
+
+dir_to_dockman () {
+    #foo
+    echo foo
+}
+
+chimage_to_dockman () {
+    #foo
+    echo foo
+}
 
 ## input/output validation functions #########################################
 
@@ -351,6 +382,11 @@ docker_out_validate () {
         FATAL "exists in Docker storage, not deleting per --no-clobber: ${1}"
     fi
 }
+
+#dockman_in_validate () {
+#    digest=$("$1" image ls -q "$2")
+#    [ -n "$digest" ] || FATAL
+#}
 
 podman_in_validate () {
     digest=$(podman_ images -q "$1")
