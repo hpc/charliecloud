@@ -40,10 +40,7 @@ cv_chimage_dir () {
 cv_chimage_docker () {
     chimage_in_validate "$1"
     docker_out_validate "$2"
-    chimage_tar=${tmpdir}/weirdal.tar.gz
-    cv_chimage_tar "$1" "$chimage_tar"  # FIXME: needlessly compresses?
-    cv_tar_docker "$chimage_tar" "$2"
-    rm "$chimage_tar"
+    chimage_to_dockman docker_ "$1" "$2"
 }
 
 cv_chimage_squash () {
@@ -71,13 +68,7 @@ cv_dir_chimage () {
 cv_dir_docker () {
     dir_in_validate "$1"
     docker_out_validate "$2"
-    dirtar=${tmpdir}/weirdal.tar.gz
-    # One could also use "docker build" with "FROM scratch" and "COPY",
-    # apparently saving a tar step. However, this will in fact tar the source
-    # directory anyway to send it to the Docker daemon.
-    cv_dir_tar "$1" "$dirtar"  # FIXME: needlessly compresses
-    cv_tar_docker "$dirtar" "$2"
-    rm "$dirtar"
+    dir_to_dockman docker_ "$1" "$2"
 }
 
 cv_dir_squash () {
@@ -176,7 +167,7 @@ cv_squash_dir () {
 cv_squash_docker () {
     squash_in_validate "$1"
     docker_out_validate "$2"
-    squash_to_dockman docker "$1" "$2"
+    squash_to_dockman docker_ "$1" "$2"
 }
 
 cv_squash_tar () {
@@ -306,6 +297,14 @@ dockman_to_chimage () {
    rm "$dockman_out"
 }
 
+dockman_to_squash () {
+    dockman_dir=${tmpdir}/weirdal
+    #cv_dockman_dir "$1" "$2" "$dockman_dir"  # FIXME: needlessly compresses
+    dockman_to_dir "$1" "$2" "$dockman_dir"  # FIXME: needlessly compresses
+    cv_dir_squash "$dockman_dir" "$3"
+    rm -Rf --one-file-system "$dockman_dir"
+}
+
 tar_to_dockman () {
     INFO "importing ..."
     "${1}" import "$2" "$3"  # FIXME: no progress meter
@@ -315,18 +314,30 @@ squash_to_dockman () {
     unsquash_tar=${tmpdir}/weirdal.tar.gz
     cv_squash_tar "$2" "$unsquash_tar"
     #cv_tar_docker "$unsquash_tar" "$3"
-    "cv_tar_${1}" "$unsquash_tar" "$3"
+    dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
+    "cv_tar_$(echo $dockman)" "$unsquash_tar" "$3"
     rm "$unsquash_tar"
 }
 
 dir_to_dockman () {
-    #foo
-    echo foo
+    dirtar=${tmpdir}/weirdal.tar.gz
+    dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
+    # One could also use "docker build" with "FROM scratch" and "COPY",
+    # apparently saving a tar step. However, this will in fact tar the source
+    # directory anyway to send it to the Docker daemon.
+    cv_dir_tar "$2" "$dirtar"  # FIXME: needlessly compresses
+    #cv_tar_docker "$dirtar" "$3"
+    "tar_to_$(echo $dockman)" "$dirtar" "$3"
+    rm "$dirtar"
 }
 
 chimage_to_dockman () {
-    #foo
-    echo foo
+    chimage_tar=${tmpdir}/weirdal.tar.gz
+    dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
+    cv_chimage_tar "$2" "$chimage_tar"  # FIXME: needlessly compresses?
+    #cv_tar_docker "$chimage_tar" "$2"
+    "tar_to_$(echo $dockman)" "$chimage_tar" "$3"
+    rm "$chimage_tar"
 }
 
 ## input/output validation functions #########################################
