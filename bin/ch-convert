@@ -112,6 +112,15 @@ cv_docker_dir () {
     dockman_to_dir docker_ "$1" "$2"
 }
 
+cv_docker_podman () {
+    docker_in_validate "$1"
+    podman_out_validate "$2"
+    docker_out=${tmpdir}/weirdal.tar.gz
+    cv_docker_tar "$1" "$docker_out" # FIXME: needlessly compress
+    cv_tar_podman "$docker_out" "$2"
+    rm "$docker_out"
+}
+
 cv_docker_squash () {
     docker_in_validate "$1"
     squash_out_validate "$2"
@@ -122,6 +131,15 @@ cv_docker_tar () {
     docker_in_validate "$1"
     tar_out_validate "$2"
     dockman_to_tar docker_ "$1" "$2"
+}
+
+cv_podman_docker () {
+    podman_in_validate "$1"
+    docker_out_validate "$2"
+    podman_out=${tmpdir}/weirdal.tar.gz
+    cv_podman_tar "$1" "$podman_out" # FIXME: needlesly compress
+    cv_tar_docker "$podman_out" "$2"
+    rm "$podman_out"
 }
 
 cv_podman_squash () {
@@ -263,21 +281,50 @@ cv_tar_squash () {
 
 chimage_to_dockman () {
     chimage_tar=${tmpdir}/weirdal.tar.gz
-    dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
+    #dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
     cv_chimage_tar "$2" "$chimage_tar"  # FIXME: needlessly compresses?
-    "tar_to_$dockman" "$chimage_tar" "$3"
+    #"tar_to_$dockman" "$chimage_tar" "$3"
+    tar_to_dockman "$1" "$chimage_tar" "$3"
     rm "$chimage_tar"
 }
 
 dir_to_dockman () {
     dirtar=${tmpdir}/weirdal.tar.gz
-    dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
+    #dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
     # One could also use "docker build" with "FROM scratch" and "COPY",
     # apparently saving a tar step. However, this will in fact tar the source
     # directory anyway to send it to the Docker daemon.
     cv_dir_tar "$2" "$dirtar"  # FIXME: needlessly compresses
-    "tar_to_$dockman" "$dirtar" "$3"
+    #"tar_to_$dockman" "$dirtar" "$3"
+    tar_to_dockman "$1" "$dirtar" "$3"
     rm "$dirtar"
+}
+
+dm_fmt_name () {
+    # Format 'docker_' and 'podman_' as 'Docker' and 'Podman' respectively.
+    case $1 in
+	docker_)
+	    echo $(echo "$1" | tr "d" "D" | tr -d "_")
+	    ;;
+	podman_)
+	    echo $(echo "$1" | tr "p" "P" | tr -d "_")
+	    ;;
+	*)
+	    FATAL "unreachable code reached"
+	    ;;
+    esac
+}
+
+dockman_in_validate () {
+    digest=$("$1" image ls -q "$2")
+    [ -n "$digest" ] || FATAL "source not found in $(dm_fmt_name $1) storage: ${2}"
+}
+
+dockman_out_validate () {
+    digest=$("$1" image ls -q "$2")
+    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
+	FATAL "exists in $(dm_fmt_name $1) storage, not deleting per --no-clobber: ${2}"
+    fi
 }
 
 dockman_to_chimage () {
@@ -375,32 +422,19 @@ dir_out_validate () {
 }
 
 docker_in_validate () {
-    digest=$(docker_ image ls -q "$1")
-    [ -n "$digest" ] || FATAL "source not found in Docker storage: ${1}"
+    dockman_in_validate docker_ "$1"
 }
 
 docker_out_validate () {
-    digest=$(docker_ image ls -q "$1")
-    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
-        FATAL "exists in Docker storage, not deleting per --no-clobber: ${1}"
-    fi
+    dockman_out_validate docker_ "$1"
 }
 
-#dockman_in_validate () {
-#    digest=$("$1" image ls -q "$2")
-#    [ -n "$digest" ] || FATAL
-#}
-
 podman_in_validate () {
-    digest=$(podman_ images -q "$1")
-    [ -n "$digest" ] || FATAL "source not found in podman sotrage: ${1}"
+    dockman_in_validate podman_ "$1"
 }
 
 podman_out_validate () {
-    digest=$(podman_ images -q "$1")
-    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
-	FATAL "exists in podman storage, not deleting per --no-clobber: ${1}"
-    fi
+    dockman_out_validate podman_ "$1"
 }
 
 squash_in_validate () {
