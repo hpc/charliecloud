@@ -327,8 +327,8 @@ dir_to_dockman () {
 
 dm_fmt_name () {
     # Format 'docker_' and 'podman_' as 'Docker' and 'Podman' respectively.
-    #
-    # shellcheck disable 2046
+    # Shellcheck thinks echo'ing a command is dumb. I disagree, so:
+    #shellcheck disable=SC2046
     case $1 in
 	docker_)
 	    echo $(echo "$1" | tr "d" "D" | tr -d "_")
