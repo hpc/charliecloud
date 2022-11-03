@@ -133,6 +133,12 @@ cv_docker_tar () {
     dockman_to_tar docker_ "$1" "$2"
 }
 
+cv_podman_dir () {
+    podman_in_validate "$1"
+    dir_out_validate "$2"
+    dockman_to_dir podman_ "$1" "$2"
+}
+
 cv_podman_docker () {
     podman_in_validate "$1"
     docker_out_validate "$2"
@@ -281,21 +287,17 @@ cv_tar_squash () {
 
 chimage_to_dockman () {
     chimage_tar=${tmpdir}/weirdal.tar.gz
-    #dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
     cv_chimage_tar "$2" "$chimage_tar"  # FIXME: needlessly compresses?
-    #"tar_to_$dockman" "$chimage_tar" "$3"
     tar_to_dockman "$1" "$chimage_tar" "$3"
     rm "$chimage_tar"
 }
 
 dir_to_dockman () {
     dirtar=${tmpdir}/weirdal.tar.gz
-    #dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
     # One could also use "docker build" with "FROM scratch" and "COPY",
     # apparently saving a tar step. However, this will in fact tar the source
     # directory anyway to send it to the Docker daemon.
     cv_dir_tar "$2" "$dirtar"  # FIXME: needlessly compresses
-    #"tar_to_$dockman" "$dirtar" "$3"
     tar_to_dockman "$1" "$dirtar" "$3"
     rm "$dirtar"
 }
@@ -317,13 +319,13 @@ dm_fmt_name () {
 
 dockman_in_validate () {
     digest=$("$1" image ls -q "$2")
-    [ -n "$digest" ] || FATAL "source not found in $(dm_fmt_name $1) storage: ${2}"
+    [ -n "$digest" ] || FATAL "source not found in $(dm_fmt_name "$1") storage: ${2}"
 }
 
 dockman_out_validate () {
     digest=$("$1" image ls -q "$2")
     if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
-	FATAL "exists in $(dm_fmt_name $1) storage, not deleting per --no-clobber: ${2}"
+	FATAL "exists in $(dm_fmt_name "$1") storage, not deleting per --no-clobber: ${2}"
     fi
 }
 
