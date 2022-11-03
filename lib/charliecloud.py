@@ -1399,7 +1399,7 @@ class Path(pathlib.PosixPath):
    def hardlink(self, target):
       try:
          os.link(target, self)  # no super().hardlink_to() until 3.10
-      except OSError:
+      except OSError as x:
          FATAL("can’t hard link: %s -> %s: %s" % (self, target, x.strerror))
 
    def is_relative_to(self, *other):

@@ -1,4 +1,5 @@
 import configparser
+import datetime
 import enum
 import glob
 import hashlib
@@ -210,14 +211,6 @@ class File_Metadata:
                    if (a not in { "image_root", "path", "st" }) }
 
    @property
-   def unstored(self):
-      """True if I represent something not stored, either ignored by Git or
-         deleted by us before committing."""
-      return (   stat.S_ISFIFO(self.mode)
-              or stat.S_ISSOCK(self.mode)
-              or self.hardlink_to is not None)
-
-   @property
    def empty_dir_p(self):
       """True if I represent either an empty directory, or a directory that
          contains only children where empty_dir_p is true. E.g., the root of a
@@ -228,12 +221,20 @@ class File_Metadata:
          return False  # not a directory
       # True if no children (truly empty directory), or each child is unstored
       # or empty_dir_p (recursively empty directory tree).
-      return all((c.hardlink_to is not None or c.empty_dir_p)
-                 for c in self.children.values())
+      return all((c.unstored or c.empty_dir_p) for c in self.children.values())
 
    @property
    def path_abs(self):
       return (self.image_root // self.path)
+
+   @property
+   def unstored(self):
+      """True if I represent something not stored, either ignored by Git or
+         deleted by us before committing."""
+      return (   stat.S_ISFIFO(self.mode)
+              or stat.S_ISSOCK(self.mode)
+              or self.large_name is not None
+              or self.hardlink_to is not None)
 
    @classmethod
    def git_prepare(class_, image_root, large_file_thresh,
@@ -315,10 +316,6 @@ class File_Metadata:
             fm.path_abs.unlink()
             fm.dont_restore = True
             return fm
-         # Deal with large files, except the pickled metadata file is never
-         # large. (The comparison is a little sloppy but it works for now.)
-         elif (fm.size > large_file_thresh and fm.name != PICKLE_PATH.name):
-            fm.large_prepare()
       elif (   stat.S_ISSOCK(fm.mode)):
          ch.WARNING("socket in image, will be ignored: %s" % path)
       elif (   stat.S_ISCHR(fm.mode)
@@ -336,14 +333,24 @@ class File_Metadata:
       # Deal with hard links (directories can’t be hard-linked).
       if (fm.st.st_nlink > 1 and not stat.S_ISDIR(fm.mode)):
          if ((fm.st.st_dev, fm.st.st_ino) in hardlinks):
-            ch.TRACE("hard link: deleting subsequent: %d %d %s"
+            ch.DEBUG("hard link: deleting subsequent: %d %d %s"
                      % (fm.st.st_dev, fm.st.st_ino, path))
             fm.hardlink_to = hardlinks[(fm.st.st_dev, fm.st.st_ino)]
-            fm.path_abs.unlink()
+            fm.path_abs.unlink_()
          else:
-            ch.TRACE("hard link: recording first: %d %d %s"
+            ch.DEBUG("hard link: recording first: %d %d %s"
                      % (fm.st.st_dev, fm.st.st_ino, path))
             hardlinks[(fm.st.st_dev, fm.st.st_ino)] = path
+      # Deal with large files. This comparison is a little sloppy (no files
+      # named “git.pickle” are large, not just the one in /ch), but it works
+      # for now.
+      if (    fm.size >= large_file_thresh
+          and stat.S_ISREG(fm.mode)
+          and fm.path.name != PICKLE_PATH.name
+          and fm.hardlink_to is None):
+         fm.large_name = fm.large_prepare()
+      else:
+         fm.large_name = None
       # Remove empty directories. Git will ignore them, including leaving them
       # there when switching the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
@@ -354,7 +361,7 @@ class File_Metadata:
          fm.path_abs.unlink()
       # Rename if necessary.
       if (path.git_incompatible_p):
-         ch.VERBOSE("renaming: %s -> %s" % (path, path.git_escaped))
+         ch.DEBUG("renaming: %s -> %s" % (path, path.git_escaped))
          fm.path_abs.rename_(fm.path_abs.git_escaped)
       # Done.
       return fm
@@ -362,7 +369,7 @@ class File_Metadata:
    @classmethod
    def unpickle(self, image_root, data=None):
       if (data is None):
-         data = (image_root // path).file_read_all(text=False)
+         data = (image_root // PICKLE_PATH).file_read_all(text=False)
       fm_tree = pickle.loads(data)
       fm_tree.unpickle_fix(image_root, path=ch.Path("."))
       return fm_tree
@@ -375,6 +382,7 @@ class File_Metadata:
       return fm
 
    def git_restore(self, quick):
+      #ch.TRACE(self.str_for_log())  # output is extreme even for TRACE?
       # Do-nothing case.
       if (self.dont_restore):
          return
@@ -390,7 +398,7 @@ class File_Metadata:
          # so the first (stored) link is always available by the time we get
          # to subsequent (unstored) links.
          target = self.image_root // self.hardlink_to
-         ch.TRACE("hard link: restoring: %s -> %s" % (self.path_abs, target))
+         ch.DEBUG("hard link: restoring: %s -> %s" % (self.path_abs, target))
          ch.ossafe(os.link, "can’t hardlink: %s -> %s" % (self.path_abs,
                                                           target),
                    target, self.path_abs, follow_symlinks=False)
@@ -421,7 +429,7 @@ class File_Metadata:
       for attr in ("mtime_ns", "mode", "size", "path"):
          h.update(bytes(repr(getattr(self, attr)).encode("UTF-8")))
       # The digest is unique, but add an encoded path to aid debugging.
-      return (h.hexdigest() + "!" + str(self.path).replace("/", "!"))
+      return (h.hexdigest() + "%" + str(self.path).replace("/", "%"))
 
    def large_names(self):
       "Return a set containing the large names of myself and all descendants."
@@ -434,28 +442,43 @@ class File_Metadata:
       return names
 
    def large_prepare(self):
-      """Set large_name, then move my file to large file storage, or delete it
-         if it already exists."""
-      self.large_name = self.large_name_get()
-      target = ch.storage.build_large_path(self.large_name)
+      """Move my file to large file storage, or delete it if it already
+         exists, then return the appropriate large name."""
+      large_name = self.large_name_get()
+      target = ch.storage.build_large_path(large_name)
       if (target.exists_()):
          op = "found"
          self.path_abs.unlink_()
       else:
          op = "moving to"
          self.path_abs.rename_(target)
-      ch.DEBUG("large file: %s: %s: %s" % (self.path, op, self.large_name))
+      ch.DEBUG("large file: %s: %s: %s" % (self.path, op, large_name))
+      return large_name
 
    def large_restore(self):
       "Hard link my file to the copy in large file storage."
       target = ch.storage.build_large_path(self.large_name)
       ch.DEBUG("large file: %s: linking: %s" % (self.path_abs, self.large_name))
       self.path_abs.hardlink(target)
-      del self.large_name  # prevent double use
 
    def pickle(self):
       (self.image_root // PICKLE_PATH) \
          .file_write(pickle.dumps(self, protocol=4))
+
+   def str_for_log(self):
+      # Truncate reported time to seconds.
+      fmt = "%Y-%m-%d.%H:%M:%S"
+      mstr = datetime.datetime.fromtimestamp(self.mtime_ns // 1e9).strftime(fmt)
+      astr = datetime.datetime.fromtimestamp(self.mtime_ns // 1e9).strftime(fmt)
+      return ("%s%s %s [%d %d %s %s %s %s %s] %s %s"
+              % ("  " * len(self.path), stat.filemode(self.mode),
+                 self.path.name, self.size, len(self.children),
+                 "dont_restore" if self.dont_restore else "-",
+                 "empty_dir" if self.empty_dir_p else "-",
+                 "unstored" if self.unstored else "-",
+                 mstr, astr,
+                 self.hardlink_to if self.hardlink_to else "-",
+                 self.large_name if self.large_name else "-"))
 
    def unpickle_fix(self, image_root, path):
       "Does no I/O."
