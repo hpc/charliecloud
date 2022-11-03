@@ -43,6 +43,12 @@ cv_chimage_docker () {
     chimage_to_dockman docker_ "$1" "$2"
 }
 
+cv_chimage_podman () {
+    chimage_in_validate "$1"
+    podman_out_validate "$2"
+    chimage_to_dockman podman_ "$1" "$2"
+}
+
 cv_chimage_squash () {
     chimage_in_validate "$1"
     squash_out_validate "$2"
@@ -69,6 +75,12 @@ cv_dir_docker () {
     dir_in_validate "$1"
     docker_out_validate "$2"
     dir_to_dockman docker_ "$1" "$2"
+}
+
+cv_dir_podman () {
+    dir_in_validate "$1"
+    podman_out_validate "$2"
+    dir_to_dockman podman_ "$1" "$2"
 }
 
 cv_dir_squash () {
@@ -133,6 +145,12 @@ cv_docker_tar () {
     dockman_to_tar docker_ "$1" "$2"
 }
 
+cv_podman_chimage () {
+    podman_in_validate "$1"
+    chimage_out_validate "$2"
+    dockman_to_chimage podman_ "$1" "$2"
+}
+
 cv_podman_dir () {
     podman_in_validate "$1"
     dir_out_validate "$2"
@@ -192,6 +210,12 @@ cv_squash_docker () {
     squash_in_validate "$1"
     docker_out_validate "$2"
     squash_to_dockman docker_ "$1" "$2"
+}
+
+cv_squash_podman () {
+    squash_in_validate "$1"
+    podman_out_validate "$2"
+    squash_to_dockman podman_ "$1" "$2"
 }
 
 cv_squash_tar () {
@@ -258,14 +282,13 @@ cv_tar_dir () {
 cv_tar_docker () {
     tar_in_validate "$1"
     docker_out_validate "$2"
-    tar_to_dockman docker_ "$1" "$2"
+    tar_to_dockman docker_ "$1" "$2"    
 }
 
 cv_tar_podman () {
     tar_in_validate "$1"
     podman_out_validate "$2"
-    INFO "importing ..."
-    podman_ import "$1" "$2"
+    tar_to_dockman podman_ "$1" "$2"
 }
 
 cv_tar_squash () {
@@ -306,10 +329,10 @@ dm_fmt_name () {
     # Format 'docker_' and 'podman_' as 'Docker' and 'Podman' respectively.
     case $1 in
 	docker_)
-	    echo $(echo "$1" | tr "d" "D" | tr -d "_")
+	    echo $(echo "${1}" | tr "d" "D" | tr -d "_")
 	    ;;
 	podman_)
-	    echo $(echo "$1" | tr "p" "P" | tr -d "_")
+	    echo $(echo "${1}" | tr "p" "P" | tr -d "_")
 	    ;;
 	*)
 	    FATAL "unreachable code reached"
