@@ -108,8 +108,8 @@ def main():
               "help": "authenticated registry access; implied by push" }],
            [["--cache-large"],
             { "metavar": "SIZE",
-              "type": lambda s: ch.unsigned(s) * 2**20,  # internal unit: bytes
-              "default": ch.unsigned(
+              "type": lambda s: ch.positive(s) * 2**20,  # internal unit: bytes
+              "default": ch.positive(
                  os.environ.get("CH_IMAGE_CACHE_LARGE", -1)) * 2**20,
               "help": "large file threshold in MiB" }],
            [["--debug"],

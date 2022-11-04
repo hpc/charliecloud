@@ -2858,6 +2858,14 @@ def ossafe(f, msg, *args, **kwargs):
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
 
+def positive(i):
+   """Convert i to int, then if ≤ 0, change to positive infinity. This is
+      monstly a convenience function to let 0 express “unlimited”."""
+   i = int(i)
+   if (i <= 0):
+      i = float("inf")
+   return i
+
 def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
        Assume that prefix and path are strings."""
@@ -2959,12 +2967,6 @@ def tree_terminals_cat(tree, tname):
    """Return the concatenated values of all child terminals named tname as a
       string, with no delimiters. If none, return the empty string."""
    return "".join(tree_terminals(tree, tname))
-
-def unsigned(i, bits=32):
-   """Convert i to int, then re-interpret it as unsigned of length bits. The
-      main point here is to turn -1 into a large positive value."""
-   assert (bits == 32)  # future expansion?
-   return struct.unpack("=I", struct.pack("=i", int(i)))[0]
 
 def user():
    "Return the current username; exit with error if it can't be obtained."

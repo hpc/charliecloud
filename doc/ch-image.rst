@@ -70,8 +70,8 @@ Common options placed before or after the sub-command:
     Enable build cache. Default if a sufficiently new Git is available.
 
   :code:`--cache-large SIZE`
-    Set the cache's large file threshold to :code:`SIZE` MiB, or :code:`-1`
-    for unlimited, which is the default. This can speed up some builds.
+    Set the cache's large file threshold to :code:`SIZE` MiB, or :code:`0` for
+    no large files, which is the default. This can speed up some builds.
     **Experimental.** See section "Build cache" for details.
 
   :code:`--no-cache`
@@ -392,7 +392,7 @@ needed, which is a fast metadata operation that ignores file content.
 
 Option :code:`--cache-large` sets the threshold in MiB; if not set,
 environment variable :code:`CH_IMAGE_CACHE_LARGE` is used; if that is not set
-either, the default value :code:`-1` indicates that no files are considered
+either, the default value :code:`0` indicates that no files are considered
 large.
 
 There are two trade-offs. First, large files in any image with the same path,
