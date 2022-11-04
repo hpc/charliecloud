@@ -316,7 +316,10 @@ class File_Metadata:
             fm.dont_restore = True
             return fm
       elif (   stat.S_ISSOCK(fm.mode)):
-         ch.WARNING("socket in image, will be ignored: %s" % path)
+         ch.WARNING("socket in image, deleting: %s" % path)
+         fm.path_abs.unlink()
+         fm.dont_restore = True
+         return fm
       elif (   stat.S_ISCHR(fm.mode)
             or stat.S_ISBLK(fm.mode)):
          ch.FATAL("device files invalid in image: %s" % path)
