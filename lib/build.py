@@ -135,7 +135,7 @@ def main(cli_):
 
    # Sometimes we exit after parsing.
    if (cli.parse_only):
-      sys.exit(0)
+      ch.exit(0)
 
    # Count the number of stages (i.e., FROM instructions)
    global image_ct

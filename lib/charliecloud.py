@@ -4,6 +4,7 @@ import atexit
 import collections
 import collections.abc
 import copy
+import cProfile
 import datetime
 import enum
 import errno
@@ -16,6 +17,7 @@ import os
 import pathlib
 import platform
 import pprint
+import pstats
 import re
 import shlex
 import shutil
@@ -299,6 +301,10 @@ tls_verify = True
 
 # True if the download cache is enabled.
 dlcache_p = None
+
+# Profiling.
+profiling = False
+profile = None
 
 # True if we talk to registries authenticated; false if anonymously.
 reg_auth = False
@@ -2555,7 +2561,7 @@ def FATAL(msg, hint=None, **kwargs):
                      for f in reversed(traceback.extract_stack()[1:-1]))
       hint = tr if hint is None else "%s: %s" % (hint, tr)
    ERROR(msg, hint, **kwargs)
-   sys.exit(1)
+   exit(1)
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
@@ -2627,7 +2633,9 @@ def cmd_base(argv, fail_ok=False, **kwargs):
    if ("env" in kwargs):
       VERBOSE("environment: %s" % kwargs["env"])
    try:
+      profile_stop()
       cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+      profile_start()
    except OSError as x:
       VERBOSE("can't execute %s: %s" % (argv[0], x.strerror))
       # Most common reason we are here is that the command isn't found, which
@@ -2697,7 +2705,7 @@ def dependencies_check():
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
-      sys.exit(1)
+      exit(1)
 
 def digest_trim(d):
    """Remove the algorithm tag from digest d and return the rest.
@@ -2718,6 +2726,11 @@ def done_notify():
       INFO("!!! KOBE !!!")
    else:
       INFO("done")
+
+def exit(code):
+   profile_stop()
+   profile_dump()
+   sys.exit(code)
 
 def init(cli):
    # logging
@@ -2764,8 +2777,9 @@ def init(cli):
       reg_auth = False
    VERBOSE("registry authentication: %s" % reg_auth)
    # misc
-   global password_many, tls_verify
+   global password_many, profiling, tls_verify
    password_many = cli.password_many
+   profiling = cli.profile
    if (cli.tls_no_verify):
       tls_verify = False
       rpu = requests.packages.urllib3
@@ -2836,6 +2850,31 @@ def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
        Assume that prefix and path are strings."""
    return prefix == path or (prefix + '/' == path[:len(prefix) + 1])
+
+def profile_dump():
+   "If profiling, dump the profile data."
+   if (profiling):
+      INFO("writing profile files ...")
+      fp = Path("/tmp/chofile.txt").open("wt")
+      ps = pstats.Stats(profile, stream=fp)
+      ps.sort_stats(pstats.SortKey.CUMULATIVE)
+      ps.dump_stats("/tmp/chofile.p")
+      ps.print_stats()
+      close_(fp)
+
+def profile_start():
+   "If profiling, start the profiler."
+   global profile
+   if (profiling):
+      if (profile is None):
+         INFO("initializing profiler")
+         profile = cProfile.Profile()
+      profile.enable()
+
+def profile_stop():
+   "If profiling, stop the profiler."
+   if (profiling and profile is not None):
+      profile.disable()
 
 def si_binary_bytes(ct):
    # FIXME: varies between 1 and 3 significant figures

@@ -85,6 +85,14 @@ Common options placed before or after the sub-command:
     :code:`ch-image` instances as you want against the same storage directory,
     which risks corruption but may be OK for some workloads.
 
+  :code:`--profile`
+    Dump profile to files :code:`/tmp/chofile.p` (:code:`cProfile` dump
+    format) and :code:`/tmp/chofile.txt` (text summary). You can convert the
+    former to a PDF call graph with :code:`gprof2dot -f pstats /tmp/chofile.p
+    | dot -Tpdf -o /tmp/chofile.pdf`. This excludes time spend in
+    subprocesses. Profile data should still be written on fatal errors, but
+    not if the program crashes.
+
   :code:`--rebuild`
     Execute all instructions, even if they are build cache hits, except for
     :code:`FROM` which is retrieved from cache on hit.
@@ -1262,4 +1270,5 @@ Environment variables
 .. include:: ./see_also.rst
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc bae
-..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd
+..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
+..  LocalWords:  pstats gprof chofile

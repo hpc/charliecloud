@@ -124,13 +124,16 @@ def main():
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],
+           [["--profile"],
+            { "action": "store_true",
+              "help": "dump profile to “./profile.{p,txt}”" }],
            [["-s", "--storage"],
             { "metavar": "DIR",
               "type": ch.Path,
               "help": "set builder internal storage directory to DIR" }],
            [["--tls-no-verify"],
             { "action": "store_true",
-              "help": "don't verify registry certificates (dangerous!)" }],
+              "help": "don’t verify registry certificates (dangerous!)" }],
            [["-v", "--verbose"],
             { "action": "count",
               "default": 0,
@@ -282,17 +285,21 @@ def main():
    # Parse it up!
    if (len(sys.argv) < 2):
        ap.print_help(file=sys.stderr)
-       sys.exit(1)
+       ch.exit(1)
    cli = ap.parse_args()
-   ch.init(cli)
 
-   # Dispatch.
+   # Initialize.
+   ch.init(cli)
    if (dependencies_check[cli.func]):
       ch.dependencies_check()
    if (storage_init[cli.func]):
       ch.storage.init()
       bu.init(cli)
+
+   # Dispatch.
+   ch.profile_start()
    cli.func(cli)
+   ch.exit(0)
 
 
 ## Bootstrap ##

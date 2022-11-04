@@ -26,7 +26,7 @@ def main(cli):
    dst_ref = src_ref if cli.dest_ref is None else ch.Image_Ref(cli.dest_ref)
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
-      sys.exit(0)
+      ch.exit(0)
    dst_img = ch.Image(dst_ref)
    ch.INFO("pulling image:    %s" % src_ref)
    if (src_ref != dst_ref):
