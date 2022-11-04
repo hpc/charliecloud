@@ -192,11 +192,14 @@ class File_Metadata:
    #                   image root. Empty for the image root itself. For
    #                   example, an image’s “/bin/true” has path “bin/true”.
    #
+   #   path_abs ...... Absolute path to the file (under the host root).
+   #
    #   st ............ Stat object for the file. Absent after un-pickling.
 
    def __init__(self, image_root, path):
       self.image_root = image_root
       self.path = path
+      self.path_abs = image_root // path
       self.st = self.path_abs.stat_(False)
       # Note: Constructor not called during unpickle.
       for attr in ("atime_ns", "mtime_ns", "mode", "size"):
@@ -208,7 +211,7 @@ class File_Metadata:
 
    def __getstate__(self):
       return { a:v for (a,v) in self.__dict__.items()
-                   if (a not in { "image_root", "path", "st" }) }
+                   if (a not in { "image_root", "path", "path_abs", "st" }) }
 
    @property
    def empty_dir_p(self):
@@ -222,10 +225,6 @@ class File_Metadata:
       # True if no children (truly empty directory), or each child is unstored
       # or empty_dir_p (recursively empty directory tree).
       return all((c.unstored or c.empty_dir_p) for c in self.children.values())
-
-   @property
-   def path_abs(self):
-      return (self.image_root // self.path)
 
    @property
    def unstored(self):
@@ -500,6 +499,7 @@ class File_Metadata:
       # all: set non-stored attributes
       self.image_root = image_root
       self.path = path
+      self.path_abs = image_root // path
       # recurse
       for (name, child) in self.children.items():
          child.unpickle_fix(image_root, path // name)

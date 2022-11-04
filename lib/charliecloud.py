@@ -1421,15 +1421,27 @@ class Path(pathlib.PosixPath):
          except ValueError:
             return False
 
-   def joinpath_posix(self, *others):
-      others2 = list()
-      for other in others:
-         other = Path(other)
-         if (other.is_absolute()):
-            other = other.relative_to("/")
-            assert (not other.is_absolute())
-         others2.append(other)
-      return self.joinpath(*others2)
+   def joinpath_posix(self, other):
+      # This method is a hot spot, so the hairiness is due to optimizations.
+      # It runs about 30% faster than the naïve verson below.
+      if (isinstance(other, Path)):
+         other_parts = other._parts
+         if (len(other_parts) > 0 and other_parts[0] == "/"):
+            other_parts = other_parts[1:]
+      elif (isinstance(other, str)):
+         other_parts = other.split("/")
+         if (len(other_parts) > 0 and len(other_parts[0]) == 0):
+            other_parts = other_parts[1:]
+      else:
+         assert False, "unknown type"
+      return self._from_parsed_parts(self._drv, self._root,
+                                     self._parts + other_parts)
+      # Naïve implementation for reference.
+      #other = Path(other)
+      #if (other.is_absolute()):
+      #   other = other.relative_to("/")
+      #   assert (not other.is_absolute())
+      #return self.joinpath(other)
 
    def json_from_file(self, msg):
       DEBUG("loading JSON: %s: %s" % (msg, self))
