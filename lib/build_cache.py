@@ -431,7 +431,8 @@ class File_Metadata:
       for attr in ("mtime_ns", "mode", "size", "path"):
          h.update(bytes(repr(getattr(self, attr)).encode("UTF-8")))
       # The digest is unique, but add an encoded path to aid debugging.
-      return (h.hexdigest() + "%" + str(self.path).replace("/", "%"))
+      return (  h.hexdigest() + "%"
+              + str(self.path).replace("/", "%"))[:ch.FILENAME_MAX_CHARS]
 
    def large_names(self):
       "Return a set containing the large names of myself and all descendants."
@@ -594,7 +595,7 @@ class Enabled_Cache:
       self.worktrees_fix()
 
    def __str__(self):
-      return ("enabled (large=%d)" % self.large_threshold)
+      return ("enabled (large=%g)" % self.large_threshold)
 
    @property
    def root(self):

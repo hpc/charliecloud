@@ -138,6 +138,13 @@ ARG_DEFAULTS = \
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
 
+# Maximum filename (path component) length, in *characters*. All Linux
+# filesystems of note that I could identify support at least 255 *bytes*. The
+# problem is filenames with multi-byte characters: you cannot simply truncate
+# byte-wise because you might do so in the middle of a character. So this is a
+# somewhat random guess with hopefully enough headroom not to cause problems.
+FILENAME_MAX_CHARS = 192
+
 # Common grammar stuff.
 GRAMMAR_COMMON = r"""
 // Matching lines in the face of continuations is surprisingly hairy. Notes:
@@ -2858,13 +2865,13 @@ def ossafe(f, msg, *args, **kwargs):
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
 
-def positive(i):
-   """Convert i to int, then if ≤ 0, change to positive infinity. This is
+def positive(x):
+   """Convert x to float, then if ≤ 0, change to positive infinity. This is
       monstly a convenience function to let 0 express “unlimited”."""
-   i = int(i)
-   if (i <= 0):
-      i = float("inf")
-   return i
+   x = float(x)
+   if (x <= 0):
+      x = float("inf")
+   return x
 
 def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
