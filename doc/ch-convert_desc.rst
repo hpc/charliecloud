@@ -139,7 +139,9 @@ filesystem.
 
   5. If Docker is installed: Docker internal storage.
 
-  6. Otherwise: No format inference.
+  6. If Podman is installed: Podman internal storage.
+
+  7. Otherwise: No format inference.
 
 
 Examples

@@ -158,16 +158,10 @@ else
     }
 fi
 
-# Do we need sudo to run podman? (Consider combining w above)
-if podman info > /dev/null 2>&1; then
-    podman_ () {
-	podman "$@"
-    }
-else
-    podman_ () {
-	sudo podman "$@"
-    }
-fi
+# Wrapper for rootless podman (for consistency w docker).
+podman_ () {
+    podman "$@"
+}
 
 # Use parallel gzip if it's available.
 if command -v pigz > /dev/null 2>&1; then
