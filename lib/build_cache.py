@@ -1116,7 +1116,7 @@ class Enabled_Cache:
 class Rebuild_Cache(Enabled_Cache):
 
    def __str__(self):
-      return ("rebuild (large=%d)" % self.large_threshold)
+      return ("rebuild (large=%g)" % self.large_threshold)
 
    def find_sid(self, sid, branch):
       return None
