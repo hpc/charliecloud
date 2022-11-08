@@ -910,9 +910,12 @@ class Enabled_Cache:
             if (os.path.exists(dotgit)):
                ch.VERBOSE("deleting cached image: %s" % d)
                (ch.storage.unpack_base // d).rmtree()
-         # Create new build cache.
+         # Delete build cache.
          self.root.rmtree()
+         ch.storage.build_large.rmtree()
+         # Create new.
          self.root.mkdir()
+         ch.storage.build_large.mkdir()
          self.bootstrap()
 
    def rollback(self, path):

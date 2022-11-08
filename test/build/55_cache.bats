@@ -1322,3 +1322,62 @@ EOF
     # build cache unchanged
     diff -u <(echo "$blessed_tree") <(ch-image build-cache --tree | treeonly)
 }
+
+@test "${tag}: large files" {
+    # We use files of size 3, 4, 5 MiB to avoid /lib/libcrypto.so.1.1, which
+    # is about 2.5 MIB and which we don’t have control over.
+    df=$(cat <<'EOF'
+FROM alpine:3.9
+RUN dd if=/dev/urandom of=/bigfile3 bs=1M count=3 \
+ && dd if=/dev/urandom of=/bigfile4 bs=1M count=4 \
+ && dd if=/dev/urandom of=/bigfile5 bs=1M count=5 \
+ && touch -t 198005120000.00 /bigfile? \
+ && chmod 644 /bigfile?
+RUN ls -l /bigfile? /lib/libcrypto*
+EOF
+        )
+
+    echo
+    echo '*** no large files'
+    ch-image build-cache --reset
+    echo "$df" | ch-image build --cache-large=0 -t tmpimg -
+    run ls "$CH_IMAGE_STORAGE"/bularge
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ -z $output ]]
+
+    echo
+    echo '*** threshold = 4'
+    ch-image build-cache --reset
+    echo "$df" | ch-image build --cache-large=5 -t tmpimg -
+    run ls "$CH_IMAGE_STORAGE"/bularge
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u - <(echo "$output") <<'EOF'
+b2dbc2a2bb35d6d0d5590aedc122cab6%bigfile5
+EOF
+
+    echo
+    echo '*** threshold = 3, rebuild'
+    echo "$df" | ch-image build --rebuild --cache-large=4 -t tmpimg -
+    run ls "$CH_IMAGE_STORAGE"/bularge
+    echo "$output"
+    [[ $status -eq 0 ]]
+    # should re-use existing bigfile5
+    diff -u - <(echo "$output") <<'EOF'
+6f7a3513121d79c42283f6f758439c3a%bigfile4
+b2dbc2a2bb35d6d0d5590aedc122cab6%bigfile5
+EOF
+
+    echo
+    echo '*** threshold = 3, reset'
+    ch-image build-cache --reset
+    echo "$df" | ch-image build --rebuild --cache-large=4 -t tmpimg -
+    run ls "$CH_IMAGE_STORAGE"/bularge
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u - <(echo "$output") <<'EOF'
+6f7a3513121d79c42283f6f758439c3a%bigfile4
+b2dbc2a2bb35d6d0d5590aedc122cab6%bigfile5
+EOF
+}
