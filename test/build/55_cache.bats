@@ -520,8 +520,6 @@ EOF
 @test "${tag}: --force" {
     ch-image build-cache --reset
 
-    # Use a centos:7 image because it can install some RPMs without --force.
-
     # First build, without --force.
     ch-image build -t force -f ./bucache/force.df ./bucache
 
@@ -531,18 +529,16 @@ EOF
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
-    blessed_out=$(cat << 'EOF'
+    diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  (force) WORKDIR /usr
-*  RUN.F yum install -y ed         # doesn't need --force
+*  RUN.F dnf install -y ed  # doesn't need --force
 | *  WORKDIR /usr
-| *  RUN yum install -y ed         # doesn't need --force
+| *  RUN dnf install -y ed  # doesn't need --force
 |/
 *  WORKDIR /
-*  (centos+7) PULL centos:7
+*  (almalinux+8) PULL almalinux:8
 *  (HEAD -> root) ROOT
 EOF
-)
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 
     # Third build, without --force. This should re-use the first build.
     sleep 1
@@ -550,18 +546,16 @@ EOF
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
-    blessed_out=$(cat << 'EOF'
+    diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  WORKDIR /usr
-*  RUN.F yum install -y ed         # doesn't need --force
+*  RUN.F dnf install -y ed  # doesn't need --force
 | *  (force) WORKDIR /usr
-| *  RUN yum install -y ed         # doesn't need --force
+| *  RUN dnf install -y ed  # doesn't need --force
 |/
 *  WORKDIR /
-*  (centos+7) PULL centos:7
+*  (almalinux+8) PULL almalinux:8
 *  (HEAD -> root) ROOT
 EOF
-)
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
 
