@@ -7,6 +7,7 @@ chtest/dev_proc_sys.py \
 chtest/fs_perms.py \
 chtest/printns \
 chtest/signal_out.py \
+distroless/hello.py \
 hello/hello.sh \
 obspy/hello.py
 
@@ -47,6 +48,7 @@ copy/dirG/s_file4/file_ \
 copy/fileA \
 copy/fileB \
 copy/test.bats \
+distroless/Dockerfile \
 dont-init-ucx-on-intel-cray.patch \
 exhaustive/Dockerfile \
 hello/Dockerfile \
@@ -77,6 +79,7 @@ spark/Dockerfile \
 spark/slurm.sh
 
 batsfiles = \
+distroless/test.bats \
 exhaustive/test.bats \
 hello/test.bats \
 lammps/test.bats \
