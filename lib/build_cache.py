@@ -1079,9 +1079,6 @@ class Enabled_Cache:
 
          [1]: https://git-scm.com/docs/git-worktree
          [2]: https://git-scm.com/docs/gitrepository-layout"""
-      # (1) worktree metadata must exist
-      # (2) worktree itself (image) must exist
-      # (3) image must be git-enabled"""
       t = ch.Timer()
       wt_actuals = { ch.Path(i).parts[-2]
                      for i in glob.iglob("%s/*/.git"
