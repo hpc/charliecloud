@@ -94,8 +94,8 @@ for oldtar in "$@"; do
     INFO "testing"
     ch-test -b ch-image --pedantic=no -s "$scope" all
 
-#    INFO "deleting: $storage"
-#    rm -Rf --one-file-system "$storage"
-#    [[ ! -d $storage ]]
+    INFO "deleting: $storage"
+    rm -Rf --one-file-system "$storage"
+    [[ ! -d $storage ]]
 
 done
