@@ -568,10 +568,19 @@ if       [ -z "$no_ldconfig" ] \
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || fatal 'ldconfig error'
     if [ -n "$ofi_found" ] || [ -n "$ofi_cxi" ]; then
         debug "validating ldconfig cache"
-        for l in $ld_conf; do
-            debug_indent "${ch_bin}/ch-run $image -- /sbin/ldconfig -p | grep -F $l > /dev/null 2>&1"
-               "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -p | grep -F "$l" > /dev/null 2>&1 \
-            || fatal "injection failed: ldconfig missing $l"
+        for file in $inject_ofi $inject_files; do
+            f="$(basename "${file%%:*}")"
+            f=$("${ch_bin}/ch-run" --no-home "$image" -- find / \
+                                                -not \( -path /proc -prune \) \
+                                                -not \( -path /dev -prune \) \
+                                                -not \( -path /tmp -prune \) \
+                                                -not \( -path /sys -prune \) \
+                                                -not \( -path /var/opt/cray -prune \) \
+                                                -not \( -path /etc/opt/cray -prune \) \
+                                                -name  "$f")
+            if [ "$("${ch_bin}/ch-run" "$image" -- ldd "$f" | grep -c 'not found ')" -ne 0 ]; then
+                fatal "ldconfig: '${ch_bin}/ch-run $image -- ldd $f' failed"
+            fi
         done
     fi
 else
