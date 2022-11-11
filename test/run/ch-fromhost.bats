@@ -234,30 +234,30 @@ fromhost_ls () {
     [[ $output = *'cannot read file: /doesnotexist'* ]]
     fromhost_clean_p "$img"
 
-    # --ofi no argument
-    run ch-fromhost "$img" --ofi
+    # --fi-path no argument
+    run ch-fromhost "$img" --fi-path
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'--ofi must not be empty'* ]]
-    # --ofi path doesn't exist
-    run ch-fromhost "$img" --ofi /rando/path
+    [[ $output = *'--fi-path must not be empty'* ]]
+    # --fi-path path doesn't exist
+    run ch-fromhost "$img" --fi-path /rando/path
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"is not a directory or file ending '-fi.so'"* ]]
-    # --ofi path has no -fi.so
-    run ch-fromhost "$img" --ofi "$CHTEST_DIR"
+    # --fi-path path has no -fi.so
+    run ch-fromhost "$img" --fi-path "$CHTEST_DIR"
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no loadable ofi provider(s) in'* ]]
-    # --ofi file is not a -fi.so
-    run ch-fromhost "$img" --ofi "$CHTEST_DIR/sotest/libsotest.so"
+    # --fi-path file is not a -fi.so
+    run ch-fromhost "$img" --fi-path "$CHTEST_DIR/sotest/libsotest.so"
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"is not a directory or file ending '-fi.so'"* ]]
-    # --ofi host FI_PROVIDER_PATH set without --dest
+    # --fi-path host FI_PROVIDER_PATH set without --dest
     unset FI_PROVIDER_PATH
     export FI_PROVIDER_PATH=/usr/foo
-    run ch-fromhost "$img" --ofi "${CHTEST_DIR}/sotest/lib/libfabric"
+    run ch-fromhost "$img" --fi-path "${CHTEST_DIR}/sotest/lib/libfabric"
     [[ $status -eq 1 ]]
     [[ $output = *'missing --dest'* ]]
     export FI_PROVIDER_PATH=$fi_provider_path
@@ -328,13 +328,13 @@ fromhost_ls () {
     fromhost_clean_p "$img"
 }
 
-@test 'ch-fromhost --ofi (OpenMPI)' {
+@test 'ch-fromhost --fi-path (OpenMPI)' {
     scope full
     prerequisites_ok openmpi
     img=${ch_imgdir}/openmpi
     unset FI_PROVIDER_PATH
 
-    ofidest=$(ch-fromhost --ofi-path "$img")
+    ofidest=$(ch-fromhost --fi-prov-path "$img")
     echo "provider dest: ${ofidest}"
 
     # The libsotest-fi.so is a dummy provider intended to exercise ch-fromhost
@@ -345,7 +345,7 @@ fromhost_ls () {
     # Inferred dest from image libfabric.so.
     img=${ch_imgdir}/openmpi
     ofi=${CHTEST_DIR}/sotest/lib/libfabric/libsotest-fi.so
-    run ch-fromhost --ofi "${ofi}" "$img"
+    run ch-fromhost --fi-path "${ofi}" "$img"
     echo "$output"
     [[ $status -eq 0 ]]
     test -f "${img}/${ofidest}/libsotest-fi.so"
@@ -353,7 +353,7 @@ fromhost_ls () {
 
     # host FI_PROVIDER_PATH with --dest
     export FI_PROVIDER_PATH=/usr/lib
-    run ch-fromhost "$img" --ofi "$ofi" --dest /usr/lib -v
+    run ch-fromhost "$img" --fi-path "$ofi" --dest /usr/lib -v
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warn'*'FI_PROVIDER_PATH'* ]]
@@ -365,7 +365,7 @@ fromhost_ls () {
     unset FI_PROVIDER_PATH
     ch_env="$(cat "${img}/ch/environment")"
     echo 'FI_PROVIDER_PATH=/usr/local/lib' >> "${img}/ch/environment"
-    run ch-fromhost "$img" --ofi "$ofi" -v
+    run ch-fromhost "$img" --fi-path "$ofi" -v
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warn'*'FI_PROVIDER_PATH'* ]]

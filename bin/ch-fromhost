@@ -50,10 +50,10 @@ Usage:
 
 Which files to inject (one or more required; can be repeated):
 
-  -c, --cmd  CMD   listed in the stdout of CMD
-  -f, --file FILE  listed in file FILE
-  -p, --path PATH  inject the file at PATH
-  -o, --ofi  PATH  inject host compiled loadable OFI provider(s) at PATH
+  -c, --cmd     CMD   listed in the stdout of CMD
+  -o, --fi-prov PATH  inject host compiled loadable OFI provider(s) at PATH
+  -f, --file    FILE  listed in file FILE
+  -p, --path    PATH  inject the file at PATH
 
   --nvidia         recommended by nVidia (via \"nvidia-container-cli list\")
 
@@ -63,9 +63,12 @@ Destination within image:
 
 Options:
 
-  --cray-ugni      bind cray libraries for gemini/aries on xc40 machines
-  --ofi-path       print the inferred destination for loadable ofi providers
+  --cray-mpi-cxi   inject slingshot libfabric for MPI on shasta machines
+  --cray-mpi-gni  inject gemini/aries libfabric for MPI on xc40 machines
+
+  --fi-prov-path   print the inferred destination for loadable ofi providers
   --lib-path       print the inferred destination for shared libraries
+
   --no-ldconfig    don\'t run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
   -v, --verbose    list the injected files
@@ -106,6 +109,19 @@ ensure_nonempty () {
 fatal () {
     printf 'error: ch-fromhost: %s\n' "$1" 1>&2
     exit 1
+}
+
+find_libfabric () {
+   libfabric=$("${ch_bin}/ch-run" --no-home "$1" -- find / \
+                                                -not \( -path /proc -prune \) \
+                                                -not \( -path /dev -prune \) \
+                                                -not \( -path /tmp -prune \) \
+                                                -not \( -path /sys -prune \) \
+                                                -not \( -path /var/opt/cray -prune \) \
+                                                -not \( -path /etc/opt/cray -prune \) \
+                                                -name  "libfabric.so")
+   [ -n "$libfabric" ] || fatal "libfabric.so not found in $1"
+   printf "%s" "$libfabric"
 }
 
 info () {
@@ -221,10 +237,10 @@ warn () {
 
 warn_fi_var () {
     if [ -n "$FI_PROVIDER" ]; then
-        warn "FI_PROVIDER is set; may cause undesired run time behavior"
+        warn "FI_PROVIDER=$FI_PROVIDER set; this will be preferred provider at runtime."
     fi
     if [ -n "$FI_PROVIDER_PATH" ]; then
-        warn "FI_PROVIDER_PATH is set; --dest required"
+        warn "FI_PROVIDER_PATH=$FI_PROVIDER_PATH set; --dest required"
     fi
 }
 
@@ -239,13 +255,16 @@ while [ $# -gt 0 ]; do
             queue_files "$out"
             shift
             ;;
-        --cray-ugni)
+        --cray-mpi-cxi)
             warn_fi_var
-            if [ -z "$CH_FROMHOST_OFI_UGNI" ]; then
-                fatal "CH_FROMHOST_OFI_UGNI is not set"
+            ofi_cxi=yes
+            ;;
+        --cray-mpi-gni)
+            warn_fi_var
+            if [ -z "$CH_FROMHOST_OFI_GNI" ]; then
+                fatal "CH_FROMHOST_OFI_GNI is not set"
             fi
-            queue_ofi_dso "$CH_FROMHOST_OFI_UGNI"
-            shift
+            queue_ofi_dso "$CH_FROMHOST_OFI_GNI"
             ;;
         -d|--dest)
             ensure_nonempty --dest "$1"
@@ -273,13 +292,13 @@ while [ $# -gt 0 ]; do
             || fatal "nvidia-container-cli failed; does this host have GPUs?"
             queue_files "$out"
             ;;
-        -o|--ofi)
+        -o|--fi-prov)
             warn_fi_var
-            ensure_nonempty --ofi "$1"
+            ensure_nonempty --fi-prov "$1"
             queue_ofi_dso "$1"
             shift
             ;;
-        --ofi-path)
+        --fi-prov-path)
             ofi_found=yes
             ofi_dest_print=yes
             ;;
@@ -330,6 +349,38 @@ if [ $lib_found ]; then
     debug "shared library destination: ${image}/${lib_dest}"
 fi
 
+if [ $ofi_cxi ]; then
+    # Libfabric does not yet have a slingshot optimzied provider; however,
+    # recent provider name reservation for 'cxi', in the source indicates we
+    # will at some point, see: https://github.com/ofiwg/libfabric/pull/7839
+    #
+    # For now, replace the image's libfabric with Cray's to use slingshot.
+    host_cxi=$(realpath /opt/cray/libfabric/**)/lib64/libfabric.so
+    [ -f "$host_cxi" ] || fatal "missing $host_cxi"
+    debug "finding image libfabric.so"
+    ofi_dest=$( find_libfabric "$image" )
+    debug_indent "found $ofi_dest"
+    d_=$(dirname "$ofi_dest")
+    queue_files "$host_cxi" "$d_"
+    # Process links, both symbolic and reference. Add only missing links, i.e.,
+    # them, do not overwrite existing files.
+    cxi_ld=$(ldd "$host_cxi" 2>&1 | grep lib | awk '{print $3}' | sort -u)
+    for l in $cxi_ld; do
+        # Ignore /lib64 targets.
+        d_=$(dirname "$l")
+        [ "$d_" = "/lib64" ] && continue
+        [ -e "${image}/${l}" ] || queue_files "$l" "$d_"
+        rl=$(readlink -f "$l")
+        d_=$(dirname "$rl")
+        [ -e "${image}/${rl}" ] || queue_files "$rl" "$d_"
+        ld=$(dirname "$l")
+        # avoid duplicates.
+        if [ "$(echo "$ld_conf" | grep -c "$ld")" -eq 0 ]; then
+            queue_add_ldconf "$ld"
+        fi
+    done
+fi
+
 if [ $ofi_found ] && [ -z "$dest" ]; then
     # By default, libfabric will create and use loadable providers in the
     # in the $PREFIX/lib/libfabric directory, where PREFIX is the --prefix
@@ -364,15 +415,7 @@ if [ $ofi_found ] && [ -z "$dest" ]; then
        ofi_dest=$ch_env_p
        warn "using ${image}${ch_env_p}; --set-env required at run time"
     else
-       ofi_so=$("${ch_bin}/ch-run" --no-home "$image" -- find / \
-                                                -not \( -path /proc -prune \) \
-                                                -not \( -path /dev -prune \) \
-                                                -not \( -path /tmp -prune \) \
-                                                -not \( -path /sys -prune \) \
-                                                -not \( -path /var/opt/cray -prune \) \
-                                                -not \( -path /etc/opt/cray -prune \) \
-                                                -name  "libfabric.so")
-       [ -n "$ofi_so" ] || fatal "libfabric.so not found in $image"
+       ofi_so=$( find_libfabric "$image" )
        debug_indent "found: ${image}${ofi_so}"
        ofi_dest=$(dirname "$ofi_so")
        ofi_dest="${ofi_dest}/libfabric"
@@ -395,35 +438,39 @@ if [ $ofi_dest_print ]; then
 fi
 
 if [ -f /etc/opt/cray/release/cle-release ]; then
-    # ALPS libraries require the contents of this directory to be present at
-    # the same path as the host. Create the mount point here, then ch-run
-    # bind-mounts it later.
-    queue_mkdir /var/opt/cray/alps/spool
-
-    # The cray-ugni provider will link against cray's libwlm_detect so. Create
-    # the mount point for ch-run.
-    queue_mkdir /opt/cray/wlm_detect
-
-    # libwlm_detect.so requires file(s) to present at the same path as the host.
-    # Create mount point for ch-run.
-    queue_mkdir /etc/opt/cray/wlm_detect
-
     # Cray needs a pile of hugetlbfs filesystems mounted at
     # /var/lib/hugetlbfs/global. Create mount point for ch-run.
     queue_mkdir /var/lib/hugetlbfs
+    # UGNI
+    if [ ! -L /etc/opt/cray/release/cle-release ]; then
+        # ALPS libraries require the contents of this directory to be present at
+        # the same path as the host. Create the mount point here, then ch-run
+        # bind-mounts it later.
+        queue_mkdir /var/opt/cray/alps/spool
 
-    # OFI uGNI provider, libgnix-fi.so, links against the Cray host's
-    # libxpmem, libudreg, libalpsutil, libalpslli, and libugni; create mount
-    # points for ch-run to use later.
-    queue_mkdir /opt/cray/udreg
-    queue_mkdir /opt/cray/xpmem
-    queue_mkdir /opt/cray/ugni
-    queue_mkdir /opt/cray/alps
+        # The cray-ugni provider will link against cray's libwlm_detect so. Create
+        # the mount point for ch-run.
+        queue_mkdir /opt/cray/wlm_detect
 
-    # Newer Cray Shasta environments require the contents of this directory
-    # to be present at the same path as the host. Create mount points for
-    # ch-run to use later.
-    queue_mkdir /var/spool/slurmd
+        # libwlm_detect.so requires file(s) to present at the same path as the host.
+        # Create mount point for ch-run.
+        queue_mkdir /etc/opt/cray/wlm_detect
+
+        # OFI uGNI provider, libgnix-fi.so, links against the Cray host's
+        # libxpmem, libudreg, libalpsutil, libalpslli, and libugni; create mount
+        # points for ch-run to use later.
+        queue_mkdir /opt/cray/udreg
+        queue_mkdir /opt/cray/xpmem
+        queue_mkdir /opt/cray/ugni
+        queue_mkdir /opt/cray/alps
+    fi
+    # CXI (slingshot)
+    if [ -f /opt/cray/etc/release/cos ]; then
+        # Newer Cray Shasta environments require the contents of this directory
+        # to be present at the same path as the host. Create mount points for
+        # ch-run to use later.
+        queue_mkdir /var/spool/slurmd
+    fi
 fi
 
 [ "$inject_files" ] || [ "$inject_ofi" ] || fatal "empty file list"
@@ -446,7 +493,7 @@ for d in $inject_mkdirs; do
 done
 
 # Process ldconfig targets.
-if [ $ofi_found ]; then
+if [ $ofi_found ] || [ $ofi_cxi ]; then
     if [ ! -f "${image}/etc/ld.so.conf" ]; then
         debug_indent "touch ${image}/etc/ld.so.conf"
         touch "${image}/etc/ld.so.conf"
@@ -514,11 +561,12 @@ for file in $inject_ofi; do
 done
 IFS="$old_ifs"
 
-if [ -z "$no_ldconfig" ] && { [ $lib_found ] || [ $ofi_found ] ;} then
+if       [ -z "$no_ldconfig" ] \
+    && { [ $lib_found ] || [ $ofi_found ] || [ $ofi_cxi ] ;} then
     debug "running ldconfig"
     debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
-    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
-    if [ -n "$ofi_found" ]; then
+    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || fatal 'ldconfig error'
+    if [ -n "$ofi_found" ] || [ -n "$ofi_cxi" ]; then
         debug "validating ldconfig cache"
         for l in $ld_conf; do
             debug_indent "${ch_bin}/ch-run $image -- /sbin/ldconfig -p | grep -F $l > /dev/null 2>&1"

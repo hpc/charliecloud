@@ -17,10 +17,10 @@ Description
 Inject files from the host into the Charliecloud image directory
 :code:`IMGDIR`.
 
-The purpose of this command is to inject arbitrary files and loadable Libfabric
-shared object providers into a container that are necessary to access host
-specific resources; usually GPU or proprietary interconnets. **It is not a
-general copy-to-image tool**; see further discussion on use cases below.
+The purpose of this command is to inject arbitrary host files into a container
+necessary to access host specific resources; usually GPU or proprietary
+interconnets. **It is not a general copy-to-image tool**; see further discussion
+on use cases below.
 
 It should be run after:code:`ch-convert` and before :code:`ch-run`. After
 invocation, the image is no longer portable to other hosts.
@@ -46,8 +46,8 @@ directory specified by :code:`--dest`.
 If any shared libraries are injected, run :code:`ldconfig` inside the
 container (using :code:`ch-run -w`) after injection.
 
-Loadable Libfabric providers
-----------------------------
+Libfabric
+---------
 
 MPI implementations have numerous ways of communicating messages over
 interconnects. We use Libfabric (OFI), an OpenFabric framework that
@@ -60,7 +60,7 @@ communcations with built-in, or loadable, fabric providers.
 Using OFI, we can: 1) uniformly manage fabric communcations services for both
 OpenMPI and MPICH; and 2) leverage host-built loadable dynamic shared object
 (dso) providers to give our container examples access to proprietary host
-hardware, e.g., Cray Gemini/Aries.
+hardware, e.g., Cray Gemini/Aries (GNI) and Slingshot (CXI).
 
 OFI providers implement the application facing software interfaces needed to
 access network specific protocols, drivers, and hardware. Loadable providers,
@@ -83,7 +83,7 @@ To specify which files to inject
   :code:`-p`, :code:`--path PATH`
     Inject the file at :code:`PATH`.
 
-  :code:`-o`. :code:`--ofi PATH`
+  :code:`-o`. :code:`--fi-prov PATH`
     Inject the loadable Libfabric provider(s) at :code:`PATH`.
 
   :code:`--nvidia`
@@ -104,15 +104,18 @@ To specify the destination within the image
 Additional arguments
 --------------------
 
-  :code:`--cray-ugni`
-    Inject cray gemini/aries GNI provider :code:`libgnix-fi.so`; this is
-    equivalent to :code:`--ofi $CH_FROMHOST_OFI_UGNI`.
+  :code:`--cray-mpi-cxi`
+    Inject cray-libfabric for slingshot.
+
+  :code:`--cray-mpi-gni`
+    Inject cray gemini/aries GNI Libfabric provider :code:`libgnix-fi.so`; this
+    is equivalent to :code:`--fi-provider $CH_FROMHOST_OFI_GNI`.
 
   :code:`--lib-path`
     Print the guest destination path for shared libraries inferred as
     described above.
 
-  :code:`--ofi-path`
+  :code:`--fi-prov-path`
     Print the guest destination path for loadable libfabric providers as
     described above.
 
@@ -221,10 +224,12 @@ The implementation of :code:`--ofi` is experimental and has a couple quirks.
    container functionality, e.g., :code:`/usr/bin/`, etc.
 
 4. At the time of this writing, a Cray Slingshot optimized provider is not
-   available. We are working with HPE to get this feature added sooner, rather
-   than later; however, we may need to implement more complicated injection
-   techniques, e.g., complete replacement of the container's libfabric with
-   hosts, for future Cray systems with Slingshot.
+   available; however, recent acitivity libfabric source indicates there will be
+   at some point, see: https://github.com/ofiwg/libfabric/pull/7839We.
+
+   For now, on Cray systems with Slingshot, CXI, we overwrite the container's
+   :code:`libfabric.so` with the hosts. This method is a stopgap while we wait
+   for the CXI provider.
 
 5. Tested only for C programs compiled with GCC, and it probably won't work
    without extensive bind-mounts and kluding. If you'd like to use another

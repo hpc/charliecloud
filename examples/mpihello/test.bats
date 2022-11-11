@@ -7,9 +7,8 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
-    if [[ $ch_cray ]]; then
-        FI_LOG_LEVEL=
-    fi
+    [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
+    export FI_LOG_LEVEL=
 }
 
 count_ranks () {
@@ -32,22 +31,31 @@ count_ranks () {
     [[ $output = *'0: finalize ok'* ]]
 }
 
-@test "${ch_tag}/inject libgnix-fi.so provider" {
+@test "${ch_tag}/inject cray mpi ($cray_prov)" {
     cray_ofi_or_skip "$ch_img"
 }
 
-@test "${ch_tag}/validate libgnix-fi.so provider" {
+@test "${ch_tag}/validate gni injection" {
     [[ -n "$ch_cray" ]] || skip "host is not cray"
-    [[ -n "$cray_ugni" ]] || skip "ugni only"
+    [[ "$cray_prov" == 'gni' ]] || skip "gni only"
     export FI_LOG_LEVEL=debug
-    export FI_LOG_PROV=core,gni
     run $ch_mpirun_node ch-run --join "$ch_img" -- /hello/hello 2>&1
     echo "$output"
     [[ $status -eq 0 ]]
     [[ "$output" == *' registering provider: gni'* ]]
     [[ "$output" == *'gni:'*'GNIX_INT_TX_BUF_SZ'* ]]
-    unset FI_LOG_LEVEL
-    unset FI_LOG_PROV
+}
+
+@test "${ch_tag}/validate cxi injection" {
+    [[ -n "$ch_cray" ]] || skip "host is not cray"
+    [[ $cray_prov == 'cxi' ]] || skip "cxi (slingshot) only"
+    export FI_LOG_LEVEL=info
+    export FI_LOG_SUBSYS=mr
+    # shellcheck disable=SC2086
+    run $ch_mpirun_node ch-run --join "$ch_img" -- /hello/hello 2>&1
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ "$output" == *'cxi:mr:ofi_'*'stats:'*'searches'*'deletes'*'hits'* ]]
 }
 
 @test "${ch_tag}/MPI version" {
@@ -110,8 +118,12 @@ count_ranks () {
 @test "${ch_tag}/Cray bind mounts" {
     [[ $ch_cray ]] || skip 'host is not a Cray'
 
-    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
     ch-run "$ch_img" -- mount | grep -F /dev/hugepages
+    if [[ $cray_prov == 'gni' ]]; then
+        ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
+    else
+        ch-run "$ch_img" -- mount | grep -F /var/spool/slurmd
+    fi
 }
 
 @test "${ch_tag}/revert image" {

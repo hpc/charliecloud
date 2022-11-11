@@ -7,6 +7,9 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
+    [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
+    export FI_LOG_LEVEL=
+    export FI_LOG_SUBSYS=
 
     # One iteration on most of these tests because we just care about
     # correctness, not performance. (If we let the benchmark choose, there is
@@ -82,15 +85,14 @@ check_process_ct () {
     check_finalized "$output"
 }
 
-@test "${ch_tag}/inject libgnix-fi.so provider" {
+@test "${ch_tag}/inject cray mpi ($cray_prov)" {
     cray_ofi_or_skip "$ch_img"
 }
 
-@test "${ch_tag}/validate libgnix-fi.so provider" {
+@test "${ch_tag}/validate gni injection" {
     [[ -n "$ch_cray" ]] || skip "host is not cray"
-    [[ -n "$cray_ugni" ]] || skip "ugni only"
+    [[ $cray_prov == 'gni' ]] || skip "gni only"
     export FI_LOG_LEVEL=debug
-    export FI_LOG_PROV=core,gni
     # shellcheck disable=SC2086
     run $ch_mpirun_2_2node ch-run --join "$ch_img" -- \
                                "$imb_mpi1" $imb_args PingPong 2>&1
@@ -98,8 +100,19 @@ check_process_ct () {
     [[ $status -eq 0 ]]
     [[ "$output" == *' registering provider: gni'* ]]
     [[ "$output" == *'gni:'*'GNIX_INT_TX_BUF_SZ'* ]]
-    unset FI_LOG_LEVEL
-    unset FI_LOG_PROV
+}
+
+@test "${ch_tag}/validate cxi injection" {
+    [[ -n "$ch_cray" ]] || skip "host is not cray"
+    [[ $cray_prov == 'cxi' ]] || skip "cxi (slingshot) only"
+    export FI_LOG_LEVEL=info
+    export FI_LOG_SUBSYS=mr
+    # shellcheck disable=SC2086
+    run $ch_mpirun_2_2node ch-run --join "$ch_img" -- \
+                               "$imb_mpi1" $imb_args PingPong 2>&1
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ "$output" == *'cxi:mr:ofi_'*'stats:'*'searches'*'deletes'*'hits'* ]]
 }
 
 # This test compares OpenMPI's point to point bandwidth with all high speed
@@ -108,7 +121,9 @@ check_process_ct () {
 @test "${ch_tag}/using the high-speed network (host launch)" {
     multiprocess_ok
     [[ $ch_multinode ]] || skip "multinode only"
-    [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
+    if [[ $ch_cray ]]; then
+        [[ $cray_prov == 'gni' ]] && skip "gni doesn't support running on tcp"
+    fi
     openmpi_or_skip
     # Verify we have known HSN devices present. (Note that -d tests for
     # directory, not device.)
@@ -118,8 +133,7 @@ check_process_ct () {
                      "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
                      | sort -nrk6 | head -1 | awk '{print $6}')
     # Configure network transport plugins to TCP only.
-    export OMPI_MCA_pml=ob1
-    export OMPI_MCA_btl=tcp,self
+    export FI_PROVIDER=tcp
     # shellcheck disable=SC2086
     hsn_disabled_bw=$($ch_mpirun_2_2node ch-run "$ch_img" -- \
                       "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \

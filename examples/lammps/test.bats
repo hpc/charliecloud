@@ -42,6 +42,7 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
     multiprocess_ok
+    [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
 }
 
 lammps_try () {
@@ -58,7 +59,7 @@ lammps_try () {
 
 }
 
-@test "${ch_tag}/inject host cray-gni ofi dso" {
+@test "${ch_tag}/inject host cray mpi ($cray_prov)" {
     cray_ofi_or_skip "$ch_img"
 }
 

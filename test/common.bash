@@ -102,12 +102,17 @@ chtest_fixtures_ok () {
 cray_ofi_or_skip () {
     if [[ $ch_cray ]]; then
         # shellcheck disable=SC2086
-        [[ -n "$CH_TEST_OFI_PATH" ]] || skip 'CH_TEST_OFI_PATH not set'
-        [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
-        if ! find "$CH_TEST_OFI_PATH" -name 'libgnix-fi.so' &> /dev/null; then
-           skip 'libgnix-fi.so not found'
+        if [[ $cray_prov == 'gni' ]]; then
+            [[ -n "$CH_TEST_OFI_PATH" ]] || skip 'CH_TEST_OFI_PATH not set'
+            [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
+            if ! find "$CH_TEST_OFI_PATH" -name 'libgnix-fi.so' &> /dev/null; then
+                skip 'libgnix-fi.so not found'
+            fi
+            export CH_FROMHOST_OFI_GNI=$CH_TEST_OFI_PATH
+            $ch_mpirun_node ch-fromhost --cray-mpi-gni "$1"
+        elif [[ $cray_prov == 'cxi' ]]; then
+            $ch_mpirun_node ch-fromhost --cray-mpi-cxi "$1"
         fi
-        $ch_mpirun_node ch-fromhost --ofi "$CH_TEST_OFI_PATH" "$1"
     else
         skip 'host is not a Cray'
     fi
@@ -357,12 +362,11 @@ if [[ -f /etc/opt/cray/release/cle-release ]]; then
     ch_cray=yes
     # Prefer gni provider on Cray ugni machines
     if [[ -d /opt/cray/ugni ]]; then
-        cray_ugni=yes
-        export FI_PROVIDER=gni
-    else
-        # shellcheck disable=SC2034
-        cray_ugni=
+        cray_prov=gni
+    elif [[ -f /opt/cray/etc/release/cos ]]; then
+        cray_prov=cxi
     fi
+    export FI_PROVIDER=$cray_pov
 else
     ch_cray=
 fi

@@ -63,7 +63,7 @@ Additional options:
   -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
   -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
-  --ofi-path PATH        path to libfabric provider injection target(s)
+  --fi-path PATH        path to libfabric provider injection target(s)
   --pack-dir DIR         packed image directory; same as \$CH_TEST_TARDIR
   --pack-fmt FMT         packed image format; same as \$CH_TEST_PACK_FMT
   --pedandic {yes,no}    set pedantic mode rather than guessing
@@ -841,7 +841,7 @@ while [[ $# -gt 0 ]]; do
     --is-sudo)      # undocumented; for CI
         is_sudo=yes
         ;;
-    --ofi-path=*)
+    --fi-path=*)
         ofi_path=${opt#*=}
         ;;
     --pack-dir)
