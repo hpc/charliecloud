@@ -41,7 +41,7 @@ of storage for test fixtures:
   kernel, not Charliecloud, and can be omitted from routine Charliecloud
   testing.
 
-The first three are created when needed if they don't exist, while the
+The first three are created when needed if they don’t exist, while the
 filesystem permissions fixtures must be created manually, in order to
 accommodate configurations where sudo is not available via the same login path
 used for running tests.
@@ -72,7 +72,7 @@ allows trading off thoroughness versus time.
   :code:`run`
     Running containers and associated functionality. This requires a packed
     images directory produced by a successful :code:`build` phase, which can
-    be copied from the build system if it's not also the run system.
+    be copied from the build system if it’s not also the run system.
 
   :code:`examples`
     Example applications. Requires an unpacked images directory produced by a
@@ -105,7 +105,7 @@ allows trading off thoroughness versus time.
 
     If :code:`TEST` is also given, then run only tests with name containing
     that string, skipping the others. The separator is a literal colon. If the
-    string contains shell metacharacters such as space, you'll need to quote
+    string contains shell metacharacters such as space, you’ll need to quote
     the argument to protect it from the shell.
 
 Scope is specified with:
@@ -126,7 +126,7 @@ Image format is specified with:
     :code:`FMT` must be one of the following:
 
     * :code:`squash-mount` or 🐘: SquashFS archive, run directly from the
-      archive using :code:`ch-run`'s internal SquashFUSE functionality. In
+      archive using :code:`ch-run`’s internal SquashFUSE functionality. In
       this mode, tests that require writing to the image are skipped.
 
     * :code:`tar-unpack` or 📠: Tarball, and the images are unpacked before
@@ -181,7 +181,7 @@ Additional arguments:
     Add :code:`DIR` to filesystem permission fixture directories; can be
     specified multiple times. We recommend one such directory per mounted
     filesystem type whose kernel module you do not trust; e.g., you probably
-    don't need to test your :code:`tmpfs`\ es, but out-of-tree filesystems very
+    don’t need to test your :code:`tmpfs`\ es, but out-of-tree filesystems very
     likely need this.
 
     Implies :code:`--sudo`. Default: :code:`CH_TEST_PERMDIRS` if set;
@@ -206,7 +206,7 @@ Bugs
 ====
 
 Bats will wait until all descendant processes finish before exiting, so if you
-get into a failure mode where a test sequence doesn't clean up all its
+get into a failure mode where a test sequence doesn’t clean up all its
 processes, :code:`ch-test` will hang.
 
 

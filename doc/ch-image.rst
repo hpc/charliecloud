@@ -70,7 +70,7 @@ Common options placed before or after the sub-command:
     Enable build cache. Default if a sufficiently new Git is available.
 
   :code:`--cache-large SIZE`
-    Set the cache's large file threshold to :code:`SIZE` MiB, or :code:`0` for
+    Set the cache’s large file threshold to :code:`SIZE` MiB, or :code:`0` for
     no large files, which is the default. This can speed up some builds.
     **Experimental.** See section "Build cache" for details.
 
@@ -104,7 +104,7 @@ Common options placed before or after the sub-command:
     Set the storage directory (see below for important details).
 
   :code:`--tls-no-verify`
-    Don't verify TLS certificates of the repository. (Do not use this option
+    Don’t verify TLS certificates of the repository. (Do not use this option
     unless you understand the risks.)
 
   :code:`-v`, :code:`--verbose`
@@ -117,7 +117,7 @@ Architecture
 Charliecloud provides the option :code:`--arch ARCH` to specify the
 architecture for architecture-aware registry operations. The argument
 :code:`ARCH` can be: (1) :code:`yolo`, to bypass architecture-aware code and
-use the registry's default architecture; (2) :code:`host`, to use the host's
+use the registry’s default architecture; (2) :code:`host`, to use the host’s
 architecture, obtained with the equivalent of :code:`uname -m` (default if
 :code:`--arch` not specified); or (3) an architecture name. If the specified
 architecture is not available, the error message will list which ones are.
@@ -130,7 +130,7 @@ architecture is not available, the error message will list which ones are.
    pull --arch=bar baz`, builder storage will contain one image called
    "baz", with architecture "bar".
 
-2. Images' default architecture is usually :code:`amd64`, so this is
+2. Images’ default architecture is usually :code:`amd64`, so this is
    usually what you get with :code:`--arch=yolo`. Similarly, if a
    registry image is architecture-unaware, it will still be pulled with
    :code:`--arch=amd64` and :code:`--arch=host` on x86-64 hosts (other
@@ -140,7 +140,7 @@ architecture is not available, the error message will list which ones are.
 3. :code:`uname -m` and image registries often use different names for
    the same architecture. For example, what :code:`uname -m` reports as
    "x86_64" is known to registries as "amd64". :code:`--arch=host` should
-   translate if needed, but it's useful to know this is happening.
+   translate if needed, but it’s useful to know this is happening.
    Directly specified architecture names are passed to the registry
    without translation.
 
@@ -199,8 +199,8 @@ treatment, so we cannot guarantee they will never reach non-volatile storage.
    The authorization dance is different from the typical UNIX approach, where
    there is a separate login sequence before any content requests are made.
    The client starts by simply making the HTTP request it wants (e.g., to
-   :code:`GET` an image manifest), and if the registry doesn't like the
-   client's token (or if there is no token because the client doesn't have one
+   :code:`GET` an image manifest), and if the registry doesn’t like the
+   client’s token (or if there is no token because the client doesn’t have one
    yet), it replies with HTTP 401 Unauthorized, but crucially it also provides
    instructions in the response header on how to get a token. The client then
    follows those instructions, obtains a token, re-tries the request, and
@@ -208,16 +208,16 @@ treatment, so we cannot guarantee they will never reach non-volatile storage.
    token if needed, e.g. when transitioning from asking if a layer exists to
    uploading its content.
 
-   The distinction between Charliecloud's anonymous mode and authenticated
+   The distinction between Charliecloud’s anonymous mode and authenticated
    modes is that it will only ask for anonymous tokens in anonymous mode and
    authenticated tokens in authenticated mode. That is, anonymous mode does
    involve an authentication procedure to obtain a token, but this
-   "authentication" is done anonymously. (Yes, it's confusing.)
+   "authentication" is done anonymously. (Yes, it’s confusing.)
 
    Registries also often reply HTTP 401 when an image does not exist, rather
    than the seemingly more correct HTTP 404 Not Found. This is to avoid
    information leakage about the existence of images the client is not allowed
-   to pull, and it's why Charliecloud never says an image simply does not
+   to pull, and it’s why Charliecloud never says an image simply does not
    exist.
 
 
@@ -235,7 +235,7 @@ In descending order of priority, this directory is located at:
 
   :code:`$CH_IMAGE_STORAGE`
     Environment variable. The path must be absolute, because the variable is
-    likely set in a very different context than when it's used, which seems
+    likely set in a very different context than when it’s used, which seems
     error-prone on what a relative path is relative to.
 
   :code:`/var/tmp/$USER.ch`
@@ -250,7 +250,7 @@ The storage directory can reside on any single filesystem (i.e., it cannot be
 split across multiple filesystems). However, it contains lots of small files
 and metadata traffic can be intense. For example, the Charliecloud test suite
 uses approximately 400,000 files and directories in the storage directory as
-of this writing. Place it on a filesystem appropriate for this; tmpfs'es such
+of this writing. Place it on a filesystem appropriate for this; tmpfs’es such
 as :code:`/var/tmp` are a good choice if you have enough RAM (:code:`/tmp` is
 not recommended because :code:`ch-run` bind-mounts it into containers by
 default).
@@ -285,13 +285,13 @@ by starting from the empty image and executing a sequence of instructions,
 largely Dockerfile instructions but also some others like "pull" and "import".
 Some instructions are expensive to execute (e.g., :code:`RUN wget
 http://slow.example.com/bigfile` or transferring data billed by the byte), so
-it's often cheaper to retrieve their results from cache instead.
+it’s often cheaper to retrieve their results from cache instead.
 
 The build cache uses a relatively new Git under the hood; see the installation
 instructions for version requirements. Charliecloud implements workarounds for
-Git's various storage limitations, so things like file metadata and Git
+Git’s various storage limitations, so things like file metadata and Git
 repositories within the image should work. **Important exception**: No files
-named :code:`.git*` or other Git metadata are permitted in the image's root
+named :code:`.git*` or other Git metadata are permitted in the image’s root
 directory.
 
 The cache has three modes, *enabled*, *disabled*, and a hybrid mode called
@@ -312,7 +312,7 @@ Compared to other implementations
 Other container implementations typically use build caches based on overlayfs,
 or fuse-overlayfs in unprivileged situations (configured via a "storage
 driver"). This works by creating a new tmpfs for each instruction, layered
-atop the previous instruction's tmpfs using overlayfs. Each layer can then be
+atop the previous instruction’s tmpfs using overlayfs. Each layer can then be
 tarred up separately to form a tar-based diff.
 
 The Git-based cache has two advantages over the overlayfs approach. First,
@@ -330,22 +330,22 @@ to answer this performance question in more detail.
 De-duplication and garbage collection
 -------------------------------------
 
-Charliecloud's build cache takes advantage of Git's file de-duplication
+Charliecloud’s build cache takes advantage of Git’s file de-duplication
 features. This operates across the entire build cache, i.e., files are
 de-duplicated no matter where in the cache they are found or the relationship
 between their container images. Files are de-duplicated at different times
 depending on whether they are identical or merely similar.
 
 *Identical* files are de-duplicated at :code:`git add` time; in
-:code:`ch-image build` terms, that's upon committing a successful instruction.
-That is, it's impossible to store two files with the same content in the build
+:code:`ch-image build` terms, that’s upon committing a successful instruction.
+That is, it’s impossible to store two files with the same content in the build
 cache. If you try — say with :code:`RUN yum install -y foo` in one Dockerfile
 and :code:`RUN yum install -y foo bar` in another, which are different
-instructions but both install RPM :code:`foo`'s files — the content is stored
+instructions but both install RPM :code:`foo`’s files — the content is stored
 once and each copy gets its own metadata and a pointer to the content, much
 like filesystem hard links.
 
-*Similar* files, however, are only de-duplicated during Git's garbage
+*Similar* files, however, are only de-duplicated during Git’s garbage
 collection process. When files are initially added to a Git repository (with
 :code:`git add`), they are stored inside the repository as (possibly
 compressed) individual files, called *objects* in Git jargon. Upon garbage
@@ -365,12 +365,12 @@ of this writing).
 Charliecloud runs Git garbage collection at two different times. First, a
 lighter-weight garbage pass runs automatically when the number of loose files
 (objects) grows beyond a limit. This limit is in flux as we learn more about
-build cache performance, but it's quite a bit higher than the Git default.
+build cache performance, but it’s quite a bit higher than the Git default.
 This garbage runs in the background and can continue after the build
 completes; you may see Git processes using a lot of CPU.
 
 An important limitation of the automatic garbage is that large packfiles
-(again, this is in flux, but it's several GiB) will not be re-packed, limiting
+(again, this is in flux, but it’s several GiB) will not be re-packed, limiting
 the scope of similar file detection. To address this, a heavier garbage
 collection can be run manually with :code:`ch-image build-cache --gc`. This
 will re-pack (and re-write) the entire build cache, de-duplicating all similar
@@ -401,7 +401,7 @@ identical, *even if their content is not actually identical*; e.g.,
 :code:`touch(1)` shenanigans can corrupt an image. Second, every version of a
 large file is stored verbatim and uncompressed (e.g., a large file with a
 one-byte change will be stored in full twice), and large files do not
-participate in the build cache's de-duplication, so more storage space will
+participate in the build cache’s de-duplication, so more storage space will
 likely be used. Unused versions *are* deleted by :code:`ch-image build-cache
 --gc`.
 
@@ -429,7 +429,7 @@ On our first build, we get::
   bar
   grown in 3 instructions: foo
 
-Note the dot after each instruction's line number. This means that the
+Note the dot after each instruction’s line number. This means that the
 instruction was executed. You can also see this by the output of the two
 :code:`echo` commands.
 
@@ -442,7 +442,7 @@ But on our second build, we get::
   copying image ...
   grown in 3 instructions: foo
 
-Here, instead of being executed, each instruction's results were retrieved
+Here, instead of being executed, each instruction’s results were retrieved
 from cache. (Charliecloud uses lazy retrieval; nothing is actually retrieved
 until the end, as seen by the "copying image" message.) Cache hit for each
 instruction is indicated by an asterisk (:code:`*`) after the line number.
@@ -555,10 +555,10 @@ Options:
     will suggest it.
 
   :code:`-n`, :code:`--dry-run`
-    Don't actually execute any Dockerfile instructions.
+    Don’t actually execute any Dockerfile instructions.
 
   :code:`--no-force-detect`
-    Don't try to detect if the workarounds in :code:`--force` would help.
+    Don’t try to detect if the workarounds in :code:`--force` would help.
 
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
@@ -688,7 +688,7 @@ Context directory
 The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
 directly from storage like any other local process would. However, you still
-can't access anything outside the context directory.
+can’t access anything outside the context directory.
 
 Variable substitution
 ~~~~~~~~~~~~~~~~~~~~~
@@ -757,8 +757,8 @@ Especially for people used to UNIX :code:`cp(1)`, the semantics of the
 Dockerfile :code:`COPY` instruction can be confusing.
 
 Most notably, when a source of the copy is a directory, the *contents* of that
-directory, not the directory itself, are copied. This is documented, but it's
-a real gotcha because that's not what :code:`cp(1)` does, and it means that
+directory, not the directory itself, are copied. This is documented, but it’s
+a real gotcha because that’s not what :code:`cp(1)` does, and it means that
 many things you can do in one :code:`cp(1)` command require multiple
 :code:`COPY` instructions.
 
@@ -769,7 +769,7 @@ bug-compatible.
 1. You can use absolute paths in the source; the root is the context
    directory.
 
-2. Destination directories are created if they don't exist in the following
+2. Destination directories are created if they don’t exist in the following
    situations:
 
    1. If the destination path ends in slash. (Documented.)
@@ -792,7 +792,7 @@ bug-compatible.
       itself is copied.
 
 4. If a directory appears at the same path in source and destination, and is
-   at the 2nd level or deeper, the source directory's metadata (e.g.,
+   at the 2nd level or deeper, the source directory’s metadata (e.g.,
    permissions) are copied to the destination directory. (Not documented.)
 
 5. If an object appears in both the source and destination, and is at the 2nd
@@ -813,7 +813,7 @@ We expect the following differences to be permanent:
 
 * Wildcards use Python glob semantics, not the Go semantics.
 
-* :code:`COPY --chown` is ignored, because it doesn't make sense in an
+* :code:`COPY --chown` is ignored, because it doesn’t make sense in an
   unprivileged build.
 
 Features we do not plan to support
@@ -826,7 +826,7 @@ Features we do not plan to support
   containerized processes can simply listen on a host port like other
   unprivileged processes.
 
-* :code:`HEALTHCHECK`: This instruction's main use case is monitoring server
+* :code:`HEALTHCHECK`: This instruction’s main use case is monitoring server
   processes rather than applications. Also, implementing it requires a
   container supervisor daemon, which we have no plans to add.
 
@@ -896,7 +896,7 @@ this order.
     process). The operation can take a long time on large caches.
 
   :code:`--text`
-    Print a text tree of the cache using Git's :code:`git log --graph`
+    Print a text tree of the cache using Git’s :code:`git log --graph`
     feature. If :code:`-v` is also given, the tree has more detail.
 
   :code:`--dot`
@@ -977,7 +977,7 @@ Optional argument:
     Use long format (name, last change timestamp) when listing images.
 
   :code:`IMAGE_REF`
-    Print details of what's known about :code:`IMAGE_REF`, both locally and in
+    Print details of what’s known about :code:`IMAGE_REF`, both locally and in
     the remote registry, if any.
 
 Examples
@@ -1088,7 +1088,7 @@ know!)
     :code:`ch-run --set-env`.
 
   * Mount point directories specified with :code:`VOLUME` are created in the
-    image if they don't exist, but no other action is taken.
+    image if they don’t exist, but no other action is taken.
 
 Note that some images (e.g., those with a "version 1 manifest") do not contain
 metadata. A warning is printed in this case.
@@ -1096,7 +1096,7 @@ metadata. A warning is printed in this case.
 Examples
 --------
 
-Download the Debian Buster image matching the host's architecture and place it
+Download the Debian Buster image matching the host’s architecture and place it
 in the storage directory::
 
    $ uname -m
@@ -1214,7 +1214,7 @@ name does not have to match the destination reference.
 
 Same, except use unpacked image located at :code:`/var/tmp/image` rather than
 an image in :code:`ch-image` storage. (Also, the sole layer is already present
-in the remote registry, so we don't upload it again.)
+in the remote registry, so we don’t upload it again.)
 
 ::
 

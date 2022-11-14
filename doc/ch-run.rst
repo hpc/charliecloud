@@ -41,7 +41,7 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
     surprising behavior. Bind-mounting happens after namespace setup but
     before pivoting into the container image, so absolute links use the host
     root. For example, suppose the image has a symlink :code:`/foo -> /mnt`.
-    Then, :code:`--bind=/bar:/foo` will bind-mount on the *host's*
+    Then, :code:`--bind=/bar:/foo` will bind-mount on the *host’s*
     :code:`/mnt`, which is inaccessible on the host because namespaces are
     already set up and *also* inaccessible in the container because of the
     subsequent pivot into the image. Currently, this problem is only detected
@@ -55,7 +55,7 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
     Bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`.
 
   :code:`--env-no-expand`
-    don't expand variables when using :code:`--set-env`
+    don’t expand variables when using :code:`--set-env`
 
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.
@@ -84,18 +84,18 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
     at guest :code:`/home/$USER`. This is accomplished by mounting a new
     :code:`tmpfs` at :code:`/home`, which hides any image content under that
     path. If this is specified, neither of these things happens and the
-    image's :code:`/home` is exposed unaltered.
+    image’s :code:`/home` is exposed unaltered.
 
   :code:`--no-passwd`
     By default, temporary :code:`/etc/passwd` and :code:`/etc/group` files are
     created according to the UID and GID maps for the container and
     bind-mounted into it. If this is specified, no such temporary files are
-    created and the image's files are exposed.
+    created and the image’s files are exposed.
 
   :code:`-t`, :code:`--private-tmp`
-    By default, the host's :code:`/tmp` (or :code:`$TMPDIR` if set) is
+    By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
     bind-mounted at container :code:`/tmp`. If this is specified, a new
-    :code:`tmpfs` is mounted on the container's :code:`/tmp` instead.
+    :code:`tmpfs` is mounted on the container’s :code:`/tmp` instead.
 
   :code:`--set-env`, :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
     Set environment variable(s). With:
@@ -157,7 +157,7 @@ can be accomplished by:
 * :code:`ch-convert` directly from :code:`ch-image` or another builder to a
   directory.
 
-* Charliecloud's tarball workflow: build or pull the image, :code:`ch-convert`
+* Charliecloud’s tarball workflow: build or pull the image, :code:`ch-convert`
   it to a tarball, transfer the tarball to the target system, then
   :code:`ch-convert` the tarball to a directory.
 
@@ -167,7 +167,7 @@ can be accomplished by:
 * Any other workflow that produces an appropriate directory tree.
 
 The second is a SquashFS image archive mounted internally by :code:`ch-run`,
-available if it's linked with the optional :code:`libsquashfuse_ll` shared
+available if it’s linked with the optional :code:`libsquashfuse_ll` shared
 library. :code:`ch-run` mounts the image filesystem, services all FUSE
 requests, and unmounts it, all within :code:`ch-run`. See :code:`--mount`
 above to set the mount point location.
@@ -185,7 +185,7 @@ value-add over the standard, unwrapped commands.
 .. warning::
 
    Currently, Charliecloud unmounts the SquashFS filesystem when user command
-   :code:`CMD`'s process exits. It does not monitor any of its child
+   :code:`CMD`’s process exits. It does not monitor any of its child
    processes. Therefore, if the user command spawns child processes and then
    exits before them (e.g., some daemons), those children will have the image
    unmounted from underneath them. In this case, the workaround is to
@@ -201,7 +201,7 @@ In addition to any directories specified by the user with :code:`--bind`,
 in as well.
 
 The following host files and directories are bind-mounted at the same location
-in the container. These give access to the host's devices and various kernel
+in the container. These give access to the host’s devices and various kernel
 facilities. (Recall that Charliecloud provides minimal isolation and
 containerized processes are mostly normal unprivileged processes.) They cannot
 be disabled and are required; i.e., they must exist both on host and within
@@ -253,12 +253,12 @@ These include:
 
 1. :code:`ptrace(2)`, used by debuggers and related tools. One can attach a
    debugger to processes in descendant namespaces, but not sibling namespaces.
-   The practical effect of this is that (without :code:`--join`), you can't
+   The practical effect of this is that (without :code:`--join`), you can’t
    run a command with :code:`ch-run` and then attach to it with a debugger
    also run with :code:`ch-run`.
 
 2. *Cross-memory attach* (CMA) is used by cooperating processes to communicate
-   by simply reading and writing one another's memory. This is also not
+   by simply reading and writing one another’s memory. This is also not
    permitted between sibling namespaces. This affects various MPI
    implementations that use CMA to pass messages between ranks on the same
    node, because it’s faster than traditional shared memory.
@@ -279,7 +279,7 @@ values in most cases:
 
 * :code:`--join-tag` sets the tag that names the peer group. The default is
   environment variable :code:`SLURM_STEP_ID`, if defined; otherwise, the PID
-  of :code:`ch-run`'s parent. Tags can be re-used for peer groups that start
+  of :code:`ch-run`’s parent. Tags can be re-used for peer groups that start
   at different times, i.e., once all peer :code:`ch-run` have replaced
   themselves with the user command, the tag can be re-used.
 
@@ -296,7 +296,7 @@ Caveats:
   active. There is currently no general way to specify which :code:`ch-run`
   should be the winner.
 
-* If :code:`--join-ct` is too high, the winning :code:`ch-run`'s user command
+* If :code:`--join-ct` is too high, the winning :code:`ch-run`’s user command
   exits before all peers join, or :code:`ch-run` itself crashes, IPC resources
   such as semaphores and shared memory segments will be leaked. These appear
   as files in :code:`/dev/shm/` and can be removed with :code:`rm(1)`.
@@ -330,9 +330,9 @@ Default behavior
 By default, :code:`ch-run` makes the following environment variable changes:
 
 * :code:`$CH_RUNNING`: Set to :code:`Weird Al Yankovic`. While a process can
-  figure out that it's in an unprivileged container and what namespaces are
+  figure out that it’s in an unprivileged container and what namespaces are
   active without this hint, that can be messy, and there is no way to tell
-  that it's a *Charliecloud* container specifically. This variable makes such
+  that it’s a *Charliecloud* container specifically. This variable makes such
   a test simple and well-defined. (**Note:** This variable is unaffected by
   :code:`--unset-env`.)
 
@@ -349,7 +349,7 @@ By default, :code:`ch-run` makes the following environment variable changes:
   Some of these distributions (e.g., Fedora 24) have also dropped :code:`/bin`
   from the default :code:`$PATH`. This is a problem when the guest OS does
   *not* have a merged :code:`/usr` (e.g., Debian 8 “Jessie”). Thus, we add
-  :code:`/bin` to :code:`$PATH` if it's not already present.
+  :code:`/bin` to :code:`$PATH` if it’s not already present.
 
   Further reading:
 
@@ -571,7 +571,7 @@ Example 1: Remove the single environment variable :code:`FOO`::
   $ ch-run --unset-env=FOO $CH_TEST_IMGDIR/chtest -- env | fgrep FOO
   $
 
-Example 2: Hide from a container the fact that it's running in a Slurm
+Example 2: Hide from a container the fact that it’s running in a Slurm
 allocation, by removing all variables beginning with :code:`SLURM`. You might
 want to do this to test an MPI program with one rank and no launcher::
 
@@ -647,7 +647,7 @@ provide a human-readable reconstruction of the command line while also
 allowing each argument to be recovered byte-for-byte.
 
   .. Note: The next paragraph contains ​U+200B ZERO WIDTH SPACE after the
-     backslash because backslash by itself won't build and two backslashes
+     backslash because backslash by itself won’t build and two backslashes
      renders as two backslashes.
 
   * If an argument contains only printable ASCII bytes that are not

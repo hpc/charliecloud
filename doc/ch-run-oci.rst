@@ -25,13 +25,13 @@ Description
 
 
 Open Containers Initiative (OCI) wrapper for :code:`ch-run(1)`. You probably
-don't want to run this command directly; it is intended to interface with
+don’t want to run this command directly; it is intended to interface with
 other software that expects an OCI runtime. The current goal is to support
 completely unprivileged image building (e.g. :code:`buildah
 --runtime=ch-run-oci`) rather than general OCI container running.
 
 *Support of the OCI runtime specification is only partial.* This is for two
-reasons. First, it's an experimental and incomplete feature. More importantly,
+reasons. First, it’s an experimental and incomplete feature. More importantly,
 the philosophy and goals of OCI differ significantly from those of
 Charliecloud. Key differences include:
 

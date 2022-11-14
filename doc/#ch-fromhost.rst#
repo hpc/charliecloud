@@ -1,3 +1,4 @@
+
 :code:`ch-fromhost`
 +++++++++++++++++++
 
@@ -77,7 +78,7 @@ To specify the destination within the image
 
   :code:`-d`, :code:`--dest DST`
     Place files specified later in directory :code:`IMGDIR/DST`, overriding the
-    inferred destination, if any. If a file’s destination cannot be inferred
+    inferred destination, if any. If a file's destination cannot be inferred
     and :code:`--dest` has not been specified, exit with an error. This can be
     repeated to place files in varying destinations.
 

@@ -71,9 +71,9 @@ producing the final format actually needed.
       [1]: https://manpages.debian.org/unstable/golang-github-containers-image/containers-transports.5.en.html
 
    2. There used to be an [OUT_ARG ...] that would be passed unchanged to the
-      archiver, i.e. tar(1) or mksquashfs(1). However it wasn't clear there
+      archiver, i.e. tar(1) or mksquashfs(1). However it wasn’t clear there
       were real use cases, and this has lots of opportunities to mess things
-      up. Also, it's not clear when it will be called. For example, if you
+      up. Also, it’s not clear when it will be called. For example, if you
       convert a directory to a tarball, then passing e.g. -J to XZ-compress
       will work fine, but when converting from Docker, we just compress the
       tarball we got from Docker, so in that case -J wouldn't work.
@@ -89,7 +89,7 @@ Image formats
 :code:`ch-convert` knows about these values of :code:`FMT`:
 
   :code:`ch-image`
-    Internal storage for Charliecloud's unprivileged image builder (Dockerfile
+    Internal storage for Charliecloud’s unprivileged image builder (Dockerfile
     interpreter) :code:`ch-image`.
 
   :code:`dir`
