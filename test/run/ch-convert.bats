@@ -188,6 +188,7 @@ convert-img () {
             false
             ;;
     esac
+    echo
     echo "CONVERT ${ct}: ${in_desc} ($in_fmt) -> ${out_desc} (${out_fmt})"
     delete "$out_fmt" "$out_desc"
     if [[ $in_fmt = ch-image && $CH_IMAGE_CACHE = enabled ]]; then

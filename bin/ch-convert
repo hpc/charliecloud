@@ -346,8 +346,10 @@ dockman_in_validate () {
 }
 
 dockman_out_validate () {
-    digest=$("$1" image ls -q "$2")
-    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
+    # Podman’s own image search is a substring query, so e.g. “foo” will also
+    # match “foobar”. Decades-old UNIX tools to the rescue. Thanks Red Hat!!
+    if    ( "$1" images | grep -Eq "^localhost/${2}\s" ) \
+       && [ -n "$no_clobber" ]; then
 	FATAL "exists in $(dm_fmt_name "$1") storage, not deleting per --no-clobber: ${2}"
     fi
 }
@@ -401,7 +403,15 @@ squash_to_dockman () {
 
 tar_to_dockman () {
     INFO "importing ..."
-    "${1}" import "$2" "$3"  # FIXME: no progress meter
+    tmpimg=$(mktemp -u tmpimg.XXXXXX | tr '[:upper:]' '[:lower:]')
+    "$1" import "$2" "$tmpimg"    # FIXME: no progress meter
+    # Podman imports our tarballs with rw------- permissions on “/ch” (i.e.,
+    # no execute), which causes all kinds of breakage. Work around that.
+    "$1" build -t "$3" - <<EOF
+FROM $tmpimg
+RUN chmod u+rwx /ch || true
+EOF
+    "$1" rmi "$tmpimg"
 }
 
 ## input/output validation functions #########################################
