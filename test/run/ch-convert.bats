@@ -236,12 +236,6 @@ delete () {
 test_from () {
     end=${BATS_TMPDIR}/convert.dir
     ct=1
-    echo "HOPE THIS WORKS"
-    ls -ld "${BATS_TMPDIR}"/convert.dir/ch || true
-    ls -ld "${BATS_TMPDIR}"/convert.dir/ch/environment || true
-    echo "THIS WON'T WORK"
-    ls -lh "${BATS_TMPDIR}"/convert.dir/ch || true
-    ls -lh "${BATS_TMPDIR}"/convert.dir/ch/environment || true
     convert-img "$ct" dir "$1"
     for j in ch-image docker podman squash tar; do
         if [[ $1 != "$j" ]]; then

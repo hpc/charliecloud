@@ -128,7 +128,7 @@ cv_docker_podman () {
     docker_in_validate "$1"
     podman_out_validate "$2"
     docker_out=${tmpdir}/weirdal.tar.gz
-    cv_docker_tar "$1" "$docker_out" # FIXME: needlessly compress
+    cv_docker_tar "$1" "$docker_out" # FIXME: needlessly compresses
     cv_tar_podman "$docker_out" "$2"
     rm "$docker_out"
 }
@@ -161,7 +161,7 @@ cv_podman_docker () {
     podman_in_validate "$1"
     docker_out_validate "$2"
     podman_out=${tmpdir}/weirdal.tar.gz
-    cv_podman_tar "$1" "$podman_out" # FIXME: needlesly compress
+    cv_podman_tar "$1" "$podman_out" # FIXME: needlesly compresses
     cv_tar_docker "$podman_out" "$2"
     rm "$podman_out"
 }
@@ -354,14 +354,14 @@ dockman_out_validate () {
 
 dockman_to_chimage () {
    dockman_out=${tmpdir}/weirdal.tar.gz
-   "cv_${1}tar" "$2" "$dockman_out"  # FIXME: needlessly compress
+   "cv_${1}tar" "$2" "$dockman_out"  # FIXME: needlessly compresses
    cv_tar_chimage "$dockman_out" "$3"
    rm "$dockman_out"
 }
 
 dockman_to_dir () {
     dockman_out=${tmpdir}/weirdal.tar.gz
-    "cv_${1}tar" "$2" "$dockman_out"  # FIXME: needlessly compress
+    "dockman_to_tar" "$1" "$2" "$dockman_out" # FIXME: needlessly compresses
     cv_tar_dir "$dockman_out" "$3"
     rm "$dockman_out"
 }
@@ -548,10 +548,10 @@ fmt_validate () {
             *)
                 if [ -n "$have_ch_image" ]; then
                     fmt=ch-image
-                elif [ -n "$have_docker" ]; then
-                    fmt=docker
 		elif [ -n "$have_podman" ]; then
 		    fmt=podman
+                elif [ -n "$have_docker" ]; then
+                    fmt=docker
                 else
                     FATAL "descriptor looks like builder storage but no builder found: ${dsc}"
                 fi
