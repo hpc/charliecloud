@@ -2492,15 +2492,20 @@ def DEBUG(msg, hint=None, **kwargs):
    if (verbose >= 2):
       log(msg, hint, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
+def ERROR(msg, hint=None, trace=None, **kwargs):
+   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
+      
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
       # calling ch-image.main()) and last entry (this function).
-      tr = "trace: " + ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
+      tr = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
                                    f.lineno, f.name)
                      for f in reversed(traceback.extract_stack()[1:-1]))
-      hint = tr if hint is None else "hint: %s\n%s" % (hint, tr)
-   ERROR(msg, hint, **kwargs)
+      #hint = tr if hint is None else "hint: %s\n%s" % (hint, tr)
+   else:
+      tr = None
+   ERROR(msg, hint, tr, **kwargs)
    sys.exit(1)
 
 def INFO(msg, hint=None, **kwargs):
@@ -2517,9 +2522,6 @@ def VERBOSE(msg, hint=None, **kwargs):
 
 def WARNING(msg, hint=None, **kwargs):
    log(msg, hint, "31m", "warning: ", **kwargs)  # red
-
-def ERROR(msg, hint=None, **kwargs):
-   log(msg, hint, "1;31m", "error: ", **kwargs)  # bold red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -2753,7 +2755,7 @@ def walk(*args, **kwargs):
              [Path(dirname) for dirname in dirnames],
              [Path(filename) for filename in filenames])
 
-def log(msg, hint, color, prefix, end="\n"):
+def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
       color_set(color, log_fp)
    if (log_festoon):
@@ -2764,6 +2766,8 @@ def log(msg, hint, color, prefix, end="\n"):
    print(festoon, prefix, msg, sep="", file=log_fp, end=end, flush=True)
    if (hint is not None):
       print(festoon, "hint: ", hint, sep="", file=log_fp, flush=True)
+   if (trace is not None):
+      print(festoon, "trace: ", trace, sep="", file=log_fp, flush=True)
    if (color is not None):
       color_reset(log_fp)
 
