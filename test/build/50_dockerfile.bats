@@ -1216,5 +1216,5 @@ FROM /alpine:3.9
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ ${lines[-2]} = 'error: image ref syntax, char 1: /alpine:3.9' ]]
+    [[ ${lines[-3]} = 'error: image ref syntax, char 1: /alpine:3.9' ]]
 }
