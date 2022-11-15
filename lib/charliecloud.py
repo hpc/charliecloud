@@ -1243,6 +1243,8 @@ class Path(pathlib.PosixPath):
       """Returns the path object restulting from appending the specified
          suffix to the end of the path name. E.g. Path(foo).add_suffix(".txt")
          returns Path("foo.txt)."""
+      # DON'T FORGET TO DELETE THIS!!!
+      #raise Exception("Fuck u")
       return Path(str(self) + suff)
 
    def chdir(self):
@@ -2494,10 +2496,10 @@ def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
       # calling ch-image.main()) and last entry (this function).
-      tr = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
+      tr = "trace: " + ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
                                    f.lineno, f.name)
                      for f in reversed(traceback.extract_stack()[1:-1]))
-      hint = tr if hint is None else "%s: %s" % (hint, tr)
+      hint = tr if hint is None else "hint: %s\n%s" % (hint, tr)
    ERROR(msg, hint, **kwargs)
    sys.exit(1)
 
