@@ -113,19 +113,19 @@ cv_dir_tar () {
 }
 
 cv_docker_chimage () {
-   docker_in_validate "$1"
+   dockman_in_validate docker_ "$1"
    chimage_out_validate "$2"
    dockman_to_chimage docker_ "$1" "$2"
 }
 
 cv_docker_dir () {
-    docker_in_validate "$1"
+    dockman_in_validate docker_ "$1"
     dir_out_validate "$2"
     dockman_to_dir docker_ "$1" "$2"
 }
 
 cv_docker_podman () {
-    docker_in_validate "$1"
+    dockman_in_validate docker_ "$1"
     podman_out_validate "$2"
     docker_out=${tmpdir}/weirdal.tar.gz
     cv_docker_tar "$1" "$docker_out" # FIXME: needlessly compresses
@@ -134,31 +134,31 @@ cv_docker_podman () {
 }
 
 cv_docker_squash () {
-    docker_in_validate "$1"
+    dockman_in_validate docker_ "$1"
     squash_out_validate "$2"
     dockman_to_squash docker_ "$1" "$2"
 }
 
 cv_docker_tar () {
-    docker_in_validate "$1"
+    dockman_in_validate docker_ "$1"
     tar_out_validate "$2"
     dockman_to_tar docker_ "$1" "$2"
 }
 
 cv_podman_chimage () {
-    podman_in_validate "$1"
+    dockman_in_validate podman_ "$1"
     chimage_out_validate "$2"
     dockman_to_chimage podman_ "$1" "$2"
 }
 
 cv_podman_dir () {
-    podman_in_validate "$1"
+    dockman_in_validate podman_ "$1"
     dir_out_validate "$2"
     dockman_to_dir podman_ "$1" "$2"
 }
 
 cv_podman_docker () {
-    podman_in_validate "$1"
+    dockman_in_validate podman_ "$1"
     docker_out_validate "$2"
     podman_out=${tmpdir}/weirdal.tar.gz
     cv_podman_tar "$1" "$podman_out" # FIXME: needlesly compresses
@@ -167,13 +167,13 @@ cv_podman_docker () {
 }
 
 cv_podman_squash () {
-    podman_in_validate "$1"
+    dockman_in_validate podman_ "$1"
     squash_out_validate "$2"
     dockman_to_squash podman_ "$1" "$2"
 }
 
 cv_podman_tar () {
-    podman_in_validate "$1"
+    dockman_in_validate podman_ "$1"
     tar_out_validate "$2"
     dockman_to_tar podman_ "$1" "$2"
 }
@@ -454,22 +454,6 @@ dir_out_validate () {
             FATAL "exists but does not appear to be an image: ${1}"
         fi
     fi
-}
-
-docker_in_validate () {
-    dockman_in_validate docker_ "$1"
-}
-
-docker_out_validate () {
-    dockman_out_validate docker_ "$1"
-}
-
-podman_in_validate () {
-    dockman_in_validate podman_ "$1"
-}
-
-podman_out_validate () {
-    dockman_out_validate podman_ "$1"
 }
 
 squash_in_validate () {
