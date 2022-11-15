@@ -2493,7 +2493,7 @@ def DEBUG(msg, hint=None, **kwargs):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
-   log(msg, hint, None, trace, "1;31m", "error: ", **kwargs)  # bold red
+   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
       
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
