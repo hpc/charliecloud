@@ -15,9 +15,11 @@ setup () {
 }
 
 @test "${tag}: without destination reference" {
-    # FIXME: This test sets up an alias tag manually so we can use it to push.
+    # FIXME: This test copies an image manually so we can use it to push.
     # Remove when we have real aliasing support for images.
-    ln -vfns 00_tiny "$CH_IMAGE_STORAGE"/img/localhost+5000%00_tiny
+    ch-image build -t localhost:5000/00_tiny - <<'EOF'
+FROM 00_tiny
+EOF
 
     run ch-image -v --tls-no-verify push localhost:5000/00_tiny
     echo "$output"
@@ -25,7 +27,7 @@ setup () {
     [[ $output = *'pushing image:   localhost:5000/00_tiny'* ]]
     [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%00_tiny"* ]]
 
-    rm "$CH_IMAGE_STORAGE"/img/localhost+5000%00_tiny
+    ch-image delete localhost:5000/00_tiny
 }
 
 @test "${tag}: with destination reference" {
@@ -35,8 +37,9 @@ setup () {
     [[ $output = *'pushing image:   00_tiny'* ]]
     [[ $output = *'destination:     localhost:5000/00_tiny'* ]]
     [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/00_tiny"* ]]
-    re='layer 1/1: [0-9a-f]{7}: already present'
-    [[ $output =~ $re ]]
+    # FIXME: Can’t re-use layer from previous test because it’s a copy.
+    #re='layer 1/1: [0-9a-f]{7}: already present'
+    #[[ $output =~ $re ]]
 }
 
 @test "${tag}: with --image" {

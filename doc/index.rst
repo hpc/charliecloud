@@ -20,6 +20,13 @@ Overview
 
    install
    tutorial
-   command-usage
+   ch-checkns
+   ch-convert
+   ch-fromhost
+   ch-image
+   ch-run
+   ch-run-oci
+   ch-ssh
+   ch-test
    faq
    dev

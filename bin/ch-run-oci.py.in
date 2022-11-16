@@ -90,13 +90,14 @@ def args_parse():
    args_.no_cache = None
    args_.no_lock = False
    args_.password_many = False
+   args_.profile = False
    args_.storage = None
    args_.tls_no_verify = False
    ch.init(args_)
 
    if len(sys.argv) < 2:
       ap.print_help(file=sys.stderr)
-      sys.exit(1)
+      ch.exit(1)
 
    bundle_ = bundle_from_cid(args_.cid)
    if ("bundle" in args_ and args_.bundle != bundle_):
@@ -178,7 +179,7 @@ def op_create():
       # be remarkably hairy unless you use a 3rd-party module.
       def exit_(sig, frame):
          ch.VERBOSE("dummy supervisor: done")
-         sys.exit(0)
+         ch.exit(0)
       signal.signal(signal.SIGTERM, exit_)
       ch.VERBOSE("dummy supervisor: starting")
       sleep_forever()

@@ -39,7 +39,7 @@ How do I read the :code:`ch-run` error messages?
 :code:`ch-run` error messages look like this::
 
   $ ch-run foo -- echo hello
-  ch-run[25750]: can't find image: foo: No such file or directory (ch-run.c:107 2)
+  ch-run[25750]: can’t find image: foo: No such file or directory (ch-run.c:107 2)
 
 There is a lot of information here, and it comes in this order:
 
@@ -50,7 +50,7 @@ There is a lot of information here, and it comes in this order:
 
 3. Colon.
 
-4. Main error message; here :code:`can't find image: foo`. This should be
+4. Main error message; here :code:`can’t find image: foo`. This should be
    informative as to what went wrong, and if it’s not, please file an issue,
    because you may have found a usability bug. Note that in some cases you may
    encounter the default message :code:`error`; if this happens and you’re not
@@ -80,7 +80,7 @@ There is a lot of information here, and it comes in this order:
 *Note:* Despite the structured format, the error messages are not guaranteed
 to be machine-readable.
 
-:code:`ch-run` fails with “can't re-mount image read-only”
+:code:`ch-run` fails with “can’t re-mount image read-only”
 ----------------------------------------------------------
 
 Normally, :code:`ch-run` re-mounts the image directory read-only within the
@@ -103,7 +103,7 @@ two solutions:
 -------------------------------------------------------
 
 When :code:`ch-image` interacts with a remote registry (e.g., via :code:`push`
-or :code:`pull` subcommands), it will verify the registry's HTTPS certificate.
+or :code:`pull` subcommands), it will verify the registry’s HTTPS certificate.
 If this fails, :code:`ch-image` will exit with the error "certificate verify
 failed".
 
@@ -125,16 +125,16 @@ for details.) For example::
 
 Alternatively, certificate verification can be disabled entirely with the
 :code:`--tls-no-verify` flag. However, users should enable this option only if
-they have other means to be confident in the registry's identity.
+they have other means to be confident in the registry’s identity.
 
 "storage directory seems invalid"
 ---------------------------------
 
 Charliecloud uses its *storage directory* (:code:`/var/tmp/$USER.ch` by
 default) for various internal uses. As such, Charliecloud needs complete
-control over this directory's contents. This error happens when the storage
-directory exists but its contents do not match what's expected, including if
-it's an empty directory, which is to protect against using common temporary
+control over this directory’s contents. This error happens when the storage
+directory exists but its contents do not match what’s expected, including if
+it’s an empty directory, which is to protect against using common temporary
 directories like :code:`/tmp` or :code:`/var/tmp` as the storage directory.
 
 Let Charliecloud create the storage directory. For example, if you want to use
@@ -177,11 +177,11 @@ which the environment variable :code:`$HOME` is unset. Thus, tools like Git
 that try to use it will fail.
 
 The reasoning for leaving the variable unset is that because Charliecloud runs
-unprivileged, it isn't really meaningful for a container to have multiple
+unprivileged, it isn’t really meaningful for a container to have multiple
 users, and thus building images with things in the home directory is an
 antipattern. In fact, by default (i.e., without :code:`--no-home`),
 :code:`ch-run` sets :code:`$HOME` to :code:`/home/$USER` and bind-mounts the
-user's host home directory at that path.
+user’s host home directory at that path.
 
 The concern with setting :code:`$HOME` to some default value during build is
 that it could simply hide the problem until runtime later, where it would be
@@ -195,13 +195,13 @@ system level, not the user level. In the example above, this means changing
 See the man page for :code:`ch-run` for more on environment variable
 handling.
 
-:code:`ch-run` fails with “can't execve(2): permission denied”
+:code:`ch-run` fails with “can’t execve(2): permission denied”
 --------------------------------------------------------------
 
 For example::
 
   $ ch-run /var/tmp/hello -- /bin/echo foo
-  ch-run[154334]: error: can't execve(2): /bin/echo: Permission denied (ch_core.c:387 13)
+  ch-run[154334]: error: can’t execve(2): /bin/echo: Permission denied (ch_core.c:387 13)
 
 But :code:`/bin/echo` *does* have execute permission::
 
@@ -227,7 +227,7 @@ To fix this, you can:
   2. Change the mount options for the filesystem (e.g., update
      :code:`/etc/fstab` or remount with :code:`exec`).
 
-  3. Use SquashFS format images (only for images exported from Charliecloud's
+  3. Use SquashFS format images (only for images exported from Charliecloud’s
      storage directory).
 
 
@@ -248,7 +248,7 @@ pre-releases such as alpha, beta, or release candidate.
 
 *Pre-release version numbers are not in order*, because this work is in a DAG
 rather than linear, except they precede the version we are working towards. If
-you're dealing with these versions, use Git.
+you’re dealing with these versions, use Git.
 
 Pre-release version numbers are the version we are working towards, followed
 by: :code:`~pre`, the branch name if not :code:`master` with non-alphanumerics
@@ -257,12 +257,12 @@ had uncommitted changes.
 
 Examples:
 
-  * :code:`0.2.0` : Version 0.2.0. Released versions don't include Git
+  * :code:`0.2.0` : Version 0.2.0. Released versions don’t include Git
     information, even if built in a Git working directory.
 
   * :code:`0.2.1~pre` : Some snapshot of work leading up to 0.2.1, built from
     source code where the Git information has been lost, e.g. the tarballs
-    Github provides. This should make you wary because you don't have any
+    Github provides. This should make you wary because you don’t have any
     provenance. It might even be uncommitted work or an abandoned branch.
 
   * :code:`0.2.1~pre+1a99f42` : Master branch commit 1a99f42, built from a
@@ -420,7 +420,7 @@ But Docker thinks the image is 597 MB::
           "Size": 596952928,
           "VirtualSize": 596952928,
 
-We've also seen cases where the Docker-reported size is an *under*\ estimate::
+We’ve also seen cases where the Docker-reported size is an *under*\ estimate::
 
   $ ch-convert -i docker bar /var/tmp/bar.tar.gz
   input:   docker    bar
@@ -438,7 +438,7 @@ We think that this is because Docker is computing size based on the size of
 the layers rather than the unpacked image. We do not currently have a fix; see
 `issue #165 <https://github.com/hpc/charliecloud/issues/165>`_.
 
-My password that contains digits doesn't work in VirtualBox console
+My password that contains digits doesn’t work in VirtualBox console
 -------------------------------------------------------------------
 
 VirtualBox has confusing Num Lock behavior. Thus, you may be typing arrows,
@@ -584,8 +584,8 @@ So what can you do? There are a few options:
 
 * We recommend simply using the :code:`--join` family of arguments to
   :code:`ch-run`. This puts a group of :code:`ch-run` peers in the same
-  namespaces; then, the system calls work. See the :ref:`man_ch-run` man page
-  for details.
+  namespaces; then, the system calls work. See the :doc:`ch-run` man page for
+  details.
 
 * You can also sometimes turn off single-copy. For example, for :code:`vader`,
   set the MCA variable :code:`btl_vader_single_copy_mechanism` to
@@ -630,7 +630,7 @@ somehow in order to sync up and begin the coupled parallel program; this
 happens in :code:`MPI_Init()`.
 
 There are lots of ways to do this coordination. Because we are launching with
-the host's Slurm, we need it to provide something for the containerized
+the host’s Slurm, we need it to provide something for the containerized
 processes for such coordination. OpenMPI must be compiled to use what that
 Slurm has to offer, and Slurm must be told to offer it. What works for us is a
 something called "PMI2". You can see if your Slurm supports it with::
@@ -647,8 +647,8 @@ something called "PMI2". You can see if your Slurm supports it with::
   srun: mpi/mpichmx
   srun: mpi/mpichgm
 
-If :code:`pmi2` is not in the list, you must ask your admins to enable Slurm's
-PMI2 support. If it is in the list, but you're seeing this problem, that means
+If :code:`pmi2` is not in the list, you must ask your admins to enable Slurm’s
+PMI2 support. If it is in the list, but you’re seeing this problem, that means
 it is not the default, and you need to tell Slurm you want it. Try::
 
   $ export SLURM_MPI_TYPE=pmi2
@@ -695,7 +695,7 @@ tag` `documentation
 forum posts. It is not a precise match for how Docker implements it, but it
 should be close enough.
 
-We'll start with two complete examples with all the bells and whistles:
+We’ll start with two complete examples with all the bells and whistles:
 
 1. :code:`example.com:8080/foo/bar/hello-world:version1.0`
 2. :code:`example.com:8080/foo/bar/hello-world@sha256:f6c68e2ad82a`
@@ -718,7 +718,7 @@ These references parse into the following components, in this order:
    * Under the hood, the default path is :code:`library`, but this is
      generally not exposed to users.
 
-   * Three or more underscores in a row is disallowed by Docker, but we don't
+   * Three or more underscores in a row is disallowed by Docker, but we don’t
      check this.
 
 5. If path given, a slash.
@@ -744,7 +744,7 @@ Detail-oriented readers may have noticed the following gotchas:
   whether :code:`foo` is a hostname or the first (and only) component of the
   path :code:`foo/bar`. The `resolution rule
   <https://stackoverflow.com/a/37867949>`_ is: if the ambiguous substring
-  contains a dot, assume it's a hostname; otherwise, assume it's a path
+  contains a dot, assume it’s a hostname; otherwise, assume it’s a path
   component.
 
 * The only character that cannot go in a POSIX filename is slash. Thus,
@@ -763,7 +763,7 @@ Detail-oriented readers may have noticed the following gotchas:
   clean up image reference-related data, and it does not address a few related
   questions, e.g. should the host and port also be a directory level.
 
-Usually, most of the components are omitted. For example, you'll more commonly
+Usually, most of the components are omitted. For example, you’ll more commonly
 see image references like:
 
   * :code:`debian`, which refers to the tag :code:`latest` of image
@@ -774,7 +774,7 @@ see image references like:
 
 See :code:`charliecloud.py` for a specific grammar that implements this.
 
-Can I build or pull images using a tool Charliecloud doesn't know about?
+Can I build or pull images using a tool Charliecloud doesn’t know about?
 ------------------------------------------------------------------------
 
 Yes. Charliecloud deals in well-known UNIX formats like directories, tarballs,
@@ -815,7 +815,7 @@ leverages this with two steps:
      on the command line; and
 
   2. bind-mount host :code:`/tmp` to guest :code:`/tmp`, which is where the
-     SSH agent's listening socket usually resides.
+     SSH agent’s listening socket usually resides.
 
 Thus, SSH within the container will use this existing SSH agent on the host to
 authenticate without further intervention.
@@ -841,7 +841,7 @@ and site-specific::
     /tmp/ssh-rHsFFqwwqh/agent.49041
     4 RUN ['/bin/sh', '-c', 'ssh git@github.com']
   [...]
-  Hi charlie! You've successfully authenticated, but GitHub does not provide shell access.
+  Hi charlie! You’ve successfully authenticated, but GitHub does not provide shell access.
 
 Note this example is rather contrived — bare SSH sessions in a Dockerfile
 rarely make sense. In practice, SSH is used as a transport to fetch something,
@@ -865,7 +865,7 @@ This often occurs during an SSH-based Git clone. For example:
   [...]
   3 RUN ['/bin/sh', '-c', 'git clone git@github.com:hpc/charliecloud.git']
   Cloning into 'charliecloud'...
-  The authenticity of host 'github.com (140.82.113.3)' can't be established.
+  The authenticity of host 'github.com (140.82.113.3)' can’t be established.
   RSA key fingerprint is SHA256:nThbg6kXUpJWGl7E1IGOCspRomTxdCARLviKw6E5SY8.
   Are you sure you want to continue connecting (yes/no/[fingerprint])?
 
@@ -874,7 +874,7 @@ At this point, the build stops while SSH waits for input.
 This happens even if you have :code:`github.com` in your
 :code:`~/.ssh/known_hosts`. This file is not available to the build because
 :code:`ch-image` runs :code:`ch-run` with :code:`--no-home`, so :code:`RUN`
-instructions can't see anything in your home directory.
+instructions can’t see anything in your home directory.
 
 Solutions include:
 
@@ -891,7 +891,7 @@ Solutions include:
      will record details of the connection within the image, including IP
      address and the fingerprint. The build also remains interactive.
 
-  3. Edit the image's system `SSH config
+  3. Edit the image’s system `SSH config
      <https://man.openbsd.org/ssh_config>`_ to turn off host key checking.
      Note this can be rather hairy, because the SSH config language is quite
      flexible and the first instance of a directive is the one used. However,
@@ -906,7 +906,7 @@ Solutions include:
        RUN git clone git@github.com:hpc/charliecloud.git
 
      Check your institutional policy on whether this is permissible, though
-     it's worth noting that users `almost never
+     it’s worth noting that users `almost never
      <https://www.usenix.org/system/files/login/articles/105484-Gutmann.pdf>`_
      verify the host fingerprints anyway.
 
@@ -962,7 +962,7 @@ responsibilities.
   <http://web.archive.org/web/20170614013206/http://www.reventlov.com/advisories/using-the-docker-command-to-root-the-host>`_.
   This is considered a feature.
 
-  For this reason, don't create the :code:`docker` group, as this will allow
+  For this reason, don’t create the :code:`docker` group, as this will allow
   passwordless, unlogged escalation for anyone in the group. Run it with
   :code:`sudo docker`.
 
@@ -976,7 +976,7 @@ responsibilities.
     $ brctl show  # note docker0 bridge
     $ route -n
 
-* **Docker installs services.** If you don't want the Docker service starting
+* **Docker installs services.** If you don’t want the Docker service starting
   automatically at boot, e.g.::
 
     $ systemctl is-enabled docker
@@ -1001,12 +1001,12 @@ manifests as::
 
 If you have a systemd system, the `Docker documentation
 <https://docs.docker.com/engine/admin/systemd/#http-proxy>`_ explains how to
-configure this. If you don't have a systemd system, then
+configure this. If you don’t have a systemd system, then
 :code:`/etc/default/docker` might be the place to go?
 
 The second problem is that programs executed during build (:code:`RUN`
 instructions) need to know about the proxy as well. This manifests as images
-failing to build because they can't download stuff from the internet.
+failing to build because they can’t download stuff from the internet.
 
 One fix is to configure your :code:`.bashrc` or equivalent to:
 
@@ -1051,20 +1051,20 @@ QEMU
 Suppose you want to build Charliecloud containers on a system which has a
 different architecture from the target system.
 
-It's straightforward as long as you can install suitable packages on the build
+It’s straightforward as long as you can install suitable packages on the build
 system (your personal computer?). You just need the magic of QEMU via a
-distribution package with a name like Debian's :code:`qemu-user-static`. For
+distribution package with a name like Debian’s :code:`qemu-user-static`. For
 use in an image root this needs to be the :code:`-static` version, not plain
 :code:`qemu-user`, and contain a :code:`qemu-*-static` executable for your
-target architecture. In case it doesn't install “binfmt” hooks (telling Linux
-how to run foreign binaries), you'll need to make that work — perhaps it's in
+target architecture. In case it doesn’t install “binfmt” hooks (telling Linux
+how to run foreign binaries), you’ll need to make that work — perhaps it’s in
 another package.
 
-That's all you need to make building with :code:`ch-image` work with a base
-foreign architecture image and the :code:`--arch` option. It's significantly
+That’s all you need to make building with :code:`ch-image` work with a base
+foreign architecture image and the :code:`--arch` option. It’s significantly
 slower than native, but quite usable — about half the speed of native for the
 ppc64le target with a build taking minutes on a laptop with a magnetic disc.
-There's a catch that images in :code:`ch-image` storage aren't distinguished
+There’s a catch that images in :code:`ch-image` storage aren’t distinguished
 by architecture except by any name you give them, e.g., a base image like
 :code:`debian:11` pulled with :code:`--arch ppc64le` will overwrite a native
 x86 one.
@@ -1093,7 +1093,7 @@ distribution package).
 How can I use tarball base images from e.g. linuxcontainers.org?
 ----------------------------------------------------------------
 
-If you can't find an image repository from which to pull for the distribution
+If you can’t find an image repository from which to pull for the distribution
 and architecture of interest, it is worth looking at the extensive collection
 of rootfs archives `maintained by linuxcontainers.org
 <https://uk.lxd.images.canonical.com/images/>`_. They are meant for LXC, but
