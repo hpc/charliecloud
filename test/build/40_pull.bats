@@ -175,7 +175,7 @@ EOF
     # invalid character in image name
     cat <<'EOF' | image_ref_parse 'name*' 1
 error: image ref syntax, char 5: name*
-hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference*
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
 EOF
 
     # missing port number
