@@ -22,7 +22,7 @@ image_ref_parse () {
         echo "fail: return code differs from expected ${retcode_expected}"
         exit 1
     fi
-    diff -u -I '^hint: https://' - <(echo "$out")
+    diff -u -I '^hint: https://' -I '^trace:' - <(echo "$out")
 }
 
 
@@ -175,7 +175,7 @@ EOF
     # invalid character in image name
     cat <<'EOF' | image_ref_parse 'name*' 1
 error: image ref syntax, char 5: name*
-hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference
+hint: https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference*
 EOF
 
     # missing port number
