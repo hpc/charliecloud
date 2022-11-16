@@ -2500,7 +2500,6 @@ def FATAL(msg, hint=None, **kwargs):
       tr = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
                                    f.lineno, f.name)
                      for f in reversed(traceback.extract_stack()[1:-1]))
-      #hint = tr if hint is None else "hint: %s\n%s" % (hint, tr)
    else:
       tr = None
    ERROR(msg, hint, tr, **kwargs)
