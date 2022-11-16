@@ -1243,8 +1243,6 @@ class Path(pathlib.PosixPath):
       """Returns the path object restulting from appending the specified
          suffix to the end of the path name. E.g. Path(foo).add_suffix(".txt")
          returns Path("foo.txt)."""
-      # DON'T FORGET TO DELETE THIS!!!
-      #raise Exception("Fuck u")
       return Path(str(self) + suff)
 
    def chdir(self):
