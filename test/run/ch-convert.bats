@@ -116,7 +116,8 @@ compare-ls () {
     cd "$1" || exit  # to make -path reasonable
       find . -mindepth 1 \
               \(    -path ./.dockerenv \
-                 -o -path ./ch \) -prune \
+                 -o -path ./ch  \
+	         -o -path ./run \) -prune \
            -o -not \(    -path ./.git \
                       -o -path ./ch/git.pickle \
                       -o -path ./dev \
