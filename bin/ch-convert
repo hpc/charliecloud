@@ -499,7 +499,7 @@ desc_base () {
         dir)
             basename "$dsc"
             ;;
-        ch-image|docker)
+        ch-image|docker|podman)
             tag_to_path "$dsc"
             ;;
         squash)
