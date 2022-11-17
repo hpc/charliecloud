@@ -387,7 +387,7 @@ desc_base () {
 dir_fixup () {
     DEBUG "fixing up: $1"
     # Make all directories writeable so we can delete later (hello, Red Hat).
-    find "$1" -type d -a ! -perm /200 -exec chmod u+w {} +
+    find "$1" -type d -a ! -perm -u+rwx -exec chmod u+w {} +
     # Ensure mount points are present.
     mount_points_ensure "$1"
 }
