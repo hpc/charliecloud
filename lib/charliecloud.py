@@ -2569,8 +2569,11 @@ class Timer:
 
 def DEBUG(msg, hint=None, **kwargs):
    if (verbose >= 2):
-      log(msg, hint, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
+      log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
+def ERROR(msg, hint=None, trace=None, **kwargs):
+   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
+      
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
@@ -2578,27 +2581,25 @@ def FATAL(msg, hint=None, **kwargs):
       tr = ", ".join("%s:%d:%s" % (os.path.basename(f.filename),
                                    f.lineno, f.name)
                      for f in reversed(traceback.extract_stack()[1:-1]))
-      hint = tr if hint is None else "%s: %s" % (hint, tr)
-   ERROR(msg, hint, **kwargs)
+   else:
+      tr = None
+   ERROR(msg, hint, tr, **kwargs)
    exit(1)
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(msg, hint, "33m", "", **kwargs)  # yellow
+   log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
    if (verbose >= 3):
-      log(msg, hint, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
+      log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def VERBOSE(msg, hint=None, **kwargs):
    if (verbose >= 1):
-      log(msg, hint, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
+      log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
 def WARNING(msg, hint=None, **kwargs):
-   log(msg, hint, "31m", "warning: ", **kwargs)  # red
-
-def ERROR(msg, hint=None, **kwargs):
-   log(msg, hint, "1;31m", "error: ", **kwargs)  # bold red
+   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -2840,7 +2841,7 @@ def walk(*args, **kwargs):
              [Path(dirname) for dirname in dirnames],
              [Path(filename) for filename in filenames])
 
-def log(msg, hint, color, prefix, end="\n"):
+def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
       color_set(color, log_fp)
    if (log_festoon):
@@ -2851,6 +2852,8 @@ def log(msg, hint, color, prefix, end="\n"):
    print(festoon, prefix, msg, sep="", file=log_fp, end=end, flush=True)
    if (hint is not None):
       print(festoon, "hint: ", hint, sep="", file=log_fp, flush=True)
+   if (trace is not None):
+      print(festoon, "trace: ", trace, sep="", file=log_fp, flush=True)
    if (color is not None):
       color_reset(log_fp)
 
