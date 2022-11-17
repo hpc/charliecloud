@@ -63,7 +63,7 @@ def delete(cli):
       delete_ct += 1
    if (delete_ct == 0):
       ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
-   bu.cache.worktrees_prune()
+   bu.cache.worktrees_fix()
 
 def gestalt_bucache(cli):
    bu.have_deps()
@@ -102,9 +102,9 @@ def list_(cli):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
       images = sorted(imgdir.listdir())
       if (len(images) >= 1):
-         img_width = max(len(str(ref)) for ref in images)
+         img_width = max(len(ref) for ref in images)
          for ref in images:
-            img = ch.Image(ch.Image_Ref(ref.parts[-1]))
+            img = ch.Image(ch.Image_Ref(ch.Path(ref).parts[-1]))
             if cli.long:
                print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
             else:
@@ -146,8 +146,8 @@ def list_(cli):
             fmt_space = len(max(arch_keys,key=len))
             arch_avail = []
             for key in arch_keys:
-               arch_avail.append("%-*s %s" % (fmt_space, key,
-                                              pullet.digests[key][:11]))
+               arch_avail.append("%-*s  %s" % (fmt_space, key,
+                                               pullet.digests[key][:11]))
          except ValueError:
             # handles case where arch_keys is empty, e.g.
             # mcr.microsoft.com/windows:20H2.

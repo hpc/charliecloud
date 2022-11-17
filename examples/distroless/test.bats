@@ -8,6 +8,7 @@ setup () {
     scope standard
     prerequisites_ok distroless
 }
+
 @test "${ch_tag}/hello" {
     run ch-run "$ch_img" -- /hello.py
     echo "$output"
