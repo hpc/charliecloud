@@ -4,6 +4,7 @@ import atexit
 import collections
 import collections.abc
 import copy
+import cProfile
 import datetime
 import enum
 import errno
@@ -16,11 +17,13 @@ import os
 import pathlib
 import platform
 import pprint
+import pstats
 import re
 import shlex
 import shutil
 import signal
 import stat
+import struct
 import subprocess
 import sys
 import tarfile
@@ -134,6 +137,13 @@ ARG_DEFAULTS = \
 
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
+
+# Maximum filename (path component) length, in *characters*. All Linux
+# filesystems of note that I could identify support at least 255 *bytes*. The
+# problem is filenames with multi-byte characters: you cannot simply truncate
+# byte-wise because you might do so in the middle of a character. So this is a
+# somewhat random guess with hopefully enough headroom not to cause problems.
+FILENAME_MAX_CHARS = 192
 
 # Common grammar stuff.
 GRAMMAR_COMMON = r"""
@@ -274,7 +284,7 @@ STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 # Storage directory format version. We refuse to operate on storage
 # directories with non-matching versions. Increment this number when the
 # format changes non-trivially.
-STORAGE_VERSION = 3
+STORAGE_VERSION = 4
 
 
 ## Globals ##
@@ -298,6 +308,10 @@ tls_verify = True
 
 # True if the download cache is enabled.
 dlcache_p = None
+
+# Profiling.
+profiling = False
+profile = None
 
 # True if we talk to registries authenticated; false if anonymously.
 reg_auth = False
@@ -473,7 +487,7 @@ class Image:
       # Return the last modified time of self as a datetime.datetime object in
       # the local time zone.
       return datetime.datetime.fromtimestamp(
-                 (self.metadata_path // "metadata.json").stat_().st_mtime,
+                 (self.metadata_path // "metadata.json").stat_(False).st_mtime,
                  datetime.timezone.utc).astimezone()
 
    @property
@@ -1195,14 +1209,17 @@ class Path(pathlib.PosixPath):
    def __floordiv__(self, right):
       return self.joinpath_posix(right)
 
+   def __len__(self):
+      return self.parts.__len__()
+
    def __rfloordiv__(self, left):
       left = Path(left)
       return left.joinpath_posix(self)
 
-   def __truediv__(self, right):
+   def __rtruediv__(self, left):
       return NotImplemented
 
-   def __rtruediv__(self, left):
+   def __truediv__(self, right):
       return NotImplemented
 
    @property
@@ -1215,12 +1232,15 @@ class Path(pathlib.PosixPath):
          return None
 
    @property
-   def path_name(self):
-      """Return path object representing file basename. For example,
-         Path("foo/bar/baz").path_name returns Path("baz"). This allows us to
-         replace path conversions of the 'name' attribute (previously found in
-         multiple places throughout the code) with calls to this property."""
-      return Path(self.name)
+   def git_escaped(self):
+      "Return a copy of me escaped for Git storage."
+      assert (self.git_incompatible_p)
+      return self.with_name(self.name.replace(".git", ".weirdal_"))
+
+   @property
+   def git_incompatible_p(self):
+      "Return True if I can’t be stored in Git because of my name."
+      return self.name.startswith(".git")
 
    @classmethod
    def gzip_set(cls):
@@ -1251,22 +1271,26 @@ class Path(pathlib.PosixPath):
       ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
       return Path(old)
 
-   def chmod_min(self, mode, st=None):
-      """Set permissions on path so they are at least mode. For symlinks, do
-         nothing, because we don’t want to follow symlinks and
-         follow_symlinks=False (or os.lchmod) is not supported on some
-         (all?)  Linux. (Also, symlink permissions are ignored on Linux,
-         so it doesn’t matter anyway.)"""
+   def chmod_min(self, perms_new, st=None):
+      """Set permissions on path so they are at least mode. If given, st is a
+         stat object for self, to avoid another stat(2) call if unneeded.
+         Return the new file mode (complete, not just permission bits).
+
+         For symlinks, do nothing, because we don’t want to follow symlinks
+         and follow_symlinks=False (or os.lchmod) is not supported on some
+         (all?) Linux. (Also, symlink permissions are ignored on Linux, so it
+         doesn’t matter anyway.)"""
       if (st is None):
-         st = os.lstat(self)
+         st = self.stat_(False)
       if (stat.S_ISLNK(st.st_mode)):
-         return
-      mode_old = stat.S_IMODE(st.st_mode)
-      if (mode & mode_old != mode):
-         mode |= mode_old
-         VERBOSE("fixing permissions: %s: %03o -> %03o" % (self, mode_old,
-                                                            mode))
-         ossafe(os.chmod, "can't chmod: %s" % self, self, mode)
+         return st.st_mode
+      perms_old = stat.S_IMODE(st.st_mode)
+      perms_new |= perms_old
+      if (perms_new != perms_old):
+         VERBOSE("fixing permissions: %s: %03o -> %03o"
+                 % (self, perms_old, perms_new))
+         ossafe(os.chmod, "can’t chmod: %s" % self, self, perms_new)
+      return (st.st_mode | perms_new)
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exits on the first error."
@@ -1287,6 +1311,18 @@ class Path(pathlib.PosixPath):
          byte_ct += sum(Path(dir_ + "/" + i).disk_bytes()
                         for i in subdirs + files)
       return (file_ct, byte_ct)
+
+   def exists_(self, links=False):
+      "Return True if I exist, False otherwise. Iff links, follow symlinks."
+      try:
+         # Don’t wrap self.exists() because that always follows symlnks. Use
+         # os.stat() b/c it has follow_symlinks in 3.6, unlike self.stat().
+         os.stat(self, follow_symlinks=links)
+      except FileNotFoundError:
+         return False
+      except OSError as x:
+         FATAL("can’t stat: %s: %s" % (self, x.strerror))
+      return True
 
    def file_ensure_exists(self):
       """If the final element of path exists (without dereferencing if it’s a
@@ -1373,15 +1409,46 @@ class Path(pathlib.PosixPath):
       except OSError as x:
          FATAL("can’t read %s: %s" % (self.name, x.strerror))
 
-   def joinpath_posix(self, *others):
-      others2 = list()
-      for other in others:
-         other = Path(other)
-         if (other.is_absolute()):
-            other = other.relative_to("/")
-            assert (not other.is_absolute())
-         others2.append(other)
-      return self.joinpath(*others2)
+   def hardlink(self, target):
+      try:
+         os.link(target, self)  # no super().hardlink_to() until 3.10
+      except OSError as x:
+         FATAL("can’t hard link: %s -> %s: %s" % (self, target, x.strerror))
+
+   def is_relative_to(self, *other):
+      try:
+         return super().is_relative_to(*other)
+      except AttributeError:
+         # pathlib.Path.is_relative_to() was introduced in 3.9. If not
+         # available, use the standard library’s trivial definition in terms
+         # of relative_to().
+         try:
+            self.relative_to(*other)
+            return True
+         except ValueError:
+            return False
+
+   def joinpath_posix(self, other):
+      # This method is a hot spot, so the hairiness is due to optimizations.
+      # It runs about 30% faster than the naïve verson below.
+      if (isinstance(other, Path)):
+         other_parts = other._parts
+         if (len(other_parts) > 0 and other_parts[0] == "/"):
+            other_parts = other_parts[1:]
+      elif (isinstance(other, str)):
+         other_parts = other.split("/")
+         if (len(other_parts) > 0 and len(other_parts[0]) == 0):
+            other_parts = other_parts[1:]
+      else:
+         assert False, "unknown type"
+      return self._from_parsed_parts(self._drv, self._root,
+                                     self._parts + other_parts)
+      # Naïve implementation for reference.
+      #other = Path(other)
+      #if (other.is_absolute()):
+      #   other = other.relative_to("/")
+      #   assert (not other.is_absolute())
+      #return self.joinpath(other)
 
    def json_from_file(self, msg):
       DEBUG("loading JSON: %s: %s" % (msg, self))
@@ -1395,29 +1462,34 @@ class Path(pathlib.PosixPath):
       return data
 
    def listdir(self):
-      """Return set of entries in directory path, without self (.) and parent
-         (..). We considered changing this to use os.scandir() for #992, but
-         decided that the advantages it offered didn’t warrant the effort
-         required to make the change."""
-      return set(Path(i) for i in ossafe(os.listdir,
-                                         "can’t list: %s" % self.name, self))
+      """Return set of entries in directory path, as strings, without self (.)
+         and parent (..). We considered changing this to use os.scandir() for
+         #992, but decided that the advantages it offered didn’t warrant the
+         effort required to make the change."""
+      return set(ossafe(os.listdir, "can’t list: %s" % self.name, self))
 
-   def lstrip(self, n):
+   def strip(self, left=0, right=0):
       """Return a copy of myself with n leading components removed. E.g.:
 
-           >>> Path("a/b/c").lstrip(1)
-           Path("b/c")
+           >>> a = Path("/a/b/c")
+           >>> a.strip(left=1)
+           Path("a/b/c")
+           >>> a.strip(right=1)
+           Path("/a/b")
+           >>> a.strip(left=1, right=1)
+           Path("a/b")
 
-         It is an error if I don’t have at least n+1 components."""
-      assert (len(self.parts) >= n + 1)
-      return Path(".").joinpath(*self.parts[n:])
+         It is an error if I don’t have at least left + right components,
+         i.e., you can strip a path down to nothing but not further."""
+      assert (len(self.parts) >= left + right)
+      return Path(*self.parts[left:len(self.parts)-right])
 
    def mkdir_(self):
       TRACE("ensuring directory: %s" % self)
       try:
          super().mkdir(exist_ok=True)
       except FileExistsError as x:
-          FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
+         FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
          FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
 
@@ -1452,7 +1524,7 @@ class Path(pathlib.PosixPath):
       else:
          assert False, "unimplemented"
 
-   def stat_(self, links=False):
+   def stat_(self, links):
       """An error-checking version of stat(). Note that we cannot simply
          change the definition of stat() to be ossafe, as the exists() method
          in pathlib relies on an OSError check.
@@ -1462,7 +1534,7 @@ class Path(pathlib.PosixPath):
          NOTE: We also cannot just call super().stat here because the
          follow_symlinks kwarg is absent in pathlib for Python 3.6, which we
          want to retain compatibility with."""
-      return ossafe(os.stat, "can't stat: %s" % self.name, self,
+      return ossafe(os.stat, "can’t stat: %s" % self, self,
                     follow_symlinks=links)
 
    def symlink(self, target, clobber=False):
@@ -2112,6 +2184,10 @@ class Storage:
       return self.root // "bucache"
 
    @property
+   def build_large(self):
+      return self.root // "bularge"
+
+   @property
    def download_cache(self):
       return self.root // "dlcache"
 
@@ -2169,6 +2245,9 @@ class Storage:
          FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
       return path
 
+   def build_large_path(self, name):
+      return self.build_large // name
+
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
@@ -2181,7 +2260,7 @@ class Storage:
          op = "initializing"
          v_found = None
       else:
-         op = "upgrading"
+         op = "upgrading"  # not used unless upgrading
          if (not self.valid_p):
             if (os.path.exists(self.root) and not self.root.listdir()):
                hint = "let Charliecloud create %s; see FAQ" % self.root.name
@@ -2192,12 +2271,13 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 1, 2}):  # initialize/upgrade
+      elif (v_found in {None, 1, 2, 3}):  # initialize/upgrade
          INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
          self.lock()
          self.download_cache.mkdir_()
          self.build_cache.mkdir_()
+         self.build_large.mkdir_()
          self.unpack_base.mkdir_()
          self.upload_cache.mkdir_()
          for old in self.unpack_base.iterdir():
@@ -2309,19 +2389,20 @@ class Storage:
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
       entries = self.root.listdir()
-      for entry in { i.path_name for i in (self.build_cache,
-                                          self.download_cache,
-                                          self.unpack_base,
-                                          self.upload_cache,
-                                          self.version_file) }:
+      for entry in { i.name for i in (self.build_cache,
+                                      self.build_large,
+                                      self.download_cache,
+                                      self.unpack_base,
+                                      self.upload_cache,
+                                      self.version_file) }:
          try:
             entries.remove(entry)
          except KeyError:
-            FATAL("%s: missing file or directory: %s" % (msg_prefix, str(entry)))
-      entries -= { i.path_name for i in (self.lockfile, self.mount_point) }
+            FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      entries -= { i.name for i in (self.lockfile, self.mount_point) }
       if (len(entries) > 0):
          FATAL("%s: extraneous file(s): %s"
-               % (msg_prefix, " ".join(str(i) for i in sorted(entries))))
+               % (msg_prefix, " ".join(sorted(entries))))
       # check version
       v_found = self.version_read()
       if (v_found != STORAGE_VERSION):
@@ -2332,7 +2413,7 @@ class Storage:
       imgs = self.unpack_base.listdir()
       imgs_bad = set()
       for img in imgs:
-         if (":" in str(img)):  # bad char check b/c problem here is bad upgrade
+         if (":" in img):  # bad char check b/c problem here is bad upgrade
             FATAL("%s: storage directory broken: bad image dir name: %s"
                   % (msg_prefix, img), BUG_REPORT_PLZ)
 
@@ -2503,7 +2584,7 @@ def FATAL(msg, hint=None, **kwargs):
    else:
       tr = None
    ERROR(msg, hint, tr, **kwargs)
-   sys.exit(1)
+   exit(1)
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
@@ -2572,7 +2653,9 @@ def cmd_base(argv, fail_ok=False, **kwargs):
    if ("env" in kwargs):
       VERBOSE("environment: %s" % kwargs["env"])
    try:
+      profile_stop()
       cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+      profile_start()
    except OSError as x:
       VERBOSE("can't execute %s: %s" % (argv[0], x.strerror))
       # Most common reason we are here is that the command isn't found, which
@@ -2588,14 +2671,14 @@ def cmd_base(argv, fail_ok=False, **kwargs):
             % (cp.returncode, argv_to_string(argv)))
    return cp
 
-def cmd_stdout(argv, **kwargs):
+def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
       CompletedProcess object (its stdout is available in the "stdout"
       attribute). If logging is info, discard stderr; otherwise send it to the
       existing stderr. If logging is debug or higher, print stdout."""
    if (verbose == 0 and "stderr" not in kwargs):  # info or lower
       kwargs["stderr"] = subprocess.DEVNULL
-   cp = cmd_base(argv, encoding="UTF-8", stdout=subprocess.PIPE, **kwargs)
+   cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
    if (verbose >= 2):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
       sys.stdout.write(cp.stdout)
@@ -2642,7 +2725,7 @@ def dependencies_check():
    for (p, v) in depfails:
       ERROR("%s dependency: %s" % (p, v))
    if (len(depfails) > 0):
-      sys.exit(1)
+      exit(1)
 
 def digest_trim(d):
    """Remove the algorithm tag from digest d and return the rest.
@@ -2664,12 +2747,17 @@ def done_notify():
    else:
       INFO("done")
 
+def exit(code):
+   profile_stop()
+   profile_dump()
+   sys.exit(code)
+
 def init(cli):
    # logging
    global log_festoon, log_fp, trace_fatal, verbose
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
-   trace_fatal = (cli.debug | bool(os.environ.get('CH_IMAGE_DEBUG', False)))
+   trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
@@ -2709,8 +2797,9 @@ def init(cli):
       reg_auth = False
    VERBOSE("registry authentication: %s" % reg_auth)
    # misc
-   global password_many, tls_verify
+   global password_many, profiling, tls_verify
    password_many = cli.password_many
+   profiling = cli.profile
    if (cli.tls_no_verify):
       tls_verify = False
       rpu = requests.packages.urllib3
@@ -2779,10 +2868,43 @@ def ossafe(f, msg, *args, **kwargs):
    except OSError as x:
       FATAL("%s: %s" % (msg, x.strerror))
 
+def positive(x):
+   """Convert x to float, then if ≤ 0, change to positive infinity. This is
+      monstly a convenience function to let 0 express “unlimited”."""
+   x = float(x)
+   if (x <= 0):
+      x = float("inf")
+   return x
+
 def prefix_path(prefix, path):
    """"Return True if prefix is a parent directory of path.
        Assume that prefix and path are strings."""
    return prefix == path or (prefix + '/' == path[:len(prefix) + 1])
+
+def profile_dump():
+   "If profiling, dump the profile data."
+   if (profiling):
+      INFO("writing profile files ...")
+      fp = Path("/tmp/chofile.txt").open("wt")
+      ps = pstats.Stats(profile, stream=fp)
+      ps.sort_stats(pstats.SortKey.CUMULATIVE)
+      ps.dump_stats("/tmp/chofile.p")
+      ps.print_stats()
+      close_(fp)
+
+def profile_start():
+   "If profiling, start the profiler."
+   global profile
+   if (profiling):
+      if (profile is None):
+         INFO("initializing profiler")
+         profile = cProfile.Profile()
+      profile.enable()
+
+def profile_stop():
+   "If profiling, stop the profiler."
+   if (profiling and profile is not None):
+      profile.disable()
 
 def si_binary_bytes(ct):
    # FIXME: varies between 1 and 3 significant figures

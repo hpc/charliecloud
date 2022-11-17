@@ -1,6 +1,8 @@
-See also
-========
+.. only:: man
 
-charliecloud(7)
+   See also
+   ========
 
-Full documentation at: <https://hpc.github.io/charliecloud>
+   charliecloud(7)
+
+   Full documentation at: <https://hpc.github.io/charliecloud>

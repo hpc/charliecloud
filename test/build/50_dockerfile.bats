@@ -896,6 +896,42 @@ EOF
     test -f "$CH_IMAGE_STORAGE"/img/tmpimg/README
 }
 
+@test 'Dockerfile: COPY to nonexistent directory' {
+    scope standard
+
+    # file to one directory that doesn’t exist
+    build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+RUN ! test -e /foo
+COPY fixtures/empty-file /foo/file_
+RUN test -f /foo/file_
+EOF
+
+    # file to multiple directories that don’t exist
+    build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+RUN ! test -e /foo
+COPY fixtures/empty-file /foo/bar/file_
+RUN test -f /foo/bar/file_
+EOF
+
+    # directory to one directory that doesn’t exist
+    build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+RUN ! test -e /foo
+COPY fixtures /foo/dir_
+RUN test -d /foo/dir_ && test -f /foo/dir_/empty-file
+EOF
+
+    # directory: multiple parents DNE
+    build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+RUN ! test -e /foo
+COPY fixtures /foo/bar/dir_
+RUN test -d /foo/bar/dir_ && test -f /foo/bar/dir_/empty-file
+EOF
+}
+
 @test 'Dockerfile: COPY errors' {
     scope standard
     [[ $CH_TEST_BUILDER = buildah* ]] && skip 'Buildah untested'

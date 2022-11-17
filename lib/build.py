@@ -135,7 +135,7 @@ def main(cli_):
 
    # Sometimes we exit after parsing.
    if (cli.parse_only):
-      sys.exit(0)
+      ch.exit(0)
 
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
@@ -670,7 +670,7 @@ class I_copy(Instruction):
          ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
-      src = src.resolve() # alternative to os.path.realpath()
+      src = src.resolve()  # alternative to os.path.realpath()
       dst = ch.Path(dst)
       assert (src.is_dir() and not src.is_symlink())
       assert (dst.is_dir() and not dst.is_symlink())
@@ -724,24 +724,33 @@ class I_copy(Instruction):
             ch.copy2(src_path, dst_path, follow_symlinks=False)
 
    def copy_src_file(self, src, dst):
-      """Copy file src, named by COPY either explicitly or with wildcards, to
-         dst. src might be a symlink, but dst is a canonical path. Both must
-         be at the top level of the COPY instruction; i.e., this function must
-         not be called recursively. If dst is a directory, file should go in
-         that directory named src (i.e., the directory creation magic has
-         already happened)."""
+      """Copy file src to dst. src might be a symlink, but dst is a canonical
+         path. Both must be at the top level of the COPY instruction; i.e.,
+         this function must not be called recursively. dst has additional
+         constraints:
+
+           1. If dst is a directory that exists, src will be copied into that
+              directory like cp(1); e.g. “COPY file_ /dir_” will produce a
+              file in the imaged called. “/dir_/file_”.
+
+           2. If dst is a regular file that exists, src will overwrite it.
+
+           3. If dst is another type of file that exists, that’s an error.
+
+           4. If dst does not exist, the parent of dst must be a directory
+              that exists."""
       assert (src.is_file())
-      assert (   not os.path.exists(dst)
-              or (os.path.isdir(dst) and not os.path.islink(dst))
-              or (os.path.isfile(dst) and not os.path.islink(dst)))
+      assert (not dst.is_symlink())
+      assert (   (dst.exists() and (dst.is_dir() or dst.is_file()))
+              or (not dst.exists() and dst.parent.is_dir()))
       ch.DEBUG("copying named file: %s -> %s" % (src, dst))
       ch.copy2(src, dst, follow_symlinks=True)
 
    def dest_realpath(self, unpack_path, dst):
       """Return the canonicalized version of path dst within (canonical) image
-        path unpack_path. We can't use os.path.realpath() because if dst is
-        an absolute symlink, we need to use the *image's* root directory, not
-        the host. Thus, we have to resolve symlinks manually."""
+         path unpack_path. We can't use os.path.realpath() because if dst is
+         an absolute symlink, we need to use the *image's* root directory, not
+         the host. Thus, we have to resolve symlinks manually."""
       dst_canon = unpack_path
       dst_parts = list(reversed(dst.parts))  # easier to operate on end of list
       iter_ct = 0
@@ -788,11 +797,16 @@ class I_copy(Instruction):
       # Create the destination directory if needed.
       if (   self.dst.endswith("/")
           or len(self.srcs) > 1
-             or self.srcs[0].is_dir()):
-         if (not os.path.exists(dst_canon)):
+          or self.srcs[0].is_dir()):
+         if (not dst_canon.exists()):
             dst_canon.mkdirs()
-         elif (not os.path.isdir(dst_canon)):  # not symlink b/c realpath()
+         elif (not dst_canon.is_dir()):  # not symlink b/c realpath()
             ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
+      if (dst_canon.parent.exists()):
+         if (not dst_canon.parent.is_dir()):
+            ch.FATAL("can’t COPY: not a directory: %s" % dst_canon.parent)
+      else:
+         dst_canon.parent.mkdirs()
       # Copy each source.
       for src in self.srcs:
          if (src.is_file()):
@@ -804,7 +818,7 @@ class I_copy(Instruction):
 
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
-         st = path.stat_(links=links)
+         st = path.stat_(links)
          return (  str(path).encode("UTF-8")
                  + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.

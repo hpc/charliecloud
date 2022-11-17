@@ -357,6 +357,7 @@ EOF
    expected=$(cat <<'EOF'
 .:
 bucache
+bularge
 dlcache
 img
 lock
@@ -364,6 +365,8 @@ ulcache
 version
 
 ./bucache:
+
+./bularge:
 
 ./dlcache:
 
@@ -786,7 +789,7 @@ EOF
     [[ $output = *"moving: ${old}/version -> ${new}/version"* ]]
     [[ $output = *"warning: parent of old storage dir now empty: ${old_parent}"* ]]
     [[ $output = *'hint: consider deleting it'* ]]
-    [[ $output = *"upgrading storage directory: v3 ${new}"* ]]
+    [[ $output = *'upgrading storage directory: v'?" ${new}"* ]]
     [[ ! -e $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]
@@ -803,7 +806,7 @@ EOF
     [[ $output = *"storage dir: valid at old default: ${old}"* ]]
     [[ $output = *"warning: storage dir: also valid at new default: ${new}"* ]]
     [[ $output = *'hint: consider deleting the old one'* ]]
-    [[ $output = *"found storage dir v3: ${new}"* ]]
+    [[ $output = *'found storage dir v'?": ${new}"* ]]
     [[ -d $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]
@@ -817,7 +820,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"warning: storage dir: invalid at old default, ignoring: ${old}"* ]]
-    [[ $output = *"initializing storage directory: v3 ${new}"* ]]
+    [[ $output = *'initializing storage directory: v'?" ${new}"* ]]
     [[ -d $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]
@@ -832,7 +835,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"storage dir: valid at old default: ${old}"* ]]
-    [[ $output = *"initializing storage directory: v3 ${new}"* ]]
+    [[ $output = *'initializing storage directory: v'?" ${new}"* ]]
     [[ $output = *"error: can’t mkdir: exists and not a directory: ${new}"* ]]
     [[ -d $old ]]
     [[ -f $new ]]
@@ -850,7 +853,7 @@ EOF
     [[ $output = *"moving: ${old}/version -> ${new}/version"* ]]
     [[ $output = *"warning: parent of old storage dir now empty: ${old_parent}"* ]]
     [[ $output = *'hint: consider deleting it'* ]]
-    [[ $output = *"upgrading storage directory: v3 ${new}"* ]]
+    [[ $output = *'upgrading storage directory: v'?" ${new}"* ]]
     [[ ! -e $old ]]
     [[ -d ${new}/dlcache ]]
     [[ -d ${new}/img ]]
