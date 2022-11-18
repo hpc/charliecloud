@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. ch-convert &mdash; Charliecloud 0.30 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. ch-fromhost" href="ch-fromhost.html" />
+    <link rel="prev" title="3. ch-checkns" href="ch-checkns.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Charliecloud
+            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.30
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">4.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">4.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#image-formats">4.3. Image formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#format-inference">4.4. Format inference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">4.5. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ch-convert">
+<h1><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code><a class="headerlink" href="#ch-convert" title="Permalink to this headline">¶</a></h1>
+<p>Convert an image from one format to another.</p>
+<section id="synopsis">
+<h2><span class="section-number">4.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert <span class="o">[</span>-i FMT<span class="o">]</span> <span class="o">[</span>-o FMT<span class="o">]</span> <span class="o">[</span>OPTION ...<span class="o">]</span> IN OUT
+</pre></div>
+</div>
+</section>
+<section id="description">
+<h2><span class="section-number">4.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Copy image <code class="code docutils literal notranslate"><span class="pre">IN</span></code> to <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> and convert its format. Replace
+<code class="code docutils literal notranslate"><span class="pre">OUT</span></code> if it already exists, unless <code class="code docutils literal notranslate"><span class="pre">--no-clobber</span></code> is specified. It
+is an error if <code class="code docutils literal notranslate"><span class="pre">IN</span></code> and <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> have the same format; use the
+format’s own tools for that case.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> can run container images that are plain directories or
+(optionally) SquashFS archives. However, images can take on a variety of other
+formats as well. The main purpose of this tool is to make images in those
+other formats available to <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
+<p>For best performance, <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> should be invoked only once,
+producing the final format actually needed.</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">IN</span></code></dt><dd><p>Descriptor for the input image. For image builders, this is an image
+reference; otherwise, it’s a filesystem path.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">OUT</span></code></dt><dd><p>Descriptor for the output image.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt><dd><p>Print help and exit.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-i</span></code>, <code class="code docutils literal notranslate"><span class="pre">--in-fmt</span> <span class="pre">FMT</span></code></dt><dd><p>Input image format is <code class="code docutils literal notranslate"><span class="pre">FMT</span></code>. If omitted, inferred as described below.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt><dd><p>Don’t read the input or write the output. Useful for testing format
+inference.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-clobber</span></code></dt><dd><p>Error if <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> already exists, rather than replacing it.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-o</span></code>, <code class="code docutils literal notranslate"><span class="pre">--out-fmt</span> <span class="pre">FMT</span></code></dt><dd><p>Output image format is <code class="code docutils literal notranslate"><span class="pre">FMT</span></code>; inferred if omitted.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--tmp</span> <span class="pre">DIR</span></code></dt><dd><p>A sub-directory for temporary storage is created in <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> and
+removed at the end of a successful conversion. <strong>If this script crashes or
+errors out, the temporary directory is left behind to assist in
+debugging.</strong> Storage may be needed up to twice the uncompressed size of
+the image, depending on the input and output formats. Default:
+<code class="code docutils literal notranslate"><span class="pre">$TMPDIR</span></code> if specified; otherwise <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Print extra chatter. Can be repeated.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="image-formats">
+<h2><span class="section-number">4.3. </span>Image formats<a class="headerlink" href="#image-formats" title="Permalink to this headline">¶</a></h2>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> knows about these values of <code class="code docutils literal notranslate"><span class="pre">FMT</span></code>:</p>
+<blockquote>
+<div><dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></dt><dd><p>Internal storage for Charliecloud’s unprivileged image builder (Dockerfile
+interpreter) <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">dir</span></code></dt><dd><p>Ordinary filesystem directory (i.e., not a mount point) containing an
+unpacked image. Output directories that already exist are replaced if they
+look like an image; otherwise, exit with an error.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">docker</span></code></dt><dd><p>Internal storage for Docker.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">squash</span></code></dt><dd><p>SquashFS filesystem archive containing the flattened image. SquashFS
+archives are much like tar archives but are mountable, including by
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s internal SquashFUSE mounting. Most systems have at least
+the SquashFS-Tools installed which allows unpacking into a directory, just
+like tar. Due to this greater flexibility, SquashFS is preferred to tar.</p>
+<p><strong>Note:</strong> Conversions to and from SquashFS are quite noisy due to the
+verbosity of the underlying <code class="code docutils literal notranslate"><span class="pre">mksquashfs(1)</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">unsquashfs(1)</span></code> tools.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">tar</span></code></dt><dd><p>Tar archive containing the flattened image with no layer sub-archives;
+i.e., the output of <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">export</span></code> works but the output of
+<code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">save</span></code> does not. Output tarballs are always gzipped and must
+end in <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code>; input tarballs can be any compression acceptable
+to <code class="code docutils literal notranslate"><span class="pre">tar(1)</span></code>.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>All of these are local formats; <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> does not know how to push
+or pull images.</p>
+</section>
+<section id="format-inference">
+<h2><span class="section-number">4.4. </span>Format inference<a class="headerlink" href="#format-inference" title="Permalink to this headline">¶</a></h2>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> tries to save typing by guessing formats when they are
+reasonably clear. This is done against filenames, rather than file contents,
+so the rules are the same for output descriptors that do not yet exist.</p>
+<p>Format inference is done for both <code class="code docutils literal notranslate"><span class="pre">IN</span></code> and <code class="code docutils literal notranslate"><span class="pre">OUT</span></code>. The first
+matching glob below yields the inferred format. Paths need not exist in the
+filesystem.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">*.sqfs</span></code>, <code class="code docutils literal notranslate"><span class="pre">*.squash</span></code>, <code class="code docutils literal notranslate"><span class="pre">*.squashfs</span></code>: SquashFS.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">*.tar</span></code>, <code class="code docutils literal notranslate"><span class="pre">*.t?z</span></code>, <code class="code docutils literal notranslate"><span class="pre">*.tar.?</span></code>, <code class="code docutils literal notranslate"><span class="pre">*.tar.??</span></code>: Tarball.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">/*</span></code>, <code class="code docutils literal notranslate"><span class="pre">./*</span></code>, i.e. absolute path or relative path with
+explicit dot: Directory.</p></li>
+<li><p>If <cite>ch-image</cite> is installed: <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> internal storage.</p></li>
+<li><p>If Docker is installed: Docker internal storage.</p></li>
+<li><p>Otherwise: No format inference.</p></li>
+</ol>
+</div></blockquote>
+</section>
+<section id="examples">
+<h2><span class="section-number">4.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Typical build-to-run sequence for image <code class="code docutils literal notranslate"><span class="pre">foo/bar</span></code> using <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s
+internal SquashFUSE code, inferring the output format:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker build -t foo/bar -f Dockerfile .
+<span class="go">[...]</span>
+<span class="gp">$</span> ch-convert foo/bar:latest /var/tmp/foobar.sqfs
+<span class="go">input:   docker    foo/bar:latest</span>
+<span class="go">output:  squashfs  /var/tmp/foobar.sqfs</span>
+<span class="go">copying ...</span>
+<span class="go">done</span>
+<span class="gp">$</span> ch-run /var/tmp/foobar.sqfs -- <span class="nb">echo</span> hello
+<span class="go">hello</span>
+</pre></div>
+</div>
+<p>Same conversion, but no format inference:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert -i ch-image -o squash foo/bar:latest /var/tmp/foobar.sqfs
+<span class="go">input:   docker    foo/bar:latest</span>
+<span class="go">output:  squashfs  /var/tmp/foobar.sqfs</span>
+<span class="go">copying ...</span>
+<span class="go">done</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ch-checkns.html" class="btn btn-neutral float-left" title="3. ch-checkns" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ch-fromhost.html" class="btn btn-neutral float-right" title="5. ch-fromhost" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014–2022, Triad National Security, LLC and others.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

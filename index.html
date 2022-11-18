@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview &mdash; Charliecloud 0.29 documentation</title>
+  <title>Overview &mdash; Charliecloud 0.30 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -30,7 +30,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.29
+                0.30
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -43,9 +43,16 @@
               <ul>
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
-<li class="toctree-l1"><a class="reference internal" href="command-usage.html">3. Charliecloud command reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">5. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -119,6 +126,8 @@ based: <a class="reference external" href="https://www.usenix.org/publications/l
 <h2>Who is responsible?<a class="headerlink" href="#who-is-responsible" title="Permalink to this headline">¶</a></h2>
 <p>Contributors:</p>
 <ul class="simple">
+<li><p>Richard Berger &lt;<a class="reference external" href="mailto:rberger&#37;&#52;&#48;lanl&#46;gov">rberger<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
+<li><p>Lucas Caudill &lt;<a class="reference external" href="mailto:lcaudill&#37;&#52;&#48;lanl&#46;gov">lcaudill<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Rusty Davis &lt;<a class="reference external" href="mailto:rustyd&#37;&#52;&#48;lanl&#46;gov">rustyd<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Hunter Easterday &lt;<a class="reference external" href="mailto:heasterday&#37;&#52;&#48;lanl&#46;gov">heasterday<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Oliver Freyermuth &lt;<a class="reference external" href="mailto:o&#46;freyermuth&#37;&#52;&#48;googlemail&#46;com">o<span>&#46;</span>freyermuth<span>&#64;</span>googlemail<span>&#46;</span>com</a>&gt;</p></li>
@@ -131,6 +140,7 @@ based: <a class="reference external" href="https://www.usenix.org/publications/l
 <li><p>Megan Phinney &lt;<a class="reference external" href="mailto:mphinney&#37;&#52;&#48;lanl&#46;gov">mphinney<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Reid Priedhorsky &lt;<a class="reference external" href="mailto:reidpr&#37;&#52;&#48;lanl&#46;gov">reidpr<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;, co-founder and project lead</p></li>
 <li><p>Tim Randles &lt;<a class="reference external" href="mailto:trandles&#37;&#52;&#48;lanl&#46;gov">trandles<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;, co-founder</p></li>
+<li><p>Benjamin “The Storm” Stormer &lt;<a class="reference external" href="mailto:bstormer&#37;&#52;&#48;lanl&#46;gov">bstormer<span>&#64;</span>lanl<span>&#46;</span>gov</a>&gt;</p></li>
 <li><p>Meisam Tabriz &lt;<a class="reference external" href="mailto:meisam&#46;tabriz&#37;&#52;&#48;mpcdf&#46;mpg&#46;de">meisam<span>&#46;</span>tabriz<span>&#64;</span>mpcdf<span>&#46;</span>mpg<span>&#46;</span>de</a>&gt;</p></li>
 <li><p>Matthew Vernon &lt;<a class="reference external" href="mailto:mv3&#37;&#52;&#48;sanger&#46;ac&#46;uk">mv3<span>&#64;</span>sanger<span>&#46;</span>ac<span>&#46;</span>uk</a>&gt;</p></li>
 <li><p>Peter Wienemann &lt;<a class="reference external" href="mailto:wienemann&#37;&#52;&#48;physik&#46;uni-bonn&#46;de">wienemann<span>&#64;</span>physik<span>&#46;</span>uni-bonn<span>&#46;</span>de</a>&gt;</p></li>
@@ -185,8 +195,8 @@ should be clearly marked, so as not to confuse it with the version available
 from LANL.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This documentation is for Charliecloud version 0.29 and was built
-2022-08-04 15:53 -0600.</p>
+<p>This documentation is for Charliecloud version 0.30 and was built
+2022-11-18 10:53 -0700.</p>
 </div>
 <div class="toctree-wrapper compound">
 </div>

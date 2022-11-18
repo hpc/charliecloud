@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Tutorial &mdash; Charliecloud 0.29 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.30 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -18,7 +18,7 @@
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="3. Charliecloud command reference" href="command-usage.html" />
+    <link rel="next" title="3. ch-checkns" href="ch-checkns.html" />
     <link rel="prev" title="1. Installing" href="install.html" /> 
 </head>
 
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.29
+                0.30
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -81,9 +81,16 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="command-usage.html">3. Charliecloud command reference</a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">4. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">5. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -225,8 +232,8 @@ Charliecloud you have (if not, please report a bug). For example:</p>
 <span class="go">0.26</span>
 </pre></div>
 </div>
-<p>A description of all commands is also collected later in this documentation; see
-<a class="reference internal" href="command-usage.html"><span class="doc">Charliecloud command reference</span></a>. In addition, each executable has a man page.</p>
+<p>Man pages for all commands are provided in this documentation (see table of
+contents at left) as well as via <code class="code docutils literal notranslate"><span class="pre">man(1)</span></code>.</p>
 </section>
 <section id="your-first-user-defined-software-stack">
 <h2><a class="toc-backref" href="#id3"><span class="section-number">2.3. </span>Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
@@ -747,7 +754,7 @@ image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
 <p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic CentOS image
-(<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.almalinux8</span></code>):</p>
+(<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.almalinux_8ch</span></code>):</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
 
 <span class="c"># This image has two purposes: (1) demonstrate we can build a AlmaLinux 8 image</span>
@@ -804,7 +811,7 @@ this with two chained Dockerfiles. First, we build a basic CentOS image
 Dockerfile that compiles several dependencies in addition to OpenMPI. For the
 purposes of this tutorial, you can skip most of it, but we felt it would be
 useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux8</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux_8ch</span>
 
 <span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
 <span class="c"># OpenMPI for use inside a container.</span>
@@ -1433,7 +1440,7 @@ your site administrators for the latter.</p>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
         <a href="install.html" class="btn btn-neutral float-left" title="1. Installing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="command-usage.html" class="btn btn-neutral float-right" title="3. Charliecloud command reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="ch-checkns.html" class="btn btn-neutral float-right" title="3. ch-checkns" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

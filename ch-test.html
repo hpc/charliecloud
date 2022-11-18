@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>10. ch-test &mdash; Charliecloud 0.30 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="11. Frequently asked questions (FAQ)" href="faq.html" />
+    <link rel="prev" title="9. ch-ssh" href="ch-ssh.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Charliecloud
+            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.30
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">10.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">10.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#exit-status">10.3. Exit status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bugs">10.4. Bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">10.5. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">10. </span><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ch-test">
+<h1><span class="section-number">10. </span><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code><a class="headerlink" href="#ch-test" title="Permalink to this headline">¶</a></h1>
+<p>Run some or all of the Charliecloud test suite.</p>
+<section id="synopsis">
+<h2><span class="section-number">10.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-test <span class="o">[</span>PHASE<span class="o">]</span> <span class="o">[</span>--scope SCOPE<span class="o">]</span> <span class="o">[</span>--pack-fmt FMT<span class="o">]</span> <span class="o">[</span>ARGS<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="description">
+<h2><span class="section-number">10.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud comes with a comprehensive test suite that exercises the
+container workflow itself as well as a few example applications.
+<code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> coordinates running the test suite.</p>
+<p>While the CLI has lots of options, the defaults are reasonable, and bare
+<code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> will give useful results in a few minutes on single-node,
+internet-connected systems with a few GB available in <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>.</p>
+<p>The test suite requires a few GB (standard scope) or tens of GB (full scope)
+of storage for test fixtures:</p>
+<ul class="simple">
+<li><p><em>Builder storage</em> (e.g., layer cache). This goes wherever the builder puts
+it.</p></li>
+<li><p><em>Packed images directory</em>: image tarballs or SquashFS files.</p></li>
+<li><p><em>Unpacked images directory</em>. Images are unpacked into and then run from
+here.</p></li>
+<li><p><em>Filesystem permissions</em> directories. These are used to test that the
+kernel is enforcing permissions correctly. Note that this exercises the
+kernel, not Charliecloud, and can be omitted from routine Charliecloud
+testing.</p></li>
+</ul>
+<p>The first three are created when needed if they don’t exist, while the
+filesystem permissions fixtures must be created manually, in order to
+accommodate configurations where sudo is not available via the same login path
+used for running tests.</p>
+<p>The packed and unpacked image directories specified for testing are volatile.
+The contents of these directories are deleted before the build and run phases,
+respectively.</p>
+<p>In all four cases, when creating directories, only the final path component is
+created. Parent directories must already exist, i.e., <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> uses the
+behavior of <code class="code docutils literal notranslate"><span class="pre">mkdir</span></code> rather than <code class="code docutils literal notranslate"><span class="pre">mkdir</span> <span class="pre">-p</span></code>.</p>
+<p>Some of the tests exercise parallel functionality. If <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> is run
+on a single node, multiple cores will be used; if in a Slurm allocation,
+multiple nodes too.</p>
+<p>The subset of tests to run mostly splits along two key dimensions. The <em>phase</em>
+is which parts of the workflow to run. Different parts of the workflow can be
+tested on different systems by copying the necessary artifacts between them,
+e.g. by building images on one system and running them on another. The <em>scope</em>
+allows trading off thoroughness versus time.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">PHASE</span></code> must be one of the following:</p>
+<blockquote>
+<div><dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">build</span></code></dt><dd><p>Image building and associated functionality, with the selected builder.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">run</span></code></dt><dd><p>Running containers and associated functionality. This requires a packed
+images directory produced by a successful <code class="code docutils literal notranslate"><span class="pre">build</span></code> phase, which can
+be copied from the build system if it’s not also the run system.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">examples</span></code></dt><dd><p>Example applications. Requires an unpacked images directory produced by a
+successful <code class="code docutils literal notranslate"><span class="pre">run</span></code> phase.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">all</span></code></dt><dd><p>Execute phases <code class="code docutils literal notranslate"><span class="pre">build</span></code>, <code class="code docutils literal notranslate"><span class="pre">run</span></code>, and <code class="code docutils literal notranslate"><span class="pre">examples</span></code>, in that
+order.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">mk-perm-dirs</span></code></dt><dd><p>Create the filesystem permissions directories. Requires
+<code class="code docutils literal notranslate"><span class="pre">--perm-dirs</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">clean</span></code></dt><dd><p>Delete automatically-generated test files, and packed and unpacked image
+directories.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">rm-perm-dirs</span></code></dt><dd><p>Remove the filesystem permissions directories. Requires
+<code class="code docutils literal notranslate"><span class="pre">--perm-dirs</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-f</span></code>, <code class="code docutils literal notranslate"><span class="pre">--file</span> <span class="pre">FILE[:TEST]</span></code></dt><dd><p>Run the tests in the given file only, which can be an arbitrary
+<code class="code docutils literal notranslate"><span class="pre">.bats</span></code> file, except for <code class="code docutils literal notranslate"><span class="pre">test.bats</span></code> under <code class="code docutils literal notranslate"><span class="pre">examples</span></code>,
+where you must specify the corresponding Dockerfile or <code class="code docutils literal notranslate"><span class="pre">Build</span></code> file
+instead. This is somewhat brittle and typically used for development or
+debugging. For example, it does not check whether the pre-requisites of
+whatever is in the file are satisfied. Often running <code class="code docutils literal notranslate"><span class="pre">build</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">run</span></code> first is sufficient, but this varies.</p>
+<p>If <code class="code docutils literal notranslate"><span class="pre">TEST</span></code> is also given, then run only tests with name containing
+that string, skipping the others. The separator is a literal colon. If the
+string contains shell metacharacters such as space, you’ll need to quote
+the argument to protect it from the shell.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Scope is specified with:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">-s</span></code>, <code class="code docutils literal notranslate"><span class="pre">--scope</span> <span class="pre">SCOPE</span></code></dt><dd><p><code class="code docutils literal notranslate"><span class="pre">SCOPE</span></code> must be one of the following:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">quick</span></code>: Most important subset of workflow. Handy for development.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">standard</span></code>: All tested workflow functionality and a selection of
+more important examples. (Default.)</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">full</span></code>: All available tests, including all examples.</p></li>
+</ul>
+</dd>
+</dl>
+</div></blockquote>
+<p>Image format is specified with:</p>
+<blockquote>
+<div><dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">--pack-fmt</span> <span class="pre">FMT</span></code></dt><dd><p><code class="code docutils literal notranslate"><span class="pre">FMT</span></code> must be one of the following:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">squash-mount</span></code> or 🐘: SquashFS archive, run directly from the
+archive using <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s internal SquashFUSE functionality. In
+this mode, tests that require writing to the image are skipped.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">tar-unpack</span></code> or 📠: Tarball, and the images are unpacked before
+running.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">squash-unpack</span></code> or 🎃: SquashFS, and the images are unpacked
+before running.</p></li>
+</ul>
+<p>Default: <code class="code docutils literal notranslate"><span class="pre">$CH_TEST_PACK_FMT</span></code> if set. Otherwise, if
+<code class="code docutils literal notranslate"><span class="pre">mksquashfs(1)</span></code> is available and <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> was built with
+<code class="code docutils literal notranslate"><span class="pre">libsquashfuse</span></code> support, then <code class="code docutils literal notranslate"><span class="pre">squash-mount</span></code>, else
+<code class="code docutils literal notranslate"><span class="pre">tar-unpack</span></code>.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Additional arguments:</p>
+<blockquote>
+<div><dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">-b</span></code>, <code class="code docutils literal notranslate"><span class="pre">--builder</span> <span class="pre">BUILDER</span></code></dt><dd><p>Image builder to use. Default: <code class="code docutils literal notranslate"><span class="pre">$CH_TEST_BUILDER</span></code> if set, otherwise
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt><dd><p>Print summary of what would be tested and then exit.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt><dd><p>Print usage and then exit.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--img-dir</span> <span class="pre">DIR</span></code></dt><dd><p>Set unpacked images directory to <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>. In a multi-node allocation,
+this directory may not be shared between nodes. Default:
+<code class="code docutils literal notranslate"><span class="pre">$CH_TEST_IMGDIR</span></code> if set; otherwise <code class="code docutils literal notranslate"><span class="pre">/var/tmp/img</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--lustre</span> <span class="pre">DIR</span></code></dt><dd><p>Use <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> for run-phase Lustre tests. Default:
+<code class="code docutils literal notranslate"><span class="pre">CH_TEST_LUSTREDIR</span></code> if set; otherwise skip them.</p>
+<p>The tests will create, populate, and delete a new subdirectory under
+<code class="code docutils literal notranslate"><span class="pre">DIR</span></code>, leaving everything else in <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> untouched.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--pack-dir</span> <span class="pre">DIR</span></code></dt><dd><p>Set packed images directory to <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>. Default:
+<code class="code docutils literal notranslate"><span class="pre">$CH_TEST_TARDIR</span></code> if set; otherwise <code class="code docutils literal notranslate"><span class="pre">/var/tmp/pack</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--pedantic</span> <span class="pre">(yes|no)</span></code></dt><dd><p>Some tests require configurations that are very specific (e.g., being a
+member of at least two groups) or unusual (e.g., sudo to a non-root
+group). If <code class="code docutils literal notranslate"><span class="pre">yes</span></code>, then fail if the requirement is not met; if
+<code class="code docutils literal notranslate"><span class="pre">no</span></code>, then skip. The default is <code class="code docutils literal notranslate"><span class="pre">yes</span></code> for CI environments or
+people listed in <code class="code docutils literal notranslate"><span class="pre">README.md</span></code>, <code class="code docutils literal notranslate"><span class="pre">no</span></code> otherwise.</p>
+<p>If <code class="code docutils literal notranslate"><span class="pre">yes</span></code> and sudo seems to be available, implies <code class="code docutils literal notranslate"><span class="pre">--sudo</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--perm-dir</span> <span class="pre">DIR</span></code></dt><dd><p>Add <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> to filesystem permission fixture directories; can be
+specified multiple times. We recommend one such directory per mounted
+filesystem type whose kernel module you do not trust; e.g., you probably
+don’t need to test your <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code>es, but out-of-tree filesystems very
+likely need this.</p>
+<p>Implies <code class="code docutils literal notranslate"><span class="pre">--sudo</span></code>. Default: <code class="code docutils literal notranslate"><span class="pre">CH_TEST_PERMDIRS</span></code> if set;
+otherwise skip the filesystem permissions tests.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--sudo</span></code></dt><dd><p>Enable things that require sudo, such as certain privilege escalation
+tests and creating/removing the filesystem permissions fixtures. Requires
+generic <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> capabilities. Note that the Docker builder uses
+<code class="code docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">docker</span></code> even without this option.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="exit-status">
+<h2><span class="section-number">10.3. </span>Exit status<a class="headerlink" href="#exit-status" title="Permalink to this headline">¶</a></h2>
+<p>Zero if all tests passed; non-zero if any failed. For setup and teardown
+phases, zero if everything was created or deleted correctly, non-zero
+otherwise.</p>
+</section>
+<section id="bugs">
+<h2><span class="section-number">10.4. </span>Bugs<a class="headerlink" href="#bugs" title="Permalink to this headline">¶</a></h2>
+<p>Bats will wait until all descendant processes finish before exiting, so if you
+get into a failure mode where a test sequence doesn’t clean up all its
+processes, <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> will hang.</p>
+</section>
+<section id="examples">
+<h2><span class="section-number">10.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<p>Many systems can simply use the defaults. To run the <code class="code docutils literal notranslate"><span class="pre">build</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">run</span></code>, and <code class="code docutils literal notranslate"><span class="pre">examples</span></code> phases on a single system, without the
+filesystem permissions tests:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-test
+<span class="go">ch-test version 0.12</span>
+
+<span class="go">ch-run: 0.12 /usr/local/bin/ch-run</span>
+<span class="go">bats:   0.4.0 /usr/bin/bats</span>
+<span class="go">tests:  /usr/local/libexec/charliecloud/test</span>
+
+<span class="go">phase:                build run examples</span>
+<span class="go">scope:                standard (default)</span>
+<span class="go">builder:              docker (default)</span>
+<span class="go">use generic sudo:     no (default)</span>
+<span class="go">unpacked images dir:  /var/tmp/img (default)</span>
+<span class="go">packed images dir:    /var/tmp/tar (default)</span>
+<span class="go">fs permissions dirs:  skip (default)</span>
+
+<span class="go">checking namespaces ...</span>
+<span class="go">ok</span>
+
+<span class="go">checking builder ...</span>
+<span class="go">found: /usr/bin/docker 19.03.2</span>
+
+<span class="go">bats build.bats build_auto.bats build_post.bats</span>
+<span class="go"> ✓ documentation seems sane</span>
+<span class="go"> ✓ version number seems sane</span>
+<span class="go">[...]</span>
+<span class="go">All tests passed.</span>
+</pre></div>
+</div>
+<p>The next example is for a more complex setup like you might find in HPC
+centers:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Non-default fixture directories.</p></li>
+<li><p>Non-default scope.</p></li>
+<li><p>Different build and run systems.</p></li>
+<li><p>Run the filesystem permissions tests.</p></li>
+</ul>
+</div></blockquote>
+<p>Output has been omitted.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp gp-VirtualEnv">(mybox)</span><span class="gp">$</span> ssh hpc-admin
+<span class="gp gp-VirtualEnv">(hpc-admin)</span><span class="gp">$</span> ch-test mk-perm-dirs --perm-dir /scratch/<span class="nv">$USER</span>/perms <span class="se">\</span>
+                                  --perm-dir /home/<span class="nv">$USER</span>/perms
+<span class="gp gp-VirtualEnv">(hpc-admin)</span><span class="gp">$</span> <span class="nb">exit</span>
+<span class="gp gp-VirtualEnv">(mybox)</span><span class="gp">$</span> ch-test build --scope full
+<span class="gp gp-VirtualEnv">(mybox)</span><span class="gp">$</span> scp -r /var/tmp/pack hpc:/scratch/<span class="nv">$USER</span>/pack
+<span class="gp gp-VirtualEnv">(mybox)</span><span class="gp">$</span> ssh hpc
+<span class="gp gp-VirtualEnv">(hpc)</span><span class="gp">$</span> salloc -N2
+<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_TARDIR</span><span class="o">=</span>/scratch/<span class="nv">$USER</span>/pack
+<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_IMGDIR</span><span class="o">=</span>/local/tmp
+<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_PERMDIRS</span><span class="o">=</span><span class="s2">&quot;/scratch/</span><span class="nv">$USER</span><span class="s2">/perms /home/</span><span class="nv">$USER</span><span class="s2">/perms&quot;</span>
+<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_TEST_SCOPE</span><span class="o">=</span>full
+<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> ch-test run
+<span class="gp gp-VirtualEnv">(cn001)</span><span class="gp">$</span> ch-test examples
+</pre></div>
+</div>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ch-ssh.html" class="btn btn-neutral float-left" title="9. ch-ssh" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="faq.html" class="btn btn-neutral float-right" title="11. Frequently asked questions (FAQ)" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014–2022, Triad National Security, LLC and others.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

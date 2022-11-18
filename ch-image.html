@@ -1,0 +1,1293 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>6. ch-image &mdash; Charliecloud 0.30 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="7. ch-run" href="ch-run.html" />
+    <link rel="prev" title="5. ch-fromhost" href="ch-fromhost.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Charliecloud
+            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.30
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">6.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">6.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#architecture">6.3. Architecture</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#authentication">6.4. Authentication</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#storage-directory">6.5. Storage directory</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-cache">6.6. Build cache</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#overview">6.6.1. Overview</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compared-to-other-implementations">6.6.2. Compared to other implementations</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#de-duplication-and-garbage-collection">6.6.3. De-duplication and garbage collection</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#large-file-threshold">6.6.4. Large file threshold</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#example">6.6.5. Example</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#build">6.7. <code class="code docutils literal notranslate"><span class="pre">build</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">6.7.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">6.7.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#privilege-model">6.7.3. Privilege model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#compatibility-with-other-dockerfile-interpreters">6.7.4. Compatibility with other Dockerfile interpreters</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#context-directory">6.7.4.1. Context directory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#variable-substitution">6.7.4.2. Variable substitution</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#arg">6.7.4.3. <code class="code docutils literal notranslate"><span class="pre">ARG</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#from">6.7.4.4. <code class="code docutils literal notranslate"><span class="pre">FROM</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#copy">6.7.4.5. <code class="code docutils literal notranslate"><span class="pre">COPY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#features-we-do-not-plan-to-support">6.7.4.6. Features we do not plan to support</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">6.7.5. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">6.8. <code class="code docutils literal notranslate"><span class="pre">build-cache</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#delete">6.9. <code class="code docutils literal notranslate"><span class="pre">delete</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#gestalt">6.10. <code class="code docutils literal notranslate"><span class="pre">gestalt</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#list">6.11. <code class="code docutils literal notranslate"><span class="pre">list</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id5">6.11.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id6">6.11.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id7">6.11.3. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#import">6.12. <code class="code docutils literal notranslate"><span class="pre">import</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pull">6.13. <code class="code docutils literal notranslate"><span class="pre">pull</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id8">6.13.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">6.13.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id10">6.13.3. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#push">6.14. <code class="code docutils literal notranslate"><span class="pre">push</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id11">6.14.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">6.14.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">6.14.3. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#reset">6.15. <code class="code docutils literal notranslate"><span class="pre">reset</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#undelete">6.16. <code class="code docutils literal notranslate"><span class="pre">undelete</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-variables">6.17. Environment variables</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">6. </span><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ch-image">
+<h1><span class="section-number">6. </span><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code><a class="headerlink" href="#ch-image" title="Permalink to this headline">¶</a></h1>
+<p>Build and manage images; completely unprivileged.</p>
+<section id="synopsis">
+<h2><span class="section-number">6.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build <span class="o">[</span>-t TAG<span class="o">]</span> <span class="o">[</span>-f DOCKERFILE<span class="o">]</span> <span class="o">[</span>...<span class="o">]</span> CONTEXT
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build-cache <span class="o">[</span>...<span class="o">]</span>
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> delete IMAGE_REF
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> gestalt <span class="o">[</span>SELECTOR<span class="o">]</span>
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> import PATH IMAGE_REF
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> list <span class="o">[</span>-l<span class="o">]</span> <span class="o">[</span>IMAGE_REF<span class="o">]</span>
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> pull <span class="o">[</span>...<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> push <span class="o">[</span>--image DIR<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> reset
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> undelete IMAGE_REF
+<span class="gp">$</span> ch-image <span class="o">{</span> --help <span class="p">|</span> --version <span class="p">|</span> --dependencies <span class="o">}</span>
+</pre></div>
+</div>
+</section>
+<section id="description">
+<h2><span class="section-number">6.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is a tool for building and manipulating container images, but
+not running them (for that you want <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>). It is completely
+unprivileged, with no setuid/setgid/setcap helpers. Many operations can use
+caching for speed. The action to take is specified by a sub-command.</p>
+<p>Options that print brief information and then exit:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt><dd><p>Print help and exit successfully. If specified before the sub-command,
+print general help and list of sub-commands; if after the sub-command,
+print help specific to that sub-command.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--dependencies</span></code></dt><dd><p>Report dependency problems on standard output, if any, and exit. If all is
+well, there is no output and the exit is successful; in case of problems,
+the exit is unsuccessful.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt><dd><p>Print version number and exit successfully.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Common options placed before or after the sub-command:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">-a</span></code>, <code class="code docutils literal notranslate"><span class="pre">--arch</span> <span class="pre">ARCH</span></code></dt><dd><p>Use <code class="code docutils literal notranslate"><span class="pre">ARCH</span></code> for architecture-aware registry operations. (See section
+“Architecture” below for details.)</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--always-download</span></code></dt><dd><p>Download all files when pulling, even if they are already in builder
+storage. Note that <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">pull</span></code> will always retrieve the most
+up-to-date image; this option is mostly for debugging.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--auth</span></code></dt><dd><p>Authenticate with the remote repository, then (if successful) make all
+subsequent requests in authenticated mode. For most subcommands, the
+default is to never authenticate, i.e., make all requests anonymously. The
+exception is <code class="code docutils literal notranslate"><span class="pre">push</span></code>, which implies <code class="code docutils literal notranslate"><span class="pre">--auth</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--cache</span></code></dt><dd><p>Enable build cache. Default if a sufficiently new Git is available.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--cache-large</span> <span class="pre">SIZE</span></code></dt><dd><p>Set the cache’s large file threshold to <code class="code docutils literal notranslate"><span class="pre">SIZE</span></code> MiB, or <code class="code docutils literal notranslate"><span class="pre">0</span></code> for
+no large files, which is the default. This can speed up some builds.
+<strong>Experimental.</strong> See section “Build cache” for details.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code></dt><dd><p>Disable build cache. Default if a sufficiently new Git is not available.
+This option turns off the cache completely; if you want to re-execute a
+Dockerfile and store the new results in cache, use <code class="code docutils literal notranslate"><span class="pre">--rebuild</span></code>
+instead.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-lock</span></code></dt><dd><p>Disable storage directory locking. This lets you run as many concurrent
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> instances as you want against the same storage directory,
+which risks corruption but may be OK for some workloads.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--profile</span></code></dt><dd><p>Dump profile to files <code class="code docutils literal notranslate"><span class="pre">/tmp/chofile.p</span></code> (<code class="code docutils literal notranslate"><span class="pre">cProfile</span></code> dump
+format) and <code class="code docutils literal notranslate"><span class="pre">/tmp/chofile.txt</span></code> (text summary). You can convert the
+former to a PDF call graph with <code class="code docutils literal notranslate"><span class="pre">gprof2dot</span> <span class="pre">-f</span> <span class="pre">pstats</span> <span class="pre">/tmp/chofile.p</span>
+<span class="pre">|</span> <span class="pre">dot</span> <span class="pre">-Tpdf</span> <span class="pre">-o</span> <span class="pre">/tmp/chofile.pdf</span></code>. This excludes time spend in
+subprocesses. Profile data should still be written on fatal errors, but
+not if the program crashes.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--rebuild</span></code></dt><dd><p>Execute all instructions, even if they are build cache hits, except for
+<code class="code docutils literal notranslate"><span class="pre">FROM</span></code> which is retrieved from cache on hit.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--password-many</span></code></dt><dd><p>Re-prompt the user every time a registry password is needed.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-s</span></code>, <code class="code docutils literal notranslate"><span class="pre">--storage</span> <span class="pre">DIR</span></code></dt><dd><p>Set the storage directory (see below for important details).</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--tls-no-verify</span></code></dt><dd><p>Don’t verify TLS certificates of the repository. (Do not use this option
+unless you understand the risks.)</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Print extra chatter; can be repeated.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="architecture">
+<h2><span class="section-number">6.3. </span>Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud provides the option <code class="code docutils literal notranslate"><span class="pre">--arch</span> <span class="pre">ARCH</span></code> to specify the
+architecture for architecture-aware registry operations. The argument
+<code class="code docutils literal notranslate"><span class="pre">ARCH</span></code> can be: (1) <code class="code docutils literal notranslate"><span class="pre">yolo</span></code>, to bypass architecture-aware code and
+use the registry’s default architecture; (2) <code class="code docutils literal notranslate"><span class="pre">host</span></code>, to use the host’s
+architecture, obtained with the equivalent of <code class="code docutils literal notranslate"><span class="pre">uname</span> <span class="pre">-m</span></code> (default if
+<code class="code docutils literal notranslate"><span class="pre">--arch</span></code> not specified); or (3) an architecture name. If the specified
+architecture is not available, the error message will list which ones are.</p>
+<p><strong>Notes:</strong></p>
+<ol class="arabic simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is limited to one image per image reference in
+builder storage at a time, regardless of architecture. For example, if
+you say <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">pull</span> <span class="pre">--arch=foo</span> <span class="pre">baz</span></code> and then <code class="code docutils literal notranslate"><span class="pre">ch-image</span>
+<span class="pre">pull</span> <span class="pre">--arch=bar</span> <span class="pre">baz</span></code>, builder storage will contain one image called
+“baz”, with architecture “bar”.</p></li>
+<li><p>Images’ default architecture is usually <code class="code docutils literal notranslate"><span class="pre">amd64</span></code>, so this is
+usually what you get with <code class="code docutils literal notranslate"><span class="pre">--arch=yolo</span></code>. Similarly, if a
+registry image is architecture-unaware, it will still be pulled with
+<code class="code docutils literal notranslate"><span class="pre">--arch=amd64</span></code> and <code class="code docutils literal notranslate"><span class="pre">--arch=host</span></code> on x86-64 hosts (other
+host architectures must specify <code class="code docutils literal notranslate"><span class="pre">--arch=yolo</span></code> to pull
+architecture-unaware images).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">uname</span> <span class="pre">-m</span></code> and image registries often use different names for
+the same architecture. For example, what <code class="code docutils literal notranslate"><span class="pre">uname</span> <span class="pre">-m</span></code> reports as
+“x86_64” is known to registries as “amd64”. <code class="code docutils literal notranslate"><span class="pre">--arch=host</span></code> should
+translate if needed, but it’s useful to know this is happening.
+Directly specified architecture names are passed to the registry
+without translation.</p></li>
+<li><p>Registries treat architecture as a pair of items, architecture and
+sometimes variant (e.g., “arm” and “v7”). Charliecloud treats
+architecture as a simple string and converts to/from the registry view
+transparently.</p></li>
+</ol>
+</section>
+<section id="authentication">
+<h2><span class="section-number">6.4. </span>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud does not have configuration files; thus, it has no separate
+<code class="code docutils literal notranslate"><span class="pre">login</span></code> subcommand to store secrets. Instead, Charliecloud will prompt
+for a username and password when authentication is needed. Note that some
+repositories refer to the secret as something other than a “password”; e.g.,
+GitLab calls it a “personal access token (PAT)”, Quay calls it an “application
+token”, and nVidia NGC calls it an “API token”.</p>
+<p>For non-interactive authentication, you can use environment variables
+<code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_USERNAME</span></code> and <code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_PASSWORD</span></code>. Only do this if you
+fully understand the implications for your specific use case, because it is
+difficult to securely store secrets in environment variables.</p>
+<p>By default for most subcommands, all registry access is anonymous. To instead
+use authenticated access for everything, specify <code class="code docutils literal notranslate"><span class="pre">--auth</span></code> or set the
+environment variable <code class="code docutils literal notranslate"><span class="pre">$CH_IMAGE_AUTH=yes</span></code>. The exception is
+<code class="code docutils literal notranslate"><span class="pre">push</span></code>, which always runs in authenticated mode. Even for pulling public
+images, it can be useful to authenticate for registries that have per-user
+rate limits, such as <a class="reference external" href="https://docs.docker.com/docker-hub/download-rate-limit/">Docker Hub</a>. (Older versions
+of Charliecloud started with anonymous access, then tried to upgrade to
+authenticated if it seemed necessary. However, this turned out to be brittle;
+see issue <a class="reference external" href="https://github.com/hpc/charliecloud/issues/1318">#1318</a>.)</p>
+<p>The username and password are remembered for the life of the process and
+silently re-offered to the registry if needed. One case when this happens is
+on push to a private registry: many registries will first offer a read-only
+token when <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> checks if something exists, then re-authenticate
+when upgrading the token to read-write for upload. If your site uses one-time
+passwords such as provided by a security device, you can specify
+<code class="code docutils literal notranslate"><span class="pre">--password-many</span></code> to provide a new secret each time.</p>
+<p>These values are not saved persistently, e.g. in a file. Note that we do use
+normal Python variables for this information, without pinning them into
+physical RAM with <a class="reference external" href="https://man7.org/linux/man-pages/man2/mlock.2.html">mlock(2)</a> or any other special
+treatment, so we cannot guarantee they will never reach non-volatile storage.</p>
+<div class="admonition-technical-details admonition">
+<p class="admonition-title">Technical details</p>
+<p>Most registries use something called <a class="reference external" href="https://datatracker.ietf.org/doc/html/rfc6750">Bearer authentication</a>, where the client (e.g.,
+Charliecloud) includes a <em>token</em> in the headers of every HTTP request.</p>
+<p>The authorization dance is different from the typical UNIX approach, where
+there is a separate login sequence before any content requests are made.
+The client starts by simply making the HTTP request it wants (e.g., to
+<code class="code docutils literal notranslate"><span class="pre">GET</span></code> an image manifest), and if the registry doesn’t like the
+client’s token (or if there is no token because the client doesn’t have one
+yet), it replies with HTTP 401 Unauthorized, but crucially it also provides
+instructions in the response header on how to get a token. The client then
+follows those instructions, obtains a token, re-tries the request, and
+(hopefully) all is well. This approach also allows a client to upgrade a
+token if needed, e.g. when transitioning from asking if a layer exists to
+uploading its content.</p>
+<p>The distinction between Charliecloud’s anonymous mode and authenticated
+modes is that it will only ask for anonymous tokens in anonymous mode and
+authenticated tokens in authenticated mode. That is, anonymous mode does
+involve an authentication procedure to obtain a token, but this
+“authentication” is done anonymously. (Yes, it’s confusing.)</p>
+<p>Registries also often reply HTTP 401 when an image does not exist, rather
+than the seemingly more correct HTTP 404 Not Found. This is to avoid
+information leakage about the existence of images the client is not allowed
+to pull, and it’s why Charliecloud never says an image simply does not
+exist.</p>
+</div>
+</section>
+<section id="storage-directory">
+<h2><span class="section-number">6.5. </span>Storage directory<a class="headerlink" href="#storage-directory" title="Permalink to this headline">¶</a></h2>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> maintains state using normal files and directories located in
+its <em>storage directory</em>; contents include temporary images used for building
+and various caches.</p>
+<p>In descending order of priority, this directory is located at:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">-s</span></code>, <code class="code docutils literal notranslate"><span class="pre">--storage</span> <span class="pre">DIR</span></code></dt><dd><p>Command line option.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">$CH_IMAGE_STORAGE</span></code></dt><dd><p>Environment variable. The path must be absolute, because the variable is
+likely set in a very different context than when it’s used, which seems
+error-prone on what a relative path is relative to.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">/var/tmp/$USER.ch</span></code></dt><dd><p>Default. (Previously, the default was <code class="code docutils literal notranslate"><span class="pre">/var/tmp/$USER/ch-image</span></code>. If
+a valid storage directory is found at the old default path,
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> tries to move it to the new default path.)</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Unlike many container implementations, there is no notion of storage drivers,
+graph drivers, etc., to select and/or configure.</p>
+<p>The storage directory can reside on any single filesystem (i.e., it cannot be
+split across multiple filesystems). However, it contains lots of small files
+and metadata traffic can be intense. For example, the Charliecloud test suite
+uses approximately 400,000 files and directories in the storage directory as
+of this writing. Place it on a filesystem appropriate for this; tmpfs’es such
+as <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code> are a good choice if you have enough RAM (<code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> is
+not recommended because <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> bind-mounts it into containers by
+default).</p>
+<p>While you can currently poke around in the storage directory and find unpacked
+images runnable with <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>, this is not a supported use case. The
+supported workflow uses <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> to obtain a packed image; see the
+tutorial for details.</p>
+<p>The storage directory format changes on no particular schedule. Often
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is able to upgrade the directory; however, downgrading is not
+supported and sometimes upgrade is not possible. In these cases,
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> will refuse to run until you delete and re-initialize the
+directory with <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">reset</span></code>.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Network filesystems, especially Lustre, are typically bad choices for the
+storage directory. This is a site-specific question and your local support
+will likely have strong opinions.</p>
+</div>
+</section>
+<section id="build-cache">
+<h2><span class="section-number">6.6. </span>Build cache<a class="headerlink" href="#build-cache" title="Permalink to this headline">¶</a></h2>
+<section id="overview">
+<h3><span class="section-number">6.6.1. </span>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
+<p>Subcommands that create images, such as <code class="code docutils literal notranslate"><span class="pre">build</span></code> and <code class="code docutils literal notranslate"><span class="pre">pull</span></code>, can
+use a build cache to speed repeated operations. That is, an image is created
+by starting from the empty image and executing a sequence of instructions,
+largely Dockerfile instructions but also some others like “pull” and “import”.
+Some instructions are expensive to execute (e.g., <code class="code docutils literal notranslate"><span class="pre">RUN</span> <span class="pre">wget</span>
+<span class="pre">http://slow.example.com/bigfile</span></code> or transferring data billed by the byte), so
+it’s often cheaper to retrieve their results from cache instead.</p>
+<p>The build cache uses a relatively new Git under the hood; see the installation
+instructions for version requirements. Charliecloud implements workarounds for
+Git’s various storage limitations, so things like file metadata and Git
+repositories within the image should work. <strong>Important exception</strong>: No files
+named <code class="code docutils literal notranslate"><span class="pre">.git*</span></code> or other Git metadata are permitted in the image’s root
+directory.</p>
+<p>The cache has three modes, <em>enabled</em>, <em>disabled</em>, and a hybrid mode called
+<em>rebuild</em> where the cache is fully enabled for <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instructions, but
+all other operations re-execute and re-cache their results. The purpose of
+<em>rebuild</em> is to do a clean rebuild of a Dockerfile atop a known-good base
+image.</p>
+<p>Enabled mode is selected with <code class="code docutils literal notranslate"><span class="pre">--cache</span></code> or setting
+<code class="code docutils literal notranslate"><span class="pre">$CH_IMAGE_CACHE</span></code> to <code class="code docutils literal notranslate"><span class="pre">enabled</span></code>, disabled mode with
+<code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code> or <code class="code docutils literal notranslate"><span class="pre">disabled</span></code>, and rebuild mode with
+<code class="code docutils literal notranslate"><span class="pre">--rebuild</span></code> or <code class="code docutils literal notranslate"><span class="pre">rebuild</span></code>. The default mode is <em>enabled</em> if an
+appropriate Git is installed, otherwise <em>disabled</em>.</p>
+</section>
+<section id="compared-to-other-implementations">
+<h3><span class="section-number">6.6.2. </span>Compared to other implementations<a class="headerlink" href="#compared-to-other-implementations" title="Permalink to this headline">¶</a></h3>
+<p>Other container implementations typically use build caches based on overlayfs,
+or fuse-overlayfs in unprivileged situations (configured via a “storage
+driver”). This works by creating a new tmpfs for each instruction, layered
+atop the previous instruction’s tmpfs using overlayfs. Each layer can then be
+tarred up separately to form a tar-based diff.</p>
+<p>The Git-based cache has two advantages over the overlayfs approach. First,
+kernel-mode overlayfs is only available unprivileged in Linux 5.11 and higher,
+forcing the use of fuse-overlayfs and its accompanying FUSE overhead for
+unprivileged use cases. Second, Git de-duplicates and compresses files in a
+fairly sophisticated way across the entire build cache, not just between image
+states with an ancestry relationship (detailed in the next section).</p>
+<p>A disadvantage is lowered performance in some cases. Preliminary experiments
+suggest this performance penalty is relatively modest, and sometimes
+Charliecloud is actually faster than alternatives. We have ongoing experiments
+to answer this performance question in more detail.</p>
+</section>
+<section id="de-duplication-and-garbage-collection">
+<h3><span class="section-number">6.6.3. </span>De-duplication and garbage collection<a class="headerlink" href="#de-duplication-and-garbage-collection" title="Permalink to this headline">¶</a></h3>
+<p>Charliecloud’s build cache takes advantage of Git’s file de-duplication
+features. This operates across the entire build cache, i.e., files are
+de-duplicated no matter where in the cache they are found or the relationship
+between their container images. Files are de-duplicated at different times
+depending on whether they are identical or merely similar.</p>
+<p><em>Identical</em> files are de-duplicated at <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span></code> time; in
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">build</span></code> terms, that’s upon committing a successful instruction.
+That is, it’s impossible to store two files with the same content in the build
+cache. If you try — say with <code class="code docutils literal notranslate"><span class="pre">RUN</span> <span class="pre">yum</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">foo</span></code> in one Dockerfile
+and <code class="code docutils literal notranslate"><span class="pre">RUN</span> <span class="pre">yum</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">foo</span> <span class="pre">bar</span></code> in another, which are different
+instructions but both install RPM <code class="code docutils literal notranslate"><span class="pre">foo</span></code>’s files — the content is stored
+once and each copy gets its own metadata and a pointer to the content, much
+like filesystem hard links.</p>
+<p><em>Similar</em> files, however, are only de-duplicated during Git’s garbage
+collection process. When files are initially added to a Git repository (with
+<code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">add</span></code>), they are stored inside the repository as (possibly
+compressed) individual files, called <em>objects</em> in Git jargon. Upon garbage
+collection, which happens both automatically when certain parameters are met
+and explicitly with <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">gc</span></code>, these files are archived and
+(re-)compressed together into a single file called a <em>packfile</em>. Also,
+existing packfiles may be re-written into the new one.</p>
+<p>During this process, similar files are identified, and each set of similar
+files is stored as one base file plus diffs to recover the others. (Similarity
+detection seems to be based primarily on file size.) This <em>delta</em> process is
+agnostic to alignment, which is an advantage over alignment-sensitive
+block-level de-duplicating filesystems. Exception: “Large” files are not
+compressed or de-duplicated. We use the Git default threshold of 512 MiB (as
+of this writing).</p>
+<p>Charliecloud runs Git garbage collection at two different times. First, a
+lighter-weight garbage pass runs automatically when the number of loose files
+(objects) grows beyond a limit. This limit is in flux as we learn more about
+build cache performance, but it’s quite a bit higher than the Git default.
+This garbage runs in the background and can continue after the build
+completes; you may see Git processes using a lot of CPU.</p>
+<p>An important limitation of the automatic garbage is that large packfiles
+(again, this is in flux, but it’s several GiB) will not be re-packed, limiting
+the scope of similar file detection. To address this, a heavier garbage
+collection can be run manually with <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">build-cache</span> <span class="pre">--gc</span></code>. This
+will re-pack (and re-write) the entire build cache, de-duplicating all similar
+files. In both cases, garbage uses all available cores.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">build-cache</span></code> prints the specific garbage collection parameters in
+use, and <code class="code docutils literal notranslate"><span class="pre">-v</span></code> can be added for more detail.</p>
+</section>
+<section id="large-file-threshold">
+<h3><span class="section-number">6.6.4. </span>Large file threshold<a class="headerlink" href="#large-file-threshold" title="Permalink to this headline">¶</a></h3>
+<p>Because Git uses content-addressed storage, upon commit, it must read in full
+all files modified by an instruction. This I/O cost can be a significant
+fraction of build time for some large images. Regular files larger than the
+experimental <em>large file threshold</em> are stored outside the Git repository,
+somewhat like <a class="reference external" href="https://git-lfs.github.com/">Git Large File Storage</a>.
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> uses hard links to bring large files in and out of images as
+needed, which is a fast metadata operation that ignores file content.</p>
+<p>Option <code class="code docutils literal notranslate"><span class="pre">--cache-large</span></code> sets the threshold in MiB; if not set,
+environment variable <code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_CACHE_LARGE</span></code> is used; if that is not set
+either, the default value <code class="code docutils literal notranslate"><span class="pre">0</span></code> indicates that no files are considered
+large.</p>
+<p>There are two trade-offs. First, large files in any image with the same path,
+mode, size, and mtime (to nanosecond precision if possible) are considered
+identical, <em>even if their content is not actually identical</em>; e.g.,
+<code class="code docutils literal notranslate"><span class="pre">touch(1)</span></code> shenanigans can corrupt an image. Second, every version of a
+large file is stored verbatim and uncompressed (e.g., a large file with a
+one-byte change will be stored in full twice), and large files do not
+participate in the build cache’s de-duplication, so more storage space will
+likely be used. Unused versions <em>are</em> deleted by <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">build-cache</span>
+<span class="pre">--gc</span></code>.</p>
+<p>(Note that Git has an unrelated setting called <code class="code docutils literal notranslate"><span class="pre">core.bigFileThreshold</span></code>.)</p>
+</section>
+<section id="example">
+<h3><span class="section-number">6.6.5. </span>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<p>Suppose we have this Dockerfile:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat a.df
+<span class="go">FROM alpine:3.9</span>
+<span class="go">RUN echo foo</span>
+<span class="go">RUN echo bar</span>
+</pre></div>
+</div>
+<p>On our first build, we get:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t foo -f a.df .
+<span class="go">  1. FROM alpine:3.9</span>
+<span class="go">[ ... pull chatter omitted ... ]</span>
+<span class="go">  2. RUN echo foo</span>
+<span class="go">copying image ...</span>
+<span class="go">foo</span>
+<span class="go">  3. RUN echo bar</span>
+<span class="go">bar</span>
+<span class="go">grown in 3 instructions: foo</span>
+</pre></div>
+</div>
+<p>Note the dot after each instruction’s line number. This means that the
+instruction was executed. You can also see this by the output of the two
+<code class="code docutils literal notranslate"><span class="pre">echo</span></code> commands.</p>
+<p>But on our second build, we get:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t foo -f a.df .
+<span class="go">  1* FROM alpine:3.9</span>
+<span class="go">  2* RUN echo foo</span>
+<span class="go">  3* RUN echo bar</span>
+<span class="go">copying image ...</span>
+<span class="go">grown in 3 instructions: foo</span>
+</pre></div>
+</div>
+<p>Here, instead of being executed, each instruction’s results were retrieved
+from cache. (Charliecloud uses lazy retrieval; nothing is actually retrieved
+until the end, as seen by the “copying image” message.) Cache hit for each
+instruction is indicated by an asterisk (<code class="code docutils literal notranslate"><span class="pre">*</span></code>) after the line number.
+Even for such a small and short Dockerfile, this build is noticeably faster
+than the first.</p>
+<p>We can also try a second, slightly different Dockerfile. Note that the first
+three instructions are the same, but the third is different:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat c.df
+<span class="go">FROM alpine:3.9</span>
+<span class="go">RUN echo foo</span>
+<span class="go">RUN echo qux</span>
+<span class="gp">$</span> ch-image build -t c -f c.df .
+<span class="go">  1* FROM alpine:3.9</span>
+<span class="go">  2* RUN echo foo</span>
+<span class="go">  3. RUN echo qux</span>
+<span class="go">copying image ...</span>
+<span class="go">qux</span>
+<span class="go">grown in 3 instructions: c</span>
+</pre></div>
+</div>
+<p>Here, the first two instructions are hits from the first Dockerfile, but the
+third is a miss, so Charliecloud retrieves that state and continues building.</p>
+<p>We can also inspect the cache:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build-cache --tree
+<span class="go">*  (c) RUN echo qux</span>
+<span class="go">| *  (a) RUN echo bar</span>
+<span class="go">|/</span>
+<span class="go">*  RUN echo foo</span>
+<span class="go">*  (alpine+3.9) PULL alpine:3.9</span>
+<span class="go">*  (HEAD -&gt; root) ROOT</span>
+
+<span class="go">named images:     4</span>
+<span class="go">state IDs:        5</span>
+<span class="go">commits:          5</span>
+<span class="go">files:          317</span>
+<span class="go">disk used:        3 MiB</span>
+</pre></div>
+</div>
+<p>Here there are four named images: <code class="code docutils literal notranslate"><span class="pre">a</span></code> and <code class="code docutils literal notranslate"><span class="pre">c</span></code> that we built, the
+base image <code class="code docutils literal notranslate"><span class="pre">alpine:3.9</span></code> (written as <code class="code docutils literal notranslate"><span class="pre">alpine+3.9</span></code> because colon is
+not allowed in Git branch names), and the empty base of everything
+<code class="code docutils literal notranslate"><span class="pre">root</span></code>. Also note how <code class="code docutils literal notranslate"><span class="pre">a</span></code> and <code class="code docutils literal notranslate"><span class="pre">c</span></code> diverge after the last
+common instruction <code class="code docutils literal notranslate"><span class="pre">RUN</span> <span class="pre">echo</span> <span class="pre">foo</span></code>.</p>
+</section>
+</section>
+<section id="build">
+<h2><span class="section-number">6.7. </span><code class="code docutils literal notranslate"><span class="pre">build</span></code><a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h2>
+<p>Build an image from a Dockerfile and put it in the storage directory.</p>
+<section id="id2">
+<h3><span class="section-number">6.7.1. </span>Synopsis<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build <span class="o">[</span>-t TAG<span class="o">]</span> <span class="o">[</span>-f DOCKERFILE<span class="o">]</span> <span class="o">[</span>...<span class="o">]</span> CONTEXT
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3><span class="section-number">6.7.2. </span>Description<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<p>Uses <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span> <span class="pre">-u0</span> <span class="pre">-g0</span> <span class="pre">--no-home</span> <span class="pre">--no-passwd</span></code> to execute <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
+instructions. Note that <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> implicitly pulls the base image if
+needed, so you may want to read about the <code class="code docutils literal notranslate"><span class="pre">pull</span></code> subcommand below as
+well.</p>
+<p>Required argument:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">CONTEXT</span></code></dt><dd><p>Path to context directory. This is the root of <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instructions
+in the Dockerfile. If a single hyphen (<code class="code docutils literal notranslate"><span class="pre">-</span></code>) is specified: (a) read
+the Dockerfile from standard input, (b) specifying <code class="code docutils literal notranslate"><span class="pre">--file</span></code> is an
+error, and (c) there is no context, so <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> will fail. (See
+<code class="code docutils literal notranslate"><span class="pre">--file</span></code> for how to provide the Dockerfile on standard input while
+also having a context.)</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Options:</p>
+<blockquote>
+<div><dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">-b</span></code>, <code class="code docutils literal notranslate"><span class="pre">--bind</span> <span class="pre">SRC[:DST]</span></code></dt><dd><p>For <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions only, bind-mount <code class="code docutils literal notranslate"><span class="pre">SRC</span></code> at guest
+<code class="code docutils literal notranslate"><span class="pre">DST</span></code>. The default destination if not specified is to use the same
+path as the host; i.e., the default is equivalent to
+<code class="code docutils literal notranslate"><span class="pre">--bind=SRC:SRC</span></code>. If <code class="code docutils literal notranslate"><span class="pre">DST</span></code> does not exist, try to create it as
+an empty directory, though images do have ten directories
+<code class="code docutils literal notranslate"><span class="pre">/mnt/[0-9]</span></code> already available as mount points. Can be repeated.</p>
+<p><strong>Note:</strong> See documentation for <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--bind</span></code> for important
+caveats and gotchas.</p>
+<p><strong>Note:</strong> Other instructions that modify the image filesystem, e.g.
+<code class="code docutils literal notranslate"><span class="pre">COPY</span></code>, can only access host files from the context directory,
+regardless of this option.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--build-arg</span> <span class="pre">KEY[=VALUE]</span></code></dt><dd><p>Set build-time variable <code class="code docutils literal notranslate"><span class="pre">KEY</span></code> defined by <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> instruction
+to <code class="code docutils literal notranslate"><span class="pre">VALUE</span></code>. If <code class="code docutils literal notranslate"><span class="pre">VALUE</span></code> not specified, use the value of
+environment variable <code class="code docutils literal notranslate"><span class="pre">KEY</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-f</span></code>, <code class="code docutils literal notranslate"><span class="pre">--file</span> <span class="pre">DOCKERFILE</span></code></dt><dd><p>Use <code class="code docutils literal notranslate"><span class="pre">DOCKERFILE</span></code> instead of <code class="code docutils literal notranslate"><span class="pre">CONTEXT/Dockerfile</span></code>. If a single
+hyphen (<code class="code docutils literal notranslate"><span class="pre">-</span></code>) is specified, read the Dockerfile from standard input;
+like <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code>, the context directory is still available in
+this case.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--force</span></code></dt><dd><p>Inject the unprivileged build workarounds; see discussion later in this
+section for details on what this does and when you might need it. If a
+build fails and <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> thinks <code class="code docutils literal notranslate"><span class="pre">--force</span></code> would help, it
+will suggest it.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt><dd><p>Don’t actually execute any Dockerfile instructions.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-force-detect</span></code></dt><dd><p>Don’t try to detect if the workarounds in <code class="code docutils literal notranslate"><span class="pre">--force</span></code> would help.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--parse-only</span></code></dt><dd><p>Stop after parsing the Dockerfile.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-t</span></code>, <code class="code docutils literal notranslate"><span class="pre">--tag</span> <span class="pre">TAG</span></code></dt><dd><p>Name of image to create. If not specified, infer the name:</p>
+<ol class="arabic simple">
+<li><p>If Dockerfile named <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> with an extension: use the
+extension with invalid characters stripped, e.g.
+<code class="code docutils literal notranslate"><span class="pre">Dockerfile.&#64;FOO.bar</span></code> → <code class="code docutils literal notranslate"><span class="pre">foo.bar</span></code>.</p></li>
+<li><p>If Dockerfile has extension <code class="code docutils literal notranslate"><span class="pre">dockerfile</span></code>: use the basename with
+the same transformation, e.g. <code class="code docutils literal notranslate"><span class="pre">baz.&#64;QUX.dockerfile</span></code> -&gt;
+<code class="code docutils literal notranslate"><span class="pre">baz.qux</span></code>.</p></li>
+<li><p>If context directory is not <code class="code docutils literal notranslate"><span class="pre">/</span></code>: use its name, i.e. the last
+component of the absolute path to the context directory, with the same
+transformation,</p></li>
+<li><p>Otherwise (context directory is <code class="code docutils literal notranslate"><span class="pre">/</span></code>): use <code class="code docutils literal notranslate"><span class="pre">root</span></code>.</p></li>
+</ol>
+<p>If no colon present in the name, append <code class="code docutils literal notranslate"><span class="pre">:latest</span></code>.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="privilege-model">
+<h3><span class="section-number">6.7.3. </span>Privilege model<a class="headerlink" href="#privilege-model" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is a <em>fully</em> unprivileged image builder. It does not use any
+setuid or setcap helper programs, and it does not use configuration files
+<code class="code docutils literal notranslate"><span class="pre">/etc/subuid</span></code> or <code class="code docutils literal notranslate"><span class="pre">/etc/subgid</span></code>. This contrasts with the “rootless”
+or “<a class="reference external" href="https://sylabs.io/guides/3.7/user-guide/fakeroot.html">fakeroot</a>” modes
+of some competing builders, which do require privileged supporting code or
+utilities.</p>
+<p>This approach does yield some quirks. We provide built-in workarounds that
+should mostly work (i.e., <code class="code docutils literal notranslate"><span class="pre">--force</span></code>), but it can be helpful to
+understand what is going on.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> executes all instructions as the normal user who invokes it.
+For <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>, this is accomplished with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span> <span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>
+(and some other arguments), i.e., your host EUID and EGID both mapped to zero
+inside the container, and only one UID (zero) and GID (zero) are available
+inside the container. Under this arrangement, processes running in the
+container for each <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> <em>appear</em> to be running as root, but many
+privileged system calls will fail without the workarounds described below.
+<strong>This affects any fully unprivileged container build, not just
+Charliecloud.</strong></p>
+<p>The most common time to see this is installing packages. For example, here is
+RPM failing to <code class="code docutils literal notranslate"><span class="pre">chown(2)</span></code> a file, which makes the package update fail:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>  Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
+Error unpacking rpm package 1:dbus-1.10.24-13.el7_6.x86_64
+error: unpacking of archive failed on file /usr/libexec/dbus-1/dbus-daemon-launch-helper;5cffd726: cpio: chown
+  Cleanup    : 1:dbus-libs-1.10.24-12.el7.x86_64                         3/4
+error: dbus-1:1.10.24-13.el7_6.x86_64: install failed
+</pre></div>
+</div>
+<p>This one is (ironically) <code class="code docutils literal notranslate"><span class="pre">apt-get</span></code> failing to drop privileges:</p>
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>E: setgroups 65534 failed - setgroups (1: Operation not permitted)
+E: setegid 65534 failed - setegid (22: Invalid argument)
+E: seteuid 100 failed - seteuid (22: Invalid argument)
+E: setgroups 0 failed - setgroups (1: Operation not permitted)
+</pre></div>
+</div>
+<p>By default, nothing is done to avoid these problems, though <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>
+does try to detect if the workarounds could help. <code class="code docutils literal notranslate"><span class="pre">--force</span></code> activates
+the workarounds: <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> injects extra commands to intercept these
+system calls and fake a successful result, using <code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code>. There
+are three basic steps:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>After <code class="code docutils literal notranslate"><span class="pre">FROM</span></code>, analyze the image to see what distribution it
+contains, which determines the specific workarounds.</p></li>
+<li><p>Before the user command in the first <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instruction where the
+injection seems needed, install <code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code> in the image, if one
+is not already installed, as well as any other necessary initialization
+commands. For example, we turn off the <code class="code docutils literal notranslate"><span class="pre">apt</span></code> sandbox (for Debian
+Buster) and configure EPEL but leave it disabled (for CentOS/RHEL).</p></li>
+<li><p>Prepend <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code> to <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions that seem to need
+it, e.g. ones that contain <code class="code docutils literal notranslate"><span class="pre">apt</span></code>, <code class="code docutils literal notranslate"><span class="pre">apt-get</span></code>, <code class="code docutils literal notranslate"><span class="pre">dpkg</span></code> for
+Debian derivatives and <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, <code class="code docutils literal notranslate"><span class="pre">rpm</span></code>, or <code class="code docutils literal notranslate"><span class="pre">yum</span></code> for
+RPM-based distributions.</p></li>
+</ol>
+</div></blockquote>
+<p>The details are specific to each distribution. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> analyzes image
+content (e.g., grepping <code class="code docutils literal notranslate"><span class="pre">/etc/debian_version</span></code>) to select a
+configuration; see <code class="code docutils literal notranslate"><span class="pre">lib/fakeroot.py</span></code> for details. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>
+prints exactly what it is doing.</p>
+</section>
+<section id="compatibility-with-other-dockerfile-interpreters">
+<h3><span class="section-number">6.7.4. </span>Compatibility with other Dockerfile interpreters<a class="headerlink" href="#compatibility-with-other-dockerfile-interpreters" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is an independent implementation and shares no code with
+other Dockerfile interpreters. It uses a formal Dockerfile parsing grammar
+developed from the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/">Dockerfile reference documentation</a> and miscellaneous other
+sources, which you can examine in the source code.</p>
+<p>We believe this independence is valuable for several reasons. First, it helps
+the community examine Dockerfile syntax and semantics critically, think
+rigorously about what is really needed, and build a more robust standard.
+Second, it yields disjoint sets of bugs (note that Podman, Buildah, and Docker
+all share the same Dockerfile parser). Third, because it is a much smaller
+code base, it illustrates how Dockerfiles work more clearly. Finally, it
+allows straightforward extensions if needed to support scientific computing.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> tries hard to be compatible with Docker and other
+interpreters, though as an independent implementation, it is not
+bug-compatible.</p>
+<p>The following subsections describe differences from the Dockerfile reference
+that we expect to be approximately permanent. For not-yet-implemented features
+and bugs in this area, see <a class="reference external" href="https://github.com/hpc/charliecloud/issues?q=is%3Aissue+is%3Aopen+sort%3Aupdated-desc+label%3Aimage">related issues</a>
+on GitHub.</p>
+<p>None of these are set in stone. We are very interested in feedback on our
+assessments and open questions. This helps us prioritize new features and
+revise our thinking about what is needed for HPC containers.</p>
+<section id="context-directory">
+<h4><span class="section-number">6.7.4.1. </span>Context directory<a class="headerlink" href="#context-directory" title="Permalink to this headline">¶</a></h4>
+<p>The context directory is bind-mounted into the build, rather than copied like
+Docker. Thus, the size of the context is immaterial, and the build reads
+directly from storage like any other local process would. However, you still
+can’t access anything outside the context directory.</p>
+</section>
+<section id="variable-substitution">
+<h4><span class="section-number">6.7.4.2. </span>Variable substitution<a class="headerlink" href="#variable-substitution" title="Permalink to this headline">¶</a></h4>
+<p>Variable substitution happens for <em>all</em> instructions, not just the ones listed
+in the Dockerfile reference.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ARG</span></code> and <code class="code docutils literal notranslate"><span class="pre">ENV</span></code> cause cache misses upon <em>definition</em>, in contrast
+with Docker where these variables miss upon <em>use</em>, except for certain
+cache-excluded variables that never cause misses, listed below.</p>
+<p>Note that <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> and <code class="code docutils literal notranslate"><span class="pre">ENV</span></code> have different syntax despite very
+similar semantics.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> passes the following proxy environment variables in to the
+build. Changes to these variables do not cause a cache miss. They do not
+require an <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> instruction, as <a class="reference external" href="https://docs.docker.com/engine/reference/builder/#predefined-args">documented</a> in the
+Dockerfile reference. Unlike Docker, they are available if the same-named
+environment variable is defined; <code class="code docutils literal notranslate"><span class="pre">--build-arg</span></code> is not required.</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>HTTP_PROXY
+http_proxy
+HTTPS_PROXY
+https_proxy
+FTP_PROXY
+ftp_proxy
+NO_PROXY
+no_proxy
+</pre></div>
+</div>
+<p>In addition to those listed in the Dockerfile reference, these environment
+variables are passed through in the same way:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>SSH_AUTH_SOCK
+USER
+</pre></div>
+</div>
+<p>Finally, these variables are also pre-defined but are unrelated to the host
+environment:</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nv">PATH</span><span class="o">=</span>/ch/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+<span class="nv">TAR_OPTIONS</span><span class="o">=</span>--no-same-owner
+</pre></div>
+</div>
+</section>
+<section id="arg">
+<h4><span class="section-number">6.7.4.3. </span><code class="code docutils literal notranslate"><span class="pre">ARG</span></code><a class="headerlink" href="#arg" title="Permalink to this headline">¶</a></h4>
+<p>Variables set with <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> are available anywhere in the Dockerfile,
+unlike Docker, where they only work in <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instructions, and possibly
+in other <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> before the first <code class="code docutils literal notranslate"><span class="pre">FROM</span></code>.</p>
+</section>
+<section id="from">
+<h4><span class="section-number">6.7.4.4. </span><code class="code docutils literal notranslate"><span class="pre">FROM</span></code><a class="headerlink" href="#from" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instruction accepts option <code class="code docutils literal notranslate"><span class="pre">--arg=NAME=VALUE</span></code>, which
+serves the same purpose as the <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> instruction. It can be repeated.</p>
+</section>
+<section id="copy">
+<h4><span class="section-number">6.7.4.5. </span><code class="code docutils literal notranslate"><span class="pre">COPY</span></code><a class="headerlink" href="#copy" title="Permalink to this headline">¶</a></h4>
+<p>Especially for people used to UNIX <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code>, the semantics of the
+Dockerfile <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instruction can be confusing.</p>
+<p>Most notably, when a source of the copy is a directory, the <em>contents</em> of that
+directory, not the directory itself, are copied. This is documented, but it’s
+a real gotcha because that’s not what <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code> does, and it means that
+many things you can do in one <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code> command require multiple
+<code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instructions.</p>
+<p>Also, the reference documentation is incomplete. In our experience, Docker
+also behaves as follows; <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> does the same in an attempt to be
+bug-compatible.</p>
+<ol class="arabic">
+<li><p>You can use absolute paths in the source; the root is the context
+directory.</p></li>
+<li><p>Destination directories are created if they don’t exist in the following
+situations:</p>
+<ol class="arabic simple">
+<li><p>If the destination path ends in slash. (Documented.)</p></li>
+<li><p>If the number of sources is greater than 1, either by wildcard or
+explicitly, regardless of whether the destination ends in slash. (Not
+documented.)</p></li>
+<li><p>If there is a single source and it is a directory. (Not documented.)</p></li>
+</ol>
+</li>
+<li><p>Symbolic links behave differently depending on how deep in the copied tree
+they are. (Not documented.)</p>
+<ol class="arabic simple">
+<li><p>Symlinks at the top level — i.e., named as the destination or the
+source, either explicitly or by wildcards — are dereferenced. They are
+followed, and whatever they point to is used as the destination or
+source, respectively.</p></li>
+<li><p>Symlinks at deeper levels are not dereferenced, i.e., the symlink
+itself is copied.</p></li>
+</ol>
+</li>
+<li><p>If a directory appears at the same path in source and destination, and is
+at the 2nd level or deeper, the source directory’s metadata (e.g.,
+permissions) are copied to the destination directory. (Not documented.)</p></li>
+<li><p>If an object appears in both the source and destination, and is at the 2nd
+level or deeper, and is of different types in the source and destination,
+then the source object will overwrite the destination object. (Not
+documented.) For example, if <code class="code docutils literal notranslate"><span class="pre">/tmp/foo/bar</span></code> is a regular file, and
+<code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> is the context directory, then the following Dockerfile
+snippet will result in a <em>file</em> in the container at <code class="code docutils literal notranslate"><span class="pre">/foo/bar</span></code>
+(copied from <code class="code docutils literal notranslate"><span class="pre">/tmp/foo/bar</span></code>); the directory and all its contents will
+be lost.</p>
+<blockquote>
+<div><div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir -p /foo/bar <span class="o">&amp;&amp;</span> touch /foo/bar/baz
+<span class="k">COPY</span> foo /foo
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+</ol>
+<p>We expect the following differences to be permanent:</p>
+<ul class="simple">
+<li><p>Wildcards use Python glob semantics, not the Go semantics.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">COPY</span> <span class="pre">--chown</span></code> is ignored, because it doesn’t make sense in an
+unprivileged build.</p></li>
+</ul>
+</section>
+<section id="features-we-do-not-plan-to-support">
+<h4><span class="section-number">6.7.4.6. </span>Features we do not plan to support<a class="headerlink" href="#features-we-do-not-plan-to-support" title="Permalink to this headline">¶</a></h4>
+<ul class="simple">
+<li><p>Parser directives are not supported. We have not identified a need for any
+of them.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">EXPOSE</span></code>: Charliecloud does not use the network namespace, so
+containerized processes can simply listen on a host port like other
+unprivileged processes.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">HEALTHCHECK</span></code>: This instruction’s main use case is monitoring server
+processes rather than applications. Also, implementing it requires a
+container supervisor daemon, which we have no plans to add.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">MAINTAINER</span></code> is deprecated.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">STOPSIGNAL</span></code> requires a container supervisor daemon process, which we
+have no plans to add.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">USER</span></code> does not make sense for unprivileged builds.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">VOLUME</span></code>: This instruction is not currently supported. Charliecloud
+has good support for bind mounts; we anticipate that it will continue to
+focus on that and will not introduce the volume management features that
+Docker has.</p></li>
+</ul>
+</section>
+</section>
+<section id="examples">
+<h3><span class="section-number">6.7.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<p>Build image <code class="code docutils literal notranslate"><span class="pre">bar</span></code> using <code class="code docutils literal notranslate"><span class="pre">./foo/bar/Dockerfile</span></code> and context
+directory <code class="code docutils literal notranslate"><span class="pre">./foo/bar</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t bar -f ./foo/bar/Dockerfile ./foo/bar
+<span class="go">[...]</span>
+<span class="go">grown in 4 instructions: bar</span>
+</pre></div>
+</div>
+<p>Same, but infer the image name and Dockerfile from the context directory
+path:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build ./foo/bar
+<span class="go">[...]</span>
+<span class="go">grown in 4 instructions: bar</span>
+</pre></div>
+</div>
+<p>Build using humongous vendor compilers you want to bind-mount instead of
+installing into the image:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build --bind /opt/bigvendor:/opt .
+<span class="gp">$</span> cat Dockerfile
+<span class="go">FROM centos:7</span>
+
+<span class="go">RUN /opt/bin/cc hello.c</span>
+<span class="gp">#</span>COPY /opt/lib/*.so /usr/local/lib   <span class="c1"># fail: COPY doesn&#39;t bind mount</span>
+<span class="go">RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround</span>
+<span class="go">RUN ldconfig</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id4">
+<h2><span class="section-number">6.8. </span><code class="code docutils literal notranslate"><span class="pre">build-cache</span></code><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build-cache <span class="o">[</span>...<span class="o">]</span>
+</pre></div>
+</div>
+<p>Print basic information about the cache. If <code class="code docutils literal notranslate"><span class="pre">-v</span></code> is given, also print
+some Git statistics and the Git repository configuration.</p>
+<p>If any of the following options are given, do the corresponding operation
+before printing. Multiple options can be given, in which case they happen in
+this order.</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">--reset</span></code></dt><dd><p>Clear and re-initialize the build cache.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--gc</span></code></dt><dd><p>Run Git garbage collection on the cache, including full de-duplication of
+similar files. This will immediately remove all cache entries not
+currently reachable from a named branch (which is likely to cause
+corruption if the build cache is being accessed concurrently by another
+process). The operation can take a long time on large caches.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--text</span></code></dt><dd><p>Print a text tree of the cache using Git’s <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">log</span> <span class="pre">--graph</span></code>
+feature. If <code class="code docutils literal notranslate"><span class="pre">-v</span></code> is also given, the tree has more detail.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--dot</span></code></dt><dd><p>Create a DOT export of the tree named <code class="code docutils literal notranslate"><span class="pre">./build-cache.dot</span></code> and a PDF
+rendering <code class="code docutils literal notranslate"><span class="pre">./build-cache.pdf</span></code>. Requires <code class="code docutils literal notranslate"><span class="pre">graphviz</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">git2dot</span></code>.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="delete">
+<h2><span class="section-number">6.9. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> delete IMAGE_GLOB
+</pre></div>
+</div>
+<p>Delete the image(s) described by <code class="code docutils literal notranslate"><span class="pre">IMAGE_GLOB</span></code> from the storage directory
+(including all build stages).</p>
+<p><code class="code docutils literal notranslate"><span class="pre">IMAGE_GLOB</span></code> can be either a plain image reference or an image reference
+with glob characters to match multiple images. For example, <code class="code docutils literal notranslate"><span class="pre">ch-image</span>
+<span class="pre">delete</span> <span class="pre">'foo*'</span></code> will delete all images whose names start with <code class="code docutils literal notranslate"><span class="pre">foo</span></code>.</p>
+<p>Importantly, this sub-command <em>does not</em> also remove the image from the build
+cache. Therefore, it can be used to reduce the size of the storage directory,
+trading off the time needed to retrieve an image from cache.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Glob characters must be quoted or otherwise protected from the shell, which
+also desires to interpret them and will do so incorrectly.</p>
+</div>
+</section>
+<section id="gestalt">
+<h2><span class="section-number">6.10. </span><code class="code docutils literal notranslate"><span class="pre">gestalt</span></code><a class="headerlink" href="#gestalt" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> gestalt <span class="o">[</span>SELECTOR<span class="o">]</span>
+</pre></div>
+</div>
+<p>Provide information about the <a class="reference external" href="https://apple.fandom.com/wiki/Gestalt">configuration and available features</a> of <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>. End users
+generally will not need this; it is intended for testing and debugging.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">SELECTOR</span></code> is one of:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">bucache</span></code>. Exit successfully if the build cache is available,
+unsuccessfully with an error message otherwise. With <code class="code docutils literal notranslate"><span class="pre">-v</span></code>, also
+print version information about dependencies.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">bucache-dot</span></code>. Exit successfully if build cache DOT trees can be
+written, unsuccessfully with an error message otherwise. With <code class="code docutils literal notranslate"><span class="pre">-v</span></code>,
+also print version information about dependencies.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">python-path</span></code>. Print the path to the Python interpreter in use and
+exit successfully.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">storage-path</span></code>. Print the storage directory path and exit
+successfully.</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="list">
+<h2><span class="section-number">6.11. </span><code class="code docutils literal notranslate"><span class="pre">list</span></code><a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h2>
+<p>Print information about images. If no argument given, list the images in
+builder storage.</p>
+<section id="id5">
+<h3><span class="section-number">6.11.1. </span>Synopsis<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> list <span class="o">[</span>-l<span class="o">]</span> <span class="o">[</span>IMAGE_REF<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="id6">
+<h3><span class="section-number">6.11.2. </span>Description<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<p>Optional argument:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">-l</span></code>, <code class="code docutils literal notranslate"><span class="pre">--long</span></code></dt><dd><p>Use long format (name, last change timestamp) when listing images.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code></dt><dd><p>Print details of what’s known about <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>, both locally and in
+the remote registry, if any.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="id7">
+<h3><span class="section-number">6.11.3. </span>Examples<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<p>List images in builder storage:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list
+<span class="go">alpine:3.9 (amd64)</span>
+<span class="go">alpine:latest (amd64)</span>
+<span class="go">debian:buster (amd64)</span>
+</pre></div>
+</div>
+<p>Print details about Debian Buster image:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list debian:buster
+<span class="go">details of image:    debian:buster</span>
+<span class="go">in local storage:    no</span>
+<span class="go">full remote ref:     registry-1.docker.io:443/library/debian:buster</span>
+<span class="go">available remotely:  yes</span>
+<span class="go">remote arch-aware:   yes</span>
+<span class="go">host architecture:   amd64</span>
+<span class="go">archs available:     386       bae2738ed83</span>
+<span class="go">                     amd64     98285d32477</span>
+<span class="go">                     arm/v7    97247fd4822</span>
+<span class="go">                     arm64/v8  122a0342878</span>
+</pre></div>
+</div>
+<p>For remotely available images like Debian Buster, the associated digest is
+listed beside each available architecture. Importantly, this feature does
+<em>not</em> provide the hash of the local image, which is only calculated on push.</p>
+</section>
+</section>
+<section id="import">
+<h2><span class="section-number">6.12. </span><code class="code docutils literal notranslate"><span class="pre">import</span></code><a class="headerlink" href="#import" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> import PATH IMAGE_REF
+</pre></div>
+</div>
+<p>Copy the image at <code class="code docutils literal notranslate"><span class="pre">PATH</span></code> into builder storage with name
+<code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>. <code class="code docutils literal notranslate"><span class="pre">PATH</span></code> can be:</p>
+<ul class="simple">
+<li><p>an image directory</p></li>
+<li><p>a tarball with no top-level directory (a.k.a. a “<a class="reference external" href="https://en.wikipedia.org/wiki/Tar_(computing)#Tarbomb">tarbomb</a>”)</p></li>
+<li><p>a standard tarball with one top-level directory</p></li>
+</ul>
+<p>If the imported image contains Charliecloud metadata, that will be imported
+unchanged, i.e., images exported from <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> builder storage will be
+functionally identical when re-imported.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Every import creates a new cache entry, even if the file or directory has
+already been imported.</p>
+</div>
+</section>
+<section id="pull">
+<h2><span class="section-number">6.13. </span><code class="code docutils literal notranslate"><span class="pre">pull</span></code><a class="headerlink" href="#pull" title="Permalink to this headline">¶</a></h2>
+<p>Pull the image described by the image reference <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from a
+repository to the local filesystem.</p>
+<section id="id8">
+<h3><span class="section-number">6.13.1. </span>Synopsis<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> pull <span class="o">[</span>...<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
+</pre></div>
+</div>
+<p>See the FAQ for the gory details on specifying image references.</p>
+</section>
+<section id="id9">
+<h3><span class="section-number">6.13.2. </span>Description<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<p>Destination:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">DEST_REF</span></code></dt><dd><p>If specified, use this as the destination image reference, rather than
+<code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>. This lets you pull an image with a complicated
+reference while storing it locally with a simpler one.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Options:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">--last-layer</span> <span class="pre">N</span></code></dt><dd><p>Unpack only <code class="code docutils literal notranslate"><span class="pre">N</span></code> layers, leaving an incomplete image. This option is
+intended for debugging.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--parse-only</span></code></dt><dd><p>Parse <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>, print a parse report, and exit successfully
+without talking to the internet or touching the storage directory.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>This script does a fair amount of validation and fixing of the layer tarballs
+before flattening in order to support unprivileged use despite image problems
+we frequently see in the wild. For example, device files are ignored, and file
+and directory permissions are increased to a minimum of <code class="code docutils literal notranslate"><span class="pre">rwx------</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">rw-------</span></code> respectively. Note, however, that symlinks pointing outside
+the image are permitted, because they are not resolved until runtime within a
+container.</p>
+<p>The following metadata in the pulled image is retained; all other metadata is
+currently ignored. (If you have a need for additional metadata, please let us
+know!)</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Current working directory set with <code class="code docutils literal notranslate"><span class="pre">WORKDIR</span></code> is effective in
+downstream Dockerfiles.</p></li>
+<li><p>Environment variables set with <code class="code docutils literal notranslate"><span class="pre">ENV</span></code> are effective in downstream
+Dockerfiles and also written to <code class="code docutils literal notranslate"><span class="pre">/ch/environment</span></code> for use in
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--set-env</span></code>.</p></li>
+<li><p>Mount point directories specified with <code class="code docutils literal notranslate"><span class="pre">VOLUME</span></code> are created in the
+image if they don’t exist, but no other action is taken.</p></li>
+</ul>
+</div></blockquote>
+<p>Note that some images (e.g., those with a “version 1 manifest”) do not contain
+metadata. A warning is printed in this case.</p>
+</section>
+<section id="id10">
+<h3><span class="section-number">6.13.3. </span>Examples<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<p>Download the Debian Buster image matching the host’s architecture and place it
+in the storage directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> uname -m
+<span class="go">aarch32</span>
+<span class="go">pulling image:    debian:buster</span>
+<span class="go">requesting arch:  arm64/v8</span>
+<span class="go">manifest list: downloading</span>
+<span class="go">manifest: downloading</span>
+<span class="go">config: downloading</span>
+<span class="go">layer 1/1: c54d940: downloading</span>
+<span class="go">flattening image</span>
+<span class="go">layer 1/1: c54d940: listing</span>
+<span class="go">validating tarball members</span>
+<span class="go">resolving whiteouts</span>
+<span class="go">layer 1/1: c54d940: extracting</span>
+<span class="go">image arch: arm64</span>
+<span class="go">done</span>
+</pre></div>
+</div>
+<p>Same, specifying the architecture explicitly:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image --arch<span class="o">=</span>arm/v7 pull debian:buster
+<span class="go">pulling image:    debian:buster</span>
+<span class="go">requesting arch:  arm/v7</span>
+<span class="go">manifest list: downloading</span>
+<span class="go">manifest: downloading</span>
+<span class="go">config: downloading</span>
+<span class="go">layer 1/1: 8947560: downloading</span>
+<span class="go">flattening image</span>
+<span class="go">layer 1/1: 8947560: listing</span>
+<span class="go">validating tarball members</span>
+<span class="go">resolving whiteouts</span>
+<span class="go">layer 1/1: 8947560: extracting</span>
+<span class="go">image arch: arm (may not match host arm64/v8)</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="push">
+<h2><span class="section-number">6.14. </span><code class="code docutils literal notranslate"><span class="pre">push</span></code><a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h2>
+<p>Push the image described by the image reference <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from the
+local filesystem to a repository.</p>
+<section id="id11">
+<h3><span class="section-number">6.14.1. </span>Synopsis<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> push <span class="o">[</span>--image DIR<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
+</pre></div>
+</div>
+<p>See the FAQ for the gory details on specifying image references.</p>
+</section>
+<section id="id12">
+<h3><span class="section-number">6.14.2. </span>Description<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<p>Destination:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">DEST_REF</span></code></dt><dd><p>If specified, use this as the destination image reference, rather than
+<code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>. This lets you push to a repository without permanently
+adding a tag to the image.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Options:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">--image</span> <span class="pre">DIR</span></code></dt><dd><p>Use the unpacked image located at <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> rather than an image in the
+storage directory named <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Because Charliecloud is fully unprivileged, the owner and group of files in
+its images are not meaningful in the broader ecosystem. Thus, when pushed,
+everything in the image is flattened to user:group <code class="code docutils literal notranslate"><span class="pre">root:root</span></code>. Also,
+setuid/setgid bits are removed, to avoid surprises if the image is pulled by a
+privileged container implementation.</p>
+</section>
+<section id="id13">
+<h3><span class="section-number">6.14.3. </span>Examples<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<p>Push a local image to the registry <code class="code docutils literal notranslate"><span class="pre">example.com:5000</span></code> at path
+<code class="code docutils literal notranslate"><span class="pre">/foo/bar</span></code> with tag <code class="code docutils literal notranslate"><span class="pre">latest</span></code>. Note that in this form, the local
+image must be named to match that remote reference.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push example.com:5000/foo/bar:latest
+<span class="go">pushing image:   example.com:5000/foo/bar:latest</span>
+<span class="go">layer 1/1: gathering</span>
+<span class="go">layer 1/1: preparing</span>
+<span class="go">preparing metadata</span>
+<span class="go">starting upload</span>
+<span class="go">layer 1/1: a1664c4: checking if already in repository</span>
+<span class="go">layer 1/1: a1664c4: not present, uploading</span>
+<span class="go">config: 89315a2: checking if already in repository</span>
+<span class="go">config: 89315a2: not present, uploading</span>
+<span class="go">manifest: uploading</span>
+<span class="go">cleaning up</span>
+<span class="go">done</span>
+</pre></div>
+</div>
+<p>Same, except use local image <code class="code docutils literal notranslate"><span class="pre">alpine:3.9</span></code>. In this form, the local image
+name does not have to match the destination reference.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push alpine:3.9 example.com:5000/foo/bar:latest
+<span class="go">pushing image:   alpine:3.9</span>
+<span class="go">destination:     example.com:5000/foo/bar:latest</span>
+<span class="go">layer 1/1: gathering</span>
+<span class="go">layer 1/1: preparing</span>
+<span class="go">preparing metadata</span>
+<span class="go">starting upload</span>
+<span class="go">layer 1/1: a1664c4: checking if already in repository</span>
+<span class="go">layer 1/1: a1664c4: not present, uploading</span>
+<span class="go">config: 89315a2: checking if already in repository</span>
+<span class="go">config: 89315a2: not present, uploading</span>
+<span class="go">manifest: uploading</span>
+<span class="go">cleaning up</span>
+<span class="go">done</span>
+</pre></div>
+</div>
+<p>Same, except use unpacked image located at <code class="code docutils literal notranslate"><span class="pre">/var/tmp/image</span></code> rather than
+an image in <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> storage. (Also, the sole layer is already present
+in the remote registry, so we don’t upload it again.)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push --image /var/tmp/image example.com:5000/foo/bar:latest
+<span class="go">pushing image:   example.com:5000/foo/bar:latest</span>
+<span class="go">image path:      /var/tmp/image</span>
+<span class="go">layer 1/1: gathering</span>
+<span class="go">layer 1/1: preparing</span>
+<span class="go">preparing metadata</span>
+<span class="go">starting upload</span>
+<span class="go">layer 1/1: 892e38d: checking if already in repository</span>
+<span class="go">layer 1/1: 892e38d: already present</span>
+<span class="go">config: 546f447: checking if already in repository</span>
+<span class="go">config: 546f447: not present, uploading</span>
+<span class="go">manifest: uploading</span>
+<span class="go">cleaning up</span>
+<span class="go">done</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="reset">
+<h2><span class="section-number">6.15. </span><code class="code docutils literal notranslate"><span class="pre">reset</span></code><a class="headerlink" href="#reset" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> reset
+</pre></div>
+</div>
+<p>Delete all images and cache from ch-image builder storage.</p>
+</section>
+<section id="undelete">
+<h2><span class="section-number">6.16. </span><code class="code docutils literal notranslate"><span class="pre">undelete</span></code><a class="headerlink" href="#undelete" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> undelete IMAGE_REF
+</pre></div>
+</div>
+<p>If <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> has been deleted but is in the build cache, recover it
+from the cache. Only available when the cache is enabled, and will not
+overwrite <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> if it exists.</p>
+</section>
+<section id="environment-variables">
+<h2><span class="section-number">6.17. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h2>
+<dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_USERNAME</span></code>, <code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_PASSWORD</span></code></dt><dd><p>Username and password for registry authentication. <strong>See important caveats
+in section “Authentication” above.</strong></p>
+</dd>
+</dl>
+<dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FILE</span></code></dt><dd><p>If set, append log chatter to this file, rather than standard error. This is
+useful for debugging situations where standard error is consumed or lost.</p>
+<p>Also sets verbose mode if not already set (equivalent to <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code>).</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FESTOON</span></code></dt><dd><p>If set, prepend PID and timestamp to logged chatter.</p>
+</dd>
+</dl>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ch-fromhost.html" class="btn btn-neutral float-left" title="5. ch-fromhost" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ch-run.html" class="btn btn-neutral float-right" title="7. ch-run" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014–2022, Triad National Security, LLC and others.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

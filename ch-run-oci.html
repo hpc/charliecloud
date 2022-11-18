@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>8. ch-run-oci &mdash; Charliecloud 0.30 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="9. ch-ssh" href="ch-ssh.html" />
+    <link rel="prev" title="7. ch-run" href="ch-run.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Charliecloud
+            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.30
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">8.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">8.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#operations">8.3. Operations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create">8.3.1. <code class="code docutils literal notranslate"><span class="pre">create</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#delete">8.3.2. <code class="code docutils literal notranslate"><span class="pre">delete</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kill">8.3.3. <code class="code docutils literal notranslate"><span class="pre">kill</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#start">8.3.4. <code class="code docutils literal notranslate"><span class="pre">start</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#state">8.3.5. <code class="code docutils literal notranslate"><span class="pre">state</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#unsupported-oci-features">8.4. Unsupported OCI features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-variables">8.5. Environment variables</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ch-run-oci">
+<h1><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h1>
+<p>OCI wrapper for <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
+<section id="synopsis">
+<h2><span class="section-number">8.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci OPERATION <span class="o">[</span>ARG ...<span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="description">
+<h2><span class="section-number">8.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This command is experimental. Features may be incomplete and/or buggy. The
+quality of code is not yet up to the usual Charliecloud standards, and
+error handling is poor. Please report any issues you find, so we can fix
+them!</p>
+</div>
+<p>Open Containers Initiative (OCI) wrapper for <code class="code docutils literal notranslate"><span class="pre">ch-run(1)</span></code>. You probably
+don’t want to run this command directly; it is intended to interface with
+other software that expects an OCI runtime. The current goal is to support
+completely unprivileged image building (e.g. <code class="code docutils literal notranslate"><span class="pre">buildah</span>
+<span class="pre">--runtime=ch-run-oci</span></code>) rather than general OCI container running.</p>
+<p><em>Support of the OCI runtime specification is only partial.</em> This is for two
+reasons. First, it’s an experimental and incomplete feature. More importantly,
+the philosophy and goals of OCI differ significantly from those of
+Charliecloud. Key differences include:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>OCI is designed to run services, while Charliecloud is designed to run
+scientific applications.</p></li>
+<li><p>OCI containers are persistent things with a complex lifecycle, while
+Charliecloud containers are simply UNIX processes.</p></li>
+<li><p>OCI expects support for a variety of namespaces, while Charliecloud
+supports user and mount, no more and no less.</p></li>
+<li><p>OCI expects runtimes to maintain a supervisor process in addition to
+user processes; Charliecloud has no need for this.</p></li>
+<li><p>OCI expects runtimes to maintain state throughout the container lifecycle
+in a location independent from the caller.</p></li>
+</ul>
+</div></blockquote>
+<p>For these reasons, <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> is a bit of a kludge, and much of what
+it does is provide scaffolding to satisfy OCI requirements.</p>
+<p>Which OCI features are and are not supported is provided in the rest of this
+man page, and technical analysis and discussion are in the Contributor’s
+Guide.</p>
+<p>This command supports OCI version 1.0.0 only and fails with an error if other
+versions are offered.</p>
+</section>
+<section id="operations">
+<h2><span class="section-number">8.3. </span>Operations<a class="headerlink" href="#operations" title="Permalink to this headline">¶</a></h2>
+<p>All OCI operations are accepted, but some are no-ops or merely scaffolding to
+satisfy the caller. For comparison, see also:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/runtime.md">OCI runtime and lifecycle spec</a></p></li>
+<li><p>The <a class="reference external" href="https://github.com/opencontainers/runc/tree/master/man">runc man pages</a></p></li>
+</ul>
+<section id="create">
+<h3><span class="section-number">8.3.1. </span><code class="code docutils literal notranslate"><span class="pre">create</span></code><a class="headerlink" href="#create" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci create --bundle DIR --pid-file FILE <span class="o">[</span>--no-new-keyring<span class="o">]</span> CONTAINER_ID
+</pre></div>
+</div>
+<p>Create a container. Charliecloud does not have separate create and start
+phases, so this operation only sets up OCI-related scaffolding.</p>
+<p>Arguments:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">--bundle</span> <span class="pre">DIR</span></code></dt><dd><p>Directory containing the OCI bundle. This must be <code class="code docutils literal notranslate"><span class="pre">/tmp/buildahYYY</span></code>,
+where <code class="code docutils literal notranslate"><span class="pre">YYY</span></code> matches <code class="code docutils literal notranslate"><span class="pre">CONTAINER_ID</span></code> below.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--pid-file</span> <span class="pre">FILE</span></code></dt><dd><p>Filename to write the “container” process PID to. Note that for
+Charliecloud, the process given is fake; see above. This must be
+<code class="code docutils literal notranslate"><span class="pre">DIR/pid</span></code>, where <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> is given by <code class="code docutils literal notranslate"><span class="pre">--bundle</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-new-keyring</span></code></dt><dd><p>Ignored. (Charliecloud does not implement session keyrings.)</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">CONTAINER_ID</span></code></dt><dd><p>String to use as the container ID. This must be
+<code class="code docutils literal notranslate"><span class="pre">buildah-buildahYYY</span></code>, where <code class="code docutils literal notranslate"><span class="pre">YYY</span></code> matches <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> above.</p>
+</dd>
+</dl>
+</div></blockquote>
+<p>Unsupported arguments:</p>
+<blockquote>
+<div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">--console-socket</span> <span class="pre">PATH</span></code></dt><dd><p>UNIX socket to pass pseudoterminal file descriptor. Charliecloud does not
+support pseudoterminals; fail with an error if this argument is given. For
+Buildah, redirect its input from <code class="code docutils literal notranslate"><span class="pre">/dev/null</span></code> to prevent it from
+requesting a pseudoterminal.</p>
+</dd>
+</dl>
+</div></blockquote>
+</section>
+<section id="delete">
+<h3><span class="section-number">8.3.2. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci delete CONTAINER_ID
+</pre></div>
+</div>
+<p>Clean up the OCI-related scaffolding for specified container.</p>
+</section>
+<section id="kill">
+<h3><span class="section-number">8.3.3. </span><code class="code docutils literal notranslate"><span class="pre">kill</span></code><a class="headerlink" href="#kill" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci <span class="nb">kill</span> CONTAINER_ID
+</pre></div>
+</div>
+<p>No-op.</p>
+</section>
+<section id="start">
+<h3><span class="section-number">8.3.4. </span><code class="code docutils literal notranslate"><span class="pre">start</span></code><a class="headerlink" href="#start" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci start CONTAINER_ID
+</pre></div>
+</div>
+<p>Eexecute the user command specified at create time in a Charliecloud
+container.</p>
+</section>
+<section id="state">
+<h3><span class="section-number">8.3.5. </span><code class="code docutils literal notranslate"><span class="pre">state</span></code><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci state CONTAINER_ID
+</pre></div>
+</div>
+<p>Print the state of the given container on standard output as an OCI compliant
+JSON document.</p>
+</section>
+</section>
+<section id="unsupported-oci-features">
+<h2><span class="section-number">8.4. </span>Unsupported OCI features<a class="headerlink" href="#unsupported-oci-features" title="Permalink to this headline">¶</a></h2>
+<p>As noted above, various OCI features are not supported by Charliecloud. We
+have tried to guess which features would be essential to callers;
+<code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> fails with an error if these are requested. Otherwise, the
+request is simply ignored.</p>
+<p>We are interested in hearing about scientific-computing use cases for
+unsupported features, so we can add support for things that are needed.</p>
+<p>Our goal is for this man page to be comprehensive: every OCI runtime feature
+should either work or be listed as unsupported.</p>
+<p>Unsupported features that are an error:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Pseudoterminals</p></li>
+<li><p>Hooks (prestart, poststart, and prestop)</p></li>
+<li><p>Annotations</p></li>
+<li><p>Joining existing namespaces</p></li>
+<li><p>Intel Resource Director Technology (RDT)</p></li>
+</ul>
+</div></blockquote>
+<p>Unsupported features that are ignored:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Mounts other than the root filesystem (we do use <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code>)</p></li>
+<li><p>User/group mappings beyond one user mapped to EUID and one group mapped to
+EGID</p></li>
+<li><p>Disabling <code class="code docutils literal notranslate"><span class="pre">prctl(PR_SET_NO_NEW_PRIVS)</span></code></p></li>
+<li><p>Root filesystem propagation mode</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">sysctl</span></code> directives</p></li>
+<li><p>masked and read-only paths (remaining unprivileged protects you)</p></li>
+<li><p>Capabilities</p></li>
+<li><p>rlimits</p></li>
+<li><p>Devices (all devices are inherited from the host)</p></li>
+<li><p>cgroups</p></li>
+<li><p>seccomp</p></li>
+<li><p>SELinux</p></li>
+<li><p>AppArmor</p></li>
+<li><p>Container hostname setting</p></li>
+</ul>
+</div></blockquote>
+</section>
+<section id="environment-variables">
+<h2><span class="section-number">8.5. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h2>
+<dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FILE</span></code></dt><dd><p>If set, append log chatter to this file, rather than standard error. This is
+useful for debugging situations where standard error is consumed or lost.</p>
+<p>Also sets verbose mode if not already set (equivalent to <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code>).</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FESTOON</span></code></dt><dd><p>If set, prepend PID and timestamp to logged chatter.</p>
+</dd>
+</dl>
+<p><code class="code docutils literal notranslate"><span class="pre">CH_RUN_OCI_HANG</span></code></p>
+<blockquote>
+<div><p>If set to the name of a command (e.g., <code class="code docutils literal notranslate"><span class="pre">create</span></code>), sleep indefinitely
+when that command is invoked. The purpose here is to halt a build so it can
+be examined and debugged.</p>
+</div></blockquote>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ch-run.html" class="btn btn-neutral float-left" title="7. ch-run" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ch-ssh.html" class="btn btn-neutral float-right" title="9. ch-ssh" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014–2022, Triad National Security, LLC and others.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
