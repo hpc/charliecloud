@@ -39,13 +39,14 @@ cv_chimage_dir () {
 
 cv_chimage_docker () {
     chimage_in_validate "$1"
-    dockman_out_validate docker_ "$2"
+    #docker_out_validate "$2"
+    docker_out_validate "$2"
     chimage_to_dockman docker_ "$1" "$2"
 }
 
 cv_chimage_podman () {
     chimage_in_validate "$1"
-    dockman_out_validate podman_ "$2"
+    podman_out_validate "$2"
     chimage_to_dockman podman_ "$1" "$2"
 }
 
@@ -73,13 +74,13 @@ cv_dir_chimage () {
 
 cv_dir_docker () {
     dir_in_validate "$1"
-    dockman_out_validate docker_ "$2"
+    docker_out_validate "$2"
     dir_to_dockman docker_ "$1" "$2"
 }
 
 cv_dir_podman () {
     dir_in_validate "$1"
-    dockman_out_validate podman_ "$2"
+    podman_out_validate "$2"
     dir_to_dockman podman_ "$1" "$2"
 }
 
@@ -126,7 +127,7 @@ cv_docker_dir () {
 
 cv_docker_podman () {
     dockman_in_validate docker_ "$1"
-    dockman_out_validate podman_ "$2"
+    podman_out_validate "$2"
     docker_out=${tmpdir}/weirdal.tar.gz
     cv_docker_tar "$1" "$docker_out" # FIXME: needlessly compresses
     cv_tar_podman "$docker_out" "$2"
@@ -159,7 +160,7 @@ cv_podman_dir () {
 
 cv_podman_docker () {
     dockman_in_validate podman_ "$1"
-    dockman_out_validate docker_ "$2"
+    docker_out_validate "$2"
     podman_out=${tmpdir}/weirdal.tar.gz
     cv_podman_tar "$1" "$podman_out" # FIXME: needlesly compresses
     cv_tar_docker "$podman_out" "$2"
@@ -208,13 +209,13 @@ cv_squash_dir () {
 
 cv_squash_docker () {
     squash_in_validate "$1"
-    dockman_out_validate docker_ "$2"
+    docker_out_validate "$2"
     squash_to_dockman docker_ "$1" "$2"
 }
 
 cv_squash_podman () {
     squash_in_validate "$1"
-    dockman_out_validate podman_ "$2"
+    podman_out_validate "$2"
     squash_to_dockman podman_ "$1" "$2"
 }
 
@@ -281,13 +282,13 @@ cv_tar_dir () {
 
 cv_tar_docker () {
     tar_in_validate "$1"
-    dockman_out_validate docker_ "$2"
+    docker_out_validate "$2"
     tar_to_dockman docker_ "$1" "$2"    
 }
 
 cv_tar_podman () {
     tar_in_validate "$1"
-    dockman_out_validate podman_ "$2"
+    podman_out_validate "$2"
     tar_to_dockman podman_ "$1" "$2"
 }
 
@@ -343,15 +344,6 @@ dm_fmt_name () {
 dockman_in_validate () {
     digest=$("$1" image ls -q "$2")
     [ -n "$digest" ] || FATAL "source not found in $(dm_fmt_name "$1") storage: ${2}"
-}
-
-dockman_out_validate () {
-    # Podman’s own image search is a substring query, so e.g. “foo” will also
-    # match “foobar”. Decades-old UNIX tools to the rescue. Thanks Red Hat!!
-    if    ( "$1" images | grep -Eq "^localhost/${2}\s" ) \
-       && [ -n "$no_clobber" ]; then
-	FATAL "exists in $(dm_fmt_name "$1") storage, not deleting per --no-clobber: ${2}"
-    fi
 }
 
 dockman_to_chimage () {
@@ -453,6 +445,22 @@ dir_out_validate () {
         else
             FATAL "exists but does not appear to be an image: ${1}"
         fi
+    fi
+}
+
+docker_out_validate () {
+    digest=$(docker_ image ls -q "$1")
+    if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
+	FATAL "exists in Docker storage, not deleting per --no-clobber: ${1}"
+    fi
+}
+
+podman_out_validate () {
+    # Podman’s own image search is a substring query, so e.g. “foo” will also
+    # match “foobar”. Decades-old UNIX tools to the rescue. Thanks Red Hat!!
+    if    ( podman_ images | grep -Eq "^localhost/${1}\s" ) \
+       && [ -n "$no_clobber" ]; then
+	FATAL "exists in Podman storage, not deleting per --no-clobber: ${1}"
     fi
 }
 
