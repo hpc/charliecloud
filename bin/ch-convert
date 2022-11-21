@@ -39,7 +39,6 @@ cv_chimage_dir () {
 
 cv_chimage_docker () {
     chimage_in_validate "$1"
-    #docker_out_validate "$2"
     docker_out_validate "$2"
     chimage_to_dockman docker_ "$1" "$2"
 }
