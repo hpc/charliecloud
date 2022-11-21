@@ -343,7 +343,6 @@ test_from () {
     # docker
     printf 'FROM alpine:3.9\n' | docker_ build -t tmpimg -
     run ch-convert --no-clobber -o docker "$BATS_TMPDIR" tmpimg
-    #run ch-convert --no-clobber -o docker alpine tmpimg
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists in Docker storage, not deleting per --no-clobber: tmpimg" ]]
