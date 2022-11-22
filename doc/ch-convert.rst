@@ -100,6 +100,9 @@ Image formats
   :code:`docker`
     Internal storage for Docker.
 
+  :code:`podman`
+    Internal storage for Podman.
+    
   :code:`squash`
     SquashFS filesystem archive containing the flattened image. SquashFS
     archives are much like tar archives but are mountable, including by
@@ -142,10 +145,11 @@ filesystem.
 
   4. If `ch-image` is installed: :code:`ch-image` internal storage.
 
-  5. If Docker is installed: Docker internal storage.
+  5. If Podman is installed: Podman internal storage.
 
-  6. Otherwise: No format inference.
+  6. If Docker is installed: Docker internal storage.
 
+  7. Otherwise: No format inference.
 
 Examples
 ========

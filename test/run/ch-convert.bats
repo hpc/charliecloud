@@ -116,7 +116,8 @@ compare-ls () {
     cd "$1" || exit  # to make -path reasonable
       find . -mindepth 1 \
               \(    -path ./.dockerenv \
-                 -o -path ./ch \) -prune \
+                 -o -path ./ch  \
+	         -o -path ./run \) -prune \
            -o -not \(    -path ./.git \
                       -o -path ./ch/git.pickle \
                       -o -path ./dev \
@@ -150,6 +151,9 @@ convert-img () {
         docker)
             in_desc=tmpimg
             ;;
+	podman)
+	    in_desc=tmpimg
+	    ;;
         tar)
             in_desc=${BATS_TMPDIR}/convert.tar.gz
             ;;
@@ -171,6 +175,9 @@ convert-img () {
         docker)
             out_desc=tmpimg
             ;;
+	podman)
+	    out_desc=tmpimg
+	    ;;
         tar)
             out_desc=${BATS_TMPDIR}/convert.tar.gz
             ;;
@@ -182,6 +189,7 @@ convert-img () {
             false
             ;;
     esac
+    echo
     echo "CONVERT ${ct}: ${in_desc} ($in_fmt) -> ${out_desc} (${out_fmt})"
     delete "$out_fmt" "$out_desc"
     if [[ $in_fmt = ch-image && $CH_IMAGE_CACHE = enabled ]]; then
@@ -210,6 +218,9 @@ delete () {
         docker)
             docker_ rmi -f "$desc"
             ;;
+	podman)
+	    podman_ rmi -f "$desc" || true
+	    ;;
         tar)
             rm -f "$desc"
             ;;
@@ -228,7 +239,7 @@ test_from () {
     end=${BATS_TMPDIR}/convert.dir
     ct=1
     convert-img "$ct" dir "$1"
-    for j in ch-image docker squash tar; do
+    for j in ch-image docker podman squash tar; do
         if [[ $1 != "$j" ]]; then
             ct=$((ct+1))
             convert-img "$ct" "$1" "$j"
@@ -286,6 +297,9 @@ test_from () {
     elif command -v docker > /dev/null 2>&1; then
         [[ $status -eq 0 ]]
         [[ $output = *'input:   docker'* ]]
+    elif command -v podman > /dev/null 2>&1; then
+	[[ $status -eq 0 ]]
+	[[ $output = *'input:   podman'* ]]
     else
         [[ $status -eq 1 ]]
         [[ $output = *'no builder found' ]]
@@ -332,6 +346,13 @@ test_from () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists in Docker storage, not deleting per --no-clobber: tmpimg" ]]
+
+    # podman
+    printf 'FROM alpine:3.9\n' | podman_ build -t tmpimg -
+    run ch-convert --no-clobber -o podman "$BATS_TMPDIR" tmpimg
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: exists in Podman storage, not deleting per --no-clobber: tmpimg" ]]
 
     # squash
     touch "${BATS_TMPDIR}/00_tiny.sqfs"
@@ -403,6 +424,10 @@ test_from () {
 
 @test 'ch-convert: dir -> docker -> X' {
     test_from docker
+}
+
+@test 'ch-convert: dir -> podman -> X' {
+    test_from podman
 }
 
 @test 'ch-convert: dir -> squash -> X' {
