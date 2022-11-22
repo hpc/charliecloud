@@ -38,8 +38,8 @@ glibc_version_ok () {
     # Ensure host glibc and guest glibc are compatible (see #1430).
     host=$(ldd --version | head -1 | grep -o '....$')
     guest=$(ch-run "$1" -- ldd --version | head -1 | grep -o '....$')
-    if [ "$(printf $host'\n2.34' | sort -V | head -1)" = '2.34' ] \
-	   && [ "$(printf $guest'\n2.34' | sort -V | head -1)" != '2.34' ]; then
+    if [ "$(printf "%s\n2.34" "$host" | sort -V | head -1)" = '2.34' ] \
+	   && [ "$(printf "%s\n2.34" "$guest" | sort -V | head -1)" != '2.34' ]; then
 	skip "host glibc $host ≥ 2.34 > $guest"
     fi
 }
