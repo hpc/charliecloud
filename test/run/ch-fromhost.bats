@@ -34,10 +34,23 @@ fromhost_ls () {
     find "$1" -xdev -name '*sotest*' -ls
 }
 
+glibc_version_ok () {
+    # Ensure host glibc and guest glibc are compatible (see #1430).
+    host=$(ldd --version | head -1 | grep -o '....$')
+    guest=$(ch-run "$1" -- ldd --version | head -1 | grep -o '....$')
+    if [ $(printf $host'\n2.34' | sort -V | head -1) = '2.34' ] \
+	   && [ $(printf $guest'\n2.34' | sort -V | head -1) != '2.34' ]; then
+	skip "host glibc $host ≥ 2.34 > $guest"
+    fi
+}
+
 @test 'ch-fromhost (CentOS)' {
     scope standard
     prerequisites_ok almalinux_8ch
     img=${ch_imgdir}/almalinux_8ch
+
+    # check glibc version compatibility.
+    glibc_version_ok "$img"
 
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
