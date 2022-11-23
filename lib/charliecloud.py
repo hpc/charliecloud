@@ -2144,31 +2144,21 @@ class Registry_HTTP:
       except requests.exceptions.RequestException as x:
          FATAL("%s failed: %s" % (method, x))
       # construct friendly Docker Hub info message
-      #rl_msg = "" # rate limit message
       rl_msg = [] # rate limit message array
       if ("ratelimit-limit" in res.headers):
-         #pass
          rl_info = res.headers["ratelimit-limit"].split(";w=")
          rl_msg.append("Rate Limit: %s pulls per %s hours" % (rl_info[0],
                                                               int(rl_info[1]) // 3600))
       if ("ratelimit-remaining" in res.headers):
-         #rl_msg += ", " if (rl_msg != "") else ""
          remaining = res.headers["ratelimit-remaining"].split(";w=")[0]
          rl_msg.append("Pulls Remaining: %s" % remaining)
       if ("docker-ratelimit-source" in res.headers):
-         #rl_msg += ", " if (rl_msg != "")
          src = res.headers["docker-ratelimit-source"]
          if (re.match(r"[0-9.a-f:]+", src).group(0) == src): # IP address
-            #pass
-            #rl_msg = ("Docker Hub Auth: False, " + rl_msg
-            #          + "Rate Limit Source: %s, " % src)
             rl_msg.append("Rate Limit Source: %s" % src)
             rl_msg.insert(0, "Docker Hub Auth: False")
          elif (re.match(r"[0-9A-Fa-f-]+", src).group(0) == src): # UUID
-            #pass
             rl_msg.insert(0, "Docker Hub Auth: True")
-      #print("EMPTY INFO INCOMING")
-      #INFO("")
       if (rl_msg != []):
          INFO(", ".join(rl_msg))
       # Log some headers if needed.
