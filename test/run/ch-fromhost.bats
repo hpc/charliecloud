@@ -137,6 +137,9 @@ glibc_version_ok () {
     prerequisites_ok debian_9ch
     img=${ch_imgdir}/debian_9ch
 
+    # check glibc version compatibility.
+    glibc_version_ok "$img"
+
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
 
