@@ -2144,10 +2144,32 @@ class Registry_HTTP:
       except requests.exceptions.RequestException as x:
          FATAL("%s failed: %s" % (method, x))
       # Log some headers if needed.
+      print("TYPE: %s" % type(res.headers))
       for h in res.headers:
          h = h.lower()
-         if (   "ratelimit" in h
-             or h == "www-authenticate"):
+         if ("ratelimit" in h):
+            info = res.headers[h].split(";w=")
+            if (h == "ratelimit-limit"):
+               #pass
+               msg = "Rate Limit: %s pulls per %s hours" % (info[0],
+                                                            int(info[1]) // 3600)
+            elif (h == "ratelimit-remaining"):
+               #pass
+               msg = "Pulls Remaining: %s" % info[0]
+            elif (h == "docker-ratelimit-source"):
+               #pass
+               if (re.match(r"[0-9.a-f:]+",
+                            info[0]).group(0) == info[0]): # IPv4 or IPv6
+                  msg = "Rate Limit Source: %s" % info[0]
+                  INFO("Docker Hub Authenticated: False")
+               elif (re.match(r"[0-9A-Fa-f-]+",
+                              info[0]).group(0) == info[0]): # UUID
+                  INFO("Docker Hub Authenticated: True")
+            else:
+               raise Exception("unreachable code reached: %s" % h)
+            INFO(msg)
+            continue
+         elif (h == "www-authenticate"):
             f = VERBOSE
          else:
             f = DEBUG
