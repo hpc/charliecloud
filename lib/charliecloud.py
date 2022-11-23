@@ -2143,33 +2143,36 @@ class Registry_HTTP:
                   % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("%s failed: %s" % (method, x))
+      # construct friendly Docker Hub info message
+      rl_msg = "" # rate limit message
+      if ("ratelimit-limit" in res.headers):
+         #pass
+         rl_info = res.headers["ratelimit-limit"].split(";w=")
+         rl_msg += "Rate Limit: %s pulls per %s hours, " % (rl_info[0],
+                                                            int(rl_info[1]) // 3600)
+      if ("ratelimit-remaining" in res.headers):
+         #rl_msg += ", " if (rl_msg != "") else ""
+         remaining = res.headers["ratelimit-remaining"].split(";w=")[0]
+         rl_msg += "Pulls Remaining: %s, " % remaining
+      if ("docker-ratelimit-source" in res.headers):
+         #rl_msg += ", " if (rl_msg != "")
+         src = res.headers["docker-ratelimit-source"]
+         if (re.match(r"[0-9.a-f:]+", src).group(0) == src): # IP address
+            #pass
+            rl_msg = ("Docker Hub Auth: False, " + rl_msg
+                      + "Rate Limit Source: %s, " % src)
+         elif (re.match(r"[0-9A-Fa-f-]+", src).group(0) == src): # UUID
+            #pass
+            rl_msg = "Docker Hub Auth: True, " + rl_msg
+      #print("EMPTY INFO INCOMING")
+      #INFO("")
+      if (rl_msg != ""):
+         INFO(rl_msg[:-2])
       # Log some headers if needed.
-      print("TYPE: %s" % type(res.headers))
       for h in res.headers:
          h = h.lower()
-         if ("ratelimit" in h):
-            info = res.headers[h].split(";w=")
-            if (h == "ratelimit-limit"):
-               #pass
-               msg = "Rate Limit: %s pulls per %s hours" % (info[0],
-                                                            int(info[1]) // 3600)
-            elif (h == "ratelimit-remaining"):
-               #pass
-               msg = "Pulls Remaining: %s" % info[0]
-            elif (h == "docker-ratelimit-source"):
-               #pass
-               if (re.match(r"[0-9.a-f:]+",
-                            info[0]).group(0) == info[0]): # IPv4 or IPv6
-                  msg = "Rate Limit Source: %s" % info[0]
-                  INFO("Docker Hub Authenticated: False")
-               elif (re.match(r"[0-9A-Fa-f-]+",
-                              info[0]).group(0) == info[0]): # UUID
-                  INFO("Docker Hub Authenticated: True")
-            else:
-               raise Exception("unreachable code reached: %s" % h)
-            INFO(msg)
-            continue
-         elif (h == "www-authenticate"):
+         if (   "ratelimit" in h
+             or h == "www-authenticate"):
             f = VERBOSE
          else:
             f = DEBUG
