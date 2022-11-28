@@ -2143,29 +2143,34 @@ class Registry_HTTP:
                   % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("%s failed: %s" % (method, x))
-      # construct friendly Docker Hub info message
-      rl_msg = [] # rate limit message array
+      # Docker Hub info message Step 1: read headers
+      rl_info, remaining, src = '', '', ''
       if ("ratelimit-limit" in res.headers):
          rl_info = res.headers["ratelimit-limit"].split(";w=")
-         rl_msg.append("Rate Limit: %s pulls per %s hours" % (rl_info[0],
-                                                              int(rl_info[1]) // 3600))
       if ("ratelimit-remaining" in res.headers):
          remaining = res.headers["ratelimit-remaining"].split(";w=")[0]
-         rl_msg.append("Pulls Remaining: %s" % remaining)
       if ("docker-ratelimit-source" in res.headers):
          src = res.headers["docker-ratelimit-source"]
-         if (re.match(r"[0-9.a-f:]+", src).group(0) == src): # IP address
+      # Step 2: Construct friendly Docker Hub ratelimit message
+      rl_msg = [] # rate limit message list
+      if (src != ''):
+         if (re.search(r"[0-9.a-f:]+", src).group(0) == src): # IP address
+            rl_msg.append("Docker Hub Auth: False")
             rl_msg.append("Rate Limit Source: %s" % src)
-            rl_msg.insert(0, "Docker Hub Auth: False")
-         elif (re.match(r"[0-9A-Fa-f-]+", src).group(0) == src): # UUID
-            rl_msg.insert(0, "Docker Hub Auth: True")
+         elif (re.search(r"[0-9A-Fa-f-]+", src).group(0) == src): # UUID
+            rl_msg.append("Docker Hub Auth: True")
+      if (rl_info != ''):
+         # ratelimit provided in seconds, convert to hours.
+         rl_msg.append("Rate Limit: %s pulls per %s hours" % (rl_info[0],
+                                                              int(rl_info[1]) // 3600))
+      if (remaining != ''):
+         rl_msg.append("Pulls Remaining: %s" % remaining)
       if (rl_msg != []):
          INFO(", ".join(rl_msg))
       # Log some headers if needed.
       for h in res.headers:
          h = h.lower()
-         if (   "ratelimit" in h
-             or h == "www-authenticate"):
+         if (h == "www-authenticate"):
             f = VERBOSE
          else:
             f = DEBUG
