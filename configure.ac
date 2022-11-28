@@ -362,7 +362,10 @@ AS_IF([   test $want_libsquashfuse = yes \
        && test $have_libsquashfuse_ll = yes \
        && test $have_ll_h = yes],
       [have_libsquashfuse=yes
-       CH_RUN_LIBS="-lsquashfuse_ll -lfuse3 -Wl,-rpath=$lib_libsquashfuse $CH_RUN_LIBS"],
+       AS_IF([test -n "$lib_libsquashfuse"],
+             [rpath_libsquashfuse=-Wl,-rpath=$lib_libsquashfuse],
+             [rpath_libsquashfuse=])
+       CH_RUN_LIBS="-lsquashfuse_ll -lfuse3 $rpath_libsquashfuse $CH_RUN_LIBS"],
       [have_libsquashfuse=no])
 AS_IF([   test $need_libsquashfuse = yes \
        && test $have_libsquashfuse = no],
