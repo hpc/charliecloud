@@ -34,10 +34,28 @@ fromhost_ls () {
     find "$1" -xdev -name '*sotest*' -ls
 }
 
+glibc_version_ok () {
+    # glibc 2.34 and later is incompatible with older versions. If you try
+    # to run a container with glibc < 2.34 on a host with glibc ≥ 2.34, you
+    # get an error. This function ensures that host glibc and guest glibc are
+    # compatible (see #1430).
+    host=$(ldd --version | grep -oE '[0-9.]+[^.]$')
+    guest=$(ch-run "$1" -- ldd --version | grep -oE '[0-9.]+[^.]$')
+    # Check version compatibility. If host glibc ≥ 2.34 and guest glibc < 2.34,
+    # skip the test.
+    if [[     $(printf "%s\n2.34" "$host" | sort -V | head -1) = 2.34 \
+	   && $(printf "%s\n2.34" "$guest" | sort -V | head -1) != 2.34 ]]; then
+	skip "host glibc $host ≥ 2.34 > $guest"
+    fi
+}
+
 @test 'ch-fromhost (CentOS)' {
     scope standard
     prerequisites_ok almalinux_8ch
     img=${ch_imgdir}/almalinux_8ch
+
+    # check glibc version compatibility.
+    glibc_version_ok "$img"
 
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
@@ -118,6 +136,9 @@ fromhost_ls () {
     scope full
     prerequisites_ok debian_9ch
     img=${ch_imgdir}/debian_9ch
+
+    # check glibc version compatibility.
+    glibc_version_ok "$img"
 
     libpath=$(ch-fromhost --lib-path "$img")
     echo "libpath: ${libpath}"
