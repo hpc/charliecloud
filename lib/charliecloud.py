@@ -19,6 +19,10 @@ import sys
 import time
 import traceback
 
+# compatability link (Path previously definied here)
+import path as pa
+Path = pa.Path
+
 ## Hairy imports ##
 
 # List of dependency problems.
