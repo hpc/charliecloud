@@ -120,7 +120,7 @@ class Path(pathlib.PosixPath):
          elif (shutil.which("gzip") is not None):
             cls.gzip = "gzip"
          else:
-            ch.FATAL("can’t find path to gzip or pigz")
+            ch.ch.FATAL("can’t find path to gzip or pigz")
 
    def add_suffix(self, suff):
       """Returns the path object restulting from appending the specified
@@ -130,8 +130,8 @@ class Path(pathlib.PosixPath):
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
-      old = ossafe(os.getcwd, "can’t get cwd(2)")
-      ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
+      old = ch.ch.ossafe(os.getcwd, "can’t get cwd(2)")
+      ch.ch.ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
       return Path(old)
 
    def chmod_min(self, perms_new, st=None):
@@ -150,14 +150,14 @@ class Path(pathlib.PosixPath):
       perms_old = stat.S_IMODE(st.st_mode)
       perms_new |= perms_old
       if (perms_new != perms_old):
-         VERBOSE("fixing permissions: %s: %03o -> %03o"
+         ch.ch.VERBOSE("fixing permissions: %s: %03o -> %03o"
                  % (self, perms_old, perms_new))
-         ossafe(os.chmod, "can’t chmod: %s" % self, self, perms_new)
+         ch.ch.ossafe(os.chmod, "can’t chmod: %s" % self, self, perms_new)
       return (st.st_mode | perms_new)
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exits on the first error."
-      shutil.copytree(str(self), copy_function=copy2, *args, **kwargs)
+      shutil.copytree(str(self), copy_function=ch.copy2, *args, **kwargs)
 
    def disk_bytes(self):
       """Return the number of disk bytes consumed by path. Note this is probably
@@ -169,7 +169,7 @@ class Path(pathlib.PosixPath):
          under path. Warning: double-counts files with multiple hard links."""
       file_ct = 1
       byte_ct = self.disk_bytes()
-      for (dir_, subdirs, files) in os.walk(self):
+      for (dir_, subdirs, files) in os.ch.walk(self):
          file_ct += len(subdirs) + len(files)
          byte_ct += sum(Path(dir_ + "/" + i).disk_bytes()
                         for i in subdirs + files)
@@ -184,7 +184,7 @@ class Path(pathlib.PosixPath):
       except FileNotFoundError:
          return False
       except OSError as x:
-         ch.FATAL("can’t stat: %s: %s" % (self, x.strerror))
+         ch.ch.FATAL("can’t stat: %s: %s" % (self, x.strerror))
       return True
 
    def file_ensure_exists(self):
@@ -192,7 +192,7 @@ class Path(pathlib.PosixPath):
          symlink), do nothing; otherwise, create it as an empty regular file."""
       if (not os.path.lexists(self)): # no substitute for lexists() in pathlib.
          fp = self.open_("w")
-         close_(fp)
+         ch.ch.close_(fp)
 
    def file_gzip(self, args=[]):
       """Run pigz(1) if it’s available, otherwise gzip(1), on file at path and
@@ -209,14 +209,14 @@ class Path(pathlib.PosixPath):
       if (path_c.exists()):
          path_c.unlink()
       # Compress.
-      cmd([self.gzip] + args + [str(self)])
+      ch.cmd([self.gzip] + args + [str(self)])
       # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1], to
       # ensure layer hash is consistent. See issue #1080.
       # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
       fp = path_c.open_("r+b")
-      ossafe(fp.seek, "can’t seek: %s" % fp, 4)
-      ossafe(fp.write, "can’t write: %s" % fp, b'\x00\x00\x00\x00')
-      close_(fp)
+      ch.ch.ossafe(fp.seek, "can’t seek: %s" % fp, 4)
+      ch.ch.ossafe(fp.write, "can’t write: %s" % fp, b'\x00\x00\x00\x00')
+      ch.ch.close_(fp)
       return path_c
 
    def file_hash(self):
@@ -225,11 +225,11 @@ class Path(pathlib.PosixPath):
       fp = self.open_("rb")
       h = hashlib.sha256()
       while True:
-         data = ossafe(fp.read, "can’t read: %s" % self.name, 2**18)
+         data = ch.ch.ossafe(fp.read, "can’t read: %s" % self.name, 2**18)
          if (len(data) == 0):
             break  # EOF
          h.update(data)
-      close_(fp)
+      ch.ch.close_(fp)
       return h.hexdigest()
 
    def file_read_all(self, text=True):
@@ -242,13 +242,13 @@ class Path(pathlib.PosixPath):
          mode = "rb"
          encoding = None
       fp = self.open_(mode, encoding=encoding)
-      data = ossafe(fp.read, "can't read: %s" % self.name)
-      close_(fp)
+      data = ch.ch.ossafe(fp.read, "can't read: %s" % self.name)
+      ch.ch.close_(fp)
       return data
 
    def file_size(self, follow_symlinks=False):
       "Return the size of file at path in bytes."
-      st = ossafe(os.stat, "can’t stat: %s" % self.name,
+      st = ch.ch.ossafe(os.stat, "can’t stat: %s" % self.name,
                   self, follow_symlinks=follow_symlinks)
       return st.st_size
 
@@ -256,8 +256,8 @@ class Path(pathlib.PosixPath):
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
       fp = self.open_("wb")
-      ossafe(fp.write, "can’t write: %s" % self.name, content)
-      close_(fp)
+      ch.ch.ossafe(fp.write, "can’t write: %s" % self.name, content)
+      ch.ch.close_(fp)
 
    def grep_p(self, rx):
       """Return True if file at path contains a line matching regular
@@ -270,13 +270,13 @@ class Path(pathlib.PosixPath):
                   return True
          return False
       except OSError as x:
-         ch.FATAL("can’t read %s: %s" % (self.name, x.strerror))
+         ch.ch.FATAL("can’t read %s: %s" % (self.name, x.strerror))
 
    def hardlink(self, target):
       try:
          os.link(target, self)  # no super().hardlink_to() until 3.10
       except OSError as x:
-         ch.FATAL("can’t hard link: %s -> %s: %s" % (self, target, x.strerror))
+         ch.ch.FATAL("can’t hard link: %s -> %s: %s" % (self, target, x.strerror))
 
    def is_relative_to(self, *other):
       try:
@@ -314,14 +314,14 @@ class Path(pathlib.PosixPath):
       #return self.joinpath(other)
 
    def json_from_file(self, msg):
-      DEBUG("loading JSON: %s: %s" % (msg, self))
+      ch.DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
-      TRACE("text:\n%s" % text)
+      ch.TRACE("text:\n%s" % text)
       try:
          data = json.loads(text)
-         DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
+         ch.DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
       except json.JSONDecodeError as x:
-         ch.FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
+         ch.ch.FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
       return data
 
    def listdir(self):
@@ -329,7 +329,7 @@ class Path(pathlib.PosixPath):
          and parent (..). We considered changing this to use os.scandir() for
          #992, but decided that the advantages it offered didn’t warrant the
          effort required to make the change."""
-      return set(ossafe(os.listdir, "can’t list: %s" % self.name, self))
+      return set(ch.ch.ossafe(os.listdir, "can’t list: %s" % self.name, self))
 
    def strip(self, left=0, right=0):
       """Return a copy of myself with n leading components removed. E.g.:
@@ -348,41 +348,41 @@ class Path(pathlib.PosixPath):
       return Path(*self.parts[left:len(self.parts)-right])
 
    def mkdir_(self):
-      TRACE("ensuring directory: %s" % self)
+      ch.TRACE("ensuring directory: %s" % self)
       try:
          super().mkdir(exist_ok=True)
       except FileExistsError as x:
-         ch.FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
+         ch.ch.FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
       except OSError as x:
-         ch.FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
+         ch.ch.FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
 
    def mkdirs(self, exist_ok=True):
-      TRACE("ensuring directories: %s" % self.name)
+      ch.TRACE("ensuring directories: %s" % self.name)
       try:
          os.makedirs(self, exist_ok=exist_ok)
       except OSError as x:
-         ch.FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
+         ch.ch.FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename, x.strerror))
 
    def open_(self, mode, *args, **kwargs):
-      return ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
+      return ch.ch.ossafe(super().open, "can't open for %s: %s" % (mode, self.name),
                     mode, *args, **kwargs)
 
    def rename_(self, name_new):
       if (Path(name_new).exists()):
-         ch.FATAL("can’t rename: destination exists: %s" % name_new)
-      ossafe(super().rename, "can’t rename: %s -> %s" % (self.name, name_new),
+         ch.ch.FATAL("can’t rename: destination exists: %s" % name_new)
+      ch.ch.ossafe(super().rename, "can’t rename: %s -> %s" % (self.name, name_new),
              name_new)
 
    def rmdir_(self):
-      ossafe(super().rmdir, "can’t rmdir: %s" % self.name)
+      ch.ch.ossafe(super().rmdir, "can’t rmdir: %s" % self.name)
 
    def rmtree(self):
       if (self.is_dir()):
-         TRACE("deleting directory: %s" % self.name)
+         ch.TRACE("deleting directory: %s" % self.name)
          try:
             shutil.rmtree(self)
          except OSError as x:
-            ch.FATAL("can’t recursively delete directory %s: %s: %s"
+            ch.ch.FATAL("can’t recursively delete directory %s: %s: %s"
                   % (self.name, x.filename, x.strerror))
       else:
          assert False, "unimplemented"
@@ -397,7 +397,7 @@ class Path(pathlib.PosixPath):
          NOTE: We also cannot just call super().stat here because the
          follow_symlinks kwarg is absent in pathlib for Python 3.6, which we
          want to retain compatibility with."""
-      return ossafe(os.stat, "can’t stat: %s" % self, self,
+      return ch.ch.ossafe(os.stat, "can’t stat: %s" % self, self,
                     follow_symlinks=links)
 
    def symlink(self, target, clobber=False):
@@ -407,16 +407,16 @@ class Path(pathlib.PosixPath):
          super().symlink_to(target)
       except FileExistsError:
          if (not self.is_symlink()):
-            ch.FATAL(  "can’t symlink: source exists and isn't a symlink: %s"
+            ch.ch.FATAL(  "can’t symlink: source exists and isn't a symlink: %s"
                   % self.name)
          if (self.readlink() != target):
-            ch.FATAL("can’t symlink: %s exists; want target %s but existing is %s"
+            ch.ch.FATAL("can’t symlink: %s exists; want target %s but existing is %s"
                   % (self.name, target, self.readlink()))
       except OSError as x:
-         ch.FATAL("can’t symlink: %s -> %s: %s" % (self.name, target, x.strerror))
+         ch.ch.FATAL("can’t symlink: %s -> %s: %s" % (self.name, target, x.strerror))
 
    def unlink_(self, *args, **kwargs):
-      ossafe(super().unlink, "can't unlink: %s" % self.name)
+      ch.ch.ossafe(super().unlink, "can't unlink: %s" % self.name)
 
       
 class Storage:
@@ -484,22 +484,22 @@ class Storage:
 
    @staticmethod
    def root_default():
-      # FIXME: Perhaps we should use getpass.getuser() instead of the $USER
+      # FIXME: Perhaps we should use getpass.getch.user() instead of the $USER
       # environment variable? It seems a lot more robust. But, (1) we'd have
       # to match it in some scripts and (2) it makes the documentation less
       # clear becase we have to explain the fallback behavior.
-      return Path("/var/tmp/%s.ch" % user())
+      return Path("/var/tmp/%s.ch" % ch.user())
 
    @staticmethod
    def root_env():
       if ("CH_GROW_STORAGE" in os.environ):
          # Avoid surprises if user still has $CH_GROW_STORAGE set (see #906).
-         ch.FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
+         ch.ch.FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
       if (not "CH_IMAGE_STORAGE" in os.environ):
          return None
       path = Path(os.environ["CH_IMAGE_STORAGE"])
       if (not path.is_absolute()):
-         ch.FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
+         ch.ch.FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
       return path
 
    def build_large_path(self, name):
@@ -523,13 +523,13 @@ class Storage:
                hint = "let Charliecloud create %s; see FAQ" % self.root.name
             else:
                hint = None
-            ch.FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
+            ch.ch.FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
          v_found = self.version_read()
       if (v_found == STORAGE_VERSION):
-         VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
+         ch.ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
       elif (v_found in {None, 1, 2, 3}):  # initialize/upgrade
-         INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
+         ch.INFO("%s storage directory: v%d %s" % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
          self.lock()
          self.download_cache.mkdir_()
@@ -541,31 +541,31 @@ class Storage:
             new = old.parent // str(old.name).replace(":", "+")
             if (old != new):
                if (new.exists()):
-                  ch.FATAL("can't upgrade: already exists: %s" % new)
+                  ch.ch.FATAL("can't upgrade: already exists: %s" % new)
                old.rename(new)
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can't upgrade
-         ch.FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
+         ch.ch.FATAL("incompatible storage directory v%d: %s" % (v_found, self.root),
                'you can delete and re-initialize with "ch-image reset"')
       self.validate_strict()
 
    def init_move_old(self):
       """If appropriate, move storage directory from old default path to new.
          See issues #1160 and #1243."""
-      old = Storage(Path("/var/tmp") // user() // "ch-image")
+      old = Storage(Path("/var/tmp") // ch.user() // "ch-image")
       moves = ( "dlcache", "img", "ulcache", "version" )
       if (self.root != self.root_default()):
          return  # do nothing silently unless using default storage dir
       if (not os.path.exists(old.root)):
          return  # do nothing silently unless old default storage dir exists
       if (not old.valid_p):
-         WARNING("storage dir: invalid at old default, ignoring: %s" % old.root)
+         ch.WARNING("storage dir: invalid at old default, ignoring: %s" % old.root)
          return
-      INFO("storage dir: valid at old default: %s" % old.root)
+      ch.INFO("storage dir: valid at old default: %s" % old.root)
       if (not os.path.exists(self.root)):
          self.root.mkdir_()
       elif (self.valid_p):
-         WARNING("storage dir: also valid at new default: %s" % self.root,
+         ch.WARNING("storage dir: also valid at new default: %s" % self.root,
                  hint="consider deleting the old one")
          return
       elif (not os.path.isdir(self.root)):
@@ -576,20 +576,20 @@ class Storage:
       # storage exists, is a directory, and contains none of the files we'd
       # move. However, it *may* contain subdirectories other parts of
       # Charliecloud care about, e.g. "mnt" for ch-run.
-      INFO("storage dir: moving to new default path: %s" % self.root)
+      ch.INFO("storage dir: moving to new default path: %s" % self.root)
       for i in moves:
          src = old.root // i
          dst = self.root // i
          if (os.path.exists(src)):
-            DEBUG("moving: %s -> %s" % (src, dst))
+            ch.DEBUG("moving: %s -> %s" % (src, dst))
             try:
                shutil.move(src, dst)
             except OSError as x:
-               ch.FATAL("can't move: %s -> %s: %s"
+               ch.ch.FATAL("can't move: %s -> %s: %s"
                      % (x.filename, x.filename2, x.strerror))
       old.root.rmdir_()
       if (not old.root.parent.listdir()):
-         WARNING("parent of old storage dir now empty: %s" % old.root.parent,
+         ch.WARNING("parent of old storage dir now empty: %s" % old.root.parent,
                  hint="consider deleting it")
 
    def lock(self):
@@ -610,10 +610,10 @@ class Storage:
          fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
       except OSError as x:
          if (x.errno in { errno.EACCES, errno.EAGAIN }):
-            ch.FATAL("storage directory is already in use",
+            ch.ch.FATAL("storage directory is already in use",
                   "concurrent instances of ch-image cannot share the same storage directory")
          else:
-            ch.FATAL("can't lock storage directory: %s" % x.strerror)
+            ch.ch.FATAL("can't lock storage directory: %s" % x.strerror)
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
@@ -627,9 +627,9 @@ class Storage:
    def reset(self):
       if (self.valid_p):
          self.root.rmtree()
-         self.init()  # largely for debugging
+         self.ch.init()  # largely for debugging
       else:
-         ch.FATAL("%s not a builder storage" % (self.root));
+         ch.ch.FATAL("%s not a builder storage" % (self.root));
 
    def unpack(self, image_ref):
       return self.unpack_base // image_ref.for_path
@@ -641,7 +641,7 @@ class Storage:
          nothing unexpected may be present. However, it is not comprehensive.
          The main purpose is to check for bad upgrades and other programming
          errors, not meddling."""
-      DEBUG("validating storage directory: %s" % self.root)
+      ch.DEBUG("validating storage directory: %s" % self.root)
       msg_prefix = "invalid storage directory"
       # Check that all expected files exist, and no others. Note that we don't
       # verify file *type*, assuming that kind of error is rare.
@@ -655,15 +655,15 @@ class Storage:
          try:
             entries.remove(entry)
          except KeyError:
-            ch.FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+            ch.ch.FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
       entries -= { i.name for i in (self.lockfile, self.mount_point) }
       if (len(entries) > 0):
-         ch.FATAL("%s: extraneous file(s): %s"
+         ch.ch.FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(sorted(entries))))
       # check version
       v_found = self.version_read()
       if (v_found != STORAGE_VERSION):
-         ch.FATAL("%s: version mismatch: %d expected, %d found"
+         ch.ch.FATAL("%s: version mismatch: %d expected, %d found"
                % (msg_prefix, STORAGE_VERSION, v_found))
       # check that no image directories have “:” in filename
       assert isinstance(self.unpack_base, Path) # remove if test suite passes
@@ -671,8 +671,8 @@ class Storage:
       imgs_bad = set()
       for img in imgs:
          if (":" in img):  # bad char check b/c problem here is bad upgrade
-            ch.FATAL("%s: storage directory broken: bad image dir name: %s"
-                  % (msg_prefix, img), BUG_REPORT_PLZ)
+            ch.ch.FATAL("%s: storage directory broken: bad image dir name: %s"
+                  % (msg_prefix, img), ch.BUG_REPORT_PLZ)
 
    def version_read(self):
       if (os.path.isfile(self.version_file)):
@@ -681,7 +681,7 @@ class Storage:
          try:
             return int(text)
          except ValueError:
-            ch.FATAL('malformed storage version: "%s"' % text)
+            ch.ch.FATAL('malformed storage version: "%s"' % text)
       else:
          return 1
 
@@ -711,7 +711,7 @@ class TarFile(tarfile.TarFile):
       def filter_(ti):
          assert (ti.name == "." or ti.name[:2] == "./")
          if (ti.name.startswith("./.git") or ti.name == "./ch/git.pickle"):
-            DEBUG("omitting from push: %s" % ti.name)
+            ch.DEBUG("omitting from push: %s" % ti.name)
             return None
          self.fix_member_uidgid(ti)
          return ti
@@ -728,7 +728,7 @@ class TarFile(tarfile.TarFile):
          # other than lstat().
          st = None
       except OSError as x:
-         ch.FATAL("can't lstat: %s" % targetpath, targetpath)
+         ch.ch.FATAL("can't lstat: %s" % targetpath, targetpath)
       if (st is not None):
          if (stat.S_ISREG(st.st_mode)):
             if (regulars):
@@ -740,7 +740,7 @@ class TarFile(tarfile.TarFile):
             if (dirs):
                Path(targetpath).rmtree()
          else:
-            ch.FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
+            ch.ch.FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
                   % (stat.S_IFMT(st.st_mode), targetpath))
 
    @staticmethod
@@ -752,7 +752,7 @@ class TarFile(tarfile.TarFile):
       fix_ct = 0
       # Empty target not allowed; have to check string b/c "" -> Path(".").
       if (len(ti.linkname) == 0):
-         ch.FATAL("rejecting link with empty target: %s: %s" % (tb, ti.name))
+         ch.ch.FATAL("rejecting link with empty target: %s: %s" % (tb, ti.name))
       # Fix absolute link targets.
       if (tgt.is_absolute()):
          if (ti.issym()):
@@ -767,13 +767,13 @@ class TarFile(tarfile.TarFile):
             new = tgt.relative_to("/")
          else:
             assert False, "not a link"
-         DEBUG("absolute %s: %s -> %s: changing target to: %s"
+         ch.DEBUG("absolute %s: %s -> %s: changing target to: %s"
                % (kind, src, tgt, new))
          tgt = new
          fix_ct = 1
       # Reject links that climb out of image (FIXME: repair instead).
       if (".." in os.path.normpath(src // tgt).split("/")):
-         ch.FATAL("rejecting too many up-levels: %s: %s -> %s" % (tb, src, tgt))
+         ch.ch.FATAL("rejecting too many up-levels: %s: %s -> %s" % (tb, src, tgt))
       # Done.
       ti.linkname = str(tgt)
       return fix_ct
@@ -782,31 +782,31 @@ class TarFile(tarfile.TarFile):
    def fix_member_uidgid(ti):
       assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
       if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
-         ch.FATAL("invalid file type: %s" % ti.name)
+         ch.ch.FATAL("invalid file type: %s" % ti.name)
       ti.uid = 0
       ti.uname = "root"
       ti.gid = 0
       ti.gname = "root"
       if (ti.mode & stat.S_ISUID):
-         VERBOSE("stripping unsafe setuid bit: %s" % ti.name)
+         ch.ch.VERBOSE("stripping unsafe setuid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISUID
       if (ti.mode & stat.S_ISGID):
-         VERBOSE("stripping unsafe setgid bit: %s" % ti.name)
+         ch.ch.VERBOSE("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
 
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
       # of the member being extracted.
-      TRACE("makedir: %s" % targetpath)
+      ch.TRACE("makedir: %s" % targetpath)
       self.clobber(targetpath, regulars=True, symlinks=True)
       super().makedir(tarinfo, targetpath)
 
    def makefile(self, tarinfo, targetpath):
-      TRACE("makefile: %s" % targetpath)
+      ch.TRACE("makefile: %s" % targetpath)
       self.clobber(targetpath, symlinks=True, dirs=True)
       super().makefile(tarinfo, targetpath)
 
    def makelink(self, tarinfo, targetpath):
-      TRACE("makelink: %s -> %s" % (targetpath, tarinfo.linkname))
+      ch.TRACE("makelink: %s -> %s" % (targetpath, tarinfo.linkname))
       self.clobber(targetpath, regulars=True, symlinks=True, dirs=True)
       super().makelink(tarinfo, targetpath)
