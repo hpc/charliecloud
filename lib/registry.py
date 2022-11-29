@@ -3,11 +3,23 @@ import io
 import os
 import sys
 import urllib
-import requests            # HAIRY IMPORTS!!!
-import requests.auth       #
-import requests.exceptions
 #from charliecloud import Image_Unavailable_Error
 import charliecloud as ch
+
+## Hairy imports ##
+
+# Requests is not bundled, so this noise makes the file parse and
+# --version/--help work even if it's not installed.
+try:
+   import requests
+   import requests.auth
+   import requests.exceptions
+except ImportError:
+   ch.depfails.append(("missing", 'Python module "requests"'))
+   # Mock up a requests.auth module so the rest of the file parses.
+   requests = types.ModuleType("requests")
+   requests.auth = types.ModuleType("requests.auth")
+   requests.auth.AuthBase = object
 
 ## Constants ##
 

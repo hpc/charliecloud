@@ -7,6 +7,22 @@ import re
 import shutil
 import tarfile
 
+## Hairy Imports ##
+
+from charliecloud import depfails # keep track of dependency probs
+
+# Lark is bundled or provided by package dependencies, so assume it's always
+# importable. There used to be a conflicting package on PyPI called "lark",
+# but it's gone now [1]. However, verify the version we got.
+#
+# [1]: https://github.com/lark-parser/lark/issues/505
+import lark
+LARK_MIN = (0,  7, 1)
+LARK_MAX = (99, 0, 0)
+lark_version = tuple(int(i) for i in lark.__version__.split("."))
+if (not LARK_MIN <= lark_version <= LARK_MAX):
+   depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
+
 ## Constants ##
 
 # ARGs that are “magic”: always available, don’t cause cache misses, not saved
@@ -830,3 +846,61 @@ fields:
           and self.port is None):
          self.path.insert(0, self.host)
          self.host = None
+
+
+## Functions ##
+
+def tree_child(tree, cname):
+   """Locate a descendant subtree named cname using breadth-first search and
+      return it. If no such subtree exists, return None."""
+   return next(tree_children(tree, cname), None)
+
+def tree_child_terminal(tree, cname, tname, i=0):
+   """Locate a descendant subtree named cname using breadth-first search and
+      return its first child terminal named tname. If no such subtree exists,
+      or it doesn't have such a terminal, return None."""
+   st = tree_child(tree, cname)
+   if (st is not None):
+      return tree_terminal(st, tname, i)
+   else:
+      return None
+
+def tree_child_terminals(tree, cname, tname):
+   """Locate a descendant substree named cname using breadth-first search and
+      yield the values of its child terminals named tname. If no such subtree
+      exists, or it has no such terminals, yield an empty sequence."""
+   for d in tree.iter_subtrees_topdown():
+      if (d.data == cname):
+         return tree_terminals(d, tname)
+   return []
+
+def tree_child_terminals_cat(tree, cname, tname):
+   """Return the concatenated values of all child terminals named tname as a
+      string, with no delimiters. If none, return the empty string."""
+   return "".join(tree_child_terminals(tree, cname, tname))
+
+def tree_children(tree, cname):
+   "Yield children of tree named cname using breadth-first search."
+   for st in tree.iter_subtrees_topdown():
+      if (st.data == cname):
+         yield st
+
+def tree_terminal(tree, tname, i=0):
+   """Return the value of the ith child terminal named tname (zero-based), or
+      None if not found."""
+   for (j, t) in enumerate(tree_terminals(tree, tname)):
+      if (j == i):
+         return t
+   return None
+
+def tree_terminals(tree, tname):
+   """Yield values of all child terminals named tname, or empty list if none
+      found."""
+   for j in tree.children:
+      if (isinstance(j, lark.lexer.Token) and j.type == tname):
+         yield j.value
+
+def tree_terminals_cat(tree, tname):
+   """Return the concatenated values of all child terminals named tname as a
+      string, with no delimiters. If none, return the empty string."""
+   return "".join(tree_terminals(tree, tname))
