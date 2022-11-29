@@ -5,7 +5,10 @@ import json
 import os
 import re
 import shutil
+import sys
 import tarfile
+import charliecloud as ch
+import path as pa
 
 ## Hairy Imports ##
 
@@ -30,7 +33,7 @@ if (not LARK_MIN <= lark_version <= LARK_MAX):
 ARGS_MAGIC = { "HTTP_PROXY", "HTTPS_PROXY", "FTP_PROXY", "NO_PROXY",
                "http_proxy", "https_proxy", "ftp_proxy", "no_proxy",
                "SSH_AUTH_SOCK", "USER" }
-# FIXME: user() not yet defined
+# FIXME: ch.user() not yet defined
 ARG_DEFAULTS_MAGIC = { k:v for (k,v) in ((m, os.environ.get(m))
                                           for m in ARGS_MAGIC)
                        if v is not None }
@@ -181,10 +184,10 @@ class Image:
       assert isinstance(ref, Image_Ref)
       self.ref = ref
       if (unpack_path is not None):
-         assert isinstance(unpack_path, Path)
+         assert isinstance(unpack_path, pa.Path)
          self.unpack_path = unpack_path
       else:
-         self.unpack_path = storage.unpack(self.ref)
+         self.unpack_path = ch.storage.unpack(self.ref)
       self.metadata_init()
 
    @property
@@ -192,7 +195,7 @@ class Image:
       """True if it's OK to delete me, either my unpack directory (a) is at
          the expected location within the storage directory xor (b) is not not
          but it looks like an image; False otherwise."""
-      if (self.unpack_path == storage.unpack_base // self.unpack_path.name):
+      if (self.unpack_path == ch.storage.unpack_base // self.unpack_path.name):
          return True
       else:
          if (all(os.path.isdir(self.unpack_path // i)
@@ -236,27 +239,27 @@ class Image:
 
    def copy_unpacked(self, other):
       """Copy image other to my unpack directory, which may not exist. other
-         can be either a path (string or Path object) or an Image object; in
+         can be either a path (string or pa.Path object) or an Image object; in
          the latter case other.unpack_path is used. other need not be a valid
          image; the essentials will be created if needed."""
       def ignore(path, names):
          # Need this path conversion, since shutil._copytree() calls ignore()
-         # and passes a string, not a Path. See:
+         # and passes a string, not a pa.Path. See:
          # https://github.com/python/cpython/blob/main/Lib/shutil.py#L456
-         path = Path(path)
+         path = pa.Path(path)
          ignore = list()
          if (path == src_path):
             for name in names:
                if (name.startswith(".git")):
-                  VERBOSE("ignoring from source image: /%s" % name)
+                  ch.VERBOSE("ignoring from source image: /%s" % name)
                   ignore.append(name)
          return ignore
-      if (isinstance(other, str) or isinstance(other, Path)):
+      if (isinstance(other, str) or isinstance(other, pa.Path)):
          src_path = other
       else:
          src_path = other.unpack_path
-      VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
-      Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
+      ch.VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
+      pa.Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
@@ -284,25 +287,25 @@ class Image:
       for (i, path) in enumerate(layer_tars, start=1):
          lh = os.path.basename(path).split(".", 1)[0]
          lh_short = lh[:7]
-         INFO("layer %d/%d: %s: listing" % (i, len(layer_tars), lh_short))
+         ch.INFO("layer %d/%d: %s: listing" % (i, len(layer_tars), lh_short))
          try:
-            fp = TarFile.open(path)
-            members = OrderedSet(fp.getmembers())  # reads whole file :(
+            fp = pa.TarFile.open(path)
+            members = ch.OrderedSet(fp.getmembers())  # reads whole file :(
          except tarfile.TarError as x:
-            FATAL("cannot open: %s: %s" % (path, x))
+            ch.FATAL("cannot open: %s: %s" % (path, x))
          if (lh in layers and len(members) > 0):
-            FATAL("duplicate non-empty layer %s" % lh)
+            ch.FATAL("duplicate non-empty layer %s" % lh)
          if (len(members) > 0):
             layers[lh] = TT(fp, members)
          else:
             empty_cnt += 1
-      VERBOSE("skipped %d empty layers" % empty_cnt)
+      ch.VERBOSE("skipped %d empty layers" % empty_cnt)
       return layers
 
    def metadata_init(self):
       "Initialize empty metadata structure."
       # Elsewhere can assume the existence and types of everything here.
-      self.metadata = { "arch": arch_host.split("/")[0],  # no variant
+      self.metadata = { "arch": ch.arch_host.split("/")[0],  # no variant
                         "arg": { **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS },
                         "cwd": "/",
                         "env": dict(),
@@ -321,9 +324,9 @@ class Image:
          path = self.metadata_path
       path //= "metadata.json"
       if (path.exists()):
-         VERBOSE("loading metadata")
+         ch.VERBOSE("loading metadata")
       else:
-         WARNING("no metadata to load; using defaults")
+         ch.WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
       self.metadata = path.json_from_file("metadata")
@@ -352,7 +355,7 @@ class Image:
          if (v is not None and v != ""):
             self.metadata[dst_key] = v
       if ("config" not in config):
-         FATAL("config missing key 'config'")
+         ch.FATAL("config missing key 'config'")
       # architecture
       set_("arch", "architecture")
       # $CWD
@@ -364,11 +367,11 @@ class Image:
             try:
                (k,v) = line.split("=", maxsplit=1)
             except AttributeError:
-               FATAL("can't parse config: bad Env line: %s" % line)
+               ch.FATAL("can't parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
       # History.
       if ("history" not in config):
-         FATAL("invalid config: missing history")
+         ch.FATAL("invalid config: missing history")
       self.metadata["history"] = config["history"]
       # labels
       set_("labels", "config", "Labels")  # copy reference
@@ -383,12 +386,12 @@ class Image:
    def metadata_replace(self, config_json):
       self.metadata_init()
       if (config_json is None):
-         INFO("no config found; initializing empty metadata")
+         ch.INFO("no config found; initializing empty metadata")
       else:
          # Copy pulled config file into the image so we still have it.
          path = self.metadata_path // "config.pulled.json"
-         copy2(config_json, path)
-         VERBOSE("pulled config path: %s" % path)
+         ch.copy2(config_json, path)
+         ch.VERBOSE("pulled config path: %s" % path)
          self.metadata_merge_from_config(path.json_from_file("config"))
       self.metadata_save()
 
@@ -402,19 +405,19 @@ class Image:
       # Serialize. We take care to pretty-print this so it can (sometimes) be
       # parsed by simple things like grep and sed.
       out = json.dumps(metadata, indent=2, sort_keys=True)
-      DEBUG("metadata:\n%s" % out)
+      ch.DEBUG("metadata:\n%s" % out)
       # Main metadata file.
       path = self.metadata_path // "metadata.json"
-      VERBOSE("writing metadata file: %s" % path)
+      ch.VERBOSE("writing metadata file: %s" % path)
       path.file_write(out + "\n")
       # /ch/environment
       path = self.metadata_path // "environment"
-      VERBOSE("writing environment file: %s" % path)
+      ch.VERBOSE("writing environment file: %s" % path)
       path.file_write( (  "\n".join("%s=%s" % (k,v) for (k,v)
                                     in sorted(metadata["env"].items()))
                         + "\n"))
       # mkdir volumes
-      VERBOSE("ensuring volume directories exist")
+      ch.VERBOSE("ensuring volume directories exist")
       for path in metadata["volumes"]:
          (self.unpack_path // path).mkdirs()
 
@@ -427,15 +430,15 @@ class Image:
       base = "%s.tar" % self.ref.for_path
       path = tarball_dir // base
       try:
-         INFO("layer 1/1: gathering")
-         VERBOSE("writing tarball: %s" % path)
-         fp = TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
+         ch.INFO("layer 1/1: gathering")
+         ch.VERBOSE("writing tarball: %s" % path)
+         fp = pa.TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
          unpack_path = self.unpack_path.resolve()  # aliases use symlinks
-         VERBOSE("canonicalized unpack path: %s" % unpack_path)
+         ch.VERBOSE("canonicalized unpack path: %s" % unpack_path)
          fp.add_(unpack_path, arcname=".")
          fp.close()
       except OSError as x:
-         FATAL("can't write tarball: %s" % x.strerror)
+         ch.FATAL("can't write tarball: %s" % x.strerror)
       return [base]
 
    def unpack(self, layer_tars, last_layer=None):
@@ -446,7 +449,7 @@ class Image:
          and either be empty or contain only a single entry called “.git”."""
       if (last_layer is None):
          last_layer = sys.maxsize
-      INFO("flattening image")
+      ch.INFO("flattening image")
       self.unpack_layers(layer_tars, last_layer)
       self.unpack_init()
 
@@ -457,33 +460,33 @@ class Image:
       """If the unpack directory does not exist, do nothing. If the unpack
          directory is already an image, remove it. Otherwise, error."""
       if (not os.path.exists(self.unpack_path)):
-         VERBOSE("no image found: %s" % self.unpack_path)
+         ch.VERBOSE("no image found: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
-            FATAL("can't flatten: %s exists but is not a directory"
+            ch.FATAL("can't flatten: %s exists but is not a directory"
                   % self.unpack_path)
          if (not self.deleteable):
-            FATAL("can't flatten: %s exists but does not appear to be an image"
+            ch.FATAL("can't flatten: %s exists but does not appear to be an image"
                   % self.unpack_path)
-         VERBOSE("removing image: %s" % self.unpack_path)
-         t = Timer()
+         ch.VERBOSE("removing image: %s" % self.unpack_path)
+         t = ch.Timer()
          self.unpack_path.rmtree()
-         t.log("removed image")
+         t.ch.log("removed image")
 
    def unpack_delete(self):
-      VERBOSE("unpack path: %s" % self.unpack_path)
+      ch.VERBOSE("unpack path: %s" % self.unpack_path)
       if (not self.unpack_exist_p):
-         FATAL("image not found, can’t delete: %s" % self.ref)
+         ch.FATAL("image not found, can’t delete: %s" % self.ref)
       if (self.deleteable):
-         INFO("deleting image: %s" % self.ref)
+         ch.INFO("deleting image: %s" % self.ref)
          self.unpack_path.chmod_min(0o700)
-         for (dir_, subdirs, _) in os.walk(self.unpack_path):
+         for (dir_, subdirs, _) in os.ch.walk(self.unpack_path):
             # must fix as subdirs so we can traverse into them
             for subdir in subdirs:
-               (Path(dir_) // subdir).chmod_min(0o700)
+               (pa.Path(dir_) // subdir).chmod_min(0o700)
          self.unpack_path.rmtree()
       else:
-         FATAL("storage directory seems broken: not an image: %s" % self.ref)
+         ch.FATAL("storage directory seems broken: not an image: %s" % self.ref)
 
    def unpack_init(self):
       """Initialize the unpack directory, which must exist. Any setup already
@@ -513,34 +516,34 @@ class Image:
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
          if (i > last_layer):
-            INFO("layer %d/%d: %s: skipping per --last-layer"
+            ch.INFO("layer %d/%d: %s: skipping per --last-layer"
                  % (i, len(layers), lh_short))
          else:
-            INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh_short))
+            ch.INFO("layer %d/%d: %s: extracting" % (i, len(layers), lh_short))
             try:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
-               FATAL("can't extract layer %d: %s" % (i, x.strerror))
+               ch.FATAL("can't extract layer %d: %s" % (i, x.strerror))
 
    def validate_members(self, layers):
-      INFO("validating tarball members")
+      ch.INFO("validating tarball members")
       top_dirs = set()
-      VERBOSE("pass 1: canonicalizing member paths")
+      ch.VERBOSE("pass 1: canonicalizing member paths")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          abs_ct = 0
          for m in list(members):   # copy b/c we remove items from the set
             # Remove members with empty paths.
             if (len(m.name) == 0):
-               WARNING("layer %d/%d: %s: skipping member with empty path"
+               ch.WARNING("layer %d/%d: %s: skipping member with empty path"
                        % (i, len(layers), lh[:7]))
                members.remove(m)
-            # Convert member paths to Path objects for easier processing.
-            # Note: In my testing, parsing a string into a Path object took
+            # Convert member paths to pa.Path objects for easier processing.
+            # Note: In my testing, parsing a string into a pa.Path object took
             # about 2.5µs, so this should be plenty fast.
-            m.name = Path(m.name)
+            m.name = pa.Path(m.name)
             # Reject members with up-levels.
             if (".." in m.name.parts):
-               FATAL("rejecting up-level member: %s: %s" % (fp.name, m.name))
+               ch.FATAL("rejecting up-level member: %s: %s" % (fp.name, m.name))
             # Correct absolute paths.
             if (m.name.is_absolute()):
                m.name = m.name.relative_to("/")
@@ -548,21 +551,21 @@ class Image:
             if (len(m.name.parts) > 1 or m.isdir()):
                top_dirs.add(m.name.first)
          if (abs_ct > 0):
-            WARNING("layer %d/%d: %s: fixed %d absolute member paths"
+            ch.WARNING("layer %d/%d: %s: fixed %d absolute member paths"
                     % (i, len(layers), lh[:7], abs_ct))
       top_dirs.discard(None)  # ignore “.”
       # Convert to tarbomb if (1) there is a single enclosing directory and
       # (2) that directory is not one of the standard directories, e.g. to
       # allow images containing just “/bin/fooprog”.
       if (len(top_dirs) != 1 or not top_dirs.isdisjoint(STANDARD_DIRS)):
-         VERBOSE("pass 2: conversion to tarbomb not needed")
+         ch.VERBOSE("pass 2: conversion to tarbomb not needed")
       else:
-         VERBOSE("pass 2: converting to tarbomb")
+         ch.VERBOSE("pass 2: converting to tarbomb")
          for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
             for m in members:
                if (len(m.name.parts) > 0):  # ignore “.”
-                  m.name = Path(*m.name.parts[1:])  # strip first component
-      VERBOSE("pass 3: analyzing members")
+                  m.name = pa.Path(*m.name.parts[1:])  # strip first component
+      ch.VERBOSE("pass 3: analyzing members")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          dev_ct = 0
          link_fix_ct = 0
@@ -571,11 +574,11 @@ class Image:
             if (m.isdev()):
                # Device or FIFO: Ignore.
                dev_ct += 1
-               VERBOSE("ignoring device file: %s" % m.name)
+               ch.VERBOSE("ignoring device file: %s" % m.name)
                members.remove(m)
                continue
             elif (m.issym() or m.islnk()):
-               link_fix_ct += TarFile.fix_link_target(m, fp.name)
+               link_fix_ct += pa.TarFile.fix_link_target(m, fp.name)
             elif (m.isdir()):
                # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
@@ -583,25 +586,25 @@ class Image:
                # Regular file: Fix bad permissions (HELLO RED HAT!!).
                m.mode |= 0o600
             else:
-               FATAL("unknown member type: %s" % m.name)
+               ch.FATAL("unknown member type: %s" % m.name)
             # Discard Git metadata (files that begin with “.git”).
             if (re.search(r"^(\./)?\.git", m.name)):
-               WARNING("ignoring member: %s" % m.name)
+               ch.WARNING("ignoring member: %s" % m.name)
                members.remove(m)
                continue
             # Discard anything under /dev. Docker puts regular files and
             # directories in here on "docker export". Note leading slashes
             # already taken care of in TarFile.fix_member_path() above.
             if (re.search(r"^(\./)?dev/.", m.name)):
-               VERBOSE("ignoring member under /dev: %s" % m.name)
+               ch.VERBOSE("ignoring member under /dev: %s" % m.name)
                members.remove(m)
                continue
-            TarFile.fix_member_uidgid(m)
+            pa.TarFile.fix_member_uidgid(m)
          if (dev_ct > 0):
-            WARNING("layer %d/%d: %s: ignored %d devices and/or FIFOs"
+            ch.WARNING("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                     % (i, len(layers), lh[:7], dev_ct))
          if (link_fix_ct > 0):
-            INFO("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
+            ch.INFO("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
                  % (i, len(layers), lh[:7], link_fix_ct))
 
    def whiteout_rm_prefix(self, layers, max_i, prefix):
@@ -609,24 +612,24 @@ class Image:
          prefix of prefix. For example, if prefix is foo/bar, then ignore
          foo/bar and foo/bar/baz but not foo/barbaz. Return count of members
          ignored."""
-      TRACE("finding members with prefix: %s" % prefix)
+      ch.TRACE("finding members with prefix: %s" % prefix)
       prefix = os.path.normpath(prefix)  # "./foo" == "foo"
       ignore_ct = 0
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          if (i > max_i): break
          members2 = list(members)  # copy b/c we'll alter members
          for m in members2:
-            if (prefix_path(prefix, m.name)):
+            if (ch.prefix_path(prefix, m.name)):
                ignore_ct += 1
                members.remove(m)
-               TRACE("layer %d/%d: %s: ignoring %s"
+               ch.TRACE("layer %d/%d: %s: ignoring %s"
                      % (i, len(layers), lh[:7], m.name))
       return ignore_ct
 
    def whiteouts_resolve(self, layers):
       """Resolve whiteouts. See:
          https://github.com/opencontainers/image-spec/blob/master/layer.md"""
-      INFO("resolving whiteouts")
+      ch.INFO("resolving whiteouts")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          wo_ct = 0
          ig_ct = 0
@@ -639,15 +642,15 @@ class Image:
                members.remove(m)
                if (filename == ".wh..wh..opq"):
                   # "Opaque whiteout": remove contents of dir_.
-                  DEBUG("found opaque whiteout: %s" % m.name)
+                  ch.DEBUG("found opaque whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1, dir_)
                else:
                   # "Explicit whiteout": remove same-name file without ".wh.".
-                  DEBUG("found explicit whiteout: %s" % m.name)
+                  ch.DEBUG("found explicit whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1,
                                                    dir_ + "/" + filename[4:])
          if (wo_ct > 0):
-            VERBOSE("layer %d/%d: %s: %d whiteouts; %d members ignored"
+            ch.VERBOSE("layer %d/%d: %s: %d whiteouts; %d members ignored"
                     % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
 
@@ -718,7 +721,7 @@ class Image_Ref:
 
    @staticmethod
    def path_to_ref(path):
-      if (isinstance(path, Path)):
+      if (isinstance(path, pa.Path)):
          path = path.name
       return path.replace("+", ":").replace("%", "/")
 
@@ -730,7 +733,7 @@ class Image_Ref:
    def glob(class_, image_glob):
       """Return a possibly-empty iterator of references in the storage
          directory matching the given glob."""
-      for path in storage.unpack_base.glob(class_.ref_to_pathstr(image_glob)):
+      for path in ch.storage.unpack_base.glob(class_.ref_to_pathstr(image_glob)):
          yield class_(class_.path_to_ref(path))
 
    @classmethod
@@ -740,21 +743,21 @@ class Image_Ref:
                                    propagate_positions=True)
       s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
-      s = variables_sub(s, variables)
+      s = ch.variables_sub(s, variables)
       if "$" in s:
-         FATAL("image reference contains an undefined variable: %s" % s)
+         ch.FATAL("image reference contains an undefined variable: %s" % s)
       try:
          tree = class_.parser.parse(s)
       except lark.exceptions.UnexpectedInput as x:
          if (x.column == -1):
-            FATAL("image ref syntax, at end: %s" % s, hint);
+            ch.FATAL("image ref syntax, at end: %s" % s, hint);
          else:
-            FATAL("image ref syntax, char %d: %s" % (x.column, s), hint)
+            ch.FATAL("image ref syntax, char %d: %s" % (x.column, s), hint)
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
          # doesn't have a column location.
-         FATAL("image ref syntax, at end: %s" % s, hint)
-      DEBUG(tree.pretty())
+         ch.FATAL("image ref syntax, at end: %s" % s, hint)
+      ch.DEBUG(tree.pretty())
       return tree
 
    @property
@@ -832,14 +835,14 @@ fields:
       self.port = tree_child_terminal(t, "ir_hostport", "IR_PORT")
       if (self.port is not None):
          self.port = int(self.port)
-      self.path = [    variables_sub(s, self.variables)
+      self.path = [    ch.variables_sub(s, self.variables)
                    for s in tree_child_terminals(t, "ir_path",
                                                  "IR_PATH_COMPONENT")]
       self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
       self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
       self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
       for a in ("host", "port", "name", "tag", "digest"):
-         setattr(self, a, variables_sub(getattr(self, a), self.variables))
+         setattr(self, a, ch.variables_sub(getattr(self, a), self.variables))
       # Resolve grammar ambiguity for hostnames w/o dot or port.
       if (    self.host is not None
           and "." not in self.host

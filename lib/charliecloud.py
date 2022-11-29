@@ -18,15 +18,11 @@ import subprocess
 import sys
 import time
 import traceback
-import types
 
 ## Hairy imports ##
 
 # List of dependency problems.
 depfails = []
-
-
-
 
 ## Enums ##
 
@@ -581,6 +577,7 @@ def exit(code):
 
 def init(cli):
    from path import Storage
+   import registry as rg
    # logging
    global log_festoon, log_fp, trace_fatal, verbose
    assert (0 <= cli.verbose <= 3)
@@ -630,7 +627,7 @@ def init(cli):
    profiling = cli.profile
    if (cli.tls_no_verify):
       tls_verify = False
-      rpu = requests.packages.urllib3
+      rpu = rg.requests.packages.urllib3
       rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
 
 def kill_blocking(pid, timeout=10):

@@ -984,7 +984,7 @@ class I_from_(Instruction):
       image_ref = im.Image_Ref(
          im.tree_child_terminals_cat(self.tree, "image_ref", "IMAGE_REF"),
          argfrom)
-      self.base_image = ch.Image(image_ref)
+      self.base_image = im.Image(image_ref)
       self.alias = im.tree_child_terminal(self.tree, "from_alias",
                                           "IR_PATH_COMPONENT")
       # Validate instruction.
@@ -1004,7 +1004,7 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s_stage%d" % (cli.tag, self.image_i)
-      self.image = ch.Image(im.Image_Ref(tag))
+      self.image = im.Image(im.Image_Ref(tag))
       images[self.image_i] = self.image
       if (self.image_alias is not None):
          images[self.image_alias] = self.image

@@ -3,6 +3,7 @@ import io
 import os
 import sys
 import urllib
+import types
 #from charliecloud import Image_Unavailable_Error
 import charliecloud as ch
 

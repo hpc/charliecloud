@@ -11,7 +11,7 @@ import version
 def main(cli):
    src_ref = im.Image_Ref(cli.source_ref)
    ch.INFO("pushing image:   %s" % src_ref)
-   image = ch.Image(src_ref, cli.image)
+   image = im.Image(src_ref, cli.image)
    # FIXME: validate it's an image using Megan's new function (PR #908)
    if (not os.path.isdir(image.unpack_path)):
       if (cli.image is not None):

@@ -665,7 +665,7 @@ class Enabled_Cache:
          dest = self.branch_name_ready(dest)
       # Some versions of Git won't let us update a branch that's already
       # checked out, so detach that worktree if it exists.
-      src_img = ch.Image(src_ref)
+      src_img = im.Image(src_ref)
       if (src_img.unpack_exist_p):
          ch.cmd_quiet(["git", "checkout", "--detach"], cwd=src_img.unpack_path)
       ch.cmd_quiet(["git", "branch", "-f", self.branch_name_ready(src_ref),
