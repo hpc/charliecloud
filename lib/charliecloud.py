@@ -19,9 +19,6 @@ import sys
 import time
 import traceback
 import types
-from registry import HTTP_CHUNK_SIZE
-
-
 
 ## Hairy imports ##
 
@@ -124,6 +121,12 @@ arch_host = None  # of host
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
+
+# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
+# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
+# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
+# takes over.
+HTTP_CHUNK_SIZE = 256 * 1024
 
 # Logging; set using init() below.
 verbose = 0          # Verbosity level.
