@@ -20,7 +20,6 @@ import time
 import traceback
 import types
 from registry import HTTP_CHUNK_SIZE
-from path import Storage, Path
 
 
 
@@ -601,6 +600,7 @@ def exit(code):
    sys.exit(code)
 
 def init(cli):
+   from path import Storage
    # logging
    global log_festoon, log_fp, trace_fatal, verbose
    assert (0 <= cli.verbose <= 3)
@@ -684,6 +684,7 @@ def walk(*args, **kwargs):
       and dirnames and filenames are lists of Path objects. For insight into
       these being lists rather than generators, see use of ch.walk() in
       I_copy.copy_src_dir()."""
+   from path import Path
    for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
       yield (Path(dirpath),
              [Path(dirname) for dirname in dirnames],
@@ -732,6 +733,7 @@ def prefix_path(prefix, path):
 def profile_dump():
    "If profiling, dump the profile data."
    if (profiling):
+      from path import Path
       INFO("writing profile files ...")
       fp = Path("/tmp/chofile.txt").open("wt")
       ps = pstats.Stats(profile, stream=fp)
