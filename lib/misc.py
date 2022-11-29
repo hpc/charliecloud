@@ -27,7 +27,7 @@ class Dependencies(Action_Exit):
       # ch.init() not yet called, so must get verbosity from arguments.
       ch.dependencies_check()
       if (cli.verbose >= 1):
-         print("lark path: %s" % os.path.normpath(inspect.getfile(ch.lark)))
+         print("lark path: %s" % os.path.normpath(inspect.getfile(im.lark)))
       sys.exit(0)
 
 class Version(Action_Exit):
