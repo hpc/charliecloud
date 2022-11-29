@@ -1941,7 +1941,7 @@ class Registry_HTTP:
             f = VERBOSE
          else:
             f = DEBUG
-         f("%s: %s" % (h, res.headers[h]))
+         f("%s: %s" % (h, hs[h]))
       # Friendly message for Docker Hub rate limit.
       used_ct = period = left_ct = reason = "???"  # keep as strings
       if ("ratelimit-limit" in hs):
@@ -1953,7 +1953,7 @@ class Registry_HTTP:
             used_ct = m[1]
             period = str(int(m[2]) / 3600)  # seconds to hours
       if ("ratelimit-remaining" in hs):
-         h = hs["ratelimit_remaining"]
+         h = hs["ratelimit-remaining"]
          m = re.search(r"^(\d+);", h)
          if (m is None):
             WARNING("can’t parse RateLimit-Remaining: %s" % h)
