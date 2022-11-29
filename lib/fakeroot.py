@@ -1,6 +1,7 @@
 import os.path
 
 import charliecloud as ch
+import path
 
 
 ## Globals ##
@@ -348,7 +349,7 @@ class Fakeroot:
 
    def __init__(self, image_path, tag, cfg, inject_p):
       ch.VERBOSE("workarounds: testing config: %s" % tag)
-      file_path = ch.Path("%s/%s" % (image_path, cfg["match"][0]))
+      file_path = path.Path("%s/%s" % (image_path, cfg["match"][0]))
       if (not (    file_path.is_file()
                and file_path.grep_p(cfg["match"][1]))):
           raise Config_Aint_Matched(tag)

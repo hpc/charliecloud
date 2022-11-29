@@ -15,6 +15,7 @@ import charliecloud as ch
 import build_cache as bu
 import fakeroot
 import pull
+import path
 
 
 ## Globals ##
@@ -115,7 +116,7 @@ def main(cli_):
    elif (not os.path.isdir(cli.context)):
       ch.FATAL("context must be a directory: %s" % cli.context)
    else:
-      fp = ch.Path(cli.file).open_("rt")
+      fp = path.Path(cli.file).open_("rt")
       text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
       ch.close_(fp)
 
@@ -341,7 +342,7 @@ class Instruction(abc.ABC):
 
    @property
    def workdir(self):
-      return ch.Path(self.image.metadata["cwd"])
+      return path.Path(self.image.metadata["cwd"])
 
    @workdir.setter
    def workdir(self, x):
@@ -514,7 +515,7 @@ class Arg(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.commit_files.add(ch.Path("ch/metadata.json"))
+      self.commit_files.add(path.Path("ch/metadata.json"))
       self.key = ch.tree_terminal(self.tree, "WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
@@ -671,7 +672,7 @@ class I_copy(Instruction):
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
       src = src.resolve()  # alternative to os.path.realpath()
-      dst = ch.Path(dst)
+      dst = path.Path(dst)
       assert (src.is_dir() and not src.is_symlink())
       assert (dst.is_dir() and not dst.is_symlink())
       ch.DEBUG("copying named directory: %s -> %s" % (src, dst))
@@ -770,12 +771,12 @@ class I_copy(Instruction):
             ch.TRACE("not symlink")
             dst_canon = cand
          else:
-            target = ch.Path(os.readlink(cand))
+            target = path.Path(os.readlink(cand))
             ch.TRACE("symlink to: %s" % target)
             assert (len(target.parts) > 0)  # POSIX says no empty symlinks
             if (target.is_absolute()):
                ch.TRACE("absolute")
-               dst_canon = ch.Path(unpack_path)
+               dst_canon = path.Path(unpack_path)
             else:
                ch.TRACE("relative")
             dst_parts.extend(reversed(target.parts))
@@ -783,9 +784,9 @@ class I_copy(Instruction):
 
    def execute(self):
       # Locate the destination.
-      unpack_canon = ch.Path(self.image.unpack_path).resolve()
+      unpack_canon = path.Path(self.image.unpack_path).resolve()
       if (self.dst.startswith("/")):
-         dst = ch.Path(self.dst)
+         dst = path.Path(self.dst)
       else:
          dst = self.workdir // self.dst
       ch.VERBOSE("destination, as given: %s" % dst)
@@ -855,7 +856,7 @@ class I_copy(Instruction):
       self.srcs = list()
       for src in (ch.variables_sub(i, self.env_build) for i in self.srcs_raw):
          # glob can’t take Path
-         matches = [ch.Path(i) for i in glob.glob("%s/%s" % (context, src))]
+         matches = [path.Path(i) for i in glob.glob("%s/%s" % (context, src))]
          if (len(matches) == 0):
             ch.FATAL("can't copy: source file not found: %s" % src)
          for i in matches:
@@ -906,8 +907,8 @@ class Env(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.commit_files |= {ch.Path("ch/environment"),
-                            ch.Path("ch/metadata.json")}
+      self.commit_files |= {path.Path("ch/environment"),
+                            path.Path("ch/metadata.json")}
 
    @property
    def str_(self):
@@ -1121,7 +1122,7 @@ class I_shell(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.commit_files.add(ch.Path("ch/metadata.json"))
+      self.commit_files.add(path.Path("ch/metadata.json"))
 
    @property
    def str_(self):
@@ -1145,7 +1146,7 @@ class I_workdir(Instruction):
       (self.image.unpack_path // self.workdir).mkdirs()
 
    def prepare(self, *args):
-      self.path = ch.Path(ch.variables_sub(
+      self.path = path.Path(ch.variables_sub(
          ch.tree_terminals_cat(self.tree, "LINE_CHUNK"), self.env_build))
       self.chdir(self.path)
       return super().prepare(*args)

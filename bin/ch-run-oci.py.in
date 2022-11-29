@@ -16,6 +16,7 @@ sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../lib/charliecloud"))
 import charliecloud as ch
 import misc
+import path
 
 
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
@@ -132,16 +133,16 @@ def debug_lines(s):
 def image_fixup(path):
    ch.VERBOSE("fixing up image: %s" % path)
    # Metadata directory.
-   ch.Path("%s/ch/bin" % path).mkdirs()
+   path.Path("%s/ch/bin" % path).mkdirs()
    # Mount points.
-   ch.Path("%s/etc/hosts" % path).file_ensure_exists()
-   ch.Path("%s/etc/resolv.conf" % path).file_ensure_exists()
+   path.Path("%s/etc/hosts" % path).file_ensure_exists()
+   path.Path("%s/etc/resolv.conf" % path).file_ensure_exists()
    # /etc/{passwd,group}
-   ch.Path("%s/etc/passwd" % path).file_write("""\
+   path.Path("%s/etc/passwd" % path).file_write("""\
 root:x:0:0:root:/root:/bin/sh
 nobody:x:65534:65534:nobody:/:/bin/false
 """)
-   ch.Path("%s/etc/group" % path).file_write("""\
+   path.Path("%s/etc/group" % path).file_write("""\
 root:x:0:
 nogroup:x:65534:
 """)
@@ -149,18 +150,18 @@ nogroup:x:65534:
    # unprivileged user namespace. See also the default environment.
    #
    # Debian apt/dpkg/etc. want to chown(1), chgrp(1), etc. in various ways.
-   ch.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path)
-   ch.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
+   path.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path)
+   path.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
    # Debian package management also wants to mess around with users. This is
    # causing problems with /etc/gshadow and other files. These links don't
    # work if they are in /ch/bin, I think because dpkg is resetting the path?
    # For now we'll do this, but I don't like it. fakeroot(1) also solves the
    # problem (see issue #472).
-   ch.Path("/bin/true").symlink("%s/bin/chown" % path, clobber=True)
-   ch.Path("/bin/true").symlink("%s/usr/sbin/groupadd" % path, clobber=True)
-   ch.Path("/bin/true").symlink("%s/usr/sbin/useradd" % path, clobber=True)
-   ch.Path("/bin/true").symlink("%s/usr/sbin/usermod" % path, clobber=True)
-   ch.Path("/bin/true").symlink("%s/usr/bin/chage" % path, clobber=True)
+   path.Path("/bin/true").symlink("%s/bin/chown" % path, clobber=True)
+   path.Path("/bin/true").symlink("%s/usr/sbin/groupadd" % path, clobber=True)
+   path.Path("/bin/true").symlink("%s/usr/sbin/useradd" % path, clobber=True)
+   path.Path("/bin/true").symlink("%s/usr/sbin/usermod" % path, clobber=True)
+   path.Path("/bin/true").symlink("%s/usr/bin/chage" % path, clobber=True)
 
 def op_create():
    # Validate arguments.
@@ -220,7 +221,7 @@ def op_start():
    #
    # GNU tar, when it thinks it's running as root, tries to chown(2) and
    # chgrp(2) files to whatever's in the tarball. --no-same-owner avoids this.
-   with ch.Path(args.bundle + "/environment").open_("wt") as fp:
+   with path.Path(args.bundle + "/environment").open_("wt") as fp:
       for line in (  c["process"]["env"]                  # from Dockerfile
                    + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
          line = re.sub(r"^(PATH=)", "\\1/ch/bin:", line)
@@ -246,11 +247,11 @@ def op_start():
 
    # Execute user command. We can't execv(2) because we have to do cleanup
    # after it exits.
-   ch.Path(args.bundle + "/user_started").file_ensure_exists()
+   path.Path(args.bundle + "/user_started").file_ensure_exists()
    ch.VERBOSE("user command: %s" % ca)
    # Standard output disappears, so send stdout to stderr.
    cp = subprocess.run(ca, stdout=2)
-   ch.Path(args.bundle + "/user_done").file_ensure_exists()
+   path.Path(args.bundle + "/user_done").file_ensure_exists()
    ch.VERBOSE("user command done")
 
    # Stop dummy supervisor.
@@ -298,7 +299,7 @@ def pid_file_from_bundle(bundle):
 def state_load():
    st = types.SimpleNamespace()
 
-   st.config = json.load(ch.Path(args.bundle + "/config.json").open_("rt"))
+   st.config = json.load(path.Path(args.bundle + "/config.json").open_("rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
