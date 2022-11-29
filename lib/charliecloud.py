@@ -2144,29 +2144,24 @@ class Registry_HTTP:
       except requests.exceptions.RequestException as x:
          FATAL("%s failed: %s" % (method, x))
       # Docker Hub info message Step 1: read headers
-      rl_info, remaining, src = '', '', ''
+      pulls, period, remaining, src, auth = [''] * 5
       if ("ratelimit-limit" in res.headers):
-         rl_info = res.headers["ratelimit-limit"].split(";w=")
+         pulls, period = res.headers["ratelimit-limit"].split(";w=")
+         period = str(int(period) // 3600) # convert seconds to hours
       if ("ratelimit-remaining" in res.headers):
          remaining = res.headers["ratelimit-remaining"].split(";w=")[0]
       if ("docker-ratelimit-source" in res.headers):
          src = res.headers["docker-ratelimit-source"]
-      # Step 2: Construct friendly Docker Hub ratelimit message
-      rl_msg = [] # rate limit message list
-      if (src != ''):
          if (re.search(r"[0-9.a-f:]+", src).group(0) == src): # IP address
-            rl_msg.append("Docker Hub Auth: False")
-            rl_msg.append("Rate Limit Source: %s" % src)
+            auth = "anon"
+            src = ", source: " + src
          elif (re.search(r"[0-9A-Fa-f-]+", src).group(0) == src): # UUID
-            rl_msg.append("Docker Hub Auth: True")
-      if (rl_info != ''):
-         # ratelimit provided in seconds, convert to hours.
-         rl_msg.append("Rate Limit: %s pulls per %s hours" % (rl_info[0],
-                                                              int(rl_info[1]) // 3600))
-      if (remaining != ''):
-         rl_msg.append("Pulls Remaining: %s" % remaining)
-      if (rl_msg != []):
-         INFO(", ".join(rl_msg))
+            auth = "auth"
+            src = ''
+      # Step 2: Construct friendly Docker Hub ratelimit message
+      if (pulls != ''):
+         INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)%s"
+              % (pulls, remaining, period, auth, src))
       # Log some headers if needed.
       for h in res.headers:
          h = h.lower()
