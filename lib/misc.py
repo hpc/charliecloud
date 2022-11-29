@@ -8,6 +8,7 @@ import sys
 
 import build_cache as bu
 import charliecloud as ch
+import image as im
 import path as pa
 import pull
 import version
@@ -82,7 +83,7 @@ def gestalt_storage_path(cli):
 def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can't copy: not found: %s" % cli.path)
-   dst = ch.Image(ch.Image_Ref(cli.image_ref))
+   dst = ch.Image(im.Image_Ref(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
    dst.unpack_clear()
@@ -105,14 +106,14 @@ def list_(cli):
       if (len(images) >= 1):
          img_width = max(len(ref) for ref in images)
          for ref in images:
-            img = ch.Image(ch.Image_Ref(pa.Path(ref).parts[-1]))
+            img = ch.Image(im.Image_Ref(pa.Path(ref).parts[-1]))
             if cli.long:
                print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
             else:
                print(img)
    else:
       # list specified image
-      img = ch.Image(ch.Image_Ref(cli.image_ref))
+      img = ch.Image(im.Image_Ref(cli.image_ref))
       print("details of image:    %s" % img.ref)
       # present locally?
       if (not img.unpack_exist_p):
@@ -175,7 +176,7 @@ def reset(cli):
 def undelete(cli):
    if (cli.bucache != ch.Build_Mode.ENABLED):
       ch.FATAL("only available when cache is enabled")
-   img = ch.Image(ch.Image_Ref(cli.image_ref))
+   img = ch.Image(im.Image_Ref(cli.image_ref))
    if (img.unpack_exist_p):
       ch.FATAL("image exists; will not overwrite")
    (_, git_hash) = bu.cache.find_image(img)

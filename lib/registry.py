@@ -6,7 +6,8 @@ import urllib
 import requests            # HAIRY IMPORTS!!!
 import requests.auth       #
 import requests.exceptions
-from charliecloud import Image_Unavailable_Error
+#from charliecloud import Image_Unavailable_Error
+import charliecloud as ch
 
 ## Constants ##
 
@@ -56,9 +57,9 @@ class Credentials:
             try:
                username = input("\nUsername: ")
             except KeyboardInterrupt:
-               FATAL("authentication cancelled")
+               ch.FATAL("authentication cancelled")
             password = getpass.getpass("Password: ")
-         if (not password_many):
+         if (not ch.password_many):
             # Remember the credentials.
             self.username = username
             self.password = password
@@ -111,7 +112,7 @@ class Registry_Auth(requests.auth.AuthBase):
    def escalate(self, reg, res):
       """Escalate to a higher level of authorization. Use the WWW-Authenticate
          header in failed response res if there is one."""
-      VERBOSE("escalating from %s" % self)
+      ch.VERBOSE("escalating from %s" % self)
       assert (res.status_code == 401)
       # Get authentication instructions.
       if ("WWW-Authenticate" in res.headers):
@@ -119,32 +120,32 @@ class Registry_Auth(requests.auth.AuthBase):
       elif (self.auth_h_next is not None):
          auth_h = self.auth_h_next
       else:
-         FATAL("don’t know how to authenticate: WWW-Authenticate not found")
+         ch.FATAL("don’t know how to authenticate: WWW-Authenticate not found")
       # We use two “undocumented (although very stable and frequently cited)”
       # methods to parse the authentication response header (thanks Andy,
       # i.e., @adrecord on GitHub).
       (auth_scheme, auth_d) = auth_h.split(maxsplit=1)
       auth_d = urllib.request.parse_keqv_list(
                   urllib.request.parse_http_list(auth_d))
-      VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_scheme, auth_d))
+      ch.VERBOSE("WWW-Authenticate parsed: %s %s" % (auth_scheme, auth_d))
       # Is escalation possible in principle?
       if (len(self.escalators) == 0):
-         FATAL("no further authentication possible, giving up")
+         ch.FATAL("no further authentication possible, giving up")
       # Try to escalate.
       for class_ in self.escalators:
          if (class_.scheme == auth_scheme):
             if (class_.reg_auth != reg_auth):
-               VERBOSE("skipping %s: auth mode mismatch" % class_.__name__)
+               ch.VERBOSE("skipping %s: auth mode mismatch" % class_.__name__)
             else:
-               VERBOSE("authenticating using %s" % class_.__name__)
+               ch.VERBOSE("authenticating using %s" % class_.__name__)
                auth = class_.authenticate(reg, auth_d)
                if (auth is None):
-                  VERBOSE("authentication failed; trying next")
+                  ch.VERBOSE("authentication failed; trying next")
                elif (auth == self):
-                  VERBOSE("authentication did not escalate; trying next")
+                  ch.VERBOSE("authentication did not escalate; trying next")
                else:
                   return auth  # success!
-      VERBOSE("no authentication left to try")
+      ch.VERBOSE("no authentication left to try")
       return None
 
 
@@ -172,7 +173,7 @@ class Registry_Auth_Basic(Registry_Auth):
    def authenticate(class_, reg, auth_d):
       # Note: Basic does not validate the credentials until we try to use it.
       if ("realm" not in auth_d):
-         FATAL("WWW-Authenticate missing realm")
+         ch.FATAL("WWW-Authenticate missing realm")
       (username, password) = reg.creds.get()
       i = class_()
       i.basic = requests.auth.HTTPBasicAuth(username, password)
@@ -222,17 +223,17 @@ class Registry_Auth_Bearer_IDed(Registry_Auth):
       # give back all the keys we got.
       for k in ("realm",):
          if (k not in auth_d):
-            FATAL("WWW-Authenticate missing key: %s" % k)
+            ch.FATAL("WWW-Authenticate missing key: %s" % k)
       params = { (k,v) for (k,v) in auth_d.items() if k != "realm" }
       # Request a Bearer token.
       res = reg.request_raw("GET", auth_d["realm"], {200,401,403},
                             auth=class_.token_auth(reg.creds), params=params)
       if (res.status_code != 200):
-         VERBOSE("bearer token request rejected")
+         ch.VERBOSE("bearer token request rejected")
          return None
       # Create new instance.
       i = class_(res.json()["token"], auth_d)
-      VERBOSE("received bearer token: %s" % (i.token_short))
+      ch.VERBOSE("received bearer token: %s" % (i.token_short))
       return i
 
    @classmethod
@@ -330,7 +331,7 @@ class Registry_HTTP:
       "GET the blob with hash digest and save it at path."
       # /v2/library/hello-world/blobs/<layer-hash>
       url = self._url_of("blobs", "sha256:" + digest)
-      sw = Progress_Writer(path, msg)
+      sw = ch.Progress_Writer(path, msg)
       self.request("GET", url, out=sw)
       sw.close()
 
@@ -339,17 +340,17 @@ class Registry_HTTP:
          can be anything requests can handle; if it's an open file, then it's
          wrapped in a Progress_Reader object. note is a string to prepend to
          the log messages; default empty string."""
-      INFO("%s%s: checking if already in repository" % (note, digest[:7]))
+      ch.INFO("%s%s: checking if already in repository" % (note, digest[:7]))
       # 1. Check if blob already exists. If so, stop.
       if (self.blob_exists_p(digest)):
-         INFO("%s%s: already present" % (note, digest[:7]))
+         ch.INFO("%s%s: already present" % (note, digest[:7]))
          return
       msg = "%s%s: not present, uploading" % (note, digest[:7])
       if (isinstance(data, io.IOBase)):
-         data = Progress_Reader(data, msg)
+         data = ch.Progress_Reader(data, msg)
          data.start()
       else:
-         INFO(msg)
+         ch.INFO(msg)
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
       res = self.request("POST", url, {202})
@@ -360,11 +361,11 @@ class Registry_HTTP:
       url = res.headers["Location"]
       res = self.request("PUT", url, {201}, data=data,
                          params={ "digest": "sha256:%s" % digest })
-      if (isinstance(data, Progress_Reader)):
+      if (isinstance(data, ch.Progress_Reader)):
          data.close()
       # 4. Verify blob now exists.
       if (not self.blob_exists_p(digest)):
-         FATAL("blob just uploaded does not exist: %s" % digest[:7])
+         ch.FATAL("blob just uploaded does not exist: %s" % digest[:7])
 
    def close(self):
       if (self.session is not None):
@@ -372,7 +373,7 @@ class Registry_HTTP:
 
    def config_upload(self, config):
       "Upload config (sequence of bytes)."
-      self.blob_upload(bytes_hash(config), config, "config: ")
+      self.blob_upload(ch.bytes_hash(config), config, "config: ")
 
    def escalate(self, res):
       "Try to escalate authorization; return True if successful, else False."
@@ -400,7 +401,7 @@ class Registry_HTTP:
          This method raises Image_Unavailable_Error in case 3. The caller is
          responsible for distinguishing cases 1 and 2."""
       url = self._url_of("manifests", self.ref.version)
-      pw = Progress_Writer(path, msg)
+      pw = ch.Progress_Writer(path, msg)
       # Including TYPES_MANIFEST avoids the server trying to convert its v2
       # manifest to a v1 manifest, which currently fails for images
       # Charliecloud pushes. The error in the test registry is “empty history
@@ -415,18 +416,18 @@ class Registry_HTTP:
             hint = "consider --auth"
          else:
             hint = None
-         FATAL("registry rate limit exceeded (HTTP 429)", hint)
+         ch.FATAL("registry rate limit exceeded (HTTP 429)", hint)
       elif (res.status_code != 200):
-         DEBUG(res.content)
-         raise Image_Unavailable_Error()
+         ch.DEBUG(res.content)
+         raise ch.Image_Unavailable_Error()
 
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don't verify the digest b/c that means reading the whole file.
-      VERBOSE("layer tarball: %s" % path)
+      ch.VERBOSE("layer tarball: %s" % path)
       fp = path.open_("rb") # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
-      close_(fp)
+      ch.close_(fp)
 
    def manifest_to_file(self, path, msg, digest=None):
       """GET manifest for the image and save it at path. If digest is given,
@@ -437,19 +438,19 @@ class Registry_HTTP:
       else:
          digest = "sha256:" + digest
       url = self._url_of("manifests", digest)
-      pw = Progress_Writer(path, msg)
+      pw = ch.Progress_Writer(path, msg)
       accept = "%s;q=0.5" % ",".join(TYPES_MANIFEST.values())
       res = self.request("GET", url, out=pw, statuses={200, 401, 404},
                          headers={ "Accept" : accept })
       pw.close()
       if (res.status_code != 200):
-         DEBUG(res.content)
-         raise Image_Unavailable_Error()
+         ch.DEBUG(res.content)
+         raise ch.Image_Unavailable_Error()
 
    def manifest_upload(self, manifest):
       "Upload manifest (sequence of bytes)."
       # Note: The manifest is *not* uploaded as a blob. We just do one PUT.
-      INFO("manifest: uploading")
+      ch.INFO("manifest: uploading")
       url = self._url_of("manifests", self.ref.tag)
       self.request("PUT", url, {201}, data=manifest,
                    headers={ "Content-Type": TYPES_MANIFEST["docker2"] })
@@ -466,7 +467,7 @@ class Registry_HTTP:
          and re-try the request."""
       # Set up.
       self.session_init_maybe()
-      VERBOSE("auth: %s" % self.auth)
+      ch.VERBOSE("auth: %s" % self.auth)
       if (out is not None):
          kwargs["stream"] = True
       # Make the request.
@@ -475,13 +476,13 @@ class Registry_HTTP:
          if (res.status_code != 401):
             break
          else:
-            VERBOSE("HTTP 401 unauthorized")
+            ch.VERBOSE("HTTP 401 unauthorized")
             if (self.escalate(res)):   # success
-               VERBOSE("retrying with auth: %s" % self.auth)
+               ch.VERBOSE("retrying with auth: %s" % self.auth)
             elif (401 in statuses):    # caller can deal with it
                break
             else:
-               FATAL("unhandled authentication failure")
+               ch.FATAL("unhandled authentication failure")
       # Stream response if needed.
       if (out is not None and res.status_code == 200):
          try:
@@ -489,9 +490,9 @@ class Registry_HTTP:
          except KeyError:
             length = None
          except ValueError:
-            FATAL("invalid Content-Length in response")
+            ch.FATAL("invalid Content-Length in response")
          out.start(length)
-         for chunk in res.iter_content(HTTP_CHUNK_SIZE):
+         for chunk in res.iter_content(ch.HTTP_CHUNK_SIZE):
             out.write(chunk)
       # Done.
       return res
@@ -504,31 +505,31 @@ class Registry_HTTP:
          Session must already exist. If auth arg given, use it; otherwise, use
          object's stored authentication if initialized; otherwise, use no
          authentication."""
-      VERBOSE("%s: %s" % (method, url))
+      ch.VERBOSE("%s: %s" % (method, url))
       if (auth is None):
          auth = self.auth
       try:
          res = self.session.request(method, url, auth=auth, **kwargs)
-         VERBOSE("response status: %d" % res.status_code)
+         ch.VERBOSE("response status: %d" % res.status_code)
          if (res.status_code not in statuses):
-            FATAL("%s failed; expected status %s but got %d: %s"
+            ch.FATAL("%s failed; expected status %s but got %d: %s"
                   % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
-         FATAL("%s failed: %s" % (method, x))
+         ch.FATAL("%s failed: %s" % (method, x))
       # Log some headers if needed.
       for h in res.headers:
          h = h.lower()
          if (   "ratelimit" in h
              or h == "www-authenticate"):
-            f = VERBOSE
+            f = ch.VERBOSE
          else:
-            f = DEBUG
+            f = ch.DEBUG
          f("%s: %s" % (h, res.headers[h]))
       return res
 
    def session_init_maybe(self):
       "Initialize session if it's not initialized; otherwise do nothing."
       if (self.session is None):
-         VERBOSE("initializing session")
+         ch.VERBOSE("initializing session")
          self.session = requests.Session()
          self.session.verify = tls_verify

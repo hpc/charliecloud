@@ -12,6 +12,7 @@ import textwrap
 import time
 
 import charliecloud as ch
+import image as im
 import path as pa
 import pull
 
@@ -660,7 +661,7 @@ class Enabled_Cache:
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Image_Ref src_ref pointing to dest, which can
          be either an Image_Ref or a Git commit reference (as a string)."""
-      if (isinstance(dest, ch.Image_Ref)):
+      if (isinstance(dest, im.Image_Ref)):
          dest = self.branch_name_ready(dest)
       # Some versions of Git won't let us update a branch that's already
       # checked out, so detach that worktree if it exists.

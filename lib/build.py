@@ -13,6 +13,7 @@ import sys
 
 import charliecloud as ch
 import build_cache as bu
+import image as im
 import fakeroot
 import pull
 import path as pa
@@ -121,7 +122,7 @@ def main(cli_):
       ch.close_(fp)
 
    # Parse it.
-   parser = lark.Lark(ch.GRAMMAR_DOCKERFILE, parser="earley",
+   parser = lark.Lark(im.GRAMMAR_DOCKERFILE, parser="earley",
                       propagate_positions=True)
    # Avoid Lark issue #237: lark.exceptions.UnexpectedEOF if the file does not
    # end in newline.
@@ -525,7 +526,7 @@ class Arg(Instruction):
 
    @property
    def sid_input(self):
-      if (self.key in ch.ARGS_MAGIC):
+      if (self.key in im.ARGS_MAGIC):
          return (self.str_name + self.key).encode("UTF-8")
       else:
          return super().sid_input
@@ -535,7 +536,7 @@ class Arg(Instruction):
       s = "%s=" % self.key
       if (self.value is not None):
          s += "'%s'" % self.value
-      if (self.key in ch.ARGS_MAGIC):
+      if (self.key in im.ARGS_MAGIC):
          s += " [special]"
       return s
 
@@ -584,7 +585,7 @@ class Arg_First(Instruction_No_Image):
       s = "%s=" % self.key
       if (self.value is not None):
          s += "'%s'" % self.value
-      if (self.key in ch.ARGS_MAGIC):
+      if (self.key in im.ARGS_MAGIC):
          s += " [special]"
       return s
 
@@ -980,7 +981,7 @@ class I_from_(Instruction):
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
       #
-      image_ref = ch.Image_Ref(
+      image_ref = im.Image_Ref(
          ch.tree_child_terminals_cat(self.tree, "image_ref", "IMAGE_REF"),
          argfrom)
       self.base_image = ch.Image(image_ref)
@@ -1003,7 +1004,7 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s_stage%d" % (cli.tag, self.image_i)
-      self.image = ch.Image(ch.Image_Ref(tag))
+      self.image = ch.Image(im.Image_Ref(tag))
       images[self.image_i] = self.image
       if (self.image_alias is not None):
          images[self.image_alias] = self.image

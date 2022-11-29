@@ -4,6 +4,7 @@ import sys
 
 import charliecloud as ch
 import build_cache as bu
+import image as im
 
 
 ## Constants ##
@@ -22,8 +23,8 @@ manifests_internal = {
 
 def main(cli):
    # Set things up.
-   src_ref = ch.Image_Ref(cli.source_ref)
-   dst_ref = src_ref if cli.dest_ref is None else ch.Image_Ref(cli.dest_ref)
+   src_ref = im.Image_Ref(cli.source_ref)
+   dst_ref = src_ref if cli.dest_ref is None else im.Image_Ref(cli.dest_ref)
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
       ch.exit(0)

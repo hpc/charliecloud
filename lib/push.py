@@ -2,13 +2,14 @@ import json
 import os.path
 
 import charliecloud as ch
+import image as im
 import version
 
 
 ## Main ##
 
 def main(cli):
-   src_ref = ch.Image_Ref(cli.source_ref)
+   src_ref = im.Image_Ref(cli.source_ref)
    ch.INFO("pushing image:   %s" % src_ref)
    image = ch.Image(src_ref, cli.image)
    # FIXME: validate it's an image using Megan's new function (PR #908)
@@ -22,10 +23,10 @@ def main(cli):
    else:
       ch.VERBOSE("image path:      %s" % image.unpack_path)
    if (cli.dest_ref is not None):
-      dst_ref = ch.Image_Ref(cli.dest_ref)
+      dst_ref = im.Image_Ref(cli.dest_ref)
       ch.INFO("destination:     %s" % dst_ref)
    else:
-      dst_ref = ch.Image_Ref(cli.source_ref)
+      dst_ref = im.Image_Ref(cli.source_ref)
    up = Image_Pusher(image, dst_ref)
    up.push()
    ch.done_notify()
