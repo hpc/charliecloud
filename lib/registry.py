@@ -10,12 +10,6 @@ from charliecloud import Image_Unavailable_Error
 
 ## Constants ##
 
-# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
-# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
-# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
-# takes over.
-HTTP_CHUNK_SIZE = 256 * 1024
-
 # Content types for some stuff we care about.
 # See: https://github.com/opencontainers/image-spec/blob/main/media-types.md
 TYPES_MANIFEST = \
