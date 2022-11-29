@@ -2159,7 +2159,7 @@ class Registry_HTTP:
             auth = "auth"
             src = ''
       # Step 2: Construct friendly Docker Hub ratelimit message
-      if (pulls != ''):
+      if (pulls != ''): # ensure message prints only when relevant
          INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)%s"
               % (pulls, remaining, period, auth, src))
       # Log some headers if needed.
