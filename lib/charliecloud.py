@@ -19,6 +19,9 @@ import sys
 import time
 import traceback
 import types
+from registry import HTTP_CHUNK_SIZE
+from path import Storage, Path
+
 
 
 ## Hairy imports ##
