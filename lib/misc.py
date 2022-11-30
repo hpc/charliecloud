@@ -57,10 +57,10 @@ def build_cache(cli):
 
 def delete(cli):
    delete_ct = 0
-   for img in ch.Image.glob(cli.image_ref):
+   for img in im.Image.glob(cli.image_ref):
       img.unpack_delete()
       delete_ct += 1
-   for img in ch.Image.glob(cli.image_ref + "_stage[0-9]*"):
+   for img in im.Image.glob(cli.image_ref + "_stage[0-9]*"):
       img.unpack_delete()
       delete_ct += 1
    if (delete_ct == 0):
@@ -154,7 +154,7 @@ def list_(cli):
             # handles case where arch_keys is empty, e.g.
             # mcr.microsoft.com/windows:20H2.
             arch_avail = [None]
-      except ch.Image_Unavailable_Error:
+      except im.Image.Unavailable_Error:
          remote = "no (or you are not authorized)"
          arch_aware = "n/a"
          arch_avail = ["n/a"]

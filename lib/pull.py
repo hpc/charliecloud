@@ -5,6 +5,7 @@ import sys
 import charliecloud as ch
 import build_cache as bu
 import image as im
+import registry as rg
 
 
 ## Constants ##
@@ -56,7 +57,7 @@ class Image_Puller:
       self.digests = dict()
       self.image = image
       self.layer_hashes = None
-      self.registry = ch.Registry_HTTP(src_ref)
+      self.registry = rg.Registry_HTTP(src_ref)
       self.sid_input = None
       self.src_ref = src_ref
 
