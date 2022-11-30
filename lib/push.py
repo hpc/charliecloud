@@ -3,6 +3,7 @@ import os.path
 
 import charliecloud as ch
 import image as im
+import registry as rg
 import version
 
 
@@ -72,8 +73,8 @@ class Image_Pusher:
    def manifest_new(class_):
       "Return an empty manifest, ready to be filled in."
       return { "schemaVersion": 2,
-               "mediaType": ch.TYPES_MANIFEST["docker2"],
-               "config": { "mediaType": ch.TYPE_CONFIG,
+               "mediaType": rg.TYPES_MANIFEST["docker2"],
+               "config": { "mediaType": rg.TYPE_CONFIG,
                            "size": None,
                            "digest": None },
                "layers": [],
@@ -168,7 +169,7 @@ class Image_Pusher:
 
    def upload(self):
       ch.INFO("starting upload")
-      ul = rg.Registry_HTTP(self.dst_ref)
+      ul = ch.Registry_HTTP(self.dst_ref)
       for (i, (digest, tarball)) in enumerate(self.layers, start=1):
          ul.layer_from_file(digest, tarball,
                             "layer %d/%d: " % (i, len(self.layers)))
