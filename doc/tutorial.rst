@@ -86,6 +86,466 @@ Charliecloud you have (if not, please report a bug). For example::
 Man pages for all commands are provided in this documentation (see table of
 contents at left) as well as via :code:`man(1)`.
 
+Tutorial
+========
+
+Key workflow operation: Pull
+----------------------------
+To start, let’s obtain a container image that someone else has already built. The
+con-tainery way to do this is the pull operation, which means to move an image
+from a re-mote repository into local storage of some kind.
+
+First, let’s browse the Docker Hub repository of official AlmaLinux images.
+Note the list of tags; this is a partial list of image versions that are
+available. We’ll use the tag “8”.
+
+Use the Charliecloud program ch-image to pull this image to a directory
+
+::
+
+   $ ch-image pull almalinux:8
+   pulling image:    almalinux:8
+   requesting arch:  amd64
+   manifest list: downloading: 100%
+   manifest: downloading: 100%
+   config: downloading: 100%
+   layer 1/1: 3239c63: downloading: 68.2/68.2 MiB (100%)
+   pulled image: adding to build cache
+   flattening image
+   layer 1/1: 3239c63: listing
+   validating tarball members
+   layer 1/1: 3239c63: changed 42 absolute symbolic and/or hard links to relative
+   resolving whiteouts
+   layer 1/1: 3239c63: extracting
+   image arch: amd64
+   done
+
+   $ ch-image list
+   almalinux:8
+
+Images can come in lots of different formats. ch-run needs the format to be a
+directory or a SquashFS to run. For this example, we’ll use a SquashFS.
+
+We first need to convert the directory format of the image, stored in the
+storage directo-ry, into a SquashFS. We use the command ch-convert to do so.
+The default storage di-rectory is /var/tmp/$USER.ch/img.
+
+Run a container::
+
+   $ ch-convert /var/tmp/$USER.ch/img/almalinux+8 almalinux.sqfs
+   $ ch-run almalinux.sqfs -- /bin.bash
+   $ pwd
+   /
+   $ ls
+   bin  ch  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run
+   sbin  srv  sys  tmp  usr  var
+   $ cat /etc/redhat-release
+   AlmaLinux release 8.7 (Stone Smilodon)
+   $ exit
+
+What does this command do?
+   1.      Start a container (ch-run).
+   2.      Use the image in directory almalinux:8.
+   3.      Stop processing ch-run command line arguments (--).
+           (Note this is standard no-tation for UNIX command line apps.)
+   4.      Run the program /bin/bash inside the container, which starts
+           an interactive shell where we enter a few commands and then exit,
+           returning to the host.
+
+Containers are not special: CentOS 7 via tarball
+------------------------------------------------
+Many folks would like you to believe that containers are magic and special.
+This is not the case. To demonstrate, we’ll create a working container image
+using standard UNIX tools.
+
+CentOS provides a tarball containing an installed CentOS 7 base image; we can
+use that in Charliecloud directly.
+
+::
+  $ wget -O centos.tar.xz 'https://github.com/CentOS/sig-cloud-instance-images/raw/
+    CentOS-7-x86_64/docker/centos-7-x86_64-docker.tar.xz?raw=true'
+  $ tar tf centos.tar.xz | head
+  ./
+  ./dev/
+  ./proc/
+  ./run/
+  ./run/lock/
+  ./run/lock/lockdev/
+  ./run/lock/subsys/
+  ./run/cryptsetup/
+  ./run/utmp
+  ./run/systemd/
+
+This tarball is what’s called a “tarbomb”, so we need to provide an enclosing directory
+to avoid making a mess.
+
+::
+  $ mkdir centos
+  $ cd centos
+  $ tar xf ../centos.tar.xz
+  $ ls
+  anaconda-post.log  dev  home  lib64  mnt  proc  run   srv  tmp  var
+  bin                etc  lib   media  opt  root  sbin  sys  usr
+  $ cd ..
+
+ Now, run Bash in the container!
+
+::
+  $ chprun ./centos -- /bin/bash
+  $ pwd
+  /
+  $ ls
+  anaconda-post.log  dev  home  lib64  mnt  proc  run   srv  tmp  var
+  bin                etc  lib   media  opt  root  sbin  sys  usr
+  $ cat /etc/redhat-release
+  CentOS Linux release 7.9.2009 (Core)
+  $ exit
+
+.. note::
+  Note: CentOS distributes tarballs with some odd directory permissions that
+  make them un-deleteable. To remove this directory:
+
+::
+  $ chmod -R u+w ./centos
+  $ rm -Rf --one-file-system ./centos
+
+Key workflow operation: Build from Dockerfile
+---------------------------------------------
+The other containery way to get an image is the build operation. This interprets
+a recipe, usually a Dockerfile, to create an image and place it into builder
+storage. We can then extract the image from builder storage to a directory and run it.
+
+We’ll write a “Hello World” Python program and run it within a container we specify
+with a Dockerfile. Set up a directory to work in::
+  $ mkdir hello.src
+  $ cd hello.src
+
+Type in the following program as `hello.py` using your least favorite editor::
+  #!/usr/bin/python3
+
+  print("Hellow World!")
+
+Next, create a file called `Dockerfile` and type in the following recipe::
+  FROM almalinux:8
+  RUN yum -y install python36
+  COPY ./hello.py /
+  RUN chmod 755 /hello.py
+
+These four instructions say:
+   1.      We are extending the almalinux:8 base image.
+   2.      Install the python36 RPM package, which we need for our Hello World pro-gram.
+   3.      Copy the file hello.py we just made to the root directory of the image. In
+           the source argument, the path is relative to the context directory, which we’ll
+           see more of below.
+   4.      Make that file executable.
+
+Let's build the image::
+  $ ls
+  Dockerfile  hello.py
+  $ ch-image build -t hello -f Dockerfile .
+
+Charliecloud supports multiple builders. In this workshop, we are using ch-image, which
+comes with Charliecloud, but you can also use others, e.g. Docker or Podman.
+.. note::
+  Note: ch-image is a big deal because it is completely unprivileged1, which is important
+  in environments like ours. Other builders run as root or require setuid root helper
+  programs; this raises a number of security questions.
+
+The `ch-image build` line says:
+  1.      Build an image named (tagged) “hello”.
+  2.        Use the Dockerfile called “Dockerfile”.
+  3.  Use the current directory as the context directory.
+
+Now list the images ch-image knows about::
+  $ ch-image list
+  almalinux:8
+  hello
+
+And run it::
+  $ ch-convert /var/tmp/$USER.ch/img/hello hello.sqfs
+  $ ch-run hello.sqfs -- /hello.py
+  Hello World!
+Note that we’ve run our application directly rather than starting an interactive shell.
+
+Key workflow operation: Push
+----------------------------
+The containery way to share your images is by pushing them to a container registry. In
+this section, we will set up a registry on gitlab.com and push the hello image to that
+registry, then pull it back to compare.
+
+Create a private container registry:
+  1.      Browse to https://gitlab.com (or any other GitLab instance)
+  2.      Log in. You should end up on your Projects page.
+  3.      Click New project then Create blank project
+  4.      Name your project “test-registry”. Leave Visibility Level at Private. Click
+          Create project. You should end up at your project’s main page.
+  5.      At left, choose Settings (the gear icon) → General, then Visibility, project
+          features, permissions. Enable Container registry, then click Save changes.
+  6.      At left, choose Packages & Registries (the box icon) → Container registry.
+          You should see the message “There are no container images stored for this project”.
+
+At this point, we have a container registry set up, and we need to teach ch-image how to
+log into it. You maybe able to use your GitLab password. However, GitLab has a thing called
+a personal access token (PAT) that can be used no matter how you log into the GitLab web
+app. To create one:
+  7.      Click on your avatar at the top right. Choose Edit Profile.
+  8.      At left, choose Access Tokens (the three-pin plug icon).
+  9.      Type in the name “registry”. Tick the boxes read_registry and write_registry.
+          Click Create personal access token.
+  10.     Your PAT will be displayed at the top of the result page under Your new personal
+          access token. Copy this string and store it somewhere safe & policy compliant.
+          (Also, you can revoke it at the end of the tutorial if you like.)
+
+Push image:
+We can use `ch-image push` to push the image to gitlab.com.
+
+::
+  $ ch-image list
+  almalinux:8
+  hello
+  $ ch-image push --help
+  usage: ch-image push [-h] [--cache | --no-cache | --rebuild] [-a ARCH]                                                [--always-download] [--auth] [--debug] [--dependencies]                                          [--password-many] [-s DIR] [--tls-no-verify] [-v]                                                [--version] [--image DIR]
+                       IMAGE_REF [DEST_REF]
+  copy image from local filesystem to remote repository
+  [...]
+
+Note that the tagging step you would need for Docker is unnecessary here, because we can
+just specify a destination reference at push time.
+
+When you are prompted for credentials, enter your e-mail address (that you use to log into
+gitlab.lanl.gov) and copy-paste the PAT you created earlier.
+
+::
+  $ ch-image push hello gitlab.com:5050/$USER/test-registry/hello:latest
+  pushing image:   hello
+  destination:     gitlab.com:5050/$USER/test-registry/hello:latest
+  layer 1/1: gathering
+  layer 1/1: preparing
+  preparing metadata
+  starting upload
+  layer 1/1: bca515d: checking if already in repository
+
+  Username: $USER
+  Password:
+  layer 1/1: bca515d: not present, uploading: 139.8/139.8 MiB(100%
+  config: f969909: checking if already in repository
+  config: f969909: not present, uploading
+  manifest: uploading
+  cleaning up
+  done
+
+ .. note::
+  Upload can be slow, so be patient.
+Go back to your container registry page. You should see your image listed now!
+
+Pull and compare:
+Let's pull that image and see how it looks
+
+::
+  $ ch-image pull gitlab.com:5050/$USER/test-registry/hello:latest
+  –auth hello.2
+  pulling image:   gitlab.com:5050/$USER/test-registry/hello:latest
+  destination:     hello.2
+  [...]
+  $ ls $CH_IMAGE_STORAGE/hello2
+  anaconda-post.log  dev       home   media  proc  sbin  tmp  WEIRD_AL_YANKOVIC
+  bin                etc       lib    mnt    root  srv   usr
+  ch                 hello.py  lib64  opt    run   sys   var
+  $ ls hello.2
+  anaconda-post.log  ch   etc       home  lib64  mnt  proc  run   srv  tmp  var
+  bin                dev  hello.py  lib   media  opt  root  sbin  sys  usr
+
+MPI Hello World
+---------------
+The next exercise demonstrates a typical workflow of:
+  1.      Build image locally.
+  2.      Copy image squashball to HPC cluster.
+  3.      Run application on HPC cluster.
+
+We’ll use a simple parallel application. The base image is a AlmaLinux 8 image with
+OpenMPI already installed; OpenMPI takes about 30 minutes to build and install, so we
+don’t want to take tutorial time doing that.
+
+Build image:
+Create a new directory for this project, and within it the following simple C program.
+(Note the program contains a bug; consider fixing it.)
+
+::
+  $ mkdir mpihello
+  $ cd mpihello
+  $ vim mpihello.c
+  $ cat mpihello.c
+  #include <stdio.h>
+  #include <mpi.h>
+
+  int main (int argc, char **argv)
+  {
+     int msg, rank, rank_ct;
+
+      MPI_Init(&argc, &argv);
+      MPI_Comm_size(MPI_COMM_WORLD, &rank_ct);
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+      printf("hello from rank %d of %d\n", rank, rank_ct);
+
+      if (rank == 0) {
+         for (int i = 1; i < rank_ct; i++) {
+            MPI_Send(&msg, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            printf("rank %d sent %d to rank %d\n", rank, msg, i);
+         }
+      } else {
+          MPI_Recv(&msg, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+          printf("rank %d received %d from rank 0\n", rank, msg);
+      }
+
+      MPI_Finalize();
+  }
+
+Add the following Dockerfile::
+  $ cat Dockerfile
+  FROM openmpi
+  RUN mkdir /hello
+  WORKDIR /hello
+  COPY mpihello.c .
+  RUN mpicc -o mpihello mpihello.c
+
+The instruction WORKDIR changes directories (the default working directory within
+a Dockerfile is /).
+
+Build::
+  $ ls
+  Dockerfile  mpihello.c
+  $ ch-image build -t mpihello .
+Note that the default Dockerfile is `./Dockerfile`; we can omit `-f`.
+
+Copy to Cluster:
+Next, we obtain an image squashball and copy it to your cluster home directory
+
+::
+  $ ch-convert /var/tmp/$USER.ch/img/mpihello mpihello.sqfs
+  $ scp mpihello.sqfs $CLUSTER:~
+  mpihello.tar.gz
+
+Log into Cluster:
+In a new terminal::
+  $ ssh $CLUSTER
+
+Run application:
+We’ll run this application interactively. One could also put similar steps in a
+Slurm batch script.
+
+First, obtain a two-node allocation and load the Charliecloud module. If your cluster
+doesn’t have Charliecloud as a module, you can install Charliecloud in your home directory.
+
+::
+  $ salloc -N2 -t 1:00:00
+  salloc: Granted job allocation 599518
+  [...]
+  $ module load charliecloud
+  $ ch-run --version
+  0.29
+
+Run the application on all 72 cores in your allocation::
+  $ srun -c1 ch-run --join ~/mpihello.sqfs -- ./hello/mpihello
+  hello from rank 22 of 72
+  rank 22 received 0 from rank 0
+  hello from rank 14 of 72
+  rank 14 received 0 from rank 0
+  [...]
+  hello from rank 0 of 72
+  rank 0 sent 0 to rank 1
+  rank 0 sent 0 to rank 2
+  [...]
+  hello from rank 65 of 72
+  rank 65 received 0 from rank 0
+Win!
+.. note::
+  Why --join? By default, each containerized rank is in a different con-tainer, and
+  processes in sibling containers can’t attach to one another to do the kind of
+  shared memory that OpenMPI prefers. Sometimes this fails, and sometimes it’s just
+  slower. By adding --join, the independent ch-run invocations use the same container.
+
+Build Cache:
+
+Subcommands that create images, such as build and pull, can use a build cache to speed
+repeated operations. That is, an image is created by starting from the empty image and
+executing a sequence of instructions, largely Dockerfile instructions but also some others
+like "pull" and "import". Some instructions are expensive to execute so it's often cheaper
+to retrieve their results from cache instead.
+
+Let's set up this example by first resetting the build cache::
+  $ ch-image build-cache -reset
+  $ mkdir cache-test
+  $ cd cache-test
+
+Suppose we have this Dockerfile::
+  $ cat a.df
+  FROM almalinux:8
+  RUN echo foo
+  RUN echo bar
+
+On our first build we get::
+  $ ch-image build -t a -f a.df .
+    1. FROM almalinux:8
+  [ ... pull chatter omitted ... ]
+    2. RUN echo foo
+  copying image ...
+  foo
+    3. RUN echo bar
+  bar
+  grown in 3 instructions: a
+
+Note the dot after each instruction’s line number. This means that the instruction
+was executed. You can see this in the output of the two echo commands.
+
+But on our second build, we get::
+  $ ch-image build -t a -f a.df .
+    1* FROM almalinux:8
+    2* RUN echo foo
+    3* RUN echo bar
+  copying image …
+  grown in 3 instructions: a
+
+Here, instead of being executed, each instruction’s results were retrieved from cache.
+Cache hit for each instruction is indicted by an asterisk( * ) after the line number.
+Even for such a small and short Dockerfile, this build is noticeably faster than the first.
+
+We can also try a second, slightly different Dockerfile. Note that the first three instruc-tions are the same, but the third is different.
+
+::
+  $ cat b.df
+  FROM almalinux:8
+  RUN echo foo
+  RUN echo qux
+  $ ch-image build -t b -f b.df
+    1* FROM almalinux:8
+    2* RUN echo foo
+    3. RUN echo qux
+  copyimg image
+  qux
+  grown in 3 instructions: b
+
+Here, the first two instructions are hits from the first Dockerfile, but the third is
+a miss, so Charliecloud retrieves that state and continues building.
+
+We can also inspect the cache::
+  $ ch-image build-cache –tree
+  *  (b) RUN echo qux
+  | *  (a) RUN echo bar
+  |/
+  *  RUN echo foo
+  *  (almalinux:8) PULL almalinux:8
+  *  (HEAD -> root) ROOT
+
+  named images:    4
+  state IDs:       5
+  commits:         5
+  files:         317
+  disk used:       3 MiB
+
+Here there are four named images: a and b that we built, the base image almalinx:8, and
+the empty base of everything root. Also note how a and b diverge after the last common
+instruction RUN echo foo.
+
 Your first user-defined software stack
 ======================================
 
