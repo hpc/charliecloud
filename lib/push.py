@@ -169,7 +169,7 @@ class Image_Pusher:
 
    def upload(self):
       ch.INFO("starting upload")
-      ul = ch.Registry_HTTP(self.dst_ref)
+      ul = rg.Registry_HTTP(self.dst_ref)
       for (i, (digest, tarball)) in enumerate(self.layers, start=1):
          ul.layer_from_file(digest, tarball,
                             "layer %d/%d: " % (i, len(self.layers)))
