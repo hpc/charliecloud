@@ -626,11 +626,11 @@ def init(cli):
       reg_auth = False
    VERBOSE("registry authentication: %s" % reg_auth)
    # misc
-   global password_many, profiling, tls_verify
+   global password_many, profiling
    password_many = cli.password_many
    profiling = cli.profile
    if (cli.tls_no_verify):
-      tls_verify = False
+      rg.tls_verify = False
       rpu = rg.requests.packages.urllib3
       rpu.disable_warnings(rpu.exceptions.InsecureRequestWarning)
 
