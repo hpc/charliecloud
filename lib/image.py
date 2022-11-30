@@ -471,7 +471,7 @@ class Image:
          ch.VERBOSE("removing image: %s" % self.unpack_path)
          t = ch.Timer()
          self.unpack_path.rmtree()
-         t.ch.log("removed image")
+         t.log("removed image")
 
    def unpack_delete(self):
       ch.VERBOSE("unpack path: %s" % self.unpack_path)
@@ -480,7 +480,7 @@ class Image:
       if (self.deleteable):
          ch.INFO("deleting image: %s" % self.ref)
          self.unpack_path.chmod_min(0o700)
-         for (dir_, subdirs, _) in os.ch.walk(self.unpack_path):
+         for (dir_, subdirs, _) in os.walk(self.unpack_path):
             # must fix as subdirs so we can traverse into them
             for subdir in subdirs:
                (pa.Path(dir_) // subdir).chmod_min(0o700)

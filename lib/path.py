@@ -169,7 +169,7 @@ class Path(pathlib.PosixPath):
          under path. Warning: double-counts files with multiple hard links."""
       file_ct = 1
       byte_ct = self.disk_bytes()
-      for (dir_, subdirs, files) in os.ch.walk(self):
+      for (dir_, subdirs, files) in os.walk(self):
          file_ct += len(subdirs) + len(files)
          byte_ct += sum(Path(dir_ + "/" + i).disk_bytes()
                         for i in subdirs + files)
