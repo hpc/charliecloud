@@ -627,7 +627,7 @@ class Storage:
    def reset(self):
       if (self.valid_p):
          self.root.rmtree()
-         self.ch.init()  # largely for debugging
+         self.init()  # largely for debugging
       else:
          ch.FATAL("%s not a builder storage" % (self.root));
 
