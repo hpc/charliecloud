@@ -154,7 +154,7 @@ def list_(cli):
             # handles case where arch_keys is empty, e.g.
             # mcr.microsoft.com/windows:20H2.
             arch_avail = [None]
-      except im.Image_Unavailable_Error:
+      except ch.Image_Unavailable_Error:
          remote = "no (or you are not authorized)"
          arch_aware = "n/a"
          arch_avail = ["n/a"]
