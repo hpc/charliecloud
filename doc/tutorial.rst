@@ -298,6 +298,7 @@ At this point, we have a container registry set up, and we need to teach ch-imag
 log into it. You maybe able to use your GitLab password. However, GitLab has a thing called
 a personal access token (PAT) that can be used no matter how you log into the GitLab web
 app. To create one:
+
   7.      Click on your avatar at the top right. Choose Edit Profile.
   8.      At left, choose Access Tokens (the three-pin plug icon).
   9.      Type in the name “registry”. Tick the boxes read_registry and write_registry.
@@ -315,7 +316,10 @@ We can use `ch-image push` to push the image to gitlab.com.
   almalinux:8
   hello
   $ ch-image push --help
-  usage: ch-image push [-h] [--cache | --no-cache | --rebuild] [-a ARCH]                                                [--always-download] [--auth] [--debug] [--dependencies]                                          [--password-many] [-s DIR] [--tls-no-verify] [-v]                                                [--version] [--image DIR]
+  usage: ch-image push [-h] [--cache | --no-cache | --rebuild] [-a ARCH]                                                
+                       [--always-download] [--auth] [--debug] [--dependencies]
+                       [--password-many] [-s DIR] [--tls-no-verify] [-v]
+                       [--version] [--image DIR]
                        IMAGE_REF [DEST_REF]
   copy image from local filesystem to remote repository
   [...]
@@ -423,7 +427,7 @@ Add the following Dockerfile::
   COPY mpihello.c .
   RUN mpicc -o mpihello mpihello.c
 
-The instruction WORKDIR changes directories (the default working directory within
+The instruction :code:`WORKDIR` changes directories (the default working directory within
 a Dockerfile is /).
 
 Build::
@@ -431,7 +435,7 @@ Build::
   $ ls
   Dockerfile  mpihello.c
   $ ch-image build -t mpihello .
-Note that the default Dockerfile is `./Dockerfile`; we can omit `-f`.
+Note that the default Dockerfile is :code:`./Dockerfile`; we can omit :code:`-f`.
 
 Copy to Cluster:
 Next, we obtain an image squashball and copy it to your cluster home directory
@@ -476,8 +480,11 @@ Run the application on all 72 cores in your allocation::
   [...]
   hello from rank 65 of 72
   rank 65 received 0 from rank 0
+
 Win!
+
 .. note::
+
   Why --join? By default, each containerized rank is in a different con-tainer, and
   processes in sibling containers can’t attach to one another to do the kind of
   shared memory that OpenMPI prefers. Sometimes this fails, and sometimes it’s just
