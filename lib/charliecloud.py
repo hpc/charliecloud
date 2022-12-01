@@ -664,11 +664,11 @@ def walk(*args, **kwargs):
       and dirnames and filenames are lists of Path objects. For insight into
       these being lists rather than generators, see use of ch.walk() in
       I_copy.copy_src_dir()."""
-   from path import Path
+   #from path import Path
    for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
-      yield (Path(dirpath),
-             [Path(dirname) for dirname in dirnames],
-             [Path(filename) for filename in filenames])
+      yield (pa.Path(dirpath),
+             [pa.Path(dirname) for dirname in dirnames],
+             [pa.Path(filename) for filename in filenames])
 
 def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
@@ -713,9 +713,9 @@ def prefix_path(prefix, path):
 def profile_dump():
    "If profiling, dump the profile data."
    if (profiling):
-      from path import Path
+      #from path import Path
       INFO("writing profile files ...")
-      fp = Path("/tmp/chofile.txt").open("wt")
+      fp = pa.Path("/tmp/chofile.txt").open("wt")
       ps = pstats.Stats(profile, stream=fp)
       ps.sort_stats(pstats.SortKey.CUMULATIVE)
       ps.dump_stats("/tmp/chofile.p")

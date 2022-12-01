@@ -1,6 +1,7 @@
 import getpass
 import io
 import os
+import re
 import sys
 import urllib
 import types
@@ -323,9 +324,9 @@ class Registry_HTTP:
       for h in hs:
          h = h.lower()
          if (h == "www-authenticate"):
-            f = VERBOSE
+            f = ch.VERBOSE
          else:
-            f = DEBUG
+            f = ch.DEBUG
          f("%s: %s" % (h, hs[h]))
       # Friendly message for Docker Hub rate limit.
       used_ct = period = left_ct = reason = "???"  # keep as strings
@@ -341,7 +342,7 @@ class Registry_HTTP:
          h = hs["ratelimit-remaining"]
          m = re.search(r"^(\d+);", h)
          if (m is None):
-            WARNING("can’t parse RateLimit-Remaining: %s" % h)
+            ch.WARNING("can’t parse RateLimit-Remaining: %s" % h)
          else:
             left_ct = m[1]
       if ("docker-ratelimit-source" in hs):
@@ -355,10 +356,10 @@ class Registry_HTTP:
                reason = "auth"
             else:
                # Overall limits yield HTTP 429 so warning seems legitimate?
-               WARNING("can’t parse Docker-RateLimit-Source: %s" % h)
+               ch.WARNING("can’t parse Docker-RateLimit-Source: %s" % h)
       if (any(i != "???" for i in (used_ct, period, left_ct,reason))):
-         INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
-              % (used_ct, period, left_ct, reason))
+         ch.INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
+                 % (used_ct, period, left_ct, reason))
 
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
