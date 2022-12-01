@@ -146,7 +146,7 @@ Run a container::
 What does this command do?
    1.      Start a container (:code:`ch-run`).
    2.      Use the image in directory almalinux:8.
-   3.      Stop processing ch-run command line arguments (:code"`--`).
+   3.      Stop processing ch-run command line arguments (:code:`--`).
            (Note this is standard no-tation for UNIX command line apps.)
    4.      Run the program /bin/bash inside the container, which starts
            an interactive shell where we enter a few commands and then exit,
@@ -255,7 +255,7 @@ Let's build the image::
 Charliecloud supports multiple builders. In this workshop, we are using ch-image, which
 comes with Charliecloud, but you can also use others, e.g. Docker or Podman.
 
-Note: ch-image is a big deal because it is completely unprivileged1, which is important
+Note: ch-image is a big deal because it is completely unprivileged, which is important
 in environments like ours. Other builders run as root or require setuid root helper
 programs; this raises a number of security questions.
 
@@ -302,7 +302,7 @@ app. To create one:
   2.      At left, choose Access Tokens (the three-pin plug icon).
   3.      Type in the name “registry”. Tick the boxes read_registry and write_registry.
           Click Create personal access token.
-  4.     Your PAT will be displayed at the top of the result page under Your new personal
+  4.      Your PAT will be displayed at the top of the result page under Your new personal
           access token. Copy this string and store it somewhere safe & policy compliant.
           (Also, you can revoke it at the end of the tutorial if you like.)
 
