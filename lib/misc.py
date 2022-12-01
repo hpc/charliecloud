@@ -9,7 +9,7 @@ import sys
 import build_cache as bu
 import charliecloud as ch
 import image as im
-import path as pa
+import filesystem as fi
 import pull
 import version
 
@@ -106,7 +106,7 @@ def list_(cli):
       if (len(images) >= 1):
          img_width = max(len(ref) for ref in images)
          for ref in images:
-            img = im.Image(im.Image_Ref(pa.Path(ref).parts[-1]))
+            img = im.Image(im.Image_Ref(fi.Path(ref).parts[-1]))
             if cli.long:
                print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
             else:

@@ -8,7 +8,7 @@ import shutil
 import sys
 import tarfile
 import charliecloud as ch
-import path as pa
+import filesystem as fi
 
 ## Hairy Imports ##
 
@@ -184,7 +184,7 @@ class Image:
       assert isinstance(ref, Image_Ref)
       self.ref = ref
       if (unpack_path is not None):
-         assert isinstance(unpack_path, pa.Path)
+         assert isinstance(unpack_path, fi.Path)
          self.unpack_path = unpack_path
       else:
          self.unpack_path = ch.storage.unpack(self.ref)
@@ -239,14 +239,14 @@ class Image:
 
    def copy_unpacked(self, other):
       """Copy image other to my unpack directory, which may not exist. other
-         can be either a path (string or pa.Path object) or an Image object; in
+         can be either a path (string or fi.Path object) or an Image object; in
          the latter case other.unpack_path is used. other need not be a valid
          image; the essentials will be created if needed."""
       def ignore(path, names):
          # Need this path conversion, since shutil._copytree() calls ignore()
-         # and passes a string, not a pa.Path. See:
+         # and passes a string, not a fi.Path. See:
          # https://github.com/python/cpython/blob/main/Lib/shutil.py#L456
-         path = pa.Path(path)
+         path = fi.Path(path)
          ignore = list()
          if (path == src_path):
             for name in names:
@@ -254,12 +254,12 @@ class Image:
                   ch.VERBOSE("ignoring from source image: /%s" % name)
                   ignore.append(name)
          return ignore
-      if (isinstance(other, str) or isinstance(other, pa.Path)):
+      if (isinstance(other, str) or isinstance(other, fi.Path)):
          src_path = other
       else:
          src_path = other.unpack_path
       ch.VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
-      pa.Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
+      fi.Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
@@ -289,7 +289,7 @@ class Image:
          lh_short = lh[:7]
          ch.INFO("layer %d/%d: %s: listing" % (i, len(layer_tars), lh_short))
          try:
-            fp = pa.TarFile.open(path)
+            fp = fi.TarFile.open(path)
             members = ch.OrderedSet(fp.getmembers())  # reads whole file :(
          except tarfile.TarError as x:
             ch.FATAL("cannot open: %s: %s" % (path, x))
@@ -432,7 +432,7 @@ class Image:
       try:
          ch.INFO("layer 1/1: gathering")
          ch.VERBOSE("writing tarball: %s" % path)
-         fp = pa.TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
+         fp = fi.TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
          unpack_path = self.unpack_path.resolve()  # aliases use symlinks
          ch.VERBOSE("canonicalized unpack path: %s" % unpack_path)
          fp.add_(unpack_path, arcname=".")
@@ -483,7 +483,7 @@ class Image:
          for (dir_, subdirs, _) in os.walk(self.unpack_path):
             # must fix as subdirs so we can traverse into them
             for subdir in subdirs:
-               (pa.Path(dir_) // subdir).chmod_min(0o700)
+               (fi.Path(dir_) // subdir).chmod_min(0o700)
          self.unpack_path.rmtree()
       else:
          ch.FATAL("storage directory seems broken: not an image: %s" % self.ref)
@@ -537,10 +537,10 @@ class Image:
                ch.WARNING("layer %d/%d: %s: skipping member with empty path"
                        % (i, len(layers), lh[:7]))
                members.remove(m)
-            # Convert member paths to pa.Path objects for easier processing.
-            # Note: In my testing, parsing a string into a pa.Path object took
+            # Convert member paths to fi.Path objects for easier processing.
+            # Note: In my testing, parsing a string into a fi.Path object took
             # about 2.5µs, so this should be plenty fast.
-            m.name = pa.Path(m.name)
+            m.name = fi.Path(m.name)
             # Reject members with up-levels.
             if (".." in m.name.parts):
                ch.FATAL("rejecting up-level member: %s: %s" % (fp.name, m.name))
@@ -564,7 +564,7 @@ class Image:
          for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
             for m in members:
                if (len(m.name.parts) > 0):  # ignore “.”
-                  m.name = pa.Path(*m.name.parts[1:])  # strip first component
+                  m.name = fi.Path(*m.name.parts[1:])  # strip first component
       ch.VERBOSE("pass 3: analyzing members")
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          dev_ct = 0
@@ -578,7 +578,7 @@ class Image:
                members.remove(m)
                continue
             elif (m.issym() or m.islnk()):
-               link_fix_ct += pa.TarFile.fix_link_target(m, fp.name)
+               link_fix_ct += fi.TarFile.fix_link_target(m, fp.name)
             elif (m.isdir()):
                # Directory: Fix bad permissions (hello, Red Hat).
                m.mode |= 0o700
@@ -599,7 +599,7 @@ class Image:
                ch.VERBOSE("ignoring member under /dev: %s" % m.name)
                members.remove(m)
                continue
-            pa.TarFile.fix_member_uidgid(m)
+            fi.TarFile.fix_member_uidgid(m)
          if (dev_ct > 0):
             ch.WARNING("layer %d/%d: %s: ignored %d devices and/or FIFOs"
                     % (i, len(layers), lh[:7], dev_ct))
@@ -721,7 +721,7 @@ class Image_Ref:
 
    @staticmethod
    def path_to_ref(path):
-      if (isinstance(path, pa.Path)):
+      if (isinstance(path, fi.Path)):
          path = path.name
       return path.replace("+", ":").replace("%", "/")
 
