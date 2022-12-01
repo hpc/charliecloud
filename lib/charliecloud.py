@@ -596,6 +596,7 @@ def init(cli):
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
    # storage directory
+   global storage
    storage = Storage(cli.storage)
    pa.storage_lock = not cli.no_lock
    # architecture
