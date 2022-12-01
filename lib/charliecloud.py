@@ -580,7 +580,6 @@ def exit(code):
    sys.exit(code)
 
 def init(cli):
-   from path import Storage, storage_lock
    import registry as rg
    # logging
    global log_festoon, log_fp, trace_fatal, verbose
@@ -597,7 +596,7 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage directory
    global storage
-   storage = Storage(cli.storage)
+   storage = pa.Storage(cli.storage)
    pa.storage_lock = not cli.no_lock
    # architecture
    global arch, arch_host
@@ -664,7 +663,6 @@ def walk(*args, **kwargs):
       and dirnames and filenames are lists of Path objects. For insight into
       these being lists rather than generators, see use of ch.walk() in
       I_copy.copy_src_dir()."""
-   #from path import Path
    for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
       yield (pa.Path(dirpath),
              [pa.Path(dirname) for dirname in dirnames],
@@ -713,7 +711,6 @@ def prefix_path(prefix, path):
 def profile_dump():
    "If profiling, dump the profile data."
    if (profiling):
-      #from path import Path
       INFO("writing profile files ...")
       fp = pa.Path("/tmp/chofile.txt").open("wt")
       ps = pstats.Stats(profile, stream=fp)
