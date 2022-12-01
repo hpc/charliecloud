@@ -7,12 +7,12 @@ import re
 import shutil
 import sys
 import tarfile
+
 import charliecloud as ch
 import filesystem as fi
 
-## Hairy Imports ##
 
-from charliecloud import depfails # keep track of dependency probs
+## Hairy Imports ##
 
 # Lark is bundled or provided by package dependencies, so assume it's always
 # importable. There used to be a conflicting package on PyPI called "lark",
@@ -24,7 +24,8 @@ LARK_MIN = (0,  7, 1)
 LARK_MAX = (99, 0, 0)
 lark_version = tuple(int(i) for i in lark.__version__.split("."))
 if (not LARK_MIN <= lark_version <= LARK_MAX):
-   depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
+   ch.depfails.append(("bad", 'found Python module "lark" version %d.%d.%d but need between %d.%d.%d and %d.%d.%d inclusive' % (lark_version + LARK_MIN + LARK_MAX)))
+
 
 ## Constants ##
 
@@ -164,6 +165,7 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 # Top-level directories we create if not present.
 STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 
+
 ## Classes ##
 
 class Image:
@@ -171,7 +173,7 @@ class Image:
 
       Constructor arguments:
 
-        ref........... Image_Ref object to identify the image.
+        ref........... Ref object to identify the image.
 
         unpack_path .. Directory to unpack the image in; if None, infer path
                        in storage dir from ref."""
@@ -181,7 +183,7 @@ class Image:
                 "unpack_path")
 
    def __init__(self, ref, unpack_path=None):
-      assert isinstance(ref, Image_Ref)
+      assert isinstance(ref, Ref)
       self.ref = ref
       if (unpack_path is not None):
          assert isinstance(unpack_path, fi.Path)
@@ -230,7 +232,7 @@ class Image:
    def glob(class_, image_glob):
       """Return a possibly-empty iterator of images in the storage directory
          matching the given glob."""
-      for ref in Image_Ref.glob(image_glob):
+      for ref in Ref.glob(image_glob):
          yield class_(ref)
 
    def commit(self):
@@ -654,13 +656,13 @@ class Image:
                     % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
 
-class Image_Ref:
+class Ref:
    """Reference to an image in a remote repository.
 
       The constructor takes one argument, which is interpreted differently
       depending on type:
 
-        None or omitted... Build an empty Image_Ref (all fields None).
+        None or omitted... Build an empty Ref (all fields None).
 
         string ........... Parse it; see FAQ for syntax. Can be either the
                            standard form (e.g., as in a FROM instruction) or

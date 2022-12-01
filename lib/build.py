@@ -981,7 +981,7 @@ class I_from_(Instruction):
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
       #
-      image_ref = im.Image_Ref(
+      image_ref = im.Ref(
          im.tree_child_terminals_cat(self.tree, "image_ref", "IMAGE_REF"),
          argfrom)
       self.base_image = im.Image(image_ref)
@@ -1004,7 +1004,7 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s_stage%d" % (cli.tag, self.image_i)
-      self.image = im.Image(im.Image_Ref(tag))
+      self.image = im.Image(im.Ref(tag))
       images[self.image_i] = self.image
       if (self.image_alias is not None):
          images[self.image_alias] = self.image
