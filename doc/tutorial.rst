@@ -93,7 +93,7 @@ Key workflow operation: Pull
 ----------------------------
 To start, let’s obtain a container image that someone else has already built. The
 con-tainery way to do this is the pull operation, which means to move an image
-from a re-mote repository into local storage of some kind.
+from a remote repository into local storage of some kind.
 
 First, let’s browse the Docker Hub repository of official AlmaLinux images.
 Note the list of tags; this is a partial list of image versions that are
@@ -123,12 +123,12 @@ Use the Charliecloud program ch-image to pull this image to a directory
    $ ch-image list
    almalinux:8
 
-Images can come in lots of different formats. ch-run needs the format to be a
+Images can come in lots of different formats. :code:`ch-run` needs the format to be a
 directory or a SquashFS to run. For this example, we’ll use a SquashFS.
 
 We first need to convert the directory format of the image, stored in the
-storage directo-ry, into a SquashFS. We use the command ch-convert to do so.
-The default storage di-rectory is /var/tmp/$USER.ch/img.
+storage directory, into a SquashFS. We use the command :code:`ch-convert` to do so.
+The default storage directory is :code:`/var/tmp/$USER.ch/img`.
 
 Run a container::
 
@@ -144,9 +144,9 @@ Run a container::
    $ exit
 
 What does this command do?
-   1.      Start a container (ch-run).
+   1.      Start a container (:code:`ch-run`).
    2.      Use the image in directory almalinux:8.
-   3.      Stop processing ch-run command line arguments (--).
+   3.      Stop processing ch-run command line arguments (:code"`--`).
            (Note this is standard no-tation for UNIX command line apps.)
    4.      Run the program /bin/bash inside the container, which starts
            an interactive shell where we enter a few commands and then exit,
@@ -190,11 +190,11 @@ to avoid making a mess.
   bin                etc  lib   media  opt  root  sbin  sys  usr
   $ cd ..
 
- Now, run Bash in the container!
+Now, run Bash in the container!
 
 ::
 
-  $ chprun ./centos -- /bin/bash
+  $ ch-run ./centos -- /bin/bash
   $ pwd
   /
   $ ls
@@ -204,9 +204,9 @@ to avoid making a mess.
   CentOS Linux release 7.9.2009 (Core)
   $ exit
 
-.. note::
-  Note: CentOS distributes tarballs with some odd directory permissions that
-  make them un-deleteable. To remove this directory:
+
+Note: CentOS distributes tarballs with some odd directory permissions that
+make them un-deleteable. To remove this directory:
 
 ::
 
@@ -254,14 +254,14 @@ Let's build the image::
 
 Charliecloud supports multiple builders. In this workshop, we are using ch-image, which
 comes with Charliecloud, but you can also use others, e.g. Docker or Podman.
-.. note::
-  Note: ch-image is a big deal because it is completely unprivileged1, which is important
-  in environments like ours. Other builders run as root or require setuid root helper
-  programs; this raises a number of security questions.
+
+Note: ch-image is a big deal because it is completely unprivileged1, which is important
+in environments like ours. Other builders run as root or require setuid root helper
+programs; this raises a number of security questions.
 
 The `ch-image build` line says:
-  1.      Build an image named (tagged) “hello”.
-  2.        Use the Dockerfile called “Dockerfile”.
+  1.  Build an image named (tagged) “hello”.
+  2.  Use the Dockerfile called “Dockerfile”.
   3.  Use the current directory as the context directory.
 
 Now list the images ch-image knows about::
@@ -280,7 +280,7 @@ Note that we’ve run our application directly rather than starting an interacti
 Key workflow operation: Push
 ----------------------------
 The containery way to share your images is by pushing them to a container registry. In
-this section, we will set up a registry on gitlab.com and push the hello image to that
+this section, we will set up a registry on GitLab and push the hello image to that
 registry, then pull it back to compare.
 
 Create a private container registry:
@@ -298,12 +298,11 @@ At this point, we have a container registry set up, and we need to teach ch-imag
 log into it. You maybe able to use your GitLab password. However, GitLab has a thing called
 a personal access token (PAT) that can be used no matter how you log into the GitLab web
 app. To create one:
-
-  7.      Click on your avatar at the top right. Choose Edit Profile.
-  8.      At left, choose Access Tokens (the three-pin plug icon).
-  9.      Type in the name “registry”. Tick the boxes read_registry and write_registry.
+  1.      Click on your avatar at the top right. Choose Edit Profile.
+  2.      At left, choose Access Tokens (the three-pin plug icon).
+  3.      Type in the name “registry”. Tick the boxes read_registry and write_registry.
           Click Create personal access token.
-  10.     Your PAT will be displayed at the top of the result page under Your new personal
+  4.     Your PAT will be displayed at the top of the result page under Your new personal
           access token. Copy this string and store it somewhere safe & policy compliant.
           (Also, you can revoke it at the end of the tutorial if you like.)
 
@@ -328,7 +327,7 @@ Note that the tagging step you would need for Docker is unnecessary here, becaus
 just specify a destination reference at push time.
 
 When you are prompted for credentials, enter your e-mail address (that you use to log into
-gitlab.lanl.gov) and copy-paste the PAT you created earlier.
+gitlab.com) and copy-paste the PAT you created earlier.
 
 ::
 
@@ -350,8 +349,7 @@ gitlab.lanl.gov) and copy-paste the PAT you created earlier.
   cleaning up
   done
 
- .. note::
-  Upload can be slow, so be patient.
+Note: Upload can be slow, so be patient.
 Go back to your container registry page. You should see your image listed now!
 
 Pull and compare:
@@ -359,8 +357,7 @@ Let's pull that image and see how it looks
 
 ::
 
-  $ ch-image pull gitlab.com:5050/$USER/test-registry/hello:latest
-  –auth hello.2
+  $ ch-image pull gitlab.com:5050/$USER/test-registry/hello:latest –auth hello.2
   pulling image:   gitlab.com:5050/$USER/test-registry/hello:latest
   destination:     hello.2
   [...]
@@ -448,6 +445,7 @@ Next, we obtain an image squashball and copy it to your cluster home directory
 
 Log into Cluster:
 In a new terminal::
+
   $ ssh $CLUSTER
 
 Run application:
@@ -483,12 +481,11 @@ Run the application on all 72 cores in your allocation::
 
 Win!
 
-.. note::
 
-  Why --join? By default, each containerized rank is in a different con-tainer, and
-  processes in sibling containers can’t attach to one another to do the kind of
-  shared memory that OpenMPI prefers. Sometimes this fails, and sometimes it’s just
-  slower. By adding --join, the independent ch-run invocations use the same container.
+Note: Why --join? By default, each containerized rank is in a different con-tainer, and
+processes in sibling containers can’t attach to one another to do the kind of
+shared memory that OpenMPI prefers. Sometimes this fails, and sometimes it’s just
+slower. By adding --join, the independent ch-run invocations use the same container.
 
 Build Cache:
 
