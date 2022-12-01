@@ -275,6 +275,7 @@ And run it::
   $ ch-convert /var/tmp/$USER.ch/img/hello hello.sqfs
   $ ch-run hello.sqfs -- /hello.py
   Hello World!
+
 Note that we’ve run our application directly rather than starting an interactive shell.
 
 Key workflow operation: Push
@@ -432,7 +433,7 @@ Build::
   $ ls
   Dockerfile  mpihello.c
   $ ch-image build -t mpihello .
-Note that the default Dockerfile is :code:`./Dockerfile`; we can omit :code:`-f`.
+  Note that the default Dockerfile is :code:`./Dockerfile`; we can omit :code:`-f`.
 
 Copy to Cluster:
 Next, we obtain an image squashball and copy it to your cluster home directory
