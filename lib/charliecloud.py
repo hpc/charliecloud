@@ -1931,6 +1931,50 @@ class Registry_HTTP:
       #if (verbose >= 2):
       #   http.client.HTTPConnection.debuglevel = 1
 
+   @staticmethod
+   def headers_log(hs):
+      """Log the headers."""
+      # All headers first.
+      for h in hs:
+         h = h.lower()
+         if (h == "www-authenticate"):
+            f = VERBOSE
+         else:
+            f = DEBUG
+         f("%s: %s" % (h, hs[h]))
+      # Friendly message for Docker Hub rate limit.
+      used_ct = period = left_ct = reason = "???"  # keep as strings
+      if ("ratelimit-limit" in hs):
+         h = hs["ratelimit-limit"]
+         m = re.search(r"^(\d+);w=(\d+)$", h)
+         if (m is None):
+            WARNING("can’t parse RateLimit-Limit: %s" % h)
+         else:
+            used_ct = m[1]
+            period = str(int(m[2]) / 3600)  # seconds to hours
+      if ("ratelimit-remaining" in hs):
+         h = hs["ratelimit-remaining"]
+         m = re.search(r"^(\d+);", h)
+         if (m is None):
+            WARNING("can’t parse RateLimit-Remaining: %s" % h)
+         else:
+            left_ct = m[1]
+      if ("docker-ratelimit-source" in hs):
+         h = hs["docker-ratelimit-source"]
+         m = re.search(r"^[0-9.a-f:]+$", h)     # IPv4 or IPv6
+         if (m is not None):
+            reason = m[0]
+         else:
+            m = re.search(r"^[0-9A-Fa-f-]+$", h)  # user UUID
+            if (m is not None):
+               reason = "auth"
+            else:
+               # Overall limits yield HTTP 429 so warning seems legitimate?
+               WARNING("can’t parse Docker-RateLimit-Source: %s" % h)
+      if (any(i != "???" for i in (used_ct, period, left_ct,reason))):
+         INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
+              % (used_ct, period, left_ct, reason))
+
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
       url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
@@ -2143,15 +2187,7 @@ class Registry_HTTP:
                   % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          FATAL("%s failed: %s" % (method, x))
-      # Log some headers if needed.
-      for h in res.headers:
-         h = h.lower()
-         if (   "ratelimit" in h
-             or h == "www-authenticate"):
-            f = VERBOSE
-         else:
-            f = DEBUG
-         f("%s: %s" % (h, res.headers[h]))
+      self.headers_log(res.headers)
       return res
 
    def session_init_maybe(self):
