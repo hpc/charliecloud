@@ -162,6 +162,7 @@ CentOS provides a tarball containing an installed CentOS 7 base image; we can
 use that in Charliecloud directly.
 
 ::
+
   $ wget -O centos.tar.xz 'https://github.com/CentOS/sig-cloud-instance-images/raw/
     CentOS-7-x86_64/docker/centos-7-x86_64-docker.tar.xz?raw=true'
   $ tar tf centos.tar.xz | head
@@ -180,6 +181,7 @@ This tarball is what’s called a “tarbomb”, so we need to provide an enclos
 to avoid making a mess.
 
 ::
+
   $ mkdir centos
   $ cd centos
   $ tar xf ../centos.tar.xz
@@ -191,6 +193,7 @@ to avoid making a mess.
  Now, run Bash in the container!
 
 ::
+
   $ chprun ./centos -- /bin/bash
   $ pwd
   /
@@ -206,6 +209,7 @@ to avoid making a mess.
   make them un-deleteable. To remove this directory:
 
 ::
+
   $ chmod -R u+w ./centos
   $ rm -Rf --one-file-system ./centos
 
@@ -217,15 +221,18 @@ storage. We can then extract the image from builder storage to a directory and r
 
 We’ll write a “Hello World” Python program and run it within a container we specify
 with a Dockerfile. Set up a directory to work in::
+
   $ mkdir hello.src
   $ cd hello.src
 
 Type in the following program as `hello.py` using your least favorite editor::
+
   #!/usr/bin/python3
 
   print("Hellow World!")
 
 Next, create a file called `Dockerfile` and type in the following recipe::
+
   FROM almalinux:8
   RUN yum -y install python36
   COPY ./hello.py /
@@ -240,6 +247,7 @@ These four instructions say:
    4.      Make that file executable.
 
 Let's build the image::
+
   $ ls
   Dockerfile  hello.py
   $ ch-image build -t hello -f Dockerfile .
@@ -257,11 +265,13 @@ The `ch-image build` line says:
   3.  Use the current directory as the context directory.
 
 Now list the images ch-image knows about::
+
   $ ch-image list
   almalinux:8
   hello
 
 And run it::
+
   $ ch-convert /var/tmp/$USER.ch/img/hello hello.sqfs
   $ ch-run hello.sqfs -- /hello.py
   Hello World!
@@ -300,6 +310,7 @@ Push image:
 We can use `ch-image push` to push the image to gitlab.com.
 
 ::
+
   $ ch-image list
   almalinux:8
   hello
@@ -316,6 +327,7 @@ When you are prompted for credentials, enter your e-mail address (that you use t
 gitlab.lanl.gov) and copy-paste the PAT you created earlier.
 
 ::
+
   $ ch-image push hello gitlab.com:5050/$USER/test-registry/hello:latest
   pushing image:   hello
   destination:     gitlab.com:5050/$USER/test-registry/hello:latest
@@ -342,6 +354,7 @@ Pull and compare:
 Let's pull that image and see how it looks
 
 ::
+
   $ ch-image pull gitlab.com:5050/$USER/test-registry/hello:latest
   –auth hello.2
   pulling image:   gitlab.com:5050/$USER/test-registry/hello:latest
@@ -371,6 +384,7 @@ Create a new directory for this project, and within it the following simple C pr
 (Note the program contains a bug; consider fixing it.)
 
 ::
+
   $ mkdir mpihello
   $ cd mpihello
   $ vim mpihello.c
@@ -401,6 +415,7 @@ Create a new directory for this project, and within it the following simple C pr
   }
 
 Add the following Dockerfile::
+
   $ cat Dockerfile
   FROM openmpi
   RUN mkdir /hello
@@ -412,6 +427,7 @@ The instruction WORKDIR changes directories (the default working directory withi
 a Dockerfile is /).
 
 Build::
+
   $ ls
   Dockerfile  mpihello.c
   $ ch-image build -t mpihello .
@@ -421,6 +437,7 @@ Copy to Cluster:
 Next, we obtain an image squashball and copy it to your cluster home directory
 
 ::
+
   $ ch-convert /var/tmp/$USER.ch/img/mpihello mpihello.sqfs
   $ scp mpihello.sqfs $CLUSTER:~
   mpihello.tar.gz
@@ -437,6 +454,7 @@ First, obtain a two-node allocation and load the Charliecloud module. If your cl
 doesn’t have Charliecloud as a module, you can install Charliecloud in your home directory.
 
 ::
+
   $ salloc -N2 -t 1:00:00
   salloc: Granted job allocation 599518
   [...]
@@ -445,6 +463,7 @@ doesn’t have Charliecloud as a module, you can install Charliecloud in your ho
   0.29
 
 Run the application on all 72 cores in your allocation::
+
   $ srun -c1 ch-run --join ~/mpihello.sqfs -- ./hello/mpihello
   hello from rank 22 of 72
   rank 22 received 0 from rank 0
@@ -473,17 +492,20 @@ like "pull" and "import". Some instructions are expensive to execute so it's oft
 to retrieve their results from cache instead.
 
 Let's set up this example by first resetting the build cache::
+
   $ ch-image build-cache -reset
   $ mkdir cache-test
   $ cd cache-test
 
 Suppose we have this Dockerfile::
+
   $ cat a.df
   FROM almalinux:8
   RUN echo foo
   RUN echo bar
 
 On our first build we get::
+
   $ ch-image build -t a -f a.df .
     1. FROM almalinux:8
   [ ... pull chatter omitted ... ]
@@ -498,6 +520,7 @@ Note the dot after each instruction’s line number. This means that the instruc
 was executed. You can see this in the output of the two echo commands.
 
 But on our second build, we get::
+
   $ ch-image build -t a -f a.df .
     1* FROM almalinux:8
     2* RUN echo foo
@@ -512,6 +535,7 @@ Even for such a small and short Dockerfile, this build is noticeably faster than
 We can also try a second, slightly different Dockerfile. Note that the first three instruc-tions are the same, but the third is different.
 
 ::
+
   $ cat b.df
   FROM almalinux:8
   RUN echo foo
@@ -528,6 +552,7 @@ Here, the first two instructions are hits from the first Dockerfile, but the thi
 a miss, so Charliecloud retrieves that state and continues building.
 
 We can also inspect the cache::
+
   $ ch-image build-cache –tree
   *  (b) RUN echo qux
   | *  (a) RUN echo bar
