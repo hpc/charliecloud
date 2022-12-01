@@ -97,7 +97,7 @@ HTTP_CHUNK_SIZE = 256 * 1024
 # Minimum Python version. NOTE: Keep in sync with configure.ac.
 PYTHON_MIN = (3,6)
 
-## Globals ##p
+## Globals ##
 
 # Active architecture (both using registry vocabulary)
 arch = None       # requested by user
