@@ -580,7 +580,7 @@ def exit(code):
    sys.exit(code)
 
 def init(cli):
-   from path import Storage
+   from path import Storage, storage_lock
    import registry as rg
    # logging
    global log_festoon, log_fp, trace_fatal, verbose
@@ -596,9 +596,8 @@ def init(cli):
    atexit.register(color_reset, log_fp)
    VERBOSE("verbose level: %d" % verbose)
    # storage directory
-   global storage, storage_lock
    storage = Storage(cli.storage)
-   storage_lock = not cli.no_lock
+   pa.storage_lock = not cli.no_lock
    # architecture
    global arch, arch_host
    assert (cli.arch is not None)
