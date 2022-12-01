@@ -19,6 +19,8 @@ import sys
 import time
 import traceback
 
+import registry as rg
+
 # compatability link (Path previously definied here)
 import path as pa
 Path = pa.Path
@@ -86,10 +88,16 @@ BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/is
 # somewhat random guess with hopefully enough headroom not to cause problems.
 FILENAME_MAX_CHARS = 192
 
+# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
+# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
+# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
+# takes over.
+HTTP_CHUNK_SIZE = 256 * 1024
+
 # Minimum Python version. NOTE: Keep in sync with configure.ac.
 PYTHON_MIN = (3,6)
 
-## Globals ##
+## Globals ##p
 
 # Active architecture (both using registry vocabulary)
 arch = None       # requested by user
@@ -98,12 +106,6 @@ arch_host = None  # of host
 # FIXME: currently set in ch-image :P
 CH_BIN = None
 CH_RUN = None
-
-# Chunk size in bytes when streaming HTTP. Progress meter is updated once per
-# chunk, which means the display is updated roughly every 20s at 100 Kbit/s
-# and every 2s at 1Mbit/s; beyond that, the once-per-second display throttling
-# takes over.
-HTTP_CHUNK_SIZE = 256 * 1024
 
 # Logging; set using init() below.
 verbose = 0          # Verbosity level.
@@ -580,7 +582,6 @@ def exit(code):
    sys.exit(code)
 
 def init(cli):
-   import registry as rg
    # logging
    global log_festoon, log_fp, trace_fatal, verbose
    assert (0 <= cli.verbose <= 3)
