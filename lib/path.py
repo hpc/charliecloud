@@ -18,7 +18,7 @@ import charliecloud as ch
 # Storage directory format version. We refuse to operate on storage
 # directories with non-matching versions. Increment this number when the
 # format changes non-trivially.
-STORAGE_VERSION = 5
+STORAGE_VERSION = 4
 
 ## Globals ##
 
