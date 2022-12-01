@@ -299,13 +299,13 @@ At this point, we have a container registry set up, and we need to teach ch-imag
 log into it. You maybe able to use your GitLab password. However, GitLab has a thing called
 a personal access token (PAT) that can be used no matter how you log into the GitLab web
 app. To create one:
-  1.      Click on your avatar at the top right. Choose Edit Profile.
-  2.      At left, choose Access Tokens (the three-pin plug icon).
-  3.      Type in the name “registry”. Tick the boxes read_registry and write_registry.
-          Click Create personal access token.
-  4.      Your PAT will be displayed at the top of the result page under Your new personal
-          access token. Copy this string and store it somewhere safe & policy compliant.
-          (Also, you can revoke it at the end of the tutorial if you like.)
+1. Click on your avatar at the top right. Choose Edit Profile.
+2. At left, choose Access Tokens (the three-pin plug icon).
+3. Type in the name “registry”. Tick the boxes read_registry and write_registry.
+   Click Create personal access token.
+4. Your PAT will be displayed at the top of the result page under Your new personal
+   access token. Copy this string and store it somewhere safe & policy compliant.
+   (Also, you can revoke it at the end of the tutorial if you like.)
 
 Push image:
 We can use `ch-image push` to push the image to gitlab.com.
