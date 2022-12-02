@@ -568,12 +568,12 @@ class Registry_HTTP:
       try:
          res = self.session.request(method, url, auth=auth, **kwargs)
          ch.VERBOSE("response status: %d" % res.status_code)
+         self.headers_log(res.headers)
          if (res.status_code not in statuses):
             ch.FATAL("%s failed; expected status %s but got %d: %s"
                   % (method, statuses, res.status_code, res.reason))
       except requests.exceptions.RequestException as x:
          ch.FATAL("%s failed: %s" % (method, x))
-      self.headers_log(res.headers)
       return res
 
    def session_init_maybe(self):

@@ -21,7 +21,9 @@ import traceback
 
 import registry as rg
 
-# compatability link (Path previously definied here)
+# Compatability link. Sometimes we load pickled data from when Path was defined
+# in this file. To maintain compatability, we set Path to its definition in
+# filesystem.py. 
 import filesystem as fi
 Path = fi.Path
 
