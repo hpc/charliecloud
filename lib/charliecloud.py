@@ -24,7 +24,7 @@ import registry as rg
 
 # Compatibility link. Sometimes we load pickled data from when Path was defined
 # in this file. This alias lets us still load such pickles. 
-Path = fi.Path
+Path = fs.Path
 
 
 ## Hairy imports ##
