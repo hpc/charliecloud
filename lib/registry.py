@@ -44,7 +44,7 @@ TYPE_LAYER = "application/vnd.docker.image.rootfs.diff.tar.gzip"
 tls_verify = True
 
 # True if we talk to registries authenticated; false if anonymously.
-reg_auth = False
+auth = False
 
 
 ## Classes ##
@@ -103,7 +103,7 @@ class Auth(requests.auth.AuthBase):
    #                 created, e.g. classes later in the file, or some can
    #                 escalate to themselves.
    #
-   #   reg_auth .... True if appropriate for authenticated mode, False if
+   #   auth .... True if appropriate for authenticated mode, False if
    #                 anonymous (i.e., --auth or not, respectively). Everything
    #                 must be one or the other.
    #
@@ -151,7 +151,7 @@ class Auth(requests.auth.AuthBase):
       # Try to escalate.
       for class_ in self.escalators:
          if (class_.scheme == auth_scheme):
-            if (class_.reg_auth != reg_auth):
+            if (class_.auth != auth):
                ch.VERBOSE("skipping %s: auth mode mismatch" % class_.__name__)
             else:
                ch.VERBOSE("authenticating using %s" % class_.__name__)
@@ -169,7 +169,7 @@ class Auth(requests.auth.AuthBase):
 class Auth_Basic(Auth):
    anon_p = False
    scheme = "Basic"
-   reg_auth = True
+   auth = True
 
    __slots__ = ("basic")
 
@@ -201,7 +201,7 @@ class Auth_Bearer_IDed(Auth):
    # https://stackoverflow.com/a/58055668
    anon_p = False
    scheme = "Bearer"
-   reg_auth = True
+   auth = True
    variant = "IDed"
 
    __slots__ = ("auth_d",
@@ -264,7 +264,7 @@ class Auth_Bearer_IDed(Auth):
 class Auth_Bearer_Anon(Auth_Bearer_IDed):
    anon_p = True
    scheme = "Bearer"
-   reg_auth = False
+   auth = False
 
    __slots__ = ()
 
@@ -282,7 +282,7 @@ class Auth_Bearer_Anon(Auth_Bearer_IDed):
 class Auth_None(Auth):
    anon_p = True
    scheme = None
-   #reg_auth =   # not meaningful b/c we start here in both modes
+   #auth =   # not meaningful b/c we start here in both modes
 
    def __call__(self, req):
       return req

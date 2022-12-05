@@ -173,7 +173,7 @@ class Image:
 
       Constructor arguments:
 
-        ref........... Ref object to identify the image.
+        ref........... Reference object to identify the image.
 
         unpack_path .. Directory to unpack the image in; if None, infer path
                        in storage dir from ref."""
@@ -183,7 +183,7 @@ class Image:
                 "unpack_path")
 
    def __init__(self, ref, unpack_path=None):
-      assert isinstance(ref, Ref)
+      assert isinstance(ref, Reference)
       self.ref = ref
       if (unpack_path is not None):
          assert isinstance(unpack_path, fs.Path)
@@ -232,7 +232,7 @@ class Image:
    def glob(class_, image_glob):
       """Return a possibly-empty iterator of images in the storage directory
          matching the given glob."""
-      for ref in Ref.glob(image_glob):
+      for ref in Reference.glob(image_glob):
          yield class_(ref)
 
    def commit(self):
@@ -662,7 +662,7 @@ class Reference:
       The constructor takes one argument, which is interpreted differently
       depending on type:
 
-        None or omitted... Build an empty Ref (all fields None).
+        None or omitted... Build an empty Reference (all fields None).
 
         string ........... Parse it; see FAQ for syntax. Can be either the
                            standard form (e.g., as in a FROM instruction) or
