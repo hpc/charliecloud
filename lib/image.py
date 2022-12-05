@@ -656,7 +656,7 @@ class Image:
                     % (i, len(layers), lh[:7], wo_ct, ig_ct))
 
 
-class Ref:
+class Reference:
    """Reference to an image in a remote repository.
 
       The constructor takes one argument, which is interpreted differently

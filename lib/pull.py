@@ -24,8 +24,8 @@ manifests_internal = {
 
 def main(cli):
    # Set things up.
-   src_ref = im.Ref(cli.source_ref)
-   dst_ref = src_ref if cli.dest_ref is None else im.Ref(cli.dest_ref)
+   src_ref = im.Reference(cli.source_ref)
+   dst_ref = src_ref if cli.dest_ref is None else im.Reference(cli.dest_ref)
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
       ch.exit(0)
