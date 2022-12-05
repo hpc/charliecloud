@@ -21,9 +21,8 @@ import traceback
 
 import registry as rg
 
-# Compatability link. Sometimes we load pickled data from when Path was defined
-# in this file. To maintain compatability, we set Path to its definition in
-# filesystem.py. 
+# Compatibility link. Sometimes we load pickled data from when Path was defined
+# in this file. This alias lets us still load such pickles. 
 import filesystem as fi
 Path = fi.Path
 
