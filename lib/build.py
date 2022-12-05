@@ -16,7 +16,7 @@ import build_cache as bu
 import image as im
 import fakeroot
 import pull
-import filesystem as fi
+import filesystem as fs
 
 
 ## Globals ##
@@ -117,7 +117,7 @@ def main(cli_):
    elif (not os.path.isdir(cli.context)):
       ch.FATAL("context must be a directory: %s" % cli.context)
    else:
-      fp = fi.Path(cli.file).open_("rt")
+      fp = fs.Path(cli.file).open_("rt")
       text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
       ch.close_(fp)
 
@@ -343,7 +343,7 @@ class Instruction(abc.ABC):
 
    @property
    def workdir(self):
-      return fi.Path(self.image.metadata["cwd"])
+      return fs.Path(self.image.metadata["cwd"])
 
    @workdir.setter
    def workdir(self, x):
@@ -516,7 +516,7 @@ class Arg(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.commit_files.add(fi.Path("ch/metadata.json"))
+      self.commit_files.add(fs.Path("ch/metadata.json"))
       self.key = im.tree_terminal(self.tree, "WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
@@ -673,7 +673,7 @@ class I_copy(Instruction):
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
       src = src.resolve()  # alternative to os.path.realpath()
-      dst = fi.Path(dst)
+      dst = fs.Path(dst)
       assert (src.is_dir() and not src.is_symlink())
       assert (dst.is_dir() and not dst.is_symlink())
       ch.DEBUG("copying named directory: %s -> %s" % (src, dst))
@@ -772,12 +772,12 @@ class I_copy(Instruction):
             ch.TRACE("not symlink")
             dst_canon = cand
          else:
-            target = fi.Path(os.readlink(cand))
+            target = fs.Path(os.readlink(cand))
             ch.TRACE("symlink to: %s" % target)
             assert (len(target.parts) > 0)  # POSIX says no empty symlinks
             if (target.is_absolute()):
                ch.TRACE("absolute")
-               dst_canon = fi.Path(unpack_path)
+               dst_canon = fs.Path(unpack_path)
             else:
                ch.TRACE("relative")
             dst_parts.extend(reversed(target.parts))
@@ -785,9 +785,9 @@ class I_copy(Instruction):
 
    def execute(self):
       # Locate the destination.
-      unpack_canon = fi.Path(self.image.unpack_path).resolve()
+      unpack_canon = fs.Path(self.image.unpack_path).resolve()
       if (self.dst.startswith("/")):
-         dst = fi.Path(self.dst)
+         dst = fs.Path(self.dst)
       else:
          dst = self.workdir // self.dst
       ch.VERBOSE("destination, as given: %s" % dst)
@@ -857,7 +857,7 @@ class I_copy(Instruction):
       self.srcs = list()
       for src in (ch.variables_sub(i, self.env_build) for i in self.srcs_raw):
          # glob can’t take Path
-         matches = [fi.Path(i) for i in glob.glob("%s/%s" % (context, src))]
+         matches = [fs.Path(i) for i in glob.glob("%s/%s" % (context, src))]
          if (len(matches) == 0):
             ch.FATAL("can't copy: source file not found: %s" % src)
          for i in matches:
@@ -908,8 +908,8 @@ class Env(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.commit_files |= {fi.Path("ch/environment"),
-                            fi.Path("ch/metadata.json")}
+      self.commit_files |= {fs.Path("ch/environment"),
+                            fs.Path("ch/metadata.json")}
 
    @property
    def str_(self):
@@ -1123,7 +1123,7 @@ class I_shell(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.commit_files.add(fi.Path("ch/metadata.json"))
+      self.commit_files.add(fs.Path("ch/metadata.json"))
 
    @property
    def str_(self):
@@ -1147,7 +1147,7 @@ class I_workdir(Instruction):
       (self.image.unpack_path // self.workdir).mkdirs()
 
    def prepare(self, *args):
-      self.path = fi.Path(ch.variables_sub(
+      self.path = fs.Path(ch.variables_sub(
          im.tree_terminals_cat(self.tree, "LINE_CHUNK"), self.env_build))
       self.chdir(self.path)
       return super().prepare(*args)

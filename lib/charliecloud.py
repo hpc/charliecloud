@@ -19,13 +19,13 @@ import sys
 import time
 import traceback
 
-import filesystem as fi
+import filesystem as fs
 import registry as rg
 
 # Compatability link. Sometimes we load pickled data from when Path was defined
 # in this file. To maintain compatability, we set Path to its definition in
 # filesystem.py. 
-Path = fi.Path
+Path = fs.Path
 
 ## Hairy imports ##
 
@@ -602,8 +602,8 @@ def init(cli):
    VERBOSE("verbose level: %d" % verbose)
    # storage directory
    global storage
-   storage = fi.Storage(cli.storage)
-   fi.storage_lock = not cli.no_lock
+   storage = fs.Storage(cli.storage)
+   fs.storage_lock = not cli.no_lock
    # architecture
    global arch, arch_host
    assert (cli.arch is not None)
@@ -670,9 +670,9 @@ def walk(*args, **kwargs):
       these being lists rather than generators, see use of ch.walk() in
       I_copy.copy_src_dir()."""
    for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
-      yield (fi.Path(dirpath),
-             [fi.Path(dirname) for dirname in dirnames],
-             [fi.Path(filename) for filename in filenames])
+      yield (fs.Path(dirpath),
+             [fs.Path(dirname) for dirname in dirnames],
+             [fs.Path(filename) for filename in filenames])
 
 def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
@@ -718,7 +718,7 @@ def profile_dump():
    "If profiling, dump the profile data."
    if (profiling):
       INFO("writing profile files ...")
-      fp = fi.Path("/tmp/chofile.txt").open("wt")
+      fp = fs.Path("/tmp/chofile.txt").open("wt")
       ps = pstats.Stats(profile, stream=fp)
       ps.sort_stats(pstats.SortKey.CUMULATIVE)
       ps.dump_stats("/tmp/chofile.p")
