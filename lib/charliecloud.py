@@ -19,12 +19,12 @@ import sys
 import time
 import traceback
 
+import filesystem as fi
 import registry as rg
 
 # Compatability link. Sometimes we load pickled data from when Path was defined
 # in this file. To maintain compatability, we set Path to its definition in
 # filesystem.py. 
-import filesystem as fi
 Path = fi.Path
 
 ## Hairy imports ##
