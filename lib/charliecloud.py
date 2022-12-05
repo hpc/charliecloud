@@ -32,6 +32,7 @@ Path = fi.Path
 # List of dependency problems.
 depfails = []
 
+
 ## Enums ##
 
 # Build cache mode.
@@ -99,6 +100,7 @@ HTTP_CHUNK_SIZE = 256 * 1024
 # Minimum Python version. NOTE: Keep in sync with configure.ac.
 PYTHON_MIN = (3,6)
 
+
 ## Globals ##
 
 # Active architecture (both using registry vocabulary)
@@ -121,6 +123,7 @@ dlcache_p = None
 # Profiling.
 profiling = False
 profile = None
+
 
 ## Exceptions ##
 

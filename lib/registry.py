@@ -5,7 +5,9 @@ import re
 import sys
 import urllib
 import types
+
 import charliecloud as ch
+
 
 ## Hairy imports ##
 
@@ -22,6 +24,7 @@ except ImportError:
    requests.auth = types.ModuleType("requests.auth")
    requests.auth.AuthBase = object
 
+   
 ## Constants ##
 
 # Content types for some stuff we care about.
@@ -42,6 +45,7 @@ tls_verify = True
 
 # True if we talk to registries authenticated; false if anonymously.
 reg_auth = False
+
 
 ## Classes ##
 
@@ -79,7 +83,7 @@ class Credentials:
       return (username, password)
 
 
-class Registry_Auth(requests.auth.AuthBase):
+class Auth(requests.auth.AuthBase):
 
    # Every registry request has an “authorization object”. This starts as no
    # authentication at all. If we get HTTP 401 Unauthorized, we try to
@@ -118,7 +122,7 @@ class Registry_Auth(requests.auth.AuthBase):
    @classmethod
    def authenticate(class_, creds, auth_d):
       """Authenticate using the given credentials and parsed WWW-Authenticate
-         dictionary. Return a new Registry_Auth object if successful, None if
+         dictionary. Return a new Auth object if successful, None if
          not. The caller is responsible for dealing with the failure."""
       ...
 
@@ -162,7 +166,7 @@ class Registry_Auth(requests.auth.AuthBase):
       return None
 
 
-class Registry_Auth_Basic(Registry_Auth):
+class Auth_Basic(Auth):
    anon_p = False
    scheme = "Basic"
    reg_auth = True
@@ -193,7 +197,7 @@ class Registry_Auth_Basic(Registry_Auth):
       return i
 
 
-class Registry_Auth_Bearer_IDed(Registry_Auth):
+class Auth_Bearer_IDed(Auth):
    # https://stackoverflow.com/a/58055668
    anon_p = False
    scheme = "Bearer"
@@ -223,7 +227,7 @@ class Registry_Auth_Bearer_IDed(Registry_Auth):
       # One can escalate to an authenticated Bearer with a greater scope. I’m
       # pretty sure this doesn’t create an infinite loop because eventually
       # the token request will fail.
-      return (Registry_Auth_Bearer_IDed,)
+      return (Auth_Bearer_IDed,)
 
    @property
    def token_short(self):
@@ -257,7 +261,7 @@ class Registry_Auth_Bearer_IDed(Registry_Auth):
       return requests.auth.HTTPBasicAuth(username, password)
 
 
-class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
+class Auth_Bearer_Anon(Auth_Bearer_IDed):
    anon_p = True
    scheme = "Bearer"
    reg_auth = False
@@ -266,7 +270,7 @@ class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
 
    @property
    def escalators(self):
-      return (Registry_Auth_Bearer_IDed,)
+      return (Auth_Bearer_IDed,)
 
    @classmethod
    def token_auth(class_, creds):
@@ -275,7 +279,7 @@ class Registry_Auth_Bearer_Anon(Registry_Auth_Bearer_IDed):
       return None
 
 
-class Registry_Auth_None(Registry_Auth):
+class Auth_None(Auth):
    anon_p = True
    scheme = None
    #reg_auth =   # not meaningful b/c we start here in both modes
@@ -288,12 +292,12 @@ class Registry_Auth_None(Registry_Auth):
 
    @property
    def escalators(self):
-      return (Registry_Auth_Basic,
-              Registry_Auth_Bearer_Anon,
-              Registry_Auth_Bearer_IDed)
+      return (Auth_Basic,
+              Auth_Bearer_Anon,
+              Auth_Bearer_IDed)
 
 
-class Registry_HTTP:
+class HTTP:
    """Transfers image data to and from a remote image repository via HTTPS.
 
       Note that ref refers to the *remote* image. Objects of this class have
@@ -307,7 +311,7 @@ class Registry_HTTP:
    def __init__(self, ref):
       # Need an image ref with all the defaults filled in.
       self.ref = ref.canonical
-      self.auth = Registry_Auth_None()
+      self.auth = Auth_None()
       self.creds = Credentials()
       self.session = None
       # This is commented out because it prints full request and response

@@ -11,7 +11,9 @@ import shutil
 import stat
 import tarfile
 import version
+
 import charliecloud as ch
+
 
 ## Constants ##
 
@@ -20,11 +22,13 @@ import charliecloud as ch
 # format changes non-trivially.
 STORAGE_VERSION = 4
 
+
 ## Globals ##
 
 # True if we lock storage directory to prevent concurrent access; false for no
 # locking (which is very YOLO and may break the storage directory).
 storage_lock = True
+
 
 ## Classes ##
 

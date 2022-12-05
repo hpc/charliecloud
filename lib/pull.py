@@ -57,7 +57,7 @@ class Image_Puller:
       self.digests = dict()
       self.image = image
       self.layer_hashes = None
-      self.registry = rg.Registry_HTTP(src_ref)
+      self.registry = rg.HTTP(src_ref)
       self.sid_input = None
       self.src_ref = src_ref
 
