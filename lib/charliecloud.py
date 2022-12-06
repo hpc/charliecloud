@@ -621,14 +621,14 @@ def init(cli):
    dlcache_p = (dlcache == Download_Mode.ENABLED)
    # registry authentication
    if (cli.func.__module__ == "push"):
-      rg.reg_auth = True
+      rg.auth_p = True
    elif (cli.auth):
-      rg.reg_auth = True
+      rg.auth_p = True
    elif ("CH_IMAGE_AUTH" in os.environ):
-      rg.reg_auth = (os.environ["CH_IMAGE_AUTH"] == "yes")
+      rg.auth_p = (os.environ["CH_IMAGE_AUTH"] == "yes")
    else:
-      rg.reg_auth = False
-   VERBOSE("registry authentication: %s" % rg.reg_auth)
+      rg.auth_p = False
+   VERBOSE("registry authentication: %s" % rg.auth_p)
    # misc
    global password_many, profiling
    password_many = cli.password_many
