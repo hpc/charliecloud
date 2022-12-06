@@ -317,7 +317,7 @@ end:
 
 /* Convert image name to correct path if applicable while also ensuring that 
    the "name" provided isn't a path in the storage directory. */
-char *name_to_path (char **name)
+char *name_to_path(char *name)
 {
   // foo
 }
