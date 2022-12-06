@@ -24,7 +24,7 @@ except ImportError:
    requests.auth = types.ModuleType("requests.auth")
    requests.auth.AuthBase = object
 
-   
+
 ## Constants ##
 
 # Content types for some stuff we care about.
@@ -103,7 +103,7 @@ class Auth(requests.auth.AuthBase):
    #                 created, e.g. classes later in the file, or some can
    #                 escalate to themselves.
    #
-   #   auth_p .... True if appropriate for authenticated mode, False if
+   #   auth_p ...... True if appropriate for authenticated mode, False if
    #                 anonymous (i.e., --auth or not, respectively). Everything
    #                 must be one or the other.
    #

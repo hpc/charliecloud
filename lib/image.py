@@ -241,9 +241,9 @@ class Image:
 
    def copy_unpacked(self, other):
       """Copy image other to my unpack directory, which may not exist. other
-         can be either a path (string or fs.Path object) or an Image object; in
-         the latter case other.unpack_path is used. other need not be a valid
-         image; the essentials will be created if needed."""
+         can be either a path (string or fs.Path object) or an Image object;
+         in the latter case other.unpack_path is used. other need not be a
+         valid image; the essentials will be created if needed."""
       def ignore(path, names):
          # Need this path conversion, since shutil._copytree() calls ignore()
          # and passes a string, not a fs.Path. See:
@@ -284,7 +284,7 @@ class Image:
       layers = collections.OrderedDict()
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
-      # Unpacking an empty layer doesn't accomplish anything so we ignore them.
+      # Unpacking an empty layer doesn't accomplish anything, so ignore them.
       empty_cnt = 0
       for (i, path) in enumerate(layer_tars, start=1):
          lh = os.path.basename(path).split(".", 1)[0]
@@ -339,9 +339,9 @@ class Image:
       self.metadata["arg"].update({ **ARG_DEFAULTS_MAGIC, **ARG_DEFAULTS })
 
    def metadata_merge_from_config(self, config):
-      """Interpret all the crap in the config data structure that is meaingful
-         to us, and add it to self.metadata. Ignore anything we expect in
-         config that's missing."""
+      """Interpret all the crap in the config data structure that is
+         meaningful to us, and add it to self.metadata. Ignore anything we
+         expect in config that's missing."""
       def get(*keys):
          d = config
          keys = list(keys)
@@ -469,7 +469,7 @@ class Image:
                   % self.unpack_path)
          if (not self.deleteable):
             ch.FATAL("can't flatten: %s exists but does not appear to be an image"
-                  % self.unpack_path)
+                     % self.unpack_path)
          ch.VERBOSE("removing image: %s" % self.unpack_path)
          t = ch.Timer()
          self.unpack_path.rmtree()
@@ -607,7 +607,7 @@ class Image:
                     % (i, len(layers), lh[:7], dev_ct))
          if (link_fix_ct > 0):
             ch.INFO("layer %d/%d: %s: changed %d absolute symbolic and/or hard links to relative"
-                 % (i, len(layers), lh[:7], link_fix_ct))
+                    % (i, len(layers), lh[:7], link_fix_ct))
 
    def whiteout_rm_prefix(self, layers, max_i, prefix):
       """Ignore members of all layers from 1 to max_i inclusive that have path
