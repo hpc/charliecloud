@@ -117,6 +117,7 @@ Use the Charliecloud program ch-image to pull this image to a directory
    layer 1/1: 3239c63: extracting
    image arch: amd64
    done
+
    $ ch-image list
    almalinux:8
 
@@ -125,20 +126,20 @@ to be a directory or a SquashFS to run. For this example, we’ll use SquashFS.
 
 We first need to convert the directory format of the image, stored in the
 storage directory, into a SquashFS. We use the command :code:`ch-convert` to
-do so. The default storage directory is :code:`/var/tmp/$USER.ch/img`.
+do so.
 
 Run a container::
 
-   $ ch-convert /var/tmp/$USER.ch/img/almalinux+8 almalinux.sqfs
+   $ ch-convert almalinux:8 almalinux.sqfs
    $ ch-run almalinux.sqfs -- /bin.bash
-   $ pwd
+   > pwd
    /
-   $ ls
+   > ls
    bin  ch  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run
    sbin  srv  sys  tmp  usr  var
-   $ cat /etc/redhat-release
+   > cat /etc/redhat-release
    AlmaLinux release 8.7 (Stone Smilodon)
-   $ exit
+   > exit
 
 What does this command do?
 
@@ -192,14 +193,14 @@ Now, run Bash in the container!
 ::
 
   $ ch-run ./centos -- /bin/bash
-  $ pwd
+  > pwd
   /
-  $ ls
+  > ls
   anaconda-post.log  dev  home  lib64  mnt  proc  run   srv  tmp  var
   bin                etc  lib   media  opt  root  sbin  sys  usr
-  $ cat /etc/redhat-release
+  > cat /etc/redhat-release
   CentOS Linux release 7.9.2009 (Core)
-  $ exit
+  > exit
 
 .. note::
 
@@ -284,7 +285,7 @@ Now list the images ch-image knows about::
 
 And run it::
 
-  $ ch-convert /var/tmp/$USER.ch/img/hello hello.sqfs
+  $ ch-convert hello hello.sqfs
   $ ch-run hello.sqfs -- /hello.py
   Hello World!
 
@@ -482,8 +483,6 @@ Copy to supercomputer
 
 Next, make an image squashball and copy it to your cluster home directory::
 
-::
-
   $ ch-convert mpihello mpihello.sqfs
   $ scp mpihello.sqfs $CLUSTER:~
   mpihello.tar.gz
@@ -635,6 +634,224 @@ Here there are four named images: a and b that we built, the base image
 almalinux:8, and the empty base of everything root. Also note that a and b
 diverge after the last common instruction RUN echo foo.
 
+Namespaces with :code:`unshare(1)`
+==================================
+
+:code:`unshare`(1) is a shell command that comes with most new-ish Linux
+distributions in the :code:`util-linux` package. We will use it to explore
+a little about how namespaces, which are the basis of containers, work. 
+
+Identifying namespaces
+----------------------
+Namespaces for a tree, and every process is already in all namespaces.
+Every namespace has an ID number, which you can see in :code:`/proc`
+with some magic symlinks.::
+
+   $ ls -l /proc/self/ns | tee outside.txt
+   total 0
+   lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 cgroup -> 'cgroup:[4026531835]'
+   lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 ipc -> 'ipc:[4026531839]'
+   lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 mnt -> 'mnt:[4026531840]'
+   lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 net -> 'net:[4026531992]'
+   lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 pid -> 'pid:[4026531836]'
+   lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 pid_for_children -> 'pid:[4026531836]'
+   lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 user -> 'user:[4026531837]'
+   lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 uts -> 'uts:[4026531838]'
+
+Let's start a new shell with different namespaces. Note how the ID numbers change.::
+
+   $ unshare --user --mount
+   > ls -l /proc/self/ns | tee inside.txt
+   total 0
+   lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 cgroup -> 'cgroup:[4026531835]'
+   lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 ipc -> 'ipc:[4026531839]'
+   lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 mnt -> 'mnt:[4026532733]'
+   lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 net -> 'net:[4026531992]'
+   lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 pid -> 'pid:[4026531836]'
+   lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 pid_for_children -> 'pid:[4026531836]'
+   lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 user -> 'user:[4026532732]'
+   lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 uts -> 'uts:[4026531838]'
+   > exit
+
+The user namespace
+------------------
+Unprivileged user namespaces let you map your effective UID to any UID inside the
+namespace, and your effective GID to any GID. Let’s try it. First, who are we::
+
+  $ id
+  uid=1000(charlie) gid=1000(charlie)
+  groups=1000(charlie),24(cdrom),25(floppy),27(sudo),29(audio)
+
+This shows our user (1000:code:`/charlie`), our primary group (1000:code:`/charlie`),
+and a bunch of supplementary groups.
+
+Let's start a user namespace, mapping our UID to 0:code:`/root` and my GID to
+0:code:`/root`. (Oler versions of :code:`unshare` do not let you specify the mappings
+directly.)::
+
+  $ unshare --user --map-root-user
+  > id
+  uid=0(root) gid=0(root) groups=0(root),65534(nogroup)
+
+This shows that our UID is 0, our GID is 0, and all supplementary groups have
+collapsed into 65534:code:`/nogroup`, because they are unmapped inside the namespace.
+(If :code:`id` complains about not finding names for IDs, just ignore it.)
+
+We are root!! Let's try something sneaky!!!::
+
+  > cat /etc/shadow
+  cat: /etc/shadow: Permission denied
+
+Drat! The kernel followed the UID map outside the namespace and used that for
+access control; ie., we are still acting as ourselves, a normal unprivileged user.
+Something else interesting::
+
+  > ls -l /etc/shadow
+  -rw-r----- 1 nobody nogroup 2151 Feb 10 11:51 /etc/shadow
+  > exit
+
+This shows up as :code:`nobody:nogroup` because UID 0 and GID 0 on the
+outside are unmapped.
+
+The mount namespace
+-------------------
+This namespace lets us set up an independent filesystem tree. For this
+exercise, you will need two terminals.
+
+In Terminal 1, set up namespaces and mount a new tmpfs over your home
+directory.::
+
+  $ unshare --mount --user
+  > mount -t tmpfs none /home/charlie
+  mount: only root can use "--types" option
+
+Wait! What!? The problem now is that you still need to be root inside the
+container to use the :code:`mount`(2) system call. Try again::
+
+  $ unshare --mount --user --map-root-user
+  > mount -t tmpfs none /home/charlie
+  > mount | fgrep /home/charlie
+  none on /home/charlie type tmpfs (rw,relatime,uid=1000,gid=1000)
+  > touch /home/charlie/foo
+  > ls /home/charlie
+  foo
+
+In Terminal 2, which is not in the container, note how the mount does
+not show up in :code:`mount` output and the files you created are not
+present::
+
+  $ ls /home/charlie
+  articles.txt             flu-index.tsv           perms_test
+  [...]
+  $ mount | fgrep /home/charlie
+
+Exit the container in Terminal 1::
+
+  > exit
+
+All you need is Bash
+====================
+
+In this exercise, we'll use shell commands to create minimal container image
+with a working copy of Bash, and that's it. To do so, we need to set up a directory
+with the Bash binary, the shared libraries it uses, and a few other hooks needed by
+Charliecloud.
+
+Important: Your Bash is probably linked differently than described below. Use the
+paths from your terminal, not the workshop manual. Adjust the steps below as needed.
+It will not work otherwise!::
+
+  $ ldd /bin/bash
+      linux-vdso.so.1 (0x00007ffdafff2000)
+      libtinfo.so.6 => /lib/x86_64-linux-gnu/libtinfo.so.6 (0x00007f6935cb6000)
+      libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f6935cb1000)
+      libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f6935af0000)
+      /lib64/ld-linux-x86-64.so.2 (0x00007f6935e21000)
+  $ ls -l /lib/x86_64-linux-gnu/libc.so.6
+  lrwxrwxrwx 1 root root 12 May  1  2019 /lib/x86_64-linux-gnu/libc.so.6 -> libc-2.28.so
+
+The shared libraries pointed to are symlinks, so we'll use :code:`cp -L` ro dereference
+them and copy the target files. note that :code:`linux-vdso.so.1` is a kernel thing, not
+a shared library file.
+
+Set up the container::
+
+  $ mkdir $CHORKSHOP/alluneed
+  $ cd $CHORKSHOP/alluneed
+  $ mkdir bin
+  $ mkdir dev
+  $ mkdir lib
+  $ mkdir lib64
+  $ mkdir lib/x86_64-linux-gnu
+  $ mkdir proc
+  $ mkdir sys
+  $ mkdir tmp
+  $ cp -pL /bin/bash ./bin
+  $ cp -pL /lib/x86_64-linux-gnu/libtinfo.so.6 ./lib/x86_64-linux-gnu
+  $ cp -pL /lib/x86_64-linux-gnu/libdl.so.2 ./lib/x86_64-linux-gnu
+  $ cp -pL /lib/x86_64-linux-gnu/libc.so.6 ./lib/x86_64-linux-gnu
+  $ cp -pL /lib64/ld-linux-x86-64.so.2 ./lib64/ld-linux-x86-64.so.2
+  $ cd $CHORKSHOP
+  $ ls -lR alluneed
+  ./alluneed:
+  total 0
+  drwxr-x--- 2 charlie charlie 60 Mar 31 17:15 bin
+  drwxr-x--- 2 charlie charlie 40 Mar 31 17:26 dev
+  drwxr-x--- 2 charlie charlie 80 Mar 31 17:27 etc
+  drwxr-x--- 3 charlie charlie 60 Mar 31 17:17 lib
+  drwxr-x--- 2 charlie charlie 60 Mar 31 17:19 lib64
+  drwxr-x--- 2 charlie charlie 40 Mar 31 17:26 proc
+  drwxr-x--- 2 charlie charlie 40 Mar 31 17:26 sys
+  drwxr-x--- 2 charlie charlie 40 Mar 31 17:27 tmp
+
+  ./alluneed/bin:
+  total 1144
+  -rwxr-xr-x 1 charlie charlie 1168776 Apr 17  2019 bash
+
+  ./alluneed/dev:
+  total 0
+
+  ./alluneed/lib:
+  total 0
+  drwxr-x--- 2 charlie charlie 100 Mar 31 17:19 x86_64-linux-gnu
+
+  ./alluneed/lib/x86_64-linux-gnu:
+  total 1980
+  -rwxr-xr-x 1 charlie charlie 1824496 May  1  2019 libc.so.6
+  -rw-r--r-- 1 charlie charlie   14592 May  1  2019 libdl.so.2
+  -rw-r--r-- 1 charlie charlie  183528 Nov  2 12:16 libtinfo.so.6
+
+  ./alluneed/lib64:
+  total 164
+  -rwxr-xr-x 1 charlie charlie 165632 May  1  2019 ld-linux-x86-64.so.2
+
+  ./alluneed/proc:
+  total 0
+
+  ./alluneed/sys:
+  total 0
+
+  ./alluneed/tmp:
+  total 0
+
+Next, start a container and run :code:`/bin/bash` within it. Options
+:code:`--no-home` and :code:`--no-passwd` turn off some convenience features
+that this image isn't prepared for::
+
+  $ ch-run --no-home --no-passwd /var/tmp/alluneed -- /bin/bash
+  > pwd
+  /
+  > echo "hello world"
+  hello world
+  > ls /
+  bash: ls: command not found
+  > echo *
+  bin dev home lib lib64 proc sys tmp
+  > exit
+
+It's not very useful since the only commands we have are Bash built-ins, but
+it's a container!
+
 
 OLD TUTORIAL STUFF TO INTEGRATE
 ===============================
@@ -662,20 +879,20 @@ identified by long ID numbers::
 
   $ ls -l /proc/self/ns
   total 0
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 ipc -> ipc:[4026531839]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 mnt -> mnt:[4026531840]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 net -> net:[4026531969]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 pid -> pid:[4026531836]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 user -> user:[4026531837]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 uts -> uts:[4026531838]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 ipc -> ipc:[4026531839]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 mnt -> mnt:[4026531840]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 net -> net:[4026531969]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 pid -> pid:[4026531836]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 user -> user:[4026531837]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 uts -> uts:[4026531838]
   $ ch-run /var/tmp/hello -- ls -l /proc/self/ns
   total 0
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 ipc -> ipc:[4026531839]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 mnt -> mnt:[4026532257]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 net -> net:[4026531969]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 pid -> pid:[4026531836]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 user -> user:[4026532256]
-  lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 uts -> uts:[4026531838]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 ipc -> ipc:[4026531839]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 mnt -> mnt:[4026532257]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 net -> net:[4026531969]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 pid -> pid:[4026531836]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 user -> user:[4026532256]
+  lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 uts -> uts:[4026531838]
 
 Notice that the container has different mount (:code:`mnt`) and user
 (:code:`user`) namespaces, but the rest of the namespaces are shared with the
@@ -867,12 +1084,12 @@ accomplished by bind-mounting a custom :code:`/etc/passwd` and
   $ id -u
   901
   $ whoami
-  reidpr
+  charlie
   $ ch-run /var/tmp/hello.sqfs -- bash
   > id -u
   901
   > whoami
-  reidpr
+  charlie
 
 More specifically, the user namespace, when created without privileges as
 Charliecloud does, lets you map any container UID to your host UID.
@@ -899,22 +1116,22 @@ typical usage without :code:`--uid`, this mapping is a no-op, so everything
 looks normal::
 
   $ ls -nd ~
-  drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr
+  drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/charlie
   $ ls -ld ~
-  drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr
+  drwxr-xr-x 87 charlie charlie 4096 Sep 28 12:12 /home/charlie
   $ ch-run /var/tmp/hello.sqfs -- bash
   > ls -nd ~
-  drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr
+  drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/charlie
   > ls -ld ~
-  drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 18:12 /home/reidpr
+  drwxr-xr-x 87 charlie charlie 4096 Sep 28 18:12 /home/charlie
 
 But if :code:`--uid` is provided, things can seem odd. For example::
 
   $ ch-run --uid 0 /var/tmp/hello.sqfs -- bash
-  > ls -nd /home/reidpr
-  drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr
-  > ls -ld /home/reidpr
-  drwxr-xr-x 87 root reidpr 4096 Sep 28 18:12 /home/reidpr
+  > ls -nd /home/charlie
+  drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/charlie
+  > ls -ld /home/charlie
+  drwxr-xr-x 87 root charlie 4096 Sep 28 18:12 /home/charlie
 
 This UID mapping can contain only one pair: an arbitrary container UID to your
 effective UID on the host. Thus, all other users are unmapped, and they show
@@ -936,18 +1153,18 @@ can lead to some strange-looking results, because only one of your GIDs can be
 mapped in any given container. All the rest become :code:`nogroup`::
 
   $ id
-  uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),903(nerds),904(losers)
+  uid=901(charlie) gid=901(charlie) groups=901(charlie),903(nerds),904(losers)
   $ ch-run /var/tmp/hello.sqfs -- id
-  uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),65534(nogroup)
+  uid=901(charlie) gid=901(charlie) groups=901(charlie),65534(nogroup)
   $ ch-run --gid 903 /var/tmp/hello.sqfs -- id
-  uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)
+  uid=901(charlie) gid=903(nerds) groups=903(nerds),65534(nogroup)
 
 However, this doesn't affect access. The container process retains the same
 GIDs from the host perspective, and as always, the host IDs are what control
 access::
 
   $ ls -l /tmp/primary /tmp/supplemental
-  -rw-rw---- 1 sig reidpr 0 Sep 28 15:47 /tmp/primary
+  -rw-rw---- 1 sig charlie 0 Sep 28 15:47 /tmp/primary
   -rw-rw---- 1 sig nerds  0 Sep 28 15:48 /tmp/supplemental
   $ ch-run /var/tmp/hello.sqfs -- bash
   > cat /tmp/primary > /dev/null
@@ -958,14 +1175,14 @@ useless. Using an unmapped group or :code:`nogroup` fails, and using a mapped
 group is a no-op because it's mapped back to the host GID::
 
   $ ls -l /tmp/bar
-  rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
+  rw-rw---- 1 charlie charlie 0 Sep 28 16:12 /tmp/bar
   $ ch-run /var/tmp/hello.sqfs -- chgrp nerds /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
   $ ch-run /var/tmp/hello.sqfs -- chgrp nogroup /tmp/bar
   chgrp: changing group of '/tmp/bar': Invalid argument
   $ ch-run --gid 903 /var/tmp/hello.sqfs -- chgrp nerds /tmp/bar
   $ ls -l /tmp/bar
-  -rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar
+  -rw-rw---- 1 charlie charlie 0 Sep 28 16:12 /tmp/bar
 
 Workarounds include :code:`chgrp(1)` on the host or fastidious use of setgid
 directories::
@@ -974,10 +1191,10 @@ directories::
   $ chgrp nerds /tmp/baz
   $ chmod 2770 /tmp/baz
   $ ls -ld /tmp/baz
-  drwxrws--- 2 reidpr nerds 40 Sep 28 16:19 /tmp/baz
+  drwxrws--- 2 charlie nerds 40 Sep 28 16:19 /tmp/baz
   $ ch-run /var/tmp/hello.sqfs -- touch /tmp/baz/foo
   $ ls -l /tmp/baz/foo
-  -rw-rw---- 1 reidpr nerds 0 Sep 28 16:21 /tmp/baz/foo
+  -rw-rw---- 1 charlie nerds 0 Sep 28 16:21 /tmp/baz/foo
 
 This concludes our discussion of how a Charliecloud container interacts with
 its host and principal Charliecloud quirks. We next move on to installing
@@ -1116,12 +1333,12 @@ Once the image is built, we can see the results. (Install the image into
 
   $ ch-run /var/tmp/mpihello-openmpi.sqfs -- ls -lh /hello
   total 32K
-  -rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile
-  -rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile
-  -rw-rw---- 1 reidpr reidpr 1.2K Aug  5 22:37 README
-  -rwxr-x--- 1 reidpr reidpr 9.5K Oct  4 15:58 hello
-  -rw-rw---- 1 reidpr reidpr 1.4K Aug  5 22:37 hello.c
-  -rwxrwx--- 1 reidpr reidpr  441 Aug  5 22:37 test.sh
+  -rw-rw---- 1 charlie charlie  908 Oct  4 15:52 Dockerfile
+  -rw-rw---- 1 charlie charlie  157 Aug  5 22:37 Makefile
+  -rw-rw---- 1 charlie charlie 1.2K Aug  5 22:37 README
+  -rwxr-x--- 1 charlie charlie 9.5K Oct  4 15:58 hello
+  -rw-rw---- 1 charlie charlie 1.4K Aug  5 22:37 hello.c
+  -rwxrwx--- 1 charlie charlie  441 Aug  5 22:37 test.sh
 
 We will revisit this image later.
 
@@ -1141,19 +1358,19 @@ demonstrate this.
   $ cd examples/mpihello
   $ ls -l
   total 20
-  -rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile
-  -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
-  -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
-  -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
+  -rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile
+  -rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c
+  -rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile
+  -rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README
   $ ch-run -b .:/mnt/0 --cd /mnt/0 /var/tmp/mpihello.sqfs -- make
   mpicc -std=gnu11 -Wall hello.c -o hello
   $ ls -l
   total 32
-  -rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile
-  -rwxrwx--- 1 reidpr reidpr 9632 Oct  4 10:43 hello
-  -rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c
-  -rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile
-  -rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README
+  -rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile
+  -rwxrwx--- 1 charlie charlie 9632 Oct  4 10:43 hello
+  -rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c
+  -rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile
+  -rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README
 
 A common use case is to leave a container shell open in one terminal for
 building, and then run using a separate container invoked from a different
