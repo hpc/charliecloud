@@ -4,6 +4,8 @@ import sys
 
 import charliecloud as ch
 import build_cache as bu
+import image as im
+import registry as rg
 
 
 ## Constants ##
@@ -22,12 +24,12 @@ manifests_internal = {
 
 def main(cli):
    # Set things up.
-   src_ref = ch.Image_Ref(cli.source_ref)
-   dst_ref = src_ref if cli.dest_ref is None else ch.Image_Ref(cli.dest_ref)
+   src_ref = im.Reference(cli.source_ref)
+   dst_ref = src_ref if cli.dest_ref is None else im.Reference(cli.dest_ref)
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
       ch.exit(0)
-   dst_img = ch.Image(dst_ref)
+   dst_img = im.Image(dst_ref)
    ch.INFO("pulling image:    %s" % src_ref)
    if (src_ref != dst_ref):
       ch.INFO("destination:      %s" % dst_ref)
@@ -55,7 +57,7 @@ class Image_Puller:
       self.digests = dict()
       self.image = image
       self.layer_hashes = None
-      self.registry = ch.Registry_HTTP(src_ref)
+      self.registry = rg.HTTP(src_ref)
       self.sid_input = None
       self.src_ref = src_ref
 
