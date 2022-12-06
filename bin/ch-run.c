@@ -315,6 +315,13 @@ end:
    return tag;
 }
 
+/* Convert image name to correct path if applicable while also ensuring that 
+   the "name" provided isn't a path in the storage directory. */
+char *name_to_path (char **name)
+{
+  // foo
+}
+
 /* Parse an integer string arg and return the result. If an error occurs,
    print a message prefixed by error_tag and exit. If not extra_ok, additional
    characters remaining after the integer are an error. */

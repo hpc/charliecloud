@@ -32,6 +32,7 @@ struct container {
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
    bool env_expand;      // expand variables in --set-env
+   char *img_ref;        // image reference (by name)
    char *img_path;       // path to image
    char *newroot;        // path to new root directory
    bool join;            // is this a synchronized join?
