@@ -12,6 +12,8 @@ import textwrap
 import time
 
 import charliecloud as ch
+import image as im
+import filesystem as fs
 import pull
 
 
@@ -90,7 +92,7 @@ cache = None
 dot_base = None
 
 # Default path within image to metadata pickle.
-PICKLE_PATH = ch.Path("ch/git.pickle")
+PICKLE_PATH = fs.Path("ch/git.pickle")
 
 
 ## Functions ##
@@ -294,7 +296,7 @@ class File_Metadata:
       # Setup.
       if (path is None):
          assert (hardlinks is None)
-         path = ch.Path()
+         path = fs.Path()
          hardlinks = dict()
       fm = class_(image_root, path)
       if (fm.path.name.startswith(".git") and len(fm.path) == 1):
@@ -373,7 +375,7 @@ class File_Metadata:
       if (data is None):
          data = (image_root // PICKLE_PATH).file_read_all(text=False)
       fm_tree = pickle.loads(data)
-      fm_tree.unpickle_fix(image_root, path=ch.Path("."))
+      fm_tree.unpickle_fix(image_root, path=fs.Path("."))
       return fm_tree
 
    def get(self, path):
@@ -492,7 +494,7 @@ class File_Metadata:
          self.size = -1
       # old: hardlink_to: stored as string
       if (isinstance(self.hardlink_to, str)):
-         self.hardlink_to = ch.Path(self.hardlink_to)
+         self.hardlink_to = fs.Path(self.hardlink_to)
       # old: children, name: just a list, and instances know their names
       if (isinstance(self.children, list)):
          children_new = dict()
@@ -636,11 +638,11 @@ class Enabled_Cache:
       try:
          with tempfile.TemporaryDirectory(prefix="weirdal.") as td:
             ch.cmd_quiet(["git", "clone", "-q", self.root, td])
-            cwd = ch.Path(td).chdir()
+            cwd = fs.Path(td).chdir()
             ch.cmd_quiet(["git", "checkout", "-q", "-b", "root"])
             # Git has no default gitignore, but cancel any global gitignore
             # rules the user might have. https://stackoverflow.com/a/26681066
-            ch.Path(".gitignore").file_write("!*\n")
+            fs.Path(".gitignore").file_write("!*\n")
             ch.cmd_quiet(["git", "add", ".gitignore"])
             ch.cmd_quiet(["git", "commit", "-m", "ROOT\n\n%s" % self.root_id])
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
@@ -657,13 +659,13 @@ class Enabled_Cache:
 
 
    def branch_nocheckout(self, src_ref, dest):
-      """Create ready branch for Image_Ref src_ref pointing to dest, which can
-         be either an Image_Ref or a Git commit reference (as a string)."""
-      if (isinstance(dest, ch.Image_Ref)):
+      """Create ready branch for Ref src_ref pointing to dest, which can
+         be either an Ref or a Git commit reference (as a string)."""
+      if (isinstance(dest, im.Reference)):
          dest = self.branch_name_ready(dest)
       # Some versions of Git won't let us update a branch that's already
       # checked out, so detach that worktree if it exists.
-      src_img = ch.Image(src_ref)
+      src_img = im.Image(src_ref)
       if (src_img.unpack_exist_p):
          ch.cmd_quiet(["git", "checkout", "--detach"], cwd=src_img.unpack_path)
       ch.cmd_quiet(["git", "branch", "-f", self.branch_name_ready(src_ref),
@@ -794,7 +796,7 @@ class Enabled_Cache:
       for d in digests:
          data = ch.cmd_stdout(["git", "show", "%s:%s" % (d, PICKLE_PATH)],
                               cwd=self.root, encoding=None).stdout
-         fm = File_Metadata.unpickle(ch.Path("/DUMMY"), data)
+         fm = File_Metadata.unpickle(fs.Path("/DUMMY"), data)
          larges_used |= fm.large_names()
          p.update(1)
       p.done()
@@ -943,7 +945,7 @@ class Enabled_Cache:
          return "*"
 
    def summary_print(self):
-      cwd = ch.Path(self.root).chdir()
+      cwd = fs.Path(self.root).chdir()
       # state IDs
       msgs = ch.cmd_stdout(["git", "log",
                             "--all", "--reflog", "--format=format:%b"]).stdout
@@ -954,7 +956,7 @@ class Enabled_Cache:
       # branches (FIXME: how to count unnamed branch tips?)
       image_ct = ch.cmd_stdout(["git", "branch", "--list"]).stdout.count("\n")
       # file count and size on disk
-      (file_ct, byte_ct) = ch.Path(self.root).du()
+      (file_ct, byte_ct) = fs.Path(self.root).du()
       commit_ct = int(ch.cmd_stdout(["git", "rev-list",
                                      "--all", "--reflog", "--count"]).stdout)
       (file_ct, file_suffix) = ch.si_decimal(file_ct)
@@ -992,8 +994,8 @@ class Enabled_Cache:
 
    def tree_dot(self):
       have_dot()
-      path_gv = ch.Path(dot_base + ".gv")
-      path_pdf = ch.Path(dot_base + ".pdf")
+      path_gv = fs.Path(dot_base + ".gv")
+      path_pdf = fs.Path(dot_base + ".pdf")
       if (not path_gv.is_absolute()):
          path_gv = os.getcwd() // path_gv
          path_pdf = os.getcwd() // path_pdf
@@ -1080,10 +1082,10 @@ class Enabled_Cache:
          [1]: https://git-scm.com/docs/git-worktree
          [2]: https://git-scm.com/docs/gitrepository-layout"""
       t = ch.Timer()
-      wt_actuals = { ch.Path(i).parts[-2]
+      wt_actuals = { fs.Path(i).parts[-2]
                      for i in glob.iglob("%s/*/.git"
                                          % ch.storage.unpack_base) }
-      wt_gits =    { ch.Path(i).name
+      wt_gits =    { fs.Path(i).name
                      for i in glob.iglob("%s/worktrees/*"
                                          % ch.storage.build_cache) }
       # Delete worktree data for images that no longer exist or aren’t
@@ -1096,7 +1098,7 @@ class Enabled_Cache:
       assert (wt_gits == wt_actuals)
       # If storage directory moved, repair all the paths.
       if (len(wt_gits) > 0):
-         wt_dir_stored = ch.Path((   ch.storage.build_cache
+         wt_dir_stored = fs.Path((   ch.storage.build_cache
                                   // "worktrees"
                                   // next(iter(wt_gits))
                                   // "gitdir").file_read_all())
