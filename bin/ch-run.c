@@ -50,12 +50,13 @@ const struct argp_option options[] = {
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },
+   { "home",          -12, 0,      0, "mount host $HOME at guest /home/$USER" },
    { "join",          'j', 0,      0, "use same container as peer ch-run" },
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
-   { "no-home",        -2, 0,      0, "don't bind-mount your home directory"},
+   { "no-home",        -2, 0,      0, "(deprecated)"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
@@ -118,16 +119,15 @@ int main(int argc, char *argv[])
                                .container_gid = getegid(),
                                .container_uid = geteuid(),
                                .env_expand = true,
+                               .host_home = NULL,
                                .img_path = NULL,
                                .newroot = NULL,
                                .join = false,
                                .join_ct = 0,
                                .join_pid = 0,
                                .join_tag = NULL,
-                               .private_home = false,
                                .private_passwd = false,
                                .private_tmp = false,
-                               .old_home = getenv("HOME"),
                                .type = IMG_NONE,
                                .writable = false },
       .env_deltas = list_new(sizeof(struct env_delta), 0),
@@ -206,8 +206,8 @@ void fix_environment(struct args *args)
 {
    char *old_value, *new_value;
 
-   // $HOME: Set to /home/$USER unless --no-home specified.
-   if (!args->c.private_home)
+   // $HOME: If --home, set to “/home/$USER”.
+   if (args->c.host_home)
       Z_ (setenv("HOME", cat("/home/", username), 1));
 
    // $PATH: Append /bin if not already present.
@@ -342,8 +342,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
-   case -2: // --private-home
-      args->c.private_home = true;
+   case -2: // --no-home
+      WARNING("deprecated --no-home is now default; ignoring")
       break;
    case -3: // --join-ct
       args->c.join = true;
@@ -394,6 +394,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #endif
       } else
          FATAL("unknown feature: %s", arg);
+      break;
+   case -12: // --home
+      Tf (args->c.host_home = getenv("HOME"), "--home failed: $HOME not set");
       break;
    case 'b': {
          char *src, *dst;

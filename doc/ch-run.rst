@@ -60,6 +60,13 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.
 
+  :code:`--home`
+    Bind-mount your host home directory (i.e., :code:`$HOME`) at guest
+    :code:`/home/$USER`. This is accomplished by over-mounting a new
+    :code:`tmpfs` at :code:`/home`, which hides any image content under that
+    path. By default, neither of these things happens and the image’s
+    :code:`/home` is exposed unaltered.
+
   :code:`-j`, :code:`--join`
     Use the same container (namespaces) as peer :code:`ch-run` invocations.
 
@@ -78,13 +85,6 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
     Use :code:`DIR` for the SquashFS mount point, which must already exist. If
     not specified, the default is :code:`/var/tmp/$USER.ch/mnt`, which *will*
     be created if needed.
-
-  :code:`--no-home`
-    By default, your host home directory (i.e., :code:`$HOME`) is bind-mounted
-    at guest :code:`/home/$USER`. This is accomplished by mounting a new
-    :code:`tmpfs` at :code:`/home`, which hides any image content under that
-    path. If this is specified, neither of these things happens and the
-    image’s :code:`/home` is exposed unaltered.
 
   :code:`--no-passwd`
     By default, temporary :code:`/etc/passwd` and :code:`/etc/group` files are
@@ -329,22 +329,25 @@ Default behavior
 
 By default, :code:`ch-run` makes the following environment variable changes:
 
-* :code:`$CH_RUNNING`: Set to :code:`Weird Al Yankovic`. While a process can
-  figure out that it’s in an unprivileged container and what namespaces are
-  active without this hint, that can be messy, and there is no way to tell
-  that it’s a *Charliecloud* container specifically. This variable makes such
-  a test simple and well-defined. (**Note:** This variable is unaffected by
+:code:`$CH_RUNNING`
+  Set to :code:`Weird Al Yankovic`. While a process can figure out that it’s
+  in an unprivileged container and what namespaces are active without this
+  hint, that can be messy, and there is no way to tell that it’s a
+  *Charliecloud* container specifically. This variable makes such a test
+  simple and well-defined. (**Note:** This variable is unaffected by
   :code:`--unset-env`.)
 
-* :code:`$HOME`: If the path to your home directory is not :code:`/home/$USER`
-  on the host, then an inherited :code:`$HOME` will be incorrect inside the
-  guest. This confuses some software, such as Spack. Thus, we change
-  :code:`$HOME` to :code:`/home/$USER`, unless :code:`--no-home` is specified,
-  in which case it is left unchanged.
+:code:`$HOME`
+  If :code:`--home` is specified, then your home directory is bind-mounted
+  into the guest at :code:`/home/$USER`. If you also have a different home
+  directory path on the host, an inherited :code:`$HOME` will be incorrect
+  inside the guest, which confuses lots of software, notably Spack. Thus, with
+  :code:`--home`, :code:`$HOME` is set to :code:`/home/$USER` (by default, it
+  is unchanged.)
 
-* :code:`$PATH`: Newer Linux distributions replace some root-level
-  directories, such as :code:`/bin`, with symlinks to their counterparts in
-  :code:`/usr`.
+:code:`$PATH`
+  Newer Linux distributions replace some root-level directories, such as
+  :code:`/bin`, with symlinks to their counterparts in :code:`/usr`.
 
   Some of these distributions (e.g., Fedora 24) have also dropped :code:`/bin`
   from the default :code:`$PATH`. This is a problem when the guest OS does
@@ -357,9 +360,10 @@ By default, :code:`ch-run` makes the following environment variable changes:
     * `Fedora <https://fedoraproject.org/wiki/Features/UsrMove>`_
     * `Debian <https://wiki.debian.org/UsrMerge>`_
 
-* :code:`$TMPDIR`: Unset, because this is almost certainly a host path, and
-  that host path is made available in the guest at :code:`/tmp` unless
-  :code:`--private-tmp` is given.
+:code:`$TMPDIR`
+  Unset, because this is almost certainly a host path, and that host path is
+  made available in the guest at :code:`/tmp` unless :code:`--private-tmp` is
+  given.
 
 Setting variables with :code:`--set-env`
 ----------------------------------------
