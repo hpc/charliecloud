@@ -287,6 +287,18 @@ char *fmt_str(char *str)
   return new_str;
 }
 
+/* Return the path to the storage directory, depending on whether
+   $CH_IMAGE_STORAGE is set. */
+char *get_storage_dir(void)
+{
+   char *storage = getenv("CH_IMAGE_STORAGE");
+   if(storage == NULL) // $CH_IMAGE_STORAGE not set
+   {
+      asprintf(&storage, "/var/tmp/%s.ch", username);
+   }
+   return storage;
+}
+
 /* Copy the buffer of size size pointed to by new into the last position in
    the zero-terminated array of elements with the same size on the heap
    pointed to by *ar, reallocating it to hold one more element and setting
@@ -479,6 +491,17 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
       fprintf(stderr, " (%s:%d)\n", file, line);
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
+}
+
+/* Convert image name to correct path if applicable while also ensuring that 
+   the "name" provided isn't a path in the storage directory. */
+char *name_to_path(char *name)
+{
+  char *storage = get_storage_dir();
+  if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
+  {
+   FATAL("Don't give path to storage directory.");
+  }
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. If
