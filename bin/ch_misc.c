@@ -278,6 +278,15 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
    return (struct env_var){ name, value };
 }
 
+/* Take input string and return the same string with the character        
+   substitutions ':' -> '+' and '/' -> '%'. */
+char *fmt_str(char *str) 
+{
+  char *new_str = replace_char(str, ':', '+');
+  new_str = replace_char(new_str, '/', '%');
+  return new_str;
+}
+
 /* Copy the buffer of size size pointed to by new into the last position in
    the zero-terminated array of elements with the same size on the heap
    pointed to by *ar, reallocating it to hold one more element and setting
@@ -577,6 +586,17 @@ char *realpath_safe(const char *path)
    pathc = realpath(path, NULL);
    Tf (pathc != NULL, "can't canonicalize: %s", path);
    return pathc;
+}
+
+/* Replace all instances of character 'old' in array 'str' with 'new'. */
+char *replace_char(const char *str, char old, char new) {
+  char *new_str = strdup(str);
+  for(int i = 0; new_str[i] != '\0'; i++) {
+    if(new_str[i] == old) {
+      new_str[i] = new;
+    }
+  }
+  return new_str;
 }
 
 /* Split string str at first instance of delimiter del. Set *a to the part
