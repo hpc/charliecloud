@@ -123,7 +123,7 @@ void msg(enum log_level level, const char *file, int line, int errno_,
          const char *fmt, ...);
 noreturn void msg_fatal(const char *file, int line, int errno_,
                         const char *fmt, ...);
-char *name_to_path(char *name);
+char *name_to_path(char *name, bool yolo);
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink);
 unsigned long path_mount_flags(const char *path);
 void path_split(const char *path, char **dir, char **base);

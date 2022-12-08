@@ -495,13 +495,18 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
 
 /* Convert image name to correct path if applicable while also ensuring that 
    the "name" provided isn't a path in the storage directory. */
-char *name_to_path(char *name)
+char *name_to_path(char *name, bool yolo)
 {
   char *path = NULL;
   char *storage = get_storage_dir(); // FIXME: currently unused
   if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
   {
-   FATAL("Specified path is in storage.");
+   if(yolo)
+   {
+      return name;
+   } else {
+      FATAL("Specified path is in storage.");
+   }
   } else if(path_exists(name, NULL, false)) // is 'name' a valid path?
   {
    return name;

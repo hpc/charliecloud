@@ -132,7 +132,8 @@ int main(int argc, char *argv[])
                                .private_tmp = false,
                                .old_home = getenv("HOME"),
                                .type = IMG_NONE,
-                               .writable = false },
+                               .writable = false,
+                               .yolo = false },
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL };
 
@@ -152,7 +153,7 @@ int main(int argc, char *argv[])
    Te (username != NULL, "$USER not set");
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   args.c.img_path = name_to_path(argv[arg_next++]);
+   args.c.img_path = name_to_path(argv[arg_next++], args.c.yolo);
    args.c.type = img_type_get(args.c.img_path);
 
    switch (args.c.type) {
@@ -399,6 +400,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       } else
          FATAL("unknown feature: %s", arg);
       break;
+   case -12: // --yolo
+      args->c.yolo = true;
+      break;
    case 'b': {
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
@@ -434,6 +438,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'm':
       Ze ((arg[0] == '\0'), "mount point can't be empty string");
       args->c.newroot = arg;
+      break;
+   case 's':
       break;
    case 't':
       args->c.private_tmp = true;
