@@ -153,15 +153,16 @@ int main(int argc, char *argv[])
    Te (username != NULL, "$USER not set");
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   args.c.img_path = get_img_path(argv[arg_next++], args.c.yolo, args.c.writable);
+   args.c.img_ref = argv[arg_next++];
+   args.c.img_path = get_img_path(args.c.img_ref, args.c.yolo, args.c.writable);
    args.c.type = img_type_get(args.c.img_path);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
       if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-      args.c.newroot = realpath(args.c.img_path, NULL);
-      Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_path);
+      args.c.newroot = args.c.img_path;
+      Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_ref);
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
@@ -169,7 +170,7 @@ int main(int argc, char *argv[])
 #endif
       break;
    case IMG_NONE:
-      FATAL("unknown image type: %s", args.c.img_path);
+      FATAL("unknown image type: %s", args.c.img_ref);
       break;
    }
 
@@ -188,7 +189,7 @@ int main(int argc, char *argv[])
       c_argv[i] = argv[i + arg_next];
 
    VERBOSE("verbosity: %d", verbose);
-   VERBOSE("image: %s", args.c.img_path);
+   VERBOSE("image: %s", args.c.img_ref);
    VERBOSE("newroot: %s", args.c.newroot);
    VERBOSE("container uid: %u", args.c.container_uid);
    VERBOSE("container gid: %u", args.c.container_gid);

@@ -306,7 +306,6 @@ char *get_img_path(char *name, bool yolo, bool writable)
    return name;
   } else { // Assume 'name' is image name, try to find it in storage.
    T_ (1 <= asprintf(&path, "/var/tmp/%s.ch/img/%s", username, fmt_str(name)));
-   printf("%s\n",path);
    if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
    {
       FATAL("%s not found in storage.", name);
