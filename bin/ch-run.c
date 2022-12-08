@@ -158,16 +158,13 @@ int main(int argc, char *argv[])
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
    args.c.img_path = get_img_path(args.c.img_ref, args.c.yolo, args.c.writable);
-   printf("OUTPUT: %s\n", args.c.img_path);
    args.c.type = img_type_get(args.c.img_path);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
       if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-      printf("SETTING NEWROOT\n");
-      args.c.newroot = strdup(args.c.img_path);
-      printf("%s\n", args.c.newroot);
+      args.c.newroot = realpath(args.c.img_path, NULL);
       Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_ref);
       break;
    case IMG_SQUASH:

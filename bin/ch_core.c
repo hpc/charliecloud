@@ -98,10 +98,6 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
    char *dst_full = cat(newroot, dst);
 
    Te (src[0] != 0 && dst[0] != 0 && newroot[0] != 0, "empty string");
-   //char *relpath = "relative path";
-   //T_ (1 <= asprintf(&relpath, " %s, %s", dst, newroot));
-   printf("dst: %s\n", dst);
-   printf("newroot: %s\n", newroot);
    Te (dst[0] == '/' && newroot[0] == '/', "relative path");
 
    if (!path_exists(src, NULL, true)) {
@@ -175,7 +171,6 @@ void containerize(struct container *c)
    in bin/ch-checkns.c. */
 void enter_udss(struct container *c)
 {
-   printf("enter_udss newroot: %s\n", c->newroot);
    char *newroot_parent, *newroot_base;
 
    LOG_IDS;
