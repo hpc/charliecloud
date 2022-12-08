@@ -311,7 +311,7 @@ char *get_img_path(char *name, bool yolo, bool writable)
    {
       FATAL("%s not found in storage.", name);
    } else if(writable) {
-      FATAL("Cannot write to storage (hint: try removing '-w' flag)");
+      FATAL("Cannot write to storage (hint: try running without '-w'");
    } else {
       return path;
    }
