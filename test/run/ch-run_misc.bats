@@ -3,6 +3,7 @@ load ../common
 
 @test 'relative path to image' {  # issue #6
     scope quick
+    echo "$(basename "$ch_timg")"
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
