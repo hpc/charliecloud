@@ -119,6 +119,7 @@ int main(int argc, char *argv[])
                                .container_uid = geteuid(),
                                .env_expand = true,
                                .img_path = NULL,
+                               .img_ref = NULL,
                                .newroot = NULL,
                                .join = false,
                                .join_ct = 0,
@@ -146,7 +147,7 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   args.c.img_path = argv[arg_next++];
+   args.c.img_path = name_to_path(argv[arg_next++]);
    args.c.type = img_type_get(args.c.img_path);
 
    switch (args.c.type) {

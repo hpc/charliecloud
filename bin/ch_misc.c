@@ -292,9 +292,10 @@ char *fmt_str(char *str)
 char *get_storage_dir(void)
 {
    char *storage = getenv("CH_IMAGE_STORAGE");
+   char *uname = getenv("USER");
    if(storage == NULL) // $CH_IMAGE_STORAGE not set
    {
-      asprintf(&storage, "/var/tmp/%s.ch", username);
+      if(asprintf(&storage, "/var/tmp/%s.ch", uname) == 0) {};
    }
    return storage;
 }
@@ -497,10 +498,26 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    the "name" provided isn't a path in the storage directory. */
 char *name_to_path(char *name)
 {
-  char *storage = get_storage_dir();
+  char *path = NULL;
+  char *storage = get_storage_dir(); // FIXME: currently unused
   if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
   {
-   FATAL("Don't give path to storage directory.");
+   FATAL("Specified path is in storage.");
+  } else if(path_exists(name, NULL, false)) // is 'name' a valid path?
+  {
+   return name;
+  } else { // Assume 'name' is image name, try to find it in storage.
+   // FIXME: should check for the image twice: first in $CH_IMAGE_STORAGE, then
+   //        in default storage.
+   char *uname = getenv("USER"); // note, 'username' is sometimes '(null)' (e.g. 00_tiny)
+   if(asprintf(&path, "/var/tmp/%s.ch/img/%s", uname, fmt_str(name)) == 0) {};
+   printf("%s\n",path);
+   if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
+   {
+      FATAL("%s not found in storage.", name);
+   } else {
+      return path;
+   }
   }
 }
 
