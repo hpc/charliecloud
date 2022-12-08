@@ -234,7 +234,9 @@ void enter_udss(struct container *c)
    c->newroot = cat("/", newroot_base);
    // Pivot into the new root. Use /dev because it's available even in
    // extremely minimal images.
-   Zf (chdir(c->newroot), "can't chdir into new root");
+   char *msg = "can't chdir into new root";
+   T_ (1 <= asprintf(&msg, "%s", c->newroot));
+   Zf (chdir(c->newroot), msg);
    Zf (syscall(SYS_pivot_root, c->newroot, cat(c->newroot, "/dev")),
        "can't pivot_root(2)");
    Zf (chroot("."), "can't chroot(2) into new root");
