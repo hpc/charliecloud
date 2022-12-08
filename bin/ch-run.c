@@ -148,7 +148,7 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
-   if (getenv("CH_RUN_YOLO")) {
+   if (getenv("TEST_YOLO")) {
       args.c.yolo = true;
    }
 

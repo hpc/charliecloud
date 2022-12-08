@@ -299,7 +299,8 @@ char *get_img_path(char *name, bool yolo, bool writable)
    {
       return name;
    } else {
-      FATAL("Specified path is in storage (hint: try running image by name).");
+      INFO("Specified path is in storage (hint: try running image by name).");
+      return name;
    }
   } else if(path_exists(name, NULL, false)) // is 'name' a valid path?
   {
