@@ -292,10 +292,9 @@ char *fmt_str(char *str)
 char *get_storage_dir(void)
 {
    char *storage = getenv("CH_IMAGE_STORAGE");
-   char *uname = getenv("USER");
    if(storage == NULL) // $CH_IMAGE_STORAGE not set
    {
-      if(asprintf(&storage, "/var/tmp/%s.ch", uname) == 0) {};
+      if(asprintf(&storage, "/var/tmp/%s.ch", username) == 0) {};
    }
    return storage;
 }
@@ -507,10 +506,7 @@ char *name_to_path(char *name)
   {
    return name;
   } else { // Assume 'name' is image name, try to find it in storage.
-   // FIXME: should check for the image twice: first in $CH_IMAGE_STORAGE, then
-   //        in default storage.
-   char *uname = getenv("USER"); // note, 'username' is sometimes '(null)' (e.g. 00_tiny)
-   if(asprintf(&path, "/var/tmp/%s.ch/img/%s", uname, fmt_str(name)) == 0) {};
+   T_ (1 <= asprintf(&path, "/var/tmp/%s.ch/img/%s", username, fmt_str(name)));
    printf("%s\n",path);
    if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
    {

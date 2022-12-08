@@ -60,11 +60,13 @@ const struct argp_option options[] = {
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
      "set environment variables per ARG"},
+   { "storage",       's', "DIR",  0, "set DIR as storage directory"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
    { "write",         'w', 0,      0, "mount image read-write"},
+   { "yolo",          -12, 0,      OPTION_HIDDEN, ""},
    { 0 }
 };
 
@@ -146,6 +148,9 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
+   username = getenv("USER");
+   Te (username != NULL, "$USER not set");
+
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_path = name_to_path(argv[arg_next++]);
    args.c.type = img_type_get(args.c.img_path);
@@ -176,8 +181,6 @@ int main(int argc, char *argv[])
       host_tmp = getenv("TMPDIR");
    else
       host_tmp = "/tmp";
-   username = getenv("USER");
-   Te (username != NULL, "$USER not set");
 
    c_argv = list_new(sizeof(char *), argc - arg_next);
    for (int i = 0; i < argc - arg_next; i++)
