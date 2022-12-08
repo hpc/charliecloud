@@ -149,7 +149,6 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
    if (getenv("CH_RUN_YOLO")) {
-      printf("YOLO\n");
       args.c.yolo = true;
    }
 
