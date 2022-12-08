@@ -17,6 +17,9 @@ fi
 # Set environment variable for ch-image --debug flag
 export CH_IMAGE_DEBUG=true
 
+# Janky new environment variable!
+export CH_RUN_YOLO=true
+
 ### Functions we need right away
 
 fatal () {
