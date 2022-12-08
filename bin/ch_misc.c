@@ -287,6 +287,37 @@ char *fmt_str(char *str)
   return new_str;
 }
 
+/* Convert image name to correct path if applicable while also ensuring that 
+   the "name" provided isn't a path in the storage directory. */
+char *get_img_path(char *name, bool yolo, bool writable)
+{
+  char *path = NULL;
+  char *storage = get_storage_dir();
+  if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
+  {
+   if(yolo)
+   {
+      return name;
+   } else {
+      FATAL("Specified path is in storage (hint: try running image by name).");
+   }
+  } else if(path_exists(name, NULL, false)) // is 'name' a valid path?
+  {
+   return name;
+  } else { // Assume 'name' is image name, try to find it in storage.
+   T_ (1 <= asprintf(&path, "/var/tmp/%s.ch/img/%s", username, fmt_str(name)));
+   printf("%s\n",path);
+   if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
+   {
+      FATAL("%s not found in storage.", name);
+   } else if(writable) {
+      FATAL("Cannot write to storage (hint: try removing '-w' flag)");
+   } else {
+      return path;
+   }
+  }
+}
+
 /* Return the path to the storage directory, depending on whether
    $CH_IMAGE_STORAGE is set. */
 char *get_storage_dir(void)
@@ -491,35 +522,6 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
       fprintf(stderr, " (%s:%d)\n", file, line);
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
-}
-
-/* Convert image name to correct path if applicable while also ensuring that 
-   the "name" provided isn't a path in the storage directory. */
-char *name_to_path(char *name, bool yolo)
-{
-  char *path = NULL;
-  char *storage = get_storage_dir(); // FIXME: currently unused
-  if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
-  {
-   if(yolo)
-   {
-      return name;
-   } else {
-      FATAL("Specified path is in storage.");
-   }
-  } else if(path_exists(name, NULL, false)) // is 'name' a valid path?
-  {
-   return name;
-  } else { // Assume 'name' is image name, try to find it in storage.
-   T_ (1 <= asprintf(&path, "/var/tmp/%s.ch/img/%s", username, fmt_str(name)));
-   printf("%s\n",path);
-   if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
-   {
-      FATAL("%s not found in storage.", name);
-   } else {
-      return path;
-   }
-  }
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. If

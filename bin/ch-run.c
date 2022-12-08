@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
    Te (username != NULL, "$USER not set");
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   args.c.img_path = name_to_path(argv[arg_next++], args.c.yolo);
+   args.c.img_path = get_img_path(argv[arg_next++], args.c.yolo, args.c.writable);
    args.c.type = img_type_get(args.c.img_path);
 
    switch (args.c.type) {

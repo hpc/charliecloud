@@ -114,6 +114,7 @@ void env_set(const char *name, const char *value, const bool expand);
 void env_unset(const char *glob);
 struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 char *fmt_str(char *str);
+char *get_img_path(char *name, bool yolo, bool writable);
 char *get_storage_dir(void);
 void list_append(void **ar, void *new, size_t size);
 void *list_new(size_t size, size_t ct);
@@ -123,7 +124,6 @@ void msg(enum log_level level, const char *file, int line, int errno_,
          const char *fmt, ...);
 noreturn void msg_fatal(const char *file, int line, int errno_,
                         const char *fmt, ...);
-char *name_to_path(char *name, bool yolo);
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink);
 unsigned long path_mount_flags(const char *path);
 void path_split(const char *path, char **dir, char **base);
