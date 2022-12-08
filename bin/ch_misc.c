@@ -291,6 +291,7 @@ char *fmt_str(char *str)
    the "name" provided isn't a path in the storage directory. */
 char *get_img_path(char *name, bool yolo, bool writable)
 {
+  printf("INPUT: %s\n", name);
   char *path = NULL;
   char *storage = get_storage_dir();
   if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
