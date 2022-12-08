@@ -468,6 +468,23 @@ files.
 Note the non-preserved bits may *sometimes* be retained, but this is undefined
 behavior. The specified behavior is that they may be zeroed at any time.
 
+Why is my wildcard in :code:`ch-run` not working?
+-------------------------------------------------
+Be aware that wildcards in the :code:`ch-run` command are interpreted by the
+host, not the container, unless protected. One workaround is to use a
+sub-shell. For example::
+
+  $ ls /usr/bin/oldfind
+  ls: cannot access '/usr/bin/oldfind': No such file or directory
+  $ ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldfind
+  /usr/bin/oldfind
+  $ ls /usr/bin/oldf*
+  ls: cannot access '/usr/bin/oldf*': No such file or directory
+  $ ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldf*
+  ls: cannot access /usr/bin/oldf*: No such file or directory
+  $ ch-run /var/tmp/hello.sqfs -- sh -c 'ls /usr/bin/oldf*'
+  /usr/bin/oldfind
+
 
 How do I ...
 ============

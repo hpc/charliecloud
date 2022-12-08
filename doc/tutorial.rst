@@ -67,6 +67,12 @@ If not, you can create image in plain directory format instead::
   $ ch-run /var/tmp/hello -- echo "I'm in a container"
   I'm in a container
 
+.. note::
+
+   You can run perfectly well out of :code:`/tmp`, but because it is
+   bind-mounted automatically, the image root will then appear in multiple
+   locations in the container's filesystem tree. This can cause confusion for
+   both users and programs.
 
 Getting help
 ============
@@ -187,6 +193,14 @@ directory to avoid making a mess::
   anaconda-post.log  dev  home  lib64  mnt  proc  run   srv  tmp  var
   bin                etc  lib   media  opt  root  sbin  sys  usr
   $ cd ..
+
+.. warning::
+
+   Generally, you should avoid directory-format images on shared filesystems
+   such as NFS and Lustre, in favor of local storage such as :code:`tmpfs` and
+   local hard disks. This will yield better performance for you and anyone
+   else on the shared filesystem. In contrast, SquashFS images should work
+   fine on shared filesystems.
 
 Now, run Bash in the container!
 
@@ -637,7 +651,7 @@ diverge after the last common instruction RUN echo foo.
 Namespaces with :code:`unshare(1)`
 ==================================
 
-:code:`unshare`(1) is a shell command that comes with most new-ish Linux
+:code:`unshare(1)` is a shell command that comes with most new-ish Linux
 distributions in the :code:`util-linux` package. We will use it to explore
 a little about how namespaces, which are the basis of containers, work. 
 
@@ -682,11 +696,11 @@ namespace, and your effective GID to any GID. Let’s try it. First, who are we:
   uid=1000(charlie) gid=1000(charlie)
   groups=1000(charlie),24(cdrom),25(floppy),27(sudo),29(audio)
 
-This shows our user (1000:code:`/charlie`), our primary group (1000:code:`/charlie`),
+This shows our user (1000 :code:`/charlie` ), our primary group (1000 :code:`/charlie` ),
 and a bunch of supplementary groups.
 
-Let's start a user namespace, mapping our UID to 0:code:`/root` and my GID to
-0:code:`/root`. (Oler versions of :code:`unshare` do not let you specify the mappings
+Let's start a user namespace, mapping our UID to 0 :code:`/root` and my GID to
+0 :code:`/root` . (Older versions of :code:`unshare` do not let you specify the mappings
 directly.)::
 
   $ unshare --user --map-root-user
@@ -852,27 +866,188 @@ that this image isn't prepared for::
 It's not very useful since the only commands we have are Bash built-ins, but
 it's a container!
 
+Best Practices
+==============
 
-OLD TUTORIAL STUFF TO INTEGRATE
-===============================
+Installing your own software (still needs editings)
+---------------------------------------------------
 
-.. warning::
+This section covers four situations for making software available inside a
+Charliecloud container:
 
-   Generally, you should avoid directory-format images on shared filesystems
-   such as NFS and Lustre, in favor of local storage such as :code:`tmpfs` and
-   local hard disks. This will yield better performance for you and anyone
-   else on the shared filesystem. In contrast, SquashFS images should work
-   fine on shared filesystems.
+  1. Third-party software installed into the image using a package manager.
+  2. Third-party software compiled from source into the image.
+  3. Your software installed into the image.
+  4. Your software stored on the host but compiled in the container.
+
+Many of Docker's `Best practices for writing Dockerfiles
+<https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices>`_
+apply to Charliecloud images as well, so you should be familiar with that
+document.
 
 .. note::
+   Maybe you don't have to install the software at all. Is there already a
+   trustworthy image on Docker Hub you can use as a base?
 
-   You can run perfectly well out of :code:`/tmp`, but because it is
-   bind-mounted automatically, the image root will then appear in multiple
-   locations in the container's filesystem tree. This can cause confusion for
-   both users and programs.
+Third-party software via package manager
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Maybe this symlink stuff is useful in an appendix?
---------------------------------------------------
+.. admonition::
+   FIXME
+
+   RPM and friends are particularly a pain in the butt, and I don't think
+   we've solved all the RPMDB bugs yet.
+
+This approach is the simplest and fastest way to install stuff in your image.
+The :code:`examples/hello` Dockerfile also seen above does this to install the
+package :code:`openssh-client`:
+
+.. literalinclude:: ../examples/hello/Dockerfile
+   :language: docker
+   :lines: 3-7
+
+You can use distribution package managers such as :code:`dnf`, as
+demonstrated above, or others, such as :code:`pip` for Python packages.
+Be aware that the software will be downloaded anew each time you build the
+image, unless you add an HTTP cache, which is out of scope of this tutorial.
+
+Third-party software compiled from source
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Under this method, one uses :code:`RUN` commands to fetch the desired software
+using :code:`curl` or :code:`wget`, compile it, and install. Our example does
+this with two chained Dockerfiles. First, we build a basic CentOS image
+(:code:`examples/Dockerfile.almalinux_8ch`):
+
+ .. literalinclude:: ../examples/Dockerfile.almalinux_8ch
+    :language: docker
+    :lines: 2-
+
+Then, we add OpenMPI with :code:`examples/Dockerfile.openmpi`. This is a complex
+Dockerfile that compiles several dependencies in addition to OpenMPI. For the
+purposes of this tutorial, you can skip most of it, but we felt it would be
+useful to show a real example.
+
+.. literalinclude:: ../examples/Dockerfile.openmpi
+   :language: docker
+   :lines: 2-
+
+So what is going on here?
+
+1. Use the latest AlmaLinux 8 as the base image.
+
+2. Install a basic build system using the OS package manager.
+
+3. For a few dependencies and then OpenMPI itself:
+
+   1. Download and untar. Note the use of variables to make adjusting the URL
+      and versions easier, as well as the explanation of why we're not using
+      :code:`dnf`, given that several of these packages are included in
+      CentOS.
+
+   2. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
+      appropriate parallel build.
+
+4. Clean up, in order to reduce the size of layers as well as the resulting
+   Charliecloud image (:code:`rm -Rf`).
+
+.. Finally, because it's a container image, you can be less tidy than you
+   might be on a normal system. For example, the above downloads and builds in
+   :code:`/` rather than :code:`/usr/local/src`, and it installs MPI into
+   :code:`/usr` rather than :code:`/usr/local`.
+
+Your software stored in the image
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This method covers software provided by you that is included in the image.
+This is recommended when your software is relatively stable or is not easily
+available to users of your image, for example a library rather than simulation
+code under active development.
+
+The general approach is the same as installing third-party software from
+source, but you use the :code:`COPY` instruction to transfer files from the
+host filesystem (rather than the network via HTTP) to the image. For example,
+:code:`examples/mpihello/Dockerfile.openmpi` uses this approach:
+
+
+.. literalinclude:: ../examples/mpihello/Dockerfile.openmpi
+  :language: docker
+
+These Dockerfile instructions:
+
+1. Copy the host directory :code:`examples/mpihello` to the image at path
+   :code:`/hello`. The host path is relative to the *context directory*, which
+   is tarred up and sent to the Docker daemon. Docker builds have no access to
+   the host filesystem outside the context directory.
+
+   (Unlike the HPC custom, Docker comes from a world without network
+   filesystems. This tar-based approach lets the Docker daemon run on a
+   different node from the client without needing any shared filesystems.)
+
+   The convention for Charliecloud tests and examples is that the context is
+   the directory containing the Dockerfile in question, and a common pattern,
+   used here, is to copy in the entire context.
+
+2. :code:`cd` to :code:`/hello`.
+
+3. Compile our example. We include :code:`make clean` to remove any leftover
+   build files, since they would be inappropriate inside the container.
+
+Once the image is built, we can see the results. (Install the image into
+:code:`/var/tmp` as outlined above, if you haven't already.)
+
+::
+
+  $ ch-run /var/tmp/mpihello-openmpi.sqfs -- ls -lh /hello
+  total 32K
+  -rw-rw---- 1 charlie charlie  908 Oct  4 15:52 Dockerfile
+  -rw-rw---- 1 charlie charlie  157 Aug  5 22:37 Makefile
+  -rw-rw---- 1 charlie charlie 1.2K Aug  5 22:37 README
+  -rwxr-x--- 1 charlie charlie 9.5K Oct  4 15:58 hello
+  -rw-rw---- 1 charlie charlie 1.4K Aug  5 22:37 hello.c
+  -rwxrwx--- 1 charlie charlie  441 Aug  5 22:37 test.sh
+
+We will revisit this image later.
+
+Your software stored on the host
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This method leaves your software on the host but compiles it in the image.
+This is recommended when your software is volatile or each image user needs a
+different version, for example a simulation code under active development.
+
+The general approach is to bind-mount the appropriate directory and then run
+the build inside the container. We can re-use the :code:`mpihello` image to
+demonstrate this.
+
+::
+
+  $ cd examples/mpihello
+  $ ls -l
+  total 20
+  -rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile
+  -rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c
+  -rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile
+  -rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README
+  $ ch-run -b .:/mnt/0 --cd /mnt/0 /var/tmp/mpihello.sqfs -- make
+  mpicc -std=gnu11 -Wall hello.c -o hello
+  $ ls -l
+  total 32
+  -rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile
+  -rwxrwx--- 1 charlie charlie 9632 Oct  4 10:43 hello
+  -rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c
+  -rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile
+  -rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README
+
+A common use case is to leave a container shell open in one terminal for
+building, and then run using a separate container invoked from a different
+terminal.
+
+Appendix
+========
+
+Appendix: Symlinks
+------------------
 
 Symbolic links in :code:`/proc` tell us the current namespaces, which are
 identified by long ID numbers::
@@ -920,27 +1095,8 @@ You can also run interactive commands, such as a shell::
   4026532256
   > exit
 
-FAQ for wildcard gotcha???
---------------------------
-
-Be aware that wildcards in the :code:`ch-run` command are interpreted by the
-host, not the container, unless protected. One workaround is to use a
-sub-shell. For example::
-
-  $ ls /usr/bin/oldfind
-  ls: cannot access '/usr/bin/oldfind': No such file or directory
-  $ ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldfind
-  /usr/bin/oldfind
-  $ ls /usr/bin/oldf*
-  ls: cannot access '/usr/bin/oldf*': No such file or directory
-  $ ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldf*
-  ls: cannot access /usr/bin/oldf*: No such file or directory
-  $ ch-run /var/tmp/hello.sqfs -- sh -c 'ls /usr/bin/oldf*'
-  /usr/bin/oldfind
-
-
-Interacting with the host (appendix?)
--------------------------------------
+Appendix: Interacting with the host
+-----------------------------------
 
 Charliecloud is not an isolation layer, so containers have full access to host
 resources, with a few quirks. This section demonstrates how this works.
@@ -995,8 +1151,6 @@ a destination that already exists, like those created under :code:`/mnt`::
   hello
   > cat /mnt/1/bar
   world
-
-
 
 Network
 ~~~~~~~
@@ -1200,184 +1354,8 @@ This concludes our discussion of how a Charliecloud container interacts with
 its host and principal Charliecloud quirks. We next move on to installing
 software.
 
-
-Installing your own software (appendix? shorten? new best practices chapter?)
------------------------------------------------------------------------------
-
-This section covers four situations for making software available inside a
-Charliecloud container:
-
-  1. Third-party software installed into the image using a package manager.
-  2. Third-party software compiled from source into the image.
-  3. Your software installed into the image.
-  4. Your software stored on the host but compiled in the container.
-
-Many of Docker's `Best practices for writing Dockerfiles
-<https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices>`_
-apply to Charliecloud images as well, so you should be familiar with that
-document.
-
-.. note::
-
-   Maybe you don't have to install the software at all. Is there already a
-   trustworthy image on Docker Hub you can use as a base?
-
-Third-party software via package manager
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. admonition::
-   FIXME
-
-   RPM and friends are particularly a pain in the butt, and I don't think
-   we've solved all the RPMDB bugs yet.
-
-This approach is the simplest and fastest way to install stuff in your image.
-The :code:`examples/hello` Dockerfile also seen above does this to install the
-package :code:`openssh-client`:
-
-.. literalinclude:: ../examples/hello/Dockerfile
-   :language: docker
-   :lines: 3-7
-
-You can use distribution package managers such as :code:`dnf`, as
-demonstrated above, or others, such as :code:`pip` for Python packages.
-
-Be aware that the software will be downloaded anew each time you build the
-image, unless you add an HTTP cache, which is out of scope of this tutorial.
-
-Third-party software compiled from source
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Under this method, one uses :code:`RUN` commands to fetch the desired software
-using :code:`curl` or :code:`wget`, compile it, and install. Our example does
-this with two chained Dockerfiles. First, we build a basic CentOS image
-(:code:`examples/Dockerfile.almalinux_8ch`):
-
-.. literalinclude:: ../examples/Dockerfile.almalinux_8ch
-   :language: docker
-   :lines: 2-
-
-Then, we add OpenMPI with :code:`examples/Dockerfile.openmpi`. This is a complex
-Dockerfile that compiles several dependencies in addition to OpenMPI. For the
-purposes of this tutorial, you can skip most of it, but we felt it would be
-useful to show a real example.
-
-.. literalinclude:: ../examples/Dockerfile.openmpi
-   :language: docker
-   :lines: 2-
-
-So what is going on here?
-
-1. Use the latest AlmaLinux 8 as the base image.
-
-2. Install a basic build system using the OS package manager.
-
-3. For a few dependencies and then OpenMPI itself:
-
-   1. Download and untar. Note the use of variables to make adjusting the URL
-      and versions easier, as well as the explanation of why we're not using
-      :code:`dnf`, given that several of these packages are included in
-      CentOS.
-
-   2. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
-      appropriate parallel build.
-
-4. Clean up, in order to reduce the size of layers as well as the resulting
-   Charliecloud image (:code:`rm -Rf`).
-
-.. Finally, because it's a container image, you can be less tidy than you
-   might be on a normal system. For example, the above downloads and builds in
-   :code:`/` rather than :code:`/usr/local/src`, and it installs MPI into
-   :code:`/usr` rather than :code:`/usr/local`.
-
-Your software stored in the image
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This method covers software provided by you that is included in the image.
-This is recommended when your software is relatively stable or is not easily
-available to users of your image, for example a library rather than simulation
-code under active development.
-
-The general approach is the same as installing third-party software from
-source, but you use the :code:`COPY` instruction to transfer files from the
-host filesystem (rather than the network via HTTP) to the image. For example,
-:code:`examples/mpihello/Dockerfile.openmpi` uses this approach:
-
-.. literalinclude:: ../examples/mpihello/Dockerfile.openmpi
-   :language: docker
-
-These Dockerfile instructions:
-
-1. Copy the host directory :code:`examples/mpihello` to the image at path
-   :code:`/hello`. The host path is relative to the *context directory*, which
-   is tarred up and sent to the Docker daemon. Docker builds have no access to
-   the host filesystem outside the context directory.
-
-   (Unlike the HPC custom, Docker comes from a world without network
-   filesystems. This tar-based approach lets the Docker daemon run on a
-   different node from the client without needing any shared filesystems.)
-
-   The convention for Charliecloud tests and examples is that the context is
-   the directory containing the Dockerfile in question, and a common pattern,
-   used here, is to copy in the entire context.
-
-2. :code:`cd` to :code:`/hello`.
-
-3. Compile our example. We include :code:`make clean` to remove any leftover
-   build files, since they would be inappropriate inside the container.
-
-Once the image is built, we can see the results. (Install the image into
-:code:`/var/tmp` as outlined above, if you haven't already.)
-
-::
-
-  $ ch-run /var/tmp/mpihello-openmpi.sqfs -- ls -lh /hello
-  total 32K
-  -rw-rw---- 1 charlie charlie  908 Oct  4 15:52 Dockerfile
-  -rw-rw---- 1 charlie charlie  157 Aug  5 22:37 Makefile
-  -rw-rw---- 1 charlie charlie 1.2K Aug  5 22:37 README
-  -rwxr-x--- 1 charlie charlie 9.5K Oct  4 15:58 hello
-  -rw-rw---- 1 charlie charlie 1.4K Aug  5 22:37 hello.c
-  -rwxrwx--- 1 charlie charlie  441 Aug  5 22:37 test.sh
-
-We will revisit this image later.
-
-Your software stored on the host
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-This method leaves your software on the host but compiles it in the image.
-This is recommended when your software is volatile or each image user needs a
-different version, for example a simulation code under active development.
-
-The general approach is to bind-mount the appropriate directory and then run
-the build inside the container. We can re-use the :code:`mpihello` image to
-demonstrate this.
-
-::
-
-  $ cd examples/mpihello
-  $ ls -l
-  total 20
-  -rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile
-  -rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c
-  -rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile
-  -rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README
-  $ ch-run -b .:/mnt/0 --cd /mnt/0 /var/tmp/mpihello.sqfs -- make
-  mpicc -std=gnu11 -Wall hello.c -o hello
-  $ ls -l
-  total 32
-  -rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile
-  -rwxrwx--- 1 charlie charlie 9632 Oct  4 10:43 hello
-  -rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c
-  -rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile
-  -rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README
-
-A common use case is to leave a container shell open in one terminal for
-building, and then run using a separate container invoked from a different
-terminal.
-
-Apache Spark (appendix?)
-------------------------
+Appendix: Apache Spark
+----------------------
 
 Interactive
 ~~~~~~~~~~~
