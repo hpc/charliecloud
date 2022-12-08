@@ -505,7 +505,7 @@ Synopsis
 Description
 -----------
 
-Uses :code:`ch-run -w -u0 -g0 --no-home --no-passwd` to execute :code:`RUN`
+Uses :code:`ch-run -w -u0 -g0 --no-passwd` to execute :code:`RUN`
 instructions. Note that :code:`FROM` implicitly pulls the base image if
 needed, so you may want to read about the :code:`pull` subcommand below as
 well.
