@@ -157,7 +157,6 @@ int main(int argc, char *argv[])
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
-   printf("IMG_REF: %s", args.c.img_ref);
    args.c.img_path = get_img_path(args.c.img_ref, args.c.yolo, args.c.writable);
    args.c.type = img_type_get(args.c.img_path);
 

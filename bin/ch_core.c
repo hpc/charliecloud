@@ -229,8 +229,6 @@ void enter_udss(struct container *c)
    bind_mounts(c->binds, c->newroot, 0);
    // Overmount / to avoid EINVAL if it's a rootfs.
    Z_ (chdir(newroot_parent));
-   printf("NEWROOT: %s\n", c->newroot);
-   printf("NEWROOT_PARENT: %s\n", newroot_parent);
    Z_ (mount(newroot_parent, "/", NULL, MS_MOVE, NULL));
    Z_ (chroot("."));
    c->newroot = cat("/", newroot_base);
