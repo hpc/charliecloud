@@ -66,7 +66,7 @@ const struct argp_option options[] = {
    { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
    { "write",         'w', 0,      0, "mount image read-write"},
-   { "yolo",          -12, 0,      OPTION_HIDDEN, ""},
+   { "yolo",          -13, 0,      OPTION_HIDDEN, ""},
    { 0 }
 };
 
@@ -404,7 +404,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       } else
          FATAL("unknown feature: %s", arg);
       break;
-   case -12: // --yolo
+   case -13: // --yolo
       args->c.yolo = true;
       break;
    case 'b': {
