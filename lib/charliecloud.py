@@ -461,7 +461,7 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", "--yolo", workdir]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   #print("".join(str(args))) # REMOVE THIS 1058
+   print("".join(str(args))) # REMOVE THIS 1058
    return cmd(args, env=env, fail_ok=fail_ok)
 
 def close_(fp):
@@ -489,6 +489,7 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       VERBOSE("environment: %s" % kwargs["env"])
    try:
       profile_stop()
+      INFO("ARGV: %s" % " ".join(argv))
       cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
       profile_start()
    except OSError as x:

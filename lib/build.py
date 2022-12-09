@@ -1067,6 +1067,7 @@ class Run(Instruction):
 
    def execute(self):
       rootfs = self.image.unpack_path
+      ch.INFO("ROOTFS: %s" % str(rootfs))
       fakeroot_config.init_maybe(rootfs, self.cmd, self.env_build)
       cmd = fakeroot_config.inject_run(self.cmd)
       exit_code = ch.ch_run_modify(rootfs, cmd, self.env_build, self.workdir,
