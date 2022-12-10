@@ -289,13 +289,14 @@ char *fmt_str(char *str)
 
 /* Convert image name to correct path if applicable while also ensuring that 
    the "name" provided isn't a path in the storage directory. */
-char *get_img_path(char *name, bool yolo, bool writable)
+char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
 {
   char *path = NULL;
-  char *storage = get_storage_dir();
+  if(!storage) {storage = get_storage_dir();}
+  //char *storage = get_storage_dir();
   if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
   {
-   if(yolo)
+   if(unsafe)
    {
       return name;
    } else {

@@ -45,7 +45,6 @@ struct container {
    char *old_home;       // host path to user's home directory (i.e. $HOME)
    enum img_type type;   // directory, SquashFS, etc.
    bool writable;        // re-mount image read-write
-   bool yolo;            // allow user to specify path to storage?
 };
 
 

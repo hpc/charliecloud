@@ -66,7 +66,7 @@ const struct argp_option options[] = {
    { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
    { "write",         'w', 0,      0, "mount image read-write"},
-   { "yolo",          -13, 0,      OPTION_HIDDEN, ""},
+   { "unsafe",          -13, 0,      OPTION_HIDDEN, ""},
    { 0 }
 };
 
@@ -77,6 +77,8 @@ struct args {
    struct container c;
    struct env_delta *env_deltas;
    char *initial_dir;
+   char *storage_dir;
+   bool unsafe;
 };
 
 
@@ -132,10 +134,12 @@ int main(int argc, char *argv[])
                                .private_tmp = false,
                                .old_home = getenv("HOME"),
                                .type = IMG_NONE,
-                               .writable = false,
-                               .yolo = false },
+                               .writable = false
+                              },
       .env_deltas = list_new(sizeof(struct env_delta), 0),
-      .initial_dir = NULL };
+      .initial_dir = NULL,
+      .storage_dir = NULL,
+      .unsafe = false };
 
    /* I couldn't find a way to set argp help defaults other than this
       environment variable. Kludge sets/unsets only if not already set. */
@@ -149,7 +153,7 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
    if (getenv("CH_TEST_YOLO")) {
-      args.c.yolo = true;
+      args.unsafe = true;
    }
 
    username = getenv("USER");
@@ -157,7 +161,7 @@ int main(int argc, char *argv[])
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
-   args.c.img_path = get_img_path(args.c.img_ref, args.c.yolo, args.c.writable);
+   args.c.img_path = get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir);
    args.c.type = img_type_get(args.c.img_path);
 
    switch (args.c.type) {
@@ -404,8 +408,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       } else
          FATAL("unknown feature: %s", arg);
       break;
-   case -13: // --yolo
-      args->c.yolo = true;
+   case -13: // --unsafe
+      args->unsafe = true;
       break;
    case 'b': {
          char *src, *dst;
@@ -444,6 +448,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.newroot = arg;
       break;
    case 's':
+      args->storage_dir = arg;
       break;
    case 't':
       args->c.private_tmp = true;

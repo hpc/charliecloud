@@ -458,7 +458,7 @@ def bytes_hash(data):
 def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
-           + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir, "--yolo"]
+           + ["-w", "-u0", "-g0", "--no-home", "--no-passwd", "--cd", workdir, "--unsafe"]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
    return cmd(args, env=env, fail_ok=fail_ok)
