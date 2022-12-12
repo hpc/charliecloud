@@ -82,36 +82,36 @@ EOF
     [[ $HOME ]]
     [[ $USER ]]
 
-    # default: set $HOME
+    # default: no change
     # shellcheck disable=SC2016
     run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = /home/$USER ]]
+    [[ $output = "$HOME" ]]
 
-    # no change if --no-home
+    # set $HOME if --home
     # shellcheck disable=SC2016
-    run ch-run --no-home "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = "$HOME" ]]
+    [[ $output = /home/$USER ]]
 
     # puke if $HOME not set
     home_tmp=$HOME
     unset HOME
     # shellcheck disable=SC2016
-    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export HOME="$home_tmp"
     echo "$output"
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
-    [[ $output = *'cannot find home directory: is $HOME set?'* ]]
+    [[ $output = *'--home failed: $HOME not set'* ]]
 
     # puke if $USER not set
     user_tmp=$USER
     unset USER
     # shellcheck disable=SC2016
-    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export USER=$user_tmp
     echo "$output"
     [[ $status -eq 1 ]]
@@ -251,15 +251,11 @@ EOF
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
 
     # omit tmpfs at /home, which shouldn't be empty
-    ch-run --no-home "$ch_timg" -- cat /home/overmount-me
-    # overmount tmpfs at /home
-    ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
+    ch-run "$ch_timg" -- cat /home/overmount-me
     # bind to /home without overmount
-    ch-run --no-home -b "${ch_imgdir}/bind1:/home" "$ch_timg" \
-           -- cat /home/file1
-    # omit default /home, with unrelated --bind
-    ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" \
-           -- cat "${ch_imgdir}/bind1/file1"
+    ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
+    # overmount tmpfs at /home
+    ch-run --home -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
 }
 
 
@@ -975,10 +971,10 @@ EOF
     echo "expected: ${r}"
     [[ $output =~ $r ]]
 
-    # /home without --private-home
+    # --home
     # FIXME: Not sure how to make the second mount(2) fail.
     rmdir "${img}/home"
-    run ch-run "$img" -- /bin/true
+    run ch-run --home "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
@@ -986,9 +982,9 @@ EOF
     echo "expected: ${r}"
     [[ $output =~ $r ]]
 
-    # --no-home shouldn't care if /home is missing
+    # default shouldn't care if /home is missing
     rmdir "${img}/home"
-    run ch-run --no-home "$img" -- /bin/true
+    run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
