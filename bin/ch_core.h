@@ -32,6 +32,7 @@ struct container {
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
    bool env_expand;      // expand variables in --set-env
+   char *host_home;      // if --home, host path to user homedir, else NULL
    char *img_path;       // path to image
    char *img_ref;        // image reference (by name)
    char *newroot;        // path to new root directory
@@ -39,10 +40,8 @@ struct container {
    int join_ct;          // number of peers in a synchronized join
    pid_t join_pid;       // process in existing namespace to join
    char *join_tag;       // identifier for synchronized join
-   bool private_home;    // don't bind user home directory
    bool private_passwd;  // don't bind custom /etc/{passwd,group}
    bool private_tmp;     // don't bind host's /tmp
-   char *old_home;       // host path to user's home directory (i.e. $HOME)
    enum img_type type;   // directory, SquashFS, etc.
    bool writable;        // re-mount image read-write
 };

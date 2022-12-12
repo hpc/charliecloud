@@ -88,7 +88,7 @@ setup () {
     prerequisites_ok almalinux_8ch
     img=${ch_imgdir}/almalinux_8ch
     image_ok "$img"
-    rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
+    rm -Rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 
     # Build and install RPMs into AlmaLinux 8 image.
     (cd .. && packaging/fedora/build --install "$img" \
