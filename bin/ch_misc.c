@@ -293,7 +293,6 @@ char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
 {
   char *path = NULL;
   if(!storage) {storage = get_storage_dir();}
-  //char *storage = get_storage_dir();
   if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
   {
    if(unsafe)
@@ -301,7 +300,6 @@ char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
       return name;
    } else {
       FATAL("Specified path is in storage (hint: try running image by name).");
-      //return name;
    }
   } else if(path_exists(name, NULL, false)) // is 'name' a valid path?
   {
@@ -312,7 +310,7 @@ char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
    {
       FATAL("%s not found in storage.", name);
    } else if(writable) {
-      FATAL("Cannot write to storage (hint: try running without '-w'");
+      FATAL("'-w' not allowed when running out of storage");
    } else {
       return path;
    }
