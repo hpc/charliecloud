@@ -461,7 +461,6 @@ def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
            + ["-w", "-u0", "-g0", "--no-passwd", "--cd", workdir, "--unsafe"]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   INFO("".join(str(args)))
    return cmd(args, env=env, fail_ok=fail_ok)
 
 def close_(fp):

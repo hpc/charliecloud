@@ -410,6 +410,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case -13: // --unsafe
       args->unsafe = true;
+      break;
    case 'b': {
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
@@ -420,7 +421,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
          args->c.binds[i].dep = BD_MAKE_DST;
          // source
          src = strsep(&arg, ":");
-         INFO("SRC: %s", src);
          T_ (src != NULL);
          Te (src[0] != 0, "--bind: no source provided");
          args->c.binds[i].src = src;
