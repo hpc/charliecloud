@@ -7,18 +7,29 @@ load ../common
 }
 
 @test 'storage errors' {
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    echo "$CH_IMAGE_STORAGE"
+
     run ch-run -w 00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 1 ]]
-    [[  $output = *"error: '-w' not allowed when running out of storage"* ]]
+    [[ $output = *"error: '-w' not allowed when running out of storage"* ]]
     
     run ch-run /var/tmp/"$USER.ch"/img/00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: Specified path is in storage"* ]]
+
+    run ch-run -s /real/fake/dir/ 00_tiny -- echo foo
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: storage directory not found"* ]]
 }
 
 @test 'specify storage' {
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
     ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/00_tiny"
     run ch-run -s "${BATS_TMPDIR}" 00_tiny -- echo foo
     echo "$output"
@@ -55,6 +66,7 @@ EOF
 }
 
 @test 'run image by name' {
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     run ch-run 00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 0 ]]

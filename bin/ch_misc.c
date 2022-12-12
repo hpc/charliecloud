@@ -299,16 +299,20 @@ char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
    {
       return name;
    } else {
-      FATAL("Specified path is in storage (hint: try running image by name).");
+      FATAL("Specified path is in storage (hint: try running image by name)");
    }
   } else if(path_exists(name, NULL, false)) // is 'name' a valid path?
   {
    return name;
   } else { // Assume 'name' is image name, try to find it in storage.
-   T_ (1 <= asprintf(&path, "/var/tmp/%s.ch/img/%s", username, fmt_str(name)));
+  T_ (1 <= asprintf(&path, "%s/%s", storage, name));
    if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
    {
-      FATAL("%s not found in storage.", name);
+      if(path_exists(storage, NULL, false)){
+         FATAL("%s not found in storage", name);
+      } else { // Storage dir doesn't exist
+         FATAL("storage directory not found: %s", storage);
+      }   
    } else if(writable) {
       FATAL("'-w' not allowed when running out of storage");
    } else {
@@ -322,9 +326,11 @@ char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
 char *get_storage_dir(void)
 {
    char *storage = getenv("CH_IMAGE_STORAGE");
-   if(storage == NULL) // $CH_IMAGE_STORAGE not set
+   if(!storage) // $CH_IMAGE_STORAGE not set
    {
-      if(asprintf(&storage, "/var/tmp/%s.ch", username) == 0) {};
+      T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch/img", username));
+   } else {
+      T_ (1 <= asprintf(&storage, "%s/img", storage));
    }
    return storage;
 }
