@@ -6,6 +6,30 @@ load ../common
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
+@test 'storage errors' {
+    run ch-run -w 00_tiny -- echo foo
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[  $output = *"error: '-w' not allowed when running out of storage"* ]]
+    
+    run ch-run /var/tmp/"$USER.ch"/img/00_tiny -- echo foo
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: Specified path is in storage"* ]]
+}
+
+@test 'specify storage' {
+    #mkdir /var/tmp/foo
+    #ch-convert -i ch-image -o dir 00_tiny /var/tmp/foo/00_tiny
+    #run ch-run -s /var/tmp/foo 00_tiny -- echo foo
+    ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/00_tiny"
+    run ch-run -s "${BATS_TMPDIR}" 00_tiny -- echo foo
+    echo $output
+    [[ $status -eq 0 ]]
+    [[ $output = "foo" ]]
+
+    rm -rf "${BATS_TMPDIR}/00_tiny"
+}
 
 @test 'symlink to image' {  # issue #50
     scope quick
@@ -33,6 +57,12 @@ EOF
     ch-run -w "$ch_timg" rm write
 }
 
+@test 'run image by name' {
+    run ch-run 00_tiny -- echo foo
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = "foo" ]]
+}
 
 @test '/usr/bin/ch-ssh' {
     # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".
