@@ -420,6 +420,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
          args->c.binds[i].dep = BD_MAKE_DST;
          // source
          src = strsep(&arg, ":");
+         INFO("SRC: %s", src);
          T_ (src != NULL);
          Te (src[0] != 0, "--bind: no source provided");
          args->c.binds[i].src = src;
