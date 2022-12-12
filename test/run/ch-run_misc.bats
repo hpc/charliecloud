@@ -21,7 +21,7 @@ load ../common
     [[ $status -eq 1 ]]
     [[ $output = *"error: Specified path is in storage"* ]]
 
-    run ch-run -s /real/fake/dir/ 00_tiny -- echo foo
+    run ch-run -s /doesnotexist 00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: storage directory not found"* ]]
