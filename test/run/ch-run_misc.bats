@@ -19,9 +19,6 @@ load ../common
 }
 
 @test 'specify storage' {
-    #mkdir /var/tmp/foo
-    #ch-convert -i ch-image -o dir 00_tiny /var/tmp/foo/00_tiny
-    #run ch-run -s /var/tmp/foo 00_tiny -- echo foo
     ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/00_tiny"
     run ch-run -s "${BATS_TMPDIR}" 00_tiny -- echo foo
     echo $output

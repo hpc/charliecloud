@@ -329,8 +329,7 @@ ch_tar=${ch_tardir}/${ch_tag}.tar.gz
 # shellcheck disable=SC2034
 ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034
-ch_timg_name=chtest
-ch_timg=${ch_imgdir}/${ch_timg_name}
+ch_timg=${ch_imgdir}/chtest
 
 # MPICH requires different handling from OpenMPI. Set a variable to enable
 # some kludges.
