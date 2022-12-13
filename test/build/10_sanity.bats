@@ -104,7 +104,7 @@ load ../common
     # For awk program, see: https://unix.stackexchange.com/a/66099
     while IFS= read -r i; do
         echo "shellcheck: ${i}"
-        shellcheck -x -P "$ch_lib" -e SC1090,SC1112,SC2002,SC2154 "$i"
+        shellcheck -x -P "$ch_lib" -e SC1090,SC1112,SC2002,SC2154,SC2317 "$i"
     done < <( find "$ch_base" \
                    \(    -name .git \
                       -o -name build-aux \) -prune \
@@ -123,7 +123,7 @@ load ../common
         echo "shellcheck: ${i}"
           sed -r -e 's/@test (.+) \{/test_ () {/g' "$i" \
                  -e 's/%\(([a-zA-Z0-9_]+)\)/SUBST_\1/g' \
-        | shellcheck -s bash -e SC1090,SC1112,SC2002,SC2103,SC2154,SC2164 -
+        | shellcheck -s bash -e SC1090,SC1112,SC2002,SC2103,SC2154,SC2164,SC2317  -
     done < <( find "$ch_base" -name '*.bats' -o -name '*.bats.in' )
 }
 
