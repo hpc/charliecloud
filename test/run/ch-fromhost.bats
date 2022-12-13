@@ -384,14 +384,14 @@ glibc_version_ok () {
     sample=/matrixMulCUBLAS
     # should fail without ch-fromhost --nvidia
     fromhost_clean "$img"
-    run ch-run "$img" -- $sample
+    run ch-run "$img" -- "$sample"
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'CUDA error at'* ]]
     # should succeed with it
     fromhost_clean_p "$img"
     ch-fromhost --nvidia "$img"
-    run ch-run "$img" -- $sample
+    run ch-run "$img" -- "$sample"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output =~ 'Comparing CUBLAS Matrix Multiply with CPU results: PASS' ]]
