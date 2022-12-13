@@ -1030,7 +1030,7 @@ EOF
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 
     # both
-    run ch-run -v --uid="$uid_bad" --gid=$gid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --uid="$uid_bad" --gid=$gid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
