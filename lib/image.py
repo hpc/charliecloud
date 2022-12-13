@@ -855,57 +855,59 @@ fields:
 
 ## Functions ##
 
-def tree_child(tree, cname):
-   """Locate a descendant subtree named cname using breadth-first search and
-      return it. If no such subtree exists, return None."""
-   return next(tree_children(tree, cname), None)
+class Tree(lark.tree.Tree):
 
-def tree_child_terminal(tree, cname, tname, i=0):
-   """Locate a descendant subtree named cname using breadth-first search and
-      return its first child terminal named tname. If no such subtree exists,
-      or it doesn't have such a terminal, return None."""
-   st = tree_child(tree, cname)
-   if (st is not None):
-      return tree_terminal(st, tname, i)
-   else:
+   def child(self, cname):
+      """Locate a descendant subtree named cname using breadth-first search and
+         return it. If no such subtree exists, return None."""
+      return next(self.children(cname), None)
+
+   def child_terminal(self, cname, tname, i=0):
+      """Locate a descendant subtree named cname using breadth-first search and
+         return its first child terminal named tname. If no such subtree exists,
+         or it doesn't have such a terminal, return None."""
+      st = self.child(cname)
+      if (st is not None):
+         return st.terminal(tname, i)
+      else:
+         return None
+
+   def child_terminals(self, cname, tname):
+      """Locate a descendant substree named cname using breadth-first search and
+         yield the values of its child terminals named tname. If no such subtree
+         exists, or it has no such terminals, yield an empty sequence."""
+      for d in self.iter_subtrees_topdown():
+         if (d.data == cname):
+            return d.terminals(tname)
+      return []
+
+   def child_terminals_cat(self, cname, tname):
+      """Return the concatenated values of all child terminals named tname as a
+         string, with no delimiters. If none, return the empty string."""
+      return "".join(self.child_terminals(cname, tname))
+
+   def children(self, cname):
+      "Yield children of tree named cname using breadth-first search."
+      for st in self.iter_subtrees_topdown():
+         if (st.data == cname):
+            yield st
+
+   def terminal(self, tname, i=0):
+      """Return the value of the ith child terminal named tname (zero-based), or
+         None if not found."""
+      for (j, t) in enumerate(self.terminals(tname)):
+         if (j == i):
+            return t
       return None
 
-def tree_child_terminals(tree, cname, tname):
-   """Locate a descendant substree named cname using breadth-first search and
-      yield the values of its child terminals named tname. If no such subtree
-      exists, or it has no such terminals, yield an empty sequence."""
-   for d in tree.iter_subtrees_topdown():
-      if (d.data == cname):
-         return tree_terminals(d, tname)
-   return []
+   def terminals(self, tname):
+      """Yield values of all child terminals named tname, or empty list if none
+         found."""
+      for j in self.children:
+         if (isinstance(j, lark.lexer.Token) and j.type == tname):
+            yield j.value
 
-def tree_child_terminals_cat(tree, cname, tname):
-   """Return the concatenated values of all child terminals named tname as a
-      string, with no delimiters. If none, return the empty string."""
-   return "".join(tree_child_terminals(tree, cname, tname))
-
-def tree_children(tree, cname):
-   "Yield children of tree named cname using breadth-first search."
-   for st in tree.iter_subtrees_topdown():
-      if (st.data == cname):
-         yield st
-
-def tree_terminal(tree, tname, i=0):
-   """Return the value of the ith child terminal named tname (zero-based), or
-      None if not found."""
-   for (j, t) in enumerate(tree_terminals(tree, tname)):
-      if (j == i):
-         return t
-   return None
-
-def tree_terminals(tree, tname):
-   """Yield values of all child terminals named tname, or empty list if none
-      found."""
-   for j in tree.children:
-      if (isinstance(j, lark.lexer.Token) and j.type == tname):
-         yield j.value
-
-def tree_terminals_cat(tree, tname):
-   """Return the concatenated values of all child terminals named tname as a
-      string, with no delimiters. If none, return the empty string."""
-   return "".join(tree_terminals(tree, tname))
+   def terminals_cat(self, tname):
+      """Return the concatenated values of all child terminals named tname as a
+         string, with no delimiters. If none, return the empty string."""
+      return "".join(self.terminals(tname))
