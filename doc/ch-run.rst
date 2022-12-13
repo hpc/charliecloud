@@ -18,7 +18,8 @@ Description
 ===========
 
 Run command :code:`CMD` in a fully unprivileged Charliecloud container using
-the image located at :code:`IMAGE`, which can be either a directory or, if the
+the image specified by :code:`IMAGE`, which can be a path to a directory, the
+name of an image in storage (e.g. :code:`almalinux`) or, if the
 proper support is enabled, a SquashFS archive. :code:`ch-run` does not use any
 setuid or setcap helpers, even for mounting SquashFS images with FUSE.
 
@@ -91,6 +92,9 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
     created according to the UID and GID maps for the container and
     bind-mounted into it. If this is specified, no such temporary files are
     created and the image’s files are exposed.
+
+  :code:`-s`, :code:`--storage DIR`
+    Set the storage directory (see section 6.5 for important details).
 
   :code:`-t`, :code:`--private-tmp`
     By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
