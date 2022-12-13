@@ -742,7 +742,8 @@ class Reference:
    def parse(class_, s, variables):
       if (class_.parser is None):
          class_.parser = lark.Lark(GRAMMAR_IMAGE_REF, parser="earley",
-                                   propagate_positions=True)
+                                   propagate_positions=True,
+                                   tree_class = Tree)
       s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       s = ch.variables_sub(s, variables)
@@ -750,7 +751,6 @@ class Reference:
          ch.FATAL("image reference contains an undefined variable: %s" % s)
       try:
          tree = class_.parser.parse(s)
-         tree.__class__ = Tree
       except lark.exceptions.UnexpectedInput as x:
          if (x.column == -1):
             ch.FATAL("image ref syntax, at end: %s" % s, hint);
@@ -861,7 +861,7 @@ class Tree(lark.tree.Tree):
    def child(self, cname):
       """Locate a descendant subtree named cname using breadth-first search and
          return it. If no such subtree exists, return None."""
-      return next(self.children(cname), None)
+      return next(self.children_(cname), None)
 
    def child_terminal(self, cname, tname, i=0):
       """Locate a descendant subtree named cname using breadth-first search and
@@ -887,11 +887,14 @@ class Tree(lark.tree.Tree):
          string, with no delimiters. If none, return the empty string."""
       return "".join(self.child_terminals(cname, tname))
 
-   def children(self, cname):
+   def children_(self, cname):
       "Yield children of tree named cname using breadth-first search."
       for st in self.iter_subtrees_topdown():
          if (st.data == cname):
             yield st
+         
+   def iter_subtrees_topdown(self, *args, **kwargs):
+      return super().iter_subtrees_topdown(*args, **kwargs)
 
    def terminal(self, tname, i=0):
       """Return the value of the ith child terminal named tname (zero-based), or

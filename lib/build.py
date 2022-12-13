@@ -123,14 +123,12 @@ def main(cli_):
 
    # Parse it.
    parser = lark.Lark(im.GRAMMAR_DOCKERFILE, parser="earley",
-                      propagate_positions=True)
+                      propagate_positions=True, tree_class=im.Tree)
    # Avoid Lark issue #237: lark.exceptions.UnexpectedEOF if the file does not
    # end in newline.
    text += "\n"
    try:
       tree = parser.parse(text)
-      # whack solution from stackoverflow https://stackoverflow.com/a/3464154
-      tree.__class__ = im.Tree
 
    except lark.exceptions.UnexpectedInput as x:
       ch.VERBOSE(x)  # noise about what was expected in the grammar
@@ -144,7 +142,7 @@ def main(cli_):
 
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
-   image_ct = sum(1 for i in tree.children("from_"))
+   image_ct = sum(1 for i in tree.children_("from_"))
 
    # Traverse the tree and do what it says.
    #
@@ -259,7 +257,7 @@ class Instruction(abc.ABC):
       self.lineno = tree.meta.line
       self.options = dict()
       # saving options with only 1 saved value
-      for st in tree.children("option"):
+      for st in tree.children_("option"):
          k = st.terminal("OPTION_KEY")
          v = st.terminal("OPTION_VALUE")
          if (k in self.options):
@@ -268,7 +266,7 @@ class Instruction(abc.ABC):
          self.options[k] = v
 
       # saving keypair options in a dictionary
-      for st in tree.children("option_keypair"):
+      for st in tree.children_("option_keypair"):
          k = st.terminal("OPTION_KEY")
          s = st.terminal("OPTION_VAR")
          v = st.terminal("OPTION_VALUE")
