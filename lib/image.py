@@ -750,6 +750,7 @@ class Reference:
          ch.FATAL("image reference contains an undefined variable: %s" % s)
       try:
          tree = class_.parser.parse(s)
+         tree.__class__ = Tree
       except lark.exceptions.UnexpectedInput as x:
          if (x.column == -1):
             ch.FATAL("image ref syntax, at end: %s" % s, hint);
@@ -833,16 +834,16 @@ fields:
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
-      self.host = tree_child_terminal(t, "ir_hostport", "IR_HOST")
-      self.port = tree_child_terminal(t, "ir_hostport", "IR_PORT")
+      self.host = t.child_terminal("ir_hostport", "IR_HOST")
+      self.port = t.child_terminal("ir_hostport", "IR_PORT")
       if (self.port is not None):
          self.port = int(self.port)
       self.path = [    ch.variables_sub(s, self.variables)
-                   for s in tree_child_terminals(t, "ir_path",
-                                                 "IR_PATH_COMPONENT")]
-      self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
-      self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
-      self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
+                   for s in t.child_terminals("ir_path",
+                                              "IR_PATH_COMPONENT")]
+      self.name = t.child_terminal("ir_name", "IR_PATH_COMPONENT")
+      self.tag = t.child_terminal("ir_tag", "IR_TAG")
+      self.digest = t.child_terminal("ir_digest", "HEX_STRING")
       for a in ("host", "port", "name", "tag", "digest"):
          setattr(self, a, ch.variables_sub(getattr(self, a), self.variables))
       # Resolve grammar ambiguity for hostnames w/o dot or port.
