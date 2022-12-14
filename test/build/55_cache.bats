@@ -48,7 +48,7 @@ EOF
     ch-image pull alpine3.16
 
     blessed_tree=$(cat << 'EOF'
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -97,7 +97,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'1* FROM alpine3.16'* ]]
     blessed_tree=$(cat << 'EOF'
-*  (d2, d, alpine+3.9) PULL alpine3.16
+*  (d2, d, alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -116,7 +116,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -137,7 +137,7 @@ EOF
 *  (b) RUN echo baz
 *  (a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -162,7 +162,7 @@ EOF
 | *  (a) RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -185,7 +185,7 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -211,7 +211,7 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -242,7 +242,7 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -266,7 +266,7 @@ EOF
 | *  RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -283,7 +283,7 @@ EOF
 | *  (e) RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -300,7 +300,7 @@ EOF
     ch-image pull alpine3.16
 
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -492,7 +492,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (foo) RUN echo bar
 *  (foo#) RUN echo foo
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -509,7 +509,7 @@ EOF
 | *  RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -581,7 +581,7 @@ EOF
 | *  RUN echo bar
 | *  RUN echo foo
 |/
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -722,7 +722,7 @@ EOF
 | *  ARG argB='vargBvargA'
 |/
 *  ARG argA='vargA'
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -871,7 +871,7 @@ EOF
 
     # Pull base image w/o cache.
     ch-image pull --no-cache alpine3.16
-    [[ ! -e $CH_IMAGE_STORAGE/img/alpine+3.9/.git ]]
+    [[ ! -e $CH_IMAGE_STORAGE/img/alpine+3.16/.git ]]
 
     # Build child image.
     run ch-image build -t foo - <<'EOF'
@@ -887,7 +887,7 @@ EOF
     # Check tree.
     blessed_out=$(cat << 'EOF'
 *  (foo) RUN echo foo
-*  (alpine+3.9) IMPORT alpine3.16
+*  (alpine+3.16) IMPORT alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -904,7 +904,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (a2, a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine3.16
+*  (alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -940,7 +940,7 @@ EOF
     printf 'FROM alpine3.16\n' | ch-image build -t foo -
     printf 'FROM foo\nRUN echo foo\n' | ch-image build -t alpine3.16 -
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.9) RUN echo foo
+*  (alpine+3.16) RUN echo foo
 *  (foo) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
@@ -958,7 +958,7 @@ EOF
     [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
-*  (foo, alpine+3.9) PULL alpine3.16
+*  (foo, alpine+3.16) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -972,7 +972,7 @@ EOF
     printf 'FROM alpine3.16\n' | ch-image build -t alpine:3.10 -
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
-*  (foo, alpine+3.9, alpine+3.10) PULL alpine3.16
+*  (foo, alpine+3.16, alpine+3.10) PULL alpine3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -989,7 +989,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.10) PULL alpine:3.10
 | *  RUN echo foo
-| *  (foo, alpine+3.9) PULL alpine3.16
+| *  (foo, alpine+3.16) PULL alpine3.16
 |/
 *  (HEAD -> root) ROOT
 EOF
@@ -1051,7 +1051,7 @@ EOF
 
     # everything in order?
     blessed_tree=$(cat << 'EOF'
-*  (bar, alpine+3.9) PULL alpine3.16
+*  (bar, alpine+3.16) PULL alpine3.16
 | *  (scratch, foo) PULL scratch
 |/
 *  (HEAD -> root) ROOT
@@ -1074,7 +1074,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
     ls -x "$CH_IMAGE_STORAGE"/img
-    [[ $(ls -x "$CH_IMAGE_STORAGE"/img) == "alpine+3.9  bar  foo" ]]
+    [[ $(ls -x "$CH_IMAGE_STORAGE"/img) == "alpine+3.16  bar  foo" ]]
 }
 
 
