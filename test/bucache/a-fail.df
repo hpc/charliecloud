@@ -1,4 +1,4 @@
-FROM alpine:3.9
+FROM alpine:3.16
 RUN echo foo
 RUN false
 RUN echo bar
