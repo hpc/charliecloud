@@ -347,7 +347,7 @@ EOF
     echo
     echo '*** Them: Create the initial image state.'
     ch-image -s "$st" build -v -t capablanca -f - . <<EOF
-FROM alpine:3.9
+FROM alpine:3.16
 RUN echo josé > /worldchampion
 EOF
     ch-image -s "$st" --auth --tls-no-verify \
@@ -398,7 +398,7 @@ EOF
     echo
     echo '*** Them: Change and push the image.'
     ch-image -s "$st" build -t fischer -f - . <<EOF
-FROM alpine:3.9
+FROM alpine:3.16
 RUN echo "bobby" > /worldchampion
 EOF
     ch-image -s "$st" --auth --tls-no-verify push fischer localhost:5000/champ
@@ -875,7 +875,7 @@ EOF
 
     # Build child image.
     run ch-image build -t foo - <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.16
 RUN echo foo
 EOF
     echo "$output"
@@ -1136,7 +1136,7 @@ EOF
     # too annoying, so the test isn’t too long. Keep in mind this is probably
     # happening on a tmpfs.
     ch-image build -t tmpimg - <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.16
 RUN for i in $(seq 0 1024); do \
        dd if=/dev/urandom of=/$i bs=1024K count=1 status=none; \
     done
@@ -1162,7 +1162,7 @@ EOF
 
 @test "${tag}: all hits, no image" {
     df=$(cat <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.16
 RUN echo foo
 EOF
         )
@@ -1265,7 +1265,7 @@ EOF
     ch-image build-cache --reset
 
     df=$(cat <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.16
 RUN touch __ch-test_ignore__
 EOF
         )
@@ -1279,19 +1279,19 @@ EOF
 @test "${tag}: delete" {
     ch-image build-cache --reset
 
-    printf 'FROM alpine:3.9\nRUN echo 1a\n' | ch-image build -t 1a -
-    printf 'FROM alpine:3.9\nRUN echo 1b\n' | ch-image build -t 1b -
-    printf 'FROM alpine:3.9\nRUN echo 2a\n' | ch-image build -t 2a -
+    printf 'FROM alpine:3.16\nRUN echo 1a\n' | ch-image build -t 1a -
+    printf 'FROM alpine:3.16\nRUN echo 1b\n' | ch-image build -t 1b -
+    printf 'FROM alpine:3.16\nRUN echo 2a\n' | ch-image build -t 2a -
 
     blessed_tree=$(ch-image build-cache --tree | treeonly)
     echo "$blessed_tree"
 
     # starting point
-    diff -u <(printf "1a\n1b\n2a\nalpine:3.9\n") <(ch-image list)
+    diff -u <(printf "1a\n1b\n2a\nalpine:3.16\n") <(ch-image list)
 
     # no glob
     ch-image delete 2a
-    diff -u <(printf "1a\n1b\nalpine:3.9\n") <(ch-image list)
+    diff -u <(printf "1a\n1b\nalpine:3.16\n") <(ch-image list)
 
     # matches none (non-empty)
     run ch-image delete 'foo*'
@@ -1301,7 +1301,7 @@ EOF
 
     # matches some
     ch-image delete '1*'
-    diff -u <(printf "alpine:3.9\n") <(ch-image list)
+    diff -u <(printf "alpine:3.16\n") <(ch-image list)
 
     # matches all
     ch-image delete '*'
@@ -1321,7 +1321,7 @@ EOF
     # We use files of size 3, 4, 5 MiB to avoid /lib/libcrypto.so.1.1, which
     # is about 2.5 MIB and which we don’t have control over.
     df=$(cat <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.16
 RUN dd if=/dev/urandom of=/bigfile3 bs=1M count=3 \
  && dd if=/dev/urandom of=/bigfile4 bs=1M count=4 \
  && dd if=/dev/urandom of=/bigfile5 bs=1M count=5 \

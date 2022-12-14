@@ -1,4 +1,4 @@
-FROM alpine:3.9
+FROM alpine:3.16
 ARG argA=vargA
 ARG argB=vargB$argA
 ENV envA=venvA envB=venvB$argA
