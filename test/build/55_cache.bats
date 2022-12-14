@@ -65,9 +65,9 @@ EOF
     run ch-image build -v -t d -f bucache/from.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'1. FROM alpine:3.9'* ]]
+    [[ $output = *'1. FROM alpine:3.16'* ]]
     blessed_tree=$(cat << 'EOF'
-*  (d, alpine+3.9) PULL alpine:3.9
+*  (d, alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -80,9 +80,9 @@ EOF
     run ch-image build -v -t d -f bucache/from.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'1* FROM alpine:3.9'* ]]
+    [[ $output = *'1* FROM alpine:3.16'* ]]
     blessed_tree=$(cat << 'EOF'
-*  (d, alpine+3.9) PULL alpine:3.9
+*  (d, alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
