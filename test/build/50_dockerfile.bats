@@ -754,7 +754,7 @@ EOF
         [[ $output = *'FROM alpine:3.16'* ]]
         [[ $output = *'os=alpine:3.16 foo=bar baz=qux'* ]]
     fi
-    [[ $output = *'alpine=3.9'* ]]
+    [[ $output = *'alpine=3.16'* ]]
 
     # multi-stage
     run build_ --no-cache -t tmpimg - <<'EOF'
