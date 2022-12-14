@@ -45,10 +45,10 @@ EOF
 
 
 @test "${tag}: §3.2.1 initial pull" {
-    ch-image pull alpine3.16
+    ch-image pull alpine:3.16
 
     blessed_tree=$(cat << 'EOF'
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -95,9 +95,9 @@ EOF
     run ch-image build -v -t d2 -f bucache/from.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'1* FROM alpine3.16'* ]]
+    [[ $output = *'1* FROM alpine:3.16'* ]]
     blessed_tree=$(cat << 'EOF'
-*  (d2, d, alpine+3.16) PULL alpine3.16
+*  (d2, d, alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -116,7 +116,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -137,7 +137,7 @@ EOF
 *  (b) RUN echo baz
 *  (a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -162,7 +162,7 @@ EOF
 | *  (a) RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -185,7 +185,7 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -211,7 +211,7 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -242,11 +242,12 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
     ch-image --rebuild build -t c -f bucache/c.df .
+    sleep 1
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -266,7 +267,7 @@ EOF
 | *  RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -283,7 +284,7 @@ EOF
 | *  (e) RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -296,11 +297,11 @@ EOF
 
 @test "${tag}: §3.4.1 two pulls, same" {
     ch-image build-cache --reset
-    ch-image pull alpine3.16
-    ch-image pull alpine3.16
+    ch-image pull alpine:3.16
+    ch-image pull alpine:3.16
 
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -492,7 +493,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (foo) RUN echo bar
 *  (foo#) RUN echo foo
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -509,7 +510,7 @@ EOF
 | *  RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -581,7 +582,7 @@ EOF
 | *  RUN echo bar
 | *  RUN echo foo
 |/
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -722,7 +723,7 @@ EOF
 | *  ARG argB='vargBvargA'
 |/
 *  ARG argA='vargA'
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -904,7 +905,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (a2, a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.16) PULL alpine3.16
+*  (alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -921,7 +922,7 @@ EOF
     ch-image build-cache --reset
 
     printf '\n*** Case 1: Not in build cache\n\n'
-    run ch-image pull alpine3.16
+    run ch-image pull alpine:3.16
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pulling image:    alpine3.16'* ]]
@@ -929,7 +930,7 @@ EOF
     [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
 
     printf '\n*** Case 2: In build cache, up to date\n\n'
-    run ch-image pull alpine3.16
+    run ch-image pull alpine:3.16
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pulling image:    alpine3.16'* ]]
@@ -937,11 +938,11 @@ EOF
     [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
 
     printf '\n*** Case 3: In build cache, not UTD, UTD commit present\n\n'
-    printf 'FROM alpine3.16\n' | ch-image build -t foo -
+    printf 'FROM alpine:3.16\n' | ch-image build -t foo -
     printf 'FROM foo\nRUN echo foo\n' | ch-image build -t alpine3.16 -
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.16) RUN echo foo
-*  (foo) PULL alpine3.16
+*  (foo) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -950,7 +951,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
     sleep 1
-    run ch-image pull alpine3.16
+    run ch-image pull alpine:3.16
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pulling image:    alpine3.16'* ]]
@@ -958,7 +959,7 @@ EOF
     [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
-*  (foo, alpine+3.16) PULL alpine3.16
+*  (foo, alpine+3.16) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -969,10 +970,10 @@ EOF
 
     printf '\n*** Case 4: In build cache, not UTD, UTD commit absent\n\n'
     sleep 1
-    printf 'FROM alpine3.16\n' | ch-image build -t alpine:3.10 -
+    printf 'FROM alpine:3.16\n' | ch-image build -t alpine:3.10 -
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
-*  (foo, alpine+3.16, alpine+3.10) PULL alpine3.16
+*  (foo, alpine+3.16, alpine+3.10) PULL alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -989,7 +990,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.10) PULL alpine:3.10
 | *  RUN echo foo
-| *  (foo, alpine+3.16) PULL alpine3.16
+| *  (foo, alpine+3.16) PULL alpine:3.16
 |/
 *  (HEAD -> root) ROOT
 EOF
@@ -1003,14 +1004,14 @@ EOF
 @test "${tag}: multistage COPY" {
     # Multi-stage build with no instructions in the first stage.
     df_no=$(cat <<'EOF'
-FROM alpine3.16
+FROM alpine:3.16
 FROM alpine:3.10
 COPY --from=0 /etc/os-release /
 EOF
            )
     # Multi-stage build with instruction in the first stage.
     df_yes=$(cat <<'EOF'
-FROM alpine3.16
+FROM alpine:3.16
 RUN echo foo
 FROM alpine:3.10
 COPY --from=0 /etc/os-release /
@@ -1047,11 +1048,11 @@ EOF
 
     # pull normal image to weird destination
     sleep 1
-    ch-image pull alpine3.16 bar
+    ch-image pull alpine:3.16 bar
 
     # everything in order?
     blessed_tree=$(cat << 'EOF'
-*  (bar, alpine+3.16) PULL alpine3.16
+*  (bar, alpine+3.16) PULL alpine:3.16
 | *  (scratch, foo) PULL scratch
 |/
 *  (HEAD -> root) ROOT
@@ -1066,7 +1067,7 @@ EOF
 
     # pull same normal image normally
     sleep 1
-    ch-image pull alpine3.16
+    ch-image pull alpine:3.16
 
     # everything still in order?
     run ch-image build-cache --tree
@@ -1081,14 +1082,14 @@ EOF
 @test "${tag}: multistage COPY" {
     # Multi-stage build with no instructions in the first stage.
     df_no=$(cat <<'EOF'
-FROM alpine3.16
+FROM alpine:3.16
 FROM alpine:3.10
 COPY --from=0 /etc/os-release /
 EOF
            )
     # Multi-stage build with instruction in the first stage.
     df_yes=$(cat <<'EOF'
-FROM alpine3.16
+FROM alpine:3.16
 RUN echo foo
 FROM alpine:3.10
 COPY --from=0 /etc/os-release /
@@ -1110,12 +1111,12 @@ EOF
     ch-image delete tmpimg || true
 
     ch-image build -t tmpimg - <<'EOF'
-FROM alpine3.16
+FROM alpine:3.16
 RUN mkdir /foo && mkdir /foo/bar
 EOF
     sleep 1
     ch-image build -t tmpimg - <<'EOF'
-FROM alpine3.16
+FROM alpine:3.16
 RUN true        # miss
 RUN mkdir /foo  # should not collide with leftover /foo from above
 EOF
