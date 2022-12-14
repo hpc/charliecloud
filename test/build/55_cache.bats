@@ -871,7 +871,7 @@ EOF
     ch-image build-cache --reset
 
     # Pull base image w/o cache.
-    ch-image pull --no-cache alpine3.16
+    ch-image pull --no-cache alpine:3.16
     [[ ! -e $CH_IMAGE_STORAGE/img/alpine+3.16/.git ]]
 
     # Build child image.
@@ -888,7 +888,7 @@ EOF
     # Check tree.
     blessed_out=$(cat << 'EOF'
 *  (foo) RUN echo foo
-*  (alpine+3.16) IMPORT alpine3.16
+*  (alpine+3.16) IMPORT alpine:3.16
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -925,7 +925,7 @@ EOF
     run ch-image pull alpine:3.16
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pulling image:    alpine3.16'* ]]
+    [[ $output = *'pulling image:    alpine:3.16'* ]]
     [[ $output  = *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
 
@@ -933,13 +933,13 @@ EOF
     run ch-image pull alpine:3.16
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pulling image:    alpine3.16'* ]]
+    [[ $output = *'pulling image:    alpine:3.16'* ]]
     [[ $output != *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
 
     printf '\n*** Case 3: In build cache, not UTD, UTD commit present\n\n'
     printf 'FROM alpine:3.16\n' | ch-image build -t foo -
-    printf 'FROM foo\nRUN echo foo\n' | ch-image build -t alpine3.16 -
+    printf 'FROM foo\nRUN echo foo\n' | ch-image build -t alpine:3.16 -
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.16) RUN echo foo
 *  (foo) PULL alpine:3.16
@@ -954,7 +954,7 @@ EOF
     run ch-image pull alpine:3.16
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pulling image:    alpine3.16'* ]]
+    [[ $output = *'pulling image:    alpine:3.16'* ]]
     [[ $output != *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
