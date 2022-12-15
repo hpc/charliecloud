@@ -341,14 +341,14 @@ EOF
    [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
    # Put an image innit.
-   ch-image pull alpine:3.9
+   ch-image pull alpine:3.17
    ls "$CH_IMAGE_STORAGE"
 
    # List images; should be only the one we just pulled.
    run ch-image list
    echo "$output"
    [[ $status -eq 0 ]]
-   [[ $output = "alpine:3.9" ]]
+   [[ $output = "alpine:3.17" ]]
 
    # Reset.
    ch-image reset
@@ -630,7 +630,7 @@ EOF
 
 @test 'ch-image build: multistage with colon' {
 cat <<'EOF' | ch-image --no-cache build -t tmpimg:tagged -f - .
-FROM alpine:3.9
+FROM alpine:3.17
 FROM alpine:3.10
 COPY --from=0 /etc/os-release /
 EOF

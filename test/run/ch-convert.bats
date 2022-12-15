@@ -326,7 +326,7 @@ test_from () {
 
 @test 'ch-convert: --no-clobber' {
     # ch-image
-    printf 'FROM alpine:3.9\n' | ch-image build -t tmpimg -f - "$BATS_TMPDIR"
+    printf 'FROM alpine:3.17\n' | ch-image build -t tmpimg -f - "$BATS_TMPDIR"
     run ch-convert --no-clobber -o ch-image "$BATS_TMPDIR" tmpimg
     echo "$output"
     [[ $status -eq 1 ]]
@@ -341,14 +341,14 @@ test_from () {
     rm -Rf --one-file-system "$BATS_TMPDIR"/00_tiny
 
     # docker
-    printf 'FROM alpine:3.9\n' | docker_ build -t tmpimg -
+    printf 'FROM alpine:3.17\n' | docker_ build -t tmpimg -
     run ch-convert --no-clobber -o docker "$BATS_TMPDIR" tmpimg
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists in Docker storage, not deleting per --no-clobber: tmpimg" ]]
 
     # podman
-    printf 'FROM alpine:3.9\n' | podman_ build -t tmpimg -
+    printf 'FROM alpine:3.17\n' | podman_ build -t tmpimg -
     run ch-convert --no-clobber -o podman "$BATS_TMPDIR" tmpimg
     echo "$output"
     [[ $status -eq 1 ]]

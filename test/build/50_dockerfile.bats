@@ -758,7 +758,7 @@ EOF
 
     # multi-stage
     run build_ --no-cache -t tmpimg - <<'EOF'
-ARG os1=alpine:3.9
+ARG os1=alpine:3.17
 ARG os2=alpine:3.16
 FROM $os1
 RUN echo "1: os1=$os1 os2=$os2"
@@ -778,10 +778,10 @@ EOF
         [[ $output = *'1: os1= os2='* ]]
         [[ $output = *'2: os1= os2='* ]]
     else
-        [[ $output = *'FROM alpine:3.9'* ]]
+        [[ $output = *'FROM alpine:3.17'* ]]
         [[ $output = *'FROM alpine:3.16'* ]]
-        [[ $output = *'1: os1=alpine:3.9 os2=alpine:3.16'* ]]
-        [[ $output = *'2: os1=alpine:3.9 os2=alpine:3.16'* ]]
+        [[ $output = *'1: os1=alpine:3.17 os2=alpine:3.16'* ]]
+        [[ $output = *'2: os1=alpine:3.17 os2=alpine:3.16'* ]]
     fi
     [[ $output = *'alpine1=3.9'* ]]
     [[ $output = *'alpine2=3.16'* ]]
@@ -1218,7 +1218,7 @@ EOF
     [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
 
     run ch-image build --no-cache -t foo - <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 FROM alpine:3.10
 COPY --from=0 /etc/os-release /
 EOF
