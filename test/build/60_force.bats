@@ -32,7 +32,7 @@ EOF
     scope standard
 
     run ch-image -v build --no-force-detect -t tmpimg -f - . <<'EOF'
-FROM alpine:3.16
+FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
