@@ -854,9 +854,9 @@ fields:
          self.host = None
 
 
-## Functions ##
-
 class Tree(lark.tree.Tree):
+   """Parse tree class. Essentially a lark parse tree with some additional
+      methods."""
 
    def child(self, cname):
       """Locate a descendant subtree named cname using breadth-first search and
