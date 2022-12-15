@@ -129,7 +129,6 @@ def main(cli_):
    text += "\n"
    try:
       tree = parser.parse(text)
-
    except lark.exceptions.UnexpectedInput as x:
       ch.VERBOSE(x)  # noise about what was expected in the grammar
       ch.FATAL("can't parse: %s:%d,%d\n\n%s"
@@ -987,7 +986,7 @@ class I_from_(Instruction):
          argfrom)
       self.base_image = im.Image(image_ref)
       self.alias = self.tree.child_terminal("from_alias",
-                                             "IR_PATH_COMPONENT")
+                                            "IR_PATH_COMPONENT")
       # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
