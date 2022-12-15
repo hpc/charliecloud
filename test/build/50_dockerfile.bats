@@ -783,8 +783,8 @@ EOF
         [[ $output = *'1: os1=alpine:3.16 os2=alpine:3.17'* ]]
         [[ $output = *'2: os1=alpine:3.16 os2=alpine:3.17'* ]]
     fi
-    [[ $output = *'alpine1=3.9'* ]]
-    [[ $output = *'alpine2=3.16'* ]]
+    [[ $output = *'alpine1=3.16'* ]]
+    [[ $output = *'alpine2=3.17'* ]]
 
     # no default value
     run build_ --no-cache -t tmpimg - <<'EOF'
@@ -819,7 +819,7 @@ EOF
         [[ $output = *'FROM alpine:3.17'* ]]
         [[ $output = *'os=alpine:3.17'* ]]
     fi
-    [[ $output = *'alpine=3.16'* ]]
+    [[ $output = *'alpine=3.17'* ]]
 
     # both before and after FROM
     run build_ --no-cache -t tmpimg - <<'EOF'
