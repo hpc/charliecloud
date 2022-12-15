@@ -17,26 +17,26 @@ setup () {
 @test "${tag}: without destination reference" {
     # FIXME: This test copies an image manually so we can use it to push.
     # Remove when we have real aliasing support for images.
-    ch-image build -t localhost:5000/00_tiny - <<'EOF'
-FROM 00_tiny
+    ch-image build -t localhost:5000/alpine:latest - <<'EOF'
+FROM alpine:latest
 EOF
 
-    run ch-image -v --tls-no-verify push localhost:5000/00_tiny
+    run ch-image -v --tls-no-verify push localhost:5000/alpine:latest
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pushing image:   localhost:5000/00_tiny'* ]]
-    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%00_tiny"* ]]
+    [[ $output = *'pushing image:   localhost:5000/alpine:latest'* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%alpine:latest"* ]]
 
-    ch-image delete localhost:5000/00_tiny
+    ch-image delete localhost:5000/alpine:latest
 }
 
 @test "${tag}: with destination reference" {
-    run ch-image -v --tls-no-verify push 00_tiny localhost:5000/00_tiny
+    run ch-image -v --tls-no-verify push alpine:latest localhost:5000/alpine:latest
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pushing image:   00_tiny'* ]]
-    [[ $output = *'destination:     localhost:5000/00_tiny'* ]]
-    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/00_tiny"* ]]
+    [[ $output = *'pushing image:   alpine:latest'* ]]
+    [[ $output = *'destination:     localhost:5000/alpine:latest'* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/alpine:latest"* ]]
     # FIXME: Can’t re-use layer from previous test because it’s a copy.
     #re='layer 1/1: [0-9a-f]{7}: already present'
     #[[ $output =~ $re ]]
@@ -93,12 +93,12 @@ EOF
 }
 
 @test "${tag}: consistent layer hash" {
-    run ch-image push --tls-no-verify 00_tiny localhost:5000/00_tiny
+    run ch-image push --tls-no-verify alpine:latest localhost:5000/alpine:latest
     echo "$output"
     [[ $status -eq 0 ]]
     push1=$(echo "$output" | grep -E 'layer 1/1: .+: checking')
 
-    run ch-image push --tls-no-verify 00_tiny localhost:5000/00_tiny
+    run ch-image push --tls-no-verify alpine:latest localhost:5000/alpine:latest
     echo "$output"
     [[ $status -eq 0 ]]
     push2=$(echo "$output" | grep -E 'layer 1/1: .+: checking')
@@ -108,7 +108,7 @@ EOF
 
 @test "${tag}: environment variables round-trip" {
     cat <<'EOF' | ch-image build -t tmpimg -
-FROM 00_tiny
+FROM alpine:latest
 ENV weird="al yankovic"
 EOF
 
