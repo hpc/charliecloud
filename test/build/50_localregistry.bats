@@ -25,7 +25,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'pushing image:   localhost:5000/alpine:latest'* ]]
-    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%alpine:latest"* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%alpine+latest"* ]]
 
     ch-image delete localhost:5000/alpine:latest
 }
@@ -36,7 +36,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'pushing image:   alpine:latest'* ]]
     [[ $output = *'destination:     localhost:5000/alpine:latest'* ]]
-    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/alpine:latest"* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/alpine+latest"* ]]
     # FIXME: Can’t re-use layer from previous test because it’s a copy.
     #re='layer 1/1: [0-9a-f]{7}: already present'
     #[[ $output =~ $re ]]
