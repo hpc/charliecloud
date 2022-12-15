@@ -736,7 +736,7 @@ EOF
 
     # single-stage
     run build_ --no-cache -t tmpimg - <<'EOF'
-ARG os=alpine:3.16
+ARG os=alpine:3.17
 ARG foo=bar
 FROM $os
 ARG baz=qux
@@ -751,15 +751,15 @@ EOF
         [[ $output = *'FROM $os'* ]]
         [[ $output = *'os= foo= baz=qux'* ]]
     else
-        [[ $output = *'FROM alpine:3.16'* ]]
-        [[ $output = *'os=alpine:3.16 foo=bar baz=qux'* ]]
+        [[ $output = *'FROM alpine:3.17'* ]]
+        [[ $output = *'os=alpine:3.17 foo=bar baz=qux'* ]]
     fi
     [[ $output = *'alpine=3.16'* ]]
 
     # multi-stage
     run build_ --no-cache -t tmpimg - <<'EOF'
 ARG os1=alpine:3.17
-ARG os2=alpine:3.16
+ARG os2=alpine:3.17
 FROM $os1
 RUN echo "1: os1=$os1 os2=$os2"
 RUN echo alpine1=$(cat /etc/alpine-release | cut -d. -f1-2)
@@ -779,9 +779,9 @@ EOF
         [[ $output = *'2: os1= os2='* ]]
     else
         [[ $output = *'FROM alpine:3.17'* ]]
-        [[ $output = *'FROM alpine:3.16'* ]]
-        [[ $output = *'1: os1=alpine:3.17 os2=alpine:3.16'* ]]
-        [[ $output = *'2: os1=alpine:3.17 os2=alpine:3.16'* ]]
+        [[ $output = *'FROM alpine:3.17'* ]]
+        [[ $output = *'1: os1=alpine:3.17 os2=alpine:3.17'* ]]
+        [[ $output = *'2: os1=alpine:3.17 os2=alpine:3.17'* ]]
     fi
     [[ $output = *'alpine1=3.9'* ]]
     [[ $output = *'alpine2=3.16'* ]]
@@ -802,8 +802,8 @@ EOF
     fi
 
     # set with --build-arg
-    run build_ --no-cache --build-arg=os=alpine:3.16 -t tmpimg - <<'EOF'
-ARG os=alpine:3.16
+    run build_ --no-cache --build-arg=os=alpine:3.17 -t tmpimg - <<'EOF'
+ARG os=alpine:3.17
 FROM $os
 RUN echo "os=$os"
 RUN echo alpine=$(cat /etc/alpine-release | cut -d. -f1-2)
@@ -816,15 +816,15 @@ EOF
         [[ $output = *'FROM $os'* ]]
         [[ $output = *'os='* ]]
     else
-        [[ $output = *'FROM alpine:3.16'* ]]
-        [[ $output = *'os=alpine:3.16'* ]]
+        [[ $output = *'FROM alpine:3.17'* ]]
+        [[ $output = *'os=alpine:3.17'* ]]
     fi
     [[ $output = *'alpine=3.16'* ]]
 
     # both before and after FROM
     run build_ --no-cache -t tmpimg - <<'EOF'
 ARG foo=bar
-FROM alpine:3.16
+FROM alpine:3.17
 ARG foo=baz
 RUN echo "foo=$foo"
 EOF
@@ -1248,9 +1248,9 @@ EOF
     [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
 
     run ch-image build -t tmpimg - <<'EOF'
-FROM /alpine:3.16
+FROM /alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ ${lines[-3]} = 'error: image ref syntax, char 1: /alpine:3.16' ]]
+    [[ ${lines[-3]} = 'error: image ref syntax, char 1: /alpine:3.17' ]]
 }
