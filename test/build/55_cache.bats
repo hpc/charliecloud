@@ -247,6 +247,7 @@ EOF
 EOF
 )
     ch-image --rebuild build -t c -f bucache/c.df .
+    # avoid race condition
     sleep 1
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
