@@ -742,8 +742,7 @@ class Reference:
    def parse(class_, s, variables):
       if (class_.parser is None):
          class_.parser = lark.Lark(GRAMMAR_IMAGE_REF, parser="earley",
-                                   propagate_positions=True,
-                                   tree_class = Tree)
+                                   propagate_positions=True, tree_class=Tree)
       s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       s = ch.variables_sub(s, variables)
@@ -839,8 +838,7 @@ fields:
       if (self.port is not None):
          self.port = int(self.port)
       self.path = [    ch.variables_sub(s, self.variables)
-                   for s in t.child_terminals("ir_path",
-                                              "IR_PATH_COMPONENT")]
+                   for s in t.child_terminals("ir_path", "IR_PATH_COMPONENT")]
       self.name = t.child_terminal("ir_name", "IR_PATH_COMPONENT")
       self.tag = t.child_terminal("ir_tag", "IR_TAG")
       self.digest = t.child_terminal("ir_digest", "HEX_STRING")
@@ -855,18 +853,16 @@ fields:
 
 
 class Tree(lark.tree.Tree):
-   """Parse tree class. Essentially a lark parse tree with some additional
-      methods."""
 
    def child(self, cname):
-      """Locate a descendant subtree named cname using breadth-first search and
-         return it. If no such subtree exists, return None."""
+      """Locate a descendant subtree named cname using breadth-first search
+         and return it. If no such subtree exists, return None."""
       return next(self.children_(cname), None)
 
    def child_terminal(self, cname, tname, i=0):
-      """Locate a descendant subtree named cname using breadth-first search and
-         return its first child terminal named tname. If no such subtree exists,
-         or it doesn't have such a terminal, return None."""
+      """Locate a descendant subtree named cname using breadth-first search
+         and return its first child terminal named tname. If no such subtree
+         exists, or it doesn't have such a terminal, return None."""
       st = self.child(cname)
       if (st is not None):
          return st.terminal(tname, i)
@@ -874,17 +870,17 @@ class Tree(lark.tree.Tree):
          return None
 
    def child_terminals(self, cname, tname):
-      """Locate a descendant substree named cname using breadth-first search and
-         yield the values of its child terminals named tname. If no such subtree
-         exists, or it has no such terminals, yield an empty sequence."""
+      """Locate a descendant substree named cname using breadth-first search
+         and yield the values of its child terminals named tname. If no such
+         subtree exists, or it has no such terminals, yield empty sequence."""
       for d in self.iter_subtrees_topdown():
          if (d.data == cname):
             return d.terminals(tname)
       return []
 
    def child_terminals_cat(self, cname, tname):
-      """Return the concatenated values of all child terminals named tname as a
-         string, with no delimiters. If none, return the empty string."""
+      """Return the concatenated values of all child terminals named tname as
+         a string, with no delimiters. If none, return the empty string."""
       return "".join(self.child_terminals(cname, tname))
 
    def children_(self, cname):
@@ -892,26 +888,26 @@ class Tree(lark.tree.Tree):
       for st in self.iter_subtrees_topdown():
          if (st.data == cname):
             yield st
-         
+
    def iter_subtrees_topdown(self, *args, **kwargs):
       return super().iter_subtrees_topdown(*args, **kwargs)
 
    def terminal(self, tname, i=0):
-      """Return the value of the ith child terminal named tname (zero-based), or
-         None if not found."""
+      """Return the value of the ith child terminal named tname (zero-based),
+         or None if not found."""
       for (j, t) in enumerate(self.terminals(tname)):
          if (j == i):
             return t
       return None
 
    def terminals(self, tname):
-      """Yield values of all child terminals named tname, or empty list if none
-         found."""
+      """Yield values of all child terminals named tname, or empty list if
+         none found."""
       for j in self.children:
          if (isinstance(j, lark.lexer.Token) and j.type == tname):
             yield j.value
 
    def terminals_cat(self, tname):
-      """Return the concatenated values of all child terminals named tname as a
-         string, with no delimiters. If none, return the empty string."""
+      """Return the concatenated values of all child terminals named tname as
+         a string, with no delimiters. If none, return the empty string."""
       return "".join(self.terminals(tname))

@@ -644,8 +644,7 @@ class I_copy(Instruction):
       if (self.tree.child("copy_shell") is not None):
          args = list(self.tree.child_terminals("copy_shell", "WORD"))
       elif (self.tree.child("copy_list") is not None):
-         args = list(self.tree.child_terminals("copy_list",
-                                                "STRING_QUOTED"))
+         args = list(self.tree.child_terminals("copy_list", "STRING_QUOTED"))
          for i in range(len(args)):
             args[i] = args[i][1:-1]  # strip quotes
       else:
@@ -985,8 +984,7 @@ class I_from_(Instruction):
          self.tree.child_terminals_cat("image_ref", "IMAGE_REF"),
          argfrom)
       self.base_image = im.Image(image_ref)
-      self.alias = self.tree.child_terminal("from_alias",
-                                            "IR_PATH_COMPONENT")
+      self.alias = self.tree.child_terminal("from_alias", "IR_PATH_COMPONENT")
       # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
