@@ -264,7 +264,7 @@ The storage directory format changes on no particular schedule.
 :code:`ch-image` is normally able to upgrade directories produced by a given
 Charliecloud version up to one year after that version's release. Upgrades
 outside this window and downgrades are not supported. In these cases,
-:code:`ch-image` will refuse to fun until you delete and re-initialize the
+:code:`ch-image` will refuse to run until you delete and re-initialize the
 storage directory with :code:`ch-image reset`.
 
 .. warning::
