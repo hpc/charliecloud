@@ -1059,21 +1059,21 @@ Examples
 Typical build-to-run sequence for image :code:`foo/bar` using :code:`ch-run`'s
 internal SquashFUSE code, inferring the output format::
 
-  $ ch-image build -t foo/bar -f Dockerfile .
+  $ ch-image build -t hello .
   [...]
-  $ ch-image export foo/bar:latest /var/tmp/foobar.sqfs
-  input:   docker    foo/bar:latest
-  output:  squashfs  /var/tmp/foobar.sqfs
+  $ ch-image export hello /var/tmp/hello.sqfs
+  input:   ch-image  hello
+  output:  squashfs  /var/tmp/hello.sqfs
   copying ...
   done
-  $ ch-run /var/tmp/foobar.sqfs -- echo hello
+  $ ch-run /var/tmp/hello.sqfs -- echo hello
   hello
 
 Same conversion, but no format inference::
 
-  $ ch-image export -o squash foo/bar:latest /var/tmp/foobar.sqfs
-  input:   docker    foo/bar:latest
-  output:  squashfs  /var/tmp/foobar.sqfs
+  $ ch-image export -o squash hello /var/tmp/foobar.sqfs
+  input:   ch-image  hello
+  output:  squashfs  /var/tmp/hello.sqfs
   copying ...
   done
 
