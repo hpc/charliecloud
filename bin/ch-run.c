@@ -78,7 +78,6 @@ struct args {
    struct container c;
    struct env_delta *env_deltas;
    char *initial_dir;
-   char *storage_dir;
    bool storage_arg;
    bool unsafe;
 };
@@ -99,6 +98,7 @@ void privs_verify_invoking();
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
+char *storage_dir = NULL;
 
 
 /** Main **/
@@ -137,7 +137,6 @@ int main(int argc, char *argv[])
                                .writable = false},
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL,
-      .storage_dir = NULL,
       .storage_arg = false,
       .unsafe = false };
 
@@ -156,15 +155,13 @@ int main(int argc, char *argv[])
    username = getenv("USER");
    Te (username != NULL, "$USER not set");
 
-   if (!args.storage_dir) {
-      args.storage_dir = get_storage_dir();
+   if (!storage_dir) {
+      storage_dir = get_storage_dir();
    }
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
-   //char* img_path = get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir);
-   //args.c.type = img_type_get(img_path, args.storage_dir);
-   args.c.type = img_type_get(args.c.img_ref, args.storage_dir, args.storage_arg);
+   args.c.type = img_type_get(args.c.img_ref, storage_dir, args.storage_arg);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
@@ -174,7 +171,7 @@ int main(int argc, char *argv[])
       Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_ref);
       break;
    case IMG_NAME:
-      args.c.newroot = realpath(get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir), NULL);
+      args.c.newroot = realpath(get_img_path(args.c.img_ref, args.unsafe, args.c.writable, storage_dir), NULL);
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
@@ -456,7 +453,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.newroot = arg;
       break;
    case 's':
-      args->storage_dir = arg;
+      storage_dir = arg;
       args->storage_arg = true;
       break;
    case 't':
