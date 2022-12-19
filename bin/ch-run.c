@@ -166,6 +166,8 @@ int main(int argc, char *argv[])
       args.c.newroot = realpath(img_path, NULL);
       Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_ref);
       break;
+   case IMG_NAME:
+      break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
       FATAL("this ch-run does not support internal SquashFS mounts");

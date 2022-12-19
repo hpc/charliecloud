@@ -240,7 +240,7 @@ void enter_udss(struct container *c)
 }
 
 /* Return image type of path, or exit with error if not a valid type. */
-enum img_type img_type_get(const char *path)
+enum img_type img_type_get(const char *path, char *storage)
 {
    struct stat read;
    FILE *fp;
@@ -250,6 +250,11 @@ enum img_type img_type_get(const char *path)
 
    if (S_ISDIR(read.st_mode))
       return IMG_DIRECTORY;
+
+   char *strg_path = NULL;
+   asprintf(&strg_path, "%s/%s", storage, path);
+   if (path_exists(strg_path, NULL, false))
+      return IMG_NAME;
 
    fp = fopen(path, "rb");
    Tf (fp != NULL, "can't open: %s", path);
