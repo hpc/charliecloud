@@ -292,7 +292,7 @@ char *fmt_str(char *str)
 char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
 {
   char *path = NULL;
-  if(!storage) {storage = get_storage_dir();}
+  //if(!storage) {storage = get_storage_dir();}
   if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
   {
    if(unsafe)
@@ -301,10 +301,10 @@ char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
    } else {
       FATAL("Specified path is in storage (hint: try running image by name)");
    }
-  } else if(path_exists(name, NULL, false)) // is 'name' a valid path?
+  } /*else if(path_exists(name, NULL, false)) // is 'name' a valid path?
   {
    return name;
-  } else { // Assume 'name' is image name, try to find it in storage.
+  }*/ else { // Assume 'name' is image name, try to find it in storage.
   T_ (1 <= asprintf(&path, "%s/%s", storage, name));
    if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
    {

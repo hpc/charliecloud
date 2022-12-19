@@ -79,6 +79,7 @@ struct args {
    struct env_delta *env_deltas;
    char *initial_dir;
    char *storage_dir;
+   bool storage_arg;
    bool unsafe;
 };
 
@@ -137,6 +138,7 @@ int main(int argc, char *argv[])
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL,
       .storage_dir = NULL,
+      .storage_arg = false,
       .unsafe = false };
 
    /* I couldn't find a way to set argp help defaults other than this
@@ -154,19 +156,25 @@ int main(int argc, char *argv[])
    username = getenv("USER");
    Te (username != NULL, "$USER not set");
 
+   if (!args.storage_dir) {
+      args.storage_dir = get_storage_dir();
+   }
+
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
-   char* img_path = get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir);
-   args.c.type = img_type_get(img_path, args.storage_dir);
+   //char* img_path = get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir);
+   //args.c.type = img_type_get(img_path, args.storage_dir);
+   args.c.type = img_type_get(args.c.img_ref, args.storage_dir, args.storage_arg);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
       if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-      args.c.newroot = realpath(img_path, NULL);
+      args.c.newroot = realpath(args.c.img_ref, NULL);
       Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_ref);
       break;
    case IMG_NAME:
+      args.c.newroot = realpath(get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir), NULL);
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
@@ -449,6 +457,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 's':
       args->storage_dir = arg;
+      args->storage_arg = true;
       break;
    case 't':
       args->c.private_tmp = true;
