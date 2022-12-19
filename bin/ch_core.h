@@ -51,5 +51,5 @@ struct container {
 /** Function prototypes **/
 
 void containerize(struct container *c);
-enum img_type img_type_get(const char *path);
+enum img_type img_type_get(const char *path, char *storage);
 void run_user_command(char *argv[], const char *initial_dir);

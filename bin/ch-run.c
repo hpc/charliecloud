@@ -157,7 +157,7 @@ int main(int argc, char *argv[])
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
    char* img_path = get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir);
-   args.c.type = img_type_get(img_path);
+   args.c.type = img_type_get(img_path, args.storage_dir);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:

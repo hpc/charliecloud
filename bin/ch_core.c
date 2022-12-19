@@ -252,7 +252,7 @@ enum img_type img_type_get(const char *path, char *storage)
       return IMG_DIRECTORY;
 
    char *strg_path = NULL;
-   asprintf(&strg_path, "%s/%s", storage, path);
+   T_ (1 <= asprintf(&strg_path, "%s/%s", storage, path));
    if (path_exists(strg_path, NULL, false))
       return IMG_NAME;
 
