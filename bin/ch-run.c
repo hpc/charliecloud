@@ -124,7 +124,6 @@ int main(int argc, char *argv[])
                                .container_uid = geteuid(),
                                .env_expand = true,
                                .host_home = NULL,
-                               .img_path = NULL,
                                .img_ref = NULL,
                                .newroot = NULL,
                                .join = false,
@@ -134,8 +133,7 @@ int main(int argc, char *argv[])
                                .private_passwd = false,
                                .private_tmp = false,
                                .type = IMG_NONE,
-                               .writable = false
-                              },
+                               .writable = false},
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL,
       .storage_dir = NULL,
@@ -158,14 +156,14 @@ int main(int argc, char *argv[])
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
-   args.c.img_path = get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir);
-   args.c.type = img_type_get(args.c.img_path);
+   char* img_path = get_img_path(args.c.img_ref, args.unsafe, args.c.writable, args.storage_dir);
+   args.c.type = img_type_get(img_path);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
       if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-      args.c.newroot = realpath(args.c.img_path, NULL);
+      args.c.newroot = realpath(img_path, NULL);
       Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_ref);
       break;
    case IMG_SQUASH:
