@@ -496,11 +496,14 @@ EOF
 )
     run build_ --no-cache -t tmpimg -f - . <<'EOF'
 FROM almalinux_8ch
+
 # FIXME: make this more comprehensive, e.g. space-separate vs.
 # equals-separated for everything.
+
 # Value has internal space.
 LABEL chsl_0a value 0a
 LABEL chsl_0b="value 0b"
+
 # Value has internal space and trailing space. NOTE: Beware your editor
 # "helpfully" removing the trailing space.
 #
@@ -509,21 +512,27 @@ LABEL chsl_0b="value 0b"
 LABEL chsl_1b="value 1b "
 # FIXME: currently a parse error.
 #LABEL chsl_1c=value\ 1c\ 
+
 # Value surrounded by double quotes, which are not part of the value.
 LABEL chsl_2a "value2a"
 LABEL chsl_2b="value2b"
+
 # Substitute previous value, space-separated, without quotes.
 LABEL chsl_2c chsl2: ${chsl_2a}
+
 # Substitute a previous value, equals-separated, with quotes.
 LABEL chsl_2d="chsl2: ${chsl_2a}"
+
 # Backslashed quotes are included in value.
 LABEL chsl_3a \"value3a\"
 # FIXME: backslashes end up literal
 #LABEL chsl_3b=\"value3b\"
+
 # Multiple variables in the same instruction.
 LABEL chsl_4a=value4a chsl_5a=value5a
 LABEL chsl_4b=value4b \
     chsl_5b=value5b
+
 # Value contains line continuation. FIXME: I think something isn't quite right
 # here. The backslash, newline sequence appears in the parse tree but not in
 # the output. That doesn't seem right.
@@ -531,8 +540,10 @@ LABEL chsl_6a value\
 6a
 LABEL chsl_6b "value\
 6b"
+
 # FIXME: currently a parse error.
 #LABEL chsl_4=value4 chsl_5="value5 foo" chsl_6=value6\ foo chsl_7=\"value7\"
+
 # Print output with Python to avoid ambiguity.
 RUN python3 -c 'import os; import json; labels = json.loads(open("/ch/metadata.json", "r").read())["labels"]; \
                 [print((k,v)) for (k,v) in sorted(labels.items()) if "chsl_" in k]'
