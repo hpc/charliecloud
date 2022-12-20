@@ -88,7 +88,7 @@ start: dockerfile
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( arg_first | directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
+?instruction: _WS? ( arg | copy | env | from_ | label | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
@@ -116,6 +116,11 @@ env_equals: WORD "=" ( WORD | STRING_QUOTED )
 from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
+label: "LABEL"i _WS ( label_space | label_equalses ) _NEWLINES
+label_space: WORD _WS _line
+label_equalses: label_equals ( _WS label_equals )*
+label_equals: WORD "=" ( WORD | STRING_QUOTED )
+
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
 run_shell: _line
@@ -128,7 +133,7 @@ uns_forever: UNS_FOREVER _WS _line _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
 uns_yet: UNS_YET _WS _line _NEWLINES
-UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "ONBUILD"i )
 
 /// Common ///
 
