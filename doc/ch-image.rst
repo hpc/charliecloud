@@ -750,6 +750,16 @@ in other :code:`ARG` before the first :code:`FROM`.
 The :code:`FROM` instruction accepts option :code:`--arg=NAME=VALUE`, which
 serves the same purpose as the :code:`ARG` instruction. It can be repeated.
 
+:code:`LABEL`
+~~~~~~~~~~~~
+
+The :code:`LABEL` instruction accepts :code:`key=value` pairs to
+add metadata for an image. Unlike Docker, this metadata cannot be observed by
+using a :code:`inspect` command since Charliecloud users can directly view the
+metadata within their image manifest. Currently, :code:`LABEL` does not allow
+for users to declare label values on multiple lines. See issue `#1512
+<https://github.com/hpc/charliecloud/issues/1512>`_.
+
 :code:`COPY`
 ~~~~~~~~~~~~
 
