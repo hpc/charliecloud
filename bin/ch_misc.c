@@ -278,9 +278,8 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
    return (struct env_var){ name, value };
 }
 
-/* Take input string and return the same string with the character        
-   substitutions ':' -> '+' and '/' -> '%'. */
-char *fmt_str(char *str) 
+/* Return given image reference with filesystem character substitutions. */
+char *fmt_str(const char *str) 
 {
   char *new_str = replace_char(str, ':', '+');
   new_str = replace_char(new_str, '/', '%');
@@ -289,10 +288,12 @@ char *fmt_str(char *str)
 
 /* Convert image name to correct path if applicable while also ensuring that 
    the "name" provided isn't a path in the storage directory. */
-char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
+char *img_path_get(char *name, bool unsafe, bool writable, char *storage)
 {
   char *path = NULL;
-  //if(!storage) {storage = get_storage_dir();}
+  printf("%s", name);
+  T_ (1 <= asprintf(&name, "%s", fmt_str(name)));
+  printf("%s", name);
   if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
   {
    if(unsafe)
@@ -301,10 +302,7 @@ char *get_img_path(char *name, bool unsafe, bool writable, char *storage)
    } else {
       FATAL("Specified path is in storage (hint: try running image by name)");
    }
-  } /*else if(path_exists(name, NULL, false)) // is 'name' a valid path?
-  {
-   return name;
-  }*/ else { // Assume 'name' is image name, try to find it in storage.
+  } else { // Assume 'name' is image name, try to find it in storage.
   T_ (1 <= asprintf(&path, "%s/%s", storage, name));
    if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
    {

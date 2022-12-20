@@ -171,7 +171,7 @@ int main(int argc, char *argv[])
       Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_ref);
       break;
    case IMG_NAME:
-      args.c.newroot = realpath(get_img_path(args.c.img_ref, args.unsafe, args.c.writable, storage_dir), NULL);
+      args.c.newroot = realpath(img_path_get(args.c.img_ref, args.unsafe, args.c.writable, storage_dir), NULL);
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
