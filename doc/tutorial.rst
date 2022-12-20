@@ -858,8 +858,8 @@ kernel thing, not a shared library file, so we don’t copy that.
 
 Set up the container::
 
-  $ mkdir $CHUTORIAL/alluneed
-  $ cd $CHUTORIAL/alluneed
+  $ mkdir alluneed
+  $ cd alluneed
   $ mkdir bin
   $ mkdir dev
   $ mkdir lib
@@ -873,7 +873,7 @@ Set up the container::
   $ cp -pL /lib/x86_64-linux-gnu/libdl.so.2 ./lib/x86_64-linux-gnu
   $ cp -pL /lib/x86_64-linux-gnu/libc.so.6 ./lib/x86_64-linux-gnu
   $ cp -pL /lib64/ld-linux-x86-64.so.2 ./lib64/ld-linux-x86-64.so.2
-  $ cd $CHUTORIAL
+  $ cd ..
   $ ls -lR alluneed
   ./alluneed:
   total 0
@@ -1370,5 +1370,5 @@ Success! (to four significant digits)
 ..  LocalWords:  openmpi rwxr rwxrwx cn cpus sparkconf MasterWebUI MasterUI
 ..  LocalWords:  StandaloneRestServer MYSECRET TransportClientFactory sc tf
 ..  LocalWords:  containery lockdev subsys cryptsetup utmp xf bca Recv df af
-..  LocalWords:  minirootfs alpinelinux cdrom ffdafff cb CHUTORIAL alluneed
+..  LocalWords:  minirootfs alpinelinux cdrom ffdafff cb alluneed
 ..  LocalWords:  pL ib
