@@ -306,6 +306,24 @@ class Instruction(abc.ABC):
          return self.image.metadata["env"]
 
    @property
+   def label_arg(self):
+      if (self.image is None):
+         assert False, "unimplemented" # return dict()
+      else:
+         return self.image.metadata["arg"]
+
+   @property
+   def label_build(self):
+      return { **self.label_arg, **self.label_label }
+
+   @property
+   def label_label(self):
+      if (self.image is None):
+         assert False, "unimplemented" # return dict()
+      else:
+         return self.image.metadata["labels"]
+
+   @property
    def miss(self):
       return (self.git_hash is None)
 
@@ -429,8 +447,9 @@ class Instruction(abc.ABC):
          be valid, then call super().prepare().
 
          WARNING: Instructions that modify image metadata (at this writing,
-         ARG ENV FROM SHELL WORKDIR) must do so here, not in execute(), so
-         that metadata is available to late instructions even on cache hit."""
+         ARG ENV FROM LABEL SHELL WORKDIR) must do so here, not in execute(),
+         so that metadata is available to late instructions even on cache hit.
+         """
       self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       ch.INFO(self.str_log)
@@ -948,6 +967,53 @@ class I_env_space(Env):
       self.value = self.tree.terminals_cat("LINE_CHUNK")
 
 
+class Label(Instruction):
+
+   __slots__ = ("key",
+                "value")
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.commit_files |= {ch.Path("ch/metadata.json")}
+
+   @property
+   def str_(self):
+      return "%s='%s'" % (self.key, self.value)
+
+   def execute(self):
+      with (self.image.unpack_path // "/ch/metadata.json").open_("wt") \
+           as fp:
+         for (k, v) in self.label_label.items():
+            print("%s=%s" % (k, v), file=fp)
+
+   def prepare(self, *args):
+      self.value = ch.variables_sub(unescape(self.value), self.label_build)
+      self.label_label[self.key] = self.value
+      return super().prepare(*args)
+
+
+class I_label_equals(Label):
+
+   __slots__ = ()
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = ch.tree_terminal(self.tree, "WORD", 0)
+      self.value = ch.tree_terminal(self.tree, "WORD", 1)
+      if (self.value is None):
+         self.value = ch.tree_terminal(self.tree, "STRING_QUOTED")
+
+
+class I_label_space(Label):
+
+   __slots__ = ()
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = ch.tree_terminal(self.tree, "WORD")
+      self.value = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
+
+
 class I_from_(Instruction):
 
    __slots__ = ("alias",
@@ -1175,7 +1241,6 @@ class I_uns_yet(Instruction_Unsupported):
       self.issue_no = { "ADD":         782,
                         "CMD":         780,
                         "ENTRYPOINT":  780,
-                        "LABEL":       781,
                         "ONBUILD":     788 }[self.name]
 
    @property
