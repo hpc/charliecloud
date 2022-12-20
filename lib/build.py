@@ -998,10 +998,10 @@ class I_label_equals(Label):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = ch.tree_terminal(self.tree, "WORD", 0)
-      self.value = ch.tree_terminal(self.tree, "WORD", 1)
+      self.key = self.tree.terminal("WORD", 0)
+      self.value = self.tree.terminal("WORD", 1)
       if (self.value is None):
-         self.value = ch.tree_terminal(self.tree, "STRING_QUOTED")
+         self.value = self.tree.terminal("STRING_QUOTED")
 
 
 class I_label_space(Label):
@@ -1010,8 +1010,8 @@ class I_label_space(Label):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = ch.tree_terminal(self.tree, "WORD")
-      self.value = ch.tree_terminals_cat(self.tree, "LINE_CHUNK")
+      self.key = self.tree.terminal("WORD")
+      self.value = self.tree.terminals_cat("LINE_CHUNK")
 
 
 class I_from_(Instruction):
