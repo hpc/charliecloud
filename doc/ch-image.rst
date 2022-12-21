@@ -993,6 +993,7 @@ producing the final format actually needed.
    3. I also deliberately left out an option to change the output compression
       algorithm, under the assumption that the default is good enough. This
       can be revisited later IMO if needed.
+
 Image formats
 -------------
 
