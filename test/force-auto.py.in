@@ -314,7 +314,7 @@ class Alpine(Test):
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "apk add ed",
                              Run.NEEDED:      "apk add dbus" } }
 class T_Alpine_39(Alpine):
-   base = "alpine:3.17"
+   base = "alpine:3.9"
 class T_Alpine_Latest(Alpine):
    base = "alpine:latest"
 
