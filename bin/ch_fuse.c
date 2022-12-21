@@ -131,7 +131,7 @@ void sq_fork(struct container *c)
    // Mount SquashFS. Use PR_SET_NO_NEW_PRIVS to actively reject running
    // fusermount3(1) setuid, even if it’s installed that way.
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
-   sq_mount(c->img_path, c->newroot);
+   sq_mount(c->img_ref, c->newroot);
 
    // Now that the filesystem is mounted, we can fork without race condition.
    // The child returns to caller and runs the user command. When that exits,
