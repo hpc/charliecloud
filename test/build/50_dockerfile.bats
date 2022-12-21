@@ -482,7 +482,7 @@ EOF
 
    # test that SHELL command can change executables and parameters
    run build_ -t tmpimg --no-cache -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 RUN echo default: $0
 SHELL ["/bin/ash", "-c"]
 RUN echo ash: $0
@@ -511,7 +511,7 @@ EOF
 
    # test that it fails if no paramaters
    run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 SHELL ["/bin/sh"]
 RUN true
 EOF
