@@ -308,7 +308,7 @@ char *img_path_get(char *name, bool unsafe, bool writable, char *storage)
       } else { // Storage dir doesn't exist
          FATAL("storage directory not found: %s", storage);
       }   
-   } else if(writable) {
+   } else if(writable && !unsafe) {
       FATAL("'-w' not allowed when running out of storage");
    } else {
       return path;
