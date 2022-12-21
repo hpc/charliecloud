@@ -361,7 +361,7 @@ class HTTP:
             else:
                # Overall limits yield HTTP 429 so warning seems legitimate?
                ch.WARNING("can’t parse Docker-RateLimit-Source: %s" % h)
-      if (any(i != "???" for i in (used_ct, period, left_ct,reason))):
+      if (any(i != "???" for i in (used_ct, period, left_ct))):
          ch.INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
                  % (used_ct, period, left_ct, reason))
 
