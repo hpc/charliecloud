@@ -996,9 +996,6 @@ producing the final format actually needed.
 Image formats
 -------------
 
-Image formats
-=============
-
 :code:`export` knows about these values of :code:`FMT`:
 
   :code:`ch-image`
