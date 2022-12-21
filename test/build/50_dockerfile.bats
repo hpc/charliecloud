@@ -758,7 +758,7 @@ EOF
 
     # multi-stage
     run build_ --no-cache -t tmpimg - <<'EOF'
-ARG os1=alpine:3.17
+ARG os1=alpine:3.16
 ARG os2=alpine:3.17
 FROM $os1
 RUN echo "1: os1=$os1 os2=$os2"
@@ -778,10 +778,10 @@ EOF
         [[ $output = *'1: os1= os2='* ]]
         [[ $output = *'2: os1= os2='* ]]
     else
+        [[ $output = *'FROM alpine:3.16'* ]]
         [[ $output = *'FROM alpine:3.17'* ]]
-        [[ $output = *'FROM alpine:3.17'* ]]
-        [[ $output = *'1: os1=alpine:3.17 os2=alpine:3.17'* ]]
-        [[ $output = *'2: os1=alpine:3.17 os2=alpine:3.17'* ]]
+        [[ $output = *'1: os1=alpine:3.16 os2=alpine:3.17'* ]]
+        [[ $output = *'2: os1=alpine:3.16 os2=alpine:3.17'* ]]
     fi
     [[ $output = *'alpine1=3.16'* ]]
     [[ $output = *'alpine2=3.17'* ]]
