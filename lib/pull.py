@@ -90,6 +90,7 @@ class Image_Puller:
       "Download image metadata and layers and put them in the download cache."
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       ch.VERBOSE("downloading image: %s" % self.image)
+      ch.INFO("DOWNLOAD")
       try:
          # fat manifest
          if (ch.arch != "yolo"):
@@ -100,6 +101,7 @@ class Image_Puller:
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
             except ch.No_Fatman_Error:
+               ch.INFO("NO FATMAN 2")
                if (ch.arch == "amd64"):
                   # We're guessing that enough arch-unaware images are amd64 to
                   # barge ahead if requested architecture is amd64.
@@ -148,6 +150,7 @@ class Image_Puller:
       return (code, msg)
 
    def fatman_load(self):
+      ch.INFO("FATMAN LOAD")
       """Download the fat manifest and load it. If the image has a fat manifest
          populate self.architectures; this may be an empty dictionary if no
          valid architectures were found.
@@ -176,6 +179,7 @@ class Image_Puller:
          # FIXME (issue #1101): If it's a v2 manifest we could use it instead
          # of re-requesting later. Maybe we could here move/copy it over to
          # the skinny manifest path.
+         ch.INFO("NO FATMAN 1")
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
@@ -213,6 +217,7 @@ class Image_Puller:
       """Download the manifest file, parse it, and set self.config_hash and
          self.layer_hashes. If the image does not exist,
          exit with error."""
+      ch.INFO("MANIFEST LOAD")
       def bad_key(key):
          ch.FATAL("manifest: %s: no key: %s" % (self.manifest_path, key))
       self.config_hash = None
