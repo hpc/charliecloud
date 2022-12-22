@@ -289,7 +289,7 @@ EOF
     # may be worth our while to upload some small test images to these places.
 
     # Docker Hub: https://hub.docker.com/_/alpine
-    ch-image pull registry-1.docker.io/library/alpine:latest
+    ch-image pull registry-1.docker.io/library/alpine:3.17
 
     # quay.io: https://quay.io/repository/quay/busybox
     ch-image pull quay.io/quay/busybox:latest
@@ -496,7 +496,7 @@ EOF
 @test 'pull by arch' {
     # Has fat manifest; requested arch exists. There's not much simple to look
     # for in the output, so just see if it works. NOTE: As a temporary fix for
-    # some test suite problems, I'm changing all instances of alpine:latest here
+    # some test suite problems, I'm changing all instances of alpine:3.17 here
     # to alpine:3.14. We really need a more permanent solution for this (see #1485)
     ch-image --arch=yolo pull alpine:3.14
     ch-image --arch=host pull alpine:3.14
