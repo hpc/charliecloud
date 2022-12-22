@@ -278,27 +278,29 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
    return (struct env_var){ name, value };
 }
 
-/* Return given image reference with filesystem character substitutions. */
+/* Take image reference and return a string of the reference with 
+   filesystem character substitutions. */
 char *img_name_to_dir(const char *str) 
 {
-  char *new_str = replace_char(str, ':', '+');
-  new_str = replace_char(new_str, '/', '%');
-  return new_str;
+   char *new_str = replace_char(str, ':', '+');
+   new_str = replace_char(new_str, '/', '%');
+   return new_str;
 }
 
 /* Convert image ref ('name') to storage directory path, if it exists. */
 char *img_path_get(char *name, bool unsafe, bool writable, char *storage)
 {
    char *path = NULL;
+   // Construct path to image ref.
    T_ (1 <= asprintf(&path, "%s/%s", storage, img_name_to_dir(name)));
-   if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
-   {
-      if(path_exists(storage, NULL, false)){
+   // Make sure the path we constructed is there.
+   if (!path_exists(path, NULL, false)) {
+      if (path_exists(storage, NULL, false)) {
          FATAL("%s not found in storage", name);
-      } else { // Storage dir doesn't exist
+      } else {
          FATAL("storage directory not found: %s", storage);
       }   
-   } else if(writable && !unsafe) {
+   } else if (writable && !unsafe) {
       FATAL("'-w' not allowed when running out of storage");
    } else {
       return path;
@@ -647,8 +649,7 @@ void split(char **a, char **b, const char *str, char del)
 char *storage_dir_get(void)
 {
    char *storage = getenv("CH_IMAGE_STORAGE");
-   if(!storage) // $CH_IMAGE_STORAGE not set
-   {
+   if(!storage) { // $CH_IMAGE_STORAGE not set, use default
       T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch/img", username));
    } else {
       T_ (1 <= asprintf(&storage, "%s/img", storage));
