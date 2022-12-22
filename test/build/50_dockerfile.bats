@@ -15,31 +15,31 @@ setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only' # FIXME: other builders?
 
     # No newline at end of file.
-      printf 'FROM alpine:latest\nRUN echo hello' \
+      printf 'FROM alpine:3.17\nRUN echo hello' \
     | ch-image build -t tmpimg -f - .
 
     # Newline before FROM.
     ch-image build -t tmpimg -f - . <<'EOF'
 
-FROM alpine:latest
+FROM alpine:3.17
 RUN echo hello
 EOF
 
     # Comment before FROM.
     ch-image build -t tmpimg -f - . <<'EOF'
 # foo
-FROM alpine:latest
+FROM alpine:3.17
 RUN echo hello
 EOF
 
     # Single instruction.
     ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 EOF
 
     # Whitespace around comment hash.
     run ch-image -v build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 #no whitespace
  #before only
 # after only
@@ -54,7 +54,7 @@ EOF
 
     # Whitespace and newlines (turn on whitespace highlighting in your editor):
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 
 # trailing whitespace: shell sees it verbatim
 RUN true 
@@ -126,7 +126,7 @@ EOF
     [[ $status -eq 0 ]]
     output_expected=$(cat <<'EOF'
 warning: not yet supported, ignored: issue #777: .dockerignore file
-  1. FROM alpine:latest
+  1. FROM alpine:3.17
 copying image ...
 available --force: alpine: Alpine, any version
   4. RUN true 
@@ -173,7 +173,7 @@ EOF
 
     # Bad instruction. Also, -v should give interal blabber about the grammar.
     run ch-image -v build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 WEIRDAL
 EOF
     echo "$output"
@@ -185,7 +185,7 @@ EOF
 
     # Bad long option.
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --chown= foo bar
 EOF
     echo "$output"
@@ -226,7 +226,7 @@ EOF
     # Non-ARG instruction before FROM
     run ch-image build -t tmpimg -f - . <<'EOF'
 RUN echo uh oh
-FROM alpine:latest
+FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -240,7 +240,7 @@ EOF
 
     # Repeated instruction option.
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --chown=foo --chown=bar fixtures/empty-file .
 EOF
     echo "$output"
@@ -249,7 +249,7 @@ EOF
 
     # COPY invalid option.
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --foo=foo fixtures/empty-file .
 EOF
     echo "$output"
@@ -258,7 +258,7 @@ EOF
 
     # FROM invalid option.
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM --foo=bar alpine:latest
+FROM --foo=bar alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -274,7 +274,7 @@ EOF
 
     # FROM --platform
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM --platform=foo alpine:latest
+FROM --platform=foo alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -282,7 +282,7 @@ EOF
 
     # other instructions
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 ADD foo
 CMD foo
 ENTRYPOINT foo
@@ -300,7 +300,7 @@ EOF
 
     # .dockerignore files
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
@@ -309,14 +309,14 @@ EOF
     # URL (Git repo) contexts
     run ch-image build -t not-yet-supported -f - \
         git@github.com:hpc/charliecloud.git <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'error: not yet supported: issue #773: URL context'* ]]
     run ch-image build -t tmpimg -f - \
         https://github.com/hpc/charliecloud.git <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
@@ -324,7 +324,7 @@ EOF
 
     # variable expansion modifiers
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 ARG foo=README
 COPY fixtures/${foo:+bar} .
 EOF
@@ -333,7 +333,7 @@ EOF
     # shellcheck disable=SC2016
     [[ $output = *'error: modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)'* ]]
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 ARG foo=README
 COPY fixtures/${foo:-bar} .
 EOF
@@ -359,7 +359,7 @@ EOF
  #syntax=foo
 # foo=bar
 # comment
-FROM alpine:latest
+FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
@@ -368,7 +368,7 @@ EOF
 
     # COPY --from
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --chown=foo fixtures/empty-file .
 EOF
     echo "$output"
@@ -377,7 +377,7 @@ EOF
 
     # Unsupported instructions
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 EXPOSE foo
 HEALTHCHECK foo
 MAINTAINER foo
@@ -497,7 +497,7 @@ EOF
 
    # test that it fails if shell doesn't exist
    run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 SHELL ["/doesnotexist", "-c"]
 RUN print("hello")
 EOF
@@ -840,33 +840,33 @@ EOF
 
     # --arg present but not used in image name
     run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
-FROM --arg=foo=bar alpine:latest
+FROM --arg=foo=bar alpine:3.17
 RUN echo "1: foo=$foo"
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'FROM --arg=foo=bar alpine:latest'* ]]
+    [[ $output = *'FROM --arg=foo=bar alpine:3.17'* ]]
     [[ $output = *'1: foo=bar'* ]]
 
     # --arg used in image name
     run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
-FROM --arg=os=alpine:latest $os
+FROM --arg=os=alpine:3.17 $os
 RUN echo "1: os=$os"
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'FROM --arg=os=alpine:latest alpine:latest'* ]]
-    [[ $output = *'1: os=alpine:latest'* ]]
+    [[ $output = *'FROM --arg=os=alpine:3.17 alpine:3.17'* ]]
+    [[ $output = *'1: os=alpine:3.17'* ]]
 
     # multiple --arg
     run ch-image build --no-cache -t tmpimg -f - . <<'EOF'
-FROM --arg=foo=bar --arg=os=alpine:latest $os
+FROM --arg=foo=bar --arg=os=alpine:3.17 $os
 RUN echo "1: foo=$foo os=$os"
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'FROM --arg=foo=bar --arg=os=alpine:latest alpine:latest'* ]]
-    [[ $output = *'1: foo=bar os=alpine:latest'* ]]
+    [[ $output = *'FROM --arg=foo=bar --arg=os=alpine:3.17 alpine:3.17'* ]]
+    [[ $output = *'1: foo=bar os=alpine:3.17'* ]]
 }
 
 
@@ -876,7 +876,7 @@ EOF
 
     # single source
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY ["fixtures/empty-file", "."]
 EOF
     echo "$output"
@@ -886,7 +886,7 @@ EOF
 
     # multiple source
     run ch-image build -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY ["fixtures/empty-file", "fixtures/README", "."]
 EOF
     echo "$output"
@@ -901,7 +901,7 @@ EOF
 
     # file to one directory that doesn’t exist
     build_ --no-cache -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 RUN ! test -e /foo
 COPY fixtures/empty-file /foo/file_
 RUN test -f /foo/file_
@@ -909,7 +909,7 @@ EOF
 
     # file to multiple directories that don’t exist
     build_ --no-cache -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 RUN ! test -e /foo
 COPY fixtures/empty-file /foo/bar/file_
 RUN test -f /foo/bar/file_
@@ -917,7 +917,7 @@ EOF
 
     # directory to one directory that doesn’t exist
     build_ --no-cache -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 RUN ! test -e /foo
 COPY fixtures /foo/dir_
 RUN test -d /foo/dir_ && test -f /foo/dir_/empty-file
@@ -925,7 +925,7 @@ EOF
 
     # directory: multiple parents DNE
     build_ --no-cache -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 RUN ! test -e /foo
 COPY fixtures /foo/bar/dir_
 RUN test -d /foo/bar/dir_ && test -f /foo/bar/dir_/empty-file
@@ -938,7 +938,7 @@ EOF
 
     # Dockerfile on stdin, so no context directory.
     run build_ -t tmpimg - <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY doesnotexist .
 EOF
     echo "$output"
@@ -955,7 +955,7 @@ EOF
     #
     # Case 1: leading "..".
     run build_ -t tmpimg -f - sotest <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY ../common.bash .
 EOF
     echo "$output"
@@ -963,7 +963,7 @@ EOF
     [[ $output = *'outside'*'context'* ]]
     # Case 2: ".." inside path.
     run build_ -t tmpimg -f - sotest <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY lib/../../common.bash .
 EOF
     echo "$output"
@@ -971,7 +971,7 @@ EOF
     [[ $output = *'outside'*'context'* ]]
     # Case 3: symlink leading outside context directory.
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY fixtures/symlink-to-tmp .
 EOF
     echo "$output"
@@ -984,14 +984,14 @@ EOF
 
     # Multiple sources and non-directory destination.
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY Build.missing common.bash /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
     run build_ -t foo -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY Build.missing common.bash /etc/fstab
 EOF
     echo "$output"
@@ -1002,14 +1002,14 @@ EOF
         [[ $output = *'not a directory'* ]]
     fi
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY run /etc/fstab/
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY run /etc/fstab
 EOF
     echo "$output"
@@ -1018,7 +1018,7 @@ EOF
 
     # No sources given.
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY .
 EOF
     echo "$output"
@@ -1029,7 +1029,7 @@ EOF
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY ["."]
 EOF
     echo "$output"
@@ -1042,7 +1042,7 @@ EOF
 
     # No sources found.
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY doesnotexist .
 EOF
     echo "$output"
@@ -1051,7 +1051,7 @@ EOF
 
     # Some sources found.
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY fixtures/README doesnotexist .
 EOF
     echo "$output"
@@ -1060,7 +1060,7 @@ EOF
 
     # No context with Dockerfile on stdin by context "-"
     run build_ -t tmpimg - <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY fixtures/README .
 EOF
     echo "$output"
@@ -1083,7 +1083,7 @@ EOF
 
     # current index
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --from=0 /etc/fstab /
 EOF
     echo "$output"
@@ -1092,7 +1092,7 @@ EOF
 
     # current name
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest AS uhigtsbjmfps
+FROM alpine:3.17 AS uhigtsbjmfps
 COPY --from=uhigtsbjmfps /etc/fstab /
 EOF
     echo "$output"
@@ -1111,7 +1111,7 @@ EOF
 
     # index does not exist
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --from=1 /etc/fstab /
 EOF
     echo "$output"
@@ -1130,7 +1130,7 @@ EOF
 
     # name does not exist
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --from=uhigtsbjmfps /etc/fstab /
 EOF
     echo "$output"
@@ -1149,9 +1149,9 @@ EOF
 
     # index exists, but is later
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --from=1 /etc/fstab /
-FROM alpine:latest
+FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
@@ -1169,9 +1169,9 @@ EOF
 
     # name is later
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --from=uhigtsbjmfps /etc/fstab /
-FROM alpine:latest AS uhigtsbjmfps
+FROM alpine:3.17 AS uhigtsbjmfps
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
@@ -1190,9 +1190,9 @@ EOF
 
     # negative index
     run build_ -t tmpimg -f - . <<'EOF'
-FROM alpine:latest
+FROM alpine:3.17
 COPY --from=-1 /etc/fstab /
-FROM alpine:latest
+FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
