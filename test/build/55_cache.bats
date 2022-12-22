@@ -971,7 +971,7 @@ EOF
 
     printf '\n*** Case 4: In build cache, not UTD, UTD commit absent\n\n'
     sleep 1
-    printf 'FROM alpine:3.17\n' | ch-image build -t alpine:3.10 -
+    printf 'FROM alpine:3.17\n' | ch-image build -t alpine:3.16 -
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
 *  (foo, alpine+3.17, alpine+3.10) PULL alpine:3.17
@@ -982,14 +982,14 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-    run ch-image pull alpine:3.10
+    run ch-image pull alpine:3.16
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pulling image:    alpine:3.10'* ]]
+    [[ $output = *'pulling image:    alpine:3.16'* ]]
     [[ $output  = *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.10) PULL alpine:3.10
+*  (alpine+3.10) PULL alpine:3.16
 | *  RUN echo foo
 | *  (foo, alpine+3.17) PULL alpine:3.17
 |/
@@ -1006,7 +1006,7 @@ EOF
     # Multi-stage build with no instructions in the first stage.
     df_no=$(cat <<'EOF'
 FROM alpine:3.17
-FROM alpine:3.10
+FROM alpine:3.16
 COPY --from=0 /etc/os-release /
 EOF
            )
@@ -1014,7 +1014,7 @@ EOF
     df_yes=$(cat <<'EOF'
 FROM alpine:3.17
 RUN echo foo
-FROM alpine:3.10
+FROM alpine:3.16
 COPY --from=0 /etc/os-release /
 EOF
             )
@@ -1084,7 +1084,7 @@ EOF
     # Multi-stage build with no instructions in the first stage.
     df_no=$(cat <<'EOF'
 FROM alpine:3.17
-FROM alpine:3.10
+FROM alpine:3.16
 COPY --from=0 /etc/os-release /
 EOF
            )
@@ -1092,7 +1092,7 @@ EOF
     df_yes=$(cat <<'EOF'
 FROM alpine:3.17
 RUN echo foo
-FROM alpine:3.10
+FROM alpine:3.16
 COPY --from=0 /etc/os-release /
 EOF
             )

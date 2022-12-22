@@ -631,7 +631,7 @@ EOF
 @test 'ch-image build: multistage with colon' {
 cat <<'EOF' | ch-image --no-cache build -t tmpimg:tagged -f - .
 FROM alpine:3.17
-FROM alpine:3.10
+FROM alpine:3.16
 COPY --from=0 /etc/os-release /
 EOF
     ch-image delete tmpimg:tagged
