@@ -363,7 +363,7 @@ class HTTP:
                ch.WARNING("can’t parse Docker-RateLimit-Source: %s" % h)
       if (any(i != "???" for i in (used_ct, period, left_ct))):
          ch.INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
-                 % (used_ct, period, left_ct, reason))
+                 % (left_ct, used_ct, period, reason))
 
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
