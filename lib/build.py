@@ -1013,7 +1013,7 @@ class I_from_(Instruction):
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
       self.base_text = self.tree.child_terminals_cat("image_ref", "IMAGE_REF")
-      self.alias = self.tree_child_terminal("from_alias", "IR_PATH_COMPONENT")
+      self.alias = self.tree.child_terminal("from_alias", "IR_PATH_COMPONENT")
       self.base_image = im.Image(im.Reference(self.base_text, argfrom))
       # Validate instruction.
       if (self.options.pop("platform", False)):
