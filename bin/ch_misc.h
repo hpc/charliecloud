@@ -115,6 +115,7 @@ void env_unset(const char *glob);
 struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 char *fmt_str(const char *str);
 char *img_path_get(char *name, bool unsafe, bool writable, char *storage);
+void img_path_safe(char *path, bool unsafe, char *storage);
 char *get_storage_dir(void);
 void list_append(void **ar, void *new, size_t size);
 void *list_new(size_t size, size_t ct);

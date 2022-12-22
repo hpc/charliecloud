@@ -316,6 +316,12 @@ char *img_path_get(char *name, bool unsafe, bool writable, char *storage)
   }
 }
 
+void img_path_safe(char *path, bool unsafe, char *storage) {
+   if((path_subdir_p(storage, path)) && !unsafe) {
+      FATAL("Specified path is in storage (hint: try running image by name)");
+   }
+}
+
 /* Return the path to the storage directory, depending on whether
    $CH_IMAGE_STORAGE is set. */
 char *get_storage_dir(void)
