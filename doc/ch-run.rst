@@ -94,7 +94,8 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
     created and the image’s files are exposed.
 
   :code:`-s`, :code:`--storage DIR`
-    Set the storage directory (see section 6.5 for important details).
+    Set the storage directory. Equivalent to the corresponding option for
+    :code:`ch-image`.
 
   :code:`-t`, :code:`--private-tmp`
     By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
@@ -120,6 +121,10 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
+
+  :code:`--unsafe`
+    Enable various unsafe behavior in the storage directory. For internal 
+    use only.
 
   :code:`--unset-env=GLOB`
     Unset environment variables whose names match :code:`GLOB`.
