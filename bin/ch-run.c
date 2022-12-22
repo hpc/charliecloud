@@ -67,7 +67,7 @@ const struct argp_option options[] = {
    { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
    { "write",         'w', 0,      0, "mount image read-write"},
-   { "unsafe",          -13, 0,      OPTION_HIDDEN, ""},
+   { "unsafe",        -13, 0,      OPTION_HIDDEN, ""},
    { 0 }
 };
 
@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
    Te (username != NULL, "$USER not set");
 
    if (!storage_dir) {
-      storage_dir = get_storage_dir();
+      storage_dir = storage_dir_get();
    }
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
@@ -200,6 +200,7 @@ int main(int argc, char *argv[])
 
    VERBOSE("verbosity: %d", verbose);
    VERBOSE("image: %s", args.c.img_ref);
+   VERBOSE("storage: %s", storage_dir);
    VERBOSE("newroot: %s", args.c.newroot);
    VERBOSE("container uid: %u", args.c.container_uid);
    VERBOSE("container gid: %u", args.c.container_gid);

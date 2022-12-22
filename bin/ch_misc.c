@@ -279,28 +279,18 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
 }
 
 /* Return given image reference with filesystem character substitutions. */
-char *fmt_str(const char *str) 
+char *img_name_to_dir(const char *str) 
 {
   char *new_str = replace_char(str, ':', '+');
   new_str = replace_char(new_str, '/', '%');
   return new_str;
 }
 
-/* Convert image name to correct path if applicable while also ensuring that 
-   the "name" provided isn't a path in the storage directory. */
+/* Convert image ref ('name') to storage directory path, if it exists. */
 char *img_path_get(char *name, bool unsafe, bool writable, char *storage)
 {
-  char *path = NULL;
-  if(path_subdir_p(storage, name)) // specified "name" is subdir of storage (bad)
-  {
-   if(unsafe)
-   {
-      return name;
-   } else {
-      FATAL("Specified path is in storage (hint: try running image by name)");
-   }
-  } else { // Assume 'name' is image name, try to find it in storage.
-  T_ (1 <= asprintf(&path, "%s/%s", storage, fmt_str(name)));
+   char *path = NULL;
+   T_ (1 <= asprintf(&path, "%s/%s", storage, img_name_to_dir(name)));
    if(!path_exists(path, NULL, false)) // make sure the path we constructed is there
    {
       if(path_exists(storage, NULL, false)){
@@ -313,27 +303,12 @@ char *img_path_get(char *name, bool unsafe, bool writable, char *storage)
    } else {
       return path;
    }
-  }
 }
 
 void img_path_safe(char *path, bool unsafe, char *storage) {
    if((path_subdir_p(storage, path)) && !unsafe) {
       FATAL("Specified path is in storage (hint: try running image by name)");
    }
-}
-
-/* Return the path to the storage directory, depending on whether
-   $CH_IMAGE_STORAGE is set. */
-char *get_storage_dir(void)
-{
-   char *storage = getenv("CH_IMAGE_STORAGE");
-   if(!storage) // $CH_IMAGE_STORAGE not set
-   {
-      T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch/img", username));
-   } else {
-      T_ (1 <= asprintf(&storage, "%s/img", storage));
-   }
-   return storage;
 }
 
 /* Copy the buffer of size size pointed to by new into the last position in
@@ -637,7 +612,7 @@ char *realpath_safe(const char *path)
    return pathc;
 }
 
-/* Replace all instances of character 'old' in array 'str' with 'new'. */
+/* Construct a new string, replacing all instances of character 'old' with 'new'. */
 char *replace_char(const char *str, char old, char new) {
   char *new_str = strdup(str);
   for(int i = 0; new_str[i] != '\0'; i++) {
@@ -665,6 +640,20 @@ void split(char **a, char **b, const char *str, char del)
    *a = strsep(b, delstr);
    if (*b == NULL)
       *a = NULL;
+}
+
+/* Return the path to the storage directory, depending on whether
+   $CH_IMAGE_STORAGE is set. */
+char *storage_dir_get(void)
+{
+   char *storage = getenv("CH_IMAGE_STORAGE");
+   if(!storage) // $CH_IMAGE_STORAGE not set
+   {
+      T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch/img", username));
+   } else {
+      T_ (1 <= asprintf(&storage, "%s/img", storage));
+   }
+   return storage;
 }
 
 /* Report the version number. */
