@@ -129,7 +129,7 @@ def main(cli_):
 
    # Parse it.
    parser = lark.Lark(im.GRAMMAR_DOCKERFILE, parser="earley",
-                      propagate_positions=True)
+                      propagate_positions=True, tree_class=im.Tree)
    # Avoid Lark issue #237: lark.exceptions.UnexpectedEOF if the file does not
    # end in newline.
    text += "\n"
@@ -147,7 +147,7 @@ def main(cli_):
 
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
-   image_ct = sum(1 for i in im.tree_children(tree, "from_"))
+   image_ct = sum(1 for i in tree.children_("from_"))
 
    # Traverse the tree and do what it says.
    #
@@ -272,19 +272,19 @@ class Instruction(abc.ABC):
       self.lineno = tree.meta.line
       self.options = dict()
       # saving options with only 1 saved value
-      for st in im.tree_children(tree, "option"):
-         k = im.tree_terminal(st, "OPTION_KEY")
-         v = im.tree_terminal(st, "OPTION_VALUE")
+      for st in tree.children_("option"):
+         k = st.terminal("OPTION_KEY")
+         v = st.terminal("OPTION_VALUE")
          if (k in self.options):
             ch.FATAL("%3d %s: repeated option --%s"
                      % (self.lineno, self.str_name, k))
          self.options[k] = v
 
       # saving keypair options in a dictionary
-      for st in im.tree_children(tree, "option_keypair"):
-         k = im.tree_terminal(st, "OPTION_KEY")
-         s = im.tree_terminal(st, "OPTION_VAR")
-         v = im.tree_terminal(st, "OPTION_VALUE")
+      for st in tree.children_("option_keypair"):
+         k = st.terminal("OPTION_KEY")
+         s = st.terminal("OPTION_VAR")
+         v = st.terminal("OPTION_VALUE")
          # assuming all key pair options allow multiple options
          self.options.setdefault(k, {}).update({s: v})
 
@@ -544,7 +544,7 @@ class Arg(Instruction):
    def __init__(self, *args):
       super().__init__(*args)
       self.commit_files.add(fs.Path("ch/metadata.json"))
-      self.key = im.tree_terminal(self.tree, "WORD", 0)
+      self.key = self.tree.terminal("WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
          del cli.build_arg[self.key]
@@ -587,9 +587,9 @@ class I_arg_equals(Arg):
    __slots__ = ()
 
    def value_default(self):
-      v = im.tree_terminal(self.tree, "WORD", 1)
+      v = self.tree.terminal("WORD", 1)
       if (v is None):
-         v = unescape(im.tree_terminal(self.tree, "STRING_QUOTED"))
+         v = unescape(self.tree.terminal("STRING_QUOTED"))
       return v
 
 
@@ -600,7 +600,7 @@ class Arg_First(Instruction_No_Image):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = im.tree_terminal(self.tree, "WORD", 0)
+      self.key = self.tree.terminal("WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
          del cli.build_arg[self.key]
@@ -635,9 +635,9 @@ class I_arg_first_equals(Arg_First):
    __slots__ = ()
 
    def value_default(self):
-      v = im.tree_terminal(self.tree, "WORD", 1)
+      v = self.tree.terminal("WORD", 1)
       if (v is None):
-         v = unescape(im.tree_terminal(self.tree, "STRING_QUOTED"))
+         v = unescape(self.tree.terminal("STRING_QUOTED"))
       return v
 
 
@@ -668,11 +668,10 @@ class I_copy(Instruction):
          except ValueError:
             pass
       # No subclasses, so check what parse tree matched.
-      if (im.tree_child(self.tree, "copy_shell") is not None):
-         args = list(im.tree_child_terminals(self.tree, "copy_shell", "WORD"))
-      elif (im.tree_child(self.tree, "copy_list") is not None):
-         args = list(im.tree_child_terminals(self.tree, "copy_list",
-                                             "STRING_QUOTED"))
+      if (self.tree.child("copy_shell") is not None):
+         args = list(self.tree.child_terminals("copy_shell", "WORD"))
+      elif (self.tree.child("copy_list") is not None):
+         args = list(self.tree.child_terminals("copy_list", "STRING_QUOTED"))
          for i in range(len(args)):
             args[i] = args[i][1:-1]  # strip quotes
       else:
@@ -922,7 +921,7 @@ class I_directive(Instruction_Supported_Never):
 
    @property
    def str_name(self):
-      return "#%s" % im.tree_terminal(self.tree, "DIRECTIVE_NAME")
+      return "#%s" % self.tree.terminal("DIRECTIVE_NAME")
 
    def prepare(self, *args):
       ch.WARNING("not supported, ignored: parser directives")
@@ -961,10 +960,10 @@ class I_env_equals(Env):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = im.tree_terminal(self.tree, "WORD", 0)
-      self.value = im.tree_terminal(self.tree, "WORD", 1)
+      self.key = self.tree.terminal("WORD", 0)
+      self.value = self.tree.terminal("WORD", 1)
       if (self.value is None):
-         self.value = im.tree_terminal(self.tree, "STRING_QUOTED")
+         self.value = self.tree.terminal("STRING_QUOTED")
 
 
 class I_env_space(Env):
@@ -973,8 +972,8 @@ class I_env_space(Env):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = im.tree_terminal(self.tree, "WORD")
-      self.value = im.tree_terminals_cat(self.tree, "LINE_CHUNK")
+      self.key = self.tree.terminal("WORD")
+      self.value = self.tree.terminals_cat("LINE_CHUNK")
 
 
 class I_from_(Instruction):
@@ -1013,10 +1012,8 @@ class I_from_(Instruction):
       # FROM is special because its preparation involves opening a new stage
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
-      self.base_text = im.tree_child_terminals_cat(self.tree, "image_ref",
-                                                   "IMAGE_REF")
-      self.alias = im.tree_child_terminal(self.tree, "from_alias",
-                                          "IR_PATH_COMPONENT")
+      self.base_text = self.tree.child_terminals_cat("image_ref", "IMAGE_REF")
+      self.alias = self.tree_child_terminal("from_alias", "IR_PATH_COMPONENT")
       self.base_image = im.Image(im.Reference(self.base_text, argfrom))
       # Validate instruction.
       if (self.options.pop("platform", False)):
@@ -1128,7 +1125,7 @@ class I_run_exec(Run):
 
    def prepare(self, *args):
       self.cmd = [    ch.variables_sub(unescape(i), self.env_build)
-                  for i in im.tree_terminals(self.tree, "STRING_QUOTED")]
+                  for i in self.tree.terminals("STRING_QUOTED")]
       return super().prepare(*args)
 
 
@@ -1145,7 +1142,7 @@ class I_run_shell(Run):
       return self._str_  # can't replace abstract property with attribute
 
    def prepare(self, *args):
-      cmd = im.tree_terminals_cat(self.tree, "LINE_CHUNK")
+      cmd = self.tree.terminals_cat("LINE_CHUNK")
       self.cmd = self.shell + [cmd]
       self._str_ = cmd
       return super().prepare(*args)
@@ -1163,7 +1160,7 @@ class I_shell(Instruction):
 
    def prepare(self, *args):
       self.shell = [    ch.variables_sub(unescape(i), self.env_build)
-                    for i in im.tree_terminals(self.tree, "STRING_QUOTED")]
+                    for i in self.tree.terminals("STRING_QUOTED")]
       return super().prepare(*args)
 
 
@@ -1180,7 +1177,7 @@ class I_workdir(Instruction):
 
    def prepare(self, *args):
       self.path = fs.Path(ch.variables_sub(
-         im.tree_terminals_cat(self.tree, "LINE_CHUNK"), self.env_build))
+         self.tree.terminals_cat("LINE_CHUNK"), self.env_build))
       self.chdir(self.path)
       return super().prepare(*args)
 
@@ -1191,7 +1188,7 @@ class I_uns_forever(Instruction_Supported_Never):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.name = im.tree_terminal(self.tree, "UNS_FOREVER")
+      self.name = self.tree.terminal("UNS_FOREVER")
 
    @property
    def str_name(self):
@@ -1205,7 +1202,7 @@ class I_uns_yet(Instruction_Unsupported):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.name = im.tree_terminal(self.tree, "UNS_YET")
+      self.name = self.tree.terminal("UNS_YET")
       self.issue_no = { "ADD":         782,
                         "CMD":         780,
                         "ENTRYPOINT":  780,
