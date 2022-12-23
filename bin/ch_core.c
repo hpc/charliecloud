@@ -240,37 +240,58 @@ void enter_udss(struct container *c)
 }
 
 /* Return image type of path, or exit with error if not a valid type. */
-enum img_type img_type_get(const char *path, char *storage, bool storage_arg)
+enum img_type image_type(const char *ref, const char *storage_dir)
 {
-   struct stat read;
+   struct stat st;
    FILE *fp;
    char magic[4];  // four bytes, not a string
-   
-   char *strg_path = NULL;
-   T_ (1 <= asprintf(&strg_path, "%s/%s", storage, img_name_to_dir(path)));
-   //if ((path_exists(strg_path, NULL, false)) || (path_subdir_p(storage, path)) || (storage_arg))
-   if ((path_exists(strg_path, NULL, false)) || (storage_arg))
+   char *img_path;
+
+   // If there’s a directory in storage where we would expect there to be if
+   // ref were an image name, assume it really is an image name.
+   img_path = img_name2path(ref, storage_dir);
+   if (path_exists(img_path, NULL, false))
       return IMG_NAME;
 
-   Zf (stat(path, &read), "can't stat: %s", path);
+   // Now we know ref is a path of some kind, so find it.
+   Zf (stat(ref, &st), "can't stat: %s", ref);
 
-   if (S_ISDIR(read.st_mode))
+   // If ref is the path to a directory, then it’s a directory.
+   if (S_ISDIR(st.st_mode))
       return IMG_DIRECTORY;
 
-   fp = fopen(path, "rb");
-   Tf (fp != NULL, "can't open: %s", path);
-   Tf (fread(magic, sizeof(char), 4, fp) == 4, "can't read: %s", path);
-   Zf (fclose(fp), "can't close: %s", path);
+   // Now we know it’s file-like enough to read. See if it has the SquashFS
+   // magic number.
+   fp = fopen(ref, "rb");
+   Tf (fp != NULL, "can't open: %s", ref);
+   Tf (fread(magic, sizeof(char), 4, fp) == 4, "can't read: %s", ref);
+   Zf (fclose(fp), "can't close: %s", ref);
    VERBOSE("image file magic expected: 6873 7173; actual: %x%x %x%x",
            magic[0], magic[1], magic[2], magic[3]);
 
-   // SquashFS magic number is 6873 7173, i.e. "hsqs". I think "sqsh" was
-   // intended but the superblock designers were confused about endianness.
+   // If magic number matches, it’s a squash. Note: Magic number is 6873 7173,
+   // i.e. “hsqs”. I think “sqsh” was intended but the superblock designers
+   // were confused about endianness.
    // See: https://dr-emann.github.io/squashfs/
    if (memcmp(magic, "hsqs", 4) == 0)
       return IMG_SQUASH;
 
-   FATAL("unknown image type: %s", path);
+   // Well now we’re stumped.
+   FATAL("unknown image type: %s", ref);
+}
+
+char *img_name2path(const char *name, const char *storage_dir)
+{
+   char *path;
+   char *name_fs = strdup(name);
+
+   replace_char(name_fs, '/', '%');
+   replace_char(name_fs, ':', '+');
+
+   T_ (1 <= asprintf(&path, "%s/img/%s", storage_dir, name_fs));
+
+   free(name_fs);  // make Tim happy
+   return path;
 }
 
 /* Begin coordinated section of namespace joining. */

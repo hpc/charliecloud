@@ -34,8 +34,7 @@ struct container {
    uid_t container_uid;  // UID to use in container
    bool env_expand;      // expand variables in --set-env
    char *host_home;      // if --home, host path to user homedir, else NULL
-   char *img_path;       // path to image
-   char *img_ref;        // image reference (by name)
+   char *img_ref;        // image description from command line
    char *newroot;        // path to new root directory
    bool join;            // is this a synchronized join?
    int join_ct;          // number of peers in a synchronized join
@@ -51,5 +50,6 @@ struct container {
 /** Function prototypes **/
 
 void containerize(struct container *c);
-enum img_type img_type_get(const char *path, char *storage, bool storage_arg);
+enum img_type image_type(const char *ref, const char *images_dir);
+char *img_name2path(const char *name, const char *storage_dir);
 void run_user_command(char *argv[], const char *initial_dir);
