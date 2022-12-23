@@ -95,8 +95,8 @@ mounting SquashFS images with FUSE.
     created and the image’s files are exposed.
 
   :code:`-s`, :code:`--storage DIR`
-    Set the storage directory. Like the same option for :code:`ch-image(1)`;
-    see that man page for important details.
+    Set the storage directory. Equivalent to the same option for
+    :code:`ch-image(1)`.
 
   :code:`-t`, :code:`--private-tmp`
     By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
@@ -122,6 +122,10 @@ mounting SquashFS images with FUSE.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
+
+  :code:`--unsafe`
+    Enable various unsafe behavior. For internal use only. Seriously, stay
+    away from this option.
 
   :code:`--unset-env=GLOB`
     Unset environment variables whose names match :code:`GLOB`.

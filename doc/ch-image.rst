@@ -505,10 +505,11 @@ Synopsis
 Description
 -----------
 
-Uses :code:`ch-run -w -u0 -g0 --no-passwd` to execute :code:`RUN`
+Uses :code:`ch-run -w -u0 -g0 --no-passwd --unsafe` to execute :code:`RUN`
 instructions. Note that :code:`FROM` implicitly pulls the base image if
 needed, so you may want to read about the :code:`pull` subcommand below as
-well.
+well. Note also that the :code:`--unsafe` flag is for internal use only, and
+should not be specified by users.
 
 Required argument:
 
