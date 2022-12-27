@@ -751,7 +751,7 @@ The :code:`FROM` instruction accepts option :code:`--arg=NAME=VALUE`, which
 serves the same purpose as the :code:`ARG` instruction. It can be repeated.
 
 :code:`LABEL`
-~~~~~~~~~~~~
+~~~~~~~~~~~~~
 
 The :code:`LABEL` instruction accepts :code:`key=value` pairs to
 add metadata for an image. Unlike Docker, this metadata cannot be observed by
