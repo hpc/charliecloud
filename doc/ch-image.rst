@@ -955,7 +955,7 @@ producing the final format actually needed.
     Image in builder storage to be exported.
 
   :code:`PATH`
-    Descriptor for the output image.
+    Destination path for exported image.
 
   :code:`-h`, :code:`--help`
     Print help and exit.
