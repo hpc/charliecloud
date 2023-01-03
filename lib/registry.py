@@ -333,14 +333,14 @@ class HTTP:
             f = ch.DEBUG
          f("%s: %s" % (h, hs[h]))
       # Friendly message for Docker Hub rate limit.
-      used_ct = period = left_ct = reason = "???"  # keep as strings
+      pull_ct = period = left_ct = reason = "???"  # keep as strings
       if ("ratelimit-limit" in hs):
          h = hs["ratelimit-limit"]
          m = re.search(r"^(\d+);w=(\d+)$", h)
          if (m is None):
             WARNING("can’t parse RateLimit-Limit: %s" % h)
          else:
-            used_ct = m[1]
+            pull_ct = m[1]
             period = str(int(m[2]) / 3600)  # seconds to hours
       if ("ratelimit-remaining" in hs):
          h = hs["ratelimit-remaining"]
@@ -361,9 +361,9 @@ class HTTP:
             else:
                # Overall limits yield HTTP 429 so warning seems legitimate?
                ch.WARNING("can’t parse Docker-RateLimit-Source: %s" % h)
-      if (any(i != "???" for i in (used_ct, period, left_ct))):
+      if (any(i != "???" for i in (pull_ct, period, left_ct))):
          ch.INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
-                 % (used_ct, period, left_ct, reason))
+                 % (left_ct, pull_ct, period, reason))
 
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
