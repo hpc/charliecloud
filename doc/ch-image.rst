@@ -952,8 +952,7 @@ For best performance, :code:`export` should be invoked only once,
 producing the final format actually needed.
 
   :code:`IMAGE_REF`
-    Descriptor for the input image. For image builders, this is an image
-    reference; otherwise, it's a filesystem path.
+    Image in builder storage to be exported.
 
   :code:`PATH`
     Descriptor for the output image.
