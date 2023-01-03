@@ -16,7 +16,7 @@ Synopsis
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] build-cache [...]
    $ ch-image [...] delete IMAGE_REF
-   $ ch-image [...] export [-o FMT] [...] IMAGE_REF IMAGE_OUT
+   $ ch-image [...] export [-o FMT] [...] IMAGE_REF PATH
    $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [-l] [IMAGE_REF]
