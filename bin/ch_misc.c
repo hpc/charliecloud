@@ -278,41 +278,6 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
    return (struct env_var){ name, value };
 }
 
-/* Take image reference and return a string of the reference with 
-   filesystem character substitutions. */
-char *img_name_to_dir(const char *str) 
-{
-   char *new_str = replace_char(str, ':', '+');
-   new_str = replace_char(new_str, '/', '%');
-   return new_str;
-}
-
-/* Convert image ref ('name') to storage directory path, if it exists. */
-char *img_path_get(char *name, bool unsafe, bool writable, char *storage)
-{
-   char *path = NULL;
-   // Construct path to image ref.
-   T_ (1 <= asprintf(&path, "%s/%s", storage, img_name_to_dir(name)));
-   // Make sure the path we constructed is there.
-   if (!path_exists(path, NULL, false)) {
-      if (path_exists(storage, NULL, false)) {
-         FATAL("%s not found in storage", name);
-      } else {
-         FATAL("storage directory not found: %s", storage);
-      }   
-   } else if (writable && !unsafe) {
-      FATAL("'-w' not allowed when running out of storage");
-   } else {
-      return path;
-   }
-}
-
-void img_path_safe(char *path, bool unsafe, char *storage) {
-   if((path_subdir_p(storage, path)) && !unsafe) {
-      FATAL("Specified path is in storage (hint: try running image by name)");
-   }
-}
-
 /* Copy the buffer of size size pointed to by new into the last position in
    the zero-terminated array of elements with the same size on the heap
    pointed to by *ar, reallocating it to hold one more element and setting
@@ -510,7 +475,7 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
 /* Return true if the given path exists, false otherwise. On error, exit. If
    statbuf is non-null, store the result of stat(2) there. If follow_symlink
    is true and the last component of path is a symlink, stat(2) the target of
-   the symlnk; otherwise, lstat(2) the link itself. */
+   the symlink; otherwise, lstat(2) the link itself. */
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
 {
    struct stat statbuf_;
@@ -614,15 +579,12 @@ char *realpath_safe(const char *path)
    return pathc;
 }
 
-/* Construct a new string, replacing all instances of character 'old' with 'new'. */
-char *replace_char(const char *str, char old, char new) {
-  char *new_str = strdup(str);
-  for(int i = 0; new_str[i] != '\0'; i++) {
-    if(new_str[i] == old) {
-      new_str[i] = new;
-    }
-  }
-  return new_str;
+/* Replace all instances of character “old” in “s” with “new”. */
+void replace_char(char *s, char old, char new)
+{
+   for (int i = 0; s[i] != '\0'; i++)
+      if(s[i] == old)
+         s[i] = new;
 }
 
 /* Split string str at first instance of delimiter del. Set *a to the part
@@ -642,19 +604,6 @@ void split(char **a, char **b, const char *str, char del)
    *a = strsep(b, delstr);
    if (*b == NULL)
       *a = NULL;
-}
-
-/* Return the path to the storage directory, depending on whether
-   $CH_IMAGE_STORAGE is set. */
-char *storage_dir_get(void)
-{
-   char *storage = getenv("CH_IMAGE_STORAGE");
-   if(!storage) { // $CH_IMAGE_STORAGE not set, use default
-      T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch/img", username));
-   } else {
-      T_ (1 <= asprintf(&storage, "%s/img", storage));
-   }
-   return storage;
 }
 
 /* Report the version number. */
