@@ -945,8 +945,8 @@ specified.
 
 :code:`ch-run` can run container images that are plain directories or
 (optionally) SquashFS archives. However, images can take on a variety of other
-formats as well. The main purpose of this tool is to make images in those
-other formats available to :code:`ch-run`.
+formats as well. The purpose of this tool is to export images from builder
+storage to a supported image format.
 
 For best performance, :code:`export` should be invoked only once,
 producing the final format actually needed.
