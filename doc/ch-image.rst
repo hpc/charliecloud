@@ -938,10 +938,10 @@ trading off the time needed to retrieve an image from cache.
 Description
 -----------
 
-Copy image :code:`IMAGE_REF` to :code:`PATH` and convert its format. Replace
-:code:`PATH` if it already exists, unless :code:`--no-clobber` is specified. It
-is an error if :code:`IMAGE_REF` and :code:`PATH` have the same format; use the
-format's own tools for that case.
+Copy image :code:`IMAGE_REF` from builder storage to :code:`PATH` in format
+:code:`FMT` if provided; otherwise, use default format :code:`tar`. Replace
+image at :code:`PATH` if it already exists, unless :code:`--no-clobber` is
+specified.
 
 :code:`ch-run` can run container images that are plain directories or
 (optionally) SquashFS archives. However, images can take on a variety of other
