@@ -30,14 +30,14 @@ load ../common
 @test 'specify storage' {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
-    #mkdir "${BATS_TMPDIR}/img"
+    mkdir "${BATS_TMPDIR}/img"
     ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/img/00_tiny"
     run ch-run --unsafe -s "${BATS_TMPDIR}" 00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "foo" ]]
 
-    rm -rf "${BATS_TMPDIR}/00_tiny"
+    rm -rf "${BATS_TMPDIR}/img"
 }
 
 @test 'symlink to image' {  # issue #50
