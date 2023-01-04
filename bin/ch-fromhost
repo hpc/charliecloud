@@ -2,10 +2,9 @@
 #
 # The basic algorithm here is that we build up a list of file
 # source:destination pairs separated by newlines, then walk through them and
-# copy them into the image. We also maintain a list of directories and ldconfig
-# conf files to create, and a list of file globs to remove.
+# copy them into the image.
 #
-# The colon separator to avoid the difficulty of iterating through a sequence
+# The colon separator is to avoid the difficulty of iterating through a sequence
 # of pairs with no arrays or structures in POSIX sh. We could avoid it by
 # taking action immediately upon encountering each file in the argument list,
 # but that would (a) yield a half-injected image for basic errors like
@@ -51,11 +50,12 @@ Usage:
 Which files to inject (one or more required; can be repeated):
 
   -c, --cmd     CMD   listed in the stdout of CMD
-  -o, --fi-prov PATH  inject host compiled loadable OFI provider(s) at PATH
   -f, --file    FILE  listed in file FILE
   -p, --path    PATH  inject the file at PATH
+  --fi-prov     PATH  inject host compiled loadable OFI provider(s) at PATH
+  --fi-replace  PATH  inject host libfabric.so at PATH over image's
 
-  --nvidia         recommended by nVidia (via \"nvidia-container-cli list\")
+  --nvidia         recommended by nVidia (via "nvidia-container-cli list")
 
 Destination within image:
 
@@ -63,13 +63,13 @@ Destination within image:
 
 Options:
 
-  --cray-mpi-cxi   inject slingshot libfabric for MPI on shasta machines
-  --cray-mpi-gni  inject gemini/aries libfabric for MPI on xc40 machines
+  --cray-libfabric-cxi   inject slingshot libfabric for MPI on shasta machines
+  --cray-libfabric-gni  inject gemini/aries libfabric for MPI on xc40 machines
 
   --fi-prov-path   print the inferred destination for loadable ofi providers
   --lib-path       print the inferred destination for shared libraries
 
-  --no-ldconfig    don\'t run ldconfig even if we injected shared libraries
+  --no-ldconfig    don't run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
   -v, --verbose    list the injected files
   --version        print version and exit
@@ -111,19 +111,6 @@ fatal () {
     exit 1
 }
 
-find_libfabric () {
-   libfabric=$("${ch_bin}/ch-run" --no-home "$1" -- find / \
-                                                -not \( -path /proc -prune \) \
-                                                -not \( -path /dev -prune \) \
-                                                -not \( -path /tmp -prune \) \
-                                                -not \( -path /sys -prune \) \
-                                                -not \( -path /var/opt/cray -prune \) \
-                                                -not \( -path /etc/opt/cray -prune \) \
-                                                -name  "libfabric.so")
-   [ -n "$libfabric" ] || fatal "libfabric.so not found in $1"
-   printf "%s" "$libfabric"
-}
-
 info () {
     printf 'ch-fromhost: %s\n' "$1" 1>&2
 }
@@ -138,7 +125,7 @@ is_bin () {
     esac
 }
 
-is_ofi () {
+is_fi_prov () {
     case $1 in
         *-fi.so)
             return 0
@@ -172,7 +159,7 @@ queue_files () {
                 ;;
         esac
         if is_so "$f"; then
-            debug "found shared library: ${f}"
+            debug_indent "found shared library: ${f}"
             lib_found=yes
         fi
         # This adds a delimiter only for the second and subsequent files.
@@ -184,23 +171,23 @@ queue_files () {
     IFS="$old_ifs"
 }
 
-queue_ofi_dso () {
+queue_fi_prov () {
     old_ifs="$IFS"
     IFS="$newline"
     d="${dest:-$2}"
     # Directory of OFI provider dsos (*-fi.so's).
     if [ -d "$1" ]; then
-       debug "searching $1 for ofi providers"
-       # shellcheck disable=SC2044
-       for f in $(find "$1" -maxdepth 1 -name '*-fi.so'); do
-           [ -z "$f" ] || queue_ofi_dso "$f"
-       done
-       [ -n "$ofi_found" ] || fatal "no loadable ofi provider(s) in $1"
+        debug "searching $1 for ofi providers"
+        # shellcheck disable=SC2044
+        for f in $(find "$1" -maxdepth 1 -name '*-fi.so'); do
+            [ -z "$f" ] || queue_fi_prov "$f"
+        done
+        [ -n "$fi_prov_found" ] || fatal "no loadable ofi provider(s) in $1"
     # Single OFI dso provider.
-    elif is_ofi "$1"; then
+    elif is_fi_prov "$1"; then
         debug_indent "found $1"
         inject_ofi="${inject_ofi:+$inject_ofi$newline}$1:$d"
-        ofi_found=yes
+        fi_prov_found=yes
         # process ofi dso link paths
         ldds=$(ldd "$1" 2>&1 | grep lib | awk '{print $3}' | sort -u)
         for l in $ldds; do
@@ -214,6 +201,57 @@ queue_ofi_dso () {
     else
         fatal "$1 is not a directory or file ending '-fi.so'"
     fi
+}
+
+queue_libfabric_replacement () {
+    # Libfabric does not yet have a slingshot optimzied provider; however,
+    # recent provider name reservation for 'cxi', in the source indicates we
+    # will at some point, see: https://github.com/ofiwg/libfabric/pull/7839
+    #
+    # For now, replace the image's libfabric with Cray's to use slingshot.
+    cray_libfabric=$1
+    case $cray_libfabric in
+        *libfabric.so)
+            true
+        ;;
+        *)
+            fatal "$cray_libfabric: does not end with libfabric.so"
+        ;;
+    esac
+    if ! ldd "$cray_libfabric" | grep libcxi 2>&1 > /dev/null; then
+        fatal "$cray_libfabric: does not appear to be cray libfabric"
+    fi
+    if [ -z "$dest" ]; then
+        debug "searching image for libfabric.so"
+        img_libfabric=$(find "$image" -name  "libfabric.so")
+        [ -n "$img_libfabric" ] || fatal "libfabric.so not found in $image"
+        debug_indent "found $img_libfabric"
+        if [ $(echo $img_libfabric | wc -l) -ne 1 ]; then
+            fatal 'must have exactly one libfabric.so to replacemence; need --dest'
+        fi
+        img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
+        dest_=$(dirname "/$img_libfabric_path")
+        queue_files "$cray_libfabric" "$dest_"
+    else
+        queue_files "$cray_libfabric" "$dest"
+    fi
+    # Add missing links to the image, do not overwrite existing files.
+    debug "searching for link dependencies"
+    ldds=$(ldd "$cray_libfabric" 2>&1 | grep lib | awk '{print $3}' | sort -u)
+    for l in $ldds; do
+        file_found=$(find ${image} -name "$(basename "$l")")
+        if [ -n "$file_found" ]; then
+            debug_indent "skipping $l"
+            continue
+        fi
+        queue_files "$l"
+        [ ! -L "$l" ] || queue_files $(readlink -f "$f")
+        file_dir=$(dirname "$l")
+        # avoid duplicates.
+        if [ "$(echo "$ld_conf" | grep -c "$file_dir")" -eq 0 ]; then
+            queue_add_ldconf "$file_dir"
+        fi
+    done
 }
 
 queue_add_ldconf () {
@@ -255,16 +293,19 @@ while [ $# -gt 0 ]; do
             queue_files "$out"
             shift
             ;;
-        --cray-mpi-cxi)
+        --cray-libfabric-cxi)
             warn_fi_var
-            ofi_cxi=yes
+            if [ -z "$CH_FROMHOST_OFI_CXI" ]; then
+                fatal "CH_FROMHOST_OFI_CXI is not set"
+            fi
+            replace_libfabric=$CH_FROMHOST_OFI_CXI
             ;;
-        --cray-mpi-gni)
+        --cray-libfabric-gni)
             warn_fi_var
             if [ -z "$CH_FROMHOST_OFI_GNI" ]; then
                 fatal "CH_FROMHOST_OFI_GNI is not set"
             fi
-            queue_ofi_dso "$CH_FROMHOST_OFI_GNI"
+            queue_fi_prov "$CH_FROMHOST_OFI_GNI"
             ;;
         -d|--dest)
             ensure_nonempty --dest "$1"
@@ -292,15 +333,21 @@ while [ $# -gt 0 ]; do
             || fatal "nvidia-container-cli failed; does this host have GPUs?"
             queue_files "$out"
             ;;
-        -o|--fi-prov)
+        --fi-prov)
             warn_fi_var
             ensure_nonempty --fi-prov "$1"
-            queue_ofi_dso "$1"
+            queue_fi_prov "$1"
             shift
             ;;
         --fi-prov-path)
-            ofi_found=yes
-            ofi_dest_print=yes
+            fi_prov_found=yes
+            fi_prov_dest_print=yes
+            ;;
+        --fi-replace)
+            warn_fi_var
+            ensure_nonempty --fi-replace "$1"
+            replace_libfabric=$1
+            shift
             ;;
         -p|--path)
             ensure_nonempty --path "$1"
@@ -324,12 +371,16 @@ while [ $# -gt 0 ]; do
 done
 
 if [ -n "$FI_PROVIDER_PATH" ]; then
-    if [ -n "$ofi_found" ] && [ -z "$dest" ]; then
+    if [ -n "$fi_prov_found" ] && [ -z "$dest" ]; then
         fatal "FI_PROVIDER_PATH set; missing --dest"
     fi
 fi
 
 [ "$image" ] || fatal "no image specified"
+
+if [ $replace_libfabric ]; then
+    queue_libfabric_replacement "$replace_libfabric"
+fi
 
 if [ $lib_found ]; then
     # We want to put the libraries in the first directory that ldconfig
@@ -349,39 +400,7 @@ if [ $lib_found ]; then
     debug "shared library destination: ${image}/${lib_dest}"
 fi
 
-if [ $ofi_cxi ]; then
-    # Libfabric does not yet have a slingshot optimzied provider; however,
-    # recent provider name reservation for 'cxi', in the source indicates we
-    # will at some point, see: https://github.com/ofiwg/libfabric/pull/7839
-    #
-    # For now, replace the image's libfabric with Cray's to use slingshot.
-    host_cxi=$(realpath /opt/cray/libfabric/**)/lib64/libfabric.so
-    [ -f "$host_cxi" ] || fatal "missing $host_cxi"
-    debug "finding image libfabric.so"
-    ofi_dest=$( find_libfabric "$image" )
-    debug_indent "found $ofi_dest"
-    d_=$(dirname "$ofi_dest")
-    queue_files "$host_cxi" "$d_"
-    # Process links, both symbolic and reference. Add only missing links, i.e.,
-    # them, do not overwrite existing files.
-    cxi_ld=$(ldd "$host_cxi" 2>&1 | grep lib | awk '{print $3}' | sort -u)
-    for l in $cxi_ld; do
-        # Ignore /lib64 targets.
-        d_=$(dirname "$l")
-        [ "$d_" = "/lib64" ] && continue
-        [ -e "${image}/${l}" ] || queue_files "$l" "$d_"
-        rl=$(readlink -f "$l")
-        d_=$(dirname "$rl")
-        [ -e "${image}/${rl}" ] || queue_files "$rl" "$d_"
-        ld=$(dirname "$l")
-        # avoid duplicates.
-        if [ "$(echo "$ld_conf" | grep -c "$ld")" -eq 0 ]; then
-            queue_add_ldconf "$ld"
-        fi
-    done
-fi
-
-if [ $ofi_found ] && [ -z "$dest" ]; then
+if [ $fi_prov_found ] && [ -z "$dest" ]; then
     # By default, libfabric will create and use loadable providers in the
     # in the $PREFIX/lib/libfabric directory, where PREFIX is the --prefix
     # argument (path) specified at libfabric configure.
@@ -412,19 +431,19 @@ if [ $ofi_found ] && [ -z "$dest" ]; then
     ch_env_p=${ch_env_p##*=}
     if  [ -n "$ch_env_p" ]; then
        warn "found FI_PROVIDER_PATH=$ch_env_p in ${image}/ch/environment"
-       ofi_dest=$ch_env_p
+       fi_prov_dest=$ch_env_p
        warn "using ${image}${ch_env_p}; --set-env required at run time"
     else
-       ofi_so=$( find_libfabric "$image" )
-       debug_indent "found: ${image}${ofi_so}"
-       ofi_dest=$(dirname "$ofi_so")
-       ofi_dest="${ofi_dest}/libfabric"
-       queue_mkdir "$ofi_dest"
+       img_libfabric=$(find "$image" -name 'libfabric.so')
+       debug_indent "found: ${image}${img_libfabric}"
+       fi_prov_dest=$(dirname "$img_libfabric")
+       fi_prov_dest="${fi_prov_dest}/libfabric"
+       queue_mkdir "$fi_prov_dest"
     fi
-    debug "ofi dso provider injection destination: $ofi_dest"
+    debug "ofi dso provider injection destination: $fi_prov_dest"
 elif [ -n "$dest" ]; then
-    ofi_dest=$dest
-    debug "ofi dso provider injection destination: $ofi_dest"
+    fi_prov_dest=$dest
+    debug "ofi dso provider injection destination: $fi_prov_dest"
 fi
 
 if [ $lib_dest_print ]; then
@@ -432,8 +451,8 @@ if [ $lib_dest_print ]; then
     exit 0
 fi
 
-if [ $ofi_dest_print ]; then
-    echo "$ofi_dest"
+if [ $fi_prov_dest_print ]; then
+    echo "$fi_prov_dest"
     exit 0
 fi
 
@@ -493,7 +512,7 @@ for d in $inject_mkdirs; do
 done
 
 # Process ldconfig targets.
-if [ $ofi_found ] || [ $ofi_cxi ]; then
+if [ $fi_prov_found ] || [ $replace_libfabric ]; then
     if [ ! -f "${image}/etc/ld.so.conf" ]; then
         debug_indent "touch ${image}/etc/ld.so.conf"
         touch "${image}/etc/ld.so.conf"
@@ -541,7 +560,7 @@ for file in $inject_ofi; do
     d="${file#*:}"
     infer=
     if is_so "$f" && [ -z "$d" ]; then
-        d=$ofi_dest
+        d=$fi_prov_dest
         infer=" (inferred)"
     fi
     debug_indent "${f} -> ${d}${infer}"
@@ -562,11 +581,11 @@ done
 IFS="$old_ifs"
 
 if       [ -z "$no_ldconfig" ] \
-    && { [ $lib_found ] || [ $ofi_found ] || [ $ofi_cxi ] ;} then
+    && { [ $lib_found ] || [ $fi_prov_found ] || [ $replace_libfabric ] ;} then
     debug "running ldconfig"
     debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || fatal 'ldconfig error'
-    if [ -n "$ofi_found" ] || [ -n "$ofi_cxi" ]; then
+    if [ -n "$fi_prov_found" ] || [ -n "$replace_libfabric" ]; then
         debug "validating ldconfig cache"
         for file in $inject_ofi $inject_files; do
             f="$(basename "${file%%:*}")"
