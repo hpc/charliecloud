@@ -83,12 +83,24 @@ To specify which files to inject
   :code:`-p`, :code:`--path PATH`
     Inject the file at :code:`PATH`.
 
-  :code:`-o`. :code:`--fi-prov PATH`
+  :code:`--fi-prov PATH`
     Inject the loadable Libfabric provider(s) at :code:`PATH`.
+
+  :code:`--fi-replace PATH`
+    Replace image :code:`libfabric.so` with the host :code:`libfabric.so` at
+    :code:`PATH`.
 
   :code:`--nvidia`
     Use :code:`nvidia-container-cli list` (from :code:`libnvidia-container`)
     to find executables and libraries to inject.
+
+  :code:`--cray-libfabric-cxi`
+    Inject cray-libfabric for slingshot. This is equivalent to
+    :code:`--fi-replace $CH_FROMHOST_OFI_CXI`.
+
+  :code:`--cray-libfabric-gni`
+    Inject cray gemini/aries GNI Libfabric provider :code:`libgnix-fi.so`. This
+    is equivalent to :code:`--fi-provider $CH_FROMHOST_OFI_GNI`.
 
 These can be repeated, and at least one must be specified.
 
@@ -104,12 +116,6 @@ To specify the destination within the image
 Additional arguments
 --------------------
 
-  :code:`--cray-mpi-cxi`
-    Inject cray-libfabric for slingshot.
-
-  :code:`--cray-mpi-gni`
-    Inject cray gemini/aries GNI Libfabric provider :code:`libgnix-fi.so`; this
-    is equivalent to :code:`--fi-provider $CH_FROMHOST_OFI_GNI`.
 
   :code:`--lib-path`
     Print the guest destination path for shared libraries inferred as
@@ -160,10 +166,11 @@ some use cases and the recommended approach:
    can package your functionality with a tidy option like :code:`--nvidia`.
 
 
-:code:`--ofi` usage and quirks
+Libfabric usage and quirks
 ==============================
 
-The implementation of :code:`--ofi` is experimental and has a couple quirks.
+The implementation of :code:`--fi-prov` and :code:`--fi-replace` is experimental
+and has a couple quirks.
 
 1. Containers must have the following software installed:
 

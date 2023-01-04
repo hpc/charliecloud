@@ -63,7 +63,7 @@ Additional options:
   -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
   -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
-  --fi-path PATH        path to libfabric provider injection target(s)
+  --fi-path PATH         path to libfabric provider injection target(s)
   --pack-dir DIR         packed image directory; same as \$CH_TEST_TARDIR
   --pack-fmt FMT         packed image format; same as \$CH_TEST_PACK_FMT
   --pedandic {yes,no}    set pedantic mode rather than guessing
@@ -842,7 +842,7 @@ while [[ $# -gt 0 ]]; do
         is_sudo=yes
         ;;
     --fi-path=*)
-        ofi_path=${opt#*=}
+        fi_path=${opt#*=}
         ;;
     --pack-dir)
         require_unset tardir
@@ -969,7 +969,7 @@ vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
 # test option output, is benign: $srun_mpi is only used in $ch_multinode.
 vset CH_TEST_SLURM_MPI "$srun_mpi"     "$CH_TEST_SLURM_MPI" "--mpi=$SLURM_MPI_TYPE" \
                       21 'srun mpi type'
-vset CH_TEST_OFI_PATH  "$ofi_path"     "$CH_TEST_OFI_PATH"  skip \
+vset CH_TEST_OFI_PATH  "$fi_path"     "$CH_TEST_OFI_PATH"  skip \
                       21 'ofi provider(s) path'
 printf '\n'
 
@@ -997,15 +997,18 @@ if [[ -z $CHTEST_INSTALLED ]]; then
 fi
 printf '\n'
 
-# Ensure OFI path looks sane.
-if [[ -n "$ofi_path" ]]; then
-    if [[ -d "$ofi_path" ]]; then
-           find "$ofi_path" -name "*-fi.so" &> /dev/null \
-        || fatal "ofi: $ofi_path: *-fi.so not found"
-    else
-           [[ "${ofi_path##*/}" == *"-fi.so" ]] \
-        || fatal "ofi: $ofi_path: not a -fi.so"
-    fi
+# Ensure ofi path looks sane.
+if [[ -n "$fi_path" ]]; then
+    case "$fi_path" in
+        *-fi.so)
+        true
+     ;;
+    *libfabric.so)
+        true
+    ;;
+     *)
+    fatal '--fi-path: must end in -fi.so or libfabric.so'
+    esac
 fi
 
 # Don't allow FI_ variables.

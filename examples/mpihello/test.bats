@@ -8,7 +8,7 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
     [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
-    export FI_LOG_LEVEL=
+    unset FI_LOG_LEVEL=
 }
 
 count_ranks () {
@@ -39,6 +39,7 @@ count_ranks () {
     [[ -n "$ch_cray" ]] || skip "host is not cray"
     [[ "$cray_prov" == 'gni' ]] || skip "gni only"
     export FI_LOG_LEVEL=debug
+    export FI_LOG_PROV=gni
     run $ch_mpirun_node ch-run --join "$ch_img" -- /hello/hello 2>&1
     echo "$output"
     [[ $status -eq 0 ]]
@@ -49,8 +50,9 @@ count_ranks () {
 @test "${ch_tag}/validate cxi injection" {
     [[ -n "$ch_cray" ]] || skip "host is not cray"
     [[ $cray_prov == 'cxi' ]] || skip "cxi (slingshot) only"
-    export FI_LOG_LEVEL=info
+    export FI_LOG_LEVEL=debug
     export FI_LOG_SUBSYS=mr
+    export FI_LOG_PROV=cxi
     # shellcheck disable=SC2086
     run $ch_mpirun_node ch-run --join "$ch_img" -- /hello/hello 2>&1
     echo "$output"
