@@ -54,6 +54,7 @@ Who is responsible?
 
 Contributors:
 
+* Richard Berger <rberger@lanl.gov>
 * Lucas Caudill <lcaudill@lanl.gov>
 * Rusty Davis <rustyd@lanl.gov>
 * Hunter Easterday <heasterday@lanl.gov>
@@ -67,6 +68,7 @@ Contributors:
 * Megan Phinney <mphinney@lanl.gov>
 * Reid Priedhorsky <reidpr@lanl.gov>, co-founder and project lead
 * Tim Randles <trandles@lanl.gov>, co-founder
+* Benjamin "The Storm" Stormer <bstormer@lanl.gov>
 * Meisam Tabriz <meisam.tabriz@mpcdf.mpg.de>
 * Matthew Vernon <mv3@sanger.ac.uk>
 * Peter Wienemann <wienemann@physik.uni-bonn.de>
@@ -132,4 +134,4 @@ should be clearly marked, so as not to confuse it with the version available
 from LANL.
 
 
-..  LocalWords:  USENIX's CNA
+..  LocalWords:  USENIX's CNA Meisam

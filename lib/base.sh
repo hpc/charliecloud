@@ -158,6 +158,14 @@ else
     }
 fi
 
+# Wrapper for rootless podman (for consistency w/ docker).
+
+# The only thing we're really concerned with here is the trailing underscore,
+# since we use it to construct function calls.
+podman_ () {
+    podman "$@"
+}
+
 # Use parallel gzip if it's available.
 if command -v pigz > /dev/null 2>&1; then
     gzip_ () {

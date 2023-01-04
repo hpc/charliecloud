@@ -203,16 +203,14 @@ void enter_udss(struct container *c)
       bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
    }
    // Container /home.
-   if (!c->private_home) {
+   if (c->host_home) {
       char *newhome;
-      // Mount tmpfs on guest /home because guest root is read-only
+      // Mount tmpfs on guest /home because guest root may be read-only.
       tmpfs_mount("/home", c->newroot, "size=4m");
-      // Bind-mount user's home directory at /home/$USER. The main use case is
-      // dotfiles.
-      Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
+      // Bind-mount user's home directory at /home/$USER.
       newhome = cat("/home/", username);
       Z_ (mkdir(cat(c->newroot, newhome), 0755));
-      bind_mount(c->old_home, newhome, BD_REQUIRED, c->newroot, 0);
+      bind_mount(c->host_home, newhome, BD_REQUIRED, c->newroot, 0);
    }
    // Container /usr/bin/ch-ssh.
    if (c->ch_ssh) {
@@ -478,17 +476,15 @@ void setup_passwd(const struct container *c)
    errno = 0;
    p = getpwuid(c->container_uid);
    if (p) {
-      T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
-                       p->pw_name, c->container_uid, c->container_gid,
-                       p->pw_gecos, username));
+      T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/:/bin/sh\n", p->pw_name,
+                       c->container_uid, c->container_gid, p->pw_gecos));
    } else {
       if (errno) {
          Tf (0, "getpwuid(3) failed");
       } else {
          VERBOSE("UID %d not found; using dummy info", c->container_uid);
-         T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
-                          "charlie", c->container_uid, c->container_gid,
-                          "Charliecloud User", "charlie"));
+         T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/:/bin/sh\n", "charlie",
+                          c->container_uid, c->container_gid, "Charlie"));
       }
    }
    Z_ (close(fd));

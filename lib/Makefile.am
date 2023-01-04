@@ -10,9 +10,12 @@ dist_mylib_DATA = base.sh \
                   build_cache.py \
                   charliecloud.py \
                   fakeroot.py \
+                  filesystem.py \
+                  image.py \
                   misc.py \
                   pull.py \
-                  push.py
+                  push.py \
+                  registry.py
 noinst_DATA = charliecloud
 mylib_DATA = contributors.bash \
              version.py \

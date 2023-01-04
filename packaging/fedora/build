@@ -64,8 +64,8 @@ rpmbuild root:      %(rpmbuild)s
       rpm_release = "0"
    else:
       m           = re.search(r"([0-9.]+)-([0-9]+)", args.version)
-      commit      = "v" + m.group(1)
-      rpm_release = m.group(2)
+      commit      = "v" + m[1]
+      rpm_release = m[2]
 
    # Create rpmbuild root
    rpm_sources = args.rpmbuild + '/SOURCES'
@@ -95,7 +95,8 @@ rpmbuild root:      %(rpmbuild)s
 
    # Build tarball.
    print("# building source tarball")
-   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
+   # FIXME: Why does this need --home?
+   cmd(CH_RUN, "--home", "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "./autogen.sh")
    cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "./configure")
@@ -149,8 +150,8 @@ rpmbuild root:      %(rpmbuild)s
       else:
          # Verify requested version matches changelog.
          m = re.search(r"%changelog\n.+?([0-9.-]+)\n", t)
-         if (m.group(1) != rpm_vr):
-            print("requested version %s != changelog %s" % (rpm_vr, m.group(1)))
+         if (m[1] != rpm_vr):
+            print("requested version %s != changelog %s" % (rpm_vr, m[1]))
             sys.exit(1)
       out.write(t)
 

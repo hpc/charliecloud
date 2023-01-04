@@ -2,15 +2,17 @@ import json
 import os.path
 
 import charliecloud as ch
+import image as im
+import registry as rg
 import version
 
 
 ## Main ##
 
 def main(cli):
-   src_ref = ch.Image_Ref(cli.source_ref)
+   src_ref = im.Reference(cli.source_ref)
    ch.INFO("pushing image:   %s" % src_ref)
-   image = ch.Image(src_ref, cli.image)
+   image = im.Image(src_ref, cli.image)
    # FIXME: validate it's an image using Megan's new function (PR #908)
    if (not os.path.isdir(image.unpack_path)):
       if (cli.image is not None):
@@ -22,10 +24,10 @@ def main(cli):
    else:
       ch.VERBOSE("image path:      %s" % image.unpack_path)
    if (cli.dest_ref is not None):
-      dst_ref = ch.Image_Ref(cli.dest_ref)
+      dst_ref = im.Reference(cli.dest_ref)
       ch.INFO("destination:     %s" % dst_ref)
    else:
-      dst_ref = ch.Image_Ref(cli.source_ref)
+      dst_ref = im.Reference(cli.source_ref)
    up = Image_Pusher(image, dst_ref)
    up.push()
    ch.done_notify()
@@ -71,8 +73,8 @@ class Image_Pusher:
    def manifest_new(class_):
       "Return an empty manifest, ready to be filled in."
       return { "schemaVersion": 2,
-               "mediaType": ch.TYPES_MANIFEST["docker2"],
-               "config": { "mediaType": ch.TYPE_CONFIG,
+               "mediaType": rg.TYPES_MANIFEST["docker2"],
+               "config": { "mediaType": rg.TYPE_CONFIG,
                            "size": None,
                            "digest": None },
                "layers": [],
@@ -83,7 +85,7 @@ class Image_Pusher:
       # Delete the tarballs since we can't yet cache them.
       for (_, tar_c) in self.layers:
          ch.VERBOSE("deleting tarball: %s" % tar_c)
-         ch.unlink(tar_c)
+         tar_c.unlink_()
 
    def prepare(self):
       """Prepare self.image for pushing to self.dst_ref. Return tuple: (list
@@ -101,15 +103,15 @@ class Image_Pusher:
       for (i, tar_uc) in enumerate(tars_uc, start=1):
          ch.INFO("layer %d/%d: preparing" % (i, len(tars_uc)))
          path_uc = ch.storage.upload_cache // tar_uc
-         hash_uc = ch.file_hash(path_uc)
+         hash_uc = path_uc.file_hash()
          config["rootfs"]["diff_ids"].append("sha256:" + hash_uc)
-         #size_uc = ch.file_size(path_uc)
-         path_c = ch.file_gzip(path_uc, ["-9", "--no-name"])
+         size_uc = path_uc.file_size()
+         path_c = path_uc.file_gzip(["-9", "--no-name"])
          tar_c = path_c.name
-         hash_c = ch.file_hash(path_c)
-         size_c = ch.file_size(path_c)
+         hash_c = path_c.file_hash()
+         size_c = path_c.file_size()
          tars_c.append((hash_c, path_c))
-         manifest["layers"].append({ "mediaType": ch.TYPE_LAYER,
+         manifest["layers"].append({ "mediaType": rg.TYPE_LAYER,
                                      "size": size_c,
                                      "digest": "sha256:" + hash_c })
       # Prepare metadata.
@@ -167,7 +169,7 @@ class Image_Pusher:
 
    def upload(self):
       ch.INFO("starting upload")
-      ul = ch.Registry_HTTP(self.dst_ref)
+      ul = rg.HTTP(self.dst_ref)
       for (i, (digest, tarball)) in enumerate(self.layers, start=1):
          ul.layer_from_file(digest, tarball,
                             "layer %d/%d: " % (i, len(self.layers)))

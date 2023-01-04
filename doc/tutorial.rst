@@ -83,8 +83,8 @@ Charliecloud you have (if not, please report a bug). For example::
   $ ch-run --version
   0.26
 
-A description of all commands is also collected later in this documentation; see
-:doc:`command-usage`. In addition, each executable has a man page.
+Man pages for all commands are provided in this documentation (see table of
+contents at left) as well as via :code:`man(1)`.
 
 Your first user-defined software stack
 ======================================

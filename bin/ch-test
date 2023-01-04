@@ -3,6 +3,7 @@
 ### Setup we need right away
 
 set -e
+
 # Set the locale so we have predictable sorting. However, ch-image crashes on
 # Python 3.6 in locale "C" (see issues #970 and #1262), which is the only
 # locale guaranteed to be available, so use a UTF-8 locale if available. This
@@ -13,6 +14,8 @@ else
     export LC_ALL=C
 fi
 
+# Set environment variable for ch-image --debug flag
+export CH_IMAGE_DEBUG=true
 
 ### Functions we need right away
 
@@ -379,9 +382,9 @@ test_make () {
     local img_pack
     local pack_files
     local tag
+    printf "finding tests compatible with %s phase settings ...\n" "$phase"
     case $phase in
     build)
-        printf "finding tests compatible with %s phase settings ...\n" "$phase"
         for i in $images $examples; do
            if test_make_check_image "$i"; then
                echo "found: $i"
@@ -394,7 +397,6 @@ test_make () {
         printf 'ok\n\n'
         ;;
     run)
-        printf "finding tests compatible with %s phase settings ...\n" "$phase"
         # For each tarball or squashfs file in --pack-dir look for a
         # corresponding example or image that produces a matching tag. If
         # found, check the image for exclusion conidtions.
@@ -418,9 +420,8 @@ test_make () {
         printf 'ok\n\n'
         ;;
     examples)
-        printf "finding tests compatible with %s phase settings ...\n" "$phase"
         if [[ $CH_TEST_SCOPE == quick ]]; then
-            echo 'found: none'
+            echo 'skipping examples phase in quick scope'
             return
         fi
         for i in $examples; do
@@ -654,7 +655,6 @@ test_run () {
         fatal "${TMP_}/run_auto.bats not found"
     fi
     bats run_first.bats "${TMP_}/run_auto.bats" ./run/*.bats
-    set -e
     if [[ $CH_TEST_SCOPE != quick ]]; then
         for guest_user in $(id -un) root nobody; do
             for guest_group in $(id -gn) root $(id -gn nobody); do
@@ -665,7 +665,6 @@ test_run () {
             done
         done
     fi
-    set +e
 }
 
 # Exit with failure if given version number is below a minimum.

@@ -27,6 +27,14 @@ import sys, os
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.mathjax', 'sphinx.ext.todo']
 todo_include_todos = True
+# Workaround for EPEL, which prohibits pip and doesn’t have
+# sphinx_reredirects. The result will be no redirect, but a lot about the
+# EPEL-built docs is crappy.
+try:
+   import sphinx_reredirects
+   extensions.append('sphinx_reredirects')
+except ImportError:
+   pass
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -113,6 +121,11 @@ except ImportError:
    pass  # error caught elsewhere
 
 highlight_language = 'console'
+
+# Don’t break links to the old command-usage.html. (#1461)
+redirects = {
+   "command-usage": "index.html"
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the

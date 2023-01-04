@@ -11,6 +11,7 @@ import build_cache as bu
 import charliecloud as ch
 import build
 import misc
+import filesystem as fs
 import pull
 import push
 
@@ -35,7 +36,7 @@ def main():
       description="Build and manage images; completely unprivileged.",
       epilog="""Storage directory is used for caching and temporary images.
                 Location: first defined of --storage, $CH_IMAGE_STORAGE, and
-                %s.""" % ch.Storage.root_default(),
+                %s.""" % fs.Storage.root_default(),
       sub_title="subcommands",
       sub_metavar="CMD")
 
@@ -106,6 +107,12 @@ def main():
            [["--auth"],
             { "action": "store_true",
               "help": "authenticated registry access; implied by push" }],
+           [["--cache-large"],
+            { "metavar": "SIZE",
+              "type": lambda s: ch.positive(s) * 2**20,  # internal unit: bytes
+              "default": ch.positive(
+                 os.environ.get("CH_IMAGE_CACHE_LARGE", 0)) * 2**20,
+              "help": "large file threshold in MiB" }],
            [["--debug"],
             { "action": "store_true",
               "help": "add short traceback to fatal error hints" }],
@@ -118,12 +125,16 @@ def main():
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],
+           [["--profile"],
+            { "action": "store_true",
+              "help": "dump profile to “./profile.{p,txt}”" }],
            [["-s", "--storage"],
             { "metavar": "DIR",
+              "type": fs.Path,
               "help": "set builder internal storage directory to DIR" }],
            [["--tls-no-verify"],
             { "action": "store_true",
-              "help": "don't verify registry certificates (dangerous!)" }],
+              "help": "don’t verify registry certificates (dangerous!)" }],
            [["-v", "--verbose"],
             { "action": "count",
               "default": 0,
@@ -206,7 +217,7 @@ def main():
    # delete
    sp = ap.add_parser("delete", "delete image from internal storage")
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
-   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
+   sp.add_argument("image_ref", metavar="IMAGE_GLOB", help="image(s) to delete")
 
    # gestalt (has sub-subcommands)
    sp = ap.add_parser("gestalt", "query debugging configuration",
@@ -236,6 +247,8 @@ def main():
    # list
    sp = ap.add_parser("list", "print information about image(s)")
    add_opts(sp, misc.list_, deps_check=True, stog_init=True)
+   sp.add_argument("-l", "--long", action="store_true",
+                   help="use long listing format")
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
 
@@ -255,7 +268,7 @@ def main():
    sp = ap.add_parser("push",
                       "copy image from local filesystem to remote repository")
    add_opts(sp, push.main, deps_check=True, stog_init=True)
-   sp.add_argument("--image", metavar="DIR",
+   sp.add_argument("--image", metavar="DIR", type=fs.Path,
                    help="path to unpacked image (default: opaque path in storage dir)")
    sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
@@ -273,17 +286,21 @@ def main():
    # Parse it up!
    if (len(sys.argv) < 2):
        ap.print_help(file=sys.stderr)
-       sys.exit(1)
+       ch.exit(1)
    cli = ap.parse_args()
-   ch.init(cli)
 
-   # Dispatch.
+   # Initialize.
+   ch.init(cli)
    if (dependencies_check[cli.func]):
       ch.dependencies_check()
    if (storage_init[cli.func]):
       ch.storage.init()
       bu.init(cli)
+
+   # Dispatch.
+   ch.profile_start()
    cli.func(cli)
+   ch.exit(0)
 
 
 ## Bootstrap ##
