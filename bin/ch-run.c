@@ -160,7 +160,6 @@ int main(int argc, char *argv[])
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
-   args.storage_dir = realpath_safe(args.storage_dir);
    args.c.type = image_type(args.c.img_ref, args.storage_dir);
 
    switch (args.c.type) {
@@ -171,6 +170,7 @@ int main(int argc, char *argv[])
       img_directory_verify(args.c.newroot, &args);
       break;
    case IMG_NAME:
+      args.storage_dir = realpath_safe(args.storage_dir);
       args.c.newroot = img_name2path(args.c.img_ref, args.storage_dir);
       img_name_verify(args.c.img_ref, args.c.newroot, &args);
       break;
