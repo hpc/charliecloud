@@ -14,12 +14,12 @@ load ../common
     run ch-run -w 00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: '-w' not allowed when running out of storage"* ]]
+    [[ $output = *"error: --write invalid when running from storage"* ]]
     
     run ch-run /var/tmp/"$USER.ch"/img/00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: Specified path is in storage"* ]]
+    [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
 
     run ch-run -s /doesnotexist 00_tiny -- echo foo
     echo "$output"
