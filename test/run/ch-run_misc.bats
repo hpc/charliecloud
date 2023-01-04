@@ -24,7 +24,7 @@ load ../common
     run ch-run -s /doesnotexist 00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: storage directory not found"* ]]
+    [[ $output = *"warning: storage directory not found: /doesnotexist"* ]]
 }
 
 @test 'specify storage' {

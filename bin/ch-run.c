@@ -88,8 +88,6 @@ struct args {
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
 void img_directory_verify(const char *img_path, const struct args *args);
-void img_name_verify(const char *img_path, const char *newroot,
-                     const struct args *args);
 int join_ct(int cli_ct);
 char *join_tag(char *cli_tag);
 int parse_int(char *s, bool extra_ok, char *error_tag);
@@ -172,7 +170,7 @@ int main(int argc, char *argv[])
    case IMG_NAME:
       args.storage_dir = realpath_safe(args.storage_dir);
       args.c.newroot = img_name2path(args.c.img_ref, args.storage_dir);
-      img_name_verify(args.c.img_ref, args.c.newroot, &args);
+      Tf ((args.unsafe && !args.c.writable), "--write invalid when running from storage");
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
@@ -289,24 +287,6 @@ void img_directory_verify(const char *newroot, const struct args *args)
    Tf (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
        "can't run directory images from storage (hint: run by name)");
 }
-
-/* Validate that it’s OK to run the image at img_path that was computed from
-   an IMG_NAME reference (e.g., the path exists, -w was not given); if this
-   fails, exit with error. */
-void img_name_verify(const char *name, const char *newroot,
-                     const struct args *args)
-{
-   if (!args->unsafe && args->c.writable) {
-      FATAL("--write invalid when running from storage");
-   } else if (!path_exists(newroot, NULL, false)) {
-      if (path_exists(args->storage_dir, NULL, false)) {
-         FATAL("named image not found: %s", name);
-      } else {
-         FATAL("storage directory not found: %s", args->storage_dir);
-      }
-   }
-}
-
 
 /* Find an appropriate join count; assumes --join was specified or implied.
    Exit with error if no valid value is available. */
@@ -483,6 +463,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 's':  // --storage
       args->storage_dir = arg;
+      if (!path_exists(arg, NULL, false)) {
+         WARNING("storage directory not found: %s", arg);
+      }
       break;
    case 't':  // --private-tmp
       args->c.private_tmp = true;
