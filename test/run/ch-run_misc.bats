@@ -30,8 +30,9 @@ load ../common
 @test 'specify storage' {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
-    ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/00_tiny"
-    run ch-run -s "${BATS_TMPDIR}" 00_tiny -- echo foo
+    #mkdir "${BATS_TMPDIR}/img"
+    ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/img/00_tiny"
+    run ch-run --unsafe -s "${BATS_TMPDIR}" 00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "foo" ]]
@@ -67,7 +68,7 @@ EOF
 
 @test 'run image by name' {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    run ch-run 00_tiny -- echo foo
+    run ch-run --unsafe 00_tiny -- echo foo
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "foo" ]]
