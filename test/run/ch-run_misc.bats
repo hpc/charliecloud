@@ -68,7 +68,7 @@ EOF
     fi
 
     # Rest of test uses custom storage path.
-    unset $CH_IMAGE_STORAGE
+    unset "$CH_IMAGE_STORAGE"
 
     # Specified on command line.
     rm -rf "$my_storage"
