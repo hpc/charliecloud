@@ -170,7 +170,7 @@ int main(int argc, char *argv[])
    case IMG_NAME:
       args.storage_dir = realpath_safe(args.storage_dir);
       args.c.newroot = img_name2path(args.c.img_ref, args.storage_dir);
-      Tf ((args.unsafe && !args.c.writable), "--write invalid when running from storage");
+      Zf ((!args.unsafe && args.c.writable), "--write invalid when running from storage");
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
