@@ -127,6 +127,10 @@ profile = None
 
 ## Exceptions ##
 
+class Fatal_Error(Exception):
+   def __init__(self, *args, **kwargs):
+      self.args = args
+      self.kwargs = kwargs
 class No_Fatman_Error(Exception): pass
 class Image_Unavailable_Error(Exception): pass
 
@@ -407,7 +411,7 @@ def DEBUG(msg, hint=None, **kwargs):
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
    log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
-      
+
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
@@ -417,8 +421,7 @@ def FATAL(msg, hint=None, **kwargs):
                      for f in reversed(traceback.extract_stack()[1:-1]))
    else:
       tr = None
-   ERROR(msg, hint, tr, **kwargs)
-   exit(1)
+   raise Fatal_Error(msg, hint, tr, **kwargs)
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."

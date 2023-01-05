@@ -1138,7 +1138,7 @@ EOF
     ch-image build -t tmpimg - <<'EOF'
 FROM alpine:3.9
 RUN for i in $(seq 0 1024); do \
-       dd if=/dev/urandom of=/$i bs=768K count=1 status=none; \
+       dd if=/dev/urandom of=/$i bs=1024K count=1 status=none; \
     done
 EOF
 
