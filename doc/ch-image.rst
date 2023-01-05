@@ -225,8 +225,8 @@ Storage directory
 =================
 
 :code:`ch-image` maintains state using normal files and directories located in
-its *storage directory*; contents include temporary images used for building
-and various caches.
+its *storage directory*; contents include various caches and temporary images
+used for building.
 
 In descending order of priority, this directory is located at:
 
@@ -260,11 +260,12 @@ images runnable with :code:`ch-run`, this is not a supported use case. The
 supported workflow uses :code:`ch-convert` to obtain a packed image; see the
 tutorial for details.
 
-The storage directory format changes on no particular schedule. Often
-:code:`ch-image` is able to upgrade the directory; however, downgrading is not
-supported and sometimes upgrade is not possible. In these cases,
+The storage directory format changes on no particular schedule.
+:code:`ch-image` is normally able to upgrade directories produced by a given
+Charliecloud version up to one year after that version's release. Upgrades
+outside this window and downgrades are not supported. In these cases,
 :code:`ch-image` will refuse to run until you delete and re-initialize the
-directory with :code:`ch-image reset`.
+storage directory with :code:`ch-image reset`.
 
 .. warning::
 

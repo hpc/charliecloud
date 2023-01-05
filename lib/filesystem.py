@@ -20,6 +20,10 @@ import charliecloud as ch
 # Storage directory format version. We refuse to operate on storage
 # directories with non-matching versions. Increment this number when the
 # format changes non-trivially.
+#
+# To see the directory formats in released versions:
+#
+#   $ git grep -F 'STORAGE_VERSION =' $(git tag | sort -V)
 STORAGE_VERSION = 5
 
 
