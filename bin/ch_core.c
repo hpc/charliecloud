@@ -245,12 +245,10 @@ enum img_type image_type(const char *ref, const char *storage_dir)
    struct stat st;
    FILE *fp;
    char magic[4];  // four bytes, not a string
-   char *img_path;
 
    // If there’s a directory in storage where we would expect there to be if
    // ref were an image name, assume it really is an image name.
-   img_path = img_name2path(ref, storage_dir);
-   if (path_exists(img_path, NULL, false))
+   if (path_exists(img_name2path(ref, storage_dir), NULL, false))
       return IMG_NAME;
 
    // Now we know ref is a path of some kind, so find it.

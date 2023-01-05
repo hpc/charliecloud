@@ -170,7 +170,8 @@ int main(int argc, char *argv[])
    case IMG_NAME:
       args.storage_dir = realpath_safe(args.storage_dir);
       args.c.newroot = img_name2path(args.c.img_ref, args.storage_dir);
-      Zf ((!args.unsafe && args.c.writable), "--write invalid when running from storage");
+      Tf (!args.c.writable || args.unsafe,
+          "--write invalid when running by name");
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
@@ -463,9 +464,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 's':  // --storage
       args->storage_dir = arg;
-      if (!path_exists(arg, NULL, false)) {
+      if (!path_exists(arg, NULL, false))
          WARNING("storage directory not found: %s", arg);
-      }
       break;
    case 't':  // --private-tmp
       args->c.private_tmp = true;
