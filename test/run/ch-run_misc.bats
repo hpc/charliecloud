@@ -7,16 +7,15 @@ load ../common
 }
 
 @test 'storage errors' {
+    scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    
-    echo "$CH_IMAGE_STORAGE"
 
     run ch-run -w 00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: --write invalid when running from storage"* ]]
-    
-    run ch-run /var/tmp/"$USER.ch"/img/00_tiny -- /bin/true
+    [[ $output = *'error: --write invalid when running by name'* ]]
+
+    run ch-run "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
@@ -24,7 +23,8 @@ load ../common
     run ch-run -s /doesnotexist 00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"warning: storage directory not found: /doesnotexist"* ]]
+    [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
+    [[ $output = *"error: can't stat: 00_tiny: No such file or directory"* ]]
 }
 
 @test 'symlink to image' {  # issue #50
@@ -53,36 +53,53 @@ EOF
     ch-run -w "$ch_timg" rm write
 }
 
-@test 'run images in storage' {
+@test '--unsafe' {
+    scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+    my_storage=${BATS_TMPDIR}/unsafe
 
-    # Run by name
+    # Default storage location.
     if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
+        sold=$CH_IMAGE_STORAGE
         unset CH_IMAGE_STORAGE
+        [[ ! -e ./00_tiny ]]
         ch-run --unsafe 00_tiny -- /bin/true
-        CH_IMAGE_STORAGE=/var/tmp/$USER.ch
+        CH_IMAGE_STORAGE=$sold
     fi
 
-    # Specify storage
-    rm -rf "${BATS_TMPDIR}/storage/img"
-    mkdir -p "${BATS_TMPDIR}/storage/img"
-    ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/storage/img/00_tiny"
-    ch-run --unsafe -s "${BATS_TMPDIR}/storage" 00_tiny -- /bin/true
+    # Rest of test uses custom storage path.
+    unset $CH_IMAGE_STORAGE
 
-    # Using environment variable
-    CH_IMAGE_STORAGE="${BATS_TMPDIR}/storage"
+    # Specified on command line.
+    rm -rf "$my_storage"
+    mkdir -p "$my_storage"/img
+    ch-convert -i ch-image -o dir 00_tiny "${my_storage}/img/00_tiny"
+    ch-run --unsafe -s "$my_storage" 00_tiny -- /bin/true
+
+    # Specifie with environment variable.
+    export CH_IMAGE_STORAGE=$my_storage
+
+    # Basic environment-variable specified.
     ch-run --unsafe 00_tiny -- /bin/true
+}
 
-    # Image in storage AND cwd
-    rm -rf "${BATS_TMPDIR}/run_wd"
-    mkdir "${BATS_TMPDIR}/run_wd"
-    cd "${BATS_TMPDIR}/run_wd"
-    # copy image to cwd
-    ch-convert -i ch-image -o dir 00_tiny "./00_tiny"
-    # remove 'true' from image in cwd
+@test 'image in both storage and cwd' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    cd "$BATS_TMPDIR"
+
+    # Set up a fixure image in $CWD that causes a collision with the named
+    # image, and that’s missing /bin/true so it pukes if we try to run it.
+    # That is, in both cases, we want run-by-name to win.
+    rm -rf ./00_tiny
+    ch-convert -i ch-image -o dir 00_tiny ./00_tiny
     rm ./00_tiny/bin/true
-    # Try to run true. If this fails, we're running out of cwd instead of
-    # storage, meaning ch-run is not working as expected.
+
+    # Default.
+    ch-run 00_tiny -- /bin/true
+
+    # With --unsafe.
     ch-run --unsafe 00_tiny -- /bin/true
 }
 
