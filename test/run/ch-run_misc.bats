@@ -8,7 +8,7 @@ load ../common
 
 @test 'storage errors' {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-
+    
     echo "$CH_IMAGE_STORAGE"
 
     run ch-run -w 00_tiny -- /bin/true
@@ -20,7 +20,7 @@ load ../common
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
-    
+
     run ch-run -s /doesnotexist 00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
