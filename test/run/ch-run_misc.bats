@@ -27,19 +27,6 @@ load ../common
     [[ $output = *"warning: storage directory not found: /doesnotexist"* ]]
 }
 
-@test 'specify storage' {
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-
-    mkdir "${BATS_TMPDIR}/img"
-    ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/img/00_tiny"
-    run ch-run --unsafe -s "${BATS_TMPDIR}" 00_tiny -- echo foo
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = "foo" ]]
-
-    rm -rf "${BATS_TMPDIR}/img"
-}
-
 @test 'symlink to image' {  # issue #50
     scope quick
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
@@ -66,12 +53,37 @@ EOF
     ch-run -w "$ch_timg" rm write
 }
 
-@test 'run image by name' {
+@test 'run images in storage' {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    run ch-run --unsafe 00_tiny -- echo foo
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = "foo" ]]
+
+    # Run by name
+    if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
+        unset CH_IMAGE_STORAGE
+        ch-run --unsafe 00_tiny -- /bin/true
+        CH_IMAGE_STORAGE=/var/tmp/$USER.ch
+    fi
+
+    # Specify storage
+    rm -rf "${BATS_TMPDIR}/storage/img"
+    mkdir -p "${BATS_TMPDIR}/storage/img"
+    ch-convert -i ch-image -o dir 00_tiny "${BATS_TMPDIR}/storage/img/00_tiny"
+    ch-run --unsafe -s "${BATS_TMPDIR}/storage" 00_tiny -- /bin/true
+
+    # Using environment variable
+    CH_IMAGE_STORAGE="${BATS_TMPDIR}/storage"
+    ch-run --unsafe 00_tiny -- /bin/true
+
+    # Image in storage AND cwd
+    rm -rf "${BATS_TMPDIR}/run_wd"
+    mkdir "${BATS_TMPDIR}/run_wd"
+    cd "${BATS_TMPDIR}/run_wd"
+    # copy image to cwd
+    ch-convert -i ch-image -o dir 00_tiny "./00_tiny"
+    # remove 'true' from image in cwd
+    rm ./00_tiny/bin/true
+    # Try to run true. If this fails, we're running out of cwd instead of
+    # storage, meaning ch-run is not working as expected.
+    ch-run --unsafe 00_tiny -- /bin/true
 }
 
 @test '/usr/bin/ch-ssh' {
