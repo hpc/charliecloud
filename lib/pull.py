@@ -1,5 +1,5 @@
 import json
-import os.path
+import os
 import sys
 
 import charliecloud as ch
@@ -178,7 +178,8 @@ class Image_Puller:
          # FIXME (issue #1101): If it's a v2 manifest we could use it instead
          # of re-requesting later. Maybe we could here move/copy it over to
          # the skinny manifest path.
-         self.manifest = fm
+         self.manifest = fm # FIXME #1101: if CI passes try removing this line
+         os.symlink(str(fm), str(self.manifest_path))
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
