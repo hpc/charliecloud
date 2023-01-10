@@ -1058,7 +1058,7 @@ internal SquashFUSE code, inferring the output format::
 
   $ ch-image build -t hello .
   [...]
-  $ ch-image export hello /var/tmp/hello.sqfs
+  $ ch-image export hello /var/tmp
   input:   ch-image  hello
   output:  squashfs  /var/tmp/hello.sqfs
   copying ...
