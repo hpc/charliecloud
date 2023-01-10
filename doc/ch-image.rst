@@ -1005,7 +1005,8 @@ Image formats
   :code:`dir`
     Ordinary filesystem directory (i.e., not a mount point) containing an
     unpacked image. Output directories that already exist are replaced if they
-    look like an image; otherwise, exit with an error.
+    look like an image, unless :code:`--no-clobber` is
+    specified; otherwise, exit with an error.
 
   :code:`squash`
     SquashFS filesystem archive containing the flattened image. SquashFS
