@@ -957,8 +957,6 @@ producing the final format actually needed.
   :code:`PATH`
     Destination path for exported image.
 
-  :code:`-h`, :code:`--help`
-    Print help and exit.
 
   :code:`-n`, :code:`--dry-run`
     Don't read the input or write the output. Useful for testing format
