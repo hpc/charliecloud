@@ -963,7 +963,7 @@ producing the final format actually needed.
     inference.
 
   :code:`--no-clobber`
-    Error if :code:`OUT` already exists, rather than replacing it.
+    Error if image at :code:`PATH` already exists, rather than replacing it.
 
   :code:`-o`, :code:`--out-fmt FMT`
     Output image format is :code:`FMT`; inferred if omitted.
