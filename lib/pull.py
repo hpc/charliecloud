@@ -179,7 +179,8 @@ class Image_Puller:
          # of re-requesting later. Maybe we could here move/copy it over to
          # the skinny manifest path.
          self.manifest = fm # FIXME #1101: if CI passes try removing this line
-         os.symlink(str(fm), str(self.manifest_path))
+         if (not os.path.exists(str(self.manifest_path))):
+            os.symlink(str(fm), str(self.manifest_path))
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
