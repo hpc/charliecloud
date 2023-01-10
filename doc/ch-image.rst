@@ -1015,9 +1015,8 @@ Image formats
     the SquashFS-Tools installed which allows unpacking into a directory, just
     like tar. Due to this greater flexibility, SquashFS is preferred to tar.
 
-    **Note:** Conversions to and from SquashFS are quite noisy due to the
-    verbosity of the underlying :code:`mksquashfs(1)` and
-    :code:`unsquashfs(1)` tools.
+    **Note:** Conversions to SquashFS are quite noisy due to the verbosity
+    of the underlying :code:`mksquashfs(1)` and :code:`unsquashfs(1)` tools.
 
   :code:`tar`
     Tar archive containing the flattened image with no layer sub-archives.
