@@ -46,7 +46,6 @@ class Image_Puller:
                 "config_hash",
                 "digests",
                 "image",
-                "manifest",
                 "layer_hashes",
                 "registry",
                 "sid_input",
@@ -58,7 +57,6 @@ class Image_Puller:
       self.digests = dict()
       self.image = image
       self.layer_hashes = None
-      self.manifest = None
       self.registry = rg.HTTP(src_ref)
       self.sid_input = None
       self.src_ref = src_ref
@@ -178,7 +176,6 @@ class Image_Puller:
          # FIXME (issue #1101): If it's a v2 manifest we could use it instead
          # of re-requesting later. Maybe we could here move/copy it over to
          # the skinny manifest path.
-         self.manifest = fm # FIXME #1101: if CI passes try removing this line
          if (not os.path.exists(str(self.manifest_path))):
             os.symlink(str(self.fatman_path), str(self.manifest_path))
          raise ch.No_Fatman_Error()
@@ -223,25 +220,22 @@ class Image_Puller:
       self.config_hash = None
       self.layer_hashes = None
       # obtain the manifest
-      if (self.manifest != None):
-         # FIXME #1101 replace all mainfest with self.manifest?
-         manifest = self.manifest
-      else:
-         try:
-            # internal manifest library, e.g. for "FROM scratch"
-            manifest = manifests_internal[str(self.src_ref)]
-            ch.INFO("manifest: using internal library")
-         except KeyError:
-            # download the file and parse it
-            if (ch.arch == "yolo" or self.architectures is None):
-               digest = None
-            else:
-               digest = self.architectures[ch.arch]
-            ch.DEBUG("manifest digest: %s" % digest)
-            self.registry.manifest_to_file(self.manifest_path,
-                                          "manifest: downloading",
-                                          digest=digest)
-            manifest = self.manifest_path.json_from_file("manifest")
+
+      try:
+         # internal manifest library, e.g. for "FROM scratch"
+         manifest = manifests_internal[str(self.src_ref)]
+         ch.INFO("manifest: using internal library")
+      except KeyError:
+         # download the file and parse it
+         if (ch.arch == "yolo" or self.architectures is None):
+            digest = None
+         else:
+            digest = self.architectures[ch.arch]
+         ch.DEBUG("manifest digest: %s" % digest)
+         self.registry.manifest_to_file(self.manifest_path,
+                                       "manifest: downloading",
+                                       digest=digest)
+         manifest = self.manifest_path.json_from_file("manifest")
       # validate schema version
       try:
          version = manifest['schemaVersion']
