@@ -180,9 +180,6 @@ class Image_Puller:
          # the skinny manifest path.
          self.manifest = fm # FIXME #1101: if CI passes try removing this line
          if (not os.path.exists(str(self.manifest_path))):
-            #ch.INFO("FM: %s" % str(fm))
-            #ch.INFO("FAT: %s" % str(self.fatman_path))
-            #ch.INFO("SKINNY: %s" % str(self.manifest_path))
             os.symlink(str(self.fatman_path), str(self.manifest_path))
          raise ch.No_Fatman_Error()
       if ("errors" in fm):

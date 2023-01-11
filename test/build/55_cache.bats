@@ -363,7 +363,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'. FROM'* ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output = *'manifest: downloading'* ]]
+    [[ $output = *'manifest list: downloading'* ]]
     [[ $output = *'config: downloading'* ]]
     [[ $output = *'. RUN'* ]]
     run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
