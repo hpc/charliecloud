@@ -8,7 +8,8 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
     [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
-    unset FI_LOG_LEVEL=
+    unset FI_LOG_LEVEL
+    unset FI_PROVIDER
 }
 
 count_ranks () {
@@ -38,13 +39,13 @@ count_ranks () {
 @test "${ch_tag}/validate gni injection" {
     [[ -n "$ch_cray" ]] || skip "host is not cray"
     [[ "$cray_prov" == 'gni' ]] || skip "gni only"
-    export FI_LOG_LEVEL=debug
-    export FI_LOG_PROV=gni
+    [[ -n "$CH_TEST_OFI_PATH" ]] || skip "--fi-provider not set"
+    export FI_LOG_LEVEL=info
     run $ch_mpirun_node ch-run --join "$ch_img" -- /hello/hello 2>&1
     echo "$output"
     [[ $status -eq 0 ]]
     [[ "$output" == *' registering provider: gni'* ]]
-    [[ "$output" == *'gni:'*'GNIX_INT_TX_BUF_SZ'* ]]
+    [[ "$output" == *'gni:'*'gnix_ep_nic_init()'*'Allocated new NIC for EP'* ]]
 }
 
 @test "${ch_tag}/validate cxi injection" {
@@ -53,6 +54,7 @@ count_ranks () {
     export FI_LOG_LEVEL=debug
     export FI_LOG_SUBSYS=mr
     export FI_LOG_PROV=cxi
+    export FI_PROVIDER=cxi
     # shellcheck disable=SC2086
     run $ch_mpirun_node ch-run --join "$ch_img" -- /hello/hello 2>&1
     echo "$output"

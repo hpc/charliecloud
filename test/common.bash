@@ -105,17 +105,10 @@ cray_ofi_or_skip () {
         [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
         # shellcheck disable=SC2086
         if [[ $cray_prov == 'gni' ]]; then
-            if [[ "$CH_TEST_OFI_PATH" != *'libgnix-fi.so' ]]; then
-                skip '--fi-path: does not end with libgnix-fi.so'
-            fi
-            export CH_FROMHOST_OFI_GNI=$CH_TEST_OFI_PATH
-            $ch_mpirun_node ch-fromhost --cray-libfabric-gni "$1"
-        elif [[ $cray_prov == 'cxi' ]]; then
-            if [[ $CH_TEST_OFI_PATH != *'libfabric.so' ]]; then
-                skip '--fi-path: does not end with libfabric.so'
-            fi
-            export CH_FROMHOST_OFI_GNI=$CH_TEST_OFI_PATH
-            $ch_mpirun_node ch-fromhost --cray-libfabric-cxi "$1"
+            $ch_mpirun_node ch-fromhost --cray-mpi-gni "$1"
+        fi
+        if [[ $cray_prov == 'cxi' ]]; then
+            $ch_mpirun_node ch-fromhost --cray-mpi-cxi "$1"
         fi
     else
         skip 'host is not a Cray'

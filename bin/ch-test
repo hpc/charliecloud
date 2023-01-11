@@ -66,7 +66,7 @@ Additional options:
   -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
   -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
-  --fi-path PATH         path to libfabric provider injection target(s)
+  --fi-provider PATH     path to libfabric provider injection target(s)
   --pack-dir DIR         packed image directory; same as \$CH_TEST_TARDIR
   --pack-fmt FMT         packed image format; same as \$CH_TEST_PACK_FMT
   --pedandic {yes,no}    set pedantic mode rather than guessing
@@ -1016,6 +1016,13 @@ if [[ -n "$FI_PROVIDER" ]]; then
 fi
 if [[ -n "$FI_PROVIDER_PATH" ]]; then
     fatal 'host FI_PROVIDER_PATH set'
+fi
+
+# If srun --mpi=pmix set variable to avoid spurious error. See
+# https://github.com/open-mpi/ompi/issues/7516.
+echo $CH_TEST_SLURM_MPI
+if [[ "$CH_TEST_SLURM_MPI" == '--mpi=pmix' ]]; then
+    export PMIX_MCA_gds=hash
 fi
 
 # Ensure BATS_TMPDIR is set to /tmp (issue #278).

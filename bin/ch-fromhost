@@ -435,8 +435,9 @@ if [ "$fi_prov_found" ] && [ -z "$dest" ]; then
        warn "using ${image}${ch_env_p}; --set-env required at run time"
     else
        img_libfabric=$(find "$image" -name 'libfabric.so')
-       debug_indent "found: ${image}${img_libfabric}"
-       fi_prov_dest=$(dirname "$img_libfabric")
+       img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
+       debug_indent "found: ${image}${img_libfabric_path}"
+       fi_prov_dest=$(dirname "/${img_libfabric_path}")
        fi_prov_dest="${fi_prov_dest}/libfabric"
        queue_mkdir "$fi_prov_dest"
     fi
