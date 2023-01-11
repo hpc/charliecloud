@@ -1045,7 +1045,11 @@ filesystem.
 
   4. If `ch-image` is installed: :code:`ch-image` internal storage.
 
-  5. Otherwise: No format inference.
+  5. If Podman is installed: Podman internal storage.
+
+  6. If Docker is installed: Docker internal storage.
+
+  7. Otherwise: No format inference.
 
 
 Examples
@@ -1072,7 +1076,16 @@ Same conversion, but no format inference::
   copying ...
   done
 
+Using :code:`ch-image build --output` to export at the end of the build sequence::
 
+  $ ch-image build --output /var/tmp -t hello .
+  [...]
+  input:   ch-image  hello
+  output:  squashfs  /var/tmp/hello.sqfs
+  copying ...
+  done
+  $ ch-run /var/tmp/hello.sqfs -- echo hello
+  hello
 ..  LocalWords:  FMT fmt
 
 :code:`gestalt`
