@@ -1223,8 +1223,6 @@ filesystems backed by a block device).
 The things that matter seem to be the same as Charliecloud defaults.
 Therefore, for now we just ignore mounts.
 
-We do add :code:`--no-home` in OCI mode.
-
 .. code-block:: javascript
 
      "process": {
