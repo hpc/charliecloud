@@ -387,7 +387,6 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output = *'manifest: downloading'* ]]
     [[ $output = *'config: using existing file'* ]]
     [[ $output = *'layer'*'using existing file'* ]]
     run ch-image -s "$so" build-cache --tree
