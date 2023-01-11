@@ -42,7 +42,9 @@ class Image_Pusher:
                 "dst_ref",   # destination of upload
                 "image",     # Image object we are uploading
                 "layers",    # list of (digest, .tar.gz path), lowest first
-                "manifest")  # sequence of bytes
+                "manifest",  # sequence of bytes
+                "ul")        # authenticated registry? idk I wrote this code like
+                             # four months ago...
 
    def __init__(self, image, dst_ref):
       self.config = None
