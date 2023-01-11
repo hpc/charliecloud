@@ -235,8 +235,8 @@ class Image_Puller:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
          self.registry.manifest_to_file(self.manifest_path,
-                                       "manifest: downloading",
-                                       digest=digest)
+                                        "manifest: downloading",
+                                        digest=digest)
          manifest = self.manifest_path.json_from_file("manifest")
       # validate schema version
       try:
