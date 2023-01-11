@@ -223,7 +223,6 @@ class Image_Puller:
       self.config_hash = None
       self.layer_hashes = None
       # obtain the manifest
-
       try:
          # internal manifest library, e.g. for "FROM scratch"
          manifest = manifests_internal[str(self.src_ref)]
