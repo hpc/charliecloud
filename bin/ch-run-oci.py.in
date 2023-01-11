@@ -16,6 +16,7 @@ sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
                     + "/../lib/charliecloud"))
 import charliecloud as ch
 import misc
+import filesystem as fs
 
 
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
@@ -90,13 +91,14 @@ def args_parse():
    args_.no_cache = None
    args_.no_lock = False
    args_.password_many = False
+   args_.profile = False
    args_.storage = None
    args_.tls_no_verify = False
    ch.init(args_)
 
    if len(sys.argv) < 2:
       ap.print_help(file=sys.stderr)
-      sys.exit(1)
+      ch.exit(1)
 
    bundle_ = bundle_from_cid(args_.cid)
    if ("bundle" in args_ and args_.bundle != bundle_):
@@ -131,16 +133,16 @@ def debug_lines(s):
 def image_fixup(path):
    ch.VERBOSE("fixing up image: %s" % path)
    # Metadata directory.
-   ch.Path("%s/ch/bin" % path).mkdirs()
+   fs.Path("%s/ch/bin" % path).mkdirs()
    # Mount points.
-   ch.Path("%s/etc/hosts" % path).file_ensure_exists()
-   ch.Path("%s/etc/resolv.conf" % path).file_ensure_exists()
+   fs.Path("%s/etc/hosts" % path).file_ensure_exists()
+   fs.Path("%s/etc/resolv.conf" % path).file_ensure_exists()
    # /etc/{passwd,group}
-   ch.Path("%s/etc/passwd" % path).file_write("""\
+   fs.Path("%s/etc/passwd" % path).file_write("""\
 root:x:0:0:root:/root:/bin/sh
 nobody:x:65534:65534:nobody:/:/bin/false
 """)
-   ch.Path("%s/etc/group" % path).file_write("""\
+   fs.Path("%s/etc/group" % path).file_write("""\
 root:x:0:
 nogroup:x:65534:
 """)
@@ -148,18 +150,18 @@ nogroup:x:65534:
    # unprivileged user namespace. See also the default environment.
    #
    # Debian apt/dpkg/etc. want to chown(1), chgrp(1), etc. in various ways.
-   ch.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path)
-   ch.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
+   fs.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path)
+   fs.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
    # Debian package management also wants to mess around with users. This is
    # causing problems with /etc/gshadow and other files. These links don't
    # work if they are in /ch/bin, I think because dpkg is resetting the path?
    # For now we'll do this, but I don't like it. fakeroot(1) also solves the
    # problem (see issue #472).
-   ch.Path("/bin/true").symlink("%s/bin/chown" % path, clobber=True)
-   ch.Path("/bin/true").symlink("%s/usr/sbin/groupadd" % path, clobber=True)
-   ch.Path("/bin/true").symlink("%s/usr/sbin/useradd" % path, clobber=True)
-   ch.Path("/bin/true").symlink("%s/usr/sbin/usermod" % path, clobber=True)
-   ch.Path("/bin/true").symlink("%s/usr/bin/chage" % path, clobber=True)
+   fs.Path("/bin/true").symlink("%s/bin/chown" % path, clobber=True)
+   fs.Path("/bin/true").symlink("%s/usr/sbin/groupadd" % path, clobber=True)
+   fs.Path("/bin/true").symlink("%s/usr/sbin/useradd" % path, clobber=True)
+   fs.Path("/bin/true").symlink("%s/usr/sbin/usermod" % path, clobber=True)
+   fs.Path("/bin/true").symlink("%s/usr/bin/chage" % path, clobber=True)
 
 def op_create():
    # Validate arguments.
@@ -178,7 +180,7 @@ def op_create():
       # be remarkably hairy unless you use a 3rd-party module.
       def exit_(sig, frame):
          ch.VERBOSE("dummy supervisor: done")
-         sys.exit(0)
+         ch.exit(0)
       signal.signal(signal.SIGTERM, exit_)
       ch.VERBOSE("dummy supervisor: starting")
       sleep_forever()
@@ -219,7 +221,7 @@ def op_start():
    #
    # GNU tar, when it thinks it's running as root, tries to chown(2) and
    # chgrp(2) files to whatever's in the tarball. --no-same-owner avoids this.
-   with ch.Path(args.bundle + "/environment").open_("wt") as fp:
+   with fs.Path(args.bundle + "/environment").open_("wt") as fp:
       for line in (  c["process"]["env"]                  # from Dockerfile
                    + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
          line = re.sub(r"^(PATH=)", "\\1/ch/bin:", line)
@@ -245,11 +247,11 @@ def op_start():
 
    # Execute user command. We can't execv(2) because we have to do cleanup
    # after it exits.
-   ch.Path(args.bundle + "/user_started").file_ensure_exists()
+   fs.Path(args.bundle + "/user_started").file_ensure_exists()
    ch.VERBOSE("user command: %s" % ca)
    # Standard output disappears, so send stdout to stderr.
    cp = subprocess.run(ca, stdout=2)
-   ch.Path(args.bundle + "/user_done").file_ensure_exists()
+   fs.Path(args.bundle + "/user_done").file_ensure_exists()
    ch.VERBOSE("user command done")
 
    # Stop dummy supervisor.
@@ -297,7 +299,7 @@ def pid_file_from_bundle(bundle):
 def state_load():
    st = types.SimpleNamespace()
 
-   st.config = json.load(ch.Path(args.bundle + "/config.json").open_("rt"))
+   st.config = json.load(fs.Path(args.bundle + "/config.json").open_("rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
    v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
@@ -321,4 +323,8 @@ def state_load():
 
 
 if (__name__ == "__main__"):
-   main()
+   try:
+      main()
+   except ch.Fatal_Error as x:
+      ch.ERROR(*x.args, **x.kwargs)
+      ch.exit(1)

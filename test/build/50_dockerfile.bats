@@ -896,6 +896,42 @@ EOF
     test -f "$CH_IMAGE_STORAGE"/img/tmpimg/README
 }
 
+@test 'Dockerfile: COPY to nonexistent directory' {
+    scope standard
+
+    # file to one directory that doesn’t exist
+    build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+RUN ! test -e /foo
+COPY fixtures/empty-file /foo/file_
+RUN test -f /foo/file_
+EOF
+
+    # file to multiple directories that don’t exist
+    build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+RUN ! test -e /foo
+COPY fixtures/empty-file /foo/bar/file_
+RUN test -f /foo/bar/file_
+EOF
+
+    # directory to one directory that doesn’t exist
+    build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+RUN ! test -e /foo
+COPY fixtures /foo/dir_
+RUN test -d /foo/dir_ && test -f /foo/dir_/empty-file
+EOF
+
+    # directory: multiple parents DNE
+    build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM 00_tiny
+RUN ! test -e /foo
+COPY fixtures /foo/bar/dir_
+RUN test -d /foo/bar/dir_ && test -f /foo/bar/dir_/empty-file
+EOF
+}
+
 @test 'Dockerfile: COPY errors' {
     scope standard
     [[ $CH_TEST_BUILDER = buildah* ]] && skip 'Buildah untested'
@@ -999,7 +1035,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: can't COPY: must specify at least one source"* ]]
+        [[ $output = *"error: must specify at least one source"* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
@@ -1030,7 +1066,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: can't COPY: no context because \"-\" given"* ]]
+        [[ $output = *'error: no context because "-" given'* ]]
     else
         [[ $output = *'COPY failed: file not found in build context or'* ]]
     fi
@@ -1216,5 +1252,5 @@ FROM /alpine:3.9
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ ${lines[-2]} = 'error: image ref syntax, char 1: /alpine:3.9' ]]
+    [[ ${lines[-3]} = 'error: image ref syntax, char 1: /alpine:3.9' ]]
 }

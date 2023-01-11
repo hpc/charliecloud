@@ -267,6 +267,11 @@ else
     }
 fi
 
+# Podman wrapper (for consistency w docker)
+podman_ () {
+    podman "$@"
+}
+
 # Do we have what we need?
 env_require CH_TEST_TARDIR
 env_require CH_TEST_IMGDIR

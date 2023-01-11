@@ -8,6 +8,8 @@ import sys
 
 import build_cache as bu
 import charliecloud as ch
+import image as im
+import filesystem as fs
 import pull
 import version
 
@@ -25,7 +27,7 @@ class Dependencies(Action_Exit):
       # ch.init() not yet called, so must get verbosity from arguments.
       ch.dependencies_check()
       if (cli.verbose >= 1):
-         print("lark path: %s" % os.path.normpath(inspect.getfile(ch.lark)))
+         print("lark path: %s" % os.path.normpath(inspect.getfile(im.lark)))
       sys.exit(0)
 
 class Version(Action_Exit):
@@ -55,12 +57,15 @@ def build_cache(cli):
 
 def delete(cli):
    delete_ct = 0
-   for img in ch.Image.glob(cli.image_ref):
+   for img in im.Image.glob(cli.image_ref):
+      img.unpack_delete()
+      delete_ct += 1
+   for img in im.Image.glob(cli.image_ref + "_stage[0-9]*"):
       img.unpack_delete()
       delete_ct += 1
    if (delete_ct == 0):
       ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
-   bu.cache.worktrees_prune()
+   bu.cache.worktrees_fix()
 
 def gestalt_bucache(cli):
    bu.have_deps()
@@ -78,7 +83,7 @@ def gestalt_storage_path(cli):
 def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can't copy: not found: %s" % cli.path)
-   dst = ch.Image(ch.Image_Ref(cli.image_ref))
+   dst = im.Image(im.Reference(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
    dst.unpack_clear()
@@ -99,16 +104,16 @@ def list_(cli):
          ch.FATAL("not a storage directory: %s" % ch.storage.root)
       images = sorted(imgdir.listdir())
       if (len(images) >= 1):
-         img_width = max(len(str(ref)) for ref in images)
+         img_width = max(len(ref) for ref in images)
          for ref in images:
-            img = ch.Image(ch.Image_Ref(ref.parts[-1]))
+            img = im.Image(im.Reference(fs.Path(ref).parts[-1]))
             if cli.long:
                print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
             else:
                print(img)
    else:
       # list specified image
-      img = ch.Image(ch.Image_Ref(cli.image_ref))
+      img = im.Image(im.Reference(cli.image_ref))
       print("details of image:    %s" % img.ref)
       # present locally?
       if (not img.unpack_exist_p):
@@ -138,20 +143,32 @@ def list_(cli):
          pullet.fatman_load()
          remote = "yes"
          arch_aware = "yes"
-         arch_avail = " ".join(sorted(pullet.architectures.keys()))
+         arch_keys = sorted(pullet.architectures.keys())
+         try:
+            fmt_space = len(max(arch_keys,key=len))
+            arch_avail = []
+            for key in arch_keys:
+               arch_avail.append("%-*s  %s" % (fmt_space, key,
+                                               pullet.digests[key][:11]))
+         except ValueError:
+            # handles case where arch_keys is empty, e.g.
+            # mcr.microsoft.com/windows:20H2.
+            arch_avail = [None]
       except ch.Image_Unavailable_Error:
          remote = "no (or you are not authorized)"
          arch_aware = "n/a"
-         arch_avail = "n/a"
+         arch_avail = ["n/a"]
       except ch.No_Fatman_Error:
          remote = "yes"
          arch_aware = "no"
-         arch_avail = "unknown"
+         arch_avail = ["unknown"]
       pullet.done()
       print("available remotely:  %s" % remote)
       print("remote arch-aware:   %s" % arch_aware)
       print("host architecture:   %s" % ch.arch_host)
-      print("archs available:     %s" % arch_avail)
+      print("archs available:     %s" % arch_avail[0])
+      for arch in arch_avail[1:]:
+         print((" " * 21) + arch)
 
 def reset(cli):
    ch.storage.reset()
@@ -159,7 +176,7 @@ def reset(cli):
 def undelete(cli):
    if (cli.bucache != ch.Build_Mode.ENABLED):
       ch.FATAL("only available when cache is enabled")
-   img = ch.Image(ch.Image_Ref(cli.image_ref))
+   img = im.Image(im.Reference(cli.image_ref))
    if (img.unpack_exist_p):
       ch.FATAL("image exists; will not overwrite")
    (_, git_hash) = bu.cache.find_image(img)

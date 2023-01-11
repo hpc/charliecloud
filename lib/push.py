@@ -2,15 +2,17 @@ import json
 import os.path
 
 import charliecloud as ch
+import image as im
+import registry as rg
 import version
 
 
 ## Main ##
 
 def main(cli):
-   src_ref = ch.Image_Ref(cli.source_ref)
+   src_ref = im.Reference(cli.source_ref)
    ch.INFO("pushing image:   %s" % src_ref)
-   image = ch.Image(src_ref, cli.image)
+   image = im.Image(src_ref, cli.image)
    # FIXME: validate it's an image using Megan's new function (PR #908)
    if (not os.path.isdir(image.unpack_path)):
       if (cli.image is not None):
@@ -22,10 +24,10 @@ def main(cli):
    else:
       ch.VERBOSE("image path:      %s" % image.unpack_path)
    if (cli.dest_ref is not None):
-      dst_ref = ch.Image_Ref(cli.dest_ref)
+      dst_ref = im.Reference(cli.dest_ref)
       ch.INFO("destination:     %s" % dst_ref)
    else:
-      dst_ref = ch.Image_Ref(cli.source_ref)
+      dst_ref = im.Reference(cli.source_ref)
    up = Image_Pusher(image, dst_ref)
    up.push()
    ch.done_notify()
@@ -74,8 +76,8 @@ class Image_Pusher:
    def manifest_new(class_):
       "Return an empty manifest, ready to be filled in."
       return { "schemaVersion": 2,
-               "mediaType": ch.TYPES_MANIFEST["docker2"],
-               "config": { "mediaType": ch.TYPE_CONFIG,
+               "mediaType": rg.TYPES_MANIFEST["docker2"],
+               "config": { "mediaType": rg.TYPE_CONFIG,
                            "size": None,
                            "digest": None },
                "layers": [],
@@ -113,7 +115,7 @@ class Image_Pusher:
          hash_c = path_c.file_hash()
          size_c = path_c.file_size()
          tars_c.append((hash_c, path_c))
-         manifest["layers"].append({ "mediaType": ch.TYPE_LAYER,
+         manifest["layers"].append({ "mediaType": rg.TYPE_LAYER,
                                      "size": size_c,
                                      "digest": "sha256:" + hash_c })
       # Prepare metadata.
@@ -171,7 +173,7 @@ class Image_Pusher:
 
    def upload(self):
       ch.INFO("starting upload")
-      #ul = ch.Registry_HTTP(self.dst_ref)
+      #ul = rg.HTTP(self.dst_ref)
       for (i, (digest, tarball)) in enumerate(self.layers, start=1):
          self.ul.layer_from_file(digest, tarball,
                             "layer %d/%d: " % (i, len(self.layers)))

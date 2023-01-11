@@ -50,17 +50,20 @@ const struct argp_option options[] = {
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },
+   { "home",          -12, 0,      0, "mount host $HOME at guest /home/$USER" },
    { "join",          'j', 0,      0, "use same container as peer ch-run" },
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
-   { "no-home",        -2, 0,      0, "don't bind-mount your home directory"},
+   { "no-home",        -2, 0,      0, "(deprecated)"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
      "set environment variables per ARG"},
+   { "storage",       's', "DIR",  0, "set DIR as storage directory"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
+   { "unsafe",        -13, 0,      0, "do unsafe things (internal use only)" },
    { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
@@ -74,7 +77,9 @@ const struct argp_option options[] = {
 struct args {
    struct container c;
    struct env_delta *env_deltas;
+   char *storage_dir;
    char *initial_dir;
+   bool unsafe;
 };
 
 
@@ -82,11 +87,13 @@ struct args {
 
 void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
+void img_directory_verify(const char *img_path, const struct args *args);
 int join_ct(int cli_ct);
 char *join_tag(char *cli_tag);
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
+char *storage_default(void);
 
 
 /** Global variables **/
@@ -111,6 +118,9 @@ int main(int argc, char *argv[])
           argv_to_string(argv));
 #endif
 
+   username = getenv("USER");
+   Te (username != NULL, "$USER not set");
+
    verbose = LL_INFO;  // in ch_misc.c
    args = (struct args){
       .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
@@ -118,20 +128,21 @@ int main(int argc, char *argv[])
                                .container_gid = getegid(),
                                .container_uid = geteuid(),
                                .env_expand = true,
-                               .img_path = NULL,
+                               .host_home = NULL,
+                               .img_ref = NULL,
                                .newroot = NULL,
                                .join = false,
                                .join_ct = 0,
                                .join_pid = 0,
                                .join_tag = NULL,
-                               .private_home = false,
                                .private_passwd = false,
                                .private_tmp = false,
-                               .old_home = getenv("HOME"),
                                .type = IMG_NONE,
                                .writable = false },
       .env_deltas = list_new(sizeof(struct env_delta), 0),
-      .initial_dir = NULL };
+      .storage_dir = storage_default(),
+      .initial_dir = NULL,
+      .unsafe = false };
 
    /* I couldn't find a way to set argp help defaults other than this
       environment variable. Kludge sets/unsets only if not already set. */
@@ -146,15 +157,21 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
-   args.c.img_path = argv[arg_next++];
-   args.c.type = img_type_get(args.c.img_path);
+   args.c.img_ref = argv[arg_next++];
+   args.c.type = image_type(args.c.img_ref, args.storage_dir);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
       if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-      args.c.newroot = realpath(args.c.img_path, NULL);
-      Tf (args.c.newroot != NULL, "can't find image: %s", args.c.img_path);
+      args.c.newroot = realpath_safe(args.c.img_ref);
+      img_directory_verify(args.c.newroot, &args);
+      break;
+   case IMG_NAME:
+      args.storage_dir = realpath_safe(args.storage_dir);
+      args.c.newroot = img_name2path(args.c.img_ref, args.storage_dir);
+      Tf (!args.c.writable || args.unsafe,
+          "--write invalid when running by name");
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
@@ -162,7 +179,7 @@ int main(int argc, char *argv[])
 #endif
       break;
    case IMG_NONE:
-      FATAL("unknown image type: %s", args.c.img_path);
+      FATAL("unknown image type: %s", args.c.img_ref);
       break;
    }
 
@@ -175,15 +192,14 @@ int main(int argc, char *argv[])
       host_tmp = getenv("TMPDIR");
    else
       host_tmp = "/tmp";
-   username = getenv("USER");
-   Te (username != NULL, "$USER not set");
 
    c_argv = list_new(sizeof(char *), argc - arg_next);
    for (int i = 0; i < argc - arg_next; i++)
       c_argv[i] = argv[i + arg_next];
 
    VERBOSE("verbosity: %d", verbose);
-   VERBOSE("image: %s", args.c.img_path);
+   VERBOSE("image: %s", args.c.img_ref);
+   VERBOSE("storage: %s", args.storage_dir);
    VERBOSE("newroot: %s", args.c.newroot);
    VERBOSE("container uid: %u", args.c.container_uid);
    VERBOSE("container gid: %u", args.c.container_gid);
@@ -206,8 +222,8 @@ void fix_environment(struct args *args)
 {
    char *old_value, *new_value;
 
-   // $HOME: Set to /home/$USER unless --no-home specified.
-   if (!args->c.private_home)
+   // $HOME: If --home, set to “/home/$USER”.
+   if (args->c.host_home)
       Z_ (setenv("HOME", cat("/home/", username), 1));
 
    // $PATH: Append /bin if not already present.
@@ -262,6 +278,15 @@ bool get_first_env(char **array, char **name, char **value)
    }
 
    return false;
+}
+
+/* Validate that it’s OK to run the IMG_DIRECTORY format image at path; if
+   not, exit with error. */
+void img_directory_verify(const char *newroot, const struct args *args)
+{
+   Tf (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
+   Tf (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
+       "can't run directory images from storage (hint: run by name)");
 }
 
 /* Find an appropriate join count; assumes --join was specified or implied.
@@ -342,8 +367,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
-   case -2: // --private-home
-      args->c.private_home = true;
+   case -2: // --no-home
+      WARNING("deprecated --no-home is now default; ignoring")
       break;
    case -3: // --join-ct
       args->c.join = true;
@@ -395,7 +420,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       } else
          FATAL("unknown feature: %s", arg);
       break;
-   case 'b': {
+   case -12: // --home
+      Tf (args->c.host_home = getenv("HOME"), "--home failed: $HOME not set");
+      break;
+   case -13: // --unsafe
+      args->unsafe = true;
+      break;
+   case 'b': {  // --bind
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
             ;
@@ -416,38 +447,43 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
          args->c.binds[i].dst = dst;
       }
       break;
-   case 'c':
+   case 'c':  // --cd
       args->initial_dir = arg;
       break;
-   case 'g':
+   case 'g':  // --gid
       i = parse_int(arg, false, "--gid");
       Te (i >= 0, "--gid: must be non-negative");
       args->c.container_gid = (gid_t) i;
       break;
-   case 'j':
+   case 'j':  // --join
       args->c.join = true;
       break;
-   case 'm':
+   case 'm':  // --mount
       Ze ((arg[0] == '\0'), "mount point can't be empty string");
       args->c.newroot = arg;
       break;
-   case 't':
+   case 's':  // --storage
+      args->storage_dir = arg;
+      if (!path_exists(arg, NULL, false))
+         WARNING("storage directory not found: %s", arg);
+      break;
+   case 't':  // --private-tmp
       args->c.private_tmp = true;
       break;
-   case 'u':
+   case 'u':  // --uid
       i = parse_int(arg, false, "--uid");
       Te (i >= 0, "--uid: must be non-negative");
       args->c.container_uid = (uid_t) i;
       break;
-   case 'V':
+   case 'V':  // --version
       version();
       exit(EXIT_SUCCESS);
       break;
-   case 'v':
+   case 'v':  // --verbose
       verbose++;
       Te(verbose <= 3, "--verbose can be specified at most thrice");
       break;
-   case 'w':
+   case 'w':  // --write
       args->c.writable = true;
       break;
    case ARGP_KEY_NO_ARGS:
@@ -489,4 +525,15 @@ void privs_verify_invoking()
    // No UID privilege allowed either.
    T_ (euid != 0);                           // no privilege
    T_ (euid == ruid && euid == suid);        // no setuid or funny business
+}
+
+/* Return path to the storage directory, if -s is not specified. */
+char *storage_default(void)
+{
+   char *storage = getenv("CH_IMAGE_STORAGE");
+
+   if (storage == NULL)
+      T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch", username));
+
+   return storage;
 }

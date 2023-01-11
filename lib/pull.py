@@ -4,6 +4,8 @@ import sys
 
 import charliecloud as ch
 import build_cache as bu
+import image as im
+import registry as rg
 
 
 ## Constants ##
@@ -18,17 +20,16 @@ manifests_internal = {
 }
 
 
-
 ## Main ##
 
 def main(cli):
    # Set things up.
-   src_ref = ch.Image_Ref(cli.source_ref)
-   dst_ref = src_ref if cli.dest_ref is None else ch.Image_Ref(cli.dest_ref)
+   src_ref = im.Reference(cli.source_ref)
+   dst_ref = src_ref if cli.dest_ref is None else im.Reference(cli.dest_ref)
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
-      sys.exit(0)
-   dst_img = ch.Image(dst_ref)
+      ch.exit(0)
+   dst_img = im.Image(dst_ref)
    ch.INFO("pulling image:    %s" % src_ref)
    if (src_ref != dst_ref):
       ch.INFO("destination:      %s" % dst_ref)
@@ -43,6 +44,7 @@ class Image_Puller:
 
    __slots__ = ("architectures",  # key: architecture, value: manifest digest
                 "config_hash",
+                "digests",
                 "image",
                 "layer_hashes",
                 "registry",
@@ -52,9 +54,10 @@ class Image_Puller:
    def __init__(self, image, src_ref):
       self.architectures = None
       self.config_hash = None
+      self.digests = dict()
       self.image = image
       self.layer_hashes = None
-      self.registry = ch.Registry_HTTP(src_ref)
+      self.registry = rg.HTTP(src_ref)
       self.sid_input = None
       self.src_ref = src_ref
 
@@ -161,6 +164,9 @@ class Image_Puller:
       if (str(self.src_ref) in manifests_internal):
          # cheat; internal manifest library matches every architecture
          self.architectures = ch.Arch_Dict({ ch.arch_host: None })
+         # Assume that image has no digest. This is a kludge, but it makes my
+         # solution to issue #1365 work so ¯\_(ツ)_/¯
+         self.digests[ch.arch_host] = "no digest"
          return
       # raises Image_Unavailable_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
@@ -195,6 +201,7 @@ class Image_Puller:
          if (arch in self.architectures):
             ch.FATAL("manifest list: duplicate architecture: %s" % arch)
          self.architectures[arch] = ch.digest_trim(digest)
+         self.digests[arch] = digest.split(":")[1]
       if (len(self.architectures) == 0):
          ch.WARNING("no valid architectures found")
 

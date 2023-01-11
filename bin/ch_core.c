@@ -193,16 +193,14 @@ void enter_udss(struct container *c)
       bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
    }
    // Container /home.
-   if (!c->private_home) {
+   if (c->host_home) {
       char *newhome;
-      // Mount tmpfs on guest /home because guest root is read-only
+      // Mount tmpfs on guest /home because guest root may be read-only.
       tmpfs_mount("/home", c->newroot, "size=4m");
-      // Bind-mount user's home directory at /home/$USER. The main use case is
-      // dotfiles.
-      Tf (c->old_home != NULL, "cannot find home directory: is $HOME set?");
+      // Bind-mount user's home directory at /home/$USER.
       newhome = cat("/home/", username);
       Z_ (mkdir(cat(c->newroot, newhome), 0755));
-      bind_mount(c->old_home, newhome, BD_REQUIRED, c->newroot, 0);
+      bind_mount(c->host_home, newhome, BD_REQUIRED, c->newroot, 0);
    }
    // Container /usr/bin/ch-ssh.
    if (c->ch_ssh) {
@@ -242,31 +240,56 @@ void enter_udss(struct container *c)
 }
 
 /* Return image type of path, or exit with error if not a valid type. */
-enum img_type img_type_get(const char *path)
+enum img_type image_type(const char *ref, const char *storage_dir)
 {
-   struct stat read;
+   struct stat st;
    FILE *fp;
    char magic[4];  // four bytes, not a string
 
-   Zf (stat(path, &read), "can't stat: %s", path);
+   // If there’s a directory in storage where we would expect there to be if
+   // ref were an image name, assume it really is an image name.
+   if (path_exists(img_name2path(ref, storage_dir), NULL, false))
+      return IMG_NAME;
 
-   if (S_ISDIR(read.st_mode))
+   // Now we know ref is a path of some kind, so find it.
+   Zf (stat(ref, &st), "can't stat: %s", ref);
+
+   // If ref is the path to a directory, then it’s a directory.
+   if (S_ISDIR(st.st_mode))
       return IMG_DIRECTORY;
 
-   fp = fopen(path, "rb");
-   Tf (fp != NULL, "can't open: %s", path);
-   Tf (fread(magic, sizeof(char), 4, fp) == 4, "can't read: %s", path);
-   Zf (fclose(fp), "can't close: %s", path);
+   // Now we know it’s file-like enough to read. See if it has the SquashFS
+   // magic number.
+   fp = fopen(ref, "rb");
+   Tf (fp != NULL, "can't open: %s", ref);
+   Tf (fread(magic, sizeof(char), 4, fp) == 4, "can't read: %s", ref);
+   Zf (fclose(fp), "can't close: %s", ref);
    VERBOSE("image file magic expected: 6873 7173; actual: %x%x %x%x",
            magic[0], magic[1], magic[2], magic[3]);
 
-   // SquashFS magic number is 6873 7173, i.e. "hsqs". I think "sqsh" was
-   // intended but the superblock designers were confused about endianness.
+   // If magic number matches, it’s a squash. Note: Magic number is 6873 7173,
+   // i.e. “hsqs”. I think “sqsh” was intended but the superblock designers
+   // were confused about endianness.
    // See: https://dr-emann.github.io/squashfs/
    if (memcmp(magic, "hsqs", 4) == 0)
       return IMG_SQUASH;
 
-   FATAL("unknown image type: %s", path);
+   // Well now we’re stumped.
+   FATAL("unknown image type: %s", ref);
+}
+
+char *img_name2path(const char *name, const char *storage_dir)
+{
+   char *path;
+   char *name_fs = strdup(name);
+
+   replace_char(name_fs, '/', '%');
+   replace_char(name_fs, ':', '+');
+
+   T_ (1 <= asprintf(&path, "%s/img/%s", storage_dir, name_fs));
+
+   free(name_fs);  // make Tim happy
+   return path;
 }
 
 /* Begin coordinated section of namespace joining. */
@@ -468,17 +491,15 @@ void setup_passwd(const struct container *c)
    errno = 0;
    p = getpwuid(c->container_uid);
    if (p) {
-      T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
-                       p->pw_name, c->container_uid, c->container_gid,
-                       p->pw_gecos, username));
+      T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/:/bin/sh\n", p->pw_name,
+                       c->container_uid, c->container_gid, p->pw_gecos));
    } else {
       if (errno) {
          Tf (0, "getpwuid(3) failed");
       } else {
          VERBOSE("UID %d not found; using dummy info", c->container_uid);
-         T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/home/%s:/bin/sh\n",
-                          "charlie", c->container_uid, c->container_gid,
-                          "Charliecloud User", "charlie"));
+         T_ (1 <= dprintf(fd, "%s:x:%u:%u:%s:/:/bin/sh\n", "charlie",
+                          c->container_uid, c->container_gid, "Charlie"));
       }
    }
    Z_ (close(fd));

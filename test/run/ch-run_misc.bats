@@ -6,6 +6,26 @@ load ../common
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
+@test 'storage errors' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    run ch-run -w 00_tiny -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: --write invalid when running by name'* ]]
+
+    run ch-run "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
+
+    run ch-run -s /doesnotexist 00_tiny -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
+    [[ $output = *"error: can't stat: 00_tiny: No such file or directory"* ]]
+}
 
 @test 'symlink to image' {  # issue #50
     scope quick
@@ -33,6 +53,55 @@ EOF
     ch-run -w "$ch_timg" rm write
 }
 
+@test '--unsafe' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+    my_storage=${BATS_TMPDIR}/unsafe
+
+    # Default storage location.
+    if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
+        sold=$CH_IMAGE_STORAGE
+        unset CH_IMAGE_STORAGE
+        [[ ! -e ./00_tiny ]]
+        ch-run --unsafe 00_tiny -- /bin/true
+        CH_IMAGE_STORAGE=$sold
+    fi
+
+    # Rest of test uses custom storage path.
+    unset CH_IMAGE_STORAGE
+
+    # Specified on command line.
+    rm -rf "$my_storage"
+    mkdir -p "$my_storage"/img
+    ch-convert -i ch-image -o dir 00_tiny "${my_storage}/img/00_tiny"
+    ch-run --unsafe -s "$my_storage" 00_tiny -- /bin/true
+
+    # Specifie with environment variable.
+    export CH_IMAGE_STORAGE=$my_storage
+
+    # Basic environment-variable specified.
+    ch-run --unsafe 00_tiny -- /bin/true
+}
+
+@test 'image in both storage and cwd' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    cd "$BATS_TMPDIR"
+
+    # Set up a fixure image in $CWD that causes a collision with the named
+    # image, and that’s missing /bin/true so it pukes if we try to run it.
+    # That is, in both cases, we want run-by-name to win.
+    rm -rf ./00_tiny
+    ch-convert -i ch-image -o dir 00_tiny ./00_tiny
+    rm ./00_tiny/bin/true
+
+    # Default.
+    ch-run 00_tiny -- /bin/true
+
+    # With --unsafe.
+    ch-run --unsafe 00_tiny -- /bin/true
+}
 
 @test '/usr/bin/ch-ssh' {
     # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".
@@ -82,36 +151,36 @@ EOF
     [[ $HOME ]]
     [[ $USER ]]
 
-    # default: set $HOME
+    # default: no change
     # shellcheck disable=SC2016
     run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = /home/$USER ]]
+    [[ $output = "$HOME" ]]
 
-    # no change if --no-home
+    # set $HOME if --home
     # shellcheck disable=SC2016
-    run ch-run --no-home "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = "$HOME" ]]
+    [[ $output = /home/$USER ]]
 
     # puke if $HOME not set
     home_tmp=$HOME
     unset HOME
     # shellcheck disable=SC2016
-    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export HOME="$home_tmp"
     echo "$output"
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
-    [[ $output = *'cannot find home directory: is $HOME set?'* ]]
+    [[ $output = *'--home failed: $HOME not set'* ]]
 
     # puke if $USER not set
     user_tmp=$USER
     unset USER
     # shellcheck disable=SC2016
-    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export USER=$user_tmp
     echo "$output"
     [[ $status -eq 1 ]]
@@ -251,15 +320,11 @@ EOF
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
 
     # omit tmpfs at /home, which shouldn't be empty
-    ch-run --no-home "$ch_timg" -- cat /home/overmount-me
-    # overmount tmpfs at /home
-    ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
+    ch-run "$ch_timg" -- cat /home/overmount-me
     # bind to /home without overmount
-    ch-run --no-home -b "${ch_imgdir}/bind1:/home" "$ch_timg" \
-           -- cat /home/file1
-    # omit default /home, with unrelated --bind
-    ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" \
-           -- cat "${ch_imgdir}/bind1/file1"
+    ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
+    # overmount tmpfs at /home
+    ch-run --home -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
 }
 
 
@@ -975,10 +1040,10 @@ EOF
     echo "expected: ${r}"
     [[ $output =~ $r ]]
 
-    # /home without --private-home
+    # --home
     # FIXME: Not sure how to make the second mount(2) fail.
     rmdir "${img}/home"
-    run ch-run "$img" -- /bin/true
+    run ch-run --home "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
@@ -986,9 +1051,9 @@ EOF
     echo "expected: ${r}"
     [[ $output =~ $r ]]
 
-    # --no-home shouldn't care if /home is missing
+    # default shouldn't care if /home is missing
     rmdir "${img}/home"
-    run ch-run --no-home "$img" -- /bin/true
+    run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
@@ -1022,19 +1087,19 @@ EOF
     gid_bad=8675310
 
     # UID
-    run ch-run -v --uid=$uid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --uid="$uid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
 
     # GID
-    run ch-run -v --gid=$gid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --gid="$gid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 
     # both
-    run ch-run -v --uid=$uid_bad --gid=$gid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --uid="$uid_bad" --gid="$gid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
