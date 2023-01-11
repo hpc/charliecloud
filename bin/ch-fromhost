@@ -226,7 +226,7 @@ queue_libfabric_replacement () {
         img_libfabric=$(find "$image" -name  "libfabric.so")
         [ -n "$img_libfabric" ] || fatal "libfabric.so not found in $image"
         debug_indent "found $img_libfabric"
-        if [ "$(echo $img_libfabric | wc -l)" -ne 1 ]; then
+        if [ "$(echo "$img_libfabric" | wc -l)" -ne 1 ]; then
             fatal 'must have exactly one libfabric.so to replacemence; need --dest'
         fi
         img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
