@@ -976,9 +976,9 @@ builder_set 21
 pedantry_set 21
 vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     "$use_sudo_default" \
                       21 'use generic sudo'
-vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
+vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   "/var/tmp/${USER}.img" \
                       21 'unpacked images dir'
-vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
+vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   "/var/tmp/${USER}.pack" \
                       21 'packed images dir'
 pack_fmt_set 21
 vset CH_IMAGE_CACHE   "$bucache_mode"  "$CH_IMAGE_CACHE"   enabled \
