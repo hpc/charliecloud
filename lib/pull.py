@@ -177,6 +177,9 @@ class Image_Puller:
          # of re-requesting later. Maybe we could here move/copy it over to
          # the skinny manifest path.
          if (not os.path.exists(str(self.manifest_path))):
+            # check for broken symlink
+            if (os.path.lexists(str(self.manifest_path))):
+               os.remove(str(self.manifest_path))
             os.symlink(str(self.fatman_path), str(self.manifest_path))
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
