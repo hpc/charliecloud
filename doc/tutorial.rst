@@ -558,7 +558,7 @@ their results from cache instead.
 
 Let’s set up this example by first resetting the build cache::
 
-  $ ch-image build-cache -reset
+  $ ch-image build-cache --reset
   $ mkdir cache-test
   $ cd cache-test
 
@@ -611,7 +611,7 @@ first three instructions are the same, but the third is different.
 
 Build it::
 
-  $ ch-image build -t b -f b.df
+  $ ch-image build -t b -f b.df .
     1* FROM almalinux:8
     2* RUN sleep 2 && echo foo
     3. RUN sleep 2 && echo qux
