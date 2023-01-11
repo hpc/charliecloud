@@ -102,11 +102,11 @@ To specify which files to inject
     Use :code:`nvidia-container-cli list` (from :code:`libnvidia-container`)
     to find executables and libraries to inject.
 
-  :code:`--cray-libfabric-cxi`
+  :code:`--cray-mpi-cxi`
     Inject cray-libfabric for slingshot. This is equivalent to
     :code:`--fi-replace $CH_FROMHOST_OFI_CXI`.
 
-  :code:`--cray-libfabric-gni`
+  :code:`--cray-mpi-gni`
     Inject cray gemini/aries GNI Libfabric provider :code:`libgnix-fi.so`. This
     is equivalent to :code:`--fi-provider $CH_FROMHOST_OFI_GNI`.
 

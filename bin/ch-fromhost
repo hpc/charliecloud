@@ -53,7 +53,7 @@ Which files to inject (one or more required; can be repeated):
   -f, --file    FILE  listed in file FILE
   -p, --path    PATH  inject the file at PATH
   --fi-prov     PATH  inject host compiled loadable OFI provider(s) at PATH
-  --fi-replace  PATH  inject host libfabric.so at PATH over image's
+  --fi-replace  PATH  inject host libfabric.so at PATH, replacing image's
 
   --nvidia         recommended by nVidia (via "nvidia-container-cli list")
 
@@ -63,10 +63,10 @@ Destination within image:
 
 Options:
 
-  --cray-libfabric-cxi   inject slingshot libfabric for MPI on shasta machines
-  --cray-libfabric-gni  inject gemini/aries libfabric for MPI on xc40 machines
+  --cray-mpi-cxi   inject cray libfabric and cxi libraries from cray host
+  --cray-mpi-gni   inject gemini/aries libfabric for MPI on xc40 machines
 
-  --fi-prov-path   print the inferred destination for loadable ofi providers
+  --fi-path        print the inferred destination for loadable ofi providers
   --lib-path       print the inferred destination for shared libraries
 
   --no-ldconfig    don't run ldconfig even if we injected shared libraries
@@ -293,14 +293,14 @@ while [ $# -gt 0 ]; do
             queue_files "$out"
             shift
             ;;
-        --cray-libfabric-cxi)
+        --cray-mpi-cxi)
             warn_fi_var
             if [ -z "$CH_FROMHOST_OFI_CXI" ]; then
                 fatal "CH_FROMHOST_OFI_CXI is not set"
             fi
             replace_libfabric=$CH_FROMHOST_OFI_CXI
             ;;
-        --cray-libfabric-gni)
+        --cray-mpi-gni)
             warn_fi_var
             if [ -z "$CH_FROMHOST_OFI_GNI" ]; then
                 fatal "CH_FROMHOST_OFI_GNI is not set"
@@ -339,7 +339,7 @@ while [ $# -gt 0 ]; do
             queue_fi_prov "$1"
             shift
             ;;
-        --fi-prov-path)
+        --fi-path)
             fi_prov_found=yes
             fi_prov_dest_print=yes
             ;;
