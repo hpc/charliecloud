@@ -173,9 +173,6 @@ class Image_Puller:
                                    "manifest list: downloading")
       fm = self.fatman_path.json_from_file("fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
-         # FIXME (issue #1101): If it's a v2 manifest we could use it instead
-         # of re-requesting later. Maybe we could here move/copy it over to
-         # the skinny manifest path.
          if (not os.path.exists(str(self.manifest_path))):
             # check for broken symlink
             if (os.path.lexists(str(self.manifest_path))):

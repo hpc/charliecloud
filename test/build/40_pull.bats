@@ -269,7 +269,7 @@ EOF
     # type specified), and 2) it isn't very large, thus keeps test time down.
     img=debian+squeeze
     ch-image pull "$img"
-    grep -F '"schemaVersion": 1' "${cache}/${img}.fat.json"
+    grep -F '"schemaVersion": 1' "${cache}/${img}%skinny.manifest.json"
 
     rm -Rf --one-file-system "$storage"
 }
