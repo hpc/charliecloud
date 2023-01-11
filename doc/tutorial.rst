@@ -362,6 +362,11 @@ We can now use :code:`ch-image push` to push the image to GitLab. (Note that
 the tagging step you would need for Docker is unnecessary here, because we can
 just specify a destination reference at push time.)
 
+For the gitlab path, it you put your registry in a group update the path
+accordingly. For example, if I put my container registry in group called 
+containers the path would be:
+:code:`gitlab.com/$USER/containers/test-registry/hello:latest`.
+
 When you are prompted for credentials, enter your GitLab username and
 copy-paste the PAT you created earlier (or enter your password). You will need
 to substitute your GitLab username for :code:`$USER` below.
@@ -393,7 +398,7 @@ Pull and compare
 
 Let’s pull that image and see how it looks::
 
-  $ ch-image pull --auth gitlab.com:5050/$USER/test-registry/hello:latest hello.2
+  $ ch-image pull --auth registry.gitlab.com/$USER/test-registry/hello:latest hello.2
   pulling image:   gitlab.com:5050/$USER/test-registry/hello:latest
   destination:     hello.2
   [...]
@@ -405,145 +410,6 @@ Let’s pull that image and see how it looks::
   $ ls ./hello.2
   bin    etc    lib    mnt    proc   run    srv    tmp    var
   dev    home   media  opt    root   sbin   sys    usr
-
-
-MPI Hello World
-===============
-
-The next exercise demonstrates a common HPC workflow of:
-
-  1. Build image locally.
-
-  2. Copy image squashball to supercomputer.
-
-  3. Run application on supercomputer.
-
-.. note::
-
-   These procedures likely need adaptation to your site. Consult your local
-   support. If you don’t have their phone number handy, try 867-5309.
-
-Build base image
-----------------
-
-.. admonition::
-   FIXME
-
-   instructions for building :code:`openmpi` (I don't want to commit to
-   maintaining a base image for folks to use, and I don't think it's 1/2 hour
-   build any more. For workshops we host, we can provide the image.)
-
-Build image
------------
-
-Create a new directory for this project, and within it the following simple C
-program, called :code:`mpihello.c`. (Note the program contains a bug; consider
-fixing it.)
-
-.. code-block:: c
-
-   #include <stdio.h>
-   #include <mpi.h>
-
-   int main (int argc, char **argv)
-   {
-      int msg, rank, rank_ct;
-
-      MPI_Init(&argc, &argv);
-      MPI_Comm_size(MPI_COMM_WORLD, &rank_ct);
-      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-      printf("hello from rank %d of %d\n", rank, rank_ct);
-
-      if (rank == 0) {
-         for (int i = 1; i < rank_ct; i++) {
-            MPI_Send(&msg, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
-            printf("rank %d sent %d to rank %d\n", rank, msg, i);
-         }
-      } else {
-          MPI_Recv(&msg, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
-          printf("rank %d received %d from rank 0\n", rank, msg);
-      }
-
-      MPI_Finalize();
-   }
-
-Add this :code:`Dockerfile`:
-
-.. code-block:: docker
-
-   FROM openmpi
-   RUN mkdir /hello
-   WORKDIR /hello
-   COPY mpihello.c .
-   RUN mpicc -o mpihello mpihello.c
-
-The instruction :code:`WORKDIR` changes directories. (The default working
-directory within a Dockerfile is :code:`/`, though the base image could have
-changed this.)
-
-Build::
-
-  $ ls
-  Dockerfile  mpihello.c
-  $ ch-image build -t mpihello .
-
-(The default Dockerfile is :code:`./Dockerfile`, which is why we can omit
-:code:`-f`.)
-
-Copy to supercomputer
----------------------
-
-Next, make an image squashball and copy it to your cluster home directory::
-
-  $ ch-convert mpihello mpihello.sqfs
-  $ scp mpihello.sqfs $CLUSTER:~
-  mpihello.sqfs
-
-Run the container
------------------
-
-In a new terminal::
-
-  $ ssh $CLUSTER
-
-We’ll run this application interactively. One could also put similar steps in a
-Slurm batch script.
-
-First, obtain a two-node allocation and load the Charliecloud module.
-
-::
-
-  $ salloc -N2 -t 1:00:00
-  salloc: Granted job allocation 599518
-  [...]
-  $ module load charliecloud
-  $ ch-run --version
-  0.30
-
-Run the application on all cores in your allocation::
-
-  $ srun -c1 ch-run --join ~/mpihello.sqfs -- /hello/mpihello
-  hello from rank 22 of 72
-  rank 22 received 0 from rank 0
-  hello from rank 14 of 72
-  rank 14 received 0 from rank 0
-  [...]
-  hello from rank 0 of 72
-  rank 0 sent 0 to rank 1
-  rank 0 sent 0 to rank 2
-  [...]
-  hello from rank 65 of 72
-  rank 65 received 0 from rank 0
-
-Win!
-
-.. note::
-
-   Why :code:`--join`? By default, each containerized rank is in a different
-   container, and processes in sibling containers can’t attach to one another
-   to do the kind of shared memory that OpenMPI prefers. Sometimes this fails,
-   and sometimes it’s just slower. By adding :code:`--join`, the independent
-   :code:`ch-run` invocations use the same container.
 
 
 Build cache
