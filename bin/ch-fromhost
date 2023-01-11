@@ -218,7 +218,7 @@ queue_libfabric_replacement () {
             fatal "$cray_libfabric: does not end with libfabric.so"
         ;;
     esac
-    if ! ldd "$cray_libfabric" | grep libcxi 2>&1 > /dev/null; then
+    if ! ldd "$cray_libfabric" | grep libcxi > /dev/null 2>&1; then
         fatal "$cray_libfabric: does not appear to be cray libfabric"
     fi
     if [ -z "$dest" ]; then
@@ -226,7 +226,7 @@ queue_libfabric_replacement () {
         img_libfabric=$(find "$image" -name  "libfabric.so")
         [ -n "$img_libfabric" ] || fatal "libfabric.so not found in $image"
         debug_indent "found $img_libfabric"
-        if [ $(echo $img_libfabric | wc -l) -ne 1 ]; then
+        if [ "$(echo $img_libfabric | wc -l)" -ne 1 ]; then
             fatal 'must have exactly one libfabric.so to replacemence; need --dest'
         fi
         img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
@@ -239,13 +239,13 @@ queue_libfabric_replacement () {
     debug "searching for link dependencies"
     ldds=$(ldd "$cray_libfabric" 2>&1 | grep lib | awk '{print $3}' | sort -u)
     for l in $ldds; do
-        file_found=$(find ${image} -name "$(basename "$l")")
+        file_found=$(find "${image}" -name "$(basename "$l")")
         if [ -n "$file_found" ]; then
             debug_indent "skipping $l"
             continue
         fi
         queue_files "$l"
-        [ ! -L "$l" ] || queue_files $(readlink -f "$f")
+        [ ! -L "$l" ] || queue_files "$(readlink -f "$f")"
         file_dir=$(dirname "$l")
         # avoid duplicates.
         if [ "$(echo "$ld_conf" | grep -c "$file_dir")" -eq 0 ]; then
@@ -378,7 +378,7 @@ fi
 
 [ "$image" ] || fatal "no image specified"
 
-if [ $replace_libfabric ]; then
+if [ "$replace_libfabric" ]; then
     queue_libfabric_replacement "$replace_libfabric"
 fi
 
@@ -400,7 +400,7 @@ if [ $lib_found ]; then
     debug "shared library destination: ${image}/${lib_dest}"
 fi
 
-if [ $fi_prov_found ] && [ -z "$dest" ]; then
+if [ "$fi_prov_found" ] && [ -z "$dest" ]; then
     # By default, libfabric will create and use loadable providers in the
     # in the $PREFIX/lib/libfabric directory, where PREFIX is the --prefix
     # argument (path) specified at libfabric configure.
@@ -446,12 +446,12 @@ elif [ -n "$dest" ]; then
     debug "ofi dso provider injection destination: $fi_prov_dest"
 fi
 
-if [ $lib_dest_print ]; then
+if [ "$lib_dest_print" ]; then
     echo "$lib_dest"
     exit 0
 fi
 
-if [ $fi_prov_dest_print ]; then
+if [ "$fi_prov_dest_print" ]; then
     echo "$fi_prov_dest"
     exit 0
 fi
@@ -512,7 +512,7 @@ for d in $inject_mkdirs; do
 done
 
 # Process ldconfig targets.
-if [ $fi_prov_found ] || [ $replace_libfabric ]; then
+if [ "$fi_prov_found" ] || [ "$replace_libfabric" ]; then
     if [ ! -f "${image}/etc/ld.so.conf" ]; then
         debug_indent "touch ${image}/etc/ld.so.conf"
         touch "${image}/etc/ld.so.conf"
@@ -581,7 +581,7 @@ done
 IFS="$old_ifs"
 
 if       [ -z "$no_ldconfig" ] \
-    && { [ $lib_found ] || [ $fi_prov_found ] || [ $replace_libfabric ] ;} then
+    && { [ "$lib_found" ] || [ "$fi_prov_found" ] || [ "$replace_libfabric" ] ;} then
     debug "running ldconfig"
     debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || fatal 'ldconfig error'
