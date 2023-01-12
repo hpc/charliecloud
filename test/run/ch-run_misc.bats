@@ -103,20 +103,6 @@ EOF
     ch-run --unsafe 00_tiny -- /bin/true
 }
 
-@test '/usr/bin/ch-ssh' {
-    # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".
-    scope quick
-    ls -l "$ch_bin/ch-ssh"
-    ch-run --ch-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
-    ch-run --ch-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
-    # Test bind-mount by comparing size rather than e.g. "ch-ssh --version"
-    # because ch-ssh won't run on Alpine (issue #4).
-    host_size=$(stat -c %s "${ch_bin}/ch-ssh")
-    guest_size=$(ch-run --ch-ssh "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
-    echo "host: ${host_size}, guest: ${guest_size}"
-    [[ $host_size -eq "$guest_size" ]]
-}
-
 
 @test 'optional default bind mounts silently skipped' {
     scope standard

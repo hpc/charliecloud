@@ -28,7 +28,6 @@ ch-fromhost.rst \
 ch-image.rst \
 ch-run.rst \
 ch-run-oci.rst \
-ch-ssh.rst \
 ch-test.rst \
 conf.py \
 dev.rst \
@@ -53,7 +52,6 @@ man/ch-fromhost.1 \
 man/ch-image.1 \
 man/ch-run.1 \
 man/ch-run-oci.1 \
-man/ch-ssh.1 \
 man/ch-test.1
 endif
 

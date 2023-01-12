@@ -95,9 +95,6 @@ chmod -R u+rw,ug-s img
 echo "tmpfs and host home are not overmounted" \
   > img/home/overmount-me
 
-# We want ch-ssh
-touch img/usr/bin/ch-ssh
-
 # Test programs.
 cp -r "$srcdir" img/test
 $ch_run --cd /test -- sh -c 'make clean && make'

@@ -5,7 +5,6 @@ a.out
 /bin/ch-image
 /bin/ch-run
 /bin/ch-run-oci
-/bin/ch-ssh
 /examples/copy/dirCa/symlink-to-dirCb
 /examples/copy/dirD/symlink-to-fileDa
 /examples/copy/dirEa/symlink-to-dirEb

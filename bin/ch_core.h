@@ -29,7 +29,6 @@ enum img_type {
 
 struct container {
    struct bind *binds;
-   bool ch_ssh;          // bind /usr/bin/ch-ssh?
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
    bool env_expand;      // expand variables in --set-env

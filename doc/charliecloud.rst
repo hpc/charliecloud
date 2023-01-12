@@ -16,7 +16,6 @@ ch-fromhost(1),
 ch-image(1),
 ch-run(1),
 ch-run-oci(1),
-ch-ssh(1),
 ch-test(1),
 
 Full documentation at: https://hpc.github.io/charliecloud
