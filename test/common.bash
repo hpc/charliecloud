@@ -105,9 +105,11 @@ cray_ofi_or_skip () {
         [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
         # shellcheck disable=SC2086
         if [[ $cray_prov == 'gni' ]]; then
+            export CH_FROMHOST_OFI_GNI=$CH_TEST_OFI_PATH
             $ch_mpirun_node ch-fromhost --cray-mpi-gni "$1"
         fi
         if [[ $cray_prov == 'cxi' ]]; then
+            export CH_FROMHOST_OFI_CXI=$CH_TEST_OFI_PATH
             $ch_mpirun_node ch-fromhost --cray-mpi-cxi "$1"
         fi
     else
@@ -368,7 +370,6 @@ if [[ -f /etc/opt/cray/release/cle-release ]]; then
     elif [[ -f /opt/cray/etc/release/cos ]]; then
         cray_prov=cxi
     fi
-    export FI_PROVIDER=$cray_pov
 else
     ch_cray=
 fi

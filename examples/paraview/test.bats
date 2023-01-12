@@ -36,8 +36,13 @@ setup () {
 # We do not check .pvtp (and its companion .vtp) output because it's a
 # collection of XML files containing binary data and it seems too hairy to me.
 
-@test "${ch_tag}/inject host cray-gni ofi dso" {
+@test "${ch_tag}/inject cray mpi ($cray_prov)" {
     cray_ofi_or_skip "$ch_img"
+    run ch-run "$ch_img" -- fi_info
+    echo $output
+    [[ $output == *"provider: $cray_prov"* ]]
+    [[ $output == *"fabric: $cray_prov"* ]]
+    [[ $stauts -eq 0 ]]
 }
 
 @test "${ch_tag}/cone serial" {

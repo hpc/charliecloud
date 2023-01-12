@@ -7,9 +7,6 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
-    [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
-    unset FI_LOG_LEVEL
-    unset FI_PROVIDER
 }
 
 count_ranks () {
@@ -34,32 +31,27 @@ count_ranks () {
 
 @test "${ch_tag}/inject cray mpi ($cray_prov)" {
     cray_ofi_or_skip "$ch_img"
+    run ch-run "$ch_img" -- fi_info
+    echo "$output"
+    [[ $output == *"provider: $cray_prov"* ]]
+    [[ $output == *"fabric: $cray_prov"* ]]
+    [[ $stauts -eq 0 ]]
 }
 
-@test "${ch_tag}/validate gni injection" {
+@test "${ch_tag}/validate $cray_prov injection" {
     [[ -n "$ch_cray" ]] || skip "host is not cray"
-    [[ "$cray_prov" == 'gni' ]] || skip "gni only"
     [[ -n "$CH_TEST_OFI_PATH" ]] || skip "--fi-provider not set"
-    export FI_LOG_LEVEL=info
-    run $ch_mpirun_node ch-run --join "$ch_img" -- /hello/hello 2>&1
+    run $ch_mpirun_node ch-run --join "$ch_img" -- sh -c \
+                    "FI_PROVIDER=$cray_prov FI_LOG_LEVEL=info /hello/hello 2>&1"
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ "$output" == *' registering provider: gni'* ]]
-    [[ "$output" == *'gni:'*'gnix_ep_nic_init()'*'Allocated new NIC for EP'* ]]
-}
-
-@test "${ch_tag}/validate cxi injection" {
-    [[ -n "$ch_cray" ]] || skip "host is not cray"
-    [[ $cray_prov == 'cxi' ]] || skip "cxi (slingshot) only"
-    export FI_LOG_LEVEL=debug
-    export FI_LOG_SUBSYS=mr
-    export FI_LOG_PROV=cxi
-    export FI_PROVIDER=cxi
-    # shellcheck disable=SC2086
-    run $ch_mpirun_node ch-run --join "$ch_img" -- /hello/hello 2>&1
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ "$output" == *'cxi:mr:ofi_'*'stats:'*'searches'*'deletes'*'hits'* ]]
+    if [[ "$cray_prov" == gni ]]; then
+        [[ "$output" == *' registering provider: gni'* ]]
+        [[ "$output" == *'gni:'*'gnix_ep_nic_init()'*'Allocated new NIC for EP'* ]]
+    fi
+    if [[ "$cray_prov" == cxi ]]; then
+        [[ "$output" == *'cxi:mr:ofi_'*'stats:'*'searches'*'deletes'*'hits'* ]]
+    fi
 }
 
 @test "${ch_tag}/MPI version" {
