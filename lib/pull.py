@@ -1,9 +1,10 @@
 import json
-import os
+import os.path
 import sys
 
 import charliecloud as ch
 import build_cache as bu
+import filesystem as fs
 import image as im
 import registry as rg
 
@@ -173,11 +174,12 @@ class Image_Puller:
                                    "manifest list: downloading")
       fm = self.fatman_path.json_from_file("fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
-         if (not os.path.exists(str(self.manifest_path))):
-            # check for broken symlink
-            if (os.path.lexists(str(self.manifest_path))):
-               os.remove(str(self.manifest_path))
-            os.symlink(str(self.fatman_path), str(self.manifest_path))
+         # Check for skinny manifest. If not present, create a symlink to the
+         # "fat manifest" with the conventional name for a skinny manifest. Note 
+         # that this works because the file we just saved as the "fat manifest"
+         # is actually a misleadingly named skinny manifest.
+         if (not fs.Path(str(self.manifest_path)).exists_()):
+            fs.Path(str(self.manifest_path)).symlink_to(str(self.fatman_path))
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
