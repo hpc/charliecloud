@@ -1077,7 +1077,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: can't COPY: must specify at least one source"* ]]
+        [[ $output = *"error: must specify at least one source"* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
@@ -1108,7 +1108,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: can't COPY: no context because \"-\" given"* ]]
+        [[ $output = *'error: no context because "-" given'* ]]
     else
         [[ $output = *'COPY failed: file not found in build context or'* ]]
     fi

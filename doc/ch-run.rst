@@ -18,9 +18,11 @@ Description
 ===========
 
 Run command :code:`CMD` in a fully unprivileged Charliecloud container using
-the image located at :code:`IMAGE`, which can be either a directory or, if the
-proper support is enabled, a SquashFS archive. :code:`ch-run` does not use any
-setuid or setcap helpers, even for mounting SquashFS images with FUSE.
+the image specified by :code:`IMAGE`, which can be: (1) a path to a directory,
+(2) the name of an image in :code:`ch-image` storage (e.g.
+:code:`example.com:5050/foo`) or, if the proper support is enabled, a SquashFS
+archive. :code:`ch-run` does not use any setuid or setcap helpers, even for
+mounting SquashFS images with FUSE.
 
   :code:`-b`, :code:`--bind=SRC[:DST]`
     Bind-mount :code:`SRC` at guest :code:`DST`. The default destination if
@@ -92,6 +94,10 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
     bind-mounted into it. If this is specified, no such temporary files are
     created and the image’s files are exposed.
 
+  :code:`-s`, :code:`--storage DIR`
+    Set the storage directory. Equivalent to the same option for
+    :code:`ch-image(1)`.
+
   :code:`-t`, :code:`--private-tmp`
     By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
     bind-mounted at container :code:`/tmp`. If this is specified, a new
@@ -116,6 +122,10 @@ setuid or setcap helpers, even for mounting SquashFS images with FUSE.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
+
+  :code:`--unsafe`
+    Enable various unsafe behavior. For internal use only. Seriously, stay
+    away from this option.
 
   :code:`--unset-env=GLOB`
     Unset environment variables whose names match :code:`GLOB`.

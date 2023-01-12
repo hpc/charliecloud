@@ -82,6 +82,10 @@ GIT_CONFIG = {
    "pack.window":            "24",
 }
 
+# Placeholder for Git hash values that are unknown. This deliberately does not
+# support str operations (e.g., indexing), so trying those will fail loudly.
+GIT_HASH_UNKNOWN = -1
+
 
 ## Globals ##
 
@@ -923,7 +927,7 @@ class Enabled_Cache:
    def rollback(self, path):
       """Restore path to the last committed state, including both tracked and
          untracked files."""
-      ch.INFO("rolling back ...")
+      ch.INFO("something went wrong, rolling back ...")
       self.git_prepare(path, [], write=False)
       t = ch.Timer()
       ch.cmd_quiet(["git", "reset", "--hard", "HEAD"], cwd=path)

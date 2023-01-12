@@ -306,4 +306,8 @@ def main():
 ## Bootstrap ##
 
 if (__name__ == "__main__"):
-   main()
+   try:
+      main()
+   except ch.Fatal_Error as x:
+      ch.ERROR(*x.args, **x.kwargs)
+      ch.exit(1)

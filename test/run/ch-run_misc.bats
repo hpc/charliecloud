@@ -6,6 +6,26 @@ load ../common
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
+@test 'storage errors' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    run ch-run -w 00_tiny -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: --write invalid when running by name'* ]]
+
+    run ch-run "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
+
+    run ch-run -s /doesnotexist 00_tiny -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
+    [[ $output = *"error: can't stat: 00_tiny: No such file or directory"* ]]
+}
 
 @test 'symlink to image' {  # issue #50
     scope quick
@@ -33,6 +53,55 @@ EOF
     ch-run -w "$ch_timg" rm write
 }
 
+@test '--unsafe' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+    my_storage=${BATS_TMPDIR}/unsafe
+
+    # Default storage location.
+    if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
+        sold=$CH_IMAGE_STORAGE
+        unset CH_IMAGE_STORAGE
+        [[ ! -e ./00_tiny ]]
+        ch-run --unsafe 00_tiny -- /bin/true
+        CH_IMAGE_STORAGE=$sold
+    fi
+
+    # Rest of test uses custom storage path.
+    unset CH_IMAGE_STORAGE
+
+    # Specified on command line.
+    rm -rf "$my_storage"
+    mkdir -p "$my_storage"/img
+    ch-convert -i ch-image -o dir 00_tiny "${my_storage}/img/00_tiny"
+    ch-run --unsafe -s "$my_storage" 00_tiny -- /bin/true
+
+    # Specifie with environment variable.
+    export CH_IMAGE_STORAGE=$my_storage
+
+    # Basic environment-variable specified.
+    ch-run --unsafe 00_tiny -- /bin/true
+}
+
+@test 'image in both storage and cwd' {
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    cd "$BATS_TMPDIR"
+
+    # Set up a fixure image in $CWD that causes a collision with the named
+    # image, and that’s missing /bin/true so it pukes if we try to run it.
+    # That is, in both cases, we want run-by-name to win.
+    rm -rf ./00_tiny
+    ch-convert -i ch-image -o dir 00_tiny ./00_tiny
+    rm ./00_tiny/bin/true
+
+    # Default.
+    ch-run 00_tiny -- /bin/true
+
+    # With --unsafe.
+    ch-run --unsafe 00_tiny -- /bin/true
+}
 
 @test '/usr/bin/ch-ssh' {
     # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".

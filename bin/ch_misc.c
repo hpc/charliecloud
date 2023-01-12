@@ -475,7 +475,7 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
 /* Return true if the given path exists, false otherwise. On error, exit. If
    statbuf is non-null, store the result of stat(2) there. If follow_symlink
    is true and the last component of path is a symlink, stat(2) the target of
-   the symlnk; otherwise, lstat(2) the link itself. */
+   the symlink; otherwise, lstat(2) the link itself. */
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
 {
    struct stat statbuf_;
@@ -577,6 +577,14 @@ char *realpath_safe(const char *path)
    pathc = realpath(path, NULL);
    Tf (pathc != NULL, "can't canonicalize: %s", path);
    return pathc;
+}
+
+/* Replace all instances of character “old” in “s” with “new”. */
+void replace_char(char *s, char old, char new)
+{
+   for (int i = 0; s[i] != '\0'; i++)
+      if(s[i] == old)
+         s[i] = new;
 }
 
 /* Split string str at first instance of delimiter del. Set *a to the part
