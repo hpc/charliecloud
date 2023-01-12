@@ -33,7 +33,7 @@ RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \
-                --with-pmi=slurm \
+                --with-pmi-lib=/usr/local/lib \
                 --with-pm=no \
                 --with-libfabric=/usr/local \
                 --with-slurm
