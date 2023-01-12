@@ -123,7 +123,6 @@ int main(int argc, char *argv[])
    verbose = LL_INFO;  // in ch_misc.c
    args = (struct args){
       .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
-                               .ch_ssh = false,
                                .container_gid = getegid(),
                                .container_uid = geteuid(),
                                .env_expand = true,
