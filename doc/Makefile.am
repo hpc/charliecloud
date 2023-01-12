@@ -65,7 +65,6 @@ html/ch-fromhost.html \
 html/ch-image.html \
 html/ch-run.html \
 html/ch-run-oci.html \
-html/ch-ssh.html \
 html/ch-test.html \
 html/command-usage.html \
 html/dev.html \
