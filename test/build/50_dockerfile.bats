@@ -475,7 +475,9 @@ EOF
 
 
 @test 'Dockerfile: LABEL parsing' {
+
     scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 
     label_expected=$(cat <<'EOF'
 ('chsl_0a', 'value 0a')
