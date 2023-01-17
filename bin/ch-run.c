@@ -48,6 +48,7 @@ const struct argp_option options[] = {
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
    { "ch-ssh",         -8, 0,      0, "bind ch-ssh into image"},
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
+   { "fake-syscalls", -14, 0,      0, "FIXME"},
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },
    { "home",          -12, 0,      0, "mount host $HOME at guest /home/$USER" },
@@ -79,6 +80,7 @@ struct args {
    struct env_delta *env_deltas;
    char *storage_dir;
    char *initial_dir;
+   bool fake_syscalls_p;
    bool unsafe;
 };
 
@@ -142,6 +144,7 @@ int main(int argc, char *argv[])
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .storage_dir = storage_default(),
       .initial_dir = NULL,
+      .fake_syscalls_p = false,
       .unsafe = false };
 
    /* I couldn't find a way to set argp help defaults other than this
@@ -206,9 +209,13 @@ int main(int argc, char *argv[])
    VERBOSE("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
            args.c.join_pid);
    VERBOSE("private /tmp: %d", args.c.private_tmp);
+   VERBOSE("fake syscalls: %d", args.fake_syscalls_p);
+   VERBOSE("unsafe: %d", args.unsafe);
 
    containerize(&args.c);
    fix_environment(&args);
+   if (args.fake_syscalls_p)
+      fake_syscalls_install();
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
@@ -425,6 +432,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case -13: // --unsafe
       args->unsafe = true;
+      break;
+   case -14: // --fake-syscalls
+      args->fake_syscalls_p = true;
       break;
    case 'b': {  // --bind
          char *src, *dst;

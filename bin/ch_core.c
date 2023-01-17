@@ -4,10 +4,15 @@
 #include <fcntl.h>
 #include <grp.h>
 #include <libgen.h>
+#include <linux/audit.h>
+#include <linux/filter.h>
+#include <linux/seccomp.h>
 #include <pwd.h>
 #include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
+#include <stddef.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -51,6 +56,70 @@ struct bind BINDS_DEFAULT[] = {
    { 0 }
 };
 
+/* Architectures that we support for fake syscalls. Order matches the
+   corresponding table below. */
+int FAKE_SYSCALL_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
+                             AUDIT_ARCH_ARM,       // arm32
+                             AUDIT_ARCH_I386,      // x86 (32-bit)
+                             AUDIT_ARCH_PPC64,     // PPC
+                             AUDIT_ARCH_X86_64,    // x86-64
+                             -1 };
+
+/* System call numbers that we fake (by doing nothing and returning success).
+   Some processors can execute multiple architectures (e.g., 64-bit Intel CPUs
+   can run both x64-64 and x86 code), and a process’ architecture can even
+   change (if you execve(2) binary of different architecture), so we can’t
+   just use the build host’s architecture.
+
+   I haven’t figured out how to gather these system call numbers
+   automatically, so they are compiled from [1] and [2]. See also [3] for a
+   more general reference.
+
+   Zero means the syscall does not exist on that architecture.
+
+   Other syscalls we considered but decided not to block: setgid(2)/setuid(2)
+   and friends, setgroups(2), capset(2).
+
+   NOTE: The total number of faked syscalls (i.e., non-zero entries below)
+   must be somewhat less than 256. I haven’t computed the exact limit. There
+   will be an assertion failure at runtime if this is exceeded.
+
+   [1]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#Cross_arch-Numbers
+   [2]: https://github.com/strace/strace/blob/v4.26/linux/powerpc64/syscallent.h
+   [3]: https://unix.stackexchange.com/questions/421750 */
+int FAKE_SYSCALL_NRS[][5] = {
+   // arm64   arm32   x86     PPC64   x86-64
+   // ------  ------  ------  ------  ------
+   {       0,      0,      0,      0,    125 },  // capset
+   {       0,    182,    182,    181,     92 },  // chown
+   {       0,      0,      0,      0,      0 },  // chown32
+   {       0,      0,      0,      0,     93 },  // fchown
+   {       0,      0,      0,      0,      0 },  // fchown32
+   {       0,      0,      0,      0,    260 },  // fchownat
+   {       0,      0,      0,      0,     94 },  // lchown
+   {       0,      0,      0,      0,      0 },  // lchown32
+   {       0,      0,      0,      0,    133 },  // mknod
+   {       0,      0,      0,      0,    259 },  // mknodat
+   {       0,      0,      0,      0,    123 },  // setfsgid
+   {       0,      0,      0,      0,      0 },  // setfsgid32
+   {       0,      0,      0,      0,    122 },  // setfsuid
+   {       0,      0,      0,      0,      0 },  // setfsuid32
+   {       0,      0,      0,      0,    106 },  // setgid
+   {       0,      0,      0,      0,      0 },  // setgid32
+   {       0,      0,      0,      0,    116 },  // setgroups
+   {       0,      0,      0,      0,      0 },  // setgroups32
+   {       0,      0,      0,      0,    114 },  // setregid
+   {       0,      0,      0,      0,      0 },  // setregid32
+   {       0,      0,      0,      0,    119 },  // setresgid
+   {       0,      0,      0,      0,      0 },  // setresgid32
+   {       0,      0,      0,      0,    117 },  // setresuid
+   {       0,      0,      0,      0,      0 },  // setresuid32
+   {       0,      0,      0,      0,    113 },  // setreuid
+   {       0,      0,      0,      0,      0 },  // setreuid32
+   {       0,      0,      0,      0,    105 },  // setuid
+   {       0,      0,      0,      0,      0 },  // setuid32
+   { -1 }, // end
+};
 
 /** Global variables **/
 
@@ -238,6 +307,96 @@ void enter_udss(struct container *c)
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
 }
+
+/* Set up the fake-syscall seccomp(2) filter. This computes and installs a
+   long-ish but fairly simple BPF program to implement the filter. To
+   understand this rather hairy language:
+
+     1. https://man7.org/training/download/secisol_seccomp_slides.pdf
+     2. https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html
+     3. https://elixir.bootlin.com/linux/latest/source/samples/seccomp */
+void fake_syscalls_install(void)
+{
+   int arch_ct = sizeof(FAKE_SYSCALL_ARCHS)/sizeof(FAKE_SYSCALL_ARCHS[0]) - 1;
+   int syscall_cts[arch_ct];
+   struct sock_fprog p = { 0 };
+   int ii, idx_allow, idx_fake, idx_next_arch;
+
+   void iw(struct sock_fprog *p, int i,
+           uint16_t op, uint32_t k, uint8_t jt, uint8_t jf)
+   {
+      p->filter[i] = (struct sock_filter){ op, jt, jf, k };
+      DEBUG("%4d: { op=%2x k=%8x jt=%3d jf=%3d }", i, op, k, jt, jf);
+   }
+
+   // Count how many syscalls we are going to fake. We need this to compute
+   // the right offsets for all the jumps.
+   for (int ai = 0; FAKE_SYSCALL_ARCHS[ai] != -1; ai++) {
+      p.len += 4;  // arch test, end-of-arch jump, load arch & syscall nr
+      syscall_cts[ai] = 0;
+      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != -1; si++) {
+         bool syscall_p = FAKE_SYSCALL_NRS[si][ai] > 0;
+         syscall_cts[ai] += syscall_p;
+         p.len += syscall_p;  // syscall jump table entry
+      }
+      DEBUG("fake syscalls: %x: %d", FAKE_SYSCALL_ARCHS[ai], syscall_cts[ai]);
+   }
+
+   // Initialize program buffer.
+   p.len += 2;  // return instructions (allow and fake success)
+   DEBUG("seccomp(2) program has %d instructions", p.len);
+   T_ (p.len <= 258);  // avoid jumps > 255
+   T_ (p.filter = calloc(p.len, sizeof(struct sock_filter)));
+
+   // Return call addresses. Allow needs to come first because we’ll jump to
+   // it for unknown architectures.
+   idx_allow = p.len - 2;
+   idx_fake = p.len - 1;
+
+   // Build a jump table for each architecture. The gist is: if architecture
+   // matches, fall through into the jump table, otherwise jump to the next
+   // architecture (or ALLOW for the last architecture).
+   ii = 0;
+   for (int ai = 0; FAKE_SYSCALL_ARCHS[ai] != -1; ai++) {
+      int jump;
+      idx_next_arch = ii + syscall_cts[ai] + 4;
+      // load arch into accumulator
+      iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+         offsetof(struct seccomp_data, arch), 0, 0);
+      // jump to next arch if arch doesn't match
+      jump = idx_next_arch - ii - 1;
+      T_ (jump <= 255);
+      iw(&p, ii++, BPF_JMP|BPF_JEQ, FAKE_SYSCALL_ARCHS[ai], 0, jump);
+      // load syscall number into accumulator
+      iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+         offsetof(struct seccomp_data, nr), 0, 0);;
+      // jump table of syscalls
+      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != -1; si++) {
+         int nr = FAKE_SYSCALL_NRS[si][ai];
+         if (nr > 0) {
+            jump = idx_fake - ii - 1;
+            T_ (jump <= 255);
+            iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, nr, jump, 0);
+         }
+      }
+      // jump to allow (distance limit of 255 does not apply to JA)
+      iw(&p, ii, BPF_JMP|BPF_JA, idx_allow - ii - 1, 0, 0);
+      ii++;
+   }
+   T_ (idx_next_arch == idx_allow);
+
+   // Returns. (Note that if we wanted a non-zero errno, we’d bitwise-or with
+   // SECCOMP_RET_ERRNO. But because fake success is errno == 0, we don’t need
+   // a no-op “| 0”.)
+   iw(&p, idx_allow, BPF_RET|BPF_K, SECCOMP_RET_ALLOW, 0, 0);
+   iw(&p, idx_fake, BPF_RET|BPF_K, SECCOMP_RET_ERRNO, 0, 0);
+
+   // Install filter. Use prctl(2) rather than seccomp(2) for slightly greater
+   // compatibility (Linux 3.5 rather than 3.17) and because there is a glibc
+   // wrapper.
+   Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p));
+}
+
 
 /* Return image type of path, or exit with error if not a valid type. */
 enum img_type image_type(const char *ref, const char *storage_dir)
