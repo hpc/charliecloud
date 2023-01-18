@@ -1025,7 +1025,6 @@ fi
 
 # If srun --mpi=pmix set variable to avoid spurious error. See
 # https://github.com/open-mpi/ompi/issues/7516.
-echo $CH_TEST_SLURM_MPI
 if [[ "$CH_TEST_SLURM_MPI" == '--mpi=pmix' ]]; then
     export PMIX_MCA_gds=hash
 fi
