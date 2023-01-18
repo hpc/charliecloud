@@ -1,18 +1,24 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#include "config.h"
+
 #include <fcntl.h>
 #include <grp.h>
 #include <libgen.h>
+#ifdef HAVE_FAKE_SYSCALLS
 #include <linux/audit.h>
 #include <linux/filter.h>
 #include <linux/seccomp.h>
+#endif
 #include <pwd.h>
 #include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
+#ifdef HAVE_FAKE_SYSCALLS
 #include <stddef.h>
 #include <stdint.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -23,7 +29,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "config.h"
 #include "ch_misc.h"
 #include "ch_core.h"
 #ifdef HAVE_LIBSQUASHFUSE
@@ -58,12 +63,14 @@ struct bind BINDS_DEFAULT[] = {
 
 /* Architectures that we support for fake syscalls. Order matches the
    corresponding table below. */
+#ifdef HAVE_FAKE_SYSCALLS
 int FAKE_SYSCALL_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
                              AUDIT_ARCH_ARM,       // arm32
                              AUDIT_ARCH_I386,      // x86 (32-bit)
                              AUDIT_ARCH_PPC64,     // PPC
                              AUDIT_ARCH_X86_64,    // x86-64
                              -1 };
+#endif
 
 /* System call numbers that we fake (by doing nothing and returning success).
    Some processors can execute multiple architectures (e.g., 64-bit Intel CPUs
@@ -87,6 +94,7 @@ int FAKE_SYSCALL_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
    [1]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#Cross_arch-Numbers
    [2]: https://github.com/strace/strace/blob/v4.26/linux/powerpc64/syscallent.h
    [3]: https://unix.stackexchange.com/questions/421750 */
+#ifdef HAVE_FAKE_SYSCALLS
 int FAKE_SYSCALL_NRS[][5] = {
    // arm64   arm32   x86     PPC64   x86-64
    // ------  ------  ------  ------  ------
@@ -120,6 +128,8 @@ int FAKE_SYSCALL_NRS[][5] = {
    {       0,      0,      0,      0,      0 },  // setuid32
    { -1 }, // end
 };
+#endif
+
 
 /** Global variables **/
 
@@ -315,6 +325,7 @@ void enter_udss(struct container *c)
      1. https://man7.org/training/download/secisol_seccomp_slides.pdf
      2. https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html
      3. https://elixir.bootlin.com/linux/latest/source/samples/seccomp */
+#ifdef HAVE_FAKE_SYSCALLS
 void fake_syscalls_install(void)
 {
    int arch_ct = sizeof(FAKE_SYSCALL_ARCHS)/sizeof(FAKE_SYSCALL_ARCHS[0]) - 1;
@@ -396,7 +407,7 @@ void fake_syscalls_install(void)
    // wrapper.
    Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p));
 }
-
+#endif
 
 /* Return image type of path, or exit with error if not a valid type. */
 enum img_type image_type(const char *ref, const char *storage_dir)
