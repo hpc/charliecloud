@@ -91,6 +91,7 @@ class Image_Puller:
       "Download image metadata and layers and put them in the download cache."
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       ch.VERBOSE("downloading image: %s" % self.image)
+      have_skinny = False
       try:
          # fat manifest
          if (ch.arch != "yolo"):
@@ -101,6 +102,9 @@ class Image_Puller:
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
             except ch.No_Fatman_Error:
+               # currently, this error is only raised if we've downloaded the skinny
+               # manifest.
+               have_skinny = True
                if (ch.arch == "amd64"):
                   # We're guessing that enough arch-unaware images are amd64 to
                   # barge ahead if requested architecture is amd64.
@@ -111,7 +115,7 @@ class Image_Puller:
                   ch.FATAL("image is architecture-unaware",
                            "consider --arch=yolo")
          # manifest
-         self.manifest_load()
+         self.manifest_load(have_skinny)
       except ch.Image_Unavailable_Error:
          if (ch.user() == "qwofford"):
             h = "Quincy, use --auth!!"
@@ -213,7 +217,7 @@ class Image_Puller:
       "Return the path to tarball for layer layer_hash."
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
-   def manifest_load(self):
+   def manifest_load(self, have_skinny=False):
       """Download the manifest file, parse it, and set self.config_hash and
          self.layer_hashes. If the image does not exist,
          exit with error."""
@@ -233,9 +237,10 @@ class Image_Puller:
          else:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
-         self.registry.manifest_to_file(self.manifest_path,
-                                        "manifest: downloading",
-                                        digest=digest)
+         if (not have_skinny):
+            self.registry.manifest_to_file(self.manifest_path,
+                                          "manifest: downloading",
+                                          digest=digest)
          manifest = self.manifest_path.json_from_file("manifest")
       # validate schema version
       try:
