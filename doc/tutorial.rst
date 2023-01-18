@@ -469,7 +469,7 @@ Build::
    Dockerfile   mpihello.c
    $ ch-image build -t mpihello
 
-Note that the default Dockerfile is :code:`./Dockerfile`; we can omit :code`-f`.
+Note that the default Dockerfile is :code:`./Dockerfile`; we can omit :code:`-f`.
 
 We need to convert that directory image to a squashball so wer can run it on the compute
 nodes::
