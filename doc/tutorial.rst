@@ -411,6 +411,107 @@ Let’s pull that image and see how it looks::
   bin    etc    lib    mnt    proc   run    srv    tmp    var
   dev    home   media  opt    root   sbin   sys    usr
 
+MPI Hello World
+===============
+
+Pull base image
+---------------
+
+we'll use a simple parallel operation. First we need to pull the base image::
+
+   ch-image pull mfisherman/openmpi openmpi
+
+Build image
+-----------
+
+Create a new directory for this project, and within it following simple C program
+called :code:`mpihello.c` (Note the program contains a bug; consider fixing it.)::
+
+   #include <stdio.h>
+   #include <mpi.h>
+
+   cint main (int argc, char **argv)
+   {
+      int msg, rank, rank_ct;
+
+      MPI_Init(&argc, &argv);
+      MPI_Comm_size(MPI_COMM_WORLD, &rank_ct);
+      MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+
+      printf("hello from rank %d of %d\n", rank, rank_ct);
+
+      if (rank == 0) {
+         for (int i = 1; i < rank_ct; i++) {
+            MPI_Send(&msg, 1, MPI_INT, i, 0, MPI_COMM_WORLD);
+            printf("rank %d sent %d to rank %d\n", rank, msg, i);
+         }
+      } else {
+         MPI_Recv(&msg, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);
+         printf("rank %d received %d from rank 0\n", rank, msg);
+      }
+
+      MPI_Finalize();
+   }
+
+Add the following :code:`Dockerfile`.::
+
+   FROM openmpi
+   RUN mkdir /hello
+   WORKDIR /hello
+   COPY mpihello.c .
+   RUN mpicc -o mpihello mpihello.c
+
+The instruction :code:`WORKDIR` changes directories (the default working directory
+within a Dockerfile is /).
+Build::
+
+   $ ls
+   Dockerfile   mpihello.c
+   $ ch-image build -t mpihello
+
+Note that the default Dockerfile is :code:`./Dockerfile`; we can omit :code`-f`.
+
+We need to convert that directory image to a squashball so wer can run it on the compute
+nodes::
+
+   $ ch-convert mpihello mpihello.sqfs
+
+Run the container
+-----------------
+
+We'll run this application interactively. One could also put similar steps in a Slurm batch
+script.
+
+First, obtain a two node allocation and install/load Charliecloud::
+
+   $ salloc -N2 -t 1:00:00
+   salloc: Granted job allocation 599518
+   [...]
+
+Put the application on all cores in your allocation::
+
+   $ srun ch-covert ~/mpihello.sqfs /var/tmp/mpihello
+   input:   tar       /users/$USER/mpihello.sqfs
+   output:  dir       /var/tmp/mpihello
+   analyzing ...
+   input:   tar       /users/$USER/mpihello.sqfs
+   output:  dir       /var/tmp/mpihello
+   analyzing ...
+   unpacking ...
+   unpacking ...
+   done
+   done
+
+Run the application on all cores in your allocation::
+
+   $ srun -c1 ch-run /var/tmp/mpihello -- ./hello.mpihello
+   hello from rank 1 of 71
+   rank 1 received 0 from rank 0
+   [...]
+   hello from rank 63 of 71
+   rank 1 received 0 from rank 62
+
+Win!
 
 Build cache
 ===========
