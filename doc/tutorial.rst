@@ -490,7 +490,7 @@ First, obtain a two node allocation and install/load Charliecloud::
 
 Put the application on all cores in your allocation::
 
-   $ srun ch-covert ~/mpihello.sqfs /var/tmp/mpihello
+   $ srun ch-convert ~/mpihello.sqfs /var/tmp/mpihello
    input:   tar       /users/$USER/mpihello.sqfs
    output:  dir       /var/tmp/mpihello
    analyzing ...
@@ -512,6 +512,8 @@ Run the application on all cores in your allocation::
    rank 1 received 0 from rank 62
 
 Win!
+Note: The :code:`srun` command might need to be updated depending
+on your cluster's openmpi set-up.
 
 Build cache
 ===========
