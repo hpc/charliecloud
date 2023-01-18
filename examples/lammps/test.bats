@@ -61,6 +61,11 @@ lammps_try () {
 
 @test "${ch_tag}/inject host cray mpi ($cray_prov)" {
     cray_ofi_or_skip "$ch_img"
+    run ch-run "$ch_img" -- fi_info
+    echo "$output"
+    [[ $output == *"provider: $cray_prov"* ]]
+    [[ $output == *"fabric: $cray_prov"* ]]
+    [[ $stauts -eq 0 ]]
 }
 
 @test "${ch_tag}/using all cores" {
