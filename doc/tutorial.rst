@@ -504,7 +504,7 @@ Put the application on all cores in your allocation::
 
 Run the application on all cores in your allocation::
 
-   $ srun -c1 ch-run /var/tmp/mpihello -- ./hello.mpihello
+   $ srun -c1 ch-run /var/tmp/mpihello -- ./hello/mpihello
    hello from rank 1 of 71
    rank 1 received 0 from rank 0
    [...]
