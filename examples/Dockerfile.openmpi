@@ -12,7 +12,7 @@ FROM libfabric
 #     container, where srun is not installed (the error messages from this are
 #     inscrutable).
 ARG MPI_URL=https://www.open-mpi.org/software/ompi/v4.1/downloads
-ARG MPI_VERSION=4.1.1
+ARG MPI_VERSION=4.1.4
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
  && tar xf openmpi-${MPI_VERSION}.tar.gz
 RUN cd openmpi-${MPI_VERSION} \

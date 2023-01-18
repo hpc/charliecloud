@@ -3,19 +3,6 @@
 # See Dockerfile.libfabric for MPI goals and details.
 FROM libfabric
 
-# PMI2.
-#
-# There isn't a package available with the Slurm PMI2 libraries we need, so
-# build them from Slurm's release.
-ARG SLURM_VERSION=21-08-6-1
-RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz \
- && tar -xf slurm-${SLURM_VERSION}.tar.gz \
- && cd slurm-slurm-${SLURM_VERSION} \
- && ./configure --prefix=/usr/local \
- && cd contribs/pmi2 \
- && make -j$(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../../../slurm*
-
 # To configure MPICH to use SLURM as its process manager we must set the
 # following:
 #
