@@ -430,7 +430,7 @@ called :code:`mpihello.c` (Note the program contains a bug; consider fixing it.)
    #include <stdio.h>
    #include <mpi.h>
 
-   cint main (int argc, char **argv)
+   int main (int argc, char **argv)
    {
       int msg, rank, rank_ct;
 
@@ -459,7 +459,7 @@ Add the following :code:`Dockerfile`.::
    RUN mkdir /hello
    WORKDIR /hello
    COPY mpihello.c .
-   RUN mpicc -o mpihello mpihello.c
+   RUN mpicc -o mpihello mpihello.c .
 
 The instruction :code:`WORKDIR` changes directories (the default working directory
 within a Dockerfile is /).
