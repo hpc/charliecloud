@@ -974,7 +974,7 @@ EOF
     printf 'FROM alpine:3.17\n' | ch-image build -t alpine:3.16 -
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
-*  (foo, alpine+3.17, alpine+3.10) PULL alpine:3.17
+*  (foo, alpine+3.17, alpine+3.16) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
