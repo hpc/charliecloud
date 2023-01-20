@@ -1,4 +1,4 @@
-Best Practices
+Best practices
 **************
 
 Other best practices information
@@ -46,10 +46,10 @@ The :code:`examples/hello` Dockerfile does this to install the package
    :language: docker
    :lines: 3-7
 
-You can use distribution package managers such as :code:`dnf`, as
-demonstrated above, or others, such as :code:`pip` for Python packages.
-Be aware that the software will be downloaded anew each time you build the
-image, unless you add an HTTP cache, which is out of scope of this tutorial.
+You can use distribution package managers such as :code:`dnf`, as demonstrated
+above, or others, such as :code:`pip` for Python packages. Be aware that the
+software will be downloaded anew each time you execute the instruction (unless
+you add an HTTP cache, which is out of scope of this documentation).
 
 .. note::
 
