@@ -6,10 +6,12 @@ both examples included with the source code as well as new ones you create
 from scratch.
 
 This tutorial assumes that: (a) Charliecloud is in your path, including
-Charliecloud's fully unprivileged image builder :code:`ch-image` and (b) the
-Charliecloud source code is available at :code:`/usr/local/src/charliecloud`.
-(If you wish to use Docker to build images, see the :ref:`FAQ
-<faq_building-with-docker>`.)
+Charliecloud's fully unprivileged image builder :code:`ch-image` and
+(b) Charliecloud is installed under :code:`/usr/local`. (If the second
+assumption isn’t true, you will just need to modify some paths.)
+
+If you want to use Docker to build images, see the :ref:`FAQ
+<faq_building-with-docker>`.
 
 .. contents::
    :depth: 2
@@ -55,10 +57,14 @@ should be able to tell you if this is linked in.
   $ ch-run /var/tmp/hello.sqfs -- echo "I’m in a container"
   I’m in a container
 
-Using a directory images
-------------------------
+Using a directory image
+-----------------------
 
-If not, you can create image in plain directory format instead::
+If not, you can create image in plain directory format instead. Most of this
+tutorial uses SquashFS images, but you can adapt it analogously to this
+section.
+
+::
 
   $ cd /usr/local/share/doc/charliecloud/examples/hello
   $ ch-image build --force .
@@ -110,8 +116,8 @@ First, browse the Docker Hub repository of `official AlmaLinux images
 partial list of image versions that are available. We’ll use the tag
 “:code:`8`”.
 
-Use the Charliecloud program :code:`ch-image` to pull this image to a
-directory::
+Use the Charliecloud program :code:`ch-image` to pull this image to
+Charliecloud’s internal storage directory::
 
    $ ch-image pull almalinux:8
    pulling image:    almalinux:8
@@ -134,8 +140,8 @@ directory::
 
 Images come in lots of different formats; :code:`ch-run` can use directories
 and SquashFS archives. For this example, we’ll use SquashFS. We use the
-command :code:`ch-convert` to create a SquashFS image from :code:`ch-image`’s
-internal storage directory, then run it::
+command :code:`ch-convert` to create a SquashFS image from the image in
+internal storage, then run it::
 
    $ ch-convert almalinux:8 almalinux.sqfs
    $ ch-run almalinux.sqfs -- /bin/bash
@@ -148,11 +154,12 @@ internal storage directory, then run it::
    AlmaLinux release 8.7 (Stone Smilodon)
    > exit
 
-What does this command do?
+What do these commands do?
 
   1. Create a SquashFS-format image (:code:`ch-convert ...`).
 
-  2. Create a container using that image (:code:`ch-run almalinux.sqfs`).
+  2. Create a running container using that image (:code:`ch-run
+     almalinux.sqfs`).
 
   3. Stop processing :code:`ch-run` options (:code:`--`). (This is
      standard notation for UNIX command line programs.)
@@ -169,7 +176,7 @@ Many folks would like you to believe that containers are magic and special
 case. To demonstrate, we’ll create a working container image using standard
 UNIX tools.
 
-Many Linux distributions provide tarballs containing installed based images,
+Many Linux distributions provide tarballs containing installed base images,
 including Alpine. We can use these in Charliecloud directly::
 
   $ wget -O alpine.tar.gz 'https://github.com/alpinelinux/docker-alpine/blob/v3.16/x86_64/alpine-minirootfs-3.16.3-x86_64.tar.gz?raw=true'
@@ -198,7 +205,8 @@ directory to avoid making a mess::
   5.6M	.
   $ cd ..
 
-Now, run a shell in the container! (Note that base Alpine does not have Bash.)
+Now, run a shell in the container! (Note that base Alpine does not have Bash,
+so we run :code:`/bin/sh` instead.)
 
 ::
 
@@ -235,8 +243,8 @@ e.g. Docker or Podman. :code:`ch-image` is a big deal because it is completely
 unprivileged. Other builders typically run as root or require setuid root
 helper programs; this raises a number of security questions.
 
-We’ll write a “Hello World” Python program and run it within a container we
-specify with a Dockerfile. Set up a directory to work in::
+We’ll write a “Hello World” Python program and put it into an image we specify
+with a Dockerfile. Set up a directory to work in::
 
   $ mkdir hello.src
   $ cd hello.src
@@ -362,20 +370,24 @@ We can now use :code:`ch-image push` to push the image to GitLab. (Note that
 the tagging step you would need for Docker is unnecessary here, because we can
 just specify a destination reference at push time.)
 
-For the gitlab path, it you put your registry in a group update the path
-accordingly. For example, if I put my container registry in group called 
-containers the path would be:
-:code:`gitlab.com/$USER/containers/test-registry/hello:latest`.
+You will need to substitute your GitLab username for :code:`$USER` below.
 
 When you are prompted for credentials, enter your GitLab username and
-copy-paste the PAT you created earlier (or enter your password). You will need
-to substitute your GitLab username for :code:`$USER` below.
+copy-paste the PAT you created earlier (or enter your password).
+
+.. note::
+
+   The specific GitLab path may vary depending on how your GitLab is set up.
+   Check the Docker examples on the empty container registry page for the
+   value you need. For example, if you put your container registry in a group
+   called “containers”, the image reference would be
+   :code:`gitlab.com/$USER/containers/myproj/hello:latest`.
 
 ::
 
-  $ ch-image push hello gitlab.com:5050/$USER/test-registry/hello:latest
+  $ ch-image push hello gitlab.com:5050/$USER/myproj/hello:latest
   pushing image:   hello
-  destination:     gitlab.com:5050/$USER/test-registry/hello:latest
+  destination:     gitlab.com:5050/$USER/myproj/hello:latest
   layer 1/1: gathering
   layer 1/1: preparing
   preparing metadata
@@ -398,8 +410,8 @@ Pull and compare
 
 Let’s pull that image and see how it looks::
 
-  $ ch-image pull --auth registry.gitlab.com/$USER/test-registry/hello:latest hello.2
-  pulling image:   gitlab.com:5050/$USER/test-registry/hello:latest
+  $ ch-image pull --auth registry.gitlab.com/$USER/myproj/hello:latest hello.2
+  pulling image:   gitlab.com:5050/$USER/myproj/hello:latest
   destination:     hello.2
   [...]
   $ ch-image list
@@ -411,21 +423,48 @@ Let’s pull that image and see how it looks::
   bin    etc    lib    mnt    proc   run    srv    tmp    var
   dev    home   media  opt    root   sbin   sys    usr
 
+
 MPI Hello World
 ===============
 
-Pull base image
----------------
+In this section, we’ll build and run a simple MPI parallel program.
 
-we'll use a simple parallel operation. First we need to pull the base image::
+Image builds can be chained. Here, we’ll build a chain of four images: the
+official :code:`almalinux:8` image, a customized AlmaLinux 8 image, an OpenMPI
+image, and finally the application image.
 
-   ch-image pull mfisherman/openmpi openmpi
+Important: Many of the specifics in this section will vary from site to site.
+In that case, follow your site’s instructions instead.
+
+Build base images
+-----------------
+
+First, build two images using the Dockerfiles provided with Charliecloud.
+These two build should take about 15 minutes total, depending on the speed of
+your system.
+
+Note that Charliecloud infers their names from the Dockerfile name, so we
+don’t need to specify :code:`-t`. Also, :code:`--force` enables some
+workarounds for tools like distribution package managers that expect to really
+be root.
+
+::
+
+  $ ch-image build --force \
+       -f /usr/local/share/doc/charliecloud/examples/Dockerfile.almalinux_8ch \
+       /usr/local/share/doc/charliecloud/examples
+  $ ch-image build --force \
+       -f /usr/local/share/doc/charliecloud/examples/Dockerfile.openmpi \
+          /usr/local/share/doc/charliecloud/examples
 
 Build image
 -----------
 
-Create a new directory for this project, and within it following simple C program
-called :code:`mpihello.c` (Note the program contains a bug; consider fixing it.)::
+Next, create a new directory for this project, and within it the following
+simple C program called :code:`mpihello.c`. (Note the program contains a bug;
+consider fixing it.)
+
+::
 
    #include <stdio.h>
    #include <mpi.h>
@@ -453,7 +492,7 @@ called :code:`mpihello.c` (Note the program contains a bug; consider fixing it.)
       MPI_Finalize();
    }
 
-Add the following :code:`Dockerfile`.::
+Add this :code:`Dockerfile`::
 
    FROM openmpi
    RUN mkdir /hello
@@ -461,59 +500,52 @@ Add the following :code:`Dockerfile`.::
    COPY mpihello.c .
    RUN mpicc -o mpihello mpihello.c .
 
-The instruction :code:`WORKDIR` changes directories (the default working directory
-within a Dockerfile is /).
-Build::
+(The instruction :code:`WORKDIR` changes directories; the default working
+directory within a Dockerfile is :code:`/`).
+
+Now build. The default Dockerfile is :code:`./Dockerfile`, so we can omit
+:code:`-f`.
+
+::
 
    $ ls
    Dockerfile   mpihello.c
    $ ch-image build -t mpihello
+   $ ch-image list
+   almalinux:8
+   almalinux_8ch
+   mpihello
+   openmpi
 
-Note that the default Dockerfile is :code:`./Dockerfile`; we can omit :code:`-f`.
-
-We need to convert that directory image to a squashball so wer can run it on the compute
-nodes::
+Finally, create a squashball image and copy it to the supercomputer::
 
    $ ch-convert mpihello mpihello.sqfs
+   $ scp mpihello.sqfs super-fe:
 
 Run the container
 -----------------
 
-We'll run this application interactively. One could also put similar steps in a Slurm batch
-script.
+We’ll run this application interactively. One could also put similar steps in
+a Slurm batch script.
 
-First, obtain a two node allocation and install/load Charliecloud::
+First, obtain a two-node allocation and load Charliecloud::
 
    $ salloc -N2 -t 1:00:00
    salloc: Granted job allocation 599518
    [...]
+   $ module load charliecloud
 
-Put the application on all cores in your allocation::
+Then, run the application on all cores in your allocation::
 
-   $ srun ch-convert ~/mpihello.sqfs /var/tmp/mpihello
-   input:   tar       /users/$USER/mpihello.sqfs
-   output:  dir       /var/tmp/mpihello
-   analyzing ...
-   input:   tar       /users/$USER/mpihello.sqfs
-   output:  dir       /var/tmp/mpihello
-   analyzing ...
-   unpacking ...
-   unpacking ...
-   done
-   done
-
-Run the application on all cores in your allocation::
-
-   $ srun -c1 ch-run /var/tmp/mpihello -- ./hello/mpihello
-   hello from rank 1 of 71
+   $ srun -c1 ch-run ~/mpihello.sqfs -- /hello/mpihello
+   hello from rank 1 of 72
    rank 1 received 0 from rank 0
    [...]
-   hello from rank 63 of 71
-   rank 1 received 0 from rank 62
+   hello from rank 63 of 72
+   rank 63 received 0 from rank 0
 
 Win!
-Note: The :code:`srun` command might need to be updated depending
-on your cluster's openmpi set-up.
+
 
 Build cache
 ===========
@@ -561,7 +593,7 @@ But on our second build, we get::
     1* FROM almalinux:8
     2* RUN sleep 2 && echo foo
     3* RUN sleep 2 && echo bar
-  copying image …
+  copying image ...
   grown in 3 instructions: a
 
 Here, instead of being executed, each instruction’s results were retrieved
@@ -569,8 +601,8 @@ from cache. Cache hit for each instruction is indicted by an asterisk
 (“:code:`*`”) after the line number. Even for such a small and short
 Dockerfile, this build is noticeably faster than the first.
 
-Let’s also try a second, slightly different Dockerfile, :code:`b.df`. Note the
-first three instructions are the same, but the third is different.
+Let’s also try a second, slightly different Dockerfile, :code:`b.df`. The
+first two instructions are the same, but the third is different.
 
 .. code-block:: docker
 
@@ -615,6 +647,9 @@ instruction :code:`RUN sleep 2 && echo foo`.
 
 Appendices
 ==========
+
+These appendices contain further tutorials that may be enlightening but are
+less essential to understanding Charliecloud.
 
 Namespaces with :code:`unshare(1)`
 ----------------------------------
@@ -789,8 +824,8 @@ Let’s revisit the symlinks in :code:`/proc`, but this time with Charliecloud::
 
 The container has different mount (:code:`mnt`) and user (:code:`user`)
 namespaces, but the rest of the namespaces are shared with the host. This
-highlights Charliecloud's focus on functionality (make your UDSS run), rather
-than isolation (protect the host from your UDSS).
+highlights Charliecloud's focus on functionality (make your container run),
+rather than isolation (protect the host from your container).
 
 Normally, each invocation of :code:`ch-run` creates a new container, so if you
 have multiple simultaneous invocations, they will not share containers. In
@@ -821,7 +856,7 @@ below as needed. It will not work otherwise.
   $ ls -l /lib/x86_64-linux-gnu/libc.so.6
   lrwxrwxrwx 1 root root 12 May  1  2019 /lib/x86_64-linux-gnu/libc.so.6 -> libc-2.28.so
 
-The shared libraries pointed to are symlinks, so we’ll use :code:`cp -L` ro
+The shared libraries pointed to are symlinks, so we’ll use :code:`cp -L` to
 dereference them and copy the target files. :code:`linux-vdso.so.1` is a
 kernel thing, not a shared library file, so we don’t copy that.
 
@@ -910,7 +945,7 @@ Interacting with the host
 -------------------------
 
 Charliecloud is not an isolation layer, so containers have full access to host
-resources, with a few quirks. This section demonstrates how this works.
+resources, with a few quirks. This section demonstrates how that works.
 
 Filesystems
 ~~~~~~~~~~~
@@ -991,10 +1026,10 @@ container. The simplest is to manually invoke :code:`ch-run` in the
 
 .. note::
 
-   Recall that each :code:`ch-run` invocation creates a new container. That
-   is, the :code:`ssh` command above has not entered an existing user
-   namespace :code:`’2256`; rather, it has re-used the namespace ID
-   :code:`’2256`.
+   Recall that by default, each :code:`ch-run` invocation creates a new
+   container. That is, the :code:`ssh` command above has not entered an
+   existing user namespace :code:`’2256`; rather, it has re-used the namespace
+   ID :code:`’2256`.
 
 Another is to use the :code:`ch-ssh` wrapper program, which adds
 :code:`ch-run` to the :code:`ssh` command implicitly. It takes the
@@ -1164,8 +1199,8 @@ directories::
 Apache Spark
 ------------
 
-This example is in :code:`examples/spark`. Build a SquashFS and upload it to
-your supercomputer.
+This example is in :code:`examples/spark`. Build a SquashFS image of it and
+upload it to your supercomputer.
 
 Interactive
 ~~~~~~~~~~~
@@ -1339,5 +1374,5 @@ Success! (to four significant digits)
 ..  LocalWords:  openmpi rwxr rwxrwx cn cpus sparkconf MasterWebUI MasterUI
 ..  LocalWords:  StandaloneRestServer MYSECRET TransportClientFactory sc tf
 ..  LocalWords:  containery lockdev subsys cryptsetup utmp xf bca Recv df af
-..  LocalWords:  minirootfs alpinelinux cdrom ffdafff cb alluneed
+..  LocalWords:  minirootfs alpinelinux cdrom ffdafff cb alluneed myproj fe
 ..  LocalWords:  pL ib
