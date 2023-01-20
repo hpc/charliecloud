@@ -160,11 +160,11 @@ Charliecloud issue
 For example::
 
   $ cat Dockerfile
-  FROM alpine:3.9
+  FROM alpine:3.17
   RUN apk add git
   RUN git config --global http.sslVerify false
   $ ch-image build -t foo -f Dockerfile .
-    1 FROM alpine:3.9
+    1 FROM alpine:3.17
     2 RUN ['/bin/sh', '-c', 'apk add git']
   [...]
     3 RUN ['/bin/sh', '-c', 'git config --global http.sslVerify false']
@@ -786,21 +786,21 @@ pull images to OCI format, and `umoci <https://umo.ci>`_ can flatten an OCI
 image to a directory. Thus, you can use the following commands to run an
 Alpine 3.9 image pulled from Docker hub::
 
-  $ skopeo copy docker://alpine:3.9 oci:/tmp/oci:img
+  $ skopeo copy docker://alpine:3.17 oci:/tmp/oci:img
   [...]
   $ ls /tmp/oci
   blobs  index.json  oci-layout
-  $ umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.9
+  $ umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.17
   [...]
-  $ ls /tmp/alpine:3.9
+  $ ls /tmp/alpine:3.17
   config.json
   rootfs
   sha256_2ca27acab3a0f4057852d9a8b775791ad8ff62fbedfc99529754549d33965941.mtree
   umoci.json
-  $ ls /tmp/alpine:3.9/rootfs
+  $ ls /tmp/alpine:3.17/rootfs
   bin  etc   lib    mnt  proc  run   srv  tmp  var
   dev  home  media  opt  root  sbin  sys  usr
-  $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
+  $ ch-run /tmp/alpine:3.17/rootfs -- cat /etc/alpine-release
   3.9.5
 
 How do I authenticate with SSH during :code:`ch-image` build?
