@@ -10,7 +10,7 @@ Charliecloud's fully unprivileged image builder :code:`ch-image` and
 (b) Charliecloud is installed under :code:`/usr/local`. (If the second
 assumption isn’t true, you will just need to modify some paths.)
 
-If you want to use Docker to build images, see the :ref:`FAQ<faq_building-with-docker>`.
+If you want to use Docker to build images, see the :ref:`faq_building-with-docker<FAQ>`.
 
 .. contents::
    :depth: 2
@@ -829,7 +829,7 @@ rather than isolation (protect the host from your container).
 Normally, each invocation of :code:`ch-run` creates a new container, so if you
 have multiple simultaneous invocations, they will not share containers. In
 some cases this can cause problems with MPI programs. However, there is an
-option :code:`--join` that can solve them; see the :ref:`FAQ<faq_join>` for
+option :code:`--join` that can solve them; see the :ref:`faq_join<FAQ>` for
 details.
 
 All you need is Bash
