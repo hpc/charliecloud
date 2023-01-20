@@ -284,8 +284,8 @@ bool get_first_env(char **array, char **name, char **value)
    not, exit with error. */
 void img_directory_verify(const char *newroot, const struct args *args)
 {
-   Tf (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
-   Tf (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
+   Te (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
+   Te (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
        "can't run directory images from storage (hint: run by name)");
 }
 

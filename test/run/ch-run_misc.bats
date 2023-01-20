@@ -15,6 +15,7 @@ load ../common
     [[ $status -eq 1 ]]
     [[ $output = *'error: --write invalid when running by name'* ]]
 
+    echo "CH_IMAGE_STORAGE=$CH_IMAGE_STORAGE"
     run ch-run "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
@@ -68,15 +69,15 @@ EOF
     fi
 
     # Rest of test uses custom storage path.
-    unset CH_IMAGE_STORAGE
-
-    # Specified on command line.
     rm -rf "$my_storage"
     mkdir -p "$my_storage"/img
     ch-convert -i ch-image -o dir 00_tiny "${my_storage}/img/00_tiny"
+    unset CH_IMAGE_STORAGE
+
+    # Specified on command line.
     ch-run --unsafe -s "$my_storage" 00_tiny -- /bin/true
 
-    # Specifie with environment variable.
+    # Specified with environment variable.
     export CH_IMAGE_STORAGE=$my_storage
 
     # Basic environment-variable specified.
