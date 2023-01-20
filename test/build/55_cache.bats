@@ -427,7 +427,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output != *'config: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
+    [[ $output = *'config: downloading'* ]]
     [[ $output = *'layer'*'downloading:'*'100%'* ]]
     run ch-image -s "$so" build-cache --tree
     echo "$output"
