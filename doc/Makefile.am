@@ -20,6 +20,7 @@
 
 EXTRA_DIST = \
 _loc.rst \
+best_practices.rst \
 bugs.rst \
 charliecloud.rst \
 ch-checkns.rst \

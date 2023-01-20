@@ -29,4 +29,5 @@ Overview
    ch-ssh
    ch-test
    faq
+   best_practices
    dev
