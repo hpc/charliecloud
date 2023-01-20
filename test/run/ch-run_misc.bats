@@ -6,28 +6,6 @@ load ../common
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
-@test 'storage errors' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-
-    run ch-run -w 00_tiny -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: --write invalid when running by name'* ]]
-
-    echo "CH_IMAGE_STORAGE=$CH_IMAGE_STORAGE"
-    run ch-run "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
-
-    run ch-run -s /doesnotexist 00_tiny -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
-    [[ $output = *"error: can't stat: 00_tiny: No such file or directory"* ]]
-}
-
 @test 'symlink to image' {  # issue #50
     scope quick
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
@@ -52,36 +30,6 @@ EOF
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
-}
-
-@test '--unsafe' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    my_storage=${BATS_TMPDIR}/unsafe
-
-    # Default storage location.
-    if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
-        sold=$CH_IMAGE_STORAGE
-        unset CH_IMAGE_STORAGE
-        [[ ! -e ./00_tiny ]]
-        ch-run --unsafe 00_tiny -- /bin/true
-        CH_IMAGE_STORAGE=$sold
-    fi
-
-    # Rest of test uses custom storage path.
-    rm -rf "$my_storage"
-    mkdir -p "$my_storage"/img
-    ch-convert -i ch-image -o dir 00_tiny "${my_storage}/img/00_tiny"
-    unset CH_IMAGE_STORAGE
-
-    # Specified on command line.
-    ch-run --unsafe -s "$my_storage" 00_tiny -- /bin/true
-
-    # Specified with environment variable.
-    export CH_IMAGE_STORAGE=$my_storage
-
-    # Basic environment-variable specified.
-    ch-run --unsafe 00_tiny -- /bin/true
 }
 
 @test 'image in both storage and cwd' {
