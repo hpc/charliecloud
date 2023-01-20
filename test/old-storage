@@ -33,7 +33,7 @@ certain properties:
        $ tar tf storage-0.26.x86_64.tar.gz | head -3
        ./
        ./dlcache/
-       ./dlcache/alpine:3.9.fat.json
+       ./dlcache/alpine:3.17.fat.json
 
   3. The result of:
 
