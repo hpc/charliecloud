@@ -357,7 +357,7 @@ EOF
     # Both download and build caches are cold; FROM will do a (lazy) pull.
     # Files should be downloaded and all instructions should miss. Then do it
     # again; nothing should download and it should be all hits.
-    run ch-image -s "$so" --auth --tls-no-verify --arch=amd64 \
+    run ch-image -s "$so" --auth --tls-no-verify \
                  build -t wc -f <(echo "$df_ours") /tmp
     echo "$output"
     [[ $status -eq 0 ]]
@@ -383,7 +383,7 @@ EOF
     echo '*** Us: explicit (eager) pull.'
     # This should download the manifest list and manifest, see that there are
     # no changes, and not download the config or layers.
-    run ch-image -s "$so" --auth --tls-no-verify --arch=amd64 pull localhost:5000/champ
+    run ch-image -s "$so" --auth --tls-no-verify pull localhost:5000/champ
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
