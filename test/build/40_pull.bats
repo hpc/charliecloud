@@ -496,7 +496,7 @@ EOF
 @test 'pull by arch' {
     # Has fat manifest; requested arch exists. There's not much simple to look
     # for in the output, so just see if it works. NOTE: As a temporary fix for
-    # some test suite problems, I'm changing all instances of alpine:3.15 here
+    # some test suite problems, I'm changing all instances of alpine:latest here
     # to alpine:3.15. We really need a more permanent solution for this (see #1485)
     ch-image --arch=yolo pull alpine:3.15
     ch-image --arch=host pull alpine:3.15
@@ -510,6 +510,8 @@ EOF
     [[ $output = *'requested arch unavailable:'*'available:'* ]]
 
     # Delete it so we don't try to use a non-matching arch for other testing.
+    # FIXME: After #1485 is closed, revert to alpine:latest or alpine:3.17 and
+    # delete cache along with image.
     ch-image delete alpine:3.15 || true
 
     # No fat manifest.
