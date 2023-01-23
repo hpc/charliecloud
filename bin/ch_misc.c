@@ -371,7 +371,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    if (denylist == NULL)
       denylist = denylist_null;  // literal here causes intermittent segfaults
 
-   basec = realpath_safe(base);
+   basec = realpath_(base, false);
 
    TRACE("mkdirs: base: %s", basec);
    TRACE("mkdirs: path: %s", path);
@@ -397,7 +397,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
          }
          Tf (S_ISDIR(sb.st_mode) || !component,   // last component not dir OK
              "can't mkdir: exists but not a directory: %s", next);
-         nextc = realpath_safe(next);
+         nextc = realpath_(next, false);
          TRACE("mkdirs: exists, canonical: %s", nextc);
       } else {
          Te (path_subdir_p(basec, next),
@@ -576,13 +576,27 @@ bool path_subdir_p(const char *base, const char *path)
            && (path[base_len] == '/' || path[base_len] == 0));
 }
 
-/* Like realpath(3), but exit with error on failure. */
-char *realpath_safe(const char *path)
+/* Like realpath(3), but never returns an error. If the underlying realpath(3)
+   fails or path is NULL, and fail_ok is true, then return a copy of the
+   input; otherwise (i.e., fail_ok is false) exit with error. */
+char *realpath_(const char *path, bool fail_ok)
 {
    char *pathc;
 
+   if (path == NULL)
+      return NULL;
+
+   errno = 0;
    pathc = realpath(path, NULL);
-   Tf (pathc != NULL, "can't canonicalize: %s", path);
+
+   if (errno != 0) {
+      if (fail_ok) {
+         T_ (pathc = strdup(path));
+      } else {
+         Tf (false, "can't canonicalize: %s", path);
+      }
+   }
+
    return pathc;
 }
 
