@@ -1074,9 +1074,9 @@ For example, to build a ppc64le image on a Debian Buster amd64 host::
   $ uname -m
   x86_64
   $ sudo apt install qemu-user-static
-  $ ch-image pull --arch ppc64le alpine:3.15
-  $ printf 'FROM alpine:3.15\nRUN apk add coreutils\n' | ch-image build -t foo -
-  $ ch-convert alpine:3.15 /var/tmp/foo
+  $ ch-image pull --arch ppc64le alpine:3.17
+  $ printf 'FROM alpine:3.17\nRUN apk add coreutils\n' | ch-image build -t foo -
+  $ ch-convert alpine:3.17 /var/tmp/foo
   $ ch-run /var/tmp/foo -- uname -m
   ppc64le
 
@@ -1099,14 +1099,14 @@ of rootfs archives `maintained by linuxcontainers.org
 <https://uk.lxd.images.canonical.com/images/>`_. They are meant for LXC, but
 are fine as a basis for Charliecloud.
 
-For example, this would leave a :code:`ppc64le/alpine:3.15` image du jour in
+For example, this would leave a :code:`ppc64le/alpine:3.17` image du jour in
 the registry for use in a Dockerfile :code:`FROM` line. Note that
 linuxcontainers.org uses the opposite order for “le” in the architecture name.
 
 ::
 
   $ wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
-  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.15
+  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.17
 
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
