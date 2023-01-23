@@ -510,6 +510,8 @@ EOF
    fi
 
    # test that it fails if no paramaters
+   run ch-image list tmpimg
+
    run build_ -t tmpimg -f - . <<'EOF'
 FROM alpine:3.17
 SHELL ["/bin/sh"]
