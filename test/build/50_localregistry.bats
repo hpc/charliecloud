@@ -107,8 +107,6 @@ EOF
 }
 
 @test "${tag}: environment variables round-trip" {
-    ch-image list tmpimg
-
     cat <<'EOF' | ch-image build -t tmpimg -
 FROM alpine:3.17
 ENV weird="al yankovic"
