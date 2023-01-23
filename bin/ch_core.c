@@ -91,6 +91,8 @@ int FAKE_SYSCALL_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
    must be somewhat less than 256. I haven’t computed the exact limit. There
    will be an assertion failure at runtime if this is exceeded.
 
+   WARNING: Keep this list consistent with the ch-image(1) man page!
+
    [1]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#Cross_arch-Numbers
    [2]: https://github.com/strace/strace/blob/v4.26/linux/powerpc64/syscallent.h
    [3]: https://unix.stackexchange.com/questions/421750 */

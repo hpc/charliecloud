@@ -57,7 +57,13 @@ mounting SquashFS images with FUSE.
     Bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`.
 
   :code:`--env-no-expand`
-    don’t expand variables when using :code:`--set-env`
+    Don’t expand variables when using :code:`--set-env`.
+
+  :code:`--fake-syscalls`
+    Using seccomp, intercept some system calls that would fail due to lack of
+    privilege, do nothing, and return fake success to the calling program.
+    This is intended for use by :code:`ch-image(1)` when building images; see
+    that man page for a detailed discussion.
 
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.
