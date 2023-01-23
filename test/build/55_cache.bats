@@ -989,7 +989,7 @@ EOF
     [[ $output  = *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.10) PULL alpine:3.16
+*  (alpine+3.16) PULL alpine:3.16
 | *  RUN echo foo
 | *  (foo, alpine+3.17) PULL alpine:3.17
 |/
