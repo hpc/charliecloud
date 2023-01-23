@@ -97,7 +97,7 @@ class Image_Pusher:
          There is not currently any support for re-using any previously
          prepared files already in the upload cache, because we don't yet have
          a way to know if these have changed until they are already build."""
-      self.registry = rg.HTTP(self.dst_ref) # registry
+      self.registry = rg.HTTP(self.dst_ref)
       self.registry.request("GET", self.registry._url_base)
       tars_uc = self.image.tarballs_write(ch.storage.upload_cache)
       tars_c = list()
