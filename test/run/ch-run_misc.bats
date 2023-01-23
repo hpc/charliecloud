@@ -867,14 +867,14 @@ EOF
     run ch-run -m ./fixtures/README "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'not a directory: ./fixtures/README'* ]]
+    [[ $output = *'not a directory: '*'/fixtures/README'* ]]
 
     # image is file but not sqfs
     run ch-run -vv ./fixtures/README -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
-    [[ $output = *'unknown image type: ./fixtures/README'* ]]
+    [[ $output = *'unknown image type: '*'/fixtures/README'* ]]
 
     # image is a broken sqfs
     sq_tmp="$BATS_TMPDIR"/b0rken.sqfs
