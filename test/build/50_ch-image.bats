@@ -917,18 +917,18 @@ EOF
 
 @test 'ch-run storage errors' {
     echo "CH_IMAGE_STORAGE=$CH_IMAGE_STORAGE"
-    run ch-run -w 00_tiny -- /bin/true
+    run ch-run -v -w 00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'error: --write invalid when running by name'* ]]
 
     echo "CH_IMAGE_STORAGE=$CH_IMAGE_STORAGE"
-    run ch-run "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
+    run ch-run -v "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
 
-    run ch-run -s /doesnotexist 00_tiny -- /bin/true
+    run ch-run -v -s /doesnotexist 00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]

@@ -558,8 +558,15 @@ void path_split(const char *path, char **dir, char **base)
 bool path_subdir_p(const char *base, const char *path)
 {
    int base_len = strlen(base);
+   int path_len = strlen(base);
 
-   if (base_len > strlen(path))
+   // remove trailing slashes
+   while (base[base_len-1] == '/' && base_len >= 1)
+      base_len--;
+   while (path[path_len-1] == '/' && path_len >= 1)
+      path_len--;
+
+   if (base_len > path_len)
       return false;
 
    if (!strcmp(base, "/"))  // below logic breaks if base is root
