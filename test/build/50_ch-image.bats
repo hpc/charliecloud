@@ -43,10 +43,10 @@ setup () {
     # Build image. It's called called delete/test to check ref parsing with
     # slash present.
     ch-image build -t delete/test -f - . << 'EOF'
-FROM 00_tiny
-FROM 00_tiny
-FROM 00_tiny
-FROM 00_tiny
+FROM alpine:3.17
+FROM alpine:3.17
+FROM alpine:3.17
+FROM alpine:3.17
 EOF
     run ch-image list
     echo "$output"
@@ -77,7 +77,7 @@ EOF
 
     # Build image.
     ch-image build -t deletetest -f - . << 'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 EOF
     run ch-image list
     echo "$output"
@@ -99,7 +99,7 @@ EOF
 @test 'broken image overwrite' {
     # Build image.
     ch-image build -t tmpimg -f - . << 'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 EOF
 
     # Break image.
@@ -107,7 +107,7 @@ EOF
 
     # Rebuild image.
     ch-image build -t tmpimg -f - . << 'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 EOF
     run ch-image list
     echo "$output"
@@ -251,7 +251,7 @@ EOF
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"00_tiny"* ]]
+    [[ $output = *"alpine:3.17"* ]]
 
     # name does not exist remotely, in library
     run ch-image list doesnotexist:latest
@@ -290,7 +290,7 @@ EOF
     [[ $output = *'archs available:     n/a'* ]]
 
     # in storage, does not exist remotely
-    run ch-image list 00_tiny
+    run ch-image list foo
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'in local storage:    yes'* ]]
@@ -401,7 +401,7 @@ EOF
 @test 'ch-image build --bind' {
     ch-image --no-cache build -t tmpimg -f - \
              -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
-FROM 00_tiny
+FROM alpine:3.17
 RUN mount
 RUN ls -lR '${PWD}/fixtures'
 RUN test -f '${PWD}/fixtures/empty-file'
@@ -648,7 +648,7 @@ EOF
     # [1]: https://git.savannah.gnu.org/cgit/bash.git/tree/CHANGES
     # shellcheck disable=SC1003
     df=$(cat <<'EOF' | tr '%' '\\'
-FROM 00_tiny
+FROM alpine:3.17
 RUN set -o noclobber %
  && echo hello > file_ %
  && mkdir dir_empty %
@@ -687,14 +687,14 @@ EOF
     # non-atomic. We use an unreadable file because if the file didn't exist,
     # COPY would fail out before starting.
     ! ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 COPY /file_readable /file_unreadable /
 EOF
 
     # This will succeed unless there’s leftover junk from failed COPY above.
     # Otherwise, it will fail because can’t overwrite a file with a directory.
     ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 COPY /dir_ /file_readable
 EOF
 }
