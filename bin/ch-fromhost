@@ -336,7 +336,7 @@ if [ -n "$cray_libfabric_found" ]; then
     done
 fi
 
-if [ -n "$lib_found" ] then
+if [ -n "$lib_found" ]; then
     # We want to put the libraries in the first directory that ldconfig
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
