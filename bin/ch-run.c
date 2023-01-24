@@ -156,7 +156,7 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
-   Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
+   Te (arg_next < argc - 1, "IMAGE and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
    args.c.newroot = realpath_(args.c.newroot, true);
    args.storage_dir = realpath_(args.storage_dir, true);

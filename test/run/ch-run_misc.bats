@@ -32,25 +32,6 @@ EOF
     ch-run -w "$ch_timg" rm write
 }
 
-@test 'image in both storage and cwd' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-
-    cd "$BATS_TMPDIR"
-
-    # Set up a fixure image in $CWD that causes a collision with the named
-    # image, and that’s missing /bin/true so it pukes if we try to run it.
-    # That is, in both cases, we want run-by-name to win.
-    rm -rf ./00_tiny
-    ch-convert -i ch-image -o dir 00_tiny ./00_tiny
-    rm ./00_tiny/bin/true
-
-    # Default.
-    ch-run 00_tiny -- /bin/true
-
-    # With --unsafe.
-    ch-run --unsafe 00_tiny -- /bin/true
-}
 
 @test '/usr/bin/ch-ssh' {
     # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".
@@ -829,11 +810,12 @@ EOF
 
     # -m option
     mountpt="${BATS_TMPDIR}/sqfs_tmpdir"
+    mountpt_real=$(realpath "$mountpt")
     [[ -e $mountpt ]] || mkdir "$mountpt"
     run ch-run -m "$mountpt" -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: ${mountpt}"* ]]
+    [[ $output = *"newroot: ${mountpt_real}"* ]]
     rmdir "$mountpt"
 
     # -m with non-sqfs img

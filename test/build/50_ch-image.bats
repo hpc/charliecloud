@@ -916,13 +916,11 @@ EOF
 
 
 @test 'ch-run storage errors' {
-    echo "CH_IMAGE_STORAGE=$CH_IMAGE_STORAGE"
     run ch-run -v -w 00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'error: --write invalid when running by name'* ]]
 
-    echo "CH_IMAGE_STORAGE=$CH_IMAGE_STORAGE"
     run ch-run -v "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
@@ -933,4 +931,22 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
     [[ $output = *"error: can't stat: 00_tiny: No such file or directory"* ]]
+}
+
+
+@test 'ch-run image in both storage and cwd' {
+    cd "$BATS_TMPDIR"
+
+    # Set up a fixure image in $CWD that causes a collision with the named
+    # image, and that’s missing /bin/true so it pukes if we try to run it.
+    # That is, in both cases, we want run-by-name to win.
+    rm -rf ./00_tiny
+    ch-convert -i ch-image -o dir 00_tiny ./00_tiny
+    rm ./00_tiny/bin/true
+
+    # Default.
+    ch-run 00_tiny -- /bin/true
+
+    # With --unsafe.
+    ch-run --unsafe 00_tiny -- /bin/true
 }
