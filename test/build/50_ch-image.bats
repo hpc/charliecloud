@@ -290,7 +290,7 @@ EOF
     [[ $output = *'archs available:     n/a'* ]]
 
     # in storage, does not exist remotely
-    run ch-image list foo
+    run ch-image list argenv
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'in local storage:    yes'* ]]
