@@ -633,26 +633,20 @@ There are lots of ways to do this coordination. Because we are launching with
 the host’s Slurm, we need it to provide something for the containerized
 processes for such coordination. OpenMPI must be compiled to use what that
 Slurm has to offer, and Slurm must be told to offer it. What works for us is a
-something called "PMI2". You can see if your Slurm supports it with::
+something called "PMIx". You can see if your Slurm supports it with::
 
   $ srun --mpi=list
-  srun: MPI types are...
-  srun: mpi/pmi2
-  srun: mpi/openmpi
-  srun: mpi/mpich1_shmem
-  srun: mpi/mpich1_p4
-  srun: mpi/lam
-  srun: mpi/none
-  srun: mpi/mvapich
-  srun: mpi/mpichmx
-  srun: mpi/mpichgm
+    cray_shasta
+    none
+    pmi2
+    pmix
 
-If :code:`pmi2` is not in the list, you must ask your admins to enable Slurm’s
-PMI2 support. If it is in the list, but you’re seeing this problem, that means
+If :code:`pmix` is not in the list, you must either (a) ask your admins to
+enable Slurm’s PMIx support, or (b) rebuild your container MPI against an PMI
+in the list. If it is in the list, but you’re seeing this problem, that means
 it is not the default, and you need to tell Slurm you want it. Try::
 
-  $ export SLURM_MPI_TYPE=pmi2
-  $ srun ch-run /var/tmp/mpihello-openmpi -- /hello/hello
+  $ srun --mpi=pmix ch-run /var/tmp/mpihello-openmpi -- /hello/hello
   0: init ok wc035.localdomain, 2 ranks, userns 4026554634
   1: init ok wc036.localdomain, 2 ranks, userns 4026554634
   0: send/receive ok

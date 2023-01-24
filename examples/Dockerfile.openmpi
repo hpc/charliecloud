@@ -8,7 +8,7 @@ FROM libfabric
 #      setting up I/O forwarding subsystem".
 #   2. --enable-mca-no-build=plm-slurm to support launching processes using the
 #     host's srun (i.e., the container OpenMPI needs to talk to the host Slurm's
-#     PMI) but prevent OpenMPI from invoking srun itself from within the
+#     PMIx) but prevent OpenMPI from invoking srun itself from within the
 #     container, where srun is not installed (the error messages from this are
 #     inscrutable).
 ARG MPI_URL=https://www.open-mpi.org/software/ompi/v4.1/downloads
@@ -20,9 +20,7 @@ RUN cd openmpi-${MPI_VERSION} \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \
                 --sysconfdir=/mnt/0 \
-                --with-slurm \
-                --with-pmi=/usr/local \
-                --with-pmix \
+                --with-pmix=/usr/local \
                 --with-libfabric=/usr/local \
                 --disable-pty-support \
                 --enable-mca-no-build=btl-openib,plm-slurm \

@@ -103,7 +103,9 @@ check_process_ct () {
     openmpi_or_skip
     # Verify we have known HSN devices present. (Note that -d tests for
     # directory, not device.)
-    [[ ! -d /dev/infiniband ]] && pedantic_fail "no high speed network detected"
+    if [[ ! -d /dev/infiniband ]] && [[ ! -e /dev/cxi0 ]]; then
+        pedantic_fail "no high speed network detected"
+    fi
     # shellcheck disable=SC2086
     hsn_enabled_bw=$(FI_PROVIDER="$cray_prov" $ch_mpirun_2_2node ch-run \
                        "$ch_img" -- "$imb_mpi1" $imb_perf_args Sendrecv \

@@ -3,16 +3,24 @@
 # See Dockerfile.libfabric for MPI goals and details.
 FROM libfabric
 
-# To configure MPICH to use SLURM as its process manager we must set the
+WORKDIR /usr/local/src
+
+# To configure MPICH to use OpenPMIx as its process manager we must set the
 # following:
 #
-#   1) --with-pmi-lib Specify the location of the SLURM pmi2 library, and
-#   2) --with-pm=no   Disable the hydra and gforker process manager.
+#   1) --with-pmi=pmix
+#   2) --with-pmilib=pmix
+#   3) --with-pmix=/usr/local
+#   4) --with-pm=no
 #
-# This enables us to use SLURM to manage host launched multinode jobs. As a
-# consequence the mpiexec exectuable is no longer compiled or installed in the
-# container.
-ARG MPI_VERSION=4.0.2
+# --with-pm=no disables the hydra and gforker process manager, this allows us
+# to launch parallel jobs with slurm using PMIx. As a consequence, the mpiexec
+# exectuable is no longer compiled or installed; thus, single-node guest launch
+# using mpiexec inside container is not poassible.
+#
+# We use 4.1rc3, the only version with Slingshot CXI support at the time of this
+# comment.
+ARG MPI_VERSION=4.1rc3
 ARG MPI_URL=http://www.mpich.org/static/downloads/${MPI_VERSION}
 RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
  && tar xf mpich-${MPI_VERSION}.tar.gz \
@@ -20,10 +28,11 @@ RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \
-                --with-pmi-lib=/usr/local/lib \
+                --with-pmi=pmix \
+                --with-pmilib=pmix \
+                --with-pmix=/usr/local/lib \
                 --with-pm=no \
-                --with-libfabric=/usr/local \
-                --with-slurm
+                --with-libfabric=/usr/local
 RUN cd mpich-${MPI_VERSION} \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../mpich-${MPI_VERSION}* \

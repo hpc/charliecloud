@@ -255,34 +255,6 @@ glibc_version_ok () {
     [[ $output = *'cannot read file: /doesnotexist'* ]]
     fromhost_clean_p "$img"
 
-    # --fi-prov no argument
-    run ch-fromhost "$img" --fi-prov
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'--fi-prov must not be empty'* ]]
-    # --fi-prov path doesn't exist
-    run ch-fromhost "$img" --fi-prov /rando/path
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"is not a directory or file ending '-fi.so'"* ]]
-    # --fi-prov path has no -fi.so
-    run ch-fromhost "$img" --fi-prov "$CHTEST_DIR"
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'no loadable ofi provider(s) in'* ]]
-    # --fi-prov file is not a -fi.so
-    run ch-fromhost "$img" --fi-prov "$CHTEST_DIR/sotest/libsotest.so"
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"is not a directory or file ending '-fi.so'"* ]]
-    # --fi-prov host FI_PROVIDER_PATH set without --dest
-    unset FI_PROVIDER_PATH
-    export FI_PROVIDER_PATH=/usr/foo
-    run ch-fromhost "$img" --fi-prov "${CHTEST_DIR}/sotest/lib/libfabric"
-    [[ $status -eq 1 ]]
-    [[ $output = *'missing --dest'* ]]
-    export FI_PROVIDER_PATH=$fi_provider_path
-
     # --path no argument
     run ch-fromhost "$img" --path
     echo "$output"
@@ -349,7 +321,7 @@ glibc_version_ok () {
     fromhost_clean_p "$img"
 }
 
-@test 'ch-fromhost --fi-prov (OpenMPI)' {
+@test 'ch-fromhost --path with libfabric' {
     scope full
     prerequisites_ok openmpi
     img=${ch_imgdir}/openmpi
@@ -366,7 +338,7 @@ glibc_version_ok () {
     # Inferred dest from image libfabric.so.
     img=${ch_imgdir}/openmpi
     ofi=${CHTEST_DIR}/sotest/lib/libfabric/libsotest-fi.so
-    run ch-fromhost --fi-prov "${ofi}" "$img"
+    run ch-fromhost -p "${ofi}" "$img"
     echo "$output"
     [[ $status -eq 0 ]]
     test -f "${img}/${ofidest}/libsotest-fi.so"
@@ -374,25 +346,12 @@ glibc_version_ok () {
 
     # host FI_PROVIDER_PATH with --dest
     export FI_PROVIDER_PATH=/usr/lib
-    run ch-fromhost "$img" --fi-prov "$ofi" --dest /usr/lib -v
+    run ch-fromhost "$img" -d /usr/lib -p "$ofi" -v
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warn'*'FI_PROVIDER_PATH'* ]]
     test -f "${img}/usr/lib/libsotest-fi.so"
     fromhost_clean "$img"
-    export FI_PROVIDER_PATH="$fi_provider_path"
-
-    # FI_PROVIDER_PATH from /ch/environment
-    unset FI_PROVIDER_PATH
-    ch_env="$(cat "${img}/ch/environment")"
-    echo 'FI_PROVIDER_PATH=/usr/local/lib' >> "${img}/ch/environment"
-    run ch-fromhost "$img" --fi-prov "$ofi" -v
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'warn'*'FI_PROVIDER_PATH'* ]]
-    test -f "${img}/usr/local/lib/libsotest-fi.so"
-    fromhost_clean "$img"
-    echo "$ch_env" > "${img}/ch/environment"
     export FI_PROVIDER_PATH="$fi_provider_path"
 }
 

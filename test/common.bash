@@ -111,6 +111,14 @@ cray_ofi_or_skip () {
         if [[ $cray_prov == 'cxi' ]]; then
             export CH_FROMHOST_OFI_CXI=$CH_TEST_OFI_PATH
             $ch_mpirun_node ch-fromhost --cray-mpi-cxi "$1"
+            $ch_mpirun_node ch-fromhost -v --cray-mpi-cxi "$1"
+            # Examples use libfabric's fi_info to ensure injection works; when
+            # replacing libfabric we also need to replace this binary.
+            fi_info="$(dirname "$(dirname "$CH_TEST_OFI_PATH")")/bin/fi_info"
+            [[ -x "$fi_info" ]]
+            $ch_mpirun_node ch-fromhost -v -d /usr/local/bin \
+                                           -p "$fi_info" \
+                                              "$1"
         fi
     else
         skip 'host is not a Cray'

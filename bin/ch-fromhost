@@ -52,10 +52,10 @@ Which files to inject (one or more required; can be repeated):
   -c, --cmd     CMD   listed in the stdout of CMD
   -f, --file    FILE  listed in file FILE
   -p, --path    PATH  inject the file at PATH
-  --fi-prov     PATH  inject host compiled loadable OFI provider(s) at PATH
-  --fi-replace  PATH  inject host libfabric.so at PATH, replacing image's
 
-  --nvidia         recommended by nVidia (via "nvidia-container-cli list")
+  --cray-mpi-cxi      inject cray libfabric and cxi libraries from cray host
+  --cray-mpi-gni      inject gemini/aries libfabric for MPI on xc40 machines
+  --nvidia            recommended by nVidia (via \"nvidia-container-cli list\")
 
 Destination within image:
 
@@ -63,13 +63,9 @@ Destination within image:
 
 Options:
 
-  --cray-mpi-cxi   inject cray libfabric and cxi libraries from cray host
-  --cray-mpi-gni   inject gemini/aries libfabric for MPI on xc40 machines
-
-  --fi-path        print the inferred destination for loadable ofi providers
+  --fi-path        print the inferred destination for libfabric
   --lib-path       print the inferred destination for shared libraries
-
-  --no-ldconfig    don't run ldconfig even if we injected shared libraries
+  --no-ldconfig    don\'t run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
   -v, --verbose    list the injected files
   --version        print version and exit
@@ -125,16 +121,6 @@ is_bin () {
     esac
 }
 
-is_fi_prov () {
-    case $1 in
-        *-fi.so)
-            return 0
-            ;;
-        *)
-            return 1
-    esac
-}
-
 is_so () {
     case $1 in
         */lib*)
@@ -152,6 +138,7 @@ queue_files () {
     old_ifs="$IFS"
     IFS="$newline"
     d="${dest:-$2}"
+    debug "queueing files"
     for f in $1; do
         case $f in
             *:*)
@@ -159,8 +146,39 @@ queue_files () {
                 ;;
         esac
         if is_so "$f"; then
-            debug_indent "found shared library: ${f}"
-            lib_found=yes
+            case $f in
+            *libfabric.so)
+                if ldd "$f" | grep libcxi > /dev/null 2>&1; then
+                    debug_indent "cray libfabric: ${f}"
+                    cray_libfabric_found=yes
+                    host_libfabric=$f
+                else
+                    debug_indent "libfabric: ${f}"
+                    lib_found=yes
+                fi
+                ;;
+            *-fi.so)
+                debug_indent "libfabric shared provider: ${f}"
+                fi_prov_found=yes
+                # Providers, like Cray's libgnix-fi.so, link against paths that
+                # need to be bind-mounted at run-time. Some of these paths need
+                # to be added to ldconf; thus, add the linked paths to a ldconf
+                # list to be added into the image.
+                ldds=$(ldd "$f" 2>&1 | grep lib | awk '{print $3}' | sort -u)
+                for l in $ldds; do
+                    ld=$(dirname "$(readlink -f "$l")")
+                    # Avoid duplicates and host libfabric.so.
+                    if     [ "$(echo "$ld_conf" | grep -c "$ld")" -eq 0 ] \
+                        && [ "$(echo "$ld" | grep -c "libfabric.so")" -eq 0 ]; then
+                        queue_add_ldconf "$ld"
+                    fi
+                done
+                ;;
+            *)
+                debug_indent "shared library: ${f}"
+                lib_found=yes
+                ;;
+            esac
         fi
         # This adds a delimiter only for the second and subsequent files.
         # https://chris-lamb.co.uk/posts/joining-strings-in-posix-shell
@@ -169,89 +187,6 @@ queue_files () {
         inject_files="${inject_files:+$inject_files$newline}$f:$d"
     done
     IFS="$old_ifs"
-}
-
-queue_fi_prov () {
-    old_ifs="$IFS"
-    IFS="$newline"
-    d="${dest:-$2}"
-    # Directory of OFI provider dsos (*-fi.so's).
-    if [ -d "$1" ]; then
-        debug "searching $1 for ofi providers"
-        # shellcheck disable=SC2044
-        for f in $(find "$1" -maxdepth 1 -name '*-fi.so'); do
-            [ -z "$f" ] || queue_fi_prov "$f"
-        done
-        [ -n "$fi_prov_found" ] || fatal "no loadable ofi provider(s) in $1"
-    # Single OFI dso provider.
-    elif is_fi_prov "$1"; then
-        debug_indent "found $1"
-        inject_ofi="${inject_ofi:+$inject_ofi$newline}$1:$d"
-        fi_prov_found=yes
-        # process ofi dso link paths
-        ldds=$(ldd "$1" 2>&1 | grep lib | awk '{print $3}' | sort -u)
-        for l in $ldds; do
-            ld=$(dirname "$(readlink -f "$l")")
-            # avoid duplicates and host libfabric.so location
-            if     [ "$(echo "$ld_conf" | grep -c "$ld")" -eq 0 ] \
-                && [ "$(echo "$ld" | grep -c "libfabric.so")" -eq 0 ]; then
-                queue_add_ldconf "$ld"
-            fi
-        done
-    else
-        fatal "$1 is not a directory or file ending '-fi.so'"
-    fi
-}
-
-queue_libfabric_replacement () {
-    # Libfabric does not yet have a slingshot optimzied provider; however,
-    # recent provider name reservation for 'cxi', in the source indicates we
-    # will at some point, see: https://github.com/ofiwg/libfabric/pull/7839
-    #
-    # For now, replace the image's libfabric with Cray's to use slingshot.
-    cray_libfabric=$1
-    case $cray_libfabric in
-        *libfabric.so)
-            true
-        ;;
-        *)
-            fatal "$cray_libfabric: does not end with libfabric.so"
-        ;;
-    esac
-    if ! ldd "$cray_libfabric" | grep libcxi > /dev/null 2>&1; then
-        fatal "$cray_libfabric: does not appear to be cray libfabric"
-    fi
-    if [ -z "$dest" ]; then
-        debug "searching image for libfabric.so"
-        img_libfabric=$(find "$image" -name  "libfabric.so")
-        [ -n "$img_libfabric" ] || fatal "libfabric.so not found in $image"
-        debug_indent "found $img_libfabric"
-        if [ "$(echo "$img_libfabric" | wc -l)" -ne 1 ]; then
-            fatal 'must have exactly one libfabric.so to replacemence; need --dest'
-        fi
-        img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
-        dest_=$(dirname "/$img_libfabric_path")
-        queue_files "$cray_libfabric" "$dest_"
-    else
-        queue_files "$cray_libfabric" "$dest"
-    fi
-    # Add missing links to the image, do not overwrite existing files.
-    debug "searching for link dependencies"
-    ldds=$(ldd "$cray_libfabric" 2>&1 | grep lib | awk '{print $3}' | sort -u)
-    for l in $ldds; do
-        file_found=$(find "${image}" -name "$(basename "$l")")
-        if [ -n "$file_found" ]; then
-            debug_indent "skipping $l"
-            continue
-        fi
-        queue_files "$l"
-        [ ! -L "$l" ] || queue_files "$(readlink -f "$f")"
-        file_dir=$(dirname "$l")
-        # avoid duplicates.
-        if [ "$(echo "$ld_conf" | grep -c "$file_dir")" -eq 0 ]; then
-            queue_add_ldconf "$file_dir"
-        fi
-    done
 }
 
 queue_add_ldconf () {
@@ -298,14 +233,14 @@ while [ $# -gt 0 ]; do
             if [ -z "$CH_FROMHOST_OFI_CXI" ]; then
                 fatal "CH_FROMHOST_OFI_CXI is not set"
             fi
-            replace_libfabric=$CH_FROMHOST_OFI_CXI
+            queue_files "$CH_FROMHOST_OFI_CXI"
             ;;
         --cray-mpi-gni)
             warn_fi_var
             if [ -z "$CH_FROMHOST_OFI_GNI" ]; then
                 fatal "CH_FROMHOST_OFI_GNI is not set"
             fi
-            queue_fi_prov "$CH_FROMHOST_OFI_GNI"
+            queue_files "$CH_FROMHOST_OFI_GNI"
             ;;
         -d|--dest)
             ensure_nonempty --dest "$1"
@@ -317,6 +252,11 @@ while [ $# -gt 0 ]; do
             out=$(cat "$1") || fatal "cannot read file: ${1}"
             queue_files "$out"
             shift
+            ;;
+        --fi-path)
+            fi_prov_found=yes
+            cray_libfabric_found=yes
+            fi_dest_print=yes
             ;;
         --lib-path)
             # Note: If this is specified along with one of the file
@@ -332,22 +272,6 @@ while [ $# -gt 0 ]; do
                out=$(nvidia-container-cli list --binaries --libraries) \
             || fatal "nvidia-container-cli failed; does this host have GPUs?"
             queue_files "$out"
-            ;;
-        --fi-prov)
-            warn_fi_var
-            ensure_nonempty --fi-prov "$1"
-            queue_fi_prov "$1"
-            shift
-            ;;
-        --fi-path)
-            fi_prov_found=yes
-            fi_prov_dest_print=yes
-            ;;
-        --fi-replace)
-            warn_fi_var
-            ensure_nonempty --fi-replace "$1"
-            replace_libfabric=$1
-            shift
             ;;
         -p|--path)
             ensure_nonempty --path "$1"
@@ -370,23 +294,53 @@ while [ $# -gt 0 ]; do
     esac
 done
 
-if [ -n "$FI_PROVIDER_PATH" ]; then
-    if [ -n "$fi_prov_found" ] && [ -z "$dest" ]; then
-        fatal "FI_PROVIDER_PATH set; missing --dest"
-    fi
+if [ -n "$FI_PROVIDER_PATH" ] && [ -n "$fi_prov_found" ] && [ -z "$dest" ]; then
+    fatal "FI_PROVIDER_PATH set; missing --dest"
 fi
 
 [ "$image" ] || fatal "no image specified"
 
-if [ "$replace_libfabric" ]; then
-    queue_libfabric_replacement "$replace_libfabric"
+if [ -n "$cray_libfabric_found" ]; then
+    # There is no Slingshot provider CXI; to leverage slingshot we need to
+    # replace the image libfabric.so with Cray's.
+    debug "searching image for inferred libfabric destiation"
+    img_libfabric=$(find "$image" -name  "libfabric.so")
+    [ -n "$img_libfabric" ] || fatal "libfabric.so not found in $image"
+    debug_indent "found $img_libfabric"
+    if [ "$(echo "$img_libfabric" | wc -l)" -ne 1 ]; then
+        warn 'found more than one libfabric.so'
+    fi
+    img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
+    cray_libfabric_dest=$(dirname "/$img_libfabric_path")
+
+    # Since cray's libfabric isn't a standard provider, to use slingshot we must
+    # also add any missing linked libraries from the host.
+    debug "adding cray libfabric libraries"
+    ldds=$(ldd "$host_libfabric" 2>&1 | grep lib | awk '{print $3}' | sort -u)
+    for l in $ldds; do
+        # Do not replace any libraries found in the image, experimentation has
+        # shown this to be problematic. Perhaps revisit in the future. For now,
+        # both MPICH and OpenMPI examples work with this conservative approach.
+        file_found=$(find "${image}" -name "$(basename "$l")")
+        if [ -n "$file_found" ]; then
+            debug_indent "skipping $l"
+            continue
+        fi
+        queue_files "$l"
+        [ ! -L "$l" ] || queue_files "$(readlink -f "$f")"
+        file_dir=$(dirname "$l")
+        # Avoid duplicates.
+        if [ "$(echo "$ld_conf" | grep -c "$file_dir")" -eq 0 ]; then
+            queue_add_ldconf "$file_dir"
+        fi
+    done
 fi
 
-if [ $lib_found ]; then
+if [ -n "$lib_found" ] then
     # We want to put the libraries in the first directory that ldconfig
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
-    debug "asking ldconfig for shared library destination"
+    debug "asking ldconfig for inferred shared library destination"
     # "ldconfig -Nv" gives some pointless warnings on stderr even if
     # successful; we don't want to show those to users. However, we don't want
     # to simply pipe stderr to /dev/null because this hides real errors. Thus,
@@ -397,64 +351,45 @@ if [ $lib_found ]; then
                 3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
     [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
     [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
-    debug "shared library destination: ${image}/${lib_dest}"
+    debug "inferred shared library destination: ${image}/${lib_dest}"
 fi
 
-if [ "$fi_prov_found" ] && [ -z "$dest" ]; then
-    # By default, libfabric will create and use loadable providers in the
-    # in the $PREFIX/lib/libfabric directory, where PREFIX is the --prefix
-    # argument (path) specified at libfabric configure.
+if [ -n "$fi_prov_found" ]; then
+    # The libfabric provider can be specified with FI_PROVIDER. The path the
+    # search for shared providers at can be specified with FI_PROVIDER_PATH
+    # (undocumented). This complicates the inferred destination because these
+    # variables can be inherited from the host or explicitly set in the image's
+    # /ch/environment
+    # file.
     #
-    # However, the target libfabric provider, and/or provider path, can also be
-    # specified with:
-    #
-    #   - FI_PROVIDER, and
-    #   - FI_PROVIDER_PATH (undocumented)
-    #
-    # respectively. This complicates things because these variables can be
-    # inherited from the host or explicitly set in the image's /ch/environment
-    # file. ch-run, by default, inherits and prefers all host variables to any
-    # listed in /ch/environment.
-    #
-    # The injection destination is then determined as follows.
-    #
-    #   1. --dest DST if provided
-    #   2. FI_PROVIDER_PATH from image /ch/environment file; warn about
-    #      --set-env requirement
-    #   3. the image's /libfabric directory at the path where libfabric.so
-    #      is found; if the directory doesn't exist, create it.
-    #
-    # Note that if the host FI_PROVIDER_PATH is set, --dest is required.
-    debug "searching ${image} for libfabric dso provider destination..."
+    # For simplicity, the inferred injection destination is the always the
+    # 'libfabric' directory at the path where libfabric.so is found. If it does
+    # not exist, create it. Warn if FI_PROVIDER_PATH or FI_PROVIDER is found
+    # in the the image's /ch/environment file.
+    debug "searching ${image} for libfabric shared provider destination"
     ch_env_p=$(grep -F FI_PROVIDER_PATH "${image}/ch/environment") \
              || true # avoid -e exit
     ch_env_p=${ch_env_p##*=}
     if  [ -n "$ch_env_p" ]; then
-       warn "found FI_PROVIDER_PATH=$ch_env_p in ${image}/ch/environment"
-       fi_prov_dest=$ch_env_p
-       warn "using ${image}${ch_env_p}; --set-env required at run time"
-    else
-       img_libfabric=$(find "$image" -name 'libfabric.so')
-       img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
-       debug_indent "found: ${image}${img_libfabric_path}"
-       fi_prov_dest=$(dirname "/${img_libfabric_path}")
-       fi_prov_dest="${fi_prov_dest}/libfabric"
-       queue_mkdir "$fi_prov_dest"
+       warn "FI_PROVIDER_PATH in ${image}/ch/environment; use --dest"
     fi
-    debug "ofi dso provider injection destination: $fi_prov_dest"
-elif [ -n "$dest" ]; then
-    fi_prov_dest=$dest
-    debug "ofi dso provider injection destination: $fi_prov_dest"
+    img_libfabric=$(find "$image" -name 'libfabric.so')
+    img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
+    debug_indent "found: ${image}${img_libfabric_path}"
+    fi_prov_dest=$(dirname "/${img_libfabric_path}")
+    fi_prov_dest="${fi_prov_dest}/libfabric"
+    queue_mkdir "$fi_prov_dest"
+    debug "inferred provider destination: $fi_prov_dest"
 fi
 
-if [ "$lib_dest_print" ]; then
+if [ -n "$lib_dest_print" ]; then
     echo "$lib_dest"
     exit 0
 fi
 
-if [ "$fi_prov_dest_print" ]; then
-    echo "$fi_prov_dest"
-    exit 0
+if [ -n "$fi_dest_print" ]; then
+    echo "$fi_prov_dest_print"
+    echo "$cray_libfabric_dest_print"
 fi
 
 if [ -f /etc/opt/cray/release/cle-release ]; then
@@ -493,7 +428,7 @@ if [ -f /etc/opt/cray/release/cle-release ]; then
     fi
 fi
 
-[ "$inject_files" ] || [ "$inject_ofi" ] || fatal "empty file list"
+[ "$inject_files" ] || fatal "empty file list"
 
 debug "injecting into image: ${image}"
 
@@ -513,7 +448,7 @@ for d in $inject_mkdirs; do
 done
 
 # Process ldconfig targets.
-if [ "$fi_prov_found" ] || [ "$replace_libfabric" ]; then
+if [ "$fi_prov_found" ] || [ "$cray_libfabric_found" ]; then
     if [ ! -f "${image}/etc/ld.so.conf" ]; then
         debug_indent "touch ${image}/etc/ld.so.conf"
         touch "${image}/etc/ld.so.conf"
@@ -539,7 +474,20 @@ for file in $inject_files; do
         d=/usr/bin
         infer=" (inferred)"
     elif is_so "$f" && [ -z "$d" ]; then
-        d=$lib_dest
+        case "$f" in
+        *libfabric.so)
+            d=$lib_dest
+            if ldd "$f" | grep libcxi > /dev/null 2>&1; then
+                d=$cray_libfabric_dest
+            fi
+        ;;
+        *-fi.so)
+            d=$fi_prov_dest
+        ;;
+        *)
+            d=$lib_dest
+        ;;
+        esac
         infer=" (inferred)"
     fi
     debug_indent "${f} -> ${d}${infer}"
@@ -556,37 +504,14 @@ for file in $inject_files; do
        cp --dereference --preserve=all "$f" "${image}${d}" \
     || fatal "cannot inject: ${f}"
 done
-for file in $inject_ofi; do
-    f="${file%%:*}"
-    d="${file#*:}"
-    infer=
-    if is_so "$f" && [ -z "$d" ]; then
-        d=$fi_prov_dest
-        infer=" (inferred)"
-    fi
-    debug_indent "${f} -> ${d}${infer}"
-    [ "$d" ] || fatal "no destination for: ${f}"
-    [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
-    [ -d "${image}/${d}" ] || fatal "not a directory: ${image}/${d}"
-    if [ ! -w "${image}${d}" ]; then
-        # Some images unpack with unwriteable directories; fix. This seems
-        # like a bit of a kludge to me, so I'd like to remove this special
-        # case in the future if possible. (#323)
-        info "${image}${d} not writeable; fixing"
-        chmod u+w "${image}${d}" || fatal "can't chmod u+w: ${image}${d}"
-    fi
-       cp --dereference --preserve=all "$f" "${image}${d}/" \
-    || fatal "cannot inject: ${f}"
-
-done
 IFS="$old_ifs"
 
 if       [ -z "$no_ldconfig" ] \
-    && { [ "$lib_found" ] || [ "$fi_prov_found" ] || [ "$replace_libfabric" ] ;} then
+    && { [ "$lib_found" ] || [ "$fi_prov_found" ] || [ "$cray_libfabric_found" ] ;} then
     debug "running ldconfig"
     debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || fatal 'ldconfig error'
-    if [ -n "$fi_prov_found" ] || [ -n "$replace_libfabric" ]; then
+    if [ -n "$fi_prov_found" ] || [ -n "$cray_libfabric_found" ]; then
         debug "validating ldconfig cache"
         for file in $inject_ofi $inject_files; do
             f="$(basename "${file%%:*}")"
