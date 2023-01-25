@@ -4,7 +4,7 @@ setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     # build image to be used in 'run' phase of test suite
-    ch-image build -t tiny -f << 'EOF'
+    ch-image build -t tiny -f - . << 'EOF'
 FROM alpine:3.17
 RUN touch /maxperms_file \
  && chmod 0777 /maxperms_file \
