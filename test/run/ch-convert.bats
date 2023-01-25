@@ -51,7 +51,6 @@ setup () {
     if ! command -v docker > /dev/null 2>&1; then
         pedantic_fail 'docker not found'
     fi
-    ch-convert -i dir -o ch-image ../examples/chtest chtest
 }
 
 # Return success if directories $1 and $2 are recursively the same, failure
@@ -334,12 +333,12 @@ test_from () {
     [[ $output = *"error: exists in ch-image storage, not deleting per --no-clobber: tmpimg" ]]
 
     # dir
-    ch-convert -i ch-image -o dir chtest "$BATS_TMPDIR"/chtest
-    run ch-convert --no-clobber -i ch-image -o dir chtest "$BATS_TMPDIR"/chtest
+    ch-convert -i ch-image -o dir tiny "$BATS_TMPDIR"/tiny
+    run ch-convert --no-clobber -i ch-image -o dir tiny "$BATS_TMPDIR"/tiny
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/chtest" ]]
-    rm -Rf --one-file-system "$BATS_TMPDIR"/chtest
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/tiny" ]]
+    rm -Rf --one-file-system "$BATS_TMPDIR"/tiny
 
     # docker
     printf 'FROM alpine:3.17\n' | docker_ build -t tmpimg -
@@ -356,20 +355,20 @@ test_from () {
     [[ $output = *"error: exists in Podman storage, not deleting per --no-clobber: tmpimg" ]]
 
     # squash
-    touch "${BATS_TMPDIR}/chtest.sqfs"
-    run ch-convert --no-clobber -i ch-image -o squash chtest "$BATS_TMPDIR"/chtest.sqfs
+    touch "${BATS_TMPDIR}/tiny.sqfs"
+    run ch-convert --no-clobber -i ch-image -o squash tiny "$BATS_TMPDIR"/tiny.sqfs
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/chtest.sqfs" ]]
-    rm "${BATS_TMPDIR}/chtest.sqfs"
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/tiny.sqfs" ]]
+    rm "${BATS_TMPDIR}/tiny.sqfs"
 
     # tar
-    touch "${BATS_TMPDIR}/chtest.tar.gz"
-    run ch-convert --no-clobber -i ch-image -o tar chtest "$BATS_TMPDIR"/chtest.tar.gz
+    touch "${BATS_TMPDIR}/tiny.tar.gz"
+    run ch-convert --no-clobber -i ch-image -o tar tiny "$BATS_TMPDIR"/tiny.tar.gz
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/chtest.tar.gz" ]]
-    rm "${BATS_TMPDIR}/chtest.tar.gz"
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/tiny.tar.gz" ]]
+    rm "${BATS_TMPDIR}/tiny.tar.gz"
 }
 
 
@@ -392,7 +391,7 @@ test_from () {
 # The next three tests are for issue #1241.
 @test 'ch-convert: permissions retained (dir)' {
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert chtest "$out"
+    ch-convert tiny "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
     [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
@@ -401,7 +400,7 @@ test_from () {
 @test 'ch-convert: permissions retained (squash)' {
     squishy=${BATS_TMPDIR}/convert.sqfs
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert chtest "$squishy"
+    ch-convert tiny "$squishy"
     ch-convert "$squishy" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
@@ -411,7 +410,7 @@ test_from () {
 @test 'ch-convert: permissions retained (tar)' {
     tarball=${BATS_TMPDIR}/convert.tar.gz
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert chtest "$tarball"
+    ch-convert tiny "$tarball"
     ch-convert "$tarball" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
