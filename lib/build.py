@@ -468,10 +468,6 @@ class Instruction(abc.ABC):
          Typically, subclasses will set up enough state for self.sid_input to
          be valid, then call super().prepare().
 
-         WARNING: Instructions that modify image metadata (at this writing,
-         ARG ENV FROM LABEL SHELL WORKDIR) must do so here, not in execute(),
-         so that metadata is available to late instructions even on cache hit.
-
          Gotchas:
 
            1. Announcing the instruction: Subclasses that are fast can let the
@@ -485,8 +481,9 @@ class Instruction(abc.ABC):
               announces, and then re-raises.
 
            3. Modifying image metadata: Instructions like ARG, ENV, FROM,
-              SHELL, and WORKDIR must modify metadata here, not in execute(),
-              so it’s available to later instructions even on cache hit."""
+              LABEL, SHELL, and WORKDIR must modify metadata here, not in
+              execute(), so it’s available to later instructions even on
+              cache hit."""
 
       self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
