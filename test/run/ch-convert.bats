@@ -338,7 +338,7 @@ test_from () {
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/$ch_timg" ]]
-    rm -Rf --one-file-system "$BATS_TMPDIR/$ch_timg"
+    rm -Rf --one-file-system "${BATS_TMPDIR:?}/$ch_timg"
 
     # docker
     printf 'FROM alpine:3.17\n' | docker_ build -t tmpimg -
