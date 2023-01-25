@@ -1009,12 +1009,6 @@ class Label(Instruction):
    def str_(self):
       return "%s='%s'" % (self.key, self.value)
 
-   def execute(self):
-      with (self.image.unpack_path // "/ch/metadata.json").open_("wt") \
-           as fp:
-         for (k, v) in self.label_label.items():
-            print("%s=%s" % (k, v), file=fp)
-
    def prepare(self, *args):
       self.value = ch.variables_sub(unescape(self.value), self.label_build)
       self.label_label[self.key] = self.value
