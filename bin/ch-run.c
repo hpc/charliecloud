@@ -156,19 +156,20 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
-   Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
+   Te (arg_next < argc - 1, "IMAGE and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
+   args.c.newroot = realpath_(args.c.newroot, true);
+   args.storage_dir = realpath_(args.storage_dir, true);
    args.c.type = image_type(args.c.img_ref, args.storage_dir);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
       if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-      args.c.newroot = realpath_safe(args.c.img_ref);
+      args.c.newroot = realpath_(args.c.img_ref, false);
       img_directory_verify(args.c.newroot, &args);
       break;
    case IMG_NAME:
-      args.storage_dir = realpath_safe(args.storage_dir);
       args.c.newroot = img_name2path(args.c.img_ref, args.storage_dir);
       Tf (!args.c.writable || args.unsafe,
           "--write invalid when running by name");
@@ -284,8 +285,8 @@ bool get_first_env(char **array, char **name, char **value)
    not, exit with error. */
 void img_directory_verify(const char *newroot, const struct args *args)
 {
-   Tf (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
-   Tf (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
+   Te (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
+   Te (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
        "can't run directory images from storage (hint: run by name)");
 }
 
