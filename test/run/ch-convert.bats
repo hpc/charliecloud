@@ -332,13 +332,23 @@ test_from () {
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists in ch-image storage, not deleting per --no-clobber: tmpimg" ]]
 
+    # convert ch_timg into ch-image format
+    ch-image delete timg | 'true'
+    if [[ $(file "$ch_timg") = *"symbolic link"* ]]; then
+        # symlink to squash archive
+        ch-convert -i squash -o ch-image "$ch_timg" timg
+    else
+        # directory
+        ch-convert -i dir -o ch-image "$ch_timg" timg
+    fi
+
     # dir
-    ch-convert -i ch-image -o dir "$ch_timg" "$BATS_TMPDIR/$ch_timg"
-    run ch-convert --no-clobber -i ch-image -o dir "$ch_timg" "$BATS_TMPDIR/$ch_timg"
+    ch-convert -i ch-image -o dir "timg" "$BATS_TMPDIR/timg"
+    run ch-convert --no-clobber -i ch-image -o dir "timg" "$BATS_TMPDIR/timg"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/$ch_timg" ]]
-    rm -Rf --one-file-system "${BATS_TMPDIR:?}/$ch_timg"
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/timg" ]]
+    rm -Rf --one-file-system "${BATS_TMPDIR:?}/timg"
 
     # docker
     printf 'FROM alpine:3.17\n' | docker_ build -t tmpimg -
@@ -355,20 +365,20 @@ test_from () {
     [[ $output = *"error: exists in Podman storage, not deleting per --no-clobber: tmpimg" ]]
 
     # squash
-    touch "${BATS_TMPDIR}/$ch_timg.sqfs"
-    run ch-convert --no-clobber -i ch-image -o squash "$ch_timg" "$BATS_TMPDIR/$ch_timg.sqfs"
+    touch "${BATS_TMPDIR}/timg.sqfs"
+    run ch-convert --no-clobber -i ch-image -o squash "timg" "$BATS_TMPDIR/timg.sqfs"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/$ch_timg.sqfs" ]]
-    rm "${BATS_TMPDIR}/$ch_timg.sqfs"
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/timg.sqfs" ]]
+    rm "${BATS_TMPDIR}/timg.sqfs"
 
     # tar
-    touch "${BATS_TMPDIR}/$ch_timg.tar.gz"
-    run ch-convert --no-clobber -i ch-image -o tar "$ch_timg" "$BATS_TMPDIR/$ch_timg.tar.gz"
+    touch "${BATS_TMPDIR}/timg.tar.gz"
+    run ch-convert --no-clobber -i ch-image -o tar "timg" "$BATS_TMPDIR/timg.tar.gz"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/$ch_timg.tar.gz" ]]
-    rm "${BATS_TMPDIR}/$ch_timg.tar.gz"
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/timg.tar.gz" ]]
+    rm "${BATS_TMPDIR}/timg.tar.gz"
 }
 
 
@@ -391,7 +401,7 @@ test_from () {
 # The next three tests are for issue #1241.
 @test 'ch-convert: permissions retained (dir)' {
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert "$ch_timg" "$out"
+    ch-convert "timg" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
     [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
@@ -400,7 +410,7 @@ test_from () {
 @test 'ch-convert: permissions retained (squash)' {
     squishy=${BATS_TMPDIR}/convert.sqfs
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert "$ch_timg" "$squishy"
+    ch-convert "timg" "$squishy"
     ch-convert "$squishy" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
@@ -410,7 +420,7 @@ test_from () {
 @test 'ch-convert: permissions retained (tar)' {
     tarball=${BATS_TMPDIR}/convert.tar.gz
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert "$ch_timg" "$tarball"
+    ch-convert "timg" "$tarball"
     ch-convert "$tarball" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
