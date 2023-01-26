@@ -62,9 +62,12 @@ def delete(cli):
       if (bu.cache == None):
          ch.WARNING("build cache not enabled")
       else:
-         ch.INFO("deleteing branch: %s" % cli.image_ref)
-         bu.cache.branch_delete(bu.cache.branch_name_unready(im.Reference(cli.image_ref)))
-         #bu.cache.branch_delete(cli.image_ref.replace("/", "%").replace(":", "+") + "#")
+         #ch.INFO("deleteing branch: %s" % cli.image_ref)
+         to_delete = cli.image_ref.replace("/", "%").replace(":", "+") + "#"
+         ch.INFO("deleting branch: %s" % to_delete)
+         bu.cache.branch_delete(to_delete)
+         ch.INFO("deleting branch: %s" % to_delete[:-1])
+         bu.cache.branch_delete(to_delete[:-1])
    for img in im.Image.glob(cli.image_ref):
       img.unpack_delete()
       delete_ct += 1
