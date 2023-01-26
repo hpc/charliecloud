@@ -893,7 +893,7 @@ EOF
     if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
         sold=$CH_IMAGE_STORAGE
         unset CH_IMAGE_STORAGE
-        [[ ! -e ./alpine:3.17 ]]
+        [[ ! -e .%3.17 ]]
         ch-run --unsafe alpine:3.17 -- /bin/true
         CH_IMAGE_STORAGE=$sold
     fi
@@ -901,7 +901,7 @@ EOF
     # Rest of test uses custom storage path.
     rm -rf "$my_storage"
     mkdir -p "$my_storage"/img
-    ch-convert -i ch-image -o dir alpine:3.17 "${my_storage}/img/alpine:3.17"
+    ch-convert -i ch-image -o dir alpine:3.17 "${my_storage}/img/alpine+3.17"
     unset CH_IMAGE_STORAGE
 
     # Specified on command line.
@@ -921,7 +921,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'error: --write invalid when running by name'* ]]
 
-    run ch-run -v "$CH_IMAGE_STORAGE"/img/alpine:3.17 -- /bin/true
+    run ch-run -v "$CH_IMAGE_STORAGE"/img/alpine+3.17 -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
@@ -940,9 +940,9 @@ EOF
     # Set up a fixure image in $CWD that causes a collision with the named
     # image, and that’s missing /bin/true so it pukes if we try to run it.
     # That is, in both cases, we want run-by-name to win.
-    rm -rf ./alpine:3.17
-    ch-convert -i ch-image -o dir alpine:3.17 ./alpine:3.17
-    rm ./alpine:3.17/bin/true
+    rm -rf ./alpine+3.17
+    ch-convert -i ch-image -o dir alpine:3.17 ./alpine+3.17
+    rm ./alpine+3.17/bin/true
 
     # Default.
     ch-run alpine:3.17 -- /bin/true
