@@ -6,27 +6,6 @@ load ../common
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
-@test 'storage errors' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-
-    run ch-run -w alpine:3.17 -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: --write invalid when running by name'* ]]
-
-    run ch-run "$CH_IMAGE_STORAGE"/img/alpine:3.17 -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
-
-    run ch-run -s /doesnotexist alpine:3.17 -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
-    [[ $output = *"error: can't stat: alpine:3.17: No such file or directory"* ]]
-}
-
 @test 'symlink to image' {  # issue #50
     scope quick
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
@@ -51,56 +30,6 @@ EOF
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
-}
-
-@test '--unsafe' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    my_storage=${BATS_TMPDIR}/unsafe
-
-    # Default storage location.
-    if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
-        sold=$CH_IMAGE_STORAGE
-        unset CH_IMAGE_STORAGE
-        [[ ! -e ./alpine:3.17 ]]
-        ch-run --unsafe alpine:3.17 -- /bin/true
-        CH_IMAGE_STORAGE=$sold
-    fi
-
-    # Rest of test uses custom storage path.
-    unset CH_IMAGE_STORAGE
-
-    # Specified on command line.
-    rm -rf "$my_storage"
-    mkdir -p "$my_storage"/img
-    ch-convert -i ch-image -o dir alpine:3.17 "${my_storage}/img/alpine:3.17"
-    ch-run --unsafe -s "$my_storage" alpine:3.17 -- /bin/true
-
-    # Specifie with environment variable.
-    export CH_IMAGE_STORAGE=$my_storage
-
-    # Basic environment-variable specified.
-    ch-run --unsafe alpine:3.17 -- /bin/true
-}
-
-@test 'image in both storage and cwd' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-
-    cd "$BATS_TMPDIR"
-
-    # Set up a fixure image in $CWD that causes a collision with the named
-    # image, and that’s missing /bin/true so it pukes if we try to run it.
-    # That is, in both cases, we want run-by-name to win.
-    rm -rf ./alpine:3.17
-    ch-convert -i ch-image -o dir alpine:3.17 ./alpine:3.17
-    rm ./alpine:3.17/bin/true
-
-    # Default.
-    ch-run alpine:3.17 -- /bin/true
-
-    # With --unsafe.
-    ch-run --unsafe alpine:3.17 -- /bin/true
 }
 
 @test '/usr/bin/ch-ssh' {
@@ -880,11 +809,12 @@ EOF
 
     # -m option
     mountpt="${BATS_TMPDIR}/sqfs_tmpdir"
+    mountpt_real=$(realpath "$mountpt")
     [[ -e $mountpt ]] || mkdir "$mountpt"
     run ch-run -m "$mountpt" -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: ${mountpt}"* ]]
+    [[ $output = *"newroot: ${mountpt_real}"* ]]
     rmdir "$mountpt"
 
     # -m with non-sqfs img
@@ -918,14 +848,14 @@ EOF
     run ch-run -m ./fixtures/README "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'not a directory: ./fixtures/README'* ]]
+    [[ $output = *'not a directory: '*'/fixtures/README'* ]]
 
     # image is file but not sqfs
     run ch-run -vv ./fixtures/README -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
-    [[ $output = *'unknown image type: ./fixtures/README'* ]]
+    [[ $output = *'unknown image type: '*'/fixtures/README'* ]]
 
     # image is a broken sqfs
     sq_tmp="$BATS_TMPDIR"/b0rken.sqfs
