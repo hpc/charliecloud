@@ -57,7 +57,7 @@ def build_cache(cli):
 
 def delete(cli):
    delete_ct = 0
-   if (also_cache):
+   if (cli.also_cache):
       ch.INFO("foo!")
    for img in im.Image.glob(cli.image_ref):
       img.unpack_delete()
