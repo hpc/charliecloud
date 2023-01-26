@@ -322,24 +322,6 @@ class Instruction(abc.ABC):
          return self.image.metadata["env"]
 
    @property
-   def label_arg(self):
-      if (self.image is None):
-         assert False, "unimplemented" # return dict()
-      else:
-         return self.image.metadata["arg"]
-
-   @property
-   def label_build(self):
-      return { **self.label_arg, **self.label_label }
-
-   @property
-   def label_label(self):
-      if (self.image is None):
-         assert False, "unimplemented" # return dict()
-      else:
-         return self.image.metadata["labels"]
-
-   @property
    def miss(self):
       """This is actually a three-valued property:
 
@@ -1010,8 +992,8 @@ class Label(Instruction):
       return "%s='%s'" % (self.key, self.value)
 
    def prepare(self, *args):
-      self.value = ch.variables_sub(unescape(self.value), self.label_build)
-      self.label_label[self.key] = self.value
+      self.value = ch.variables_sub(unescape(self.value), self.env_build)
+      self.image.metadata["labels"][self.key] = self.value
       return super().prepare(*args)
 
 
