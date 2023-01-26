@@ -78,7 +78,6 @@ Dockerfile
     filter remove_inline #.*$
     extension df
     filename Dockerfile
-    filename Dockerfile.00_tiny
     filename Dockerfile.argenv
     filename Dockerfile.centos_7ch
     filename Dockerfile.almalinux_8ch

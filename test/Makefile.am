@@ -3,7 +3,6 @@ testdir = $(pkglibexecdir)/test
 # These test files require no special handling.
 testfiles = \
 .dockerignore \
-Dockerfile.00_tiny \
 Dockerfile.argenv \
 bucache/a.df \
 bucache/a-fail.df \
