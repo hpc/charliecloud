@@ -56,7 +56,6 @@ const struct argp_option options[] = {
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
-   { "no-home",        -2, 0,      0, "(deprecated)"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
@@ -368,9 +367,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
-   case -2: // --no-home
-      WARNING("deprecated --no-home is now default; ignoring")
-      break;
    case -3: // --join-ct
       args->c.join = true;
       args->c.join_ct = parse_int(arg, false, "--join-ct");

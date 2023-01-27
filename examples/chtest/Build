@@ -42,7 +42,7 @@ cd "$workdir"
 #
 # For most Build scripts, we'd simply error out with missing prerequisites,
 # but this is a core image that much of the test suite depends on.
-ch_run="ch-run -u0 -g0 -w --no-home ${img}"
+ch_run="ch-run -u0 -g0 -w ${img}"
 
 ## Bootstrap base Alpine Linux.
 
@@ -91,7 +91,7 @@ chmod -R u+rw,ug-s img
 
 ## Install our test stuff.
 
-# Sentinel file for --no-home --bind test
+# Sentinel file for --bind test
 echo "tmpfs and host home are not overmounted" \
   > img/home/overmount-me
 
