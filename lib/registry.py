@@ -365,10 +365,13 @@ class HTTP:
          ch.INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
                  % (left_ct, pull_ct, period, reason))
 
+   @property
+   def _url_base(self):
+      return "https://%s:%d/v2/" % (self.ref.host, self.ref.port)
+   
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
-      url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
-      return "/".join((url_base, self.ref.path_full, type_, address))
+      return self._url_base + "/".join((self.ref.path_full, type_, address))
 
    def blob_exists_p(self, digest):
       """Return true if a blob with digest (hex string) exists in the
