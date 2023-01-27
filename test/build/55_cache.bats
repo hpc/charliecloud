@@ -363,7 +363,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'. FROM'* ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output = *'manifest: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
     [[ $output = *'config: downloading'* ]]
     [[ $output = *'. RUN'* ]]
     run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
@@ -387,7 +387,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output = *'manifest: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
     [[ $output = *'config: using existing file'* ]]
     [[ $output = *'layer'*'using existing file'* ]]
     run ch-image -s "$so" build-cache --tree
@@ -427,7 +427,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output = *'manifest: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
     [[ $output = *'config: downloading'* ]]
     [[ $output = *'layer'*'downloading:'*'100%'* ]]
     run ch-image -s "$so" build-cache --tree

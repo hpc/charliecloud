@@ -186,7 +186,7 @@ class Path(pathlib.PosixPath):
    def exists_(self, links=False):
       "Return True if I exist, False otherwise. Iff links, follow symlinks."
       try:
-         # Don’t wrap self.exists() because that always follows symlnks. Use
+         # Don’t wrap self.exists() because that always follows symlinks. Use
          # os.stat() b/c it has follow_symlinks in 3.6, unlike self.stat().
          os.stat(self, follow_symlinks=links)
       except FileNotFoundError:
