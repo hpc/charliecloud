@@ -59,10 +59,6 @@ def main(cli_):
    global cli
    cli = cli_
 
-   # Check argument validity.
-   if (cli.force and cli.no_force_detect):
-      ch.FATAL("--force and --no-force-detect are incompatible")
-
    # Infer input file if needed.
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
@@ -91,6 +87,24 @@ def main(cli_):
          ch.VERBOSE("inferring name with root context directory: %s" % cli.tag)
       cli.tag = re.sub(r"[^a-z0-9_.-]", "", cli.tag.lower())
       ch.INFO("inferred image name: %s" % cli.tag)
+
+   # --force and friends.
+   if (cli.force and cli.no_force_detect):
+      ch.FATAL("--force and --no-force-detect are incompatible")
+   if (cli.force_cmd and cli.force == "fakeroot"):
+      ch.FATAL("--force-cmd and --force=fakeroot are incompatible")
+   if (cli.force_cmd):
+      cli.force = "fake-syscalls"
+   else:
+      cli.force_cmd = fakeroot.FORCE_CMD_DEFAULT
+   ch.VERBOSE("force mode: %s" % cli.force)
+   if (cli.force == "fake-syscalls"):
+      force_cmd = dict()
+      for line in cli.force_cmd:
+         (cmd, args) = fakeroot.force_cmd_parse(line)
+         force_cmd[cmd] = args
+         ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
+   cli.force_cmd = force_cmd
 
    # Deal with build arguments.
    def build_arg_get(arg):

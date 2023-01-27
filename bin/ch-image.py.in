@@ -186,10 +186,11 @@ def main():
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
-   sp.add_argument("--force-", metavar="MODE", nargs="?",
+   sp.add_argument("--force", metavar="MODE", nargs="?", default=None,
                    choices=["fakeroot", "fake-syscalls"], const="fake-syscalls",
                    help="inject unprivileged build workarounds")
    sp.add_argument("--force-cmd", metavar="CMD,ARG1[,ARG2...]",
+                   action="append", default=[],
                    help="command arg(s) to add under --force=fake-syscalls")
    sp.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")

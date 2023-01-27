@@ -562,7 +562,8 @@ Options:
     :code:`-o APT::Sandbox::User=root` is added to :code:`apt` by default.
     Implies :code:`--force=fake-syscalls`. If specified, replaces (does not
     extend) the default suppression options. Literal commas can be escaped
-    with backslash.
+    with backslash; importantly however, backslash will need to be protected
+    from the shell also.
 
   :code:`-n`, :code:`--dry-run`
     Don’t actually execute any Dockerfile instructions.

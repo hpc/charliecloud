@@ -1,4 +1,5 @@
 import os.path
+import re
 
 import charliecloud as ch
 import filesystem as fs
@@ -312,6 +313,23 @@ def detect(image, force, no_force_detect):
    if (f is None):
       f = Fakeroot_Noop()
    return f
+
+def force_cmd_parse(text):
+   # 1. Split on “,” preceded by even number of backslashes.
+   #
+   # FIXME: Said backslashes are removed in the split, so you can’t have a
+   # component with trailing backslashes. That seems rare so I’m not fixing
+   # for now.
+   args = re.split(r"(?<!\\)(?:\\\\)*,", text)
+   # 2. Reject list of length < 2.
+   if (len(args) < 2):
+      ch.FATAL("--force-cmd: need at least one ARG")
+   # 3. Reject list with empty first item.
+   if (args[0] == ""):
+      ch.FATAL("--force-cmd: CMD can’t be empty")
+   # 4. Replace “\x” for any char x ⇒ literal “x”.
+   args = [re.sub(r"\\(.)", r"\1", a) for a in args]
+   return (args[0], args[1:])
 
 
 ## Classes ##
