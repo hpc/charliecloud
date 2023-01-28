@@ -589,7 +589,7 @@ char *realpath_(const char *path, bool fail_ok)
    errno = 0;
    pathc = realpath(path, NULL);
 
-   if (errno != 0) {
+   if (pathc == NULL && errno != 0) {
       if (fail_ok) {
          T_ (pathc = strdup(path));
       } else {
