@@ -661,7 +661,6 @@ class Enabled_Cache:
                        cwd=self.root, fail_ok=True) == 0):
          ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
 
-
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Ref src_ref pointing to dest, which can
          be either an Ref or a Git commit reference (as a string)."""

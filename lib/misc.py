@@ -57,17 +57,6 @@ def build_cache(cli):
 
 def delete(cli):
    delete_ct = 0
-   if (cli.also_cache):
-      #ch.INFO("foo!")
-      if (bu.cache == None):
-         ch.WARNING("build cache not enabled")
-      else:
-         #ch.INFO("deleteing branch: %s" % cli.image_ref)
-         to_delete = cli.image_ref.replace("/", "%").replace(":", "+") + "#"
-         ch.INFO("deleting branch: %s" % to_delete)
-         bu.cache.branch_delete(to_delete)
-         ch.INFO("deleting branch: %s" % to_delete[:-1])
-         bu.cache.branch_delete(to_delete[:-1])
    for img in im.Image.glob(cli.image_ref):
       img.unpack_delete()
       delete_ct += 1
@@ -77,6 +66,13 @@ def delete(cli):
    if (delete_ct == 0):
       ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
    bu.cache.worktrees_fix()
+   if (cli.also_cache):
+      if (bu.cache == None):
+         ch.WARNING("build cache not enabled")
+      else:
+         to_delete = cli.image_ref.replace("/", "%").replace(":", "+") + "#"
+         bu.cache.branch_delete(to_delete)
+         bu.cache.branch_delete(to_delete[:-1])
 
 def gestalt_bucache(cli):
    bu.have_deps()
