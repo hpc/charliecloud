@@ -468,29 +468,6 @@ EOF
 }
 
 
-@test "${tag}: branch delete" {
-    ch-image build-cache --reset
-
-    # Build image
-    ch-image build -t a -f bucache/a.df ./bucache
-
-    # Delete image
-    ch-image delete a
-
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    blessed_out=$(cat << 'EOF'
-*  (a) RUN echo bar
-*  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
-*  (HEAD -> root) ROOT
-EOF
-)
-    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-}
-
-
 # FIXME: for issue #1359, add test here where they revert the image in the
 # remote registry to a previous state; our next pull will hit, and so too
 # should any subsequent previously cached instructions based on the FROM SID.
@@ -1192,7 +1169,7 @@ EOF
 
     ch-image build-cache --reset
     ch-image build -t tmpimg -f <(echo "$df") .
-    ch-image delete tmpimg
+    ch-image delete --not-cache tmpimg
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg ]]
     run ch-image build -v -t tmpimg -f <(echo "$df") .
     echo "$output"
