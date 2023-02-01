@@ -468,6 +468,33 @@ EOF
 }
 
 
+@test "${tag}: branch delete" {
+    ch-image build-cache --reset
+
+    # Build image
+    ch-image build -t a -f bucache/a.df ./bucache
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u - <(echo "$output" | treeonly) <<'EOF'
+*  (a) RUN echo bar
+*  RUN echo foo
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) ROOT
+EOF
+
+    # Delete image
+    ch-image delete a
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]    
+    diff -u - <(echo "$output" | treeonly) <<'EOF'
+*  (alpine+3.9) PULL alpine:3.9
+*  (HEAD -> root) ROOT
+EOF
+}
+
+
 # FIXME: for issue #1359, add test here where they revert the image in the
 # remote registry to a previous state; our next pull will hit, and so too
 # should any subsequent previously cached instructions based on the FROM SID.
@@ -1290,25 +1317,25 @@ EOF
     diff -u <(printf "1a\n1b\n2a\nalpine:3.9\n") <(ch-image list)
 
     # no glob
-    ch-image delete 2a
+    ch-image delete --not-cache 2a
     diff -u <(printf "1a\n1b\nalpine:3.9\n") <(ch-image list)
 
     # matches none (non-empty)
-    run ch-image delete 'foo*'
+    run ch-image delete --not-cache 'foo*'
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no image matching glob, can’t delete: foo*'* ]]
 
     # matches some
-    ch-image delete '1*'
+    ch-image delete --not-cache '1*'
     diff -u <(printf "alpine:3.9\n") <(ch-image list)
 
     # matches all
-    ch-image delete '*'
+    ch-image delete --not-cache '*'
     diff -u <(printf "") <(ch-image list)
 
     # matches none (empty)
-    run ch-image delete '*'
+    run ch-image delete --not-cache '*'
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no image matching glob, can’t delete: *'* ]]
