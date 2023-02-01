@@ -217,6 +217,9 @@ def main():
    # delete
    sp = ap.add_parser("delete", "delete image from internal storage")
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
+   sp.add_argument("--not-cache",
+                   action="store_true",
+                   help="delete image, keep cache branch")
    sp.add_argument("image_ref", metavar="IMAGE_GLOB", help="image(s) to delete")
 
    # gestalt (has sub-subcommands)
