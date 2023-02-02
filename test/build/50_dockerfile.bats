@@ -286,16 +286,14 @@ FROM 00_tiny
 ADD foo
 CMD foo
 ENTRYPOINT foo
-LABEL foo
 ONBUILD foo
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 5 ]]
+    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 4 ]]
     [[ $output = *'warning: not yet supported, ignored: issue #782: ADD instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #780: CMD instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #780: ENTRYPOINT instruction'* ]]
-    [[ $output = *'warning: not yet supported, ignored: issue #781: LABEL instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #788: ONBUILD instruction'* ]]
 
     # .dockerignore files
@@ -473,6 +471,52 @@ EOF
   echo "$output"
   [[ $status -eq 0 ]]
   diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
+}
+
+
+@test 'Dockerfile: LABEL parsing' {
+
+    scope standard
+    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+
+    label_expected=$(cat <<'EOF'
+('chsl_0a', 'value 0a')
+('chsl_0b', 'value 0b')
+('chsl_2a', 'value2a')
+('chsl_2b', 'value2b')
+('chsl_3a', 'value3a')
+('chsl_3b', 'value3b')
+EOF
+)
+    run build_ --no-cache -t tmpimg -f - . <<'EOF'
+FROM almalinux_8ch
+
+# Value has internal space.
+LABEL chsl_0a value 0a
+LABEL chsl_0b="value 0b"
+
+# FIXME: See issue #1533. Quotes around keys are not removed in metadata.
+#LABEL "chsl_1"="value 1"
+
+# Multiple variables in the same instruction.
+LABEL chsl_2a=value2a chsl_3a=value3a
+LABEL chsl_2b=value2b \
+    chsl_3b=value3b
+
+# FIXME: currently a parse error.
+#LABEL chsl_4=value4 chsl_5="value5 foo" chsl_6=value6\ foo chsl_7=\"value7\"
+
+# FIXME: See issue #1512. Multiline values currently not supported.
+#LABEL chsl_5 = "value\
+#5"
+
+# Print output with Python to avoid ambiguity.
+RUN python3 -c 'import os; import json; labels = json.loads(open("/ch/metadata.json", "r").read())["labels"]; \
+                [print((k,v)) for (k,v) in sorted(labels.items()) if "chsl_" in k]'
+EOF
+  echo "$output"
+  [[ $status -eq 0 ]]
+  diff -u <(echo "$label_expected") <(echo "$output" | grep -E "^\('chsl_")
 }
 
 

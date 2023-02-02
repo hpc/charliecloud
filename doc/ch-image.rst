@@ -751,6 +751,14 @@ in other :code:`ARG` before the first :code:`FROM`.
 The :code:`FROM` instruction accepts option :code:`--arg=NAME=VALUE`, which
 serves the same purpose as the :code:`ARG` instruction. It can be repeated.
 
+:code:`LABEL`
+~~~~~~~~~~~~~
+
+The :code:`LABEL` instruction accepts :code:`key=value` pairs to
+add metadata for an image. Unlike Docker, multiline values are not supported;
+see issue `#1512 <https://github.com/hpc/charliecloud/issues/1512>`_.
+Can be repeated.
+
 :code:`COPY`
 ~~~~~~~~~~~~
 
