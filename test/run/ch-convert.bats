@@ -333,14 +333,15 @@ test_from () {
     [[ $output = *"error: exists in ch-image storage, not deleting per --no-clobber: tmpimg" ]]
 
     # convert ch_timg into ch-image format
-    ch-image delete timg | 'true'
-    if [[ $(file "$ch_timg") = *"symbolic link"* ]]; then
+    ch-image delete timg | true
+    if [[ $(stat "$ch_timg") = *"symbolic link"* ]]; then
         # symlink to squash archive
-        ch-convert -i squash -o ch-image "$ch_timg" timg
+        fmt="squash"
     else
         # directory
-        ch-convert -i dir -o ch-image "$ch_timg" timg
+        fmt="dir"
     fi
+    ch-convert -i $fmt -o ch-image "$ch_timg" timg
 
     # dir
     ch-convert -i ch-image -o dir timg "$BATS_TMPDIR/timg"

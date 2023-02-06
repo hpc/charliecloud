@@ -32,6 +32,7 @@ EOF
     ch-run -w "$ch_timg" rm write
 }
 
+
 @test '/usr/bin/ch-ssh' {
     # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".
     scope quick

@@ -1218,7 +1218,7 @@ EOF
     [[ $CH_TEST_BUILDER == ch-image ]] || skip 'ch-image only'
 
     run ch-image build --no-cache -t foo - <<'EOF'
-FROM alpine:3.17
+FROM alpine:3.16
 FROM alpine:3.17
 COPY --from=0 /etc/os-release /
 EOF
