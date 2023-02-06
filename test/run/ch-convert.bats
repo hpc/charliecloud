@@ -341,7 +341,7 @@ test_from () {
         # directory
         fmt="dir"
     fi
-    ch-convert -i $fmt -o ch-image "$ch_timg" timg
+    ch-convert -i "$fmt" -o ch-image "$ch_timg" timg
 
     # dir
     ch-convert -i ch-image -o dir timg "$BATS_TMPDIR/timg"
