@@ -106,12 +106,11 @@ cray_ofi_or_skip () {
         # shellcheck disable=SC2086
         if [[ $cray_prov == 'gni' ]]; then
             export CH_FROMHOST_OFI_GNI=$CH_TEST_OFI_PATH
-            $ch_mpirun_node ch-fromhost --cray-mpi-gni "$1"
+            $ch_mpirun_node ch-fromhost -v --cray-gni "$1"
         fi
         if [[ $cray_prov == 'cxi' ]]; then
             export CH_FROMHOST_OFI_CXI=$CH_TEST_OFI_PATH
-            $ch_mpirun_node ch-fromhost --cray-mpi-cxi "$1"
-            $ch_mpirun_node ch-fromhost -v --cray-mpi-cxi "$1"
+            $ch_mpirun_node ch-fromhost --cray-cxi "$1"
             # Examples use libfabric's fi_info to ensure injection works; when
             # replacing libfabric we also need to replace this binary.
             fi_info="$(dirname "$(dirname "$CH_TEST_OFI_PATH")")/bin/fi_info"

@@ -38,7 +38,7 @@ image is left in an undefined state and should be re-unpacked from storage.
 Injection is currently implemented using a simple file copy, but that may
 change in the future.
 
-Arbitrary file and Libfabric injection are handled differently.
+Arbitrary file and libfabric injection are handled differently.
 
 Arbitrary files
 ---------------
@@ -58,7 +58,7 @@ Libfabric
 ---------
 
 MPI implementations have numerous ways of communicating messages over
-interconnects. We use Libfabric (OFI), an OpenFabric framework that
+interconnects. We use libfabric (OFI), an OpenFabric framework that
 exports fabric communication services to applications, to manage these
 communcations with built-in, or loadable, fabric providers.
 
@@ -97,7 +97,7 @@ To specify which files to inject
     the path the Cray host libfabric :code:`libfabric.so`.
 
   :code:`--cray-mpi-gni`
-    Inject cray gemini/aries GNI Libfabric provider :code:`libgnix-fi.so`. This
+    Inject cray gemini/aries GNI libfabric provider :code:`libgnix-fi.so`. This
     is equivalent to :code:`--fi-provider $CH_FROMHOST_OFI_GNI`, where
     :code:`CH_FROMHOST_OFI_GNI` is the path to the Cray host ugni provider
     :code:`libgnix-fi.so`.
@@ -176,7 +176,7 @@ experimental and has a couple quirks.
 
 1. Containers must have the following software installed:
 
-   a. Libfabric (https://ofiwg.github.io/libfabric/). See
+   a. libfabric (https://ofiwg.github.io/libfabric/). See
       :code:`charliecloud/examples/Dockerfile.libfabric`.
 
    b. Corresponding open source MPI implementation configured and built against
@@ -186,7 +186,7 @@ experimental and has a couple quirks.
       See :code:`charliecloud/examples/Dockerfile.mpich` and
       :code:`charliecloud/examples/Dockerfile.openmpi`.
 
-2. At run time, a Libfabric provider can be specified with the variable
+2. At run time, a libfabric provider can be specified with the variable
    :code:`FI_PROVIDER`. The path to search for shared providers can be specified
    with :code:`FI_PROVIDER_PATH`. These variables can be inherited from the host
    or explicitly set with the container's environment file
@@ -220,15 +220,15 @@ experimental and has a couple quirks.
    container functionality, e.g., :code:`glibc.so`, etc.
 
 4. At the time of this writing, a Cray Slingshot optimized provider is not
-   available; however, recent Libfabric source acitivity indicates there may be
+   available; however, recent libfabric source acitivity indicates there may be
    at some point, see: https://github.com/ofiwg/libfabric/pull/7839We.
 
    For now, on Cray systems with Slingshot, CXI, we need overwrite the
    container's :code:`libfabric.so` with the hosts using :code:`--path`. See
    examples for details.
 
-5. Tested only for C programs compiled with GCC, and it probably won't work
-   without extensive bind-mounts and kluding. If you'd like to use another
+5. Tested only for C programs compiled with GCC. Additional bind mount or
+   kluding may be needed for untested use cases. If you'd like to use another
    compiler or programming environment, please get in touch so we can implement
    the necessary support.
 
@@ -453,3 +453,8 @@ implementation of :code:`--cray-mpi`.
 
 We appreciate the advice of Ryan Olson at nVidia on implementing
 :code:`--nvidia`.
+
+
+.. include:: ./bugs.rst
+.. include:: ./see_also.rst
+..  LocalWords:  libmpi libmpich nvidia
