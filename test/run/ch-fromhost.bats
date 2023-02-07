@@ -62,7 +62,7 @@ glibc_version_ok () {
     # check glibc version compatibility.
     glibc_version_ok "$img"
 
-    libpath=$(ch-fromhost --lib-path "$img")
+    libpath=$(ch-fromhost --print-lib "$img")
     echo "libpath: ${libpath}"
 
     # --file
@@ -145,7 +145,7 @@ glibc_version_ok () {
     # check glibc version compatibility.
     glibc_version_ok "$img"
 
-    libpath=$(ch-fromhost --lib-path "$img")
+    libpath=$(ch-fromhost --print-lib "$img")
     echo "libpath: ${libpath}"
 
     fromhost_clean "$img"
@@ -313,7 +313,7 @@ glibc_version_ok () {
     # couldn't come up with anything better. E.g., bad ld.so.conf or broken
     # .so's seem to produce only warnings.)
     mv "${img}/sbin/ldconfig" "${img}/sbin/ldconfig.foo"
-    run ch-fromhost --lib-path "$img"
+    run ch-fromhost --print-lib "$img"
     mv "${img}/sbin/ldconfig.foo" "${img}/sbin/ldconfig"
     echo "$output"
     [[ $status -eq 1 ]]
@@ -327,7 +327,7 @@ glibc_version_ok () {
     img=${ch_imgdir}/openmpi
     unset FI_PROVIDER_PATH
 
-    ofidest=$(ch-fromhost --fi-path "$img")
+    ofidest=$(ch-fromhost --print-fi "$img")
     echo "provider dest: ${ofidest}"
 
     # The libsotest-fi.so is a dummy provider intended to exercise ch-fromhost

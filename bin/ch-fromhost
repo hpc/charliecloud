@@ -89,7 +89,7 @@ fi_prov_found=
 lib_dest=
 lib_found=
 print_cray_fi_dest=
-print_fi_prov_dest=
+print_fi_dest=
 print_lib_dest=
 no_ldconfig=
 
