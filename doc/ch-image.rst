@@ -1327,6 +1327,24 @@ in the remote registry, so we don’t upload it again.)
    cleaning up
    done
 
+Same, except the local image has already been pushed to the destination in its
+current form. Charliecloud is able to expedite the pushing process by using
+previously prepared config, metadata, and tarballs from the previous push.
+
+::
+
+   $ ch-image push --image /var/tmp/image example.com:5000/foo/bar:latest
+   pushing image:   example.com:5000/foo/bar:latest
+   image path:      /var/tmp/image
+   starting upload
+   layer 1/1: 5ffaf42: checking if already in repository
+   layer 1/1: 5ffaf42: already present
+   config: 2966628: checking if already in repository
+   config: 2966628: already present
+   manifest: uploading
+   cleaning up
+   done
+
 
 :code:`reset`
 =============
