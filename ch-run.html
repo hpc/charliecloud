@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>7. ch-run &mdash; Charliecloud 0.30 documentation</title>
+  <title>7. ch-run &mdash; Charliecloud 0.31 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.30
+                0.31
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -69,7 +69,8 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -107,9 +108,11 @@
 <section id="description">
 <h2><span class="section-number">7.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
 <p>Run command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code> in a fully unprivileged Charliecloud container using
-the image located at <code class="code docutils literal notranslate"><span class="pre">IMAGE</span></code>, which can be either a directory or, if the
-proper support is enabled, a SquashFS archive. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> does not use any
-setuid or setcap helpers, even for mounting SquashFS images with FUSE.</p>
+the image specified by <code class="code docutils literal notranslate"><span class="pre">IMAGE</span></code>, which can be: (1) a path to a directory,
+(2) the name of an image in <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> storage (e.g.
+<code class="code docutils literal notranslate"><span class="pre">example.com:5050/foo</span></code>) or, if the proper support is enabled, a SquashFS
+archive. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> does not use any setuid or setcap helpers, even for
+mounting SquashFS images with FUSE.</p>
 <blockquote>
 <div><dl>
 <dt><code class="code docutils literal notranslate"><span class="pre">-b</span></code>, <code class="code docutils literal notranslate"><span class="pre">--bind=SRC[:DST]</span></code></dt><dd><p>Bind-mount <code class="code docutils literal notranslate"><span class="pre">SRC</span></code> at guest <code class="code docutils literal notranslate"><span class="pre">DST</span></code>. The default destination if
@@ -142,6 +145,12 @@ absolute symlinks in this case, to avoid directory creation surprises.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-g</span></code>, <code class="code docutils literal notranslate"><span class="pre">--gid=GID</span></code></dt><dd><p>Run as group <code class="code docutils literal notranslate"><span class="pre">GID</span></code> within container.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--home</span></code></dt><dd><p>Bind-mount your host home directory (i.e., <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code>) at guest
+<code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>. This is accomplished by over-mounting a new
+<code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> at <code class="code docutils literal notranslate"><span class="pre">/home</span></code>, which hides any image content under that
+path. By default, neither of these things happens and the image’s
+<code class="code docutils literal notranslate"><span class="pre">/home</span></code> is exposed unaltered.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-j</span></code>, <code class="code docutils literal notranslate"><span class="pre">--join</span></code></dt><dd><p>Use the same container (namespaces) as peer <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--join-pid=PID</span></code></dt><dd><p>Join the namespaces of an existing process.</p>
@@ -156,16 +165,13 @@ below).</p>
 not specified, the default is <code class="code docutils literal notranslate"><span class="pre">/var/tmp/$USER.ch/mnt</span></code>, which <em>will</em>
 be created if needed.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--no-home</span></code></dt><dd><p>By default, your host home directory (i.e., <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code>) is bind-mounted
-at guest <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>. This is accomplished by mounting a new
-<code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> at <code class="code docutils literal notranslate"><span class="pre">/home</span></code>, which hides any image content under that
-path. If this is specified, neither of these things happens and the
-image’s <code class="code docutils literal notranslate"><span class="pre">/home</span></code> is exposed unaltered.</p>
-</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-passwd</span></code></dt><dd><p>By default, temporary <code class="code docutils literal notranslate"><span class="pre">/etc/passwd</span></code> and <code class="code docutils literal notranslate"><span class="pre">/etc/group</span></code> files are
 created according to the UID and GID maps for the container and
 bind-mounted into it. If this is specified, no such temporary files are
 created and the image’s files are exposed.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-s</span></code>, <code class="code docutils literal notranslate"><span class="pre">--storage</span> <span class="pre">DIR</span></code></dt><dd><p>Set the storage directory. Equivalent to the same option for
+<code class="code docutils literal notranslate"><span class="pre">ch-image(1)</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-t</span></code>, <code class="code docutils literal notranslate"><span class="pre">--private-tmp</span></code></dt><dd><p>By default, the host’s <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> (or <code class="code docutils literal notranslate"><span class="pre">$TMPDIR</span></code> if set) is
 bind-mounted at container <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>. If this is specified, a new
@@ -188,6 +194,9 @@ read.</p></li>
 <p>See below for details on how environment variables work in <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-u</span></code>, <code class="code docutils literal notranslate"><span class="pre">--uid=UID</span></code></dt><dd><p>Run as user <code class="code docutils literal notranslate"><span class="pre">UID</span></code> within container.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--unsafe</span></code></dt><dd><p>Enable various unsafe behavior. For internal use only. Seriously, stay
+away from this option.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--unset-env=GLOB</span></code></dt><dd><p>Unset environment variables whose names match <code class="code docutils literal notranslate"><span class="pre">GLOB</span></code>.</p>
 </dd>
@@ -374,21 +383,23 @@ file.</p>
 <section id="default-behavior">
 <h3><span class="section-number">7.6.1. </span>Default behavior<a class="headerlink" href="#default-behavior" title="Permalink to this headline">¶</a></h3>
 <p>By default, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> makes the following environment variable changes:</p>
-<ul>
-<li><p><code class="code docutils literal notranslate"><span class="pre">$CH_RUNNING</span></code>: Set to <code class="code docutils literal notranslate"><span class="pre">Weird</span> <span class="pre">Al</span> <span class="pre">Yankovic</span></code>. While a process can
-figure out that it’s in an unprivileged container and what namespaces are
-active without this hint, that can be messy, and there is no way to tell
-that it’s a <em>Charliecloud</em> container specifically. This variable makes such
-a test simple and well-defined. (<strong>Note:</strong> This variable is unaffected by
-<code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code>.)</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">$HOME</span></code>: If the path to your home directory is not <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>
-on the host, then an inherited <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> will be incorrect inside the
-guest. This confuses some software, such as Spack. Thus, we change
-<code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> to <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>, unless <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code> is specified,
-in which case it is left unchanged.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>: Newer Linux distributions replace some root-level
-directories, such as <code class="code docutils literal notranslate"><span class="pre">/bin</span></code>, with symlinks to their counterparts in
-<code class="code docutils literal notranslate"><span class="pre">/usr</span></code>.</p>
+<dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">$CH_RUNNING</span></code></dt><dd><p>Set to <code class="code docutils literal notranslate"><span class="pre">Weird</span> <span class="pre">Al</span> <span class="pre">Yankovic</span></code>. While a process can figure out that it’s
+in an unprivileged container and what namespaces are active without this
+hint, that can be messy, and there is no way to tell that it’s a
+<em>Charliecloud</em> container specifically. This variable makes such a test
+simple and well-defined. (<strong>Note:</strong> This variable is unaffected by
+<code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code>.)</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">$HOME</span></code></dt><dd><p>If <code class="code docutils literal notranslate"><span class="pre">--home</span></code> is specified, then your home directory is bind-mounted
+into the guest at <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>. If you also have a different home
+directory path on the host, an inherited <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> will be incorrect
+inside the guest, which confuses lots of software, notably Spack. Thus, with
+<code class="code docutils literal notranslate"><span class="pre">--home</span></code>, <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> is set to <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code> (by default, it
+is unchanged.)</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">$PATH</span></code></dt><dd><p>Newer Linux distributions replace some root-level directories, such as
+<code class="code docutils literal notranslate"><span class="pre">/bin</span></code>, with symlinks to their counterparts in <code class="code docutils literal notranslate"><span class="pre">/usr</span></code>.</p>
 <p>Some of these distributions (e.g., Fedora 24) have also dropped <code class="code docutils literal notranslate"><span class="pre">/bin</span></code>
 from the default <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>. This is a problem when the guest OS does
 <em>not</em> have a merged <code class="code docutils literal notranslate"><span class="pre">/usr</span></code> (e.g., Debian 8 “Jessie”). Thus, we add
@@ -401,11 +412,12 @@ from the default <code class="code docutils literal notranslate"><span class="pr
 <li><p><a class="reference external" href="https://wiki.debian.org/UsrMerge">Debian</a></p></li>
 </ul>
 </div></blockquote>
-</li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">$TMPDIR</span></code>: Unset, because this is almost certainly a host path, and
-that host path is made available in the guest at <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> unless
-<code class="code docutils literal notranslate"><span class="pre">--private-tmp</span></code> is given.</p></li>
-</ul>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">$TMPDIR</span></code></dt><dd><p>Unset, because this is almost certainly a host path, and that host path is
+made available in the guest at <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> unless <code class="code docutils literal notranslate"><span class="pre">--private-tmp</span></code> is
+given.</p>
+</dd>
+</dl>
 </section>
 <section id="setting-variables-with-set-env">
 <h3><span class="section-number">7.6.2. </span>Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code><a class="headerlink" href="#setting-variables-with-set-env" title="Permalink to this headline">¶</a></h3>

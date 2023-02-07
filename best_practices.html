@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>12. Best practices &mdash; Charliecloud 0.31 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="13. Contributor’s guide" href="dev.html" />
+    <link rel="prev" title="11. Frequently asked questions (FAQ)" href="faq.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="index.html" class="icon icon-home"> Charliecloud
+            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.31
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">12. Best practices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#other-best-practices-information">12.1. Other best practices information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">12.2. Installing your own software</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#third-party-software-via-package-manager">12.2.1. Third-party software via package manager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#third-party-software-compiled-from-source">12.2.2. Third-party software compiled from source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-in-the-image">12.2.3. Your software stored in the image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">12.2.4. Your software stored on the host</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+      <li><span class="section-number">12. </span>Best practices</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="best-practices">
+<h1><span class="section-number">12. </span>Best practices<a class="headerlink" href="#best-practices" title="Permalink to this headline">¶</a></h1>
+<section id="other-best-practices-information">
+<h2><span class="section-number">12.1. </span>Other best practices information<a class="headerlink" href="#other-best-practices-information" title="Permalink to this headline">¶</a></h2>
+<p>This isn’t the last word. Also consider:</p>
+<ul class="simple">
+<li><p>Many of Docker’s <a class="reference external" href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices">Best practices for writing Dockerfiles</a>
+apply to Charliecloud images as well.</p></li>
+<li><p>“<a class="reference external" href="https://f1000research.com/articles/7-742/v2">Recommendations for the packaging and containerizing of bioinformatics
+software</a>”, Gruening et al.
+2019, is a thoughtful editorial with eleven specific containerization
+recommendations for scientific software.</p></li>
+<li><p>“<a class="reference external" href="https://nvlpubs.nist.gov/nistpubs/specialpublications/nist.sp.800-190.pdf">Application container security guide</a>”,
+NIST Special Publication 800-190; Souppaya, Morello, and Scarfone 2017.</p></li>
+</ul>
+</section>
+<section id="installing-your-own-software">
+<h2><span class="section-number">12.2. </span>Installing your own software<a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
+<p>This section covers four situations for making software available inside a
+Charliecloud container:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Third-party software installed into the image using a package manager.</p></li>
+<li><p>Third-party software compiled from source into the image.</p></li>
+<li><p>Your software installed into the image.</p></li>
+<li><p>Your software stored on the host but compiled in the container.</p></li>
+</ol>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Maybe you don’t have to install the software at all. Is there already a
+trustworthy image on Docker Hub you can use as a base?</p>
+</div>
+<section id="third-party-software-via-package-manager">
+<h3><span class="section-number">12.2.1. </span>Third-party software via package manager<a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
+<p>This approach is the simplest and fastest way to install stuff in your image.
+The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile does this to install the package
+<code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> openssh-clients <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf clean all
+
+<span class="k">COPY</span> . hello
+</pre></div>
+</div>
+<p>You can use distribution package managers such as <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, as demonstrated
+above, or others, such as <code class="code docutils literal notranslate"><span class="pre">pip</span></code> for Python packages. Be aware that the
+software will be downloaded anew each time you execute the instruction (unless
+you add an HTTP cache, which is out of scope of this documentation).</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>RPM and friends (<code class="code docutils literal notranslate"><span class="pre">yum</span></code>, <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, etc.) have traditionally been
+rather troublesome in containers, and we suspect there are bugs we haven’t
+ironed out yet. If you encounter problems, please do file a bug!</p>
+</div>
+</section>
+<section id="third-party-software-compiled-from-source">
+<h3><span class="section-number">12.2.2. </span>Third-party software compiled from source<a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
+<p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
+using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
+this with two chained Dockerfiles. First, we build a basic AlmaLinux image
+(<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.almalinux_8ch</span></code>):</p>
+<blockquote>
+<div><div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
+
+<span class="c"># This image has two purposes: (1) demonstrate we can build a AlmaLinux 8 image</span>
+<span class="c"># and (2) provide a build environment for Charliecloud EPEL 8 RPMs.</span>
+<span class="c">#</span>
+<span class="c"># Quirks:</span>
+<span class="c">#</span>
+<span class="c">#   1. Install the dnf ovl plugin to work around RPMDB corruption when</span>
+<span class="c">#      building images with Docker and the OverlayFS storage driver.</span>
+<span class="c">#</span>
+<span class="c">#   2. Enable PowerTools repo, because some packages in EPEL depend on it.</span>
+<span class="c">#</span>
+<span class="c">#   3. Install packages needed to build el8 rpms.</span>
+<span class="c">#</span>
+<span class="c">#   4. Issue #1103: Install libarchive to resolve cmake bug</span>
+<span class="c">#</span>
+<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
+                epel-release <span class="se">\</span>
+                <span class="s1">&#39;dnf-command(config-manager)&#39;</span> <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf config-manager --enable powertools <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
+                dnf-plugin-ovl <span class="se">\</span>
+                autoconf <span class="se">\</span>
+                automake <span class="se">\</span>
+                gcc <span class="se">\</span>
+                git <span class="se">\</span>
+                libarchive <span class="se">\</span>
+                make <span class="se">\</span>
+                python3 <span class="se">\</span>
+                python3-devel <span class="se">\</span>
+                python3-lark-parser <span class="se">\</span>
+                python3-requests <span class="se">\</span>
+                python3-sphinx <span class="se">\</span>
+                python3-sphinx_rtd_theme <span class="se">\</span>
+                rpm-build <span class="se">\</span>
+                rpmlint <span class="se">\</span>
+                rsync <span class="se">\</span>
+                squashfs-tools <span class="se">\</span>
+                squashfuse <span class="se">\</span>
+                wget <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf clean all
+
+<span class="c"># Need wheel to install bundled Lark, and the RPM version doesn&#39;t work.</span>
+<span class="k">RUN</span> pip3 install wheel
+
+<span class="c"># AlmaLinux&#39;s linker doesn&#39;t search these paths by default; add them because we</span>
+<span class="c"># will install stuff later into /usr/local.</span>
+<span class="k">RUN</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib&quot;</span> &gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib64&quot;</span> &gt;&gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ldconfig
+</pre></div>
+</div>
+</div></blockquote>
+<p>Then, in a second image (<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.openmpi</span></code>), we add OpenMPI.
+This is a complex Dockerfile that compiles several dependencies in addition to
+OpenMPI. For the purposes of this documentation, you can skip most of it, but
+we felt it would be useful to show a real example.</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux_8ch</span>
+
+<span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
+<span class="c"># OpenMPI for use inside a container.</span>
+<span class="c">#</span>
+<span class="c"># This OpenMPI aspires to work close to optimally on clusters with any of the</span>
+<span class="c"># following interconnects:</span>
+<span class="c">#</span>
+<span class="c">#    - Ethernet (TCP/IP)</span>
+<span class="c">#    - InfiniBand (IB)</span>
+<span class="c">#    - Omni-Path (OPA)</span>
+<span class="c">#    - RDMA over Converged Ethernet (RoCE) interconnects</span>
+<span class="c">#</span>
+<span class="c"># with no environment variables, command line arguments, or additional</span>
+<span class="c"># configuration files. Thus, we try to implement decisions at build time.</span>
+<span class="c">#</span>
+<span class="c"># This is a work in progress, and we&#39;re very interested in feedback.</span>
+<span class="c">#</span>
+<span class="c"># OpenMPI has numerous ways to communicate messages [1]. The ones relevant to</span>
+<span class="c"># this build and the interconnects they support are:</span>
+<span class="c">#</span>
+<span class="c">#   Module        Eth   IB    OPA   RoCE    note  decision</span>
+<span class="c">#   ------------  ----  ----  ----  ----    ----  --------</span>
+<span class="c">#</span>
+<span class="c">#   ob1 : tcp      Y*    X     X     X      a     include</span>
+<span class="c">#   ob1 : openib   N     Y     Y     Y      b,c   exclude</span>
+<span class="c">#   cm  : psm2     N     N     Y*    N            include</span>
+<span class="c">#       : ucx      Y?    Y*    N     Y?     b,d   include</span>
+<span class="c">#</span>
+<span class="c">#   Y : supported</span>
+<span class="c">#   Y*: best choice for that interconnect</span>
+<span class="c">#   X : supported but sub-optimal</span>
+<span class="c">#</span>
+<span class="c">#   a : No RDMA, so performance will suffer.</span>
+<span class="c">#   b : Uses libibverbs.</span>
+<span class="c">#   c : Will be removed in OpenMPI 5.</span>
+<span class="c">#   d : Uses Mellanox libraries if available in preference to libibverbs.</span>
+<span class="c">#</span>
+<span class="c"># You can check what&#39;s available with:</span>
+<span class="c">#</span>
+<span class="c">#   $ ch-run /var/tmp/openmpi -- ompi_info | egrep &#39;(btl|mtl|pml)&#39;</span>
+<span class="c">#</span>
+<span class="c"># The other build decisions are:</span>
+<span class="c">#</span>
+<span class="c">#   1. PMI/PMIx: Include these so that we can use srun or any other PMI[x]</span>
+<span class="c">#      provider, with no matching OpenMPI needed on the host.</span>
+<span class="c">#</span>
+<span class="c">#   2. --disable-pty-support to avoid &quot;pipe function call failed when</span>
+<span class="c">#      setting up I/O forwarding subsystem&quot;.</span>
+<span class="c">#</span>
+<span class="c">#   3. --enable-mca-no-build=plm-slurm to support launching processes using</span>
+<span class="c">#      the host&#39;s srun (i.e., the container OpenMPI needs to talk to the host</span>
+<span class="c">#      Slurm&#39;s PMI) but prevent OpenMPI from invoking srun itself from within</span>
+<span class="c">#      the container, where srun is not installed (the error messages from</span>
+<span class="c">#      this are inscrutable).</span>
+<span class="c">#</span>
+<span class="c"># [1]: https://github.com/open-mpi/ompi/blob/master/README</span>
+
+<span class="c"># OS packages needed to build this stuff.</span>
+<span class="c">#</span>
+<span class="c"># Note that libpsm2 is x86-64 only so we skip if missing</span>
+<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
+                automake <span class="se">\</span>
+                file <span class="se">\</span>
+                flex <span class="se">\</span>
+                gcc <span class="se">\</span>
+                gcc-c++ <span class="se">\</span>
+                gcc-gfortran <span class="se">\</span>
+                git <span class="se">\</span>
+                ibacm <span class="se">\</span>
+                libevent-devel <span class="se">\</span>
+                libtool <span class="se">\</span>
+                libibumad <span class="se">\</span>
+                libibumad-devel <span class="se">\</span>
+                libibverbs <span class="se">\</span>
+                libibverbs-devel <span class="se">\</span>
+                libibverbs-utils <span class="se">\</span>
+                librdmacm <span class="se">\</span>
+                librdmacm-devel <span class="se">\</span>
+                rdma-core <span class="se">\</span>
+                make <span class="se">\</span>
+                numactl-devel <span class="se">\</span>
+                wget <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> --skip-broken <span class="se">\</span>
+                libpsm2 <span class="se">\</span>
+                libpsm2-devel <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> dnf clean all
+
+<span class="k">WORKDIR</span><span class="s"> /usr/local/src</span>
+
+<span class="c"># UCX. There is a package but we want control over build options, specifically</span>
+<span class="c"># multithreaded support.</span>
+<span class="k">ARG</span> <span class="nv">UCX_VERSION</span><span class="o">=</span><span class="m">1</span>.11.2
+<span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
+              https://github.com/openucx/ucx.git <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ucx <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ./contrib/configure-release-mt --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -Rf ../ucx*
+
+<span class="c"># PMI2.</span>
+<span class="c">#</span>
+<span class="c"># There isn&#39;t a package available with the Slurm PMI2 libraries we need, so</span>
+<span class="c"># build them from Slurm&#39;s release.</span>
+<span class="k">ARG</span> <span class="nv">SLURM_VERSION</span><span class="o">=</span><span class="m">19</span>-05-3-2
+<span class="k">RUN</span> wget https://github.com/SchedMD/slurm/archive/slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> tar -xf slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">cd</span> slurm-slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span> <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">cd</span> contribs/pmi2 <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -Rf ../../../slurm*
+
+<span class="c"># OpenMPI.</span>
+<span class="c">#</span>
+<span class="c"># Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX</span>
+<span class="c"># has inferior performance than PSM2/uGNI but higher priority.</span>
+<span class="k">ARG</span> <span class="nv">MPI_URL</span><span class="o">=</span>https://www.open-mpi.org/software/ompi/v3.1/downloads
+<span class="k">ARG</span> <span class="nv">MPI_VERSION</span><span class="o">=</span><span class="m">3</span>.1.6
+<span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
+<span class="k">COPY</span> dont-init-ucx-on-intel-cray.patch ./openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>
+<span class="k">RUN</span> <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> patch -p1 dont-init-ucx-on-intel-cray.patch <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+    <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+    ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
+                --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
+                --with-slurm <span class="se">\</span>
+                --with-pmi<span class="o">=</span>/usr/local <span class="se">\</span>
+                --with-pmix <span class="se">\</span>
+                --with-ucx <span class="se">\</span>
+                --disable-pty-support <span class="se">\</span>
+                --enable-mca-no-build<span class="o">=</span>btl-openib,plm-slurm <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -Rf ../openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
+<span class="k">RUN</span> ldconfig
+
+<span class="c"># OpenMPI expects this program to exist, even if it&#39;s not used. Default is</span>
+<span class="c"># &quot;ssh : rsh&quot;, but that&#39;s not installed.</span>
+<span class="k">RUN</span> <span class="nb">echo</span> <span class="s1">&#39;plm_rsh_agent = false&#39;</span> &gt;&gt; /mnt/0/openmpi-mca-params.conf
+</pre></div>
+</div>
+<p>So what is going on here?</p>
+<ol class="arabic simple">
+<li><p>Use the latest AlmaLinux 8 as the base image.</p></li>
+<li><p>Install a basic build system using the OS package manager.</p></li>
+<li><p>For a few dependencies and then OpenMPI itself:</p>
+<ol class="arabic simple">
+<li><p>Download and untar. Note the use of variables to make adjusting the URL
+and versions easier, as well as the explanation of why we’re not using
+<code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, given that several of these packages are included in
+CentOS.</p></li>
+<li><p>Build and install OpenMPI. Note the <code class="code docutils literal notranslate"><span class="pre">getconf</span></code> trick to guess at an
+appropriate parallel build.</p></li>
+</ol>
+</li>
+<li><p>Clean up, in order to reduce the size of the build cache as well as the
+resulting Charliecloud image (<code class="code docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-Rf</span></code>).</p></li>
+</ol>
+</section>
+<section id="your-software-stored-in-the-image">
+<h3><span class="section-number">12.2.3. </span>Your software stored in the image<a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
+<p>This method covers software provided by you that is included in the image.
+This is recommended when your software is relatively stable or is not easily
+available to users of your image, for example a library rather than simulation
+code under active development.</p>
+<p>The general approach is the same as installing third-party software from
+source, but you use the <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instruction to transfer files from the
+host filesystem (rather than the network via HTTP) to the image. For example,
+<code class="code docutils literal notranslate"><span class="pre">examples/mpihello/Dockerfile.openmpi</span></code> uses this approach:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: full</span>
+<span class="k">FROM</span> <span class="s">openmpi</span>
+
+<span class="c"># This example</span>
+<span class="k">COPY</span> . /hello
+<span class="k">WORKDIR</span><span class="s"> /hello</span>
+<span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
+</pre></div>
+</div>
+<p>These Dockerfile instructions:</p>
+<ol class="arabic">
+<li><p>Copy the host directory <code class="code docutils literal notranslate"><span class="pre">examples/mpihello</span></code> to the image at path
+<code class="code docutils literal notranslate"><span class="pre">/hello</span></code>. The host path is relative to the <em>context directory</em>, which
+is tarred up and sent to the Docker daemon. Docker builds have no access to
+the host filesystem outside the context directory.</p>
+<p>(Unlike HPC, Docker comes from a world without network filesystems. This
+tar-based approach lets the Docker daemon run on a different node from the
+client without needing any shared filesystems.)</p>
+<p>The usual convention, including for Charliecloud tests and examples, is
+that the context is the directory containing the Dockerfile in question. A
+common pattern, used here, is to copy in the entire context.</p>
+</li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">cd</span></code> to <code class="code docutils literal notranslate"><span class="pre">/hello</span></code>.</p></li>
+<li><p>Compile our example. We include <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code> to remove any leftover
+build files, since they would be inappropriate inside the container.</p></li>
+</ol>
+<p>Once the image is built, we can see the results. (Install the image into
+<code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code> as outlined in the tutorial, if you haven’t already.)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/mpihello-openmpi.sqfs -- ls -lh /hello
+<span class="go">total 32K</span>
+<span class="go">-rw-rw---- 1 charlie charlie  908 Oct  4 15:52 Dockerfile</span>
+<span class="go">-rw-rw---- 1 charlie charlie  157 Aug  5 22:37 Makefile</span>
+<span class="go">-rw-rw---- 1 charlie charlie 1.2K Aug  5 22:37 README</span>
+<span class="go">-rwxr-x--- 1 charlie charlie 9.5K Oct  4 15:58 hello</span>
+<span class="go">-rw-rw---- 1 charlie charlie 1.4K Aug  5 22:37 hello.c</span>
+<span class="go">-rwxrwx--- 1 charlie charlie  441 Aug  5 22:37 test.sh</span>
+</pre></div>
+</div>
+</section>
+<section id="your-software-stored-on-the-host">
+<h3><span class="section-number">12.2.4. </span>Your software stored on the host<a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
+<p>This method leaves your software on the host but compiles it in the image.
+This is recommended when your software is volatile or each image user needs a
+different version, for example a simulation code under active development.</p>
+<p>The general approach is to bind-mount the appropriate directory and then run
+the build inside the container. We can re-use the <code class="code docutils literal notranslate"><span class="pre">mpihello</span></code> image to
+demonstrate this.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/mpihello
+<span class="gp">$</span> ls -l
+<span class="go">total 20</span>
+<span class="go">-rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile</span>
+<span class="go">-rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c</span>
+<span class="go">-rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile</span>
+<span class="go">-rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README</span>
+<span class="gp">$</span> ch-run -b .:/mnt/0 --cd /mnt/0 /var/tmp/mpihello.sqfs -- <span class="se">\</span>
+  make mpicc -std<span class="o">=</span>gnu11 -Wall hello.c -o hello
+<span class="gp">$</span> ls -l
+<span class="go">total 32</span>
+<span class="go">-rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile</span>
+<span class="go">-rwxrwx--- 1 charlie charlie 9632 Oct  4 10:43 hello</span>
+<span class="go">-rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c</span>
+<span class="go">-rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile</span>
+<span class="go">-rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README</span>
+</pre></div>
+</div>
+<p>A common use case is to leave a container shell open in one terminal for
+building, and then run using a separate container invoked from a different
+terminal.</p>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="faq.html" class="btn btn-neutral float-left" title="11. Frequently asked questions (FAQ)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dev.html" class="btn btn-neutral float-right" title="13. Contributor’s guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014–2022, Triad National Security, LLC and others.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

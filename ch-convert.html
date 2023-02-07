@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>4. ch-convert &mdash; Charliecloud 0.30 documentation</title>
+  <title>4. ch-convert &mdash; Charliecloud 0.31 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.30
+                0.31
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -60,7 +60,8 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -151,6 +152,8 @@ look like an image; otherwise, exit with an error.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">docker</span></code></dt><dd><p>Internal storage for Docker.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">podman</span></code></dt><dd><p>Internal storage for Podman.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">squash</span></code></dt><dd><p>SquashFS filesystem archive containing the flattened image. SquashFS
 archives are much like tar archives but are mountable, including by
 <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s internal SquashFUSE mounting. Most systems have at least
@@ -186,6 +189,7 @@ filesystem.</p>
 <li><p><code class="code docutils literal notranslate"><span class="pre">/*</span></code>, <code class="code docutils literal notranslate"><span class="pre">./*</span></code>, i.e. absolute path or relative path with
 explicit dot: Directory.</p></li>
 <li><p>If <cite>ch-image</cite> is installed: <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> internal storage.</p></li>
+<li><p>If Podman is installed: Podman internal storage.</p></li>
 <li><p>If Docker is installed: Docker internal storage.</p></li>
 <li><p>Otherwise: No format inference.</p></li>
 </ol>

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Tutorial &mdash; Charliecloud 0.30 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.31 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.30
+                0.31
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -44,39 +44,48 @@
               <ul class="current">
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">2. Tutorial</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#seconds-to-charliecloud">2.1. 90 seconds to Charliecloud</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#seconds-to-charliecloud">2.1. 90 seconds to Charliecloud</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#using-a-squashfs-image">2.1.1. Using a SquashFS image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#using-a-directory-image">2.1.2. Using a directory image</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#getting-help">2.2. Getting help</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-user-defined-software-stack">2.3. Your first user-defined software stack</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#defining-your-udss">2.3.1. Defining your UDSS</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#build-charliecloud-image">2.3.2. Build Charliecloud image</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#sharing-images">2.3.3. Sharing images</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#distributing-images">2.3.4. Distributing images</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#running-images">2.3.5. Running images</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#pull-an-image">2.3. Pull an image</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#containers-are-not-special">2.4. Containers are not special</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-from-dockerfile">2.5. Build from Dockerfile</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#push-an-image">2.6. Push an image</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#destination-setup">2.6.1. Destination setup</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#push">2.6.2. Push</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#pull-and-compare">2.6.3. Pull and compare</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#interacting-with-the-host">2.4. Interacting with the host</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#filesystems">2.4.1. Filesystems</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#network">2.4.2. Network</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#user-and-group-ids">2.4.3. User and group IDs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#mpi-hello-world">2.7. MPI Hello World</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#build-base-images">2.7.1. Build base images</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#build-image">2.7.2. Build image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#run-the-container">2.7.3. Run the container</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">2.5. Installing your own software</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#third-party-software-via-package-manager">2.5.1. Third-party software via package manager</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#third-party-software-compiled-from-source">2.5.2. Third-party software compiled from source</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-in-the-image">2.5.3. Your software stored in the image</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">2.5.4. Your software stored on the host</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#build-cache">2.8. Build cache</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#appendices">2.9. Appendices</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#namespaces-with-unshare-1">2.9.1. Namespaces with <code class="code docutils literal notranslate"><span class="pre">unshare(1)</span></code></a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#identifying-the-current-namespaces">2.9.1.1. Identifying the current namespaces</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-user-namespace">2.9.1.2. The user namespace</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#the-mount-namespace">2.9.1.3. The mount namespace</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-single-node-multi-process-jobs">2.6. Your first single-node, multi-process jobs</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-host">2.6.1. Processes coordinated by host</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#processes-coordinated-by-container">2.6.2. Processes coordinated by container</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#namespaces-in-charliecloud">2.9.2. Namespaces in Charliecloud</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#all-you-need-is-bash">2.9.3. All you need is Bash</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#interacting-with-the-host">2.9.4. Interacting with the host</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#filesystems">2.9.4.1. Filesystems</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#network">2.9.4.2. Network</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#user-and-group-ids">2.9.4.3. User and group IDs</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#your-first-multi-node-jobs">2.7. Your first multi-node jobs</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#interactive-mpi-hello-world">2.7.1. Interactive MPI hello world</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#non-interactive-mpi-hello-world">2.7.2. Non-interactive MPI hello world</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#interactive-apache-spark">2.7.3. Interactive Apache Spark</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#non-interactive-apache-spark">2.7.4. Non-interactive Apache Spark</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#apache-spark">2.9.5. Apache Spark</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#interactive">2.9.5.1. Interactive</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#non-interactive">2.9.5.2. Non-interactive</a></li>
+</ul>
+</li>
 </ul>
 </li>
 </ul>
@@ -90,7 +99,8 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -122,51 +132,44 @@
 both examples included with the source code as well as new ones you create
 from scratch.</p>
 <p>This tutorial assumes that: (a) Charliecloud is in your path, including
-Charliecloud’s fully unprivileged image builder <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> and (b) the
-Charliecloud source code is available at <code class="code docutils literal notranslate"><span class="pre">/usr/local/src/charliecloud</span></code>.
-Optionally, (c) <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> is linked with SquashFUSE to provide internal
-SquashFS image mounting. (If you wish to use Docker to build images, see the
-<a class="reference internal" href="faq.html#faq-building-with-docker"><span class="std std-ref">FAQ</span></a>.)</p>
+Charliecloud’s fully unprivileged image builder <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> and
+(b) Charliecloud is installed under <code class="code docutils literal notranslate"><span class="pre">/usr/local</span></code>. (If the second
+assumption isn’t true, you will just need to modify some paths.)</p>
+<p>If you want to use Docker to build images, see the <a class="reference internal" href="faq.html#faq-building-with-docker"><span class="std std-ref">FAQ</span></a>.</p>
 <div class="contents local topic" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#seconds-to-charliecloud" id="id1">90 seconds to Charliecloud</a></p></li>
-<li><p><a class="reference internal" href="#getting-help" id="id2">Getting help</a></p></li>
-<li><p><a class="reference internal" href="#your-first-user-defined-software-stack" id="id3">Your first user-defined software stack</a></p>
+<li><p><a class="reference internal" href="#seconds-to-charliecloud" id="id1">90 seconds to Charliecloud</a></p>
 <ul>
-<li><p><a class="reference internal" href="#defining-your-udss" id="id4">Defining your UDSS</a></p></li>
-<li><p><a class="reference internal" href="#build-charliecloud-image" id="id5">Build Charliecloud image</a></p></li>
-<li><p><a class="reference internal" href="#sharing-images" id="id6">Sharing images</a></p></li>
-<li><p><a class="reference internal" href="#distributing-images" id="id7">Distributing images</a></p></li>
-<li><p><a class="reference internal" href="#running-images" id="id8">Running images</a></p></li>
+<li><p><a class="reference internal" href="#using-a-squashfs-image" id="id2">Using a SquashFS image</a></p></li>
+<li><p><a class="reference internal" href="#using-a-directory-image" id="id3">Using a directory image</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#interacting-with-the-host" id="id9">Interacting with the host</a></p>
+<li><p><a class="reference internal" href="#getting-help" id="id4">Getting help</a></p></li>
+<li><p><a class="reference internal" href="#pull-an-image" id="id5">Pull an image</a></p></li>
+<li><p><a class="reference internal" href="#containers-are-not-special" id="id6">Containers are not special</a></p></li>
+<li><p><a class="reference internal" href="#build-from-dockerfile" id="id7">Build from Dockerfile</a></p></li>
+<li><p><a class="reference internal" href="#push-an-image" id="id8">Push an image</a></p>
 <ul>
-<li><p><a class="reference internal" href="#filesystems" id="id10">Filesystems</a></p></li>
-<li><p><a class="reference internal" href="#network" id="id11">Network</a></p></li>
-<li><p><a class="reference internal" href="#user-and-group-ids" id="id12">User and group IDs</a></p></li>
+<li><p><a class="reference internal" href="#destination-setup" id="id9">Destination setup</a></p></li>
+<li><p><a class="reference internal" href="#push" id="id10">Push</a></p></li>
+<li><p><a class="reference internal" href="#pull-and-compare" id="id11">Pull and compare</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#installing-your-own-software" id="id13">Installing your own software</a></p>
+<li><p><a class="reference internal" href="#mpi-hello-world" id="id12">MPI Hello World</a></p>
 <ul>
-<li><p><a class="reference internal" href="#third-party-software-via-package-manager" id="id14">Third-party software via package manager</a></p></li>
-<li><p><a class="reference internal" href="#third-party-software-compiled-from-source" id="id15">Third-party software compiled from source</a></p></li>
-<li><p><a class="reference internal" href="#your-software-stored-in-the-image" id="id16">Your software stored in the image</a></p></li>
-<li><p><a class="reference internal" href="#your-software-stored-on-the-host" id="id17">Your software stored on the host</a></p></li>
+<li><p><a class="reference internal" href="#build-base-images" id="id13">Build base images</a></p></li>
+<li><p><a class="reference internal" href="#build-image" id="id14">Build image</a></p></li>
+<li><p><a class="reference internal" href="#run-the-container" id="id15">Run the container</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#your-first-single-node-multi-process-jobs" id="id18">Your first single-node, multi-process jobs</a></p>
+<li><p><a class="reference internal" href="#build-cache" id="id16">Build cache</a></p></li>
+<li><p><a class="reference internal" href="#appendices" id="id17">Appendices</a></p>
 <ul>
-<li><p><a class="reference internal" href="#processes-coordinated-by-host" id="id19">Processes coordinated by host</a></p></li>
-<li><p><a class="reference internal" href="#processes-coordinated-by-container" id="id20">Processes coordinated by container</a></p></li>
-</ul>
-</li>
-<li><p><a class="reference internal" href="#your-first-multi-node-jobs" id="id21">Your first multi-node jobs</a></p>
-<ul>
-<li><p><a class="reference internal" href="#interactive-mpi-hello-world" id="id22">Interactive MPI hello world</a></p></li>
-<li><p><a class="reference internal" href="#non-interactive-mpi-hello-world" id="id23">Non-interactive MPI hello world</a></p></li>
-<li><p><a class="reference internal" href="#interactive-apache-spark" id="id24">Interactive Apache Spark</a></p></li>
-<li><p><a class="reference internal" href="#non-interactive-apache-spark" id="id25">Non-interactive Apache Spark</a></p></li>
+<li><p><a class="reference internal" href="#namespaces-with-unshare-1" id="id18">Namespaces with <code class="code docutils literal notranslate"><span class="pre">unshare(1)</span></code></a></p></li>
+<li><p><a class="reference internal" href="#namespaces-in-charliecloud" id="id19">Namespaces in Charliecloud</a></p></li>
+<li><p><a class="reference internal" href="#all-you-need-is-bash" id="id20">All you need is Bash</a></p></li>
+<li><p><a class="reference internal" href="#interacting-with-the-host" id="id21">Interacting with the host</a></p></li>
+<li><p><a class="reference internal" href="#apache-spark" id="id22">Apache Spark</a></p></li>
 </ul>
 </li>
 </ul>
@@ -183,6 +186,8 @@ commands executed in a container.</p>
 “hello world” Charliecloud container. If you like what you see, then proceed
 with the rest of the tutorial to understand what is happening and how to use
 Charliecloud for your own applications.</p>
+<section id="using-a-squashfs-image">
+<h3><a class="toc-backref" href="#id2"><span class="section-number">2.1.1. </span>Using a SquashFS image</a><a class="headerlink" href="#using-a-squashfs-image" title="Permalink to this headline">¶</a></h3>
 <p>The preferred workflow uses our internal SquashFS mounting code. Your sysadmin
 should be able to tell you if this is linked in.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/share/doc/charliecloud/examples/hello
@@ -199,11 +204,16 @@ should be able to tell you if this is linked in.</p>
 <span class="go">[=============================================|] 10411/10411 100%</span>
 <span class="go">[...]</span>
 <span class="go">done</span>
-<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- <span class="nb">echo</span> <span class="s2">&quot;I&#39;m in a container&quot;</span>
-<span class="go">I&#39;m in a container</span>
+<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- <span class="nb">echo</span> <span class="s2">&quot;I’m in a container&quot;</span>
+<span class="go">I’m in a container</span>
 </pre></div>
 </div>
-<p>If not, you can create image in plain directory format instead:</p>
+</section>
+<section id="using-a-directory-image">
+<h3><a class="toc-backref" href="#id3"><span class="section-number">2.1.2. </span>Using a directory image</a><a class="headerlink" href="#using-a-directory-image" title="Permalink to this headline">¶</a></h3>
+<p>If not, you can create image in plain directory format instead. Most of this
+tutorial uses SquashFS images, but you can adapt it analogously to this
+section.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/share/doc/charliecloud/examples/hello
 <span class="gp">$</span> ch-image build --force .
 <span class="go">inferred image name: hello</span>
@@ -214,13 +224,21 @@ should be able to tell you if this is linked in.</p>
 <span class="go">output:  dir       /var/tmp/hello</span>
 <span class="go">exporting ...</span>
 <span class="go">done</span>
-<span class="gp">$</span> ch-run /var/tmp/hello -- <span class="nb">echo</span> <span class="s2">&quot;I&#39;m in a container&quot;</span>
-<span class="go">I&#39;m in a container</span>
+<span class="gp">$</span> ch-run /var/tmp/hello -- <span class="nb">echo</span> <span class="s2">&quot;I’m in a container&quot;</span>
+<span class="go">I’m in a container</span>
 </pre></div>
 </div>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>You can run perfectly well out of <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>, but because it is
+bind-mounted automatically, the image root will then appear in multiple
+locations in the container’s filesystem tree. This can cause confusion for
+both users and programs.</p>
+</div>
+</section>
 </section>
 <section id="getting-help">
-<h2><a class="toc-backref" href="#id2"><span class="section-number">2.2. </span>Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4"><span class="section-number">2.2. </span>Getting help</a><a class="headerlink" href="#getting-help" title="Permalink to this headline">¶</a></h2>
 <p>All the executables have decent help and can tell you what version of
 Charliecloud you have (if not, please report a bug). For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --help
@@ -235,134 +253,114 @@ Charliecloud you have (if not, please report a bug). For example:</p>
 <p>Man pages for all commands are provided in this documentation (see table of
 contents at left) as well as via <code class="code docutils literal notranslate"><span class="pre">man(1)</span></code>.</p>
 </section>
-<section id="your-first-user-defined-software-stack">
-<h2><a class="toc-backref" href="#id3"><span class="section-number">2.3. </span>Your first user-defined software stack</a><a class="headerlink" href="#your-first-user-defined-software-stack" title="Permalink to this headline">¶</a></h2>
-<p>In this section, we will create and run a simple “hello, world” image. This
-uses the <code class="code docutils literal notranslate"><span class="pre">hello</span></code> example in the Charliecloud source code. Start with:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/hello
-</pre></div>
-</div>
-<section id="defining-your-udss">
-<h3><a class="toc-backref" href="#id4"><span class="section-number">2.3.1. </span>Defining your UDSS</a><a class="headerlink" href="#defining-your-udss" title="Permalink to this headline">¶</a></h3>
-<p>You must first write a Dockerfile that describes the image you would like;
-consult the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/">Dockerfile documentation</a> for details on how to do
-this. Note that run-time functionality such as <code class="code docutils literal notranslate"><span class="pre">ENTRYPOINT</span></code> is not
-supported.</p>
-<p>We will use the following simple Dockerfile:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: standard</span>
-<span class="k">FROM</span> <span class="s">almalinux:8</span>
-
-<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> openssh-clients <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf clean all
-
-<span class="k">COPY</span> . hello
-
-<span class="k">RUN</span> touch /usr/bin/ch-ssh
-</pre></div>
-</div>
-<p>This creates a minimal AlmaLinux 8 image with <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> installed. We
-will encounter more complex Dockerfiles later in this tutorial.</p>
-</section>
-<section id="build-charliecloud-image">
-<h3><a class="toc-backref" href="#id5"><span class="section-number">2.3.2. </span>Build Charliecloud image</a><a class="headerlink" href="#build-charliecloud-image" title="Permalink to this headline">¶</a></h3>
-<p>The three arguments here are the <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> subcommand <code class="code docutils literal notranslate"><span class="pre">build</span></code>,
-the option to enable unprivileged build workarounds <code class="code docutils literal notranslate"><span class="pre">--force</span></code>, and the
-context directory <code class="code docutils literal notranslate"><span class="pre">.</span></code>, which in this case is the current directory.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build --force .
-<span class="go">inferred image name: hello</span>
-<span class="go">2 FROM almalinux:8</span>
-<span class="go">will use --force: rhel8: CentOS/RHEL 8+</span>
-<span class="go">[...]</span>
-<span class="go">7 COPY [&#39;.&#39;] -&gt; &#39;hello&#39;</span>
-<span class="go">9 RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;touch /usr/bin/ch-ssh&#39;]</span>
-<span class="go">--force: init OK &amp; modified 1 RUN instructions</span>
-<span class="go">grown in 4 instructions: hello</span>
-</pre></div>
-</div>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> prints information about the build process while in
-progress. While not shown above, it uses yellow for this chatter, while
-build command output remains in the default color (e.g., white).</p>
-</div>
-<p>This image and the <code class="code docutils literal notranslate"><span class="pre">almalinux:8</span></code> base image used to build it are now
-visible in Charliecloud’s builder storage:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list
+<section id="pull-an-image">
+<h2><a class="toc-backref" href="#id5"><span class="section-number">2.3. </span>Pull an image</a><a class="headerlink" href="#pull-an-image" title="Permalink to this headline">¶</a></h2>
+<p>To start, let’s obtain a container image that someone else has already built.
+The containery way to do this is the pull operation, which means to move an
+image from a remote repository into local storage of some kind.</p>
+<p>First, browse the Docker Hub repository of <a class="reference external" href="https://hub.docker.com/_/almalinux">official AlmaLinux images</a>. Note the list of tags; this is a
+partial list of image versions that are available. We’ll use the tag
+“<code class="code docutils literal notranslate"><span class="pre">8</span></code>”.</p>
+<p>Use the Charliecloud program <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> to pull this image to
+Charliecloud’s internal storage directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image pull almalinux:8
+<span class="go">pulling image:    almalinux:8</span>
+<span class="go">requesting arch:  amd64</span>
+<span class="go">manifest list: downloading: 100%</span>
+<span class="go">manifest: downloading: 100%</span>
+<span class="go">config: downloading: 100%</span>
+<span class="go">layer 1/1: 3239c63: downloading: 68.2/68.2 MiB (100%)</span>
+<span class="go">pulled image: adding to build cache</span>
+<span class="go">flattening image</span>
+<span class="go">layer 1/1: 3239c63: listing</span>
+<span class="go">validating tarball members</span>
+<span class="go">layer 1/1: 3239c63: changed 42 absolute symbolic and/or hard links to relative</span>
+<span class="go">resolving whiteouts</span>
+<span class="go">layer 1/1: 3239c63: extracting</span>
+<span class="go">image arch: amd64</span>
+<span class="go">done</span>
+<span class="gp">$</span> ch-image list
 <span class="go">almalinux:8</span>
-<span class="go">hello</span>
 </pre></div>
 </div>
+<p>Images come in lots of different formats; <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> can use directories
+and SquashFS archives. For this example, we’ll use SquashFS. We use the
+command <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> to create a SquashFS image from the image in
+internal storage, then run it:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert almalinux:8 almalinux.sqfs
+<span class="gp">$</span> ch-run almalinux.sqfs -- /bin/bash
+<span class="gp">&gt;</span> <span class="nb">pwd</span>
+<span class="go">/</span>
+<span class="gp">&gt;</span> ls
+<span class="go">bin  ch  dev  etc  home  lib  lib64  media  mnt  opt  proc  root  run</span>
+<span class="go">sbin  srv  sys  tmp  usr  var</span>
+<span class="gp">&gt;</span> cat /etc/redhat-release
+<span class="go">AlmaLinux release 8.7 (Stone Smilodon)</span>
+<span class="gp">&gt;</span> <span class="nb">exit</span>
+</pre></div>
+</div>
+<p>What do these commands do?</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Create a SquashFS-format image (<code class="code docutils literal notranslate"><span class="pre">ch-convert</span> <span class="pre">...</span></code>).</p></li>
+<li><p>Create a running container using that image (<code class="code docutils literal notranslate"><span class="pre">ch-run</span>
+<span class="pre">almalinux.sqfs</span></code>).</p></li>
+<li><p>Stop processing <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> options (<code class="code docutils literal notranslate"><span class="pre">--</span></code>). (This is
+standard notation for UNIX command line programs.)</p></li>
+<li><p>Run the program <code class="code docutils literal notranslate"><span class="pre">/bin/bash</span></code> inside the container, which starts an
+interactive shell, where we enter a few commands and then exit, returning
+to the host.</p></li>
+</ol>
+</div></blockquote>
 </section>
-<section id="sharing-images">
-<h3><a class="toc-backref" href="#id6"><span class="section-number">2.3.3. </span>Sharing images</a><a class="headerlink" href="#sharing-images" title="Permalink to this headline">¶</a></h3>
-<p>Charliecloud images in internal storage can be converted to multiple formats
-via <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code>, e.g. SquashFS (if SquashFUSE is installed):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert hello /var/tmp/hello.sqfs
-<span class="go">input:   ch-image  hello</span>
-<span class="go">output:  squash    /var/tmp/hello.sqfs</span>
-<span class="go">packing ...</span>
-<span class="go">[...]</span>
-<span class="go">done</span>
-<span class="gp">$</span> ls -l /var/tmp/hello.sqfs
-<span class="go">-rw-rw-r-- 1 heasterday heasterday 83288064 Nov 15 12:07 /var/tmp/hello.sqfs</span>
+<section id="containers-are-not-special">
+<h2><a class="toc-backref" href="#id6"><span class="section-number">2.4. </span>Containers are not special</a><a class="headerlink" href="#containers-are-not-special" title="Permalink to this headline">¶</a></h2>
+<p>Many folks would like you to believe that containers are magic and special
+(especially if they want to sell you their container product). This is not the
+case. To demonstrate, we’ll create a working container image using standard
+UNIX tools.</p>
+<p>Many Linux distributions provide tarballs containing installed base images,
+including Alpine. We can use these in Charliecloud directly:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> wget -O alpine.tar.gz <span class="s1">&#39;https://github.com/alpinelinux/docker-alpine/blob/v3.16/x86_64/alpine-minirootfs-3.16.3-x86_64.tar.gz?raw=true&#39;</span>
+<span class="gp">$</span> tar tf alpine.tar.gz <span class="p">|</span> head -10
+<span class="go">./</span>
+<span class="go">./root/</span>
+<span class="go">./var/</span>
+<span class="go">./var/log/</span>
+<span class="go">./var/lock/</span>
+<span class="go">./var/lock/subsys/</span>
+<span class="go">./var/spool/</span>
+<span class="go">./var/spool/cron/</span>
+<span class="go">./var/spool/cron/crontabs</span>
+<span class="go">./var/spool/mail</span>
 </pre></div>
 </div>
-<p>Tarball:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert hello /var/tmp/hello.tar.gz
-<span class="go">input:   ch-image  hello</span>
-<span class="go">output:  tar       /var/tmp/hello.tar.gz</span>
-<span class="go">exporting ...</span>
-<span class="go">done</span>
-<span class="gp">$</span> ls -l /var/tmp/hello.tar.gz
-<span class="go">-rw-rw-r-- 1 heasterday heasterday 86122450 Nov 15 15:23 /var/tmp/hello.tar.gz</span>
+<p>This tarball is what’s called a “tarbomb”, so we need to provide an enclosing
+directory to avoid making a mess:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir alpine
+<span class="gp">$</span> <span class="nb">cd</span> alpine
+<span class="gp">$</span> tar xf ../alpine.tar.gz
+<span class="gp">$</span> ls
+<span class="go">bin  etc   lib    mnt  proc  run   srv  tmp  var</span>
+<span class="go">dev  home  media  opt  root  sbin  sys  usr</span>
+<span class="gp">$</span> du -sh
+<span class="go">5.6M  .</span>
+<span class="gp">$</span> <span class="nb">cd</span> ..
 </pre></div>
 </div>
-<p>Directory:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert hello /var/tmp/hello
-<span class="go">input:   ch-image  hello</span>
-<span class="go">output:  dir       /var/tmp/hello</span>
-<span class="go">exporting ...</span>
-<span class="go">done</span>
-<span class="gp">$</span> ls /var/tmp/hello
-<span class="go">bin  dev  hello  lib    lost+found  mnt  proc  run   srv  tmp  var</span>
-<span class="go">ch   etc  home   lib64  media       opt  root  sbin  sys  usr</span>
+<p>Now, run a shell in the container! (Note that base Alpine does not have Bash,
+so we run <code class="code docutils literal notranslate"><span class="pre">/bin/sh</span></code> instead.)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run ./alpine -- /bin/sh
+<span class="gp">&gt;</span> <span class="nb">pwd</span>
+<span class="go">/</span>
+<span class="gp">&gt;</span> ls
+<span class="go">bin    etc    lib    mnt    proc   run    srv    tmp    var</span>
+<span class="go">dev    home   media  opt    root   sbin   sys    usr</span>
+<span class="gp">&gt;</span> cat /etc/alpine-release
+<span class="go">3.16.3</span>
+<span class="gp">&gt;</span> <span class="nb">exit</span>
 </pre></div>
 </div>
-<p><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> can also convert images between any two supported formats,
-e.g. SquashFS to tarball:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert hello.sqfs hello.tar.gz
-<span class="go">input:   tar       hello.tar.gz</span>
-<span class="go">output:  squash    hello.sqfs</span>
-<span class="go">unpacking ...</span>
-<span class="go">[...]</span>
-<span class="go">done</span>
-</pre></div>
-</div>
-<p>Tarball to directory:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert /var/tmp/hello.tar.gz /var/tmp/hello
-<span class="go">input:   tar       /var/tmp/hello.tar.gz</span>
-<span class="go">output:  dir       /var/tmp/hello</span>
-<span class="go">unpacking ...</span>
-<span class="go">[...]</span>
-<span class="go">done</span>
-</pre></div>
-</div>
-<p>Charliecloud also supports “pushing” images from its internal storage to a
-registry using <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">push</span></code> and “pulling” images in the reverse
-direction with <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">pull</span></code>.</p>
-</section>
-<section id="distributing-images">
-<h3><a class="toc-backref" href="#id7"><span class="section-number">2.3.4. </span>Distributing images</a><a class="headerlink" href="#distributing-images" title="Permalink to this headline">¶</a></h3>
-<p>Thus far, the workflow has taken place on the build system. The next step is
-to copy the built image to the run system. This can use any appropriate method
-for moving files: <code class="code docutils literal notranslate"><span class="pre">scp</span></code>, <code class="code docutils literal notranslate"><span class="pre">rsync</span></code>, something integrated with the
-scheduler, etc. (The purpose of the tarball image format is to put images in a
-single file that’s easy to move around with traditional UNIX commands.)</p>
-<p>If the build and run systems are the same, then no copy is needed. This is a
-typical use case for development and testing.</p>
-<p>If you are using the SquashFS workflow, copy the <code class="code docutils literal notranslate"><span class="pre">.sqfs</span></code> file you
-created above to the run system; otherwise, copy the <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code>, then
-unpack it on the run system using <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> as above.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Generally, you should avoid directory-format images on shared filesystems
@@ -372,119 +370,673 @@ else on the shared filesystem. In contrast, SquashFS images should work
 fine on shared filesystems.</p>
 </div>
 </section>
-<section id="running-images">
-<h3><a class="toc-backref" href="#id8"><span class="section-number">2.3.5. </span>Running images</a><a class="headerlink" href="#running-images" title="Permalink to this headline">¶</a></h3>
-<p>We are now ready to run programs inside a Charliecloud container. This is done
-with the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> command:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- <span class="nb">echo</span> hello
+<section id="build-from-dockerfile">
+<h2><a class="toc-backref" href="#id7"><span class="section-number">2.5. </span>Build from Dockerfile</a><a class="headerlink" href="#build-from-dockerfile" title="Permalink to this headline">¶</a></h2>
+<p>The other containery way to get an image is the build operation. This
+interprets a recipe, usually a Dockerfile, to create an image and place it
+into builder storage. We can then extract the image from builder storage to a
+directory and run it.</p>
+<p>Charliecloud supports arbitrary image builders. In this tutorial, we use
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>, which comes with Charliecloud, but you can also use others,
+e.g. Docker or Podman. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is a big deal because it is completely
+unprivileged. Other builders typically run as root or require setuid root
+helper programs; this raises a number of security questions.</p>
+<p>We’ll write a “Hello World” Python program and put it into an image we specify
+with a Dockerfile. Set up a directory to work in:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir hello.src
+<span class="gp">$</span> <span class="nb">cd</span> hello.src
+</pre></div>
+</div>
+<p>Type in the following program as <code class="code docutils literal notranslate"><span class="pre">hello.py</span></code> using your least favorite
+editor:</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/usr/bin/python3</span>
+
+<span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Hello World!&quot;</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Next, create a file called <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> and type in the following
+recipe:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
+<span class="k">RUN</span> yum -y install python36
+<span class="k">COPY</span> ./hello.py /
+<span class="k">RUN</span> chmod <span class="m">755</span> /hello.py
+</pre></div>
+</div>
+<p>These four instructions say:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">FROM</span></code>: We are extending the <code class="code docutils literal notranslate"><span class="pre">almalinux:8</span></code> <em>base image</em>.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">RUN</span></code>: Install the <code class="code docutils literal notranslate"><span class="pre">python36</span></code> RPM package, which we need for
+our Hello World program.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">COPY</span></code>: Copy the file <code class="code docutils literal notranslate"><span class="pre">hello.py</span></code> we just made to the root
+directory of the image. In the source argument, the path is relative to
+the <em>context directory</em>, which we’ll see more of below.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">RUN</span></code>: Make that file executable.</p></li>
+</ol>
+</div></blockquote>
+<p>Let’s build this image:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t hello -f Dockerfile .
+<span class="go">  1. FROM almalinux:8</span>
+<span class="go">[...]</span>
+<span class="go">  4. RUN chmod 755 /hello.py</span>
+<span class="go">grown in 4 instructions: hello</span>
+</pre></div>
+</div>
+<p>This command says:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Build (<code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">build</span></code>) an image named (a.k.a. tagged) “hello”
+(<code class="code docutils literal notranslate"><span class="pre">-t</span> <span class="pre">hello</span></code>).</p></li>
+<li><p>Use the Dockerfile called “Dockerfile” (<code class="code docutils literal notranslate"><span class="pre">-f</span> <span class="pre">Dockerfile</span></code>).</p></li>
+<li><p>Use the current directory as the context directory (<code class="code docutils literal notranslate"><span class="pre">.</span></code>).</p></li>
+</ol>
+</div></blockquote>
+<p>Now, list the images <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> knows about:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list
+<span class="go">almalinux:8</span>
 <span class="go">hello</span>
 </pre></div>
 </div>
-<p>or:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/hello -- <span class="nb">echo</span> hello
-<span class="go">hello</span>
+<p>And run the image we just made:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> ..
+<span class="gp">$</span> ch-convert hello hello.sqfs
+<span class="gp">$</span> ch-run hello.sqfs -- /hello.py
+<span class="go">Hello World!</span>
 </pre></div>
 </div>
+<p>This time, we’ve run our application directly rather than starting an
+interactive shell.</p>
+</section>
+<section id="push-an-image">
+<h2><a class="toc-backref" href="#id8"><span class="section-number">2.6. </span>Push an image</a><a class="headerlink" href="#push-an-image" title="Permalink to this headline">¶</a></h2>
+<p>The containery way to share your images is by pushing them to a container
+registry. In this section, we will set up a registry on GitLab and push the
+hello image to that registry, then pull it back to compare.</p>
+<section id="destination-setup">
+<h3><a class="toc-backref" href="#id9"><span class="section-number">2.6.1. </span>Destination setup</a><a class="headerlink" href="#destination-setup" title="Permalink to this headline">¶</a></h3>
+<p>Create a private container registry:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Browse to <a class="reference external" href="https://gitlab.com">https://gitlab.com</a> (or any other GitLab instance).</p></li>
+<li><p>Log in. You should end up on your <em>Projects</em> page.</p></li>
+<li><p>Click <em>New project</em> then <em>Create blank project</em>.</p></li>
+<li><p>Name your project “<code class="code docutils literal notranslate"><span class="pre">test-registry</span></code>”. Leave <em>Visibility Level</em> at
+<em>Private</em>. Click <em>Create project</em>. You should end up at your project’s
+main page.</p></li>
+<li><p>At left, choose <em>Settings</em> (the gear icon) → <em>General</em>, then <em>Visibility,
+project features, permissions</em>. Enable <em>Container registry</em>, then click
+<em>Save changes</em>.</p></li>
+<li><p>At left, choose Packages &amp; Registries (the box icon) → Container
+registry. You should see the message “There are no container images
+stored for this project”.</p></li>
+</ol>
+</div></blockquote>
+<p>At this point, we have a container registry set up, and we need to teach
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> how to log into it. On <code class="code docutils literal notranslate"><span class="pre">gitlab.com</span></code> and some other
+instances, you can use your GitLab password. However, GitLab has a thing
+called a <em>personal access token</em> (PAT) that can be used no matter how you log
+into the GitLab web app. To create one:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Click on your avatar at the top right. Choose <em>Edit Profile</em>.</p></li>
+<li><p>At left, choose <em>Access Tokens</em> (the three-pin plug icon).</p></li>
+<li><p>Type in the name “<code class="code docutils literal notranslate"><span class="pre">registry</span></code>”. Tick the boxes <em>read_registry</em> and
+<em>write_registry</em>. Click <em>Create personal access token</em>.</p></li>
+<li><p>Your PAT will be displayed at the top of the result page under <em>Your new
+personal access token</em>. Copy this string and store it somewhere safe &amp;
+policy-compliant for your organization. (Also, you can revoke it at the
+end of the tutorial if you like.)</p></li>
+</ol>
+</div></blockquote>
+</section>
+<section id="push">
+<h3><a class="toc-backref" href="#id10"><span class="section-number">2.6.2. </span>Push</a><a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h3>
+<p>We can now use <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">push</span></code> to push the image to GitLab. (Note that
+the tagging step you would need for Docker is unnecessary here, because we can
+just specify a destination reference at push time.)</p>
+<p>You will need to substitute your GitLab username for <code class="code docutils literal notranslate"><span class="pre">$USER</span></code> below.</p>
+<p>When you are prompted for credentials, enter your GitLab username and
+copy-paste the PAT you created earlier (or enter your password).</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>You can run perfectly well out of <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>, but because it is
-bind-mounted automatically, the image root will then appear in multiple
-locations in the container’s filesystem tree. This can cause confusion for
-both users and programs.</p>
+<p>The specific GitLab path may vary depending on how your GitLab is set up.
+Check the Docker examples on the empty container registry page for the
+value you need. For example, if you put your container registry in a group
+called “containers”, the image reference would be
+<code class="code docutils literal notranslate"><span class="pre">gitlab.com/$USER/containers/myproj/hello:latest</span></code>.</p>
 </div>
-<p>Symbolic links in <code class="code docutils literal notranslate"><span class="pre">/proc</span></code> tell us the current namespaces, which are
-identified by long ID numbers:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /proc/self/ns
-<span class="go">total 0</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 ipc -&gt; ipc:[4026531839]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 mnt -&gt; mnt:[4026531840]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 net -&gt; net:[4026531969]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 pid -&gt; pid:[4026531836]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 user -&gt; user:[4026531837]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 11:24 uts -&gt; uts:[4026531838]</span>
-<span class="gp">$</span> ch-run /var/tmp/hello -- ls -l /proc/self/ns
-<span class="go">total 0</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 ipc -&gt; ipc:[4026531839]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 mnt -&gt; mnt:[4026532257]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 net -&gt; net:[4026531969]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 pid -&gt; pid:[4026531836]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 user -&gt; user:[4026532256]</span>
-<span class="go">lrwxrwxrwx 1 reidpr reidpr 0 Sep 28 17:34 uts -&gt; uts:[4026531838]</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push hello gitlab.com:5050/<span class="nv">$USER</span>/myproj/hello:latest
+<span class="go">pushing image:   hello</span>
+<span class="go">destination:     gitlab.com:5050/$USER/myproj/hello:latest</span>
+<span class="go">layer 1/1: gathering</span>
+<span class="go">layer 1/1: preparing</span>
+<span class="go">preparing metadata</span>
+<span class="go">starting upload</span>
+<span class="go">layer 1/1: bca515d: checking if already in repository</span>
+
+<span class="go">Username: $USER</span>
+<span class="go">Password:</span>
+<span class="go">layer 1/1: bca515d: not present, uploading: 139.8/139.8 MiB(100%</span>
+<span class="go">config: f969909: checking if already in repository</span>
+<span class="go">config: f969909: not present, uploading</span>
+<span class="go">manifest: uploading</span>
+<span class="go">cleaning up</span>
+<span class="go">done</span>
 </pre></div>
 </div>
-<p>Notice that the container has different mount (<code class="code docutils literal notranslate"><span class="pre">mnt</span></code>) and user
-(<code class="code docutils literal notranslate"><span class="pre">user</span></code>) namespaces, but the rest of the namespaces are shared with the
-host. This highlights Charliecloud’s focus on functionality (make your UDSS
-run), rather than isolation (protect the host from your UDSS).</p>
+<p>Go back to your container registry page. You should see your image listed now!</p>
+</section>
+<section id="pull-and-compare">
+<h3><a class="toc-backref" href="#id11"><span class="section-number">2.6.3. </span>Pull and compare</a><a class="headerlink" href="#pull-and-compare" title="Permalink to this headline">¶</a></h3>
+<p>Let’s pull that image and see how it looks:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image pull --auth registry.gitlab.com/<span class="nv">$USER</span>/myproj/hello:latest hello.2
+<span class="go">pulling image:   gitlab.com:5050/$USER/myproj/hello:latest</span>
+<span class="go">destination:     hello.2</span>
+<span class="go">[...]</span>
+<span class="gp">$</span> ch-image list
+<span class="go">almalinux:8</span>
+<span class="go">hello</span>
+<span class="go">hello.2</span>
+<span class="gp">$</span> ch-image convert hello.2 ./hello.2
+<span class="gp">$</span> ls ./hello.2
+<span class="go">bin    etc    lib    mnt    proc   run    srv    tmp    var</span>
+<span class="go">dev    home   media  opt    root   sbin   sys    usr</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="mpi-hello-world">
+<h2><a class="toc-backref" href="#id12"><span class="section-number">2.7. </span>MPI Hello World</a><a class="headerlink" href="#mpi-hello-world" title="Permalink to this headline">¶</a></h2>
+<p>In this section, we’ll build and run a simple MPI parallel program.</p>
+<p>Image builds can be chained. Here, we’ll build a chain of four images: the
+official <code class="code docutils literal notranslate"><span class="pre">almalinux:8</span></code> image, a customized AlmaLinux 8 image, an OpenMPI
+image, and finally the application image.</p>
+<p>Important: Many of the specifics in this section will vary from site to site.
+In that case, follow your site’s instructions instead.</p>
+<section id="build-base-images">
+<h3><a class="toc-backref" href="#id13"><span class="section-number">2.7.1. </span>Build base images</a><a class="headerlink" href="#build-base-images" title="Permalink to this headline">¶</a></h3>
+<p>First, build two images using the Dockerfiles provided with Charliecloud.
+These two build should take about 15 minutes total, depending on the speed of
+your system.</p>
+<p>Note that Charliecloud infers their names from the Dockerfile name, so we
+don’t need to specify <code class="code docutils literal notranslate"><span class="pre">-t</span></code>. Also, <code class="code docutils literal notranslate"><span class="pre">--force</span></code> enables some
+workarounds for tools like distribution package managers that expect to really
+be root.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build --force <span class="se">\</span>
+     -f /usr/local/share/doc/charliecloud/examples/Dockerfile.almalinux_8ch <span class="se">\</span>
+     /usr/local/share/doc/charliecloud/examples
+<span class="gp">$</span> ch-image build --force <span class="se">\</span>
+     -f /usr/local/share/doc/charliecloud/examples/Dockerfile.openmpi <span class="se">\</span>
+        /usr/local/share/doc/charliecloud/examples
+</pre></div>
+</div>
+</section>
+<section id="build-image">
+<h3><a class="toc-backref" href="#id14"><span class="section-number">2.7.2. </span>Build image</a><a class="headerlink" href="#build-image" title="Permalink to this headline">¶</a></h3>
+<p>Next, create a new directory for this project, and within it the following
+simple C program called <code class="code docutils literal notranslate"><span class="pre">mpihello.c</span></code>. (Note the program contains a bug;
+consider fixing it.)</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">#</span>include &lt;stdio.h&gt;
+<span class="gp">#</span>include &lt;mpi.h&gt;
+
+<span class="go">int main (int argc, char **argv)</span>
+<span class="go">{</span>
+<span class="go">   int msg, rank, rank_ct;</span>
+
+<span class="go">   MPI_Init(&amp;argc, &amp;argv);</span>
+<span class="go">   MPI_Comm_size(MPI_COMM_WORLD, &amp;rank_ct);</span>
+<span class="go">   MPI_Comm_rank(MPI_COMM_WORLD, &amp;rank);</span>
+
+<span class="go">   printf(&quot;hello from rank %d of %d\n&quot;, rank, rank_ct);</span>
+
+<span class="go">   if (rank == 0) {</span>
+<span class="go">      for (int i = 1; i &lt; rank_ct; i++) {</span>
+<span class="go">         MPI_Send(&amp;msg, 1, MPI_INT, i, 0, MPI_COMM_WORLD);</span>
+<span class="go">         printf(&quot;rank %d sent %d to rank %d\n&quot;, rank, msg, i);</span>
+<span class="go">      }</span>
+<span class="go">   } else {</span>
+<span class="go">      MPI_Recv(&amp;msg, 1, MPI_INT, 0, 0, MPI_COMM_WORLD, MPI_STATUS_IGNORE);</span>
+<span class="go">      printf(&quot;rank %d received %d from rank 0\n&quot;, rank, msg);</span>
+<span class="go">   }</span>
+
+<span class="go">   MPI_Finalize();</span>
+<span class="go">}</span>
+</pre></div>
+</div>
+<p>Add this <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code>:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">FROM openmpi</span>
+<span class="go">RUN mkdir /hello</span>
+<span class="go">WORKDIR /hello</span>
+<span class="go">COPY mpihello.c .</span>
+<span class="go">RUN mpicc -o mpihello mpihello.c .</span>
+</pre></div>
+</div>
+<p>(The instruction <code class="code docutils literal notranslate"><span class="pre">WORKDIR</span></code> changes directories; the default working
+directory within a Dockerfile is <code class="code docutils literal notranslate"><span class="pre">/</span></code>).</p>
+<p>Now build. The default Dockerfile is <code class="code docutils literal notranslate"><span class="pre">./Dockerfile</span></code>, so we can omit
+<code class="code docutils literal notranslate"><span class="pre">-f</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls
+<span class="go">Dockerfile   mpihello.c</span>
+<span class="gp">$</span> ch-image build -t mpihello
+<span class="gp">$</span> ch-image list
+<span class="go">almalinux:8</span>
+<span class="go">almalinux_8ch</span>
+<span class="go">mpihello</span>
+<span class="go">openmpi</span>
+</pre></div>
+</div>
+<p>Finally, create a squashball image and copy it to the supercomputer:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert mpihello mpihello.sqfs
+<span class="gp">$</span> scp mpihello.sqfs super-fe:
+</pre></div>
+</div>
+</section>
+<section id="run-the-container">
+<h3><a class="toc-backref" href="#id15"><span class="section-number">2.7.3. </span>Run the container</a><a class="headerlink" href="#run-the-container" title="Permalink to this headline">¶</a></h3>
+<p>We’ll run this application interactively. One could also put similar steps in
+a Slurm batch script.</p>
+<p>First, obtain a two-node allocation and load Charliecloud:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> salloc -N2 -t <span class="m">1</span>:00:00
+<span class="go">salloc: Granted job allocation 599518</span>
+<span class="go">[...]</span>
+<span class="gp">$</span> module load charliecloud
+</pre></div>
+</div>
+<p>Then, run the application on all cores in your allocation:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun -c1 ch-run ~/mpihello.sqfs -- /hello/mpihello
+<span class="go">hello from rank 1 of 72</span>
+<span class="go">rank 1 received 0 from rank 0</span>
+<span class="go">[...]</span>
+<span class="go">hello from rank 63 of 72</span>
+<span class="go">rank 63 received 0 from rank 0</span>
+</pre></div>
+</div>
+<p>Win!</p>
+</section>
+</section>
+<section id="build-cache">
+<h2><a class="toc-backref" href="#id16"><span class="section-number">2.8. </span>Build cache</a><a class="headerlink" href="#build-cache" title="Permalink to this headline">¶</a></h2>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> subcommands that create images, such as build and pull, can
+use a build cache to speed repeated operations. That is, an image is created
+by starting from the empty image and executing a sequence of instructions,
+largely Dockerfile instructions but also some others like “pull” and “import”.
+Some instructions are expensive to execute so it’s often cheaper to retrieve
+their results from cache instead.</p>
+<p>Let’s set up this example by first resetting the build cache:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build-cache --reset
+<span class="gp">$</span> mkdir cache-test
+<span class="gp">$</span> <span class="nb">cd</span> cache-test
+</pre></div>
+</div>
+<p>Suppose we have a Dockerfile <code class="code docutils literal notranslate"><span class="pre">a.df</span></code>:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
+<span class="k">RUN</span> sleep <span class="m">2</span> <span class="o">&amp;&amp;</span> <span class="nb">echo</span> foo
+<span class="k">RUN</span> sleep <span class="m">2</span> <span class="o">&amp;&amp;</span> <span class="nb">echo</span> bar
+</pre></div>
+</div>
+<p>On our first build, we get:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t a -f a.df .
+<span class="go">  1. FROM almalinux:8</span>
+<span class="go">[ ... pull chatter omitted ... ]</span>
+<span class="go">  2. RUN echo foo</span>
+<span class="go">copying image ...</span>
+<span class="go">foo</span>
+<span class="go">  3. RUN echo bar</span>
+<span class="go">bar</span>
+<span class="go">grown in 3 instructions: a</span>
+</pre></div>
+</div>
+<p>Note the dot after each instruction’s line number. This means that the
+instruction was executed. You can also see this in the output of the two
+<code class="code docutils literal notranslate"><span class="pre">echo</span></code> commands.</p>
+<p>But on our second build, we get:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t a -f a.df .
+<span class="go">  1* FROM almalinux:8</span>
+<span class="go">  2* RUN sleep 2 &amp;&amp; echo foo</span>
+<span class="go">  3* RUN sleep 2 &amp;&amp; echo bar</span>
+<span class="go">copying image ...</span>
+<span class="go">grown in 3 instructions: a</span>
+</pre></div>
+</div>
+<p>Here, instead of being executed, each instruction’s results were retrieved
+from cache. Cache hit for each instruction is indicted by an asterisk
+(“<code class="code docutils literal notranslate"><span class="pre">*</span></code>”) after the line number. Even for such a small and short
+Dockerfile, this build is noticeably faster than the first.</p>
+<p>Let’s also try a second, slightly different Dockerfile, <code class="code docutils literal notranslate"><span class="pre">b.df</span></code>. The
+first two instructions are the same, but the third is different.</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
+<span class="k">RUN</span> sleep <span class="m">2</span> <span class="o">&amp;&amp;</span> <span class="nb">echo</span> foo
+<span class="k">RUN</span> sleep <span class="m">2</span> <span class="o">&amp;&amp;</span> <span class="nb">echo</span> qux
+</pre></div>
+</div>
+<p>Build it:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t b -f b.df .
+<span class="go">  1* FROM almalinux:8</span>
+<span class="go">  2* RUN sleep 2 &amp;&amp; echo foo</span>
+<span class="go">  3. RUN sleep 2 &amp;&amp; echo qux</span>
+<span class="go">copying image</span>
+<span class="go">qux</span>
+<span class="go">grown in 3 instructions: b</span>
+</pre></div>
+</div>
+<p>Here, the first two instructions are hits from the first Dockerfile, but the
+third is a miss, so Charliecloud retrieves that state and continues building.</p>
+<p>Finally, inspect the cache:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build-cache --tree
+<span class="go">*  (b) RUN sleep 2 &amp;&amp; echo qux</span>
+<span class="go">| *  (a) RUN sleep 2 &amp;&amp; echo bar</span>
+<span class="go">|/</span>
+<span class="go">*  RUN sleep 2 &amp;&amp; echo foo</span>
+<span class="go">*  (almalinux:8) PULL almalinux:8</span>
+<span class="go">*  (HEAD -&gt; root) ROOT</span>
+
+<span class="go">named images:    4</span>
+<span class="go">state IDs:       5</span>
+<span class="go">commits:         5</span>
+<span class="go">files:         317</span>
+<span class="go">disk used:       3 MiB</span>
+</pre></div>
+</div>
+<p>Here there are four named images: <code class="code docutils literal notranslate"><span class="pre">a</span></code> and <code class="code docutils literal notranslate"><span class="pre">b</span></code> that we built, the
+base image <code class="code docutils literal notranslate"><span class="pre">almalinux:8</span></code>, and the empty base of everything <code class="code docutils literal notranslate"><span class="pre">ROOT</span></code>.
+Also note that <code class="code docutils literal notranslate"><span class="pre">a</span></code> and <code class="code docutils literal notranslate"><span class="pre">b</span></code> diverge after the last common
+instruction <code class="code docutils literal notranslate"><span class="pre">RUN</span> <span class="pre">sleep</span> <span class="pre">2</span> <span class="pre">&amp;&amp;</span> <span class="pre">echo</span> <span class="pre">foo</span></code>.</p>
+</section>
+<section id="appendices">
+<h2><a class="toc-backref" href="#id17"><span class="section-number">2.9. </span>Appendices</a><a class="headerlink" href="#appendices" title="Permalink to this headline">¶</a></h2>
+<p>These appendices contain further tutorials that may be enlightening but are
+less essential to understanding Charliecloud.</p>
+<section id="namespaces-with-unshare-1">
+<h3><a class="toc-backref" href="#id18"><span class="section-number">2.9.1. </span>Namespaces with <code class="code docutils literal notranslate"><span class="pre">unshare(1)</span></code></a><a class="headerlink" href="#namespaces-with-unshare-1" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">unshare(1)</span></code> is a shell command that comes with most new-ish Linux
+distributions in the <code class="code docutils literal notranslate"><span class="pre">util-linux</span></code> package. We will use it to explore a
+little about how namespaces, which are the basis of containers, work.</p>
+<section id="identifying-the-current-namespaces">
+<h4><span class="section-number">2.9.1.1. </span>Identifying the current namespaces<a class="headerlink" href="#identifying-the-current-namespaces" title="Permalink to this headline">¶</a></h4>
+<p>There are several kinds of namespaces, and every process is always in one
+namespace of each kind. Namespaces within each kind form a tree. Every
+namespace has an ID number, which you can see in <code class="code docutils literal notranslate"><span class="pre">/proc</span></code> with some magic
+symlinks:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /proc/self/ns
+<span class="go">total 0</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 cgroup -&gt; &#39;cgroup:[4026531835]&#39;</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 ipc -&gt; &#39;ipc:[4026531839]&#39;</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 mnt -&gt; &#39;mnt:[4026531840]&#39;</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 net -&gt; &#39;net:[4026531992]&#39;</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 pid -&gt; &#39;pid:[4026531836]&#39;</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 pid_for_children -&gt; &#39;pid:[4026531836]&#39;</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 user -&gt; &#39;user:[4026531837]&#39;</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Mar 31 16:44 uts -&gt; &#39;uts:[4026531838]&#39;</span>
+</pre></div>
+</div>
+<p>Let’s start a new shell with different user and mount namespaces. Note how the
+ID numbers change for these two, but not the others.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> unshare --user --mount
+<span class="gp">&gt;</span> ls -l /proc/self/ns <span class="p">|</span> tee inside.txt
+<span class="go">total 0</span>
+<span class="go">lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 cgroup -&gt; &#39;cgroup:[4026531835]&#39;</span>
+<span class="go">lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 ipc -&gt; &#39;ipc:[4026531839]&#39;</span>
+<span class="go">lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 mnt -&gt; &#39;mnt:[4026532733]&#39;</span>
+<span class="go">lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 net -&gt; &#39;net:[4026531992]&#39;</span>
+<span class="go">lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 pid -&gt; &#39;pid:[4026531836]&#39;</span>
+<span class="go">lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 pid_for_children -&gt; &#39;pid:[4026531836]&#39;</span>
+<span class="go">lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 user -&gt; &#39;user:[4026532732]&#39;</span>
+<span class="go">lrwxrwxrwx 1 nobody nogroup 0 Mar 31 16:46 uts -&gt; &#39;uts:[4026531838]&#39;</span>
+<span class="gp">&gt;</span> <span class="nb">exit</span>
+</pre></div>
+</div>
+<p>These IDs are available both in the name and inode number of the magic symlink
+target:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> stat -L /proc/self/ns/user
+<span class="go">  File: /proc/self/ns/user</span>
+<span class="go">  Size: 0            Blocks: 0          IO Block: 4096   regular empty file</span>
+<span class="go">Device: 4h/4d        Inode: 4026531837  Links: 1</span>
+<span class="go">Access: (0444/-r--r--r--)  Uid: (    0/    root)   Gid: (    0/    root)</span>
+<span class="go">Access: 2022-12-16 10:56:54.916459868 -0700</span>
+<span class="go">Modify: 2022-12-16 10:56:54.916459868 -0700</span>
+<span class="go">Change: 2022-12-16 10:56:54.916459868 -0700</span>
+<span class="go"> Birth: -</span>
+<span class="gp">$</span> unshare --user --mount -- stat -L /proc/self/ns/user
+<span class="go">  File: /proc/self/ns/user</span>
+<span class="go">  Size: 0            Blocks: 0          IO Block: 4096   regular empty file</span>
+<span class="go">Device: 4h/4d        Inode: 4026532565  Links: 1</span>
+<span class="go">Access: (0444/-r--r--r--)  Uid: (65534/  nobody)   Gid: (65534/ nogroup)</span>
+<span class="go">Access: 2022-12-16 10:57:07.136561077 -0700</span>
+<span class="go">Modify: 2022-12-16 10:57:07.136561077 -0700</span>
+<span class="go">Change: 2022-12-16 10:57:07.136561077 -0700</span>
+<span class="go"> Birth: -</span>
+</pre></div>
+</div>
+</section>
+<section id="the-user-namespace">
+<h4><span class="section-number">2.9.1.2. </span>The user namespace<a class="headerlink" href="#the-user-namespace" title="Permalink to this headline">¶</a></h4>
+<p>Unprivileged user namespaces let you map your effective user id (UID) to any
+UID inside the namespace, and your effective group ID (GID) to any GID. Let’s
+try it. First, who are we?</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> id
+<span class="go">uid=1000(charlie) gid=1000(charlie)</span>
+<span class="go">groups=1000(charlie),24(cdrom),25(floppy),27(sudo),29(audio)</span>
+</pre></div>
+</div>
+<p>This shows our user (1000 <code class="code docutils literal notranslate"><span class="pre">charlie</span></code>), our primary group (1000
+<code class="code docutils literal notranslate"><span class="pre">charlie</span></code>), and a bunch of supplementary groups.</p>
+<p>Let’s start a user namespace, mapping our UID to 0 (<code class="code docutils literal notranslate"><span class="pre">root</span></code>) and our GID
+to 0 (<code class="code docutils literal notranslate"><span class="pre">root</span></code>):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> unshare --user --map-root-user
+<span class="gp">&gt;</span> id
+<span class="go">uid=0(root) gid=0(root) groups=0(root),65534(nogroup)</span>
+</pre></div>
+</div>
+<p>This shows that our UID inside the container is 0, our GID is 0, and all
+supplementary groups have collapsed into 65534:code:<cite>nogroup</cite>, because they
+are unmapped inside the namespace. (If <code class="code docutils literal notranslate"><span class="pre">id</span></code> complains about not finding
+names for IDs, just ignore it.)</p>
+<p>We are root!! Let’s try something sneaky!!!</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> cat /etc/shadow
+<span class="go">cat: /etc/shadow: Permission denied</span>
+</pre></div>
+</div>
+<p>Drat! The kernel followed the UID map outside the namespace and used that for
+access control; i.e., we are still acting as us, a normal unprivileged user
+who cannot read <code class="code docutils literal notranslate"><span class="pre">/etc/shadow</span></code>. Something else interesting:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> ls -l /etc/shadow
+<span class="go">-rw-r----- 1 nobody nogroup 2151 Feb 10 11:51 /etc/shadow</span>
+<span class="gp">&gt;</span> <span class="nb">exit</span>
+</pre></div>
+</div>
+<p>This shows up as <code class="code docutils literal notranslate"><span class="pre">nobody:nogroup</span></code> because UID 0 and GID 0 outside the
+container are not mapped to anything inside (i.e., they are <em>unmapped</em>).</p>
+</section>
+<section id="the-mount-namespace">
+<h4><span class="section-number">2.9.1.3. </span>The mount namespace<a class="headerlink" href="#the-mount-namespace" title="Permalink to this headline">¶</a></h4>
+<p>This namespace lets us set up an independent filesystem tree. For this
+exercise, you will need two terminals.</p>
+<p>In Terminal 1, set up namespaces and mount a new tmpfs over your home
+directory:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> unshare --mount --user
+<span class="gp">&gt;</span> mount -t tmpfs none /home/charlie
+<span class="go">mount: only root can use &quot;--types&quot; option</span>
+</pre></div>
+</div>
+<p>Wait! What!? The problem now is that you still need to be root inside the
+container to use the <code class="code docutils literal notranslate"><span class="pre">mount(2)</span></code> system call. Try again:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> unshare --mount --user --map-root-user
+<span class="gp">&gt;</span> mount -t tmpfs none /home/charlie
+<span class="gp">&gt;</span> mount <span class="p">|</span> fgrep /home/charlie
+<span class="go">none on /home/charlie type tmpfs (rw,relatime,uid=1000,gid=1000)</span>
+<span class="gp">&gt;</span> touch /home/charlie/foo
+<span class="gp">&gt;</span> ls /home/charlie
+<span class="go">foo</span>
+</pre></div>
+</div>
+<p>In Terminal 2, which is not in the container, note how the mount doesn’t show
+up in <code class="code docutils literal notranslate"><span class="pre">mount</span></code> output and the files you created are not present:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls /home/charlie
+<span class="go">articles.txt             flu-index.tsv           perms_test</span>
+<span class="go">[...]</span>
+<span class="gp">$</span> mount <span class="p">|</span> fgrep /home/charlie
+<span class="gp">$</span>
+</pre></div>
+</div>
+<p>Exit the container in Terminal 1:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> <span class="nb">exit</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="namespaces-in-charliecloud">
+<h3><a class="toc-backref" href="#id19"><span class="section-number">2.9.2. </span>Namespaces in Charliecloud</a><a class="headerlink" href="#namespaces-in-charliecloud" title="Permalink to this headline">¶</a></h3>
+<p>Let’s revisit the symlinks in <code class="code docutils literal notranslate"><span class="pre">/proc</span></code>, but this time with Charliecloud:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /proc/self/ns
+<span class="go">total 0</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 ipc -&gt; ipc:[4026531839]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 mnt -&gt; mnt:[4026531840]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 net -&gt; net:[4026531969]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 pid -&gt; pid:[4026531836]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 user -&gt; user:[4026531837]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 11:24 uts -&gt; uts:[4026531838]</span>
+<span class="gp">$</span> ch-run /var/tmp/hello -- ls -l /proc/self/ns
+<span class="go">total 0</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 ipc -&gt; ipc:[4026531839]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 mnt -&gt; mnt:[4026532257]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 net -&gt; net:[4026531969]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 pid -&gt; pid:[4026531836]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 user -&gt; user:[4026532256]</span>
+<span class="go">lrwxrwxrwx 1 charlie charlie 0 Sep 28 17:34 uts -&gt; uts:[4026531838]</span>
+</pre></div>
+</div>
+<p>The container has different mount (<code class="code docutils literal notranslate"><span class="pre">mnt</span></code>) and user (<code class="code docutils literal notranslate"><span class="pre">user</span></code>)
+namespaces, but the rest of the namespaces are shared with the host. This
+highlights Charliecloud’s focus on functionality (make your container run),
+rather than isolation (protect the host from your container).</p>
 <p>Normally, each invocation of <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> creates a new container, so if you
 have multiple simultaneous invocations, they will not share containers. In
 some cases this can cause problems with MPI programs. However, there is an
 option <code class="code docutils literal notranslate"><span class="pre">--join</span></code> that can solve them; see the <a class="reference internal" href="faq.html#faq-join"><span class="std std-ref">FAQ</span></a> for
 details.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The <code class="code docutils literal notranslate"><span class="pre">--</span></code> in the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> command line is a standard argument
-that separates options from non-option arguments. Without it,
-<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> would try (and fail) to interpret <code class="code docutils literal notranslate"><span class="pre">ls</span></code>’s <code class="code docutils literal notranslate"><span class="pre">-l</span></code>
-argument.</p>
-</div>
-<p>These IDs are available both in the symlink target as well as its inode
-number:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
-<span class="go">4026531837</span>
-<span class="gp">$</span> ch-run /var/tmp/hello -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
-<span class="go">4026532256</span>
+</section>
+<section id="all-you-need-is-bash">
+<h3><a class="toc-backref" href="#id20"><span class="section-number">2.9.3. </span>All you need is Bash</a><a class="headerlink" href="#all-you-need-is-bash" title="Permalink to this headline">¶</a></h3>
+<p>In this exercise, we’ll use shell commands to create minimal container image
+with a working copy of Bash, and that’s all. To do so, we need to set up a
+directory with the Bash binary, the shared libraries it uses, and a few other
+hooks needed by Charliecloud.</p>
+<p><strong>Important:</strong> Your Bash is almost certainly linked differently than described
+below. Use the paths from your terminal, not this tutorial. Adjust the steps
+below as needed. It will not work otherwise.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ldd /bin/bash
+<span class="go">    linux-vdso.so.1 (0x00007ffdafff2000)</span>
+<span class="go">    libtinfo.so.6 =&gt; /lib/x86_64-linux-gnu/libtinfo.so.6 (0x00007f6935cb6000)</span>
+<span class="go">    libdl.so.2 =&gt; /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f6935cb1000)</span>
+<span class="go">    libc.so.6 =&gt; /lib/x86_64-linux-gnu/libc.so.6 (0x00007f6935af0000)</span>
+<span class="go">    /lib64/ld-linux-x86-64.so.2 (0x00007f6935e21000)</span>
+<span class="gp">$</span> ls -l /lib/x86_64-linux-gnu/libc.so.6
+<span class="go">lrwxrwxrwx 1 root root 12 May  1  2019 /lib/x86_64-linux-gnu/libc.so.6 -&gt; libc-2.28.so</span>
 </pre></div>
 </div>
-<p>You can also run interactive commands, such as a shell:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- /bin/bash
-<span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
-<span class="go">4026532256</span>
+<p>The shared libraries pointed to are symlinks, so we’ll use <code class="code docutils literal notranslate"><span class="pre">cp</span> <span class="pre">-L</span></code> to
+dereference them and copy the target files. <code class="code docutils literal notranslate"><span class="pre">linux-vdso.so.1</span></code> is a
+kernel thing, not a shared library file, so we don’t copy that.</p>
+<p>Set up the container:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir alluneed
+<span class="gp">$</span> <span class="nb">cd</span> alluneed
+<span class="gp">$</span> mkdir bin
+<span class="gp">$</span> mkdir dev
+<span class="gp">$</span> mkdir lib
+<span class="gp">$</span> mkdir lib64
+<span class="gp">$</span> mkdir lib/x86_64-linux-gnu
+<span class="gp">$</span> mkdir proc
+<span class="gp">$</span> mkdir sys
+<span class="gp">$</span> mkdir tmp
+<span class="gp">$</span> cp -pL /bin/bash ./bin
+<span class="gp">$</span> cp -pL /lib/x86_64-linux-gnu/libtinfo.so.6 ./lib/x86_64-linux-gnu
+<span class="gp">$</span> cp -pL /lib/x86_64-linux-gnu/libdl.so.2 ./lib/x86_64-linux-gnu
+<span class="gp">$</span> cp -pL /lib/x86_64-linux-gnu/libc.so.6 ./lib/x86_64-linux-gnu
+<span class="gp">$</span> cp -pL /lib64/ld-linux-x86-64.so.2 ./lib64/ld-linux-x86-64.so.2
+<span class="gp">$</span> <span class="nb">cd</span> ..
+<span class="gp">$</span> ls -lR alluneed
+<span class="go">./alluneed:</span>
+<span class="go">total 0</span>
+<span class="go">drwxr-x--- 2 charlie charlie 60 Mar 31 17:15 bin</span>
+<span class="go">drwxr-x--- 2 charlie charlie 40 Mar 31 17:26 dev</span>
+<span class="go">drwxr-x--- 2 charlie charlie 80 Mar 31 17:27 etc</span>
+<span class="go">drwxr-x--- 3 charlie charlie 60 Mar 31 17:17 lib</span>
+<span class="go">drwxr-x--- 2 charlie charlie 60 Mar 31 17:19 lib64</span>
+<span class="go">drwxr-x--- 2 charlie charlie 40 Mar 31 17:26 proc</span>
+<span class="go">drwxr-x--- 2 charlie charlie 40 Mar 31 17:26 sys</span>
+<span class="go">drwxr-x--- 2 charlie charlie 40 Mar 31 17:27 tmp</span>
+
+<span class="go">./alluneed/bin:</span>
+<span class="go">total 1144</span>
+<span class="go">-rwxr-xr-x 1 charlie charlie 1168776 Apr 17  2019 bash</span>
+
+<span class="go">./alluneed/dev:</span>
+<span class="go">total 0</span>
+
+<span class="go">./alluneed/lib:</span>
+<span class="go">total 0</span>
+<span class="go">drwxr-x--- 2 charlie charlie 100 Mar 31 17:19 x86_64-linux-gnu</span>
+
+<span class="go">./alluneed/lib/x86_64-linux-gnu:</span>
+<span class="go">total 1980</span>
+<span class="go">-rwxr-xr-x 1 charlie charlie 1824496 May  1  2019 libc.so.6</span>
+<span class="go">-rw-r--r-- 1 charlie charlie   14592 May  1  2019 libdl.so.2</span>
+<span class="go">-rw-r--r-- 1 charlie charlie  183528 Nov  2 12:16 libtinfo.so.6</span>
+
+<span class="go">./alluneed/lib64:</span>
+<span class="go">total 164</span>
+<span class="go">-rwxr-xr-x 1 charlie charlie 165632 May  1  2019 ld-linux-x86-64.so.2</span>
+
+<span class="go">./alluneed/proc:</span>
+<span class="go">total 0</span>
+
+<span class="go">./alluneed/sys:</span>
+<span class="go">total 0</span>
+
+<span class="go">./alluneed/tmp:</span>
+<span class="go">total 0</span>
+</pre></div>
+</div>
+<p>Next, start a container and run <code class="code docutils literal notranslate"><span class="pre">/bin/bash</span></code> within it. Option
+<code class="code docutils literal notranslate"><span class="pre">--no-passwd</span></code> turns off some convenience features that this image isn’t
+prepared for.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --no-passwd ./alluneed -- /bin/bash
+<span class="gp">&gt;</span> <span class="nb">pwd</span>
+<span class="go">/</span>
+<span class="gp">&gt;</span> <span class="nb">echo</span> <span class="s2">&quot;hello world&quot;</span>
+<span class="go">hello world</span>
+<span class="gp">&gt;</span> ls /
+<span class="go">bash: ls: command not found</span>
+<span class="gp">&gt;</span> <span class="nb">echo</span> *
+<span class="go">bin dev home lib lib64 proc sys tmp</span>
 <span class="gp">&gt;</span> <span class="nb">exit</span>
 </pre></div>
 </div>
-<p>Be aware that wildcards in the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> command are interpreted by the
-host, not the container, unless protected. One workaround is to use a
-sub-shell. For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls /usr/bin/oldfind
-<span class="go">ls: cannot access &#39;/usr/bin/oldfind&#39;: No such file or directory</span>
-<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldfind
-<span class="go">/usr/bin/oldfind</span>
-<span class="gp">$</span> ls /usr/bin/oldf*
-<span class="go">ls: cannot access &#39;/usr/bin/oldf*&#39;: No such file or directory</span>
-<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldf*
-<span class="go">ls: cannot access /usr/bin/oldf*: No such file or directory</span>
-<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- sh -c <span class="s1">&#39;ls /usr/bin/oldf*&#39;</span>
-<span class="go">/usr/bin/oldfind</span>
-</pre></div>
-</div>
-<p>You have now successfully run commands within a single-node Charliecloud
-container. Next, we explore how Charliecloud accesses host resources.</p>
-</section>
+<p>It’s not very useful since the only commands we have are Bash built-ins, but
+it’s a container!</p>
 </section>
 <section id="interacting-with-the-host">
-<h2><a class="toc-backref" href="#id9"><span class="section-number">2.4. </span>Interacting with the host</a><a class="headerlink" href="#interacting-with-the-host" title="Permalink to this headline">¶</a></h2>
+<h3><a class="toc-backref" href="#id21"><span class="section-number">2.9.4. </span>Interacting with the host</a><a class="headerlink" href="#interacting-with-the-host" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud is not an isolation layer, so containers have full access to host
-resources, with a few quirks. This section demonstrates how this works.</p>
+resources, with a few quirks. This section demonstrates how that works.</p>
 <section id="filesystems">
-<h3><a class="toc-backref" href="#id10"><span class="section-number">2.4.1. </span>Filesystems</a><a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h3>
+<h4><span class="section-number">2.9.4.1. </span>Filesystems<a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h4>
 <p>Charliecloud makes host directories available inside the container using bind
 mounts, which is somewhat like a hard link in that it causes a file or
 directory to appear in multiple places in the filesystem tree, but it is a
 property of the running kernel rather than the filesystem.</p>
 <p>Several host directories are always bind-mounted into the container. These
-include system directories such as <code class="code docutils literal notranslate"><span class="pre">/dev</span></code>, <code class="code docutils literal notranslate"><span class="pre">/proc</span></code>, and
-<code class="code docutils literal notranslate"><span class="pre">/sys</span></code>; <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>; Charliecloud’s <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code> command in
-<code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code>; and the invoking user’s home directory (for dotfiles),
-unless <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code> is specified.</p>
+include system directories such as <code class="code docutils literal notranslate"><span class="pre">/dev</span></code>, <code class="code docutils literal notranslate"><span class="pre">/proc</span></code>, <code class="code docutils literal notranslate"><span class="pre">/sys</span></code>,
+and <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>. Others can be requested with a command line option, e.g.
+<code class="code docutils literal notranslate"><span class="pre">--home</span></code> bind-mounts the invoking user’s home directory.</p>
 <p>Charliecloud uses recursive bind mounts, so for example if the host has a
 variety of sub-filesystems under <code class="code docutils literal notranslate"><span class="pre">/sys</span></code>, as Ubuntu does, these will be
 available in the container as well.</p>
-<p>In addition to the default bind mounts, arbitrary user-specified directories
-can be added using the <code class="code docutils literal notranslate"><span class="pre">--bind</span></code> or <code class="code docutils literal notranslate"><span class="pre">-b</span></code> switch. By default, mounts
-use the same path as provided from the host. In the case of directory images,
-which are writeable, the target mount directory will be automatically created
-before the container is started:</p>
+<p>In addition to these, arbitrary user-specified directories can be added using
+the <code class="code docutils literal notranslate"><span class="pre">--bind</span></code> or <code class="code docutils literal notranslate"><span class="pre">-b</span></code> switch. By default, mounts use the same path
+as provided from the host. In the case of directory images, which are
+writeable, the target mount directory will be automatically created before the
+container is started:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir /var/tmp/foo0
 <span class="gp">$</span> <span class="nb">echo</span> hello &gt; /var/tmp/foo0/bar
 <span class="gp">$</span> mkdir /var/tmp/foo1
@@ -515,7 +1067,7 @@ a destination that already exists, like those created under <code class="code do
 </div>
 </section>
 <section id="network">
-<h3><a class="toc-backref" href="#id11"><span class="section-number">2.4.2. </span>Network</a><a class="headerlink" href="#network" title="Permalink to this headline">¶</a></h3>
+<h4><span class="section-number">2.9.4.2. </span>Network<a class="headerlink" href="#network" title="Permalink to this headline">¶</a></h4>
 <p>Charliecloud containers share the host’s network namespace, so most network
 things should be the same.</p>
 <p>However, SSH is not aware of Charliecloud containers. If you SSH to a node
@@ -541,10 +1093,10 @@ container. The simplest is to manually invoke <code class="code docutils literal
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Recall that each <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocation creates a new container. That
-is, the <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> command above has not entered an existing user
-namespace <code class="code docutils literal notranslate"><span class="pre">’2256</span></code>; rather, it has re-used the namespace ID
-<code class="code docutils literal notranslate"><span class="pre">’2256</span></code>.</p>
+<p>Recall that by default, each <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocation creates a new
+container. That is, the <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> command above has not entered an
+existing user namespace <code class="code docutils literal notranslate"><span class="pre">’2256</span></code>; rather, it has re-used the namespace
+ID <code class="code docutils literal notranslate"><span class="pre">’2256</span></code>.</p>
 </div>
 <p>Another is to use the <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code> wrapper program, which adds
 <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> to the <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> command implicitly. It takes the
@@ -558,8 +1110,8 @@ making it mostly a drop-in replacement for <code class="code docutils literal no
 <span class="go">4026532256</span>
 </pre></div>
 </div>
-<p><code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code> is available inside containers as well (in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code> via
-bind-mount):</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code> is available inside containers as well, in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code> via
+bind-mount, if the image has a dummy file at <code class="code docutils literal notranslate"><span class="pre">/usr/bin/ch-ssh</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/var/tmp/hello.sqfs --&quot;</span>
 <span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- /bin/bash
 <span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
@@ -582,25 +1134,25 @@ otherwise you’ll get a shell that accepts commands but doesn’t print
 prompts, among other other issues. (<a class="reference external" href="https://github.com/hpc/charliecloud/issues/2">Issue #2</a>.)</p></li>
 </ol>
 </div>
-<p>A third may be to edit one’s shell initialization scripts to check the command
-line and <code class="code docutils literal notranslate"><span class="pre">exec(1)</span></code> <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> if appropriate. This is brittle but
-avoids wrapping <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> or altering its command line.</p>
+<p>A third approach may be to edit one’s shell initialization scripts to check
+the command line and <code class="code docutils literal notranslate"><span class="pre">exec(1)</span></code> <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> if appropriate. This is
+brittle but avoids wrapping <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> or altering its command line.</p>
 </section>
 <section id="user-and-group-ids">
-<h3><a class="toc-backref" href="#id12"><span class="section-number">2.4.3. </span>User and group IDs</a><a class="headerlink" href="#user-and-group-ids" title="Permalink to this headline">¶</a></h3>
+<h4><span class="section-number">2.9.4.3. </span>User and group IDs<a class="headerlink" href="#user-and-group-ids" title="Permalink to this headline">¶</a></h4>
 <p>Unlike Docker and some other container systems, Charliecloud tries to make the
-container’s users and groups look the same as the host’s. (This is
-accomplished by bind-mounting a custom <code class="code docutils literal notranslate"><span class="pre">/etc/passwd</span></code> and
-<code class="code docutils literal notranslate"><span class="pre">/etc/group</span></code> into the container.) For example:</p>
+container’s users and groups look the same as the host’s. This is accomplished
+by bind-mounting a custom <code class="code docutils literal notranslate"><span class="pre">/etc/passwd</span></code> and <code class="code docutils literal notranslate"><span class="pre">/etc/group</span></code> into the
+container. For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> id -u
 <span class="go">901</span>
 <span class="gp">$</span> whoami
-<span class="go">reidpr</span>
+<span class="go">charlie</span>
 <span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- bash
 <span class="gp">&gt;</span> id -u
 <span class="go">901</span>
 <span class="gp">&gt;</span> whoami
-<span class="go">reidpr</span>
+<span class="go">charlie</span>
 </pre></div>
 </div>
 <p>More specifically, the user namespace, when created without privileges as
@@ -615,8 +1167,9 @@ you’re root:</p>
 <span class="go">root</span>
 </pre></div>
 </div>
-<p>But, this doesn’t get you anything useful, because the container UID is mapped
-back to your UID on the host before permission checks are applied:</p>
+<p>But, as shown above, this doesn’t get you anything useful, because the
+container UID is mapped back to your UID on the host before permission checks
+are applied:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;</span> dd <span class="k">if</span><span class="o">=</span>/dev/mem <span class="nv">of</span><span class="o">=</span>/tmp/pwned
 <span class="go">dd: failed to open &#39;/dev/mem&#39;: Permission denied</span>
 </pre></div>
@@ -627,22 +1180,22 @@ then looked up in <code class="code docutils literal notranslate"><span class="p
 typical usage without <code class="code docutils literal notranslate"><span class="pre">--uid</span></code>, this mapping is a no-op, so everything
 looks normal:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -nd ~
-<span class="go">drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/reidpr</span>
+<span class="go">drwxr-xr-x 87 901 901 4096 Sep 28 12:12 /home/charlie</span>
 <span class="gp">$</span> ls -ld ~
-<span class="go">drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 12:12 /home/reidpr</span>
+<span class="go">drwxr-xr-x 87 charlie charlie 4096 Sep 28 12:12 /home/charlie</span>
 <span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- bash
 <span class="gp">&gt;</span> ls -nd ~
-<span class="go">drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/reidpr</span>
+<span class="go">drwxr-xr-x 87 901 901 4096 Sep 28 18:12 /home/charlie</span>
 <span class="gp">&gt;</span> ls -ld ~
-<span class="go">drwxr-xr-x 87 reidpr reidpr 4096 Sep 28 18:12 /home/reidpr</span>
+<span class="go">drwxr-xr-x 87 charlie charlie 4096 Sep 28 18:12 /home/charlie</span>
 </pre></div>
 </div>
 <p>But if <code class="code docutils literal notranslate"><span class="pre">--uid</span></code> is provided, things can seem odd. For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --uid <span class="m">0</span> /var/tmp/hello.sqfs -- bash
-<span class="gp">&gt;</span> ls -nd /home/reidpr
-<span class="go">drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/reidpr</span>
-<span class="gp">&gt;</span> ls -ld /home/reidpr
-<span class="go">drwxr-xr-x 87 root reidpr 4096 Sep 28 18:12 /home/reidpr</span>
+<span class="gp">&gt;</span> ls -nd /home/charlie
+<span class="go">drwxr-xr-x 87 0 901 4096 Sep 28 18:12 /home/charlie</span>
+<span class="gp">&gt;</span> ls -ld /home/charlie
+<span class="go">drwxr-xr-x 87 root charlie 4096 Sep 28 18:12 /home/charlie</span>
 </pre></div>
 </div>
 <p>This UID mapping can contain only one pair: an arbitrary container UID to your
@@ -664,18 +1217,18 @@ exactly one arbitrary container GID maps to your effective <em>primary</em> GID.
 can lead to some strange-looking results, because only one of your GIDs can be
 mapped in any given container. All the rest become <code class="code docutils literal notranslate"><span class="pre">nogroup</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> id
-<span class="go">uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),903(nerds),904(losers)</span>
+<span class="go">uid=901(charlie) gid=901(charlie) groups=901(charlie),903(nerds),904(losers)</span>
 <span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- id
-<span class="go">uid=901(reidpr) gid=901(reidpr) groups=901(reidpr),65534(nogroup)</span>
+<span class="go">uid=901(charlie) gid=901(charlie) groups=901(charlie),65534(nogroup)</span>
 <span class="gp">$</span> ch-run --gid <span class="m">903</span> /var/tmp/hello.sqfs -- id
-<span class="go">uid=901(reidpr) gid=903(nerds) groups=903(nerds),65534(nogroup)</span>
+<span class="go">uid=901(charlie) gid=903(nerds) groups=903(nerds),65534(nogroup)</span>
 </pre></div>
 </div>
 <p>However, this doesn’t affect access. The container process retains the same
 GIDs from the host perspective, and as always, the host IDs are what control
 access:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /tmp/primary /tmp/supplemental
-<span class="go">-rw-rw---- 1 sig reidpr 0 Sep 28 15:47 /tmp/primary</span>
+<span class="go">-rw-rw---- 1 sig charlie 0 Sep 28 15:47 /tmp/primary</span>
 <span class="go">-rw-rw---- 1 sig nerds  0 Sep 28 15:48 /tmp/supplemental</span>
 <span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- bash
 <span class="gp">&gt;</span> cat /tmp/primary &gt; /dev/null
@@ -686,14 +1239,14 @@ access:</p>
 useless. Using an unmapped group or <code class="code docutils literal notranslate"><span class="pre">nogroup</span></code> fails, and using a mapped
 group is a no-op because it’s mapped back to the host GID:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -l /tmp/bar
-<span class="go">rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar</span>
+<span class="go">rw-rw---- 1 charlie charlie 0 Sep 28 16:12 /tmp/bar</span>
 <span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- chgrp nerds /tmp/bar
 <span class="go">chgrp: changing group of &#39;/tmp/bar&#39;: Invalid argument</span>
 <span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- chgrp nogroup /tmp/bar
 <span class="go">chgrp: changing group of &#39;/tmp/bar&#39;: Invalid argument</span>
 <span class="gp">$</span> ch-run --gid <span class="m">903</span> /var/tmp/hello.sqfs -- chgrp nerds /tmp/bar
 <span class="gp">$</span> ls -l /tmp/bar
-<span class="go">-rw-rw---- 1 reidpr reidpr 0 Sep 28 16:12 /tmp/bar</span>
+<span class="go">-rw-rw---- 1 charlie charlie 0 Sep 28 16:12 /tmp/bar</span>
 </pre></div>
 </div>
 <p>Workarounds include <code class="code docutils literal notranslate"><span class="pre">chgrp(1)</span></code> on the host or fastidious use of setgid
@@ -702,598 +1255,29 @@ directories:</p>
 <span class="gp">$</span> chgrp nerds /tmp/baz
 <span class="gp">$</span> chmod <span class="m">2770</span> /tmp/baz
 <span class="gp">$</span> ls -ld /tmp/baz
-<span class="go">drwxrws--- 2 reidpr nerds 40 Sep 28 16:19 /tmp/baz</span>
+<span class="go">drwxrws--- 2 charlie nerds 40 Sep 28 16:19 /tmp/baz</span>
 <span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- touch /tmp/baz/foo
 <span class="gp">$</span> ls -l /tmp/baz/foo
-<span class="go">-rw-rw---- 1 reidpr nerds 0 Sep 28 16:21 /tmp/baz/foo</span>
+<span class="go">-rw-rw---- 1 charlie nerds 0 Sep 28 16:21 /tmp/baz/foo</span>
 </pre></div>
 </div>
-<p>This concludes our discussion of how a Charliecloud container interacts with
-its host and principal Charliecloud quirks. We next move on to installing
-software.</p>
 </section>
 </section>
-<section id="installing-your-own-software">
-<h2><a class="toc-backref" href="#id13"><span class="section-number">2.5. </span>Installing your own software</a><a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
-<p>This section covers four situations for making software available inside a
-Charliecloud container:</p>
-<blockquote>
-<div><ol class="arabic simple">
-<li><p>Third-party software installed into the image using a package manager.</p></li>
-<li><p>Third-party software compiled from source into the image.</p></li>
-<li><p>Your software installed into the image.</p></li>
-<li><p>Your software stored on the host but compiled in the container.</p></li>
-</ol>
-</div></blockquote>
-<p>Many of Docker’s <a class="reference external" href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices">Best practices for writing Dockerfiles</a>
-apply to Charliecloud images as well, so you should be familiar with that
-document.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Maybe you don’t have to install the software at all. Is there already a
-trustworthy image on Docker Hub you can use as a base?</p>
-</div>
-<section id="third-party-software-via-package-manager">
-<h3><a class="toc-backref" href="#id14"><span class="section-number">2.5.1. </span>Third-party software via package manager</a><a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
-<p>This approach is the simplest and fastest way to install stuff in your image.
-The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile also seen above does this to install the
-package <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> openssh-clients <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf clean all
-
-<span class="k">COPY</span> . hello
-</pre></div>
-</div>
-<p>You can use distribution package managers such as <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, as
-demonstrated above, or others, such as <code class="code docutils literal notranslate"><span class="pre">pip</span></code> for Python packages.</p>
-<p>Be aware that the software will be downloaded anew each time you build the
-image, unless you add an HTTP cache, which is out of scope of this tutorial.</p>
-</section>
-<section id="third-party-software-compiled-from-source">
-<h3><a class="toc-backref" href="#id15"><span class="section-number">2.5.2. </span>Third-party software compiled from source</a><a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
-<p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
-using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
-this with two chained Dockerfiles. First, we build a basic CentOS image
-(<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.almalinux_8ch</span></code>):</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
-
-<span class="c"># This image has two purposes: (1) demonstrate we can build a AlmaLinux 8 image</span>
-<span class="c"># and (2) provide a build environment for Charliecloud EPEL 8 RPMs.</span>
-<span class="c">#</span>
-<span class="c"># Quirks:</span>
-<span class="c">#</span>
-<span class="c">#   1. Install the dnf ovl plugin to work around RPMDB corruption when</span>
-<span class="c">#      building images with Docker and the OverlayFS storage driver.</span>
-<span class="c">#</span>
-<span class="c">#   2. Enable PowerTools repo, because some packages in EPEL depend on it.</span>
-<span class="c">#</span>
-<span class="c">#   3. Install packages needed to build el8 rpms.</span>
-<span class="c">#</span>
-<span class="c">#   4. Issue #1103: Install libarchive to resolve cmake bug</span>
-<span class="c">#</span>
-<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-                epel-release <span class="se">\</span>
-                <span class="s1">&#39;dnf-command(config-manager)&#39;</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf config-manager --enable powertools <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-                dnf-plugin-ovl <span class="se">\</span>
-                autoconf <span class="se">\</span>
-                automake <span class="se">\</span>
-                gcc <span class="se">\</span>
-                git <span class="se">\</span>
-                libarchive <span class="se">\</span>
-                make <span class="se">\</span>
-                python3 <span class="se">\</span>
-                python3-devel <span class="se">\</span>
-                python3-lark-parser <span class="se">\</span>
-                python3-requests <span class="se">\</span>
-                python3-sphinx <span class="se">\</span>
-                python3-sphinx_rtd_theme <span class="se">\</span>
-                rpm-build <span class="se">\</span>
-                rpmlint <span class="se">\</span>
-                rsync <span class="se">\</span>
-                squashfs-tools <span class="se">\</span>
-                squashfuse <span class="se">\</span>
-                wget <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf clean all
-
-<span class="c"># Need wheel to install bundled Lark, and the RPM version doesn&#39;t work.</span>
-<span class="k">RUN</span> pip3 install wheel
-
-<span class="c"># AlmaLinux&#39;s linker doesn&#39;t search these paths by default; add them because we</span>
-<span class="c"># will install stuff later into /usr/local.</span>
-<span class="k">RUN</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib&quot;</span> &gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib64&quot;</span> &gt;&gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ldconfig
-</pre></div>
-</div>
-<p>Then, we add OpenMPI with <code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.openmpi</span></code>. This is a complex
-Dockerfile that compiles several dependencies in addition to OpenMPI. For the
-purposes of this tutorial, you can skip most of it, but we felt it would be
-useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux_8ch</span>
-
-<span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
-<span class="c"># OpenMPI for use inside a container.</span>
-<span class="c">#</span>
-<span class="c"># This OpenMPI aspires to work close to optimally on clusters with any of the</span>
-<span class="c"># following interconnects:</span>
-<span class="c">#</span>
-<span class="c">#    - Ethernet (TCP/IP)</span>
-<span class="c">#    - InfiniBand (IB)</span>
-<span class="c">#    - Omni-Path (OPA)</span>
-<span class="c">#    - RDMA over Converged Ethernet (RoCE) interconnects</span>
-<span class="c">#</span>
-<span class="c"># with no environment variables, command line arguments, or additional</span>
-<span class="c"># configuration files. Thus, we try to implement decisions at build time.</span>
-<span class="c">#</span>
-<span class="c"># This is a work in progress, and we&#39;re very interested in feedback.</span>
-<span class="c">#</span>
-<span class="c"># OpenMPI has numerous ways to communicate messages [1]. The ones relevant to</span>
-<span class="c"># this build and the interconnects they support are:</span>
-<span class="c">#</span>
-<span class="c">#   Module        Eth   IB    OPA   RoCE    note  decision</span>
-<span class="c">#   ------------  ----  ----  ----  ----    ----  --------</span>
-<span class="c">#</span>
-<span class="c">#   ob1 : tcp      Y*    X     X     X      a     include</span>
-<span class="c">#   ob1 : openib   N     Y     Y     Y      b,c   exclude</span>
-<span class="c">#   cm  : psm2     N     N     Y*    N            include</span>
-<span class="c">#       : ucx      Y?    Y*    N     Y?     b,d   include</span>
-<span class="c">#</span>
-<span class="c">#   Y : supported</span>
-<span class="c">#   Y*: best choice for that interconnect</span>
-<span class="c">#   X : supported but sub-optimal</span>
-<span class="c">#</span>
-<span class="c">#   a : No RDMA, so performance will suffer.</span>
-<span class="c">#   b : Uses libibverbs.</span>
-<span class="c">#   c : Will be removed in OpenMPI 5.</span>
-<span class="c">#   d : Uses Mellanox libraries if available in preference to libibverbs.</span>
-<span class="c">#</span>
-<span class="c"># You can check what&#39;s available with:</span>
-<span class="c">#</span>
-<span class="c">#   $ ch-run /var/tmp/openmpi -- ompi_info | egrep &#39;(btl|mtl|pml)&#39;</span>
-<span class="c">#</span>
-<span class="c"># The other build decisions are:</span>
-<span class="c">#</span>
-<span class="c">#   1. PMI/PMIx: Include these so that we can use srun or any other PMI[x]</span>
-<span class="c">#      provider, with no matching OpenMPI needed on the host.</span>
-<span class="c">#</span>
-<span class="c">#   2. --disable-pty-support to avoid &quot;pipe function call failed when</span>
-<span class="c">#      setting up I/O forwarding subsystem&quot;.</span>
-<span class="c">#</span>
-<span class="c">#   3. --enable-mca-no-build=plm-slurm to support launching processes using</span>
-<span class="c">#      the host&#39;s srun (i.e., the container OpenMPI needs to talk to the host</span>
-<span class="c">#      Slurm&#39;s PMI) but prevent OpenMPI from invoking srun itself from within</span>
-<span class="c">#      the container, where srun is not installed (the error messages from</span>
-<span class="c">#      this are inscrutable).</span>
-<span class="c">#</span>
-<span class="c"># [1]: https://github.com/open-mpi/ompi/blob/master/README</span>
-
-<span class="c"># OS packages needed to build this stuff.</span>
-<span class="c">#</span>
-<span class="c"># Note that libpsm2 is x86-64 only so we skip if missing</span>
-<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-                automake <span class="se">\</span>
-                file <span class="se">\</span>
-                flex <span class="se">\</span>
-                gcc <span class="se">\</span>
-                gcc-c++ <span class="se">\</span>
-                gcc-gfortran <span class="se">\</span>
-                git <span class="se">\</span>
-                ibacm <span class="se">\</span>
-                libevent-devel <span class="se">\</span>
-                libtool <span class="se">\</span>
-                libibumad <span class="se">\</span>
-                libibumad-devel <span class="se">\</span>
-                libibverbs <span class="se">\</span>
-                libibverbs-devel <span class="se">\</span>
-                libibverbs-utils <span class="se">\</span>
-                librdmacm <span class="se">\</span>
-                librdmacm-devel <span class="se">\</span>
-                rdma-core <span class="se">\</span>
-                make <span class="se">\</span>
-                numactl-devel <span class="se">\</span>
-                wget <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> --skip-broken <span class="se">\</span>
-                libpsm2 <span class="se">\</span>
-                libpsm2-devel <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf clean all
-
-<span class="k">WORKDIR</span><span class="s"> /usr/local/src</span>
-
-<span class="c"># UCX. There is a package but we want control over build options, specifically</span>
-<span class="c"># multithreaded support.</span>
-<span class="k">ARG</span> <span class="nv">UCX_VERSION</span><span class="o">=</span><span class="m">1</span>.11.2
-<span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
-              https://github.com/openucx/ucx.git <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ucx <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ./contrib/configure-release-mt --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
- <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -Rf ../ucx*
-
-<span class="c"># PMI2.</span>
-<span class="c">#</span>
-<span class="c"># There isn&#39;t a package available with the Slurm PMI2 libraries we need, so</span>
-<span class="c"># build them from Slurm&#39;s release.</span>
-<span class="k">ARG</span> <span class="nv">SLURM_VERSION</span><span class="o">=</span><span class="m">19</span>-05-3-2
-<span class="k">RUN</span> wget https://github.com/SchedMD/slurm/archive/slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
- <span class="o">&amp;&amp;</span> tar -xf slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">cd</span> slurm-slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">cd</span> contribs/pmi2 <span class="se">\</span>
- <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -Rf ../../../slurm*
-
-<span class="c"># OpenMPI.</span>
-<span class="c">#</span>
-<span class="c"># Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX</span>
-<span class="c"># has inferior performance than PSM2/uGNI but higher priority.</span>
-<span class="k">ARG</span> <span class="nv">MPI_URL</span><span class="o">=</span>https://www.open-mpi.org/software/ompi/v3.1/downloads
-<span class="k">ARG</span> <span class="nv">MPI_VERSION</span><span class="o">=</span><span class="m">3</span>.1.6
-<span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
- <span class="o">&amp;&amp;</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
-<span class="k">COPY</span> dont-init-ucx-on-intel-cray.patch ./openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>
-<span class="k">RUN</span> <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> patch -p1 dont-init-ucx-on-intel-cray.patch <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-    <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-    ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
-                --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
-                --with-slurm <span class="se">\</span>
-                --with-pmi<span class="o">=</span>/usr/local <span class="se">\</span>
-                --with-pmix <span class="se">\</span>
-                --with-ucx <span class="se">\</span>
-                --disable-pty-support <span class="se">\</span>
-                --enable-mca-no-build<span class="o">=</span>btl-openib,plm-slurm <span class="se">\</span>
- <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -Rf ../openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
-<span class="k">RUN</span> ldconfig
-
-<span class="c"># OpenMPI expects this program to exist, even if it&#39;s not used. Default is</span>
-<span class="c"># &quot;ssh : rsh&quot;, but that&#39;s not installed.</span>
-<span class="k">RUN</span> <span class="nb">echo</span> <span class="s1">&#39;plm_rsh_agent = false&#39;</span> &gt;&gt; /mnt/0/openmpi-mca-params.conf
-</pre></div>
-</div>
-<p>So what is going on here?</p>
-<ol class="arabic simple">
-<li><p>Use the latest AlmaLinux 8 as the base image.</p></li>
-<li><p>Install a basic build system using the OS package manager.</p></li>
-<li><p>For a few dependencies and then OpenMPI itself:</p>
-<ol class="arabic simple">
-<li><p>Download and untar. Note the use of variables to make adjusting the URL
-and versions easier, as well as the explanation of why we’re not using
-<code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, given that several of these packages are included in
-CentOS.</p></li>
-<li><p>Build and install OpenMPI. Note the <code class="code docutils literal notranslate"><span class="pre">getconf</span></code> trick to guess at an
-appropriate parallel build.</p></li>
-</ol>
-</li>
-<li><p>Clean up, in order to reduce the size of layers as well as the resulting
-Charliecloud image (<code class="code docutils literal notranslate"><span class="pre">rm</span> <span class="pre">-Rf</span></code>).</p></li>
-</ol>
-</section>
-<section id="your-software-stored-in-the-image">
-<h3><a class="toc-backref" href="#id16"><span class="section-number">2.5.3. </span>Your software stored in the image</a><a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
-<p>This method covers software provided by you that is included in the image.
-This is recommended when your software is relatively stable or is not easily
-available to users of your image, for example a library rather than simulation
-code under active development.</p>
-<p>The general approach is the same as installing third-party software from
-source, but you use the <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instruction to transfer files from the
-host filesystem (rather than the network via HTTP) to the image. For example,
-<code class="code docutils literal notranslate"><span class="pre">examples/mpihello/Dockerfile.openmpi</span></code> uses this approach:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: full</span>
-<span class="k">FROM</span> <span class="s">openmpi</span>
-
-<span class="c"># This example</span>
-<span class="k">COPY</span> . /hello
-<span class="k">WORKDIR</span><span class="s"> /hello</span>
-<span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
-</pre></div>
-</div>
-<p>These Dockerfile instructions:</p>
-<ol class="arabic">
-<li><p>Copy the host directory <code class="code docutils literal notranslate"><span class="pre">examples/mpihello</span></code> to the image at path
-<code class="code docutils literal notranslate"><span class="pre">/hello</span></code>. The host path is relative to the <em>context directory</em>, which
-is tarred up and sent to the Docker daemon. Docker builds have no access to
-the host filesystem outside the context directory.</p>
-<p>(Unlike the HPC custom, Docker comes from a world without network
-filesystems. This tar-based approach lets the Docker daemon run on a
-different node from the client without needing any shared filesystems.)</p>
-<p>The convention for Charliecloud tests and examples is that the context is
-the directory containing the Dockerfile in question, and a common pattern,
-used here, is to copy in the entire context.</p>
-</li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">cd</span></code> to <code class="code docutils literal notranslate"><span class="pre">/hello</span></code>.</p></li>
-<li><p>Compile our example. We include <code class="code docutils literal notranslate"><span class="pre">make</span> <span class="pre">clean</span></code> to remove any leftover
-build files, since they would be inappropriate inside the container.</p></li>
-</ol>
-<p>Once the image is built, we can see the results. (Install the image into
-<code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code> as outlined above, if you haven’t already.)</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/mpihello-openmpi.sqfs -- ls -lh /hello
-<span class="go">total 32K</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr  908 Oct  4 15:52 Dockerfile</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 22:37 Makefile</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr 1.2K Aug  5 22:37 README</span>
-<span class="go">-rwxr-x--- 1 reidpr reidpr 9.5K Oct  4 15:58 hello</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr 1.4K Aug  5 22:37 hello.c</span>
-<span class="go">-rwxrwx--- 1 reidpr reidpr  441 Aug  5 22:37 test.sh</span>
-</pre></div>
-</div>
-<p>We will revisit this image later.</p>
-</section>
-<section id="your-software-stored-on-the-host">
-<h3><a class="toc-backref" href="#id17"><span class="section-number">2.5.4. </span>Your software stored on the host</a><a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
-<p>This method leaves your software on the host but compiles it in the image.
-This is recommended when your software is volatile or each image user needs a
-different version, for example a simulation code under active development.</p>
-<p>The general approach is to bind-mount the appropriate directory and then run
-the build inside the container. We can re-use the <code class="code docutils literal notranslate"><span class="pre">mpihello</span></code> image to
-demonstrate this.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/mpihello
-<span class="gp">$</span> ls -l
-<span class="go">total 20</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README</span>
-<span class="gp">$</span> ch-run -b .:/mnt/0 --cd /mnt/0 /var/tmp/mpihello.sqfs -- make
-<span class="go">mpicc -std=gnu11 -Wall hello.c -o hello</span>
-<span class="gp">$</span> ls -l
-<span class="go">total 32</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr  908 Oct  4 09:52 Dockerfile</span>
-<span class="go">-rwxrwx--- 1 reidpr reidpr 9632 Oct  4 10:43 hello</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr 1431 Aug  5 16:37 hello.c</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr  157 Aug  5 16:37 Makefile</span>
-<span class="go">-rw-rw---- 1 reidpr reidpr 1172 Aug  5 16:37 README</span>
-</pre></div>
-</div>
-<p>A common use case is to leave a container shell open in one terminal for
-building, and then run using a separate container invoked from a different
-terminal.</p>
-</section>
-</section>
-<section id="your-first-single-node-multi-process-jobs">
-<h2><a class="toc-backref" href="#id18"><span class="section-number">2.6. </span>Your first single-node, multi-process jobs</a><a class="headerlink" href="#your-first-single-node-multi-process-jobs" title="Permalink to this headline">¶</a></h2>
-<p>This is an important use case even for large-scale codes, when testing and
-development happens at small scale but need to use an environment comparable
-to large-scale runs.</p>
-<p>This tutorial covers three approaches:</p>
-<ol class="arabic simple">
-<li><p>Processes are coordinated by the host, i.e., one process per container.</p></li>
-<li><p>Processes are coordinated by the container, i.e., one container with
-multiple processes, using configuration files from the container.</p></li>
-<li><p>Processes are coordinated by the container using configuration files from
-the host.</p></li>
-</ol>
-<p>In order to test approach 1, you must install OpenMPI 2.1.2 on the host.
-In our experience, we have had success compiling from source with the same
-options as in the Dockerfile, but there is probably more nuance to the match
-than we’ve discovered.</p>
-<section id="processes-coordinated-by-host">
-<h3><a class="toc-backref" href="#id19"><span class="section-number">2.6.1. </span>Processes coordinated by host</a><a class="headerlink" href="#processes-coordinated-by-host" title="Permalink to this headline">¶</a></h3>
-<p>This approach does the forking and process coordination on the host. Each
-process is spawned in its own container, and because Charliecloud introduces
-minimal isolation, they can communicate as if they were running directly on
-the host.</p>
-<p>For example, using Slurm <code class="code docutils literal notranslate"><span class="pre">srun</span></code> and the <code class="code docutils literal notranslate"><span class="pre">mpihello</span></code> example above:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
-<span class="go">4026531837</span>
-<span class="gp">$</span> ch-run /var/tmp/mpihello-openmpi.sqfs -- mpirun --version
-<span class="go">mpirun (Open MPI) 2.1.5</span>
-<span class="gp">$</span> srun -n4 ch-run /var/tmp/mpihello-openmpi.sqfs -- /hello/hello
-<span class="go">0: init ok cn001, 4 ranks, userns 4026554650</span>
-<span class="go">1: init ok cn001, 4 ranks, userns 4026554652</span>
-<span class="go">3: init ok cn002, 4 ranks, userns 4026554652</span>
-<span class="go">2: init ok cn002, 4 ranks, userns 4026554650</span>
-<span class="go">0: send/receive ok</span>
-<span class="go">0: finalize ok</span>
-</pre></div>
-</div>
-<p>We recommend this approach because it lets you take advantage of difficult
-things already done by your site admins, such as configuring Slurm.</p>
-<p>If you don’t have Slurm, you can use <code class="code docutils literal notranslate"><span class="pre">mpirun</span> <span class="pre">-np</span> <span class="pre">4</span></code> instead of
-<code class="code docutils literal notranslate"><span class="pre">srun</span> <span class="pre">-n4</span></code>. However, this requires that the host have a compatible
-version of OpenMPI installed on the host. Which versions are compatible seems
-to be a moving target, but having the same versions inside and outside the
-container <em>usually</em> works.</p>
-</section>
-<section id="processes-coordinated-by-container">
-<h3><a class="toc-backref" href="#id20"><span class="section-number">2.6.2. </span>Processes coordinated by container</a><a class="headerlink" href="#processes-coordinated-by-container" title="Permalink to this headline">¶</a></h3>
-<p>This approach starts a single container process, which then forks and
-coordinates the parallel work. The advantage is that this approach is
-completely independent of the host for dependency configuration and
-installation; the disadvantage is that it cannot take advantage of host things
-such as Slurm configuration.</p>
-<p>For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/mpihello-openmpi.sqfs -- mpirun -np <span class="m">4</span> /hello/hello
-<span class="go">0: init ok cn001, 4 ranks, userns 4026532256</span>
-<span class="go">1: init ok cn001, 4 ranks, userns 4026532256</span>
-<span class="go">2: init ok cn001, 4 ranks, userns 4026532256</span>
-<span class="go">3: init ok cn001, 4 ranks, userns 4026532256</span>
-<span class="go">0: send/receive ok</span>
-<span class="go">0: finalize ok</span>
-</pre></div>
-</div>
-<p>Note that in this case, we use <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> rather than <code class="code docutils literal notranslate"><span class="pre">srun</span></code> because
-the Slurm client programs are not installed inside the container, and we don’t
-want the host’s Slurm coordinating processes anyway.</p>
-</section>
-</section>
-<section id="your-first-multi-node-jobs">
-<h2><a class="toc-backref" href="#id21"><span class="section-number">2.7. </span>Your first multi-node jobs</a><a class="headerlink" href="#your-first-multi-node-jobs" title="Permalink to this headline">¶</a></h2>
-<p>This section assumes that you are using a Slurm cluster and some type of
-node-local storage. A <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> will suffice, and we use <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>
-for this tutorial. (Using <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> often works but can cause confusion
-because it’s shared by the container and host, yielding cycles in the
-directory tree.)</p>
-<p>We cover three cases:</p>
-<ol class="arabic simple">
-<li><p>The MPI hello world example above, run interactively, with the host
-coordinating.</p></li>
-<li><p>Same, non-interactive.</p></li>
-<li><p>An Apache Spark example, run interactively.</p></li>
-<li><p>Same, non-interactive.</p></li>
-</ol>
-<p>We think that container-coordinated MPI jobs will also work, but we haven’t
-worked out how to do this yet. (See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/5">issue #5</a>.)</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>The image directory is mounted read-only by default so it can be shared by
-multiple Charliecloud containers in the same or different jobs. It can be
-mounted read-write with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code> if you are not using SquashFS.</p>
-</div>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>The image can reside on most filesystems, but be aware of metadata impact.
-A non-trivial Charliecloud job may overwhelm a network filesystem, earning
-you the ire of your sysadmins and colleagues.</p>
-</div>
-<section id="interactive-mpi-hello-world">
-<h3><a class="toc-backref" href="#id22"><span class="section-number">2.7.1. </span>Interactive MPI hello world</a><a class="headerlink" href="#interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
-<p>First, obtain an interactive allocation of nodes. This tutorial assumes an
-allocation of 4 nodes (but any number should work) and an interactive shell on
-one of those nodes. For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> salloc -N4
-</pre></div>
-</div>
-<p>The next step is to distribute the image to the compute nodes. For SquashFS
-images, this is handled by the internal mounting process; for tarballs, we run
-one instance of <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> on each node using <code class="code docutils literal notranslate"><span class="pre">srun</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-convert mpihello-openmpi.tar.gz /var/tmp/mpihello-openmpi
-<span class="go">input:   tar       mpihello-openmpi.tar.gz</span>
-<span class="go">output:  dir       /var/tmp/mpihello-openmpi</span>
-<span class="go">unpacking ...</span>
-<span class="go">input:   tar       mpihello-openmpi.tar.gz</span>
-<span class="go">output:  dir       /var/tmp/mpihello-openmpi</span>
-<span class="go">unpacking ...</span>
-<span class="go">input:   tar       mpihello-openmpi.tar.gz</span>
-<span class="go">output:  dir       /var/tmp/mpihello-openmpi</span>
-<span class="go">unpacking ...</span>
-<span class="go">input:   tar       mpihello-openmpi.tar.gz</span>
-<span class="go">output:  dir       /var/tmp/mpihello-openmpi</span>
-<span class="go">unpacking ...</span>
-<span class="go">done</span>
-<span class="go">done</span>
-<span class="go">done</span>
-<span class="go">done</span>
-</pre></div>
-</div>
-<p>We can now activate the image and run our program:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run /var/tmp/mpihello-openmpi.sqfs -- /hello/hello
-<span class="go">2: init ok cn001, 64 ranks, userns 4026532567</span>
-<span class="go">4: init ok cn001, 64 ranks, userns 4026532571</span>
-<span class="go">8: init ok cn001, 64 ranks, userns 4026532579</span>
-<span class="go">[...]</span>
-<span class="go">45: init ok cn003, 64 ranks, userns 4026532589</span>
-<span class="go">17: init ok cn002, 64 ranks, userns 4026532565</span>
-<span class="go">55: init ok cn004, 64 ranks, userns 4026532577</span>
-<span class="go">0: send/receive ok</span>
-<span class="go">0: finalize ok</span>
-</pre></div>
-</div>
-<p>Success!</p>
-</section>
-<section id="non-interactive-mpi-hello-world">
-<h3><a class="toc-backref" href="#id23"><span class="section-number">2.7.2. </span>Non-interactive MPI hello world</a><a class="headerlink" href="#non-interactive-mpi-hello-world" title="Permalink to this headline">¶</a></h3>
-<p>Production jobs are normally run non-interactively, via submission of a job
-script that runs when resources are available, placing output into a file.</p>
-<p>The MPI hello world example includes such a script,
-<code class="code docutils literal notranslate"><span class="pre">examples/mpi/mpihello/slurm.sh</span></code>:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="ch">#!/bin/bash</span>
-<span class="c1">#SBATCH --time=0:10:00</span>
-
-<span class="c1"># Arguments: Path to tarball, path to image parent directory.</span>
-
-<span class="nb">set</span> -e
-
-<span class="nv">tar</span><span class="o">=</span><span class="nv">$1</span>
-<span class="nv">imgdir</span><span class="o">=</span><span class="nv">$2</span>
-<span class="nv">img</span><span class="o">=</span><span class="si">${</span><span class="nv">2</span><span class="si">}</span>/<span class="k">$(</span>basename <span class="s2">&quot;</span><span class="si">${</span><span class="nv">tar</span><span class="p">%.tar.gz</span><span class="si">}</span><span class="s2">&quot;</span><span class="k">)</span>
-
-<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$tar</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
-    <span class="nb">echo</span> <span class="s1">&#39;no tarball specified&#39;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
-    <span class="nb">exit</span> <span class="m">1</span>
-<span class="k">fi</span>
-<span class="nb">printf</span> <span class="s1">&#39;tarball:   %s\n&#39;</span> <span class="s2">&quot;</span><span class="nv">$tar</span><span class="s2">&quot;</span>
-
-<span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$imgdir</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
-    <span class="nb">echo</span> <span class="s1">&#39;no image directory specified&#39;</span> <span class="m">1</span>&gt;<span class="p">&amp;</span><span class="m">2</span>
-    <span class="nb">exit</span> <span class="m">1</span>
-<span class="k">fi</span>
-<span class="nb">printf</span> <span class="s1">&#39;image:     %s\n&#39;</span> <span class="s2">&quot;</span><span class="nv">$img</span><span class="s2">&quot;</span>
-
-<span class="c1"># Make Charliecloud available (varies by site).</span>
-module purge
-module load friendly-testing
-module load charliecloud
-
-<span class="c1"># Unpack image.</span>
-srun ch-convert -o dir <span class="s2">&quot;</span><span class="nv">$tar</span><span class="s2">&quot;</span> <span class="s2">&quot;</span><span class="nv">$imgdir</span><span class="s2">&quot;</span>
-
-<span class="c1"># MPI version in container.</span>
-<span class="nb">printf</span> <span class="s1">&#39;container: &#39;</span>
-ch-run <span class="s2">&quot;</span><span class="nv">$img</span><span class="s2">&quot;</span> -- mpirun --version <span class="p">|</span> grep -E <span class="s1">&#39;^mpirun&#39;</span>
-
-<span class="c1"># Run the app.</span>
-srun --cpus-per-task<span class="o">=</span><span class="m">1</span> ch-run <span class="s2">&quot;</span><span class="nv">$img</span><span class="s2">&quot;</span> -- /hello/hello
-</pre></div>
-</div>
-<p>Note that this script both unpacks the image and runs it.</p>
-<p>Submit it with something like:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh ~/mpihello-openmpi.tar.gz /var/tmp
-<span class="go">207745</span>
-</pre></div>
-</div>
-<p>When the job is complete, look at the output:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat slurm-207745.out
-<span class="go">tarball:   /home/reidpr/mpihello-openmpi.tar.gz</span>
-<span class="go">image:     /var/tmp/mpihello-openmpi</span>
-<span class="go">creating new image /var/tmp/mpihello-openmpi</span>
-<span class="go">creating new image /var/tmp/mpihello-openmpi</span>
-<span class="go">[...]</span>
-<span class="go">/var/tmp/mpihello-openmpi unpacked ok</span>
-<span class="go">/var/tmp/mpihello-openmpi unpacked ok</span>
-<span class="go">container: mpirun (Open MPI) 2.1.5</span>
-<span class="go">0: init ok cn001.localdomain, 144 ranks, userns 4026554766</span>
-<span class="go">37: init ok cn002.localdomain, 144 ranks, userns 4026554800</span>
-<span class="go">[...]</span>
-<span class="go">96: init ok cn003.localdomain, 144 ranks, userns 4026554803</span>
-<span class="go">86: init ok cn003.localdomain, 144 ranks, userns 4026554793</span>
-<span class="go">0: send/receive ok</span>
-<span class="go">0: finalize ok</span>
-</pre></div>
-</div>
-<p>Success!</p>
-</section>
-<section id="interactive-apache-spark">
-<h3><a class="toc-backref" href="#id24"><span class="section-number">2.7.3. </span>Interactive Apache Spark</a><a class="headerlink" href="#interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
-<p>This example is in <code class="code docutils literal notranslate"><span class="pre">examples/spark</span></code>. Build a tarball or SquashFS and
-upload it to your cluster.</p>
-<p>Once you have an interactive job, prepare the image. Recall that for the
-SquashFS workflow this is handled by the internal mounting process.</p>
-<p>tarball:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-convert spark.tar.gz /var/tmp/spark
-<span class="go">input:   tar       spark.tar.gz</span>
-<span class="go">output:  dir       /var/tmp/spark</span>
-<span class="go">unpacking ...</span>
-<span class="go">input:   tar       spark.tar.gz</span>
-<span class="go">output:  dir       /var/tmp/spark</span>
-<span class="go">unpacking ...</span>
-<span class="go">done</span>
-<span class="go">done</span>
-</pre></div>
-</div>
+<section id="apache-spark">
+<h3><a class="toc-backref" href="#id22"><span class="section-number">2.9.5. </span>Apache Spark</a><a class="headerlink" href="#apache-spark" title="Permalink to this headline">¶</a></h3>
+<p>This example is in <code class="code docutils literal notranslate"><span class="pre">examples/spark</span></code>. Build a SquashFS image of it and
+upload it to your supercomputer.</p>
+<section id="interactive">
+<h4><span class="section-number">2.9.5.1. </span>Interactive<a class="headerlink" href="#interactive" title="Permalink to this headline">¶</a></h4>
 <p>We need to first create a basic configuration for Spark, as the defaults in
-the Dockerfile are insufficient. (For real jobs, you’ll want to also configure
-performance parameters such as memory use; see <a class="reference external" href="http://spark.apache.org/docs/latest/configuration.html">the documentation</a>.) First:</p>
+the Dockerfile are insufficient. For real jobs, you’ll want to also configure
+performance parameters such as memory use; see <a class="reference external" href="http://spark.apache.org/docs/latest/configuration.html">the documentation</a>. First:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir -p ~/sparkconf
 <span class="gp">$</span> chmod <span class="m">700</span> ~/sparkconf
 </pre></div>
 </div>
-<p>We’ll want to use the cluster’s high-speed network. For this example, we’ll
-find the Spark master’s IP manually:</p>
+<p>We’ll want to use the supercomputer’s high-speed network. For this example,
+we’ll find the Spark master’s IP manually:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ip -o -f inet addr show <span class="p">|</span> cut -d/ -f1
 <span class="go">1: lo    inet 127.0.0.1</span>
 <span class="go">2: eth0  inet 192.168.8.3</span>
@@ -1344,11 +1328,11 @@ example:</p>
 <p>Next, start one worker on each compute node.</p>
 <p>In this tutorial, we start the workers using <code class="code docutils literal notranslate"><span class="pre">srun</span></code> in a way that
 prevents any subsequent <code class="code docutils literal notranslate"><span class="pre">srun</span></code> invocations from running until the Spark
-workers exit. For our purposes here, that’s OK, but it’s a big limitation for
-some jobs. (See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/230">issue #230</a>.)</p>
-<p>Alternatives include <code class="code docutils literal notranslate"><span class="pre">pdsh</span></code>, which is the approach we use for the Spark
-tests (<code class="code docutils literal notranslate"><span class="pre">examples/other/spark/test.bats</span></code>), or a simple for loop of
-<code class="code docutils literal notranslate"><span class="pre">ssh</span></code> calls. Both of these are also quite clunky and do not scale well.</p>
+workers exit. For our purposes here, that’s OK, but it’s a significant
+limitation for some jobs. (See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/230">issue #230</a>.) Alternatives include
+<code class="code docutils literal notranslate"><span class="pre">pdsh</span></code>, which is the approach we use for the Spark tests
+(<code class="code docutils literal notranslate"><span class="pre">examples/other/spark/test.bats</span></code>), or a simple for loop of <code class="code docutils literal notranslate"><span class="pre">ssh</span></code>
+calls. Both of these are also quite clunky and do not scale well.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun sh -c <span class="s2">&quot;   ch-run -b ~/sparkconf /var/tmp/spark.sqfs -- \</span>
 <span class="s2">                        spark/sbin/start-slave.sh </span><span class="nv">$MASTER_URL</span><span class="s2"> \</span>
 <span class="s2">              &amp;&amp; sleep infinity&quot;</span> <span class="p">&amp;</span>
@@ -1413,15 +1397,15 @@ omitted.)</p>
 <p>Exit your allocation. Slurm will clean up the Spark daemons.</p>
 <p>Success! Next, we’ll run a similar job non-interactively.</p>
 </section>
-<section id="non-interactive-apache-spark">
-<h3><a class="toc-backref" href="#id25"><span class="section-number">2.7.4. </span>Non-interactive Apache Spark</a><a class="headerlink" href="#non-interactive-apache-spark" title="Permalink to this headline">¶</a></h3>
+<section id="non-interactive">
+<h4><span class="section-number">2.9.5.2. </span>Non-interactive<a class="headerlink" href="#non-interactive" title="Permalink to this headline">¶</a></h4>
 <p>We’ll re-use much of the above to run the same computation non-interactively.
 For brevity, the Slurm script at <code class="code docutils literal notranslate"><span class="pre">examples/other/spark/slurm.sh</span></code> is not
 reproduced here.</p>
-<p>Submit it as follows. It requires three arguments: the tarball, the image
+<p>Submit it as follows. It requires three arguments: the squashball, the image
 directory to unpack into, and the high-speed network interface. Again, consult
 your site administrators for the latter.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh spark.tar.gz /var/tmp ib0
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sbatch -N4 slurm.sh spark.sqfs /var/tmp ib0
 <span class="go">Submitted batch job 86754</span>
 </pre></div>
 </div>
@@ -1431,6 +1415,7 @@ your site administrators for the latter.</p>
 </pre></div>
 </div>
 <p>Success! (to four significant digits)</p>
+</section>
 </section>
 </section>
 </section>
