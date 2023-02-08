@@ -334,7 +334,7 @@ test_from () {
 
     # convert ch_timg into ch-image format
     ch-image delete timg | true
-    if [[ $(stat "$ch_timg") = *"symbolic link"* ]]; then
+    if [[ $(stat -c %F "$ch_timg") = 'symbolic link' ]]; then
         # symlink to squash archive
         fmt="squash"
     else
