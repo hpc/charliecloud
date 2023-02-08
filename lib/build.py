@@ -24,9 +24,6 @@ import filesystem as fs
 # Namespace from command line arguments. FIXME: be more tidy about this ...
 cli = None
 
-# Fakeroot configuration (initialized during FROM).
-fakeroot_config = None
-
 # Images that we are building. Each stage gets its own image. In this
 # dictionary, an image appears exactly once or twice. All images appear with
 # an int key counting stages up from zero. Images with a name (e.g., "FROM ...
@@ -197,12 +194,12 @@ def main(cli_):
       ch.FATAL("no instructions found: %s" % cli.file)
    assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
    if (cli.force and ml.miss_ct != 0):
-      if (fakeroot_config.inject_ct == 0):
-         assert (not fakeroot_config.init_done)
-         ch.WARNING("--force specified, but nothing to do")
+      if (fakeroot.config.inject_ct == 0):
+         assert (not fakeroot.config.init_done)
+         ch.WARNING("--force=fakeroot specified, but nothing to do")
       else:
-         ch.INFO("--force: init OK & modified %d RUN instructions"
-                 % fakeroot_config.inject_ct)
+         ch.INFO("--force=fakeroot: init OK & modified %d RUN instructions"
+                 % fakeroot.config.inject_ct)
    ch.INFO("grown in %d instructions: %s"
            % (ml.instruction_total_ct, ml.inst_prev.image))
    # FIXME: remove when we're done encouraging people to use the build cache.
@@ -406,8 +403,7 @@ class Instruction(abc.ABC):
 
    def checkout_for_build(self, base_image=None):
       self.parent.checkout(base_image)
-      global fakeroot_config
-      fakeroot_config = fakeroot.detect(self.image.unpack_path,
+      fakeroot.config = fakeroot.detect(self.image.unpack_path,
                                         cli.force, cli.no_force_detect)
 
    def commit(self):
@@ -1099,33 +1095,42 @@ class Run(Instruction):
 
    __slots__ = ("cmd")
 
-   # FIXME: This causes spurious misses because it adds the force bit to *all*
-   # RUN instructions, not just those that actually were modified (i.e, any
-   # RUN instruction will miss the equivalent RUN with --force inverted). But
-   # we don't know know if an instruction needs modifications until the result
-   # is checked out, which happens after we check the cache. See issue #FIXME.
    @property
    def str_name(self):
-      return super().str_name + (".F" if cli.force else "")
+      if (cli.force == "fakeroot"):
+         # FIXME: This causes spurious misses because it adds the force tag to
+         # *all* RUN instructions, not just those that actually were modified
+         # (i.e, any RUN instruction will miss the equivalent RUN without
+         # --force=fakeroot). But we don’t know know if an instruction needs
+         # modifications until the result is checked out, which happens after
+         # we check the cache. See issue #1339.
+         tag = ".F"
+      elif (cli.force == "seccomp"):
+         tag = ".S"
+      elif (cli.force == None):
+         tag = ""
+      else:
+         assert False, "unreachable code reached"
+      return super().str_name + tag
 
    def execute(self):
       rootfs = self.image.unpack_path
-      fakeroot_config.init_maybe(rootfs, self.cmd, self.env_build)
-      cmd = fakeroot_config.inject_run(self.cmd)
+      fakeroot.config.init_maybe(rootfs, self.cmd, self.env_build)
+      cmd = fakeroot.config.inject_run(self.cmd)
       exit_code = ch.ch_run_modify(rootfs, cmd, self.env_build, self.workdir,
                                    cli.bind, fail_ok=True)
       if (exit_code != 0):
          msg = "build failed: RUN command exited with %d" % exit_code
          if (cli.force):
-            if (isinstance(fakeroot_config, fakeroot.Fakeroot_Noop)):
-               ch.FATAL(msg, "--force specified, but no suitable config found")
+            if (isinstance(fakeroot.config, fakeroot.Fakeroot_Noop)):
+               ch.FATAL(msg, "--force=fakeroot specified, but no suitable config found")
             else:
-               ch.FATAL(msg)  # --force inited OK but the build still failed
+               ch.FATAL(msg)  # inited OK but the build still failed
          elif (not cli.no_force_detect):
-            if (fakeroot_config.init_done):
-               ch.FATAL(msg, "--force may fix it")
+            if (fakeroot.config.init_done):
+               ch.FATAL(msg, "--force=fakeroot may fix it")
             else:
-               ch.FATAL(msg, "current version of --force wouldn't help")
+               ch.FATAL(msg, "current version of --force=fakeroot wouldn't help")
          assert False, "unreachable code reached"
 
 

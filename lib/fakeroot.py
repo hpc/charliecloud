@@ -7,6 +7,9 @@ import filesystem as fs
 
 ## Globals ##
 
+# Configuration (initialized during FROM).
+config = None
+
 DEFAULT_CONFIGS = {
 
    # General notes:
