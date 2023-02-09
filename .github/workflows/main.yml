@@ -103,10 +103,7 @@ jobs:
           cd /usr/local/src
           git clone --depth 1 --branch v1.2.1 https://github.com/bats-core/bats-core.git
           cd bats-core
-          git submodule add https://github.com/bats-core/bats-core.git test/bats
-          git submodule add https://github.com/bats-core/bats-support.git test/test_helper/bats-support
-          git submodule add https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
-          command -v bats
+          sudo sh -c 'umask 0022 && ./install.sh /usr/local'
           bats --version
           [[ $(command -v bats) == /usr/local/bin/bats ]]
           [[ $(bats --version) == 'Bats 1.2.1' ]]
