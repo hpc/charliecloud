@@ -14,9 +14,9 @@ import filesystem as fs
 
 ## Hairy Imports ##
 
-# Lark is bundled or provided by package dependencies, so assume it's always
+# Lark is bundled or provided by package dependencies, so assume it’s always
 # importable. There used to be a conflicting package on PyPI called "lark",
-# but it's gone now [1]. However, verify the version we got.
+# but it’s gone now [1]. However, verify the version we got.
 #
 # [1]: https://github.com/lark-parser/lark/issues/505
 import lark
@@ -151,7 +151,7 @@ IMAGE_REF: /[A-Za-z0-9$:._\/-]+/
 GRAMMAR_IMAGE_REF = r"""
 // Note: Hostnames with no dot and no port get parsed as a hostname, which
 // is wrong; it should be the first path component. We patch this error later.
-// FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
+// FIXME: Supposedly this can be fixed with priorities, but I couldn’t get it
 // to work with brief trying.
 
 start: image_ref
@@ -199,7 +199,7 @@ class Image:
 
    @property
    def deleteable(self):
-      """True if it's OK to delete me, either my unpack directory (a) is at
+      """True if it’s OK to delete me, either my unpack directory (a) is at
          the expected location within the storage directory xor (b) is not not
          but it looks like an image; False otherwise."""
       if (self.unpack_path == ch.storage.unpack_base // self.unpack_path.name):
@@ -283,13 +283,13 @@ class Image:
          Important note: TarFile.extractall() extracts the given members in
          the order they are specified, so we need to preserve their order from
          the file, as returned by getmembers(). We also need to quickly remove
-         members we don't want from this sequence. Thus, we use the OrderedSet
+         members we don’t want from this sequence. Thus, we use the OrderedSet
          class defined in this module."""
       TT = collections.namedtuple("TT", ["fp", "members"])
       layers = collections.OrderedDict()
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
-      # Unpacking an empty layer doesn't accomplish anything, so ignore them.
+      # Unpacking an empty layer doesn’t accomplish anything, so ignore them.
       empty_cnt = 0
       for (i, path) in enumerate(layer_tars, start=1):
          lh = os.path.basename(path).split(".", 1)[0]
@@ -319,12 +319,12 @@ class Image:
                         "history": list(),
                         "labels": dict(),
                         "shell": ["/bin/sh", "-c"],
-                        "volumes": list() }  # set isn't JSON-serializable
+                        "volumes": list() }  # set isn’t JSON-serializable
 
    def metadata_load(self, target_img=None):
       """Load metadata file, replacing the existing metadata object. If
-         metadata doesn't exist, warn and use defaults. If target_img is
-         non-None, use that image's metadata instead of self's."""
+         metadata doesn’t exist, warn and use defaults. If target_img is
+         non-None, use that image’s metadata instead of self’s."""
       if (target_img is not None):
          path = target_img.metadata_path
       else:
@@ -346,7 +346,7 @@ class Image:
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is
          meaningful to us, and add it to self.metadata. Ignore anything we
-         expect in config that's missing."""
+         expect in config that’s missing."""
       def get(*keys):
          d = config
          keys = list(keys)
@@ -374,7 +374,7 @@ class Image:
             try:
                (k,v) = line.split("=", maxsplit=1)
             except AttributeError:
-               ch.FATAL("can't parse config: bad Env line: %s" % line)
+               ch.FATAL("can’t parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
       # History.
       if ("history" not in config):
@@ -403,9 +403,9 @@ class Image:
       self.metadata_save()
 
    def metadata_save(self):
-      """Dump image's metadata to disk, including the main data structure but
+      """Dump image’s metadata to disk, including the main data structure but
          also all auxiliary files, e.g. ch/environment."""
-      # Adjust since we don't save everything.
+      # Adjust since we don’t save everything.
       metadata = copy.deepcopy(self.metadata)
       for k in ARGS_MAGIC:
          metadata["arg"].pop(k, None)
@@ -431,7 +431,7 @@ class Image:
    def tarballs_write(self, tarball_dir):
       """Write one uncompressed tarball per layer to tarball_dir. Return a
          sequence of tarball basenames, with the lowest layer first."""
-      # FIXME: Yes, there is only one layer for now and we'll need to update
+      # FIXME: Yes, there is only one layer for now and we’ll need to update
       # it when (if) we have multiple layers. But, I wanted the interface to
       # support multiple layers.
       base = "%s.tar" % self.ref.for_path
@@ -445,7 +445,7 @@ class Image:
          fp.add_(unpack_path, arcname=".")
          fp.close()
       except OSError as x:
-         ch.FATAL("can't write tarball: %s" % x.strerror)
+         ch.FATAL("can’t write tarball: %s" % x.strerror)
       return [base]
 
    def unpack(self, layer_tars, last_layer=None):
@@ -470,10 +470,10 @@ class Image:
          ch.VERBOSE("no image found: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
-            ch.FATAL("can't flatten: %s exists but is not a directory"
+            ch.FATAL("can’t flatten: %s exists but is not a directory"
                   % self.unpack_path)
          if (not self.deleteable):
-            ch.FATAL("can't flatten: %s exists but does not appear to be an image"
+            ch.FATAL("can’t flatten: %s exists but does not appear to be an image"
                      % self.unpack_path)
          ch.VERBOSE("removing image: %s" % self.unpack_path)
          t = ch.Timer()
@@ -503,8 +503,8 @@ class Image:
       (self.unpack_path // "ch").mkdir_()
       (self.unpack_path // "ch/environment").file_ensure_exists()
       # Essential directories & mount points. Do nothing if something already
-      # exists, without dereferencing, in case it's a symlink, which will work
-      # for bind-mount later but won't resolve correctly now outside the
+      # exists, without dereferencing, in case it’s a symlink, which will work
+      # for bind-mount later but won’t resolve correctly now outside the
       # container (e.g. linuxcontainers.org images; issue #1015).
       #
       # WARNING: Keep in sync with shell scripts.
@@ -530,7 +530,7 @@ class Image:
             try:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
-               ch.FATAL("can't extract layer %d: %s" % (i, x.strerror))
+               ch.FATAL("can’t extract layer %d: %s" % (i, x.strerror))
 
    def validate_members(self, layers):
       ch.INFO("validating tarball members")
@@ -624,7 +624,7 @@ class Image:
       ignore_ct = 0
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          if (i > max_i): break
-         members2 = list(members)  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we’ll alter members
          for m in members2:
             if (ch.prefix_path(prefix, m.name)):
                ignore_ct += 1
@@ -640,7 +640,7 @@ class Image:
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          wo_ct = 0
          ig_ct = 0
-         members2 = list(members)  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we’ll alter members
          for m in members2:
             dir_ = os.path.dirname(m.name)
             filename = os.path.basename(m.name)
@@ -690,8 +690,8 @@ class Reference:
                 "variables")
 
    # Reference parser object. Instantiating a parser took 100ms when we tested
-   # it, which means we can't really put it in a loop. But, at parse time,
-   # "lark" may refer to a dummy module (see above), so we can't populate the
+   # it, which means we can’t really put it in a loop. But, at parse time,
+   # "lark" may refer to a dummy module (see above), so we can’t populate the
    # parser here either. We use a class varible and populate it at the time of
    # first use.
    parser = None
@@ -762,7 +762,7 @@ class Reference:
             ch.FATAL("image ref syntax, char %d: %s" % (x.column, s), hint)
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
-         # doesn't have a column location.
+         # doesn’t have a column location.
          ch.FATAL("image ref syntax, at end: %s" % s, hint)
       ch.DEBUG(tree.pretty())
       return tree
@@ -867,7 +867,7 @@ class Tree(lark.tree.Tree):
    def child_terminal(self, cname, tname, i=0):
       """Locate a descendant subtree named cname using breadth-first search
          and return its first child terminal named tname. If no such subtree
-         exists, or it doesn't have such a terminal, return None."""
+         exists, or it doesn’t have such a terminal, return None."""
       st = self.child(cname)
       if (st is not None):
          return st.terminal(tname, i)

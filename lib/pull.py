@@ -102,11 +102,11 @@ class Image_Puller:
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
             except ch.No_Fatman_Error:
-               # currently, this error is only raised if we've downloaded the skinny
+               # currently, this error is only raised if we’ve downloaded the skinny
                # manifest.
                have_skinny = True
                if (ch.arch == "amd64"):
-                  # We're guessing that enough arch-unaware images are amd64 to
+                  # We’re guessing that enough arch-unaware images are amd64 to
                   # barge ahead if requested architecture is amd64.
                   ch.arch = "yolo"
                   ch.WARNING("image is architecture-unaware")
@@ -253,7 +253,7 @@ class Image_Puller:
       #
       # FIXME: Manifest version 1 does not list a config blob. It does have
       # things (plural) that look like a config at history/v1Compatibility as
-      # an embedded JSON string :P but I haven't dug into it.
+      # an embedded JSON string :P but I haven’t dug into it.
       if (version == 1):
          ch.VERBOSE("no config; manifest schema version 1")
          self.config_hash = None
@@ -280,7 +280,7 @@ class Image_Puller:
          self.layer_hashes.append(ch.digest_trim(i[key2]))
       if (version == 1):
          self.layer_hashes.reverse()
-      # Remember State_ID input. We can't rely on the manifest existing in
+      # Remember State_ID input. We can’t rely on the manifest existing in
       # serialized form (e.g. for internal manifests), so re-serialize.
       self.sid_input = json.dumps(manifest, sort_keys=True)
 

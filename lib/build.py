@@ -119,12 +119,12 @@ def main(cli_):
 
    # Read input file.
    if (cli.file == "-" or cli.context == "-"):
-      text = ch.ossafe(sys.stdin.read, "can't read stdin")
+      text = ch.ossafe(sys.stdin.read, "can’t read stdin")
    elif (not os.path.isdir(cli.context)):
       ch.FATAL("context must be a directory: %s" % cli.context)
    else:
       fp = fs.Path(cli.file).open_("rt")
-      text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
+      text = ch.ossafe(fp.read, "can’t read: %s" % cli.file)
       ch.close_(fp)
 
    # Parse it.
@@ -137,7 +137,7 @@ def main(cli_):
       tree = parser.parse(text)
    except lark.exceptions.UnexpectedInput as x:
       ch.VERBOSE(x)  # noise about what was expected in the grammar
-      ch.FATAL("can't parse: %s:%d,%d\n\n%s"
+      ch.FATAL("can’t parse: %s:%d,%d\n\n%s"
                % (cli.file, x.line, x.column, x.get_context(text, 39)))
    ch.VERBOSE(tree.pretty())
 
@@ -151,7 +151,7 @@ def main(cli_):
 
    # Traverse the tree and do what it says.
    #
-   # We don't actually care whether the tree is traversed breadth-first or
+   # We don’t actually care whether the tree is traversed breadth-first or
    # depth-first, but we *do* care that instruction nodes are visited in
    # order. Neither visit() nor visit_topdown() are documented as of
    # 2020-06-11 [1], but examining source code [2] shows that visit_topdown()
@@ -178,7 +178,7 @@ def main(cli_):
    if (len(cli.build_arg) != 0):
       ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
 
-   # Print summary & we're done.
+   # Print summary & we’re done.
    if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
    assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
@@ -191,7 +191,7 @@ def main(cli_):
                  % fakeroot_config.inject_ct)
    ch.INFO("grown in %d instructions: %s"
            % (ml.instruction_total_ct, ml.inst_prev.image))
-   # FIXME: remove when we're done encouraging people to use the build cache.
+   # FIXME: remove when we’re done encouraging people to use the build cache.
    if (isinstance(bu.cache, bu.Disabled_Cache)):
       ch.INFO("build slow? consider enabling the new build cache",
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
@@ -264,7 +264,7 @@ class Instruction(abc.ABC):
 
    def __init__(self, tree):
       """Note: When this is called, all we know about the instruction is
-         what's in the parse tree. In particular, you must not call
+         what’s in the parse tree. In particular, you must not call
          ch.variables_sub() here."""
       self.announced_p = False
       self.commit_files = set()
@@ -410,13 +410,13 @@ class Instruction(abc.ABC):
       pass
 
    def init(self, parent):
-      """Initialize attributes defining this instruction's context, much of
+      """Initialize attributes defining this instruction’s context, much of
          which is not available until the previous instruction is processed.
          After this is called, the instruction has a valid image and parent
-         instruction, unless it's the first instruction, in which case
+         instruction, unless it’s the first instruction, in which case
          prepare() does the initialization."""
-      # Separate from prepare() because subclasses shouldn't need to override
-      # it. If a subclass doesn't like the result, it can just change things
+      # Separate from prepare() because subclasses shouldn’t need to override
+      # it. If a subclass doesn’t like the result, it can just change things
       # in prepare().
       self.parent = parent
       if (self.parent is None):
@@ -652,7 +652,7 @@ class I_copy(Instruction):
    # bug-compatible with Docker but probably are not 100%. See the FAQ.
    #
    # Because of these weird semantics, none of this abstracted into a general
-   # copy function. I don't want people calling it except from here.
+   # copy function. I don’t want people calling it except from here.
 
    __slots__ = ("dst",
                 "dst_raw",
@@ -698,7 +698,7 @@ class I_copy(Instruction):
          must exist already and be a directory. Unlike subdirectories, the
          metadata of dst will not be altered to match src."""
       def onerror(x):
-         ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
+         ch.FATAL("can’t scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
       src = src.resolve()  # alternative to os.path.realpath()
@@ -709,7 +709,7 @@ class I_copy(Instruction):
       for (dirpath, dirnames, filenames) in ch.walk(src, onerror=onerror):
          subdir = dirpath.relative_to(src)
          dst_dir = dst // subdir
-         # dirnames can contain symlinks, which we handle as files, so we'll
+         # dirnames can contain symlinks, which we handle as files, so we’ll
          # rebuild it; the walk will not descend into those "directories".
          dirnames2 = dirnames.copy()  # shallow copy
          dirnames[:] = list()         # clear in place
@@ -723,21 +723,21 @@ class I_copy(Instruction):
                continue
             else:
                dirnames.append(d)   # directory, descend into later
-            # If destination exists, but isn't a directory, remove it.
+            # If destination exists, but isn’t a directory, remove it.
             if (os.path.exists(dst_path)):
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   ch.TRACE("dst_path exists and is a directory")
                else:
                   ch.TRACE("dst_path exists, not a directory, removing")
                   dst_path.unlink_()
-            # If destination directory doesn't exist, create it.
+            # If destination directory doesn’t exist, create it.
             if (not os.path.exists(dst_path)):
                ch.TRACE("mkdir dst_path")
-               ch.ossafe(os.mkdir, "can't mkdir: %s" % dst_path, dst_path)
+               ch.ossafe(os.mkdir, "can’t mkdir: %s" % dst_path, dst_path)
             # Copy metadata, now that we know the destination exists and is a
             # directory.
             ch.ossafe(shutil.copystat,
-                      "can't copy metadata: %s -> %s" % (src_path, dst_path),
+                      "can’t copy metadata: %s -> %s" % (src_path, dst_path),
                       src_path, dst_path, follow_symlinks=False)
          for f in filenames:
             src_path = dirpath // f
@@ -745,7 +745,7 @@ class I_copy(Instruction):
             ch.TRACE("file or symlink via copy2: %s -> %s"
                       % (src_path, dst_path))
             if (not (os.path.isfile(src_path) or os.path.islink(src_path))):
-               ch.FATAL("can't COPY: unknown file type: %s" % src_path)
+               ch.FATAL("can’t COPY: unknown file type: %s" % src_path)
             if (os.path.exists(dst_path)):
                ch.TRACE("destination exists, removing")
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
@@ -779,8 +779,8 @@ class I_copy(Instruction):
 
    def dest_realpath(self, unpack_path, dst):
       """Return the canonicalized version of path dst within (canonical) image
-         path unpack_path. We can't use os.path.realpath() because if dst is
-         an absolute symlink, we need to use the *image's* root directory, not
+         path unpack_path. We can’t use os.path.realpath() because if dst is
+         an absolute symlink, we need to use the *image’s* root directory, not
          the host. Thus, we have to resolve symlinks manually."""
       dst_canon = unpack_path
       dst_parts = list(reversed(dst.parts))  # easier to operate on end of list
@@ -788,7 +788,7 @@ class I_copy(Instruction):
       while (len(dst_parts) > 0):
          iter_ct += 1
          if (iter_ct > 100):  # arbitrary
-            ch.FATAL("can't COPY: too many path components")
+            ch.FATAL("can’t COPY: too many path components")
          ch.TRACE("current destination: %d %s" % (iter_ct, dst_canon))
          #ch.TRACE("parts remaining: %s" % dst_parts)
          part = dst_parts.pop()
@@ -824,7 +824,7 @@ class I_copy(Instruction):
       ch.VERBOSE("destination, canonical: %s" % dst_canon)
       if (not os.path.commonpath([dst_canon, unpack_canon])
               .startswith(str(unpack_canon))):
-         ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
+         ch.FATAL("can’t COPY: destination not in image: %s" % dst_canon)
       # Create the destination directory if needed.
       if (   self.dst.endswith("/")
           or len(self.srcs) > 1
@@ -832,7 +832,7 @@ class I_copy(Instruction):
          if (not dst_canon.exists()):
             dst_canon.mkdirs()
          elif (not dst_canon.is_dir()):  # not symlink b/c realpath()
-            ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
+            ch.FATAL("can’t COPY: not a directory: %s" % dst_canon)
       if (dst_canon.parent.exists()):
          if (not dst_canon.parent.is_dir()):
             ch.FATAL("can’t COPY: not a directory: %s" % dst_canon.parent)
@@ -845,7 +845,7 @@ class I_copy(Instruction):
          elif (src.is_dir()):
             self.copy_src_dir(src, dst_canon)
          else:
-            ch.FATAL("can't COPY: unknown file type: %s" % src)
+            ch.FATAL("can’t COPY: unknown file type: %s" % src)
 
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
@@ -894,7 +894,7 @@ class I_copy(Instruction):
             ch.VERBOSE("source: %s" % i)
       # Expand destination.
       self.dst = ch.variables_sub(self.dst_raw, self.env_build)
-      # Validate sources are within context directory. (Can't convert to
+      # Validate sources are within context directory. (Can’t convert to
       # canonical paths yet because we need the source path as given.)
       for src in self.srcs:
          src_canon = src.resolve()
@@ -1085,8 +1085,8 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
       # Close previous stage if needed.
       if (miss_ct == 0 and self.image_i > 0):
-         # While there haven't been any misses so far, we do need to check out
-         # the previous stage (a) to read its metadata and (b) in case there's
+         # While there haven’t been any misses so far, we do need to check out
+         # the previous stage (a) to read its metadata and (b) in case there’s
          # a COPY later. This will still be fast most of the time since the
          # correct branch is likely to be checked out already.
          self.parent.checkout()
@@ -1131,7 +1131,7 @@ class Run(Instruction):
    # FIXME: This causes spurious misses because it adds the force bit to *all*
    # RUN instructions, not just those that actually were modified (i.e, any
    # RUN instruction will miss the equivalent RUN with --force inverted). But
-   # we don't know know if an instruction needs modifications until the result
+   # we don’t know know if an instruction needs modifications until the result
    # is checked out, which happens after we check the cache. See issue #FIXME.
    @property
    def str_name(self):
@@ -1154,7 +1154,7 @@ class Run(Instruction):
             if (fakeroot_config.init_done):
                ch.FATAL(msg, "--force may fix it")
             else:
-               ch.FATAL(msg, "current version of --force wouldn't help")
+               ch.FATAL(msg, "current version of --force wouldn’t help")
          assert False, "unreachable code reached"
 
 
@@ -1182,7 +1182,7 @@ class I_run_shell(Run):
 
    @property
    def str_(self):
-      return self._str_  # can't replace abstract property with attribute
+      return self._str_  # can’t replace abstract property with attribute
 
    def prepare(self, *args):
       cmd = self.tree.terminals_cat("LINE_CHUNK")
@@ -1268,13 +1268,13 @@ class Environment:
 
    # FIXME:
    # - problem:
-   #   1. COPY (at least) needs a valid build environment to figure out if it's
+   #   1. COPY (at least) needs a valid build environment to figure out if it’s
    #      a hit or miss, which happens in prepare()
-   #   2. no files from the image are available in prepare(), so we can't read
+   #   2. no files from the image are available in prepare(), so we can’t read
    #      image metadata then
    #      - could get it from Git if needed, but that seems complicated
    # - valid during prepare() and execute() but not __init__()
-   #   - in particular, don't ch.variables_sub() in __init__()
+   #   - in particular, don’t ch.variables_sub() in __init__()
    # - instructions that update it need to change the env object in prepare()
    #   - WORKDIR SHELL ARG ENV
    #   - FROM
@@ -1289,8 +1289,8 @@ class Environment:
 def unescape(sl):
    # FIXME: This is also ugly and should go in the grammar.
    #
-   # The Dockerfile spec does not precisely define string escaping, but I'm
-   # guessing it's the Go rules. You will note that we are using Python rules.
+   # The Dockerfile spec does not precisely define string escaping, but I’m
+   # guessing it’s the Go rules. You will note that we are using Python rules.
    # This is wrong but close enough for now (see also gripe in previous
    # paragraph).
    if (    not sl.startswith('"')                          # no start quote

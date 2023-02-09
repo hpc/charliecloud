@@ -47,13 +47,13 @@ GIT_CONFIG = {
    "core.untrackedCache":    "true",
    # Quick-and-dirty results suggest that commit is not faster after garbage
    # collection, and checkout is actually a little faster if *not* garbage
-   # collected. Therefore, it's not a high priority to run garbage collection.
+   # collected. Therefore, it’s not a high priority to run garbage collection.
    # Further, I would assume garbaging a lot of files rather than a few gives
    # better opportunities for delta compression. Our most file-ful example
    # image is obspy at about 50K files.
    "gc.auto":                "100000",
    # Leave packs larger than this alone during automatic GC. This is to avoid
-   # excessive resource consumption during GC the user didn't ask for.
+   # excessive resource consumption during GC the user didn’t ask for.
    "gc.bigPackThreshold":    "12G",
    # Anything unreachable from a named branch or the reflog is unavailable to
    # the build cache, so we may as well delete it immediately. However, there
@@ -114,8 +114,8 @@ def have_dot():
 
 def init(cli):
    # At this point --bucache is what the user wanted, either directly or via
-   # --no-cache. If it's None, chose the right default; otherwise, try what
-   # the user asked for and fail if we can't do it.
+   # --no-cache. If it’s None, chose the right default; otherwise, try what
+   # the user asked for and fail if we can’t do it.
    if (cli.bucache != ch.Build_Mode.DISABLED):
       ok = have_deps(False)
       if (cli.bucache is None):
@@ -224,8 +224,8 @@ class File_Metadata:
       """True if I represent either an empty directory, or a directory that
          contains only children where empty_dir_p is true. E.g., the root of a
          directory tree containing only empty directories returns true."""
-      # In principle this could do a lot of recursion, but in practice I'm
-      # guessing it's not too much.
+      # In principle this could do a lot of recursion, but in practice I’m
+      # guessing it’s not too much.
       if (not stat.S_ISDIR(self.mode)):
          return False  # not a directory
       # True if no children (truly empty directory), or each child is unstored
@@ -289,8 +289,8 @@ class File_Metadata:
                  DB database support files used by RPM. Sometimes, something
                  mishandles the last-modified dates on these files, fooling
                  Git into thinking they have not been modified, and so they
-                 don't get committed or restored, which confuses BDB/RPM.
-                 Fortunately, they can be safely deleted, and that's a simple
+                 don’t get committed or restored, which confuses BDB/RPM.
+                 Fortunately, they can be safely deleted, and that’s a simple
                  workaround, so we do it. See issue #1351.
 
          Return the File_Metadata tree, and if write is True, also save it in
@@ -652,7 +652,7 @@ class Enabled_Cache:
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
             cwd.chdir()
       except OSError as x:
-         ch.FATAL("can't create or delete temporary directory: %s: %s"
+         ch.FATAL("can’t create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
    def branch_delete(self, branch):
@@ -667,7 +667,7 @@ class Enabled_Cache:
          be either an Ref or a Git commit reference (as a string)."""
       if (isinstance(dest, im.Reference)):
          dest = self.branch_name_ready(dest)
-      # Some versions of Git won't let us update a branch that's already
+      # Some versions of Git won’t let us update a branch that’s already
       # checked out, so detach that worktree if it exists.
       src_img = im.Image(src_ref)
       if (src_img.unpack_exist_p):
@@ -702,7 +702,7 @@ class Enabled_Cache:
       ch.cmd_quiet(["git", "commit", "-q", "--allow-empty",
                     "-m", "%s\n\n%s" % (msg, sid)])
       t.log("committed")
-      # "git commit" does print the new commit's hash without "-q", but it
+      # "git commit" does print the new commit’s hash without "-q", but it
       # also prints every file commited, which is rather enormous for us.
       # Therefore, retrieve the hash separately.
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
@@ -989,7 +989,7 @@ class Enabled_Cache:
          fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
       else:
          # ref names, short commit hash, subject (instruction), body (state ID)
-         # FIXME: The body contains a trailing newline I can't figure out how
+         # FIXME: The body contains a trailing newline I can’t figure out how
          # to remove.
          fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
       ch.cmd_base(["git", "log", "--graph", "--all", "--reflog",
