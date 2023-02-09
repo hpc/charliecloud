@@ -166,7 +166,7 @@ echo "$output"
             if (self.run == Run.NEEDED):
                outs += ["build failed", "--force may fix it"]
          elif (self.run == Run.UNNEEDED_FAIL):
-            outs += ["build failed", "current version of --force wouldn't help"]
+            outs += ["build failed", "current version of --force wouldn’t help"]
       out = self.as_outputs(outs)
       # emit the test
       print(f"""

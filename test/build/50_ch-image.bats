@@ -225,7 +225,7 @@ EOF
     run ch-image import -v /doesnotexist imptest
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: can't copy: not found: /doesnotexist"* ]]
+    [[ $output = *"error: can’t copy: not found: /doesnotexist"* ]]
 
     # invalid destination reference
     run ch-image import -v "${fixtures}/empty" 'badchar*'

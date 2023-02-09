@@ -179,7 +179,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     # error message
-    [[ $output = *"can't parse: -:2,1"* ]]
+    [[ $output = *"can’t parse: -:2,1"* ]]
     # internal blabber (varies by version)
     [[ $output = *'No terminal'*"'W'"*'at line 2 col 1'* ]]
 
@@ -1068,7 +1068,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: can't parse: -:2,7"* ]]
+        [[ $output = *"error: can’t parse: -:2,7"* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
