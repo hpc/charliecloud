@@ -97,18 +97,19 @@ jobs:
           misc/loc
 
       - name: install Bats
-        # We need (1) old Bats, not bats-core and (2) prior to commit 1735a4f,
-        # because this is what is provided in distros we need to support and
-        # it contains a bug we work around (see issue #552).
+        # Previously, we installed old Bats here. Changing this to bats-core
+        # (see issue #582).
         run: |
           cd /usr/local/src
-          git clone --depth 1 --branch v0.4.0 https://github.com/sstephenson/bats.git
-          cd bats
-          sudo sh -c 'umask 0022 && ./install.sh /usr/local'
+          git clone --depth 1 --branch v1.2.1 https://github.com/bats-core/bats-core.git
+          cd bats-core
+          git submodule add https://github.com/bats-core/bats-core.git test/bats
+          git submodule add https://github.com/bats-core/bats-support.git test/test_helper/bats-support
+          git submodule add https://github.com/bats-core/bats-assert.git test/test_helper/bats-assert
           command -v bats
           bats --version
           [[ $(command -v bats) == /usr/local/bin/bats ]]
-          [[ $(bats --version) == 'Bats 0.4.0' ]]
+          [[ $(bats --version) == 'Bats 1.2.1' ]]
 
       - name: install/configure dependencies, all
         run: |
