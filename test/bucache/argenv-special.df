@@ -1,4 +1,4 @@
-FROM alpine:3.9
+FROM alpine:3.17
 ARG argA=vargA
 ARG SSH_AUTH_SOCK=sockA
 RUN echo $argA $SSH_AUTH_SOCK

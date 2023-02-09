@@ -12,7 +12,7 @@
 # ch-test-builder-include: ch-image
 
 # Use a moderately complex image reference.
-FROM registry-1.docker.io:443/library/alpine:3.9 AS stage1
+FROM registry-1.docker.io:443/library/alpine:3.17 AS stage1
 
 RUN pwd
 WORKDIR /usr/local/src

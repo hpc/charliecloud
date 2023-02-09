@@ -6,7 +6,7 @@
 # instead of embedded in a .bats file.
 
 # ch-test-scope: standard
-FROM 00_tiny
+FROM alpine:3.17
 
 ARG chse_arg1_df
 ARG chse_arg2_df=arg2

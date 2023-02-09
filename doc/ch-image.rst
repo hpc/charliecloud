@@ -414,14 +414,14 @@ Example
 Suppose we have this Dockerfile::
 
   $ cat a.df
-  FROM alpine:3.9
+  FROM alpine:3.17
   RUN echo foo
   RUN echo bar
 
 On our first build, we get::
 
   $ ch-image build -t foo -f a.df .
-    1. FROM alpine:3.9
+    1. FROM alpine:3.17
   [ ... pull chatter omitted ... ]
     2. RUN echo foo
   copying image ...
@@ -437,7 +437,7 @@ instruction was executed. You can also see this by the output of the two
 But on our second build, we get::
 
   $ ch-image build -t foo -f a.df .
-    1* FROM alpine:3.9
+    1* FROM alpine:3.17
     2* RUN echo foo
     3* RUN echo bar
   copying image ...
@@ -454,11 +454,11 @@ We can also try a second, slightly different Dockerfile. Note that the first
 three instructions are the same, but the third is different::
 
   $ cat c.df
-  FROM alpine:3.9
+  FROM alpine:3.17
   RUN echo foo
   RUN echo qux
   $ ch-image build -t c -f c.df .
-    1* FROM alpine:3.9
+    1* FROM alpine:3.17
     2* RUN echo foo
     3. RUN echo qux
   copying image ...
@@ -475,7 +475,7 @@ We can also inspect the cache::
   | *  (a) RUN echo bar
   |/
   *  RUN echo foo
-  *  (alpine+3.9) PULL alpine:3.9
+  *  (alpine+3.9) PULL alpine:3.17
   *  (HEAD -> root) ROOT
 
   named images:     4
@@ -485,7 +485,7 @@ We can also inspect the cache::
   disk used:        3 MiB
 
 Here there are four named images: :code:`a` and :code:`c` that we built, the
-base image :code:`alpine:3.9` (written as :code:`alpine+3.9` because colon is
+base image :code:`alpine:3.17` (written as :code:`alpine+3.9` because colon is
 not allowed in Git branch names), and the empty base of everything
 :code:`root`. Also note how :code:`a` and :code:`c` diverge after the last
 common instruction :code:`RUN echo foo`.
@@ -995,7 +995,7 @@ Examples
 List images in builder storage::
 
    $ ch-image list
-   alpine:3.9 (amd64)
+   alpine:3.17 (amd64)
    alpine:latest (amd64)
    debian:buster (amd64)
 
@@ -1201,13 +1201,13 @@ image must be named to match that remote reference.
    cleaning up
    done
 
-Same, except use local image :code:`alpine:3.9`. In this form, the local image
+Same, except use local image :code:`alpine:3.17`. In this form, the local image
 name does not have to match the destination reference.
 
 ::
 
-   $ ch-image push alpine:3.9 example.com:5000/foo/bar:latest
-   pushing image:   alpine:3.9
+   $ ch-image push alpine:3.17 example.com:5000/foo/bar:latest
+   pushing image:   alpine:3.17
    destination:     example.com:5000/foo/bar:latest
    layer 1/1: gathering
    layer 1/1: preparing

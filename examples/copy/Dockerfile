@@ -6,7 +6,7 @@
 # ch-test-builder-exclude: buildah-runc
 # ch-test-builder-exclude: buildah-setuid
 
-FROM 00_tiny
+FROM alpine:3.17
 
 # Test directory
 RUN mkdir /test
