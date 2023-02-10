@@ -106,7 +106,7 @@ jobs:
           sudo sh -c 'umask 0022 && ./install.sh /usr/local'
           bats --version
           [[ $(command -v bats) == /usr/local/bin/bats ]]
-          [[ $(bats --version) == 'Bats 1.2.1' ]]
+          [[ $(printf "$(bats --version)\nBats 1.2.1" | sort -V | head -1) == 'Bats 1.2.1' ]]
 
       - name: install/configure dependencies, all
         run: |
