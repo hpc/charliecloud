@@ -91,11 +91,11 @@ def main(cli_):
    if (cli.force_cmd and cli.force == "fakeroot"):
       ch.FATAL("--force-cmd and --force=fakeroot are incompatible")
    if (cli.force_cmd):
-      cli.force = "fake-syscalls"
+      cli.force = "seccomp"
    else:
       cli.force_cmd = fakeroot.FORCE_CMD_DEFAULT
    ch.VERBOSE("force mode: %s" % cli.force)
-   if (cli.force == "fake-syscalls"):
+   if (cli.force == "seccomp"):
       force_cmd = dict()
       for line in cli.force_cmd:
          (cmd, args) = fakeroot.force_cmd_parse(line)

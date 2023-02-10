@@ -48,9 +48,6 @@ const struct argp_option options[] = {
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
    { "ch-ssh",         -8, 0,      0, "bind ch-ssh into image"},
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
-#ifdef HAVE_FAKE_SYSCALLS
-   { "fake-syscalls", -14, 0,      0, "fake success for some system calls"},
-#endif
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },
    { "home",          -12, 0,      0, "mount host $HOME at guest /home/$USER" },
@@ -62,8 +59,12 @@ const struct argp_option options[] = {
    { "no-home",        -2, 0,      0, "(deprecated)"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
+#ifdef HAVE_SECCOMP
+   { "seccomp",       -14, 0,      0,
+                           "fake success for some syscalls with seccomp(2)"},
+#endif
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
-     "set environment variables per ARG"},
+                           "set environment variables per ARG"},
    { "storage",       's', "DIR",  0, "set DIR as storage directory"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unsafe",        -13, 0,      0, "do unsafe things (internal use only)" },
@@ -80,11 +81,11 @@ const struct argp_option options[] = {
 struct args {
    struct container c;
    struct env_delta *env_deltas;
-   char *storage_dir;
    char *initial_dir;
-#ifdef HAVE_FAKE_SYSCALLS
-   bool fake_syscalls_p;
+#ifdef HAVE_SECCOMP
+   bool seccomp_p;
 #endif
+   char *storage_dir;
    bool unsafe;
 };
 
@@ -146,11 +147,11 @@ int main(int argc, char *argv[])
                                .type = IMG_NONE,
                                .writable = false },
       .env_deltas = list_new(sizeof(struct env_delta), 0),
-      .storage_dir = storage_default(),
       .initial_dir = NULL,
-#ifdef HAVE_FAKE_SYSCALLS
-      .fake_syscalls_p = false,
+#ifdef HAVE_SECCOMP
+      .seccomp_p = false,
 #endif
+      .storage_dir = storage_default(),
       .unsafe = false };
 
    /* I couldn't find a way to set argp help defaults other than this
@@ -215,16 +216,16 @@ int main(int argc, char *argv[])
    VERBOSE("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
            args.c.join_pid);
    VERBOSE("private /tmp: %d", args.c.private_tmp);
-#ifdef HAVE_FAKE_SYSCALLS
-   VERBOSE("fake syscalls: %d", args.fake_syscalls_p);
+#ifdef HAVE_SECCOMP
+   VERBOSE("seccomp: %d", args.seccomp_p);
 #endif
    VERBOSE("unsafe: %d", args.unsafe);
 
    containerize(&args.c);
    fix_environment(&args);
-#ifdef HAVE_FAKE_SYSCALLS
-   if (args.fake_syscalls_p)
-      fake_syscalls_install();
+#ifdef HAVE_SECCOMP
+   if (args.seccomp_p)
+      seccomp_install();
 #endif
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
@@ -443,9 +444,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case -13: // --unsafe
       args->unsafe = true;
       break;
-#ifdef HAVE_FAKE_SYSCALLS
-   case -14: // --fake-syscalls
-      args->fake_syscalls_p = true;
+#ifdef HAVE_SECCOMP
+   case -14: // --seccomp
+      args->seccomp_p = true;
       break;
 #endif
    case 'b': {  // --bind

@@ -116,24 +116,24 @@ AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
 
-AC_ARG_WITH([fake-syscalls],
-  AS_HELP_STRING([--with-fake-syscalls=(yes|no)],
-                 [support for --fake-syscalls]))
-AS_CASE([$with_fake_syscalls],
+AC_ARG_WITH([seccomp],
+  AS_HELP_STRING([--with-seccomp=(yes|no)],
+                 [support for --seccomp]))
+AS_CASE([$with_seccomp],
   [yes],  # explicit “yes”
-    [want_fake_syscalls=yes
-     need_fake_syscalls=yes
-     msg_fake_syscalls=yes],
+    [want_seccomp=yes
+     need_seccomp=yes
+     msg_seccomp=yes],
   [no],   # explicit “no”
-    [want_fake_syscalls=no
-     need_fake_syscalls=no
-     msg_fake_syscalls=no],
+    [want_seccomp=no
+     need_seccomp=no
+     msg_seccomp=no],
   [''],   # option not specified
-    [want_fake_syscalls=yes
-     need_fake_syscalls=no
-     msg_fake_syscalls='if tested working'],
+    [want_seccomp=yes
+     need_seccomp=no
+     msg_seccomp='if tested working'],
   [*],    # anything else
-    [AC_MSG_ERROR([invalid --with-fake-syscalls arg: $with_fake_syscalls])])
+    [AC_MSG_ERROR([invalid --with-seccomp arg: $with_seccomp])])
 
 AC_ARG_WITH([libsquashfuse],
   AS_HELP_STRING([--with-libsquashfuse=@<:@yes|no|PATH@:>@],
@@ -345,7 +345,7 @@ AC_CHECK_DECL(FNM_EXTMATCH,
               [[#define _GNU_SOURCE
                 #include <fnmatch.h>]])
 
-# Should we build fake syscalls?
+# Should we build seccomp?
 AC_MSG_CHECKING([for seccomp filter support])
 AC_RUN_IFELSE([AC_LANG_SOURCE([[
     #define _GNU_SOURCE
@@ -368,17 +368,17 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
     }
   ]])],
   [AC_MSG_RESULT([yes])
-   test_fake_syscalls=yes],
+   test_seccomp=yes],
   [AC_MSG_RESULT([no])
-   test_fake_syscalls=no],
+   test_seccomp=no],
   [AC_MSG_ERROR([cross-compilation not supported])])
-AS_IF([test $test_fake_syscalls = yes],
-      [AS_IF([test $want_fake_syscalls = yes],
-             [have_fake_syscalls=yes],   # works and =yes or not given
-             [have_fake_syscalls=no])],  # works and =no
-      [AS_IF([test $need_fake_syscalls = yes],
-             [have_fake_syscalls=yes],   # doesn’t work and =yes (build anyway)
-             [have_fake_syscalls=no])])  # doesn’t work and =no or not given
+AS_IF([test $test_seccomp = yes],
+      [AS_IF([test $want_seccomp = yes],
+             [have_seccomp=yes],   # works and =yes or not given
+             [have_seccomp=no])],  # works and =no
+      [AS_IF([test $need_seccomp = yes],
+             [have_seccomp=yes],   # doesn’t work and =yes (build anyway)
+             [have_seccomp=no])])  # doesn’t work and =no or not given
 
 
 ### SquashFS #################################################################
@@ -690,8 +690,8 @@ AC_SUBST([SPHINX])
 
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
-AS_IF([test $have_fake_syscalls = yes],
-      [AC_DEFINE([HAVE_FAKE_SYSCALLS], [1], [fake syscalls supported])])
+AS_IF([test $have_seccomp = yes],
+      [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
@@ -860,9 +860,9 @@ Building Charliecloud
     libsquashfuse_ll ... ${have_libsquashfuse_ll}
     ll.h header ... ${have_ll_h}
 
-  fake system calls: ${have_fake_syscalls}
-    enabled ... ${msg_fake_syscalls}
-    tested working ... ${test_fake_syscalls}
+  fake system calls with seccomp(2): ${have_seccomp}
+    enabled ... ${msg_seccomp}
+    tested working ... ${test_seccomp}
 
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}

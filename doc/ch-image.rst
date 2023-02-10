@@ -551,19 +551,18 @@ Options:
 
   :code:`--force[=MODE]`
     Use unprivileged build workarounds of mode :code:`MODE`, which can be
-    :code:`fakeroot` or :code:`fake-syscalls` (the default). See section
-    “Privilege model” below for details on what this does and when you might
-    need it.
+    :code:`fakeroot` or :code:`seccomp` (the default). See section “Privilege
+    model” below for details on what this does and when you might need it.
 
   :code:`--force-cmd=CMD,ARG1[,ARG2...]`
     If command :code:`CMD` is found in a :code:`RUN` instruction, add the
     comma-separated :code:`ARGs` to it. This is intended to suppress
-    validation that defeats :code:`--force=fake-syscalls`. For example,
-    :code:`-o APT::Sandbox::User=root` is added to :code:`apt` by default.
-    Implies :code:`--force=fake-syscalls`. If specified, replaces (does not
-    extend) the default suppression options. Literal commas can be escaped
-    with backslash; importantly however, backslash will need to be protected
-    from the shell also.
+    validation that defeats :code:`--force=seccomp`. For example, :code:`-o
+    APT::Sandbox::User=root` is added to :code:`apt` by default. Implies
+    :code:`--force=seccomp`. If specified, replaces (does not extend) the
+    default suppression options. Literal commas can be escaped with backslash;
+    importantly however, backslash will need to be protected from the shell
+    also.
 
   :code:`-n`, :code:`--dry-run`
     Don’t actually execute any Dockerfile instructions.
@@ -686,12 +685,12 @@ prints exactly what it is doing.
 .. warning::
 
    Because of :code:`fakeroot` mode’s complexity, we plan to remove it if
-   :code:`fake-syscalls` mode performs well enough. If you have a situation
-   where :code:`fakeroot` mode works and :code:`fake-syscalls` does not,
-   please let us know.
+   :code:`seccomp` mode performs well enough. If you have a situation where
+   :code:`fakeroot` mode works and :code:`seccomp` does not, please let us
+   know.
 
-Workaround mode :code:`fake-syscalls` (default)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Workaround mode :code:`seccomp` (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This mode uses the kernel’s :code:`seccomp(2)` system call filtering to
 intercept certain privileged system calls, do absolutely nothing, and return
