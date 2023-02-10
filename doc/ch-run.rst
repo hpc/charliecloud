@@ -534,7 +534,7 @@ Example valid assignments that are probably not what you want:
    * - :code:`FOO="bar"`
      - :code:`FOO`
      - :code:`"bar"`
-     - double quotes aren't stripped
+     - double quotes aren’t stripped
    * - :code:`FOO=bar # baz`
      - :code:`FOO`
      - :code:`bar # baz`

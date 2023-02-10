@@ -32,7 +32,7 @@ Charliecloud container:
   4. Your software stored on the host but compiled in the container.
 
 .. note::
-   Maybe you don't have to install the software at all. Is there already a
+   Maybe you don’t have to install the software at all. Is there already a
    trustworthy image on Docker Hub you can use as a base?
 
 Third-party software via package manager
@@ -88,7 +88,7 @@ So what is going on here?
 3. For a few dependencies and then OpenMPI itself:
 
    1. Download and untar. Note the use of variables to make adjusting the URL
-      and versions easier, as well as the explanation of why we're not using
+      and versions easier, as well as the explanation of why we’re not using
       :code:`dnf`, given that several of these packages are included in
       CentOS.
 
@@ -98,7 +98,7 @@ So what is going on here?
 4. Clean up, in order to reduce the size of the build cache as well as the
    resulting Charliecloud image (:code:`rm -Rf`).
 
-.. Finally, because it's a container image, you can be less tidy than you
+.. Finally, because it’s a container image, you can be less tidy than you
    might be on a normal system. For example, the above downloads and builds in
    :code:`/` rather than :code:`/usr/local/src`, and it installs MPI into
    :code:`/usr` rather than :code:`/usr/local`.

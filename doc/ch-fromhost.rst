@@ -254,8 +254,8 @@ then run :code:`ldconfig`::
 
   $ ch-fromhost --nvidia /var/tmp/baz
   asking ldconfig for shared library destination
-  /sbin/ldconfig: Can't stat /libx32: No such file or directory
-  /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
+  /sbin/ldconfig: Can’t stat /libx32: No such file or directory
+  /sbin/ldconfig: Can’t stat /usr/libx32: No such file or directory
   shared library destination: /usr/lib64//bind9-export
   injecting into image: /var/tmp/baz
     /usr/bin/nvidia-smi -> /usr/bin (inferred)
@@ -275,8 +275,8 @@ Inject the Cray-enabled MPI libraries into the image, and then run
 
   $ ch-fromhost --cray-mpi /var/tmp/baz
   asking ldconfig for shared library destination
-  /sbin/ldconfig: Can't stat /libx32: No such file or directory
-  /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
+  /sbin/ldconfig: Can’t stat /libx32: No such file or directory
+  /sbin/ldconfig: Can’t stat /usr/libx32: No such file or directory
   shared library destination: /usr/lib64//bind9-export
   found shared library: /usr/lib64/liblustreapi.so.1
   found shared library: /opt/cray/xpmem/default/lib64/libxpmem.so.0

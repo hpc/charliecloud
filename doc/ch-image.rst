@@ -262,7 +262,7 @@ tutorial for details.
 
 The storage directory format changes on no particular schedule.
 :code:`ch-image` is normally able to upgrade directories produced by a given
-Charliecloud version up to one year after that version's release. Upgrades
+Charliecloud version up to one year after that version’s release. Upgrades
 outside this window and downgrades are not supported. In these cases,
 :code:`ch-image` will refuse to run until you delete and re-initialize the
 storage directory with :code:`ch-image reset`.
@@ -876,7 +876,7 @@ installing into the image::
    FROM centos:7
 
    RUN /opt/bin/cc hello.c
-   #COPY /opt/lib/*.so /usr/local/lib   # fail: COPY doesn't bind mount
+   #COPY /opt/lib/*.so /usr/local/lib   # fail: COPY doesn’t bind mount
    RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
    RUN ldconfig
 
