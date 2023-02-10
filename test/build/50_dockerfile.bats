@@ -190,7 +190,7 @@ COPY --chown= foo bar
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't parse: -:2,14"* ]]
+    [[ $output = *"can’t parse: -:2,14"* ]]
 
     # Empty input.
     run ch-image build -t tmpimg -f /dev/null .
