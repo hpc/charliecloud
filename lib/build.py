@@ -13,16 +13,22 @@ import sys
 
 import charliecloud as ch
 import build_cache as bu
-import image as im
-import fakeroot
-import pull
 import filesystem as fs
+import force
+import image as im
+import pull
 
 
 ## Globals ##
 
+# ARG values that are set before FROM.
+argfrom = {}
+
 # Namespace from command line arguments. FIXME: be more tidy about this ...
 cli = None
+
+# --force injector object (initialized to something meaningful during FROM).
+forcer = None
 
 # Images that we are building. Each stage gets its own image. In this
 # dictionary, an image appears exactly once or twice. All images appear with
@@ -32,9 +38,6 @@ images = dict()
 # Number of stages. This is obtained by counting FROM instructions in the
 # parse tree, so we can use it for error checking.
 image_ct = None
-
-# ARG values that are set before FROM.
-argfrom = {}
 
 
 ## Imports not in standard library ##
@@ -86,22 +89,20 @@ def main(cli_):
       ch.INFO("inferred image name: %s" % cli.tag)
 
    # --force and friends.
-   if (cli.force and cli.no_force_detect):
-      ch.FATAL("--force and --no-force-detect are incompatible")
    if (cli.force_cmd and cli.force == "fakeroot"):
       ch.FATAL("--force-cmd and --force=fakeroot are incompatible")
-   if (cli.force_cmd):
-      cli.force = "seccomp"
+   if (not cli.force_cmd):
+      cli.force_cmd = force.FORCE_CMD_DEFAULT
    else:
-      cli.force_cmd = fakeroot.FORCE_CMD_DEFAULT
-   ch.VERBOSE("force mode: %s" % cli.force)
-   if (cli.force == "seccomp"):
+      cli.force = "seccomp"
+      # convert cli.force_cmd to parsed dict
       force_cmd = dict()
       for line in cli.force_cmd:
-         (cmd, args) = fakeroot.force_cmd_parse(line)
+         (cmd, args) = force.force_cmd_parse(line)
          force_cmd[cmd] = args
          ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
-   cli.force_cmd = force_cmd
+      cli.force_cmd = force_cmd
+   ch.VERBOSE("force mode: %s" % cli.force)
 
    # Deal with build arguments.
    def build_arg_get(arg):
@@ -194,12 +195,8 @@ def main(cli_):
       ch.FATAL("no instructions found: %s" % cli.file)
    assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
    if (cli.force and ml.miss_ct != 0):
-      if (fakeroot.config.inject_ct == 0):
-         assert (not fakeroot.config.init_done)
-         ch.WARNING("--force=fakeroot specified, but nothing to do")
-      else:
-         ch.INFO("--force=fakeroot: init OK & modified %d RUN instructions"
-                 % fakeroot.config.inject_ct)
+      ch.INFO("--force=%s: modified %d RUN instructions"
+              % (cli.force, forcer.run_modified_ct))
    ch.INFO("grown in %d instructions: %s"
            % (ml.instruction_total_ct, ml.inst_prev.image))
    # FIXME: remove when we're done encouraging people to use the build cache.
@@ -403,8 +400,8 @@ class Instruction(abc.ABC):
 
    def checkout_for_build(self, base_image=None):
       self.parent.checkout(base_image)
-      fakeroot.config = fakeroot.detect(self.image.unpack_path,
-                                        cli.force, cli.no_force_detect)
+      global forcer
+      forcer = force.new(self.image.unpack_path, cli.force, cli.force_cmd)
 
    def commit(self):
       path = self.image.unpack_path
@@ -1097,7 +1094,11 @@ class Run(Instruction):
 
    @property
    def str_name(self):
-      if (cli.force == "fakeroot"):
+      # Can’t get this from the forcer object because it might not have been
+      # initialized yet.
+      if (cli.force is None):
+         tag = ""
+      elif (cli.force == "fakeroot"):
          # FIXME: This causes spurious misses because it adds the force tag to
          # *all* RUN instructions, not just those that actually were modified
          # (i.e, any RUN instruction will miss the equivalent RUN without
@@ -1107,31 +1108,17 @@ class Run(Instruction):
          tag = ".F"
       elif (cli.force == "seccomp"):
          tag = ".S"
-      elif (cli.force == None):
-         tag = ""
       else:
          assert False, "unreachable code reached"
       return super().str_name + tag
 
    def execute(self):
       rootfs = self.image.unpack_path
-      fakeroot.config.init_maybe(rootfs, self.cmd, self.env_build)
-      cmd = fakeroot.config.inject_run(self.cmd)
+      cmd = forcer.run_modified(self.cmd, self.env_build)
       exit_code = ch.ch_run_modify(rootfs, cmd, self.env_build, self.workdir,
                                    cli.bind, fail_ok=True)
       if (exit_code != 0):
          msg = "build failed: RUN command exited with %d" % exit_code
-         if (cli.force):
-            if (isinstance(fakeroot.config, fakeroot.Fakeroot_Noop)):
-               ch.FATAL(msg, "--force=fakeroot specified, but no suitable config found")
-            else:
-               ch.FATAL(msg)  # inited OK but the build still failed
-         elif (not cli.no_force_detect):
-            if (fakeroot.config.init_done):
-               ch.FATAL(msg, "--force=fakeroot may fix it")
-            else:
-               ch.FATAL(msg, "current version of --force=fakeroot wouldn't help")
-         assert False, "unreachable code reached"
 
 
 class I_run_exec(Run):

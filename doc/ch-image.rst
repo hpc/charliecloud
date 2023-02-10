@@ -567,9 +567,6 @@ Options:
   :code:`-n`, :code:`--dry-run`
     Don’t actually execute any Dockerfile instructions.
 
-  :code:`--no-force-detect`
-    Don’t try to detect if the workarounds in :code:`--force` would help.
-
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
 

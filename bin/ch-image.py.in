@@ -194,8 +194,6 @@ def main():
                    help="command arg(s) to add under --force=seccomp")
    sp.add_argument("-n", "--dry-run", action="store_true",
                    help="don't execute instructions")
-   sp.add_argument("--no-force-detect", action="store_true",
-                   help="don't try to detect if --force workarounds would work")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",
