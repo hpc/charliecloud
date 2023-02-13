@@ -68,3 +68,18 @@ EOF
     [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
     [[ $output = *'grown in 4 instructions: tmpimg'* ]]
 }
+
+@test "${tag}: dpkg(8)" {
+    # Typically folks will use apt-get(8), but bare dpkg(8) also happens.
+    scope standard
+    [[ $(uname -m) = x86_64 ]] || skip 'amd64 only'
+
+    # NOTE: This produces a broken system because we ignore openssh-client’s
+    # dependencies, but it’s good enough to test --force.
+    ch-image -v build --rebuild --force -t tmpimg -f - . <<'EOF'
+FROM debian:buster
+RUN apt-get update && apt install -y wget
+RUN wget -nv http://ftp.us.debian.org/debian/pool/main/o/openssh/openssh-client_8.4p1-5+deb11u1_amd64.deb
+RUN dpkg --install --force-depends *.deb
+EOF
+}
