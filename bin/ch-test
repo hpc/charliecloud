@@ -901,7 +901,7 @@ done
 printf 'ch-run:       %s (%s)\n' "${ch_bin}/ch-run" "$ch_libc"
 printf 'bats:         %s (%s' "$bats" "$bats_version"
 # Complain if bats version < 1.2.1
-if [[ $(printf "$bats_version\n1.2.1" | sort -V | head -1) != '1.2.1' ]]; then
+if [[ $(printf '%s\n1.2.1' "$bats_version" | sort -V | head -1) != '1.2.1' ]]; then
     printf '; warning: unsupported b/c ≤ 1.2.1)\n'
 else
     printf ')\n'
