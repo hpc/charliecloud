@@ -228,7 +228,7 @@ experimental and has a couple quirks.
    examples for details.
 
 5. Tested only for C programs compiled with GCC. Additional bind mount or
-   kluding may be needed for untested use cases. If you'd like to use another
+   kludging may be needed for untested use cases. If you'd like to use another
    compiler or programming environment, please get in touch so we can implement
    the necessary support.
 
