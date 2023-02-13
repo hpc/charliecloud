@@ -281,8 +281,9 @@ FAKEROOT_DEFAULT_CONFIGS = {
     "each": ["fakeroot"] },
 }
 
-# FIXME
-FORCE_CMD_DEFAULT = None
+# Default value of --force-cmd.
+FORCE_CMD_DEFAULT = { "apt":     ["-o", "APT::Sandbox::User=root"],
+                      "apt-get": ["-o", "APT::Sandbox::User=root"] }
 
 
 ## Functions ###
@@ -412,3 +413,39 @@ class Fakeroot(Base):
          self.install_done = True
       return self.each + args
 
+
+class Seccomp(Base):
+
+   __slots__ = ("force_cmds",)
+
+   def __init__(self, force_cmds):
+      super().__init__()
+      self.force_cmds = force_cmds
+
+   @property
+   def ch_run_args(self):
+      return super().ch_run_args + ["--seccomp"]
+
+   def run_modified_(self, args, env):
+      args = args.copy()
+      for (cmd, args_inject) in self.force_cmds.items():
+         args_new = list()
+         for word in args:
+            if (word == cmd):
+               # It’s a list-style RUN, e.g.:
+               #
+               #   RUN ["apt", "install", "-y", "foo"]
+               args_new += [word] + args_inject
+            else:
+               # It’s a shell-style RUN, e.g.:
+               #
+               #   RUN apt install -y foo
+               #   RUN echo foo&&apt install -y foo
+               #   RUN ["/bin/sh", "-c", "apt install -y foo"]
+               #
+               # Note this is a no-op if the command doesn’t contain cmd.
+               str_inject = ch.argv_to_string(args_inject)
+               args_new.append(re.sub(r"\b(%s)(\s)" % cmd,
+                                      r"\1 %s\2" % str_inject, word))
+         args = args_new
+      return args

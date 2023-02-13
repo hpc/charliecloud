@@ -84,9 +84,6 @@ int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
 
    Zero means the syscall does not exist on that architecture.
 
-   Other syscalls we considered but decided not to block: setgid(2)/setuid(2)
-   and friends, setgroups(2), capset(2).
-
    NOTE: The total number of faked syscalls (i.e., non-zero entries below)
    must be somewhat less than 256. I haven’t computed the exact limit. There
    will be an assertion failure at runtime if this is exceeded.
