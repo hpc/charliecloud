@@ -210,6 +210,12 @@ pict_ok () {
     fi
 }
 
+pmix_or_skip () {
+    if [[ "$CH_TEST_SRUN_MPI" != 'pmix'* ]]; then
+        skip 'srun missing pmix support'
+    fi
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
@@ -413,7 +419,7 @@ ch_mpirun_np="-np ${ch_cores_node}"
 # shellcheck disable=SC2034
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
-    srun_mpi=$CH_TEST_SLURM_MPI
+    [[ -z "$CH_TEST_SLURM_MPI" ]] || srun_mpi="--mpi=$CH_TEST_SLURM_MPI"
     ch_multiprocess=yes
     ch_mpirun_node="srun $srun_mpi --ntasks-per-node 1"
     ch_mpirun_core="srun $srun_mpi --ntasks-per-node $ch_cores_node"

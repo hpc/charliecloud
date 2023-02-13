@@ -7,6 +7,12 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
+
+    # If MPICH, require pmix. Unlike OpenMPI, we were unable to configure MPICH
+    # to use both pmi2 and pmix with minimal effort.
+    if [[ "$ch_tag" == *'mpich'* ]]; then
+        pmix_or_skip
+    fi
 }
 
 count_ranks () {

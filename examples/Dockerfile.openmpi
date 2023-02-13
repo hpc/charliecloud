@@ -21,6 +21,7 @@ RUN cd openmpi-${MPI_VERSION} \
     ./configure --prefix=/usr/local \
                 --sysconfdir=/mnt/0 \
                 --with-pmix=/usr/local \
+                --with-pmi=/usr/local \
                 --with-libfabric=/usr/local \
                 --disable-pty-support \
                 --enable-mca-no-build=btl-openib,plm-slurm \

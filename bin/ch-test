@@ -893,7 +893,7 @@ while [[ $# -gt 0 ]]; do
         ;;
     --srun-mpi=*)
         require_unset srun_mpi
-        srun_mpi="--mpi=${opt#*=}"
+        srun_mpi="${opt#*=}"
         ;;
     --lustre)
         require_unset lustredir
@@ -971,7 +971,7 @@ vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
 # The --mpi default produces a missing argument, e.g., --mpi='', when
 # testing on nodes not in a SLURM allocation. This, aside from uglying up the
 # test option output, is benign: $srun_mpi is only used in $ch_multinode.
-vset CH_TEST_SLURM_MPI "$srun_mpi"     "$CH_TEST_SLURM_MPI" "--mpi=$SLURM_MPI_TYPE" \
+vset CH_TEST_SLURM_MPI "$srun_mpi"     "$CH_TEST_SLURM_MPI" "$SLURM_MPI_TYPE" \
                       21 'srun mpi type'
 vset CH_TEST_OFI_PATH  "$fi_path"     "$CH_TEST_OFI_PATH"  skip \
                       21 'ofi provider(s) path'
@@ -1023,9 +1023,9 @@ if [[ -n "$FI_PROVIDER_PATH" ]]; then
     fatal 'host FI_PROVIDER_PATH set'
 fi
 
-# If srun --mpi=pmix set variable to avoid spurious error. See
+# If srun --mpi=pmix, set variable to avoid spurious error. See
 # https://github.com/open-mpi/ompi/issues/7516.
-if [[ "$CH_TEST_SLURM_MPI" == '--mpi=pmix' ]]; then
+if [[ "$CH_TEST_SLURM_MPI" == 'pmix'* ]]; then
     export PMIX_MCA_gds=hash
 fi
 

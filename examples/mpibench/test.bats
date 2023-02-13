@@ -23,6 +23,12 @@ setup () {
     # we get more consistent results. Npmin is ommitted as we are only running
     # with two processes, one per node.
     imb_perf_args="-iter 100 -iter_policy off"
+
+    # If MPICH, require pmix. Unlike OpenMPI, we were unable to configure MPICH
+    # to use both pmi2 and pmix with minimal effort.
+    if [[ "$ch_tag" == *'mpich'* ]]; then
+        pmix_or_skip
+    fi
 }
 
 check_errors () {
