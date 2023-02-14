@@ -899,12 +899,10 @@ while [[ $# -gt 0 ]]; do
 done
 
 printf 'ch-run:       %s (%s)\n' "${ch_bin}/ch-run" "$ch_libc"
-printf 'bats:         %s (%s' "$bats" "$bats_version"
+printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
 # Complain if bats version < 1.2.1
 if [[ $(printf '%s\n1.2.1' "$bats_version" | sort -V | head -1) != '1.2.1' ]]; then
-    printf '; warning: unsupported b/c ≤ 1.2.1)\n'
-else
-    printf ')\n'
+    warning 'bats version unsupported b/c < 1.2.1'
 fi
 printf 'tests:        %s\n' "$CHTEST_DIR"
 printf 'installed:    %s\n' "${CHTEST_INSTALLED:-no}"
