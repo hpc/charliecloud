@@ -211,8 +211,8 @@ pict_ok () {
 }
 
 pmix_or_skip () {
-    if [[ "$CH_TEST_SRUN_MPI" != 'pmix'* ]]; then
-        skip 'srun missing pmix support'
+    if [[ "$CH_TEST_SLURM_MPI" != 'pmix'* ]]; then
+        skip 'pmix only'
     fi
 }
 

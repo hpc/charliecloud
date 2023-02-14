@@ -23,12 +23,6 @@ setup () {
     # we get more consistent results. Npmin is ommitted as we are only running
     # with two processes, one per node.
     imb_perf_args="-iter 100 -iter_policy off"
-
-    # If MPICH, require pmix. Unlike OpenMPI, we were unable to configure MPICH
-    # to use both pmi2 and pmix with minimal effort.
-    if [[ "$ch_tag" == *'mpich'* ]]; then
-        pmix_or_skip
-    fi
 }
 
 check_errors () {
@@ -113,7 +107,7 @@ check_process_ct () {
         pedantic_fail "no high speed network detected"
     fi
     # shellcheck disable=SC2086
-    hsn_enabled_bw=$(FI_PROVIDER="$cray_prov" $ch_mpirun_2_2node ch-run \
+    hsn_enabled_bw=$($ch_mpirun_2_2node ch-run \
                        "$ch_img" -- "$imb_mpi1" $imb_perf_args Sendrecv \
                      | tail -n +35 | sort -nrk6 | head -1 | awk '{print $6}')
     # Configure network transport plugins to TCP only.

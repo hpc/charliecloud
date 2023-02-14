@@ -132,7 +132,7 @@ RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
 #
 # Note: PMIX_VERSION is a variable used by OpenMPI at configure time; we use
 # PMIX_VER to avoid issues.
-ARG PMIX_VER=4.2.2
+ARG PMIX_VER=3.2.4
 RUN git clone https://github.com/openpmix/openpmix.git \
   && cd openpmix \
   && git checkout v$PMIX_VER \

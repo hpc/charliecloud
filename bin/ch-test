@@ -895,6 +895,10 @@ while [[ $# -gt 0 ]]; do
         require_unset srun_mpi
         srun_mpi="${opt#*=}"
         ;;
+    --srun-mpi)
+        require_unset srun_mpi
+        srun_mpi=$1; shift
+        ;;
     --lustre)
         require_unset lustredir
         lustredir=$1; shift
