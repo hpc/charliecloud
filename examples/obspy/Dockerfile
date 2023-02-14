@@ -21,7 +21,8 @@ WORKDIR /usr/local/src
 ARG MC_VERSION=latest
 ARG MC_FILE=Miniconda3-$MC_VERSION-Linux-x86_64.sh
 RUN wget -nv https://repo.anaconda.com/miniconda/$MC_FILE
-RUN bash $MC_FILE -bf -p /usr/local
+# Miniconda will fail if the HOME variable is not set.
+RUN HOME=/home bash $MC_FILE -bf -p /usr/local
 RUN rm -Rf $MC_FILE
 RUN which conda && conda --version
 # Disable automatic conda upgrades for predictable versioning.
