@@ -79,7 +79,29 @@ EOF
     ch-image -v build --rebuild --force -t tmpimg -f - . <<'EOF'
 FROM debian:buster
 RUN apt-get update && apt install -y wget
-RUN wget -nv http://ftp.us.debian.org/debian/pool/main/o/openssh/openssh-client_8.4p1-5+deb11u1_amd64.deb
+RUN wget -nv https://snapshot.debian.org/archive/debian/20230213T151507Z/pool/main/o/openssh/openssh-client_8.4p1-5%2Bdeb11u1_amd64.deb
 RUN dpkg --install --force-depends *.deb
+EOF
+}
+
+@test "${tag}: rpm(8)" {
+    # Typically folks will use yum(8) or dnf(8), but bare rpm(8) also happens.
+    scope standard
+    [[ $(uname -m) = x86_64 ]] || skil 'amd64 only'
+
+    ch-image -v build --rebuild --force -t tmpimg -f - . <<'EOF'
+FROM almalinux:8
+RUN curl -sO https://repo.almalinux.org/vault/8.6/BaseOS/x86_64/os/Packages/openssh-8.0p1-13.el8.x86_64.rpm
+RUN rpm --install *.rpm
+EOF
+}
+
+@test "${tag}: list form" {
+    scope standard
+
+    ch-image -v build --rebuild --force -t tmpimg -f - . <<'EOF'
+FROM debian:buster
+RUN ["apt-get", "update"]
+RUN ["apt-get", "install", "-y", "openssh-client"]
 EOF
 }
