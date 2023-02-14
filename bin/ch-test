@@ -81,6 +81,13 @@ EOF
 
 ### Functions
 
+build_auto () {
+    if [[ ! -f ${TMP_}/build_auto.bats ]]; then
+        fatal "${TMP_}/build_auto.bats not found"
+    fi
+    bats "${TMP_}/build_auto.bats"
+}
+
 builder_check () {
     printf 'checking builder ...\n'
     case $CH_TEST_BUILDER in
@@ -358,10 +365,7 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
-    if [[ ! -f ${TMP_}/build_auto.bats ]]; then
-        fatal "${TMP_}/build_auto.bats not found"
-    fi
-    bats "${TMP_}/build_auto.bats" build/*.bats
+    bats build/*.bats
 }
 
 test_examples () {
@@ -382,7 +386,7 @@ test_make () {
     local tag
     printf "finding tests compatible with %s phase settings ...\n" "$phase"
     case $phase in
-    build)
+    build|images-build)
         for i in $images $examples; do
            if test_make_check_image "$i"; then
                echo "found: $i"
@@ -466,7 +470,7 @@ test_make_auto () {
             exit 0
         fi
 
-        if [[ $mode == build ]]; then
+        if [[ $mode == *build ]]; then
             case $basename_ in
                 Build|Build.*)
                     test_make_template_print 'build_custom.bats.in'
@@ -788,7 +792,7 @@ fi
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    all|build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+    all|build|clean|examples|mk-perm-dirs|images-build|rm-perm-dirs|run)
         require_unset phase
         phase=$opt
         ;;
@@ -1041,6 +1045,7 @@ case $phase in
         dir_tar_mk
         builder_check
         test_make
+        build_auto
         test_build
 
         phase=run
@@ -1061,6 +1066,7 @@ case $phase in
         builder_check
         dir_tar_mk
         test_make
+        build_auto
         test_build
         win
         ;;
@@ -1074,6 +1080,14 @@ case $phase in
     examples)
         test_make
         test_examples
+        win
+        ;;
+    images-build)
+        builder_check
+        dir_tar_mk
+        test_make
+        build_auto
+        test_build
         win
         ;;
     mk-perm-dirs)
