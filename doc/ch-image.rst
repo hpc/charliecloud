@@ -604,14 +604,15 @@ utilities.
 
 Without workarounds provided by :code:`--force`, this approach does confuse
 programs that expect to have real root privileges, most notably distribution
-package installers. This subsection describes why that happens.
+package installers. This subsection describes why that happens and what you
+can do about it.
 
 :code:`ch-image` executes all instructions as the normal user who invokes it.
-For :code:`RUN`, this is accomplished with :code:`ch-run -w --uid=0 --gid=0`
-(and some other arguments), i.e., your host EUID and EGID both mapped to zero
-inside the container, and only one UID (zero) and GID (zero) are available
-inside the container. Under this arrangement, processes running in the
-container for each :code:`RUN` *appear* to be running as root, but many
+For :code:`RUN`, this is accomplished with :code:`ch-run` arguments including
+:code:`-w --uid=0 --gid=0`. That is, your host EUID and EGID are both mapped
+to zero inside the container, and only one UID (zero) and GID (zero) are
+available inside the container. Under this arrangement, processes running in
+the container for each :code:`RUN` *appear* to be running as root, but many
 privileged system calls will fail without the workarounds described below.
 **This affects any fully unprivileged container build, not just
 Charliecloud.**
@@ -674,6 +675,9 @@ This mode has three basic steps:
      Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
      RPM-based distributions.
 
+:code:`RUN` instructions that *do not* seem to need modification are
+unaffected by this mode.
+
 The details are specific to each distribution. :code:`ch-image` analyzes image
 content (e.g., grepping :code:`/etc/debian_version`) to select a
 configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
@@ -704,17 +708,29 @@ is that it’s a very lazy liar; even the most cursory consistency checks will
 fail, e.g., :code:`getuid(2)` after :code:`setuid(2)`.
 
 While this mode does not provide consistency, it does offer a hook to help
-prevent programs asking for consistency. For example, :code:`apt -o
-APT::Sandbox::User=root` will prevent :code:`apt` from attempting to drop
+prevent programs asking for consistency. For example, :code:`apt-get -o
+APT::Sandbox::User=root` will prevent :code:`apt-get` from attempting to drop
 privileges, which `it verifies
 <https://salsa.debian.org/apt-team/apt/-/blob/cacdb549/apt-pkg/contrib/fileutl.cc#L3343>`_,
 exiting with failure if the correct IDs are not found (which they won’t be
 under this approach). This can be expressed with
-:code:`--force-cmd=apt,-o,APT::Sandbox::User=root`, though this particular
+:code:`--force-cmd=apt-get,-o,APT::Sandbox::User=root`, though this particular
 case is built-in and does not need to be specified. The full default
 configuration can be examined in the source file :code:`fakeroot.py`. If any
 :code:`--force-cmd` are specified, this replaces (rather than extends) the
 default configuration.
+
+Note that because the substitutions are a simple regex with no knowledge of
+shell syntax, they can cause unwanted modifications. For example, :code:`RUN
+apt-get install -y apt-get` will be run as :code:`/bin/sh -c "apt-get -o
+APT::Sandbox::User=root install -y apt-get -o APT::Sandbox::User=root"`. One
+workaround is to add escape syntax transparent to the shell; e.g., :code:`RUN
+apt-get install -y a\pt-get`.
+
+This mode executes *all* :code:`RUN` instructions with the :code:`seccomp(2)`
+filter and has no knowledge of which instructions actually used the
+intercepted system calls. Therefore, the printed “instructions modified”
+number is only a count of instructions with a hook applied as described above.
 
 Compatibility with other Dockerfile interpreters
 ------------------------------------------------
