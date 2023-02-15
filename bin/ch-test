@@ -55,7 +55,7 @@ Usage:
 
   $ $(basename "$0") [PHASE] [--scope SCOPE] [--pack-fmt FMT] [OPTIONS]
 
-Valid phases: build, run, examples, all, mk-perm-dirs, clean, rm-perm-dirs
+Valid phases: build, build-images, run, examples, all, mk-perm-dirs, clean, rm-perm-dirs
 Valid scopes: quick, standard, full
 Valid pack formats: squash-mount, tar-unpack, squash-unpack
 
@@ -81,10 +81,15 @@ EOF
 
 ### Functions
 
-build_auto () {
+build_auto_validate () {
     if [[ ! -f ${TMP_}/build_auto.bats ]]; then
         fatal "${TMP_}/build_auto.bats not found"
     fi
+}
+
+build_images () {
+    echo 'building images ...'
+    build_auto_validate
     bats "${TMP_}/build_auto.bats"
 }
 
@@ -365,7 +370,8 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
-    bats build/*.bats
+    build_auto_validate
+    bats "${TMP_}/build_auto.bats" build/*.bats
 }
 
 test_examples () {
@@ -386,7 +392,7 @@ test_make () {
     local tag
     printf "finding tests compatible with %s phase settings ...\n" "$phase"
     case $phase in
-    build|images-build)
+    build|build-images)
         for i in $images $examples; do
            if test_make_check_image "$i"; then
                echo "found: $i"
@@ -470,7 +476,7 @@ test_make_auto () {
             exit 0
         fi
 
-        if [[ $mode == *build ]]; then
+        if [[ $mode == build || $mode == build-images ]]; then
             case $basename_ in
                 Build|Build.*)
                     test_make_template_print 'build_custom.bats.in'
@@ -792,7 +798,7 @@ fi
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    all|build|clean|examples|mk-perm-dirs|images-build|rm-perm-dirs|run)
+    all|build|clean|examples|mk-perm-dirs|build-images|rm-perm-dirs|run)
         require_unset phase
         phase=$opt
         ;;
@@ -1066,7 +1072,6 @@ case $phase in
         builder_check
         dir_tar_mk
         test_make
-        build_auto
         test_build
         win
         ;;
@@ -1082,12 +1087,11 @@ case $phase in
         test_examples
         win
         ;;
-    images-build)
+    build-images)
         builder_check
         dir_tar_mk
         test_make
-        build_auto
-        test_build
+        build_images
         win
         ;;
     mk-perm-dirs)

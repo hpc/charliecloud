@@ -86,6 +86,9 @@ allows trading off thoroughness versus time.
     Create the filesystem permissions directories. Requires
     :code:`--perm-dirs`.
 
+  :code:`build-images`
+    Build images from :code:`build` phase, without running the associated tests.
+
   :code:`clean`
     Delete automatically-generated test files, and packed and unpacked image
     directories.
