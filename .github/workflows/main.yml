@@ -96,16 +96,10 @@ jobs:
           sudo apt-get install cloc
           misc/loc
 
-      - name: install Bats
-        run: |
-          cd /usr/local/src
-          sudo apt install bats
-          bats --version
-          [[ $(command -v bats) == /usr/local/bin/bats ]]
-          [[ $(bats --version) == 'Bats 1.2.1' ]]
-
       - name: install/configure dependencies, all
         run: |
+          # install Bats
+          sudo apt-get install bats
           # configure doesn't tell us about these.
           sudo apt-get install attr pigz pv
           # configure does tell us about these.
