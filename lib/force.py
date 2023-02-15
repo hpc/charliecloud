@@ -282,6 +282,8 @@ FAKEROOT_DEFAULT_CONFIGS = {
 }
 
 # Default value of --force-cmd.
+#
+# NOTE: apt(8) tells people not to use it in scripts, but they do it anyway.
 FORCE_CMD_DEFAULT = { "apt":     ["-o", "APT::Sandbox::User=root"],
                       "apt-get": ["-o", "APT::Sandbox::User=root"] }
 

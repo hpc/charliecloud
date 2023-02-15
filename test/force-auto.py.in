@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
-# This script generates a BATS file to exercise "ch-image build --force"
-# across a variety of distributions. It's used by Makefile.am.
+# This script generates a BATS file to exercise “ch-image build --force”
+# across a variety of distributions. It’s used by Makefile.am.
 #
 # About each distribution, we remember:
 #
@@ -14,23 +14,23 @@
 #
 # For each distribution, we test these factors:
 #
-#   - whether or not --force is given (2)
+#   - the value of --force (absent, fakeroot, seccomp) (3)
 #   - whether or not preparation for --force is already done (2)
 #   - commands that (4)
-#       - don't need --force, and fail
-#       - don't need --force, and succeed
+#       - don’t need --force, and fail
+#       - don’t need --force, and succeed
 #       - apparently need --force but in fact do not
 #       - really do need --force
 #
-# This would appear to yield 2×2×4 = 16 tests per distribution. However:
+# This would appear to yield 3×2×4 = 24 tests per distribution. However:
 #
-#   1. We only try pre-prepared images for "really need" commands with --force
-#      given, to save time, so it's at most 9 potential tests.
+#   1. We only try pre-prepared images for “really need” commands with --force
+#      given, to save time, so it’s at most 9 potential tests.
 #
-#   2. Some distros don't have any pre-preparation step, so that test doesn't
-#      make sense.
+#   2. The pre-preparation set doesn’t make sense for some distros or for
+#      --force=seccomp.
 #
-#   3. Some distros don't have an "apparently need" command determined.
+#   3. Some distros don’t have an “apparently need” command determined.
 #
 # Bottom line, the number of tests per distro varies. See the code below for
 # specific details.
@@ -58,6 +58,7 @@ class Run(enum.Enum):
 class Test(abc.ABC):
 
    arch_excludes = []
+   force_excludes = []
    base = None
    config = None
    scope = Scope.FULL
@@ -65,15 +66,14 @@ class Test(abc.ABC):
    runs = { Run.UNNEEDED_FAIL: "false",
             Run.UNNEEDED_WIN: "true" }
 
-   def __init__(self, run, forced, preprep):
+   def __init__(self, run, force, preprep):
       self.run = run
-      self.forced = forced
+      self.force = force
       self.preprep = preprep
 
    def __str__(self):
       preprep = "preprep" if self.preprep else "no preprep"
-      force = "with --force" if self.forced else "w/o --force"
-      return f"{self.base}, {self.run.value}, {force}, {preprep}"
+      return f"{self.base}, {self.run.value}, {self.force}, {preprep}"
 
    @property
    def build1_post_hook(self):
@@ -109,11 +109,17 @@ class Test(abc.ABC):
 
    def test(self):
       # skip?
-      if (self.preprep and not (self.forced and self.run == Run.NEEDED)):
+      if (self.preprep and not (self.force and self.run == Run.NEEDED)):
          print(f"\n# skip: {self}: not needed")
          return
       if (self.preprep and self.prep_run is None):
          print(f"\n# skip: {self}: no preprep command")
+         return
+      if (self.preprep and self.force == "seccomp"):
+         print(f"\n# skip: {self}: no preprep for --force=seccomp")
+         return
+      if (self.force in self.force_excludes):
+         print(f"\n# skip: {self}: --force=%s excluded" % self.force)
          return
       # scope
       if (self.scope == Scope.STANDARD or self.run == Run.NEEDED):
@@ -138,7 +144,7 @@ echo "$output"
 [[ $status -eq 0 ]]
 {self.build1_post_hook}"""
       # force
-      force = "--force" if self.forced else ""
+      force = "--force=%s" % (self.force) if self.force else ""
       # run command we're testing
       try:
          run = self.runs[self.run]
@@ -147,26 +153,16 @@ echo "$output"
          return
       # status
       if (   self.run == Run.UNNEEDED_FAIL
-          or ( self.run == Run.NEEDED and not self.forced )):
+          or ( self.run == Run.NEEDED and not self.force )):
          status = 1
       else:
          status = 0
       # output
       outs = []
-      if (self.forced):
-         outs += [f"will use --force: {self.config}"]
-         if (self.run == Run.UNNEEDED_WIN ):
-            outs += ["warning: --force specified, but nothing to do"]
-         elif (self.run in { Run.NEEDED, Run.FAKE_NEEDED }):
-            outs += ["--force: init OK & modified 1 RUN instructions"]
-      else:
-         outs += [f"available --force: {self.config}"]
+      if (self.force == "fakeroot"):
+         outs += [f"--force=fakeroot: will use: {self.config}"]
          if (self.run in { Run.NEEDED, Run.FAKE_NEEDED }):
-            outs += ["RUN: available here with --force"]
-            if (self.run == Run.NEEDED):
-               outs += ["build failed", "--force may fix it"]
-         elif (self.run == Run.UNNEEDED_FAIL):
-            outs += ["build failed", "current version of --force wouldn't help"]
+            outs += ["--force=fakeroot: modified 1 RUN instructions"]
       out = self.as_outputs(outs)
       # emit the test
       print(f"""
@@ -303,6 +299,7 @@ class T_Arch_Latest(Test):
    config = "arch"
    base = "archlinux:latest"
    arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
+   force_excludes = ["seccomp"]  # issue #FIXME
    # pacman does not exit non-zero when installing openssh fails; work
    # around this bug by grepping the pacman log.
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "pacman -Syq --noconfirm ed; ! fgrep failed: /var/log/pacman.log",
@@ -339,6 +336,6 @@ setup () {
 for (name, test) in (i for i in inspect.getmembers(sys.modules[__name__])
                      if i[0].startswith("T_")):
    for run in Run:
-      for forced in (False, True):
+      for force in (None, "fakeroot", "seccomp"):
          for preprep in (False, True):
-            test(run, forced, preprep).test()
+            test(run, force, preprep).test()
