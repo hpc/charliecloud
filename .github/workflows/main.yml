@@ -97,13 +97,9 @@ jobs:
           misc/loc
 
       - name: install Bats
-        # Previously, we installed old Bats here. Changing this to bats-core
-        # (see issue #582).
         run: |
           cd /usr/local/src
-          git clone --depth 1 --branch v1.2.1 https://github.com/bats-core/bats-core.git
-          cd bats-core
-          sudo sh -c 'umask 0022 && ./install.sh /usr/local'
+          sudo apt install bats
           bats --version
           [[ $(command -v bats) == /usr/local/bin/bats ]]
           [[ $(bats --version) == 'Bats 1.2.1' ]]

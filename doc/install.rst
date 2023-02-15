@@ -330,12 +330,7 @@ Bats
 ~~~~
 
 Bats ("Bash Automated Testing System") is a test framework for tests written
-as Bash shell scripts.
-
-Previously, the test suite relied on an unmaintained, `legacy version <https://github.com/sstephenson/bats>`_
-of Bats (v0.4.0). As of release 0.32, we will be dropping support for this
-older version in favor of `Bats-core <https://github.com/bats-core/bats-core>`_,
-specifically v1.2.1 or greater. 
+as Bash shell scripts. The test suite uses `Bats-core <https://github.com/bats-core/bats-core>`_.
 
 Buildah
 ~~~~~~~
