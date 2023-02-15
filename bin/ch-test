@@ -81,7 +81,7 @@ EOF
 
 ### Global variables
 
-bats_vmin='1.2.1'
+bats_vmin='1.2.0'
 
 
 ### Functions
