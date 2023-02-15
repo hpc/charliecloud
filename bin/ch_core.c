@@ -155,6 +155,10 @@ void bind_mount(const char *src, const char *dst, enum bind_dep,
 void bind_mounts(const struct bind *binds, const char *newroot,
                  unsigned long flags);
 void enter_udss(struct container *c);
+#ifdef HAVE_SECCOMP
+void iw(struct sock_fprog *p, int i,
+        uint16_t op, uint32_t k, uint8_t jt, uint8_t jf);
+#endif
 void join_begin(const char *join_tag);
 void join_namespace(pid_t pid, const char *ns);
 void join_namespaces(pid_t pid);
@@ -370,6 +374,16 @@ char *img_name2path(const char *name, const char *storage_dir)
    return path;
 }
 
+/* Helper function to write seccomp-bpf programs. */
+#ifdef HAVE_SECCOMP
+void iw(struct sock_fprog *p, int i,
+        uint16_t op, uint32_t k, uint8_t jt, uint8_t jf)
+{
+   p->filter[i] = (struct sock_filter){ op, jt, jf, k };
+   DEBUG("%4d: { op=%2x k=%8x jt=%3d jf=%3d }", i, op, k, jt, jf);
+}
+#endif
+
 /* Begin coordinated section of namespace joining. */
 void join_begin(const char *join_tag)
 {
@@ -503,13 +517,6 @@ void seccomp_install(void)
    struct sock_fprog p = { 0 };
    int ii, idx_allow, idx_fake, idx_next_arch;
 
-   void iw(struct sock_fprog *p, int i,
-           uint16_t op, uint32_t k, uint8_t jt, uint8_t jf)
-   {
-      p->filter[i] = (struct sock_filter){ op, jt, jf, k };
-      DEBUG("%4d: { op=%2x k=%8x jt=%3d jf=%3d }", i, op, k, jt, jf);
-   }
-
    // Count how many syscalls we are going to fake. We need this to compute
    // the right offsets for all the jumps.
    for (int ai = 0; SECCOMP_ARCHS[ai] != -1; ai++) {
@@ -538,6 +545,7 @@ void seccomp_install(void)
    // matches, fall through into the jump table, otherwise jump to the next
    // architecture (or ALLOW for the last architecture).
    ii = 0;
+   idx_next_arch = -1;  // avoid warning on some compilers
    for (int ai = 0; SECCOMP_ARCHS[ai] != -1; ai++) {
       int jump;
       idx_next_arch = ii + syscall_cts[ai] + 4;
