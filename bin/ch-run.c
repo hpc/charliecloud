@@ -435,7 +435,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #else
          exit(1);
 #endif
-      } else
+      } else if (!strcmp(arg, "seccomp")) {
+#ifdef HAVE_SECCOMP
+         exit(0);
+#else
+         exit(1);
+#endif
+      }
+      else
          FATAL("unknown feature: %s", arg);
       break;
    case -12: // --home

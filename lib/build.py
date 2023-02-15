@@ -103,6 +103,10 @@ def main(cli_):
          ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
       cli.force_cmd = force_cmd
    ch.VERBOSE("force mode: %s" % cli.force)
+   if (    cli.force == "seccomp"
+       and ch.cmd([ch.CH_BIN + "/ch-run", "--feature=seccomp"],
+                  fail_ok=True) != 0):
+      ch.FATAL("ch-run was not built with seccomp(2) support")
 
    # Deal with build arguments.
    def build_arg_get(arg):
