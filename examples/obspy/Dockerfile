@@ -1,4 +1,4 @@
-# ch-test-scope: skip  # issue #1476
+# ch-test-scope: full
 # ch-test-arch-exclude: aarch64  # no obspy Conda package
 # ch-test-arch-exclude: ppc64le  # no obspy Conda package?
 FROM almalinux_8ch
