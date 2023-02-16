@@ -67,7 +67,7 @@ EOF
     scope standard
     [[ $(uname -m) = x86_64 ]] || skil 'amd64 only'
 
-    ch-image -v build --rebuild --force -t tmpimg -f - . <<'EOF'
+    ch-image -v build --force -t tmpimg -f - . <<'EOF'
 FROM almalinux:8
 RUN curl -sO https://repo.almalinux.org/vault/8.6/BaseOS/x86_64/os/Packages/openssh-8.0p1-13.el8.x86_64.rpm
 RUN rpm --install *.rpm
@@ -77,7 +77,7 @@ EOF
 @test "${tag}: list form" {
     scope standard
 
-    ch-image -v build --rebuild --force -t tmpimg -f - . <<'EOF'
+    ch-image -v build --force -t tmpimg -f - . <<'EOF'
 FROM debian:buster
 RUN ["apt-get", "update"]
 RUN ["apt-get", "install", "-y", "openssh-client"]

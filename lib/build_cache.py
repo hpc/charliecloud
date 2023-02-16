@@ -3,6 +3,7 @@ import datetime
 import enum
 import glob
 import hashlib
+import itertools
 import os
 import pickle
 import re
@@ -309,7 +310,7 @@ class File_Metadata:
          return fm
       # Ensure minimum permissions. Some tools like to make files with mode
       # 000, because root ignores the permissions bits.
-      fm.path_abs.chmod_min(0o700 if stat.S_ISDIR(fm.mode) else 0o400, fm.st)
+      fm.path_abs.chmod_min(fm.st)
       # Validate file type and recurse if needed. (Don’t use os.walk() because
       # it’s iterative, and our algorithm is better expressed recursively.)
       if   (   stat.S_ISREG(fm.mode)
@@ -1156,8 +1157,23 @@ class Disabled_Cache(Rebuild_Cache):
          pullet.done()
       return (None, None)
 
-   def ready(self, *args):
-      pass
+   def ready(self, img):
+      # Some distributions create unreadable files; e.g., CentOS 7 after
+      # installing “openssh”:
+      #
+      #   $ ls -lh /scratch/reidpr.ch/img/centos_7ch/usr/bin/ssh-agent
+      #   ---x--s--x 1 reidpr reidpr 374K Nov 24  2021 [...]/ssh-agent
+      #
+      # This makes the image un-copyable, so it can’t be used as a base image.
+      #
+      # Enabled_Cache takes care of this in git_prepare(), and
+      # --force=fakeroot bypasses it in some other way I haven’t looked into.
+      #
+      # Fixing it here isn’t quite right -- commit() and/or rollback() seems
+      # better -- but I want to avoid a full traversal after each instruction.
+      for (dir_, subdirs, files) in ch.walk(img.unpack_path):
+         for i in itertools.chain(subdirs, files):
+            (dir_ // i).chmod_min()
 
    def rollback(self, *args):
       pass
