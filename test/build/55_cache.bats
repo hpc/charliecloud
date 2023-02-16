@@ -1198,7 +1198,7 @@ EOF
 
     ch-image build-cache --reset
     ch-image build -t tmpimg -f <(echo "$df") .
-    ch-image delete --not-cache tmpimg
+    ch-image delete tmpimg
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg ]]
     run ch-image build -v -t tmpimg -f <(echo "$df") .
     echo "$output"
@@ -1277,7 +1277,7 @@ EOF
     # Build again; tests full restore because we delete the image. Compare
     # against the (already validated) results of the first build, this time
     # including timestamps.
-    ch-image delete --not-cache tmpimg
+    ch-image delete tmpimg
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg ]]
     run ch-image build -t tmpimg -f ./bucache/difficult.df .
     echo "$output"
@@ -1322,7 +1322,7 @@ EOF
     diff -u <(printf "1a\n1b\nalpine:3.17\n") <(ch-image list)
 
     # matches none (non-empty)
-    run ch-image delete --not-cache 'foo*'
+    run ch-image delete 'foo*'
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no image matching glob, can’t delete: foo*'* ]]
@@ -1332,11 +1332,11 @@ EOF
     diff -u <(printf "alpine:3.17\n") <(ch-image list)
 
     # matches all
-    ch-image delete --not-cache '*'
+    ch-image delete '*'
     diff -u <(printf "") <(ch-image list)
 
     # matches none (empty)
-    run ch-image delete --not-cache '*'
+    run ch-image delete '*'
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'no image matching glob, can’t delete: *'* ]]
