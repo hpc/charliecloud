@@ -61,7 +61,7 @@ setup () {
         d="${d}/pass"
         echo "verifying: ${d}"
         # shellcheck disable=SC2086
-        ch-run --no-home --private-tmp \
+        ch-run --private-tmp \
                $uid_args $gid_args -b "$d:/mnt/0" "$ch_timg" -- \
                /test/fs_perms.py /mnt/0
     done

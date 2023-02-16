@@ -474,8 +474,10 @@ class Instruction(abc.ABC):
               announces, and then re-raises.
 
            3. Modifying image metadata: Instructions like ARG, ENV, FROM,
-              SHELL, and WORKDIR must modify metadata here, not in execute(),
-              so it’s available to later instructions even on cache hit."""
+              LABEL, SHELL, and WORKDIR must modify metadata here, not in
+              execute(), so it’s available to later instructions even on
+              cache hit."""
+
       self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       return miss_ct + int(self.miss)
@@ -987,6 +989,47 @@ class I_env_space(Env):
       self.value = self.tree.terminals_cat("LINE_CHUNK")
 
 
+class Label(Instruction):
+
+   __slots__ = ("key",
+                "value")
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.commit_files |= {ch.Path("ch/metadata.json")}
+
+   @property
+   def str_(self):
+      return "%s='%s'" % (self.key, self.value)
+
+   def prepare(self, *args):
+      self.value = ch.variables_sub(unescape(self.value), self.env_build)
+      self.image.metadata["labels"][self.key] = self.value
+      return super().prepare(*args)
+
+
+class I_label_equals(Label):
+
+   __slots__ = ()
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.tree.terminal("WORD", 0)
+      self.value = self.tree.terminal("WORD", 1)
+      if (self.value is None):
+         self.value = self.tree.terminal("STRING_QUOTED")
+
+
+class I_label_space(Label):
+
+   __slots__ = ()
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.tree.terminal("WORD")
+      self.value = self.tree.terminals_cat("LINE_CHUNK")
+
+
 class I_from_(Instruction):
 
    __slots__ = ("alias",
@@ -1216,7 +1259,6 @@ class I_uns_yet(Instruction_Unsupported):
       self.issue_no = { "ADD":         782,
                         "CMD":         780,
                         "ENTRYPOINT":  780,
-                        "LABEL":       781,
                         "ONBUILD":     788 }[self.name]
 
    @property

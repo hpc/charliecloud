@@ -169,7 +169,7 @@ Unsupported features that are an error:
 
 Unsupported features that are ignored:
 
-  * Mounts other than the root filesystem (we do use :code:`--no-home`)
+  * Mounts other than the root filesystem
   * User/group mappings beyond one user mapped to EUID and one group mapped to
     EGID
   * Disabling :code:`prctl(PR_SET_NO_NEW_PRIVS)`

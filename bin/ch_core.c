@@ -199,8 +199,8 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
          break;
       }
 
-   newrootc = realpath_safe(newroot);
-   dst_fullc = realpath_safe(dst_full);
+   newrootc = realpath_(newroot, false);
+   dst_fullc = realpath_(dst_full, false);
    Tf (path_subdir_p(newrootc, dst_fullc),
        "can't bind: %s not subdirectory of %s", dst_fullc, newrootc);
    if (strcmp(newroot, "/"))  // don't record if newroot is "/"

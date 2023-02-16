@@ -236,15 +236,15 @@ AC_PROG_CC
 # Set up CFLAGS.
 ch_cflags='-std=c99 -Wall'
 AS_IF([test -n "$lib_libsquashfuse"],
-      [ch_cflags+=" -I$inc_libsquashfuse -L$lib_libsquashfuse"
+      [ch_cflags="$ch_cflags -I$inc_libsquashfuse -L$lib_libsquashfuse"
        # Without this, clang fails with "error: argument unused during
        # compilation" on the -L. GCC ignores it.
-       ch_cflags+=' -Wno-unused-command-line-argument'])
+       ch_cflags="$ch_cflags -Wno-unused-command-line-argument"])
 AS_IF([test $use_werror = yes],
-      [ch_cflags+=' -Werror'])
+      [ch_cflags="$ch_cflags -Werror"])
 
 AX_CHECK_COMPILE_FLAG([$ch_cflags], [
-  CFLAGS+=" $ch_cflags"
+  CFLAGS="$CFLAGS $ch_cflags"
 ], [
   AC_MSG_ERROR([no suitable C99 compiler found])
 ])
@@ -489,7 +489,7 @@ CH_CHECK_VERSION([GIT], [$vmin_git], [--version | cut -d' ' -f3])
 # DOT
 vmin_dot=2.30.1
 AC_CHECK_PROG([DOT], [dot], [dot])
-CH_CHECK_VERSION([DOT], [$vmin_dot], [dot -V |& cut -d' ' -f5])
+CH_CHECK_VERSION([DOT], [$vmin_dot], [dot -V 2>&1 | cut -d' ' -f5])
 
 # git2dot
 vmin_git2dot=0.8.3

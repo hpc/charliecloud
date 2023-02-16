@@ -310,8 +310,8 @@ class Alpine(Test):
    # openssh does not need --force on Alpine
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "apk add ed",
                              Run.NEEDED:      "apk add dbus" } }
-class T_Alpine_39(Alpine):
-   base = "alpine:3.9"
+class T_Alpine_317(Alpine):
+   base = "alpine:3.17"
 class T_Alpine_Latest(Alpine):
    base = "alpine:latest"
 

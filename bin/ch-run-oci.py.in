@@ -232,7 +232,6 @@ def op_start():
    cmd = CH_BIN + "/ch-run"
    ca = [cmd,
          "--cd", c["process"]["cwd"],
-         "--no-home",
          "--no-passwd",
          "--gid", str(c["process"]["user"]["gid"]),
          "--uid", str(c["process"]["user"]["uid"]),

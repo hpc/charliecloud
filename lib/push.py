@@ -44,7 +44,8 @@ class Image_Pusher:
                 "dst_ref",   # destination of upload
                 "image",     # Image object we are uploading
                 "layers",    # list of (digest, .tar.gz path), lowest first
-                "manifest")  # sequence of bytes
+                "manifest",  # sequence of bytes
+                "registry")  # destination registry
 
    def __init__(self, image, dst_ref):
       self.config = None
@@ -52,6 +53,7 @@ class Image_Pusher:
       self.image = image
       self.layers = None
       self.manifest = None
+      self.registry = None
 
    @classmethod
    def config_new(class_):
@@ -95,6 +97,11 @@ class Image_Pusher:
          There is not currently any support for re-using any previously
          prepared files already in the upload cache, because we don't yet have
          a way to know if these have changed until they are already build."""
+      # Initializing an HTTP instance for the registry and doing a 'GET'
+      # request right out the gate ensures the user needs to authenticate
+      # before we prepare the image for upload (#1426).
+      self.registry = rg.HTTP(self.dst_ref)
+      self.registry.request("GET", self.registry._url_base)
       tars_uc = self.image.tarballs_write(ch.storage.upload_cache)
       tars_c = list()
       config = self.config_new()
@@ -169,10 +176,9 @@ class Image_Pusher:
 
    def upload(self):
       ch.INFO("starting upload")
-      ul = rg.HTTP(self.dst_ref)
       for (i, (digest, tarball)) in enumerate(self.layers, start=1):
-         ul.layer_from_file(digest, tarball,
-                            "layer %d/%d: " % (i, len(self.layers)))
-      ul.config_upload(self.config)
-      ul.manifest_upload(self.manifest)
-      ul.close()
+         self.registry.layer_from_file(digest, tarball,
+                                 "layer %d/%d: " % (i, len(self.layers)))
+      self.registry.config_upload(self.config)
+      self.registry.manifest_upload(self.manifest)
+      self.registry.close()

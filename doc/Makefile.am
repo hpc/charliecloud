@@ -20,6 +20,7 @@
 
 EXTRA_DIST = \
 _loc.rst \
+best_practices.rst \
 bugs.rst \
 charliecloud.rst \
 ch-checkns.rst \
@@ -61,6 +62,7 @@ if ENABLE_HTML
 nobase_html_DATA = \
 html/searchindex.js \
 html/_images/rd100-winner.png \
+html/best_practices.html \
 html/ch-checkns.html \
 html/ch-convert.html \
 html/ch-fromhost.html \
