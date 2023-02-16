@@ -81,15 +81,11 @@ EOF
 
 ### Functions
 
-build_auto_validate () {
+build_images () {
+    echo 'building images ...'
     if [[ ! -f ${TMP_}/build_auto.bats ]]; then
         fatal "${TMP_}/build_auto.bats not found"
     fi
-}
-
-build_images () {
-    echo 'building images ...'
-    build_auto_validate
     bats "${TMP_}/build_auto.bats"
 }
 
@@ -370,8 +366,7 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
-    build_auto_validate
-    bats "${TMP_}/build_auto.bats" build/*.bats
+    bats build/*.bats
 }
 
 test_examples () {
@@ -1051,7 +1046,7 @@ case $phase in
         dir_tar_mk
         builder_check
         test_make
-        build_auto
+        build_images
         test_build
 
         phase=run
@@ -1072,6 +1067,7 @@ case $phase in
         builder_check
         dir_tar_mk
         test_make
+        build_images
         test_build
         win
         ;;
