@@ -11,41 +11,22 @@ setup () {
 @test "${tag}: no matching distro" {
     scope standard
 
-    # without --force
-    run ch-image -v build --no-cache -t tmpimg -f - . <<'EOF'
-FROM hello-world:latest
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'--force not available (no suitable config found)'* ]]
-
     # with --force
-    run ch-image -v build --force -t tmpimg -f - . <<'EOF'
+    run ch-image -v build --force=fakeroot -t tmpimg -f - . <<'EOF'
 FROM hello-world:latest
 EOF
     echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'--force not available (no suitable config found)'* ]]
-}
-
-@test "${tag}: --no-force-detect" {
-    scope standard
-
-    run ch-image -v build --no-force-detect -t tmpimg -f - . <<'EOF'
-FROM alpine:3.17
-EOF
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'not detecting --force config, per --no-force-detect'* ]]
+    [[ $status -eq 1 ]]
+    [[ $output = *'--force=fakeroot not available (no suitable config found)'* ]]
 }
 
 @test "${tag}: misc errors" {
     scope standard
 
-    run ch-image build --force --no-force-detect .
+    run ch-image build --force=fakeroot --force-cmd=foo,bar .
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = 'error'*'are incompatible'* ]]
+    [[ $output = *'are incompatible'* ]]
 }
 
 @test "${tag}: multiple RUN" {
@@ -61,11 +42,8 @@ RUN ["apt-get", "install", "-y", "hello"]
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Fc 'init step 1: checking: $') -eq 1 ]]
-    [[ $(echo "$output" | grep -Fc 'init step 1: $') -eq 1 ]]
     [[ $(echo "$output" | grep -Fc 'RUN: new command:') -eq 2 ]]
-    [[ $output = *'init: already initialized'* ]]
-    [[ $output = *'--force: init OK & modified 2 RUN instructions'* ]]
+    [[ $output = *'--force=seccomp: modified 2 RUN instructions'* ]]
     [[ $output = *'grown in 4 instructions: tmpimg'* ]]
 }
 

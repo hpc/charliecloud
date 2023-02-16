@@ -62,8 +62,18 @@ struct bind BINDS_DEFAULT[] = {
 };
 
 /* Architectures that we support for seccomp. Order matches the
-   corresponding table below. */
+   corresponding table below.
+
+   Note: On some distros (e.g., CentOS 7), some of the architecture numbers
+   are missing. The workaround is to use the numbers I have on Debian
+   Bullseye. The reason I (Reid) feel moderately comfortable doing this is how
+   militant Linux is about not changing the userspace API. */
 #ifdef HAVE_SECCOMP
+#ifndef AUDIT_ARCH_AARCH64
+#define AUDIT_ARCH_AARCH64 0xC00000B7u  // undeclared on CentOS 7
+#undef  AUDIT_ARCH_ARM                  // uses undeclared EM_ARM on CentOS 7
+#define AUDIT_ARCH_ARM     0x40000028u
+#endif
 int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
                         AUDIT_ARCH_ARM,       // arm32
                         AUDIT_ARCH_I386,      // x86 (32-bit)
