@@ -210,9 +210,9 @@ pict_ok () {
     fi
 }
 
-pmix_or_skip () {
-    if [[ "$CH_TEST_SLURM_MPI" != 'pmix'* ]]; then
-        skip 'pmix only'
+mpich_pmix_or_skip () {
+    if [[ "$CH_TEST_SLURM_MPI" != 'pmix'* ]] && [[ "$ch_mpi" == 'mpich' ]]; then
+        skip 'need PMIx'
     fi
 }
 
