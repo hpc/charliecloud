@@ -129,19 +129,6 @@ jobs:
       - name: install/configure dependencies, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
-          # Install the minimum Python version we support (issue #959). Python
-          # is pretty quick to build, so this only takes a couple of minutes.
-          cd /usr/local/src
-          wget -nv https://www.python.org/ftp/python/3.6.12/Python-3.6.12.tar.xz
-          tar xf Python-3.6.12.tar.xz
-          cd Python-3.6.12
-          ./configure --prefix=/usr/local
-          make $ch_makej
-          sudo sh -c 'umask 0022 && make install'
-          command -v pip3
-          command -v python3
-          [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
-          [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark requests wheel'
           # Configure Git and friends for build cache.
