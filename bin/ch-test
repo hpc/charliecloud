@@ -972,9 +972,6 @@ vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
                       21 'Lustre test dir'
-# The --mpi default produces a missing argument, e.g., --mpi='', when
-# testing on nodes not in a SLURM allocation. This, aside from uglying up the
-# test option output, is benign: $srun_mpi is only used in $ch_multinode.
 vset CH_TEST_SLURM_MPI "$srun_mpi"     "$CH_TEST_SLURM_MPI" "$SLURM_MPI_TYPE" \
                       21 'srun mpi type'
 vset CH_TEST_OFI_PATH  "$fi_path"     "$CH_TEST_OFI_PATH"  skip \
