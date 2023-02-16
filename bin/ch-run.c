@@ -56,7 +56,6 @@ const struct argp_option options[] = {
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
-   { "no-home",        -2, 0,      0, "(deprecated)"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
@@ -156,19 +155,20 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
-   Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
+   Te (arg_next < argc - 1, "IMAGE and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
+   args.c.newroot = realpath_(args.c.newroot, true);
+   args.storage_dir = realpath_(args.storage_dir, true);
    args.c.type = image_type(args.c.img_ref, args.storage_dir);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
       if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-      args.c.newroot = realpath_safe(args.c.img_ref);
+      args.c.newroot = realpath_(args.c.img_ref, false);
       img_directory_verify(args.c.newroot, &args);
       break;
    case IMG_NAME:
-      args.storage_dir = realpath_safe(args.storage_dir);
       args.c.newroot = img_name2path(args.c.img_ref, args.storage_dir);
       Tf (!args.c.writable || args.unsafe,
           "--write invalid when running by name");
@@ -284,8 +284,8 @@ bool get_first_env(char **array, char **name, char **value)
    not, exit with error. */
 void img_directory_verify(const char *newroot, const struct args *args)
 {
-   Tf (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
-   Tf (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
+   Te (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
+   Te (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
        "can't run directory images from storage (hint: run by name)");
 }
 
@@ -367,9 +367,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
-   case -2: // --no-home
-      WARNING("deprecated --no-home is now default; ignoring")
-      break;
    case -3: // --join-ct
       args->c.join = true;
       args->c.join_ct = parse_int(arg, false, "--join-ct");

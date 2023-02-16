@@ -16,7 +16,7 @@
 #
 # ch-test-scope: skip
 
-FROM 00_tiny
+FROM alpine:3.17
 
 CMD ["bar", "baz"]
 ENTRYPOINT ["/bin/echo","foo"]

@@ -4,6 +4,7 @@ import sys
 
 import charliecloud as ch
 import build_cache as bu
+import filesystem as fs
 import image as im
 import registry as rg
 
@@ -90,6 +91,7 @@ class Image_Puller:
       "Download image metadata and layers and put them in the download cache."
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       ch.VERBOSE("downloading image: %s" % self.image)
+      have_skinny = False
       try:
          # fat manifest
          if (ch.arch != "yolo"):
@@ -100,6 +102,9 @@ class Image_Puller:
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
             except ch.No_Fatman_Error:
+               # currently, this error is only raised if we've downloaded the skinny
+               # manifest.
+               have_skinny = True
                if (ch.arch == "amd64"):
                   # We're guessing that enough arch-unaware images are amd64 to
                   # barge ahead if requested architecture is amd64.
@@ -110,7 +115,7 @@ class Image_Puller:
                   ch.FATAL("image is architecture-unaware",
                            "consider --arch=yolo")
          # manifest
-         self.manifest_load()
+         self.manifest_load(have_skinny)
       except ch.Image_Unavailable_Error:
          if (ch.user() == "qwofford"):
             h = "Quincy, use --auth!!"
@@ -173,9 +178,12 @@ class Image_Puller:
                                    "manifest list: downloading")
       fm = self.fatman_path.json_from_file("fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
-         # FIXME (issue #1101): If it's a v2 manifest we could use it instead
-         # of re-requesting later. Maybe we could here move/copy it over to
-         # the skinny manifest path.
+         # Check for skinny manifest. If not present, create a symlink to the
+         # "fat manifest" with the conventional name for a skinny manifest. Note 
+         # that this works because the file we just saved as the "fat manifest"
+         # is actually a misleadingly named skinny manifest.
+         if (not fs.Path(str(self.manifest_path)).exists_()):
+            fs.Path(str(self.manifest_path)).symlink_to(str(self.fatman_path))
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
@@ -209,7 +217,7 @@ class Image_Puller:
       "Return the path to tarball for layer layer_hash."
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
-   def manifest_load(self):
+   def manifest_load(self, have_skinny=False):
       """Download the manifest file, parse it, and set self.config_hash and
          self.layer_hashes. If the image does not exist,
          exit with error."""
@@ -229,9 +237,10 @@ class Image_Puller:
          else:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
-         self.registry.manifest_to_file(self.manifest_path,
-                                        "manifest: downloading",
-                                        digest=digest)
+         if (not have_skinny):
+            self.registry.manifest_to_file(self.manifest_path,
+                                          "manifest: downloading",
+                                          digest=digest)
          manifest = self.manifest_path.json_from_file("manifest")
       # validate schema version
       try:
