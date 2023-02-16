@@ -223,6 +223,7 @@ jobs:
           ! test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
+          bin/ch-image -v --dependencies
           [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
           [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
           make clean
@@ -299,7 +300,7 @@ jobs:
           set -x
           [[ $(bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
           [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py" ]]
-          [[ $($ch_prefix/from-git/bin/ch-image gestalt python-path) = /usr/local/bin/python3 ]]
+          [[ $($ch_prefix/from-git/bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
           [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git/lib/charliecloud/lark/__init__.py" ]]
 
       - name: late setup & validation, all
