@@ -54,7 +54,7 @@ EOF
 
     # NOTE: This produces a broken system because we ignore openssh-client’s
     # dependencies, but it’s good enough to test --force.
-    ch-image -v build --rebuild --force -t tmpimg -f - . <<'EOF'
+    ch-image -v build --force -t tmpimg -f - . <<'EOF'
 FROM debian:buster
 RUN apt-get update && apt install -y wget
 RUN wget -nv https://snapshot.debian.org/archive/debian/20230213T151507Z/pool/main/o/openssh/openssh-client_8.4p1-5%2Bdeb11u1_amd64.deb
