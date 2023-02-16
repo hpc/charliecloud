@@ -7,7 +7,6 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
-    mpich_pmix_or_skip
 
     # One iteration on most of these tests because we just care about
     # correctness, not performance. (If we let the benchmark choose, there is

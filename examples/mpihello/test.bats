@@ -7,7 +7,6 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
-    mpich_pmix_or_skip
 }
 
 count_ranks () {

@@ -210,12 +210,6 @@ pict_ok () {
     fi
 }
 
-mpich_pmix_or_skip () {
-    if [[ "$CH_TEST_SLURM_MPI" != 'pmix'* ]] && [[ "$ch_mpi" == 'mpich' ]]; then
-        skip 'need PMIx'
-    fi
-}
-
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
