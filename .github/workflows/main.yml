@@ -297,7 +297,7 @@ jobs:
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
           set -x
-          [[ $(bin/ch-image gestalt python-path) = /usr/local/bin/python3 ]]
+          [[ $(bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
           [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py" ]]
           [[ $($ch_prefix/from-git/bin/ch-image gestalt python-path) = /usr/local/bin/python3 ]]
           [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git/lib/charliecloud/lark/__init__.py" ]]
