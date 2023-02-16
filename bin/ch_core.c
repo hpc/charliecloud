@@ -725,4 +725,3 @@ void tmpfs_mount(const char *dst, const char *newroot, const char *data)
    Zf (mount(NULL, dst_full, "tmpfs", 0, data),
        "can't mount tmpfs at %s", dst_full);
 }
-

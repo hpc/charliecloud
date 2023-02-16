@@ -558,7 +558,7 @@ Options:
     If command :code:`CMD` is found in a :code:`RUN` instruction, add the
     comma-separated :code:`ARGs` to it. This is intended to suppress
     validation that defeats :code:`--force=seccomp`. For example, :code:`-o
-    APT::Sandbox::User=root` is added to :code:`apt` by default. Implies
+    APT::Sandbox::User=root` is added to :code:`apt-get` by default. Implies
     :code:`--force=seccomp`. If specified, replaces (does not extend) the
     default suppression options. Literal commas can be escaped with backslash;
     importantly however, backslash will need to be protected from the shell
@@ -680,8 +680,8 @@ unaffected by this mode.
 
 The details are specific to each distribution. :code:`ch-image` analyzes image
 content (e.g., grepping :code:`/etc/debian_version`) to select a
-configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
-prints exactly what it is doing.
+configuration; see :code:`lib/force.py` for details. :code:`ch-image` prints
+exactly what it is doing.
 
 .. warning::
 
@@ -716,9 +716,9 @@ exiting with failure if the correct IDs are not found (which they won’t be
 under this approach). This can be expressed with
 :code:`--force-cmd=apt-get,-o,APT::Sandbox::User=root`, though this particular
 case is built-in and does not need to be specified. The full default
-configuration can be examined in the source file :code:`fakeroot.py`. If any
-:code:`--force-cmd` are specified, this replaces (rather than extends) the
-default configuration.
+configuration, which is applied regardless of the image distribution, can be
+examined in the source file :code:`force.py`. If any :code:`--force-cmd` are
+specified, this replaces (rather than extends) the default configuration.
 
 Note that because the substitutions are a simple regex with no knowledge of
 shell syntax, they can cause unwanted modifications. For example, :code:`RUN
