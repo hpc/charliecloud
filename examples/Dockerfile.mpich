@@ -18,7 +18,7 @@ WORKDIR /usr/local/src
 #
 # We use 4.1rc3, the only version with Slingshot CXI support at the time of this
 # comment.
-ARG MPI_VERSION=4.1rc3
+ARG MPI_VERSION=4.1
 ARG MPI_URL=http://www.mpich.org/static/downloads/${MPI_VERSION}
 RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
  && tar xf mpich-${MPI_VERSION}.tar.gz \
