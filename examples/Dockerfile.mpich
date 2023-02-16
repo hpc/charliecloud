@@ -5,9 +5,10 @@ FROM libfabric
 
 WORKDIR /usr/local/src
 
-# Configure MPICH with both PMI2 and OpenPMIx support.
+# Configure MPICH with OpenPMIx. Note we did attempt to configure MPICH against
+# both PMI2 and PMIx, as we do with OpenMPI, but the examples only pass testing
+# when pmix is specified.
 #
-#   1) --with-pmi-include=/usr/local/include/slurm/pmi2.h
 #   2) --with-pmix=/usr/local
 #   3) --with-pm=no
 #
@@ -16,7 +17,7 @@ WORKDIR /usr/local/src
 # mpiexec exectuable is no longer compiled or installed; thus, single-node guest
 # launch using mpiexec inside container is not poassible.
 #
-# We use 4.1rc3, the only version with Slingshot CXI support at the time of this
+# We use 4.1, the only version with Slingshot CXI support at the time of this
 # comment.
 ARG MPI_VERSION=4.1
 ARG MPI_URL=http://www.mpich.org/static/downloads/${MPI_VERSION}
@@ -27,7 +28,6 @@ RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \
                 --with-pmix=/usr/local/lib \
-                --with-pmi-include=/usr/local/include/slurm/pmi2.h \
                 --with-pm=no \
                 --with-libfabric=/usr/local
 RUN cd mpich-${MPI_VERSION} \

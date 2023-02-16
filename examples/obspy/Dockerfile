@@ -32,7 +32,9 @@ RUN conda config --set auto_update_conda False
 # new environment for obspy.
 # See: https://github.com/obspy/obspy/wiki/Installation-via-Anaconda
 RUN conda config --add channels conda-forge
-RUN conda install --yes obspy
+# Use numpy 1.21 to avoid isse: https://github.com/obspy/obspy/issues/2940
+RUN conda install --yes obspy=1.4.0
+RUN conda update obspy
 
 # Hello world program and input from docs.
 WORKDIR /

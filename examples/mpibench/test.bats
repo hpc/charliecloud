@@ -112,7 +112,8 @@ check_process_ct () {
                      | tail -n +35 | sort -nrk6 | head -1 | awk '{print $6}')
     # Configure network transport plugins to TCP only.
     # shellcheck disable=SC2086
-    hsn_disabled_bw=$(FI_PROVIDER=tcp $ch_mpirun_2_2node ch-run "$ch_img" -- \
+    hsn_disabled_bw=$(OMPI_MCA_pml=ob1 OMPI_MCA_btl=tcp,self \
+                      $ch_mpirun_2_2node ch-run "$ch_img" -- \
                       "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
                       | sort -nrk6 | head -1 | awk '{print $6}')
     echo "Max bandwidth with high speed network: $hsn_enabled_bw MB/s"
