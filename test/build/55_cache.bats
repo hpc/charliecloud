@@ -481,7 +481,7 @@ EOF
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  (a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 
@@ -491,7 +491,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]    
     diff -u - <(echo "$output" | treeonly) <<'EOF'
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 }
@@ -1204,7 +1204,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'* FROM'* ]]
-    [[ $output = *'* RUN'* ]]
+    [[ $output = *'. RUN'* ]]
     [[ $output = *"no image found: $CH_IMAGE_STORAGE/img/tmpimg"* ]]
     [[ $output = *'created worktree'* ]]
 }
@@ -1282,7 +1282,7 @@ EOF
     run ch-image build -t tmpimg -f ./bucache/difficult.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'* RUN echo last'* ]]
+    [[ $output = *'. RUN echo last'* ]]
     statwalk | diff -u <(echo "$stat1") -
 }
 
@@ -1319,6 +1319,9 @@ EOF
     diff -u <(printf "1a\n1b\n2a\nalpine:3.17\n") <(ch-image list)
 
     # no glob
+    ch-image delete 2a
+    # the 2a bucache branch as been "pruned", reset blessed_tree
+    blessed_tree=$(ch-image build-cache --tree | treeonly)
     diff -u <(printf "1a\n1b\nalpine:3.17\n") <(ch-image list)
 
     # matches none (non-empty)
