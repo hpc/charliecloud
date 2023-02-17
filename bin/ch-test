@@ -905,7 +905,7 @@ done
 
 printf 'ch-run:       %s (%s)\n' "${ch_bin}/ch-run" "$ch_libc"
 printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
-if [[    $(printf "%s\n%s" "$bats_version" "$bats_vmin" | sort -V | head -1)
+if [[    $(printf "%s\n%s" "$bats_version" "$bats_vmin" | sort -V | head -1) \
       != "$bats_vmin" ]]; then
     warning "Bats version unsupported b/c < $bats_vmin"
 fi
