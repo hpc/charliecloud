@@ -98,12 +98,10 @@ jobs:
 
       - name: install/configure dependencies, all
         run: |
-          # install Bats
-          sudo apt-get install bats
           # configure doesn't tell us about these.
           sudo apt-get install attr pigz pv
           # configure does tell us about these.
-          sudo apt-get install squashfs-tools
+          sudo apt-get install bats squashfs-tools
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme sphinx-reredirects'
           # Use newest shellcheck.

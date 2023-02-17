@@ -81,7 +81,7 @@ EOF
 
 ### Global variables
 
-bats_vmin='1.2.0'
+bats_vmin=1.2.0  # FIXME: get from configure somehow?
 
 
 ### Functions
@@ -905,9 +905,9 @@ done
 
 printf 'ch-run:       %s (%s)\n' "${ch_bin}/ch-run" "$ch_libc"
 printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
-# Complain if bats version < $bats_vmin
-if [[ $(printf "%s\n$bats_vmin" "$bats_version" | sort -V | head -1) != "$bats_vmin" ]]; then
-    warning "bats version unsupported b/c < $bats_vmin"
+if [[    $(printf "%s\n%s" "$bats_version" "$bats_vmin" | sort -V | head -1)
+      != "$bats_vmin" ]]; then
+    warning "Bats version unsupported b/c < $bats_vmin"
 fi
 printf 'tests:        %s\n' "$CHTEST_DIR"
 printf 'installed:    %s\n' "${CHTEST_INSTALLED:-no}"

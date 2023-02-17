@@ -326,12 +326,6 @@ When Bash is needed, it's because:
 
   * It is required by our testing framework, Bats.
 
-Bats
-~~~~
-
-Bats ("Bash Automated Testing System") is a test framework for tests written
-as Bash shell scripts. The test suite uses `Bats-core <https://github.com/bats-core/bats-core>`_.
-
 Buildah
 ~~~~~~~
 
