@@ -345,6 +345,7 @@ class File_Metadata:
                      % (fm.st.st_dev, fm.st.st_ino, path))
             fm.hardlink_to = hardlinks[(fm.st.st_dev, fm.st.st_ino)]
             fm.path_abs.unlink_()
+            return fm
          else:
             ch.DEBUG("hard link: recording first: %d %d %s"
                      % (fm.st.st_dev, fm.st.st_ino, path))
@@ -363,10 +364,11 @@ class File_Metadata:
       # there when switching the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
          fm.path_abs.rmdir_()
-         return fm  # can’t do anything else after it’s gone
+         return fm
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(fm.mode)):
          fm.path_abs.unlink()
+         return fm
       # Rename if necessary.
       if (path.git_incompatible_p):
          ch.DEBUG("renaming: %s -> %s" % (path, path.git_escaped))
@@ -393,14 +395,11 @@ class File_Metadata:
       #ch.TRACE(self.str_for_log())  # output is extreme even for TRACE?
       # Do-nothing case.
       if (self.dont_restore):
+         if (not (quick or (    self.path.name.startswith(".git")
+                            and len(self.path) == 1))):
+            ch.WARNING("ignoring un-restorable file: /%s" % self.path)
          return
       # Make sure I exist, and with the correct name.
-      if (self.empty_dir_p):
-         ch.ossafe(os.mkdir, "can’t mkdir: %s" % self.path, self.path_abs)
-      if (stat.S_ISFIFO(self.mode)):
-         ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
-      if (self.large_name is not None):
-         self.large_restore()
       if (self.hardlink_to is not None):
          # This relies on prepare and restore having the same traversal order,
          # so the first (stored) link is always available by the time we get
@@ -410,11 +409,14 @@ class File_Metadata:
          ch.ossafe(os.link, "can’t hardlink: %s -> %s" % (self.path_abs,
                                                           target),
                    target, self.path_abs, follow_symlinks=False)
-      if (self.path.git_incompatible_p):
+      elif (self.large_name is not None):
+         self.large_restore()
+      elif (self.empty_dir_p):
+         ch.ossafe(os.mkdir, "can’t mkdir: %s" % self.path, self.path_abs)
+      elif (stat.S_ISFIFO(self.mode)):
+         ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
+      elif (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
-      if (not quick):
-         if (stat.S_ISSOCK(self.mode)):
-            ch.WARNING("ignoring socket in image: %s" % self.path)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
