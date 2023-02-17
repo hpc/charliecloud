@@ -107,7 +107,7 @@ int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
 int FAKE_SYSCALL_NRS[][5] = {
    // arm64   arm32   x86     PPC64   x86-64
    // ------  ------  ------  ------  ------
-   {      91,    185,    185,    184,    125 },  // capset
+   {      91,    185,    185,    184,    126 },  // capset
    {       0,    182,    182,    181,     92 },  // chown
    {       0,    212,    212,      0,      0 },  // chown32
    {      55,     95,     95,     95,     93 },  // fchown
@@ -126,7 +126,7 @@ int FAKE_SYSCALL_NRS[][5] = {
    {     159,     81,     81,     81,    116 },  // setgroups
    {       0,    206,    206,      0,      0 },  // setgroups32
    {     143,     71,     71,     71,    114 },  // setregid
-   {       0,    204,    210,      0,      0 },  // setregid32
+   {       0,    204,    204,      0,      0 },  // setregid32
    {     149,    170,    170,    169,    119 },  // setresgid
    {       0,    210,    210,      0,      0 },  // setresgid32
    {     147,    164,    164,    164,    117 },  // setresuid

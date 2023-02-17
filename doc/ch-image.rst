@@ -556,11 +556,12 @@ Options:
 
   :code:`--force-cmd=CMD,ARG1[,ARG2...]`
     If command :code:`CMD` is found in a :code:`RUN` instruction, add the
-    comma-separated :code:`ARGs` to it. This is intended to suppress
-    validation that defeats :code:`--force=seccomp`. For example, :code:`-o
-    APT::Sandbox::User=root` is added to :code:`apt-get` by default. Implies
-    :code:`--force=seccomp`. If specified, replaces (does not extend) the
-    default suppression options. Literal commas can be escaped with backslash;
+    comma-separated :code:`ARGs` to it. For example,
+    :code:`--force-cmd=foo,-a,--bar=baz` would transform :code:`RUN foo -c`
+    into :code:`RUN foo -a --bar=baz -c`. This is intended to suppress
+    validation that defeats :code:`--force=seccomp` and implies that option.
+    Can be repeated. If specified, replaces (does not extend) the default
+    suppression options. Literal commas can be escaped with backslash;
     importantly however, backslash will need to be protected from the shell
     also.
 
