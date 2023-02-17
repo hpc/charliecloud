@@ -83,6 +83,7 @@ Dockerfile
     filename Dockerfile.almalinux_8ch
     filename Dockerfile.debian_9ch
     filename Dockerfile.file-quirks
+    filename Dockerfile.libfabric
     filename Dockerfile.metadata
     filename Dockerfile.mpich
     filename Dockerfile.nvidia
