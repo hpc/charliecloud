@@ -1390,5 +1390,4 @@ RUN touch a/b/.gitignore
 RUN ln a/b/.gitignore a/c/.gitignore
 RUN stat -c'%n %h %d/%i' a/?/.gitignore
 EOF
-    false
 }
