@@ -4,8 +4,12 @@ FROM libfabric
 # See Dockerfile.libfabric for MPI goals and details.
 
 # OpenMPI.
+#
+# Build with PMIx, PMI2, and FLUX-PMI support.
+#
 #   1. --disable-pty-support to avoid "pipe function call failed when
 #      setting up I/O forwarding subsystem".
+#
 #   2. --enable-mca-no-build=plm-slurm to support launching processes using the
 #     host's srun (i.e., the container OpenMPI needs to talk to the host Slurm's
 #     PMIx) but prevent OpenMPI from invoking srun itself from within the
@@ -18,10 +22,13 @@ RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
 RUN cd openmpi-${MPI_VERSION} \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
+    FLUX_PMI_CFLAGS=-I/usr/local/include/flux/core,-L/usr/local/lib/flux \
+    FLUX_PMI_LIBS=-lflux-core \
     ./configure --prefix=/usr/local \
                 --sysconfdir=/mnt/0 \
                 --with-pmix=/usr/local \
                 --with-pmi=/usr/local \
+                --with-flux-pmi-library \
                 --with-libfabric=/usr/local \
                 --disable-pty-support \
                 --enable-mca-no-build=btl-openib,plm-slurm \
@@ -35,3 +42,22 @@ RUN echo 'plm_rsh_agent = false' >> /mnt/0/openmpi-mca-params.conf
 
 # Silence spurious pmix error. https://github.com/open-mpi/ompi/issues/7516.
 ENV PMIX_MCA_gds=hash
+
+# FLUX-PMIX-PLUGGIN.
+#
+# A Flux PMI plugin that enables Flux to be launched by a foreign launcher that
+# only supports pmix. See: https://github.com/flux-framework/flux-pmix.
+#
+# This pluggin requires OpenMPI, thus we build it here rather than
+# Dockerfile.libfabric.
+#ARG FLUX_PMIX_VERSION=0.1.0
+#RUN git clone https://github.com/flux-framework/flux-pmix.git \
+#&& cd flux-pmix \
+#&& git checkout v${FLUX_PMIX_VERSION} \
+#&& ./autogen.sh \
+#&& PMIX_CFLAGS=-I/usr/local/lib/include \
+#   PMIX_LIBS=-lpmix \
+#   OMPI_CFLAGS=-I/usr/local/lib/include \
+#   OMPI_LIBS=-lmpi ./configure --prefix=/usr/local \
+#&& make -j$(getconf _NPROCESSORS_ONLN) install \
+#&& rm -Rf ../flux-pmix
