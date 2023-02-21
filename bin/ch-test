@@ -55,7 +55,8 @@ Usage:
 
   $ $(basename "$0") [PHASE] [--scope SCOPE] [--pack-fmt FMT] [OPTIONS]
 
-Valid phases: build, run, examples, all, mk-perm-dirs, clean, rm-perm-dirs
+Valid phases: build, build-images, run, examples, all, mk-perm-dirs, clean,
+              rm-perm-dirs
 Valid scopes: quick, standard, full
 Valid pack formats: squash-mount, tar-unpack, squash-unpack
 
@@ -360,10 +361,15 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
+    bats build/*.bats
+}
+
+test_build_images () {
+    echo 'building images ...'
     if [[ ! -f ${TMP_}/build_auto.bats ]]; then
         fatal "${TMP_}/build_auto.bats not found"
     fi
-    bats "${TMP_}/build_auto.bats" build/*.bats
+    bats "${TMP_}/build_auto.bats"
 }
 
 test_examples () {
@@ -384,7 +390,7 @@ test_make () {
     local tag
     printf "finding tests compatible with %s phase settings ...\n" "$phase"
     case $phase in
-    build)
+    build|build-images)
         for i in $images $examples; do
            if test_make_check_image "$i"; then
                echo "found: $i"
@@ -468,7 +474,7 @@ test_make_auto () {
             exit 0
         fi
 
-        if [[ $mode == build ]]; then
+        if [[ $mode == build* ]]; then
             case $basename_ in
                 Build|Build.*)
                     test_make_template_print 'build_custom.bats.in'
@@ -790,7 +796,7 @@ fi
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    all|build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+    all|build|build-images|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
         require_unset phase
         phase=$opt
         ;;
@@ -1091,6 +1097,7 @@ case $phase in
         dir_tar_mk
         builder_check
         test_make
+        test_build_images
         test_build
 
         phase=run
@@ -1111,6 +1118,7 @@ case $phase in
         builder_check
         dir_tar_mk
         test_make
+        test_build_images
         test_build
         win
         ;;
@@ -1124,6 +1132,13 @@ case $phase in
     examples)
         test_make
         test_examples
+        win
+        ;;
+    build-images)
+        builder_check
+        dir_tar_mk
+        test_make
+        test_build_images
         win
         ;;
     mk-perm-dirs)
