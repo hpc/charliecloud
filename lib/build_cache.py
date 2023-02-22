@@ -659,7 +659,8 @@ class Enabled_Cache:
       "Delete branch branch if it exists; otherwise, do nothing."
       if (ch.cmd_quiet(["git", "show-ref", "--quiet", "--heads", branch],
                        cwd=self.root, fail_ok=True) == 0):
-         ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
+         #ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
+         ch.cmd_quiet(["git", "update-ref", "-d", "refs/heads/%s" % branch], cwd=self.root)
 
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Ref src_ref pointing to dest, which can
