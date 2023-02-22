@@ -96,26 +96,12 @@ jobs:
           sudo apt-get install cloc
           misc/loc
 
-      - name: install Bats
-        # We need (1) old Bats, not bats-core and (2) prior to commit 1735a4f,
-        # because this is what is provided in distros we need to support and
-        # it contains a bug we work around (see issue #552).
-        run: |
-          cd /usr/local/src
-          git clone --depth 1 --branch v0.4.0 https://github.com/sstephenson/bats.git
-          cd bats
-          sudo sh -c 'umask 0022 && ./install.sh /usr/local'
-          command -v bats
-          bats --version
-          [[ $(command -v bats) == /usr/local/bin/bats ]]
-          [[ $(bats --version) == 'Bats 0.4.0' ]]
-
       - name: install/configure dependencies, all
         run: |
           # configure doesn't tell us about these.
           sudo apt-get install attr pigz pv
           # configure does tell us about these.
-          sudo apt-get install squashfs-tools
+          sudo apt-get install bats squashfs-tools
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme sphinx-reredirects'
           # Use newest shellcheck.

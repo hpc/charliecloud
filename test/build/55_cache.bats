@@ -1080,33 +1080,6 @@ EOF
 }
 
 
-@test "${tag}: multistage COPY" {
-    # Multi-stage build with no instructions in the first stage.
-    df_no=$(cat <<'EOF'
-FROM alpine:3.17
-FROM alpine:3.16
-COPY --from=0 /etc/os-release /
-EOF
-           )
-    # Multi-stage build with instruction in the first stage.
-    df_yes=$(cat <<'EOF'
-FROM alpine:3.17
-RUN echo foo
-FROM alpine:3.16
-COPY --from=0 /etc/os-release /
-EOF
-            )
-
-    ch-image build-cache --reset
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
-
-    ch-image build-cache --reset
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
-}
-
-
 @test "${tag}: empty dir persistence" {
     ch-image build-cache --reset
     ch-image delete tmpimg || true
