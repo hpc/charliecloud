@@ -55,7 +55,8 @@ Usage:
 
   $ $(basename "$0") [PHASE] [--scope SCOPE] [--pack-fmt FMT] [OPTIONS]
 
-Valid phases: build, run, examples, all, mk-perm-dirs, clean, rm-perm-dirs
+Valid phases: build, build-images, run, examples, all, mk-perm-dirs, clean,
+              rm-perm-dirs
 Valid scopes: quick, standard, full
 Valid pack formats: squash-mount, tar-unpack, squash-unpack
 
@@ -66,10 +67,12 @@ Additional options:
   -f,--file FILE[:TEST]  run tests in FILE only, or even just TEST
   -h,--help              print this help and exit
   --img-dir DIR          unpacked images directory; same as \$CH_TEST_IMGDIR
+  --fi-path PATH         path to libfabric provider injection target(s)
   --pack-dir DIR         packed image directory; same as \$CH_TEST_TARDIR
   --pack-fmt FMT         packed image format; same as \$CH_TEST_PACK_FMT
   --pedandic {yes,no}    set pedantic mode rather than guessing
   --perm-dir DIR         permissions fixture dir, can repeat; \$CH_TEST_PERMDIRS
+  --srun-mpi MPI         srun --mpi argument; see srun --mpi=list
   --sudo                 enable tests that need sudo
   --lustre DIR           run-phase Lustre test directory; \$CH_TEST_LUSTREDIR
   --version              print version and exit
@@ -358,10 +361,15 @@ scope_to_digit () {
 
 test_build () {
     echo 'executing build phase tests ...'
+    bats build/*.bats
+}
+
+test_build_images () {
+    echo 'building images ...'
     if [[ ! -f ${TMP_}/build_auto.bats ]]; then
         fatal "${TMP_}/build_auto.bats not found"
     fi
-    bats "${TMP_}/build_auto.bats" build/*.bats
+    bats "${TMP_}/build_auto.bats"
 }
 
 test_examples () {
@@ -382,7 +390,7 @@ test_make () {
     local tag
     printf "finding tests compatible with %s phase settings ...\n" "$phase"
     case $phase in
-    build)
+    build|build-images)
         for i in $images $examples; do
            if test_make_check_image "$i"; then
                echo "found: $i"
@@ -466,7 +474,7 @@ test_make_auto () {
             exit 0
         fi
 
-        if [[ $mode == build ]]; then
+        if [[ $mode == build* ]]; then
             case $basename_ in
                 Build|Build.*)
                     test_make_template_print 'build_custom.bats.in'
@@ -788,7 +796,7 @@ fi
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    all|build|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+    all|build|build-images|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
         require_unset phase
         phase=$opt
         ;;
@@ -838,6 +846,14 @@ while [[ $# -gt 0 ]]; do
     --is-sudo)      # undocumented; for CI
         is_sudo=yes
         ;;
+    --fi-path)
+        require_unset fi_path
+        fi_path=$1; shift
+        ;;
+    --fi-path=*)
+        require_unset fi_path
+        fi_path=${opt#*=}
+        ;;
     --pack-dir)
         require_unset tardir
         tardir=$1; shift
@@ -880,6 +896,14 @@ while [[ $# -gt 0 ]]; do
         ;;
     --sudo)
         use_sudo=yes
+        ;;
+    --srun-mpi=*)
+        require_unset srun_mpi
+        srun_mpi="${opt#*=}"
+        ;;
+    --srun-mpi)
+        require_unset srun_mpi
+        srun_mpi=$1; shift
         ;;
     --lustre)
         require_unset lustredir
@@ -954,6 +978,10 @@ vset CH_TEST_PERMDIRS "${permdirs[*]}" "$CH_TEST_PERMDIRS" skip \
                       21 'fs permissions dirs'
 vset CH_TEST_LUSTREDIR "$lustredir"    "$CH_TEST_LUSTREDIR" skip \
                       21 'Lustre test dir'
+vset CH_TEST_SLURM_MPI "$srun_mpi"     "$CH_TEST_SLURM_MPI" "$SLURM_MPI_TYPE" \
+                      21 'srun mpi type'
+vset CH_TEST_OFI_PATH  "$fi_path"     "$CH_TEST_OFI_PATH"  skip \
+                      21 'ofi provider(s) path'
 printf '\n'
 
 if [[ $phase == *'perm'* ]] && [[ $CH_TEST_PERMDIRS == skip ]]; then
@@ -979,6 +1007,34 @@ if [[ -z $CHTEST_INSTALLED ]]; then
     fi
 fi
 printf '\n'
+
+# Ensure ofi path looks sane.
+if [[ -n "$fi_path" ]]; then
+    case "$fi_path" in
+        *-fi.so)
+        true
+     ;;
+    *libfabric.so)
+        true
+    ;;
+     *)
+    fatal '--fi-path: must end in -fi.so or libfabric.so'
+    esac
+fi
+
+# Don't allow FI_ variables.
+if [[ -n "$FI_PROVIDER" ]]; then
+    fatal 'host FI_PROVIDER set'
+fi
+if [[ -n "$FI_PROVIDER_PATH" ]]; then
+    fatal 'host FI_PROVIDER_PATH set'
+fi
+
+# If srun --mpi=pmix, set variable to avoid spurious error. See
+# https://github.com/open-mpi/ompi/issues/7516.
+if [[ "$CH_TEST_SLURM_MPI" == 'pmix'* ]]; then
+    export PMIX_MCA_gds=hash
+fi
 
 # Ensure BATS_TMPDIR is set to /tmp (issue #278).
 if [[ -n $BATS_TMPDIR && $BATS_TMPDIR != '/tmp' ]]; then
@@ -1041,6 +1097,7 @@ case $phase in
         dir_tar_mk
         builder_check
         test_make
+        test_build_images
         test_build
 
         phase=run
@@ -1061,6 +1118,7 @@ case $phase in
         builder_check
         dir_tar_mk
         test_make
+        test_build_images
         test_build
         win
         ;;
@@ -1074,6 +1132,13 @@ case $phase in
     examples)
         test_make
         test_examples
+        win
+        ;;
+    build-images)
+        builder_check
+        dir_tar_mk
+        test_make
+        test_build_images
         win
         ;;
     mk-perm-dirs)

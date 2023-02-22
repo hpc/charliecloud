@@ -1,137 +1,28 @@
 # ch-test-scope: full
-FROM almalinux_8ch
+FROM libfabric
 
-# A key goal of this Dockerfile is to demonstrate best practices for building
-# OpenMPI for use inside a container.
-#
-# This OpenMPI aspires to work close to optimally on clusters with any of the
-# following interconnects:
-#
-#    - Ethernet (TCP/IP)
-#    - InfiniBand (IB)
-#    - Omni-Path (OPA)
-#    - RDMA over Converged Ethernet (RoCE) interconnects
-#
-# with no environment variables, command line arguments, or additional
-# configuration files. Thus, we try to implement decisions at build time.
-#
-# This is a work in progress, and we're very interested in feedback.
-#
-# OpenMPI has numerous ways to communicate messages [1]. The ones relevant to
-# this build and the interconnects they support are:
-#
-#   Module        Eth   IB    OPA   RoCE    note  decision
-#   ------------  ----  ----  ----  ----    ----  --------
-#
-#   ob1 : tcp      Y*    X     X     X      a     include
-#   ob1 : openib   N     Y     Y     Y      b,c   exclude
-#   cm  : psm2     N     N     Y*    N            include
-#       : ucx      Y?    Y*    N     Y?     b,d   include
-#
-#   Y : supported
-#   Y*: best choice for that interconnect
-#   X : supported but sub-optimal
-#
-#   a : No RDMA, so performance will suffer.
-#   b : Uses libibverbs.
-#   c : Will be removed in OpenMPI 5.
-#   d : Uses Mellanox libraries if available in preference to libibverbs.
-#
-# You can check what's available with:
-#
-#   $ ch-run /var/tmp/openmpi -- ompi_info | egrep '(btl|mtl|pml)'
-#
-# The other build decisions are:
-#
-#   1. PMI/PMIx: Include these so that we can use srun or any other PMI[x]
-#      provider, with no matching OpenMPI needed on the host.
-#
-#   2. --disable-pty-support to avoid "pipe function call failed when
-#      setting up I/O forwarding subsystem".
-#
-#   3. --enable-mca-no-build=plm-slurm to support launching processes using
-#      the host's srun (i.e., the container OpenMPI needs to talk to the host
-#      Slurm's PMI) but prevent OpenMPI from invoking srun itself from within
-#      the container, where srun is not installed (the error messages from
-#      this are inscrutable).
-#
-# [1]: https://github.com/open-mpi/ompi/blob/master/README
-
-# OS packages needed to build this stuff.
-#
-# Note that libpsm2 is x86-64 only so we skip if missing
-RUN dnf install -y --setopt=install_weak_deps=false \
-                automake \
-                file \
-                flex \
-                gcc \
-                gcc-c++ \
-                gcc-gfortran \
-                git \
-                ibacm \
-                libevent-devel \
-                libtool \
-                libibumad \
-                libibumad-devel \
-                libibverbs \
-                libibverbs-devel \
-                libibverbs-utils \
-                librdmacm \
-                librdmacm-devel \
-                rdma-core \
-                make \
-                numactl-devel \
-                wget \
- && dnf install -y --setopt=install_weak_deps=false --skip-broken \
-                libpsm2 \
-                libpsm2-devel \
- && dnf clean all
-
-WORKDIR /usr/local/src
-
-# UCX. There is a package but we want control over build options, specifically
-# multithreaded support.
-ARG UCX_VERSION=1.11.2
-RUN git clone --branch v${UCX_VERSION} --depth 1 \
-              https://github.com/openucx/ucx.git \
- && cd ucx \
- && ./autogen.sh \
- && ./contrib/configure-release-mt --prefix=/usr/local \
- && make -j$(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../ucx*
-
-# PMI2.
-#
-# There isn't a package available with the Slurm PMI2 libraries we need, so
-# build them from Slurm's release.
-ARG SLURM_VERSION=19-05-3-2
-RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz \
- && tar -xf slurm-${SLURM_VERSION}.tar.gz \
- && cd slurm-slurm-${SLURM_VERSION} \
- && ./configure --prefix=/usr/local \
- && cd contribs/pmi2 \
- && make -j$(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../../../slurm*
+# See Dockerfile.libfabric for MPI goals and details.
 
 # OpenMPI.
-#
-# Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX
-# has inferior performance than PSM2/uGNI but higher priority.
-ARG MPI_URL=https://www.open-mpi.org/software/ompi/v3.1/downloads
-ARG MPI_VERSION=3.1.6
+#   1. --disable-pty-support to avoid "pipe function call failed when
+#      setting up I/O forwarding subsystem".
+#   2. --enable-mca-no-build=plm-slurm to support launching processes using the
+#     host's srun (i.e., the container OpenMPI needs to talk to the host Slurm's
+#     PMIx) but prevent OpenMPI from invoking srun itself from within the
+#     container, where srun is not installed (the error messages from this are
+#     inscrutable).
+ARG MPI_URL=https://www.open-mpi.org/software/ompi/v4.1/downloads
+ARG MPI_VERSION=4.1.4
 RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
  && tar xf openmpi-${MPI_VERSION}.tar.gz
-COPY dont-init-ucx-on-intel-cray.patch ./openmpi-${MPI_VERSION}
 RUN cd openmpi-${MPI_VERSION} \
- && patch -p1 dont-init-ucx-on-intel-cray.patch \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \
                 --sysconfdir=/mnt/0 \
-                --with-slurm \
+                --with-pmix=/usr/local \
                 --with-pmi=/usr/local \
-                --with-pmix \
-                --with-ucx \
+                --with-libfabric=/usr/local \
                 --disable-pty-support \
                 --enable-mca-no-build=btl-openib,plm-slurm \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
@@ -141,3 +32,6 @@ RUN ldconfig
 # OpenMPI expects this program to exist, even if it's not used. Default is
 # "ssh : rsh", but that's not installed.
 RUN echo 'plm_rsh_agent = false' >> /mnt/0/openmpi-mca-params.conf
+
+# Silence spurious pmix error. https://github.com/open-mpi/ompi/issues/7516.
+ENV PMIX_MCA_gds=hash
