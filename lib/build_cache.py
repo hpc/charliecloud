@@ -32,6 +32,11 @@ GIT_CONFIG = {
    # Prioritize write speed over data safety; i.e., increase the risk of cache
    # corruption on system crash while (hopefully) decreasing write speed.
    "core.fsync":             "none",
+   # Enable reflog. This allows us to access commits associated with a deleted
+   # branch, which is important when deleting cache branches. Before, building
+   # an image whose branch was deleted would result in a miss, despite the
+   # layers still being cached (see #1485).
+   "core.logAllRefUpdates":  "true",
    # Try to maximize “git add” speed.
    "core.looseCompression":  "0",
    # Enable incremental indexes [1]; it should speed things like “git add”.
@@ -659,8 +664,7 @@ class Enabled_Cache:
       "Delete branch branch if it exists; otherwise, do nothing."
       if (ch.cmd_quiet(["git", "show-ref", "--quiet", "--heads", branch],
                        cwd=self.root, fail_ok=True) == 0):
-         #ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
-         ch.cmd_quiet(["git", "update-ref", "-d", "refs/heads/%s" % branch], cwd=self.root)
+         ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
 
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Ref src_ref pointing to dest, which can
