@@ -1292,6 +1292,7 @@ EOF
     diff -u <(echo "$blessed_tree") <(ch-image build-cache --tree | treeonly)
 }
 
+
 @test "${tag}: large files" {
     # We use files of size 3, 4, 5 MiB to avoid /lib/libcrypto.so.1.1, which
     # is about 2.5 MIB and which we don’t have control over.
@@ -1348,5 +1349,18 @@ EOF
     diff -u - <(echo "$output") <<'EOF'
 6f7a3513121d79c42283f6f758439c3a%bigfile4
 b2dbc2a2bb35d6d0d5590aedc122cab6%bigfile5
+EOF
+}
+
+
+@test "${tag}: hard links with Git-incompatible name" {  # issue #1569
+    ch-image build-cache --reset
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.17
+RUN mkdir -p a/b
+RUN mkdir -p a/c
+RUN touch a/b/.gitignore
+RUN ln a/b/.gitignore a/c/.gitignore
+RUN stat -c'%n %h %d/%i' a/?/.gitignore
 EOF
 }
