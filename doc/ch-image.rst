@@ -703,10 +703,10 @@ The quashed system calls are: :code:`capset(2)`; :code:`chown(2)` and friends;
 :code:`setgid(2)`, and :code:`setgroups(2)` along with the other system calls
 that change user or group.
 
-The advantages of this approach is that it’s much simpler, it’s completely
-agnostic to libc, and it’s mostly agnostic to distribution. The disadvantage
-is that it’s a very lazy liar; even the most cursory consistency checks will
-fail, e.g., :code:`getuid(2)` after :code:`setuid(2)`.
+The advantages of this approach is that it’s much simpler, it’s faster, it’s
+completely agnostic to libc, and it’s mostly agnostic to distribution. The
+disadvantage is that it’s a very lazy liar; even the most cursory consistency
+checks will fail, e.g., :code:`getuid(2)` after :code:`setuid(2)`.
 
 While this mode does not provide consistency, it does offer a hook to help
 prevent programs asking for consistency. For example, :code:`apt-get -o

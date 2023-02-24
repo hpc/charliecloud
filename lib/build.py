@@ -100,9 +100,11 @@ def main(cli_):
       for line in cli.force_cmd:
          (cmd, args) = force.force_cmd_parse(line)
          force_cmd[cmd] = args
-         ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
       cli.force_cmd = force_cmd
    ch.VERBOSE("force mode: %s" % cli.force)
+   if (cli.force == "seccomp"):
+      for (cmd, args) in cli.force_cmd.items():
+         ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
    if (    cli.force == "seccomp"
        and ch.cmd([ch.CH_BIN + "/ch-run", "--feature=seccomp"],
                   fail_ok=True) != 0):

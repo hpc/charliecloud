@@ -565,10 +565,10 @@ void seccomp_install(void)
       // jump to next arch if arch doesn't match
       jump = idx_next_arch - ii - 1;
       T_ (jump <= 255);
-      iw(&p, ii++, BPF_JMP|BPF_JEQ, SECCOMP_ARCHS[ai], 0, jump);
+      iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, SECCOMP_ARCHS[ai], 0, jump);
       // load syscall number into accumulator
       iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
-         offsetof(struct seccomp_data, nr), 0, 0);;
+         offsetof(struct seccomp_data, nr), 0, 0);
       // jump table of syscalls
       for (int si = 0; FAKE_SYSCALL_NRS[si][0] != -1; si++) {
          int nr = FAKE_SYSCALL_NRS[si][ai];
