@@ -165,7 +165,10 @@ load ../common
     # Can’t use a here document to store the approved trailing-whitespace
     # lines because we’re grepping *this* file, so we’d have to add the here
     # document, which would expand the here document, etc.
+    #
+    # Note you can update the file by piping this “grep” into it, assuming
+    # there is no bogus trailing whitespace present. I have had trouble with
+    # copy-and-paste removing the trailing whitespace.
       ../misc/grep -E '\s+$' \
-    | sed -E 's/:[0-9]+:/::/' \
     | diff -u approved-trailing-whitespace -
 }
