@@ -172,15 +172,16 @@ For example::
   error: build failed: RUN command exited with 128
 
 The reason this happens is that :code:`ch-image build` executes :code:`RUN`
-instructions with :code:`ch-run` options including the absence of :code:`--home`,
-under which the environment variable :code:`$HOME` is unset. Thus, tools like Git
-that try to use it will fail.
+instructions with :code:`ch-run` options including the absence of
+:code:`--home`, under which the environment variable :code:`$HOME` is unset.
+Thus, tools like Git that try to use it will fail.
 
 The reasoning for leaving the variable unset is that because Charliecloud runs
 unprivileged, it isn’t really meaningful for a container to have multiple
 users, and thus building images with things in the home directory is an
-antipattern. In fact, with :code:`--home` specified, :code:`ch-run` sets :code:`$HOME` 
-to :code:`/home/$USER` and bind-mounts the user’s host home directory at that path.
+antipattern. In fact, with :code:`--home` specified, :code:`ch-run` sets
+:code:`$HOME` to :code:`/home/$USER` and bind-mounts the user’s host home
+directory at that path.
 
 The concern with setting :code:`$HOME` to some default value during build is
 that it could simply hide the problem until runtime later, where it would be

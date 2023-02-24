@@ -22,8 +22,8 @@ import traceback
 import filesystem as fs
 import registry as rg
 
-# Compatibility link. Sometimes we load pickled data from when Path was defined
-# in this file. This alias lets us still load such pickles. 
+# Compatibility link. Sometimes we load pickled data from when Path was
+# defined in this file. This alias lets us still load such pickles.
 Path = fs.Path
 
 

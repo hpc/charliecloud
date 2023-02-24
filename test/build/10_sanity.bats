@@ -156,3 +156,16 @@ load ../common
     done
     [[ $empty_ct -eq 0 ]]
 }
+
+
+@test 'trailing whitespace' {
+    scope standard
+    [[ -z $CHTEST_INSTALLED ]] || skip 'build directory only'
+
+    # Can’t use a here document to store the approved trailing-whitespace
+    # lines because we’re grepping *this* file, so we’d have to add the here
+    # document, which would expand the here document, etc.
+      ../misc/grep -E '\s+$' \
+    | sed -E 's/:[0-9]+:/::/' \
+    | diff -u approved-trailing-whitespace -
+}
