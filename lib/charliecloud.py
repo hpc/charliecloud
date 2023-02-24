@@ -482,13 +482,18 @@ def cmd(argv, fail_ok=False, **kwargs):
 
 def cmd_base(argv, fail_ok=False, **kwargs):
    """Run a command to completion. If not fail_ok, exit with a fatal error if
-      the command does not exit with code zero. If logging is verbose or
-      higher, first print the command line arguments; if debug or higher, the
-      environment as well (if given). Return the CompletedProcess object."""
+      the command fails (i.e., doesn’t exit with code zero). Return the
+      CompletedProcess object.
+
+      The command’s stderr is suppressed unless (1) logging is DEBUG or higher
+      or (2) fail_ok is False and the command fails."""
    argv = [str(i) for i in argv]
    VERBOSE("executing: %s" % argv_to_string(argv))
    if ("env" in kwargs):
       VERBOSE("environment: %s" % kwargs["env"])
+   if ("stderr" not in kwargs):
+      if (verbose <= 1):  # VERBOSE or lower: capture for printing on fail only
+         kwargs["stderr"] = subprocess.PIPE
    try:
       profile_stop()
       cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
@@ -504,17 +509,17 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       # [1]: https://devdocs.io/bash/exit-status#Exit-Status
       cp = subprocess.CompletedProcess(argv, 127)
    if (not fail_ok and cp.returncode != 0):
+      if (cp.stderr is not None):
+         sys.stderr.write(cp.stderr)
+         sys.stderr.flush()
       FATAL("command failed with code %d: %s"
             % (cp.returncode, argv_to_string(argv)))
    return cp
 
 def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
-      CompletedProcess object (its stdout is available in the "stdout"
-      attribute). If logging is info, discard stderr; otherwise send it to the
-      existing stderr. If logging is debug or higher, print stdout."""
-   if (verbose == 0 and "stderr" not in kwargs):  # info or lower
-      kwargs["stderr"] = subprocess.DEVNULL
+      CompletedProcess object (its stdout is available in the “stdout”
+      attribute). If logging is debug or higher, print stdout."""
    cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
    if (verbose >= 2):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
@@ -523,18 +528,13 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    return cp
 
 def cmd_quiet(argv, **kwargs):
-   """Run command using cmd() and return the exit code. If logging is info,
-      discard both stdout and stderr; if it's verbose, discard stdout only; if
-      it's debug or higher, discard nothing."""
+   """Run command using cmd() and return the exit code. If logging is verbose
+      or lower, discard stdout."""
    if (verbose >= 2):  # debug or higher
       stdout=None
    else:
       stdout=subprocess.DEVNULL
-   if (verbose >= 1):  # verbose or higher
-      stderr=None
-   else:
-      stderr=subprocess.DEVNULL
-   return cmd(argv, stdout=stdout, stderr=stderr, **kwargs)
+   return cmd(argv, stdout=stdout, **kwargs)
 
 def color_reset(*fps):
    for fp in fps:
