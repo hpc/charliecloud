@@ -80,6 +80,14 @@ GIT_CONFIG = {
    # [2]: https://web.archive.org/web/20170526024841/https://vcscompare.blogspot.com/2008/06/git-repack-parameters.html
    "pack.depth":             "36",
    "pack.window":            "24",
+   # Our Git repo is purely local, so it doesn’t really matter who owns the
+   # commits. Set these in case the user hasn’t configured them and they can’t
+   # be guessed. (Issue #1535.)
+   "user.email":             "charlie@localhost",
+   "user.name":              "Charlie",
+   # Always fail if Git doesn’t know who the user is, rather than guessing if
+   # possible. Makes #1535 happen for everyone.
+   "user.useConfigOnly":     "true",
 }
 
 # Placeholder for Git hash values that are unknown. This deliberately does not
@@ -599,7 +607,8 @@ class Enabled_Cache:
          # Non-empty but not an existing cache.
          # See: https://git-scm.com/docs/gitrepository-layout
          ch.FATAL("storage broken: not a build cache: %s" % self.root)
-      self.configure()         # updates config if needed
+      else:
+         self.configure()         # updates config if needed
       self.worktrees_fix()
 
    def __str__(self):
@@ -639,19 +648,25 @@ class Enabled_Cache:
       self.bootstrap_ct += 1
       # Initialize bare repo
       ch.cmd_quiet(["git", "init", "--bare", "-b", "root", self.root])
-      # Create empty root commit. There is probably a way to do this directly
-      # in the bare repo, but brief searching makes it seem pretty hairy.
+      self.configure()
+      # Create empty root commit.
       try:
          with tempfile.TemporaryDirectory(prefix="weirdal.") as td:
-            ch.cmd_quiet(["git", "clone", "-q", self.root, td])
             cwd = fs.Path(td).chdir()
-            ch.cmd_quiet(["git", "checkout", "-q", "-b", "root"])
             # Git has no default gitignore, but cancel any global gitignore
             # rules the user might have. https://stackoverflow.com/a/26681066
             fs.Path(".gitignore").file_write("!*\n")
-            ch.cmd_quiet(["git", "add", ".gitignore"])
-            ch.cmd_quiet(["git", "commit", "-m", "ROOT\n\n%s" % self.root_id])
-            ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
+            # Hairy commit with no working directory at all. We do this
+            # because (1) cloning the bucache doesn’t clone the config, which
+            # we care about, and (2) worktrees cannot be used on empty
+            # repositories. See: https://stackoverflow.com/a/29396902/396038
+            env = { "GIT_DIR": self.root,
+                    "GIT_WORK_TREE": td,
+                    "GIT_INDEX_FILE": "%s/scratch-index" % td }
+            ch.cmd(["git", "read-tree", "--empty"], env=env)
+            ch.cmd(["git", "add", ".gitignore"], env=env)
+            ch.cmd(["git", "commit", "-m", "ROOT\n\n%s" % self.root_id],
+                   env=env)
             cwd.chdir()
       except OSError as x:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
