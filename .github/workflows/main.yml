@@ -103,7 +103,8 @@ jobs:
           # configure does tell us about these.
           sudo apt-get install bats squashfs-tools
           # Track newest Sphinx in case it breaks things.
-          sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme sphinx-reredirects'
+          # FIXME: pip yells about docutils 0.19 so ask for latest 0.18
+          sudo su -c 'umask 0022 && pip3 install docutils==0.18.1 sphinx sphinx-rtd-theme sphinx-reredirects'
           # Use newest shellcheck.
           cd /usr/local/src
           wget -nv https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz
