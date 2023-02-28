@@ -326,19 +326,6 @@ When Bash is needed, it's because:
 
   * It is required by our testing framework, Bats.
 
-Bats
-~~~~
-
-Bats ("Bash Automated Testing System") is a test framework for tests written
-as Bash shell scripts.
-
-`Upstream Bats <https://github.com/sstephenson/bats>`_ is unmaintained, but
-widely available. Both version 0.4.0, which tends to be in distributions, and
-upstream master branch (commit 0360811) should work. There is a maintained
-fork called `Bats-core <https://github.com/bats-core/bats-core>`_, but the
-test suite currently does not pass with it; see `issue #582
-<https://github.com/hpc/charliecloud/issues/582>`_. Patches welcome!
-
 Buildah
 ~~~~~~~
 

@@ -9,8 +9,8 @@ dist_mylib_DATA = base.sh \
                   build.py \
                   build_cache.py \
                   charliecloud.py \
-                  fakeroot.py \
                   filesystem.py \
+                  force.py \
                   image.py \
                   misc.py \
                   pull.py \

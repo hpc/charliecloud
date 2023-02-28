@@ -282,7 +282,7 @@ cv_tar_dir () {
 cv_tar_docker () {
     tar_in_validate "$1"
     docker_out_validate "$2"
-    tar_to_dockman docker_ "$1" "$2"    
+    tar_to_dockman docker_ "$1" "$2"
 }
 
 cv_tar_podman () {
@@ -449,7 +449,7 @@ dir_out_validate () {
 
 docker_out_validate () {
     # When writing the out_validate functions, we had to address a podman bug
-    # that caused conversion to fail. Our workaround (see the 
+    # that caused conversion to fail. Our workaround (see the
     # 'podman_out_validate' below) is not generalizable to docker, which is
     # why we've broken from the 'dockman' convention here.
     digest=$(docker_ image ls -q "$1")

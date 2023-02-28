@@ -129,6 +129,7 @@ plain text
     filename PERUSEME
     filename README
     filename VERSION
+    filename approved-trailing-whitespace
     3rd_gen_scale 1.00
 POSIX sh
     filter remove_matches ^\s*#
@@ -242,6 +243,7 @@ find ./.github ./examples ./test -type f -a \( \
      -o -path ./.github/PERUSEME \
      -o -path ./examples/chtest/printns \
      -o -path ./test/common.bash \
+     -o -path ./test/approved-trailing-whitespace \
      -o -path ./test/old-storage \
      -o -path ./test/sotest/files_inferrable.txt \
      -o -path ./test/whiteout \) | sort > /tmp/loc.test
