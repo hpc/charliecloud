@@ -969,6 +969,7 @@ fi
 printf '\n'
 
 # FIXME: https://github.com/hpc/charliecloud/issues/1580
+# shellcheck disable=SC2016
 echo  'NOTE: default image and pack directories changed to:'
 echo  '      CH_TEST_IMGDIR=/var/tmp/${USER}.img'
 echo  '      CH_TEST_TARDIR=/var/tmp/${USER}.pack'
