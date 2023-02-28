@@ -27,10 +27,10 @@
 #   1. We only try pre-prepared images for “really need” commands with --force
 #      given, to save time, so it’s at most 9 potential tests.
 #
-#   2. The pre-preparation set doesn’t make sense for some distros or for
+#   2. The pre-preparation step doesn’t make sense for some distros or for
 #      --force=seccomp.
 #
-#   3. Some distros don’t have an “apparently need” command determined.
+#   3. We’ve not yet determined an “apparently need” command for some distros.
 #
 # Bottom line, the number of tests per distro varies. See the code below for
 # specific details.
@@ -299,7 +299,7 @@ class T_Arch_Latest(Test):
    config = "arch"
    base = "archlinux:latest"
    arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
-   force_excludes = ["seccomp"]  # issue #FIXME
+   force_excludes = ["seccomp"]  # issue #1567
    # pacman does not exit non-zero when installing openssh fails; work
    # around this bug by grepping the pacman log.
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "pacman -Syq --noconfirm ed; ! fgrep failed: /var/log/pacman.log",

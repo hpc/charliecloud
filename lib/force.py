@@ -294,7 +294,7 @@ def new(image_path, force_mode, force_cmds):
    """Return a new forcer object appropriate for image at image_path in mode
       force_mode. If no such object can be found, exit with error."""
    if (force_mode is None):
-      return Noop()
+      return Nope()
    elif (force_mode == "fakeroot"):
       return Fakeroot(image_path)
    elif (force_mode == "seccomp"):
@@ -349,7 +349,7 @@ class Base:
       return args.copy()
 
 
-class Noop(Base):
+class Nope(Base):
    pass
 
 

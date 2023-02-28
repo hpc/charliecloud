@@ -563,7 +563,7 @@ Options:
     Can be repeated. If specified, replaces (does not extend) the default
     suppression options. Literal commas can be escaped with backslash;
     importantly however, backslash will need to be protected from the shell
-    also.
+    also. Section “Privilege model” below explains why you might need this.
 
   :code:`-n`, :code:`--dry-run`
     Don’t actually execute any Dockerfile instructions.
@@ -638,7 +638,7 @@ This one is (ironically) :code:`apt-get` failing to drop privileges:
   E: seteuid 100 failed - seteuid (22: Invalid argument)
   E: setgroups 0 failed - setgroups (1: Operation not permitted)
 
-Charliecloud provides two different workaround to avoid these problems. Both
+Charliecloud provides two different mechanisms to avoid these problems. Both
 involve lying to the containerized process about privileged system calls, but
 at very different levels of complexity.
 
