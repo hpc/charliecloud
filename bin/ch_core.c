@@ -56,8 +56,18 @@ struct bind BINDS_DEFAULT[] = {
    { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
    { "/etc/machine-id",          "/etc/machine-id",          BD_OPTIONAL },
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
-   { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs",  BD_OPTIONAL },
-   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
+   /* Cray bind-mounts. See #1473. */
+   { "/var/lib/hugetlbfs",       "/var/lib/hugetlbfs",       BD_OPTIONAL },
+   /* Cray Gemini/Aries interconnect bind-mounts. */
+   { "/etc/opt/cray/wlm_detect", "/etc/opt/cray/wlm_detect", BD_OPTIONAL },
+   { "/opt/cray/wlm_detect",     "/opt/cray/wlm_detect",     BD_OPTIONAL },
+   { "/opt/cray/alps",           "/opt/cray/alps",           BD_OPTIONAL },
+   { "/opt/cray/udreg",          "/opt/cray/udreg",          BD_OPTIONAL },
+   { "/opt/cray/ugni",           "/opt/cray/ugni",           BD_OPTIONAL },
+   { "/opt/cray/xpmem",          "/opt/cray/xpmem",          BD_OPTIONAL },
+   { "/var/opt/cray/alps",       "/var/opt/cray/alps",       BD_OPTIONAL },
+   /* Cray Shasta/Slingshot bind-mounts. */
+   { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_OPTIONAL },
    { 0 }
 };
 

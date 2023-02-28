@@ -1,0 +1,14 @@
+./misc/loc:60:    filter rm_comments_in_strings " // 
+./test/build/50_dockerfile.bats:60:RUN true 
+./test/build/50_dockerfile.bats:63: 
+./test/build/50_dockerfile.bats:65: 
+./test/build/50_dockerfile.bats:66: 
+./test/build/50_dockerfile.bats:85:RUN echo test3\  
+./test/build/50_dockerfile.bats:88:RUN echo test3\  
+./test/build/50_dockerfile.bats:89:b\  
+./test/build/50_dockerfile.bats:93:RUN echo test4   \  
+./test/build/50_dockerfile.bats:96:RUN echo test4   \  
+./test/build/50_dockerfile.bats:97:b   \  
+./test/build/50_dockerfile.bats:132:  4. RUN true 
+./test/build/50_dockerfile.bats:432:#ENV chse_1a value 1a 
+./test/build/50_dockerfile.bats:435:#ENV chse_1c=value\ 1c\ 

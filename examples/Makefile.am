@@ -15,6 +15,7 @@ noexecs = \
 Dockerfile.centos_7ch \
 Dockerfile.almalinux_8ch \
 Dockerfile.debian_9ch \
+Dockerfile.libfabric \
 Dockerfile.mpich \
 Dockerfile.nvidia \
 Dockerfile.openmpi \
@@ -49,7 +50,6 @@ copy/fileA \
 copy/fileB \
 copy/test.bats \
 distroless/Dockerfile \
-dont-init-ucx-on-intel-cray.patch \
 exhaustive/Dockerfile \
 hello/Dockerfile \
 hello/README \

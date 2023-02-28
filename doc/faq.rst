@@ -172,15 +172,16 @@ For example::
   error: build failed: RUN command exited with 128
 
 The reason this happens is that :code:`ch-image build` executes :code:`RUN`
-instructions with :code:`ch-run` options including the absence of :code:`--home`,
-under which the environment variable :code:`$HOME` is unset. Thus, tools like Git
-that try to use it will fail.
+instructions with :code:`ch-run` options including the absence of
+:code:`--home`, under which the environment variable :code:`$HOME` is unset.
+Thus, tools like Git that try to use it will fail.
 
 The reasoning for leaving the variable unset is that because Charliecloud runs
 unprivileged, it isn’t really meaningful for a container to have multiple
 users, and thus building images with things in the home directory is an
-antipattern. In fact, with :code:`--home` specified, :code:`ch-run` sets :code:`$HOME` 
-to :code:`/home/$USER` and bind-mounts the user’s host home directory at that path.
+antipattern. In fact, with :code:`--home` specified, :code:`ch-run` sets
+:code:`$HOME` to :code:`/home/$USER` and bind-mounts the user’s host home
+directory at that path.
 
 The concern with setting :code:`$HOME` to some default value during build is
 that it could simply hide the problem until runtime later, where it would be
@@ -649,26 +650,20 @@ There are lots of ways to do this coordination. Because we are launching with
 the host’s Slurm, we need it to provide something for the containerized
 processes for such coordination. OpenMPI must be compiled to use what that
 Slurm has to offer, and Slurm must be told to offer it. What works for us is a
-something called "PMI2". You can see if your Slurm supports it with::
+something called "PMIx". You can see if your Slurm supports it with::
 
   $ srun --mpi=list
-  srun: MPI types are...
-  srun: mpi/pmi2
-  srun: mpi/openmpi
-  srun: mpi/mpich1_shmem
-  srun: mpi/mpich1_p4
-  srun: mpi/lam
-  srun: mpi/none
-  srun: mpi/mvapich
-  srun: mpi/mpichmx
-  srun: mpi/mpichgm
+    cray_shasta
+    none
+    pmi2
+    pmix
 
-If :code:`pmi2` is not in the list, you must ask your admins to enable Slurm’s
-PMI2 support. If it is in the list, but you’re seeing this problem, that means
+If :code:`pmix` is not in the list, you must either (a) ask your admins to
+enable Slurm’s PMIx support, or (b) rebuild your container MPI against an PMI
+in the list. If it is in the list, but you’re seeing this problem, that means
 it is not the default, and you need to tell Slurm you want it. Try::
 
-  $ export SLURM_MPI_TYPE=pmi2
-  $ srun ch-run /var/tmp/mpihello-openmpi -- /hello/hello
+  $ srun --mpi=pmix ch-run /var/tmp/mpihello-openmpi -- /hello/hello
   0: init ok wc035.localdomain, 2 ranks, userns 4026554634
   1: init ok wc036.localdomain, 2 ranks, userns 4026554634
   0: send/receive ok

@@ -600,7 +600,7 @@ AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
 CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
 
 # Bats
-vmin_bats=0.4.0
+vmin_bats=1.2.0
 AC_CHECK_PROG([BATS], [bats], [bats])
 CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
 
