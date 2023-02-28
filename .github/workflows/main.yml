@@ -189,6 +189,11 @@ jobs:
           make $ch_makej
           sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
           sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
+          # musl-gcc does not install Linux headers. This is a bad kludge.
+          # See: https://www.openwall.com/lists/musl/2017/11/23/1
+          sudo ln -s ../linux ../asm-generic ../x86_64-linux-gnu \
+                     /usr/include/x86_64-linux-musl/
+          sudo ln -s x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
