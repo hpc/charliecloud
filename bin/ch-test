@@ -968,6 +968,12 @@ if [[ -z $phase ]]; then
 fi
 printf '\n'
 
+# FIXME: https://github.com/hpc/charliecloud/issues/1580
+echo  'NOTE: default image and pack directories changed to:'
+echo  '      CH_TEST_IMGDIR=/var/tmp/${USER}.img'
+echo  '      CH_TEST_TARDIR=/var/tmp/${USER}.pack'
+printf '\n'
+
 #    variable name    CLI              environment         default
 #                     desc. width  description
 vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
