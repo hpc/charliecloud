@@ -69,8 +69,7 @@ FROM almalinux_8ch
 #
 # PMI:
 #
-# We use OpenPMIx for OpenMPI and MPICH PMI because PMIx scales better than
-# PMI2, and OpenMPI no longer supports PMI2 as of version 5.
+# We build OpenPMIx, PMI2, and FLUX-PMI.
 
 
 # OS packages needed to build libfabric providers.
