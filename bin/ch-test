@@ -968,11 +968,15 @@ if [[ -z $phase ]]; then
 fi
 printf '\n'
 
-# FIXME: https://github.com/hpc/charliecloud/issues/1580
+# See issue #1580
 # shellcheck disable=SC2016
-echo  'NOTE: default image and pack directories changed to:'
-echo  '      CH_TEST_IMGDIR=/var/tmp/${USER}.img'
-echo  '      CH_TEST_TARDIR=/var/tmp/${USER}.pack'
+if [[ -d /var/tmp/img ]] || [[ -d /var/tmp/tar ]]; then
+printf '\n'
+  warning 'NOTE: default image and pack directories changed to:'
+  warning '      CH_TEST_IMGDIR=/var/tmp/${USER}.img'
+  warning '      CH_TEST_TARDIR=/var/tmp/${USER}.pack'
+fi
+
 printf '\n'
 
 #    variable name    CLI              environment         default
