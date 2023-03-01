@@ -42,6 +42,7 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
     multiprocess_ok
+    [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
 }
 
 lammps_try () {
@@ -58,8 +59,13 @@ lammps_try () {
 
 }
 
-@test "${ch_tag}/crayify image" {
-    crayify_mpi_or_skip "$ch_img"
+@test "${ch_tag}/inject host cray mpi ($cray_prov)" {
+    cray_ofi_or_skip "$ch_img"
+    run ch-run "$ch_img" -- fi_info
+    echo "$output"
+    [[ $output == *"provider: $cray_prov"* ]]
+    [[ $output == *"fabric: $cray_prov"* ]]
+    [[ $stauts -eq 0 ]]
 }
 
 @test "${ch_tag}/using all cores" {

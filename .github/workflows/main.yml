@@ -96,26 +96,12 @@ jobs:
           sudo apt-get install cloc
           misc/loc
 
-      - name: install Bats
-        # We need (1) old Bats, not bats-core and (2) prior to commit 1735a4f,
-        # because this is what is provided in distros we need to support and
-        # it contains a bug we work around (see issue #552).
-        run: |
-          cd /usr/local/src
-          git clone --depth 1 --branch v0.4.0 https://github.com/sstephenson/bats.git
-          cd bats
-          sudo sh -c 'umask 0022 && ./install.sh /usr/local'
-          command -v bats
-          bats --version
-          [[ $(command -v bats) == /usr/local/bin/bats ]]
-          [[ $(bats --version) == 'Bats 0.4.0' ]]
-
       - name: install/configure dependencies, all
         run: |
           # configure doesn't tell us about these.
           sudo apt-get install attr pigz pv
           # configure does tell us about these.
-          sudo apt-get install squashfs-tools
+          sudo apt-get install bats squashfs-tools
           # Track newest Sphinx in case it breaks things.
           sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme sphinx-reredirects'
           # Use newest shellcheck.
@@ -189,6 +175,11 @@ jobs:
           make $ch_makej
           sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
           sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
+          # musl-gcc does not install Linux headers. This is a bad kludge.
+          # See: https://www.openwall.com/lists/musl/2017/11/23/1
+          sudo ln -s ../linux ../asm-generic ../x86_64-linux-gnu \
+                     /usr/include/x86_64-linux-musl/
+          sudo ln -s x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/
 
       - name: install/configure dependencies, all Buildah
         if: ${{ startsWith(matrix.builder, 'buildah') }}
