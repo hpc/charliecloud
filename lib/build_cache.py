@@ -750,26 +750,26 @@ class Enabled_Cache:
       # 2. The oddly-named GIT_DIR.
       (self.root // "info/exclude").file_write("!*\n%s\n" % im.GIT_DIR)
 
-   def find_commit(self, path, git_id):
-      """Return (state ID, commit) of commit-ish git_id in directory path, or
-         (None, None) if it doesn’t exist."""
+   def find_commit(self, git_id):
+      """Return (state ID, commit) of commit-ish git_id, or (None, None) if it
+         doesn’t exist."""
       # Note abbreviated commit hash %h is automatically long enough to avoid
       # collisions.
       cp = self.git(["log", "--format=%h%n%B", "-n", "1", git_id],
-                    fail_ok=True, cwd=path)
+                    fail_ok=True)
       if (cp.returncode == 0):  # branch exists
          sid = State_ID.from_text(cp.stdout)
          commit = cp.stdout.split("\n", maxsplit=1)[0]
       else:
          sid = None
          commit = None
-      ch.VERBOSE("commit-ish %s in %s: %s %s" % (git_id, path, commit, sid))
+      ch.VERBOSE("commit-ish %s: %s %s" % (git_id, commit, sid))
       return (sid, commit)
 
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
          no such branch."""
-      return self.find_commit(self.root, image.ref.for_path)
+      return self.find_commit(image.ref.for_path)
 
    def find_sid(self, sid, branch):
       """Return the hash of the commit matching State_ID, or None if no such
@@ -814,7 +814,8 @@ class Enabled_Cache:
       p = ch.Progress("enumerating large files", "commits", 1, len(digests))
       larges_used = set()
       for d in digests:
-         data = self.git(["show", "%s:%s" % (d, PICKLE_PATH)]).stdout
+         data = self.git(["show", "%s:%s" % (d, PICKLE_PATH)],
+                         encoding=None).stdout
          fm = File_Metadata.unpickle(fs.Path("/DUMMY"), data)
          larges_used |= fm.large_names()
          p.update(1)
@@ -1052,8 +1053,7 @@ class Enabled_Cache:
    def worktree_add(self, image, base):
       if (image.unpack_cache_linked):
          self.git_prepare(image.unpack_path, [], write=False)  # clean worktree
-         if (    self.commit_hash_p(base)
-             and base == self.find_commit(image.unpack_path, "HEAD")[1]):
+         if (self.commit_hash_p(base) and base == self.worktree_head(image)):
             ch.VERBOSE("already checked out: %s %s" % (image.unpack_path, base))
          else:
             ch.INFO("updating existing image ...")
@@ -1088,16 +1088,8 @@ class Enabled_Cache:
       self.worktree_add(image, base)
       (image.unpack_path // im.GIT_DIR).rename(   ch.storage.image_tmp
                                                // im.GIT_DIR)
-      image.unpack_path.rmdir_()
+      image.unpack_path.rmtree()
       ch.storage.image_tmp.rename_(image.unpack_path)
-
-   def worktree_get_head(self, image):
-      cp = self.git(["rev-parse", "--short", "HEAD"],
-                    fail_ok=True, cwd=image.unpack_path)
-      if (cp.returncode != 0):
-         return None
-      else:
-         return cp.stdout.strip()
 
    def worktrees_fix(self):
       """Git stores pointers (paths) both from the main repository to each
@@ -1146,6 +1138,14 @@ class Enabled_Cache:
                (wt_repo_dir // "gitdir").file_write(str(wt_img_git) + "\n")
             ch.VERBOSE("fixed %d worktrees" % len(wt_actuals))
       t.log("re-linked worktrees")
+
+   def worktree_head(self, image):
+      cp = self.git(["rev-parse", "--short", "HEAD"],
+                    fail_ok=True, cwd=image.unpack_path)
+      if (cp.returncode != 0):
+         return None
+      else:
+         return cp.stdout.strip()
 
 
 class Rebuild_Cache(Enabled_Cache):

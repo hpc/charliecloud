@@ -32,7 +32,7 @@ setup () {
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     blessed_tree=$(cat << EOF
-initializing storage directory: v5 ${CH_IMAGE_STORAGE}
+initializing storage directory: v6 ${CH_IMAGE_STORAGE}
 initializing empty build cache
 *  (HEAD -> root) ROOT
 EOF

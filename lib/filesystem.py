@@ -546,7 +546,7 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 1, 2, 3, 4}):  # initialize/upgrade
+      elif (v_found in {None, 1, 2, 3, 4, 5}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
@@ -565,9 +565,14 @@ class Storage:
                      if (new.exists()):
                         ch.FATAL("can't upgrade: already exists: %s" % new)
                      old.rename(new)
-            # if (v_vound < 6):
-         # Git metadata moved from /.git to /ch/.git in v6.
-         # FIXME
+            if (v_found < 6):
+               # Git metadata moved from /.git to /ch/.git in v6.
+               for img in self.unpack_base.iterdir():
+                  old = img // ".git"
+                  new = img // "ch/git"
+                  if (old.exists_()):
+                     new.parent.mkdir_()
+                     old.rename_(new)
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can't upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
