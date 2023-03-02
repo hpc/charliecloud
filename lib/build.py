@@ -1090,8 +1090,9 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s_stage%d" % (cli.tag, self.image_i)
-      # Check for alias.
       if self.base_text in images:
+         # Is alias; store base_text as the "alias used" to target a previous
+         # stage as the base.
          self.base_alias = self.base_text
          self.base_text = str(images[self.base_text].ref)
       self.base_image = im.Image(im.Reference(self.base_text, argfrom))

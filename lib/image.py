@@ -183,8 +183,7 @@ class Image:
         unpack_path .. Directory to unpack the image in; if None, infer path
                        in storage dir from ref."""
 
-   __slots__ = ("alias",
-                "metadata",
+   __slots__ = ("metadata",
                 "ref",
                 "unpack_path")
 
