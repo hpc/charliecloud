@@ -512,6 +512,8 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       cp = subprocess.CompletedProcess(argv, 127)
    if (not fail_ok and cp.returncode != 0):
       if (cp.stderr is not None):
+         if (isinstance(cp.stderr, bytes)):
+            cp.stderr = cp.stderr.decode("UTF-8")
          sys.stderr.write(cp.stderr)
          sys.stderr.flush()
       FATAL("command failed with code %d: %s"

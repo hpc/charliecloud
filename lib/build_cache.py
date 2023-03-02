@@ -312,7 +312,7 @@ class File_Metadata:
          path = fs.Path()
          hardlinks = dict()
       fm = class_(image_root, path)
-      if (fm.path.name.startswith(".git") and len(fm.path) == 1):
+      if (fm.path == im.GIT_DIR):
          # skip Git stuff at image root
          fm.dont_restore = True
          return fm
@@ -404,8 +404,7 @@ class File_Metadata:
       #ch.TRACE(self.str_for_log())  # output is extreme even for TRACE?
       # Do-nothing case.
       if (self.dont_restore):
-         if (not (quick or (    self.path.name.startswith(".git")
-                            and len(self.path) == 1))):
+         if (not quick and self.path != im.GIT_DIR):
             ch.WARNING("ignoring un-restorable file: /%s" % self.path)
          return
       # Make sure I exist, and with the correct name.
@@ -647,38 +646,33 @@ class Enabled_Cache:
    def bootstrap(self):
       ch.INFO("initializing empty build cache")
       self.bootstrap_ct += 1
-      # Initialize bare repo
+      # Initialize bare repo. Don’t use wrapper because the build cache
+      # doesn’t exist yet.
       ch.cmd_quiet(["git", "init", "--bare", "-b", "root", self.root])
       self.configure()
-      # Create empty root commit.
+      # Create empty root commit. This is done in a strange way with no real
+      # working directory at all, because (1) cloning the bucache doesn’t
+      # clone the config, which we care about, and (2) worktrees cannot be
+      # used on empty repositories.
+      # See: https://stackoverflow.com/a/29396902/396038
       try:
          with tempfile.TemporaryDirectory(prefix="weirdal.") as td:
-            cwd = fs.Path(td).chdir()
-            # Git has no default gitignore, but cancel any global gitignore
-            # rules the user might have. https://stackoverflow.com/a/26681066
-            fs.Path(".gitignore").file_write("!*\n")
-            # Hairy commit with no working directory at all. We do this
-            # because (1) cloning the bucache doesn’t clone the config, which
-            # we care about, and (2) worktrees cannot be used on empty
-            # repositories. See: https://stackoverflow.com/a/29396902/396038
             env = { "GIT_DIR": self.root,
                     "GIT_WORK_TREE": td,
-                    "GIT_INDEX_FILE": "%s/scratch-index" % td }
-            ch.cmd(["git", "read-tree", "--empty"], env=env)
-            ch.cmd(["git", "add", ".gitignore"], env=env)
-            ch.cmd(["git", "commit", "-m", "ROOT\n\n%s" % self.root_id],
-                   env=env)
-            cwd.chdir()
+                    "GIT_INDEX_FILE": "%s/bootstrap-index" % td }
+            self.git(["read-tree", "--empty"], env=env)
+            # Note: complaints about empty commits go to stdout, not stderr.
+            self.git(["commit", "--allow-empty",
+                                "-m", "ROOT\n\n%s" % self.root_id], env=env)
       except OSError as x:
          ch.FATAL("can't create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
    def branch_delete(self, branch):
       "Delete branch branch if it exists; otherwise, do nothing."
-      if (ch.cmd_quiet(["git", "show-ref", "--quiet", "--heads", branch],
-                       cwd=self.root, fail_ok=True) == 0):
-         ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
-
+      if (self.git(["show-ref", "--quiet", "--heads", branch],
+                   fail_ok=True).returncode == 0):
+         self.git(["branch", "-D", branch])
 
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Ref src_ref pointing to dest, which can
@@ -689,9 +683,8 @@ class Enabled_Cache:
       # checked out, so detach that worktree if it exists.
       src_img = im.Image(src_ref)
       if (src_img.unpack_exist_p):
-         ch.cmd_quiet(["git", "checkout", "--detach"], cwd=src_img.unpack_path)
-      ch.cmd_quiet(["git", "branch", "-f", self.branch_name_ready(src_ref),
-                    dest], cwd=self.root)
+         self.git(["checkout", "--detach"], cwd=src_img.unpack_path)
+      self.git(["branch", "-f", self.branch_name_ready(src_ref), dest])
 
    def checkout(self, image, git_hash, base_image):
       # base_image used in other subclasses
@@ -708,28 +701,27 @@ class Enabled_Cache:
       #
       # WARNING: files must be empty for the first image commit.
       self.git_prepare(path, files)
-      cwd = path.chdir()
       t = ch.Timer()
       if (len(files) == 0):
          git_files = ["-A"]
       else:
          git_files = list(files) + ["ch/git.pickle"]
-      ch.cmd_quiet(["git", "add"] + git_files)
+      self.git(["add"] + git_files, cwd=path)
       t.log("prepared index")
       t = ch.Timer()
-      ch.cmd_quiet(["git", "commit", "-q", "--allow-empty",
-                    "-m", "%s\n\n%s" % (msg, sid)])
+      self.git(["commit", "-q", "--allow-empty",
+                          "-m", "%s\n\n%s" % (msg, sid)], cwd=path)
       t.log("committed")
       # "git commit" does print the new commit's hash without "-q", but it
       # also prints every file commited, which is rather enormous for us.
       # Therefore, retrieve the hash separately.
-      cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
+      cp = self.git(["rev-parse", "--short", "HEAD"], cwd=path)
       git_hash = cp.stdout.strip()
-      cwd.chdir()
       self.git_restore(path, files, True)
       return git_hash
 
    def configure(self):
+      # Configuration.
       path = self.root // "config"
       fp = path.open_("r+")
       config = configparser.ConfigParser()
@@ -750,14 +742,21 @@ class Enabled_Cache:
          fp.truncate()
          ch.ossafe(config.write, "can’t write Git config: %s" % path, fp)
       ch.close_(fp)
+      # Ignore list entries:
+      #
+      # 1. Git has no default gitignore, but cancel any global gitignore rules
+      #    the user might have. https://stackoverflow.com/a/26681066
+      #
+      # 2. The oddly-named GIT_DIR.
+      (self.root // "info/exclude").file_write("!*\n%s\n" % im.GIT_DIR)
 
    def find_commit(self, path, git_id):
       """Return (state ID, commit) of commit-ish git_id in directory path, or
-         (None, None) if it doesn’t exist.."""
+         (None, None) if it doesn’t exist."""
       # Note abbreviated commit hash %h is automatically long enough to avoid
       # collisions.
-      cp = ch.cmd_stdout(["git", "log", "--format=%h%n%B", "-n", "1", git_id],
-                         fail_ok=True, cwd=path)
+      cp = self.git(["log", "--format=%h%n%B", "-n", "1", git_id],
+                    fail_ok=True, cwd=path)
       if (cp.returncode == 0):  # branch exists
          sid = State_ID.from_text(cp.stdout)
          commit = cp.stdout.split("\n", maxsplit=1)[0]
@@ -787,14 +786,14 @@ class Enabled_Cache:
          None if no such commit exists. If branch is given, search only that
          branch; otherwise, search the entire repo, including commits not
          reachable from any branch."""
-      argv = ["git", "log", "--grep", sid, "-F", "--format=%h", "-n", "1"]
+      argv = ["log", "--grep", sid, "-F", "--format=%h", "-n", "1"]
       if (branch is not None):
          fail_ok = True
          argv += [branch]
       else:
          fail_ok = False
          argv += ["--all", "--reflog"]
-      cp = ch.cmd_stdout(argv, fail_ok=fail_ok, cwd=self.root)
+      cp = self.git(argv, fail_ok=fail_ok)
       if (cp.returncode != 0 or len(cp.stdout) == 0):
          return None
       else:
@@ -805,19 +804,17 @@ class Enabled_Cache:
       t = ch.Timer()
       # Expire the reflog with a recent time instead of now in case there is a
       # parallel Git operation in progress.
-      ch.cmd(["git", "-c", "gc.bigPackthreshold=0", "-c", "gc.pruneExpire=now",
-                     "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
+      self.git(["-c", "gc.bigPackthreshold=0", "-c", "gc.pruneExpire=now",
+                "-c", "gc.reflogExpire=now", "gc"], quiet=False)
       t.log("collected garbage")
       t = ch.Timer()
-      digests = ch.cmd_stdout(["git", "rev-list", "--all", "--reflog"],
-                              cwd=self.root).stdout.split("\n")
+      digests = self.git(["rev-list", "--all", "--reflog"]).stdout.split("\n")
       assert (digests[-1] == "")  # trailing newline
       digests[-2:] = []           # discard root commit and trailing newline
       p = ch.Progress("enumerating large files", "commits", 1, len(digests))
       larges_used = set()
       for d in digests:
-         data = ch.cmd_stdout(["git", "show", "%s:%s" % (d, PICKLE_PATH)],
-                              cwd=self.root, encoding=None).stdout
+         data = self.git(["show", "%s:%s" % (d, PICKLE_PATH)]).stdout
          fm = File_Metadata.unpickle(fs.Path("/DUMMY"), data)
          larges_used |= fm.large_names()
          p.update(1)
@@ -829,6 +826,23 @@ class Enabled_Cache:
          if (l not in larges_used):
             (self.build_large // l).unlink_()
       t.log("deleted unused large files")
+
+   def git(self, argv, cwd=None, quiet=True, *args, **kwargs):
+      """Run the given git(1) command with appropriate environment and return
+         the resulting CompletedProcess object. If cwd is None, run with CWD
+         set to the build cache bare repo; otherwise, it must be the path to
+         an unpacked image. If quiet is true, read Git’s stdout and return it
+         in cp.stdout; otherwise, leave Git’s stdout unchanged. Any additional
+         arguments are passed through to ch.cmd_stdout()."""
+      if (cwd is None):
+         cwd = self.root
+      else:
+         if ("env" not in kwargs):
+            kwargs["env"] = dict()
+         kwargs["env"].update({ "GIT_DIR": str(cwd // im.GIT_DIR),
+                                "GIT_WORK_TREE": str(cwd) })
+      return (ch.cmd_stdout if quiet else ch.cmd)(["git"] + argv, cwd=cwd,
+                                                  *args, **kwargs)
 
    def git_prepare(self, unpack_path, files, write=True):
       """Prepare unpack_path for Git operations (see
@@ -903,8 +917,8 @@ class Enabled_Cache:
       return (sid, commit)
 
    def ready(self, image):
-      ch.cmd_quiet(["git", "checkout", "-B", self.branch_name_ready(image.ref)],
-                   cwd=image.unpack_path)
+      self.git(["checkout", "-B", self.branch_name_ready(image.ref)],
+               cwd=image.unpack_path)
       self.branch_delete(self.branch_name_unready(image.ref))
 
    def reset(self):
@@ -930,7 +944,7 @@ class Enabled_Cache:
          # Delete images that are worktrees referring back to the build cache.
          ch.INFO("deleting build cache")
          for d in ch.storage.unpack_base.listdir():
-            dotgit = ch.storage.unpack_base // d // ".git"
+            dotgit = ch.storage.unpack_base // d // im.GIT_DIR
             if (os.path.exists(dotgit)):
                ch.VERBOSE("deleting cached image: %s" % d)
                (ch.storage.unpack_base // d).rmtree()
@@ -948,8 +962,8 @@ class Enabled_Cache:
       ch.INFO("something went wrong, rolling back ...")
       self.git_prepare(path, [], write=False)
       t = ch.Timer()
-      ch.cmd_quiet(["git", "reset", "--hard", "HEAD"], cwd=path)
-      ch.cmd_quiet(["git", "clean", "-fdq"], cwd=path)
+      self.git(["reset", "--hard", "HEAD"], cwd=path, quiet=False)
+      self.git(["clean", "-fdq"], cwd=path, quiet=False)
       t.log("reverted worktree")
       self.git_restore(path, [], False)
 
@@ -967,20 +981,18 @@ class Enabled_Cache:
          return "*"
 
    def summary_print(self):
-      cwd = fs.Path(self.root).chdir()
       # state IDs
-      msgs = ch.cmd_stdout(["git", "log",
-                            "--all", "--reflog", "--format=format:%b"]).stdout
+      msgs = self.git(["log", "--all", "--reflog", "--format=format:%b"]).stdout
       states = set()
       for msg in msgs.splitlines():
          if (msg != ""):
             states.add(State_ID.from_text(msg))
       # branches (FIXME: how to count unnamed branch tips?)
-      image_ct = ch.cmd_stdout(["git", "branch", "--list"]).stdout.count("\n")
+      image_ct = self.git(["branch", "--list"]).stdout.count("\n")
       # file count and size on disk
       (file_ct, byte_ct) = fs.Path(self.root).du()
-      commit_ct = int(ch.cmd_stdout(["git", "rev-list",
-                                     "--all", "--reflog", "--count"]).stdout)
+      commit_ct = int(self.git(["rev-list", "--all", "--reflog",
+                                            "--count"]).stdout)
       (file_ct, file_suffix) = ch.si_decimal(file_ct)
       (byte_ct, byte_suffix) = ch.si_binary_bytes(byte_ct)
       # print it
@@ -992,7 +1004,7 @@ class Enabled_Cache:
       print("disk used:      %5d %s" % (byte_ct, byte_suffix))
       # some information directly from Git
       if (ch.verbose >= 1):
-         out = ch.cmd_stdout(["git", "count-objects", "-vH"]).stdout
+         out = self.git(["count-objects", "-vH"]).stdout
          print("Git statistics:")
          print(textwrap.indent(out, "  "), end="")
          out = (self.root // "config").file_read_all()
@@ -1010,8 +1022,8 @@ class Enabled_Cache:
          # FIXME: The body contains a trailing newline I can't figure out how
          # to remove.
          fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
-      ch.cmd_base(["git", "log", "--graph", "--all", "--reflog",
-                   "--topo-order", "--format=%s" % fmt], cwd=self.root)
+      self.git(["log", "--graph", "--all", "--reflog",
+                       "--topo-order", "--format=%s" % fmt], quiet=False)
       print()  # blank line to separate from summary
 
    def tree_dot(self):
@@ -1046,17 +1058,20 @@ class Enabled_Cache:
          else:
             ch.INFO("updating existing image ...")
             t = ch.Timer()
-            ch.cmd_quiet(["git", "checkout",
-                          "-B", self.branch_name_unready(image.ref), base],
-                         cwd=image.unpack_path)
+            self.git(["checkout", "-B", self.branch_name_unready(image.ref),
+                      base], cwd=image.unpack_path)
             t.log("adjusted worktree")
       else:
          ch.INFO("copying image from cache ...")
          image.unpack_clear()
          t = ch.Timer()
-         ch.cmd_quiet(["git", "worktree", "add", "-f",
-                       "-B", self.branch_name_unready(image.ref),
-                       image.unpack_path, base], cwd=self.root)
+         self.git(["worktree", "add", "-f", "-B",
+                   self.branch_name_unready(image.ref),
+                   image.unpack_path, base])
+         git_dir_default = image.unpack_path // ".git"
+         git_dir_new = image.unpack_path // im.GIT_DIR
+         git_dir_new.parent.mkdir_()
+         git_dir_default.rename_(git_dir_new)
          t.log("created worktree")
 
    def worktree_adopt(self, image, base):
@@ -1071,14 +1086,14 @@ class Enabled_Cache:
          ch.storage.image_tmp.rmtree()
       image.unpack_path.rename_(ch.storage.image_tmp)
       self.worktree_add(image, base)
-      for i in { ".git", ".gitignore" }:
-         (image.unpack_path // i).rename_(ch.storage.image_tmp // i)
+      (image.unpack_path // im.GIT_DIR).rename(   ch.storage.image_tmp
+                                               // im.GIT_DIR)
       image.unpack_path.rmdir_()
       ch.storage.image_tmp.rename_(image.unpack_path)
 
    def worktree_get_head(self, image):
-      cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"],
-                         cwd=image.unpack_path, fail_ok=True)
+      cp = self.git(["rev-parse", "--short", "HEAD"],
+                    fail_ok=True, cwd=image.unpack_path)
       if (cp.returncode != 0):
          return None
       else:
@@ -1104,12 +1119,11 @@ class Enabled_Cache:
          [1]: https://git-scm.com/docs/git-worktree
          [2]: https://git-scm.com/docs/gitrepository-layout"""
       t = ch.Timer()
-      wt_actuals = { fs.Path(i).parts[-2]
-                     for i in glob.iglob("%s/*/.git"
-                                         % ch.storage.unpack_base) }
+      wt_actuals = { fs.Path(i).parts[-(len(im.GIT_DIR)+1)]
+                     for i in glob.iglob(str(   ch.storage.unpack_base
+                                             // "*" // im.GIT_DIR)) }
       wt_gits =    { fs.Path(i).name
-                     for i in glob.iglob("%s/worktrees/*"
-                                         % ch.storage.build_cache) }
+                     for i in glob.iglob("%s/worktrees/*" % self.root) }
       # Delete worktree data for images that no longer exist or aren’t
       # Git-enabled any more.
       wt_gits_deleted = wt_gits - wt_actuals
@@ -1127,7 +1141,7 @@ class Enabled_Cache:
          if (not wt_dir_stored.is_relative_to(ch.storage.root)):
             for wt in wt_actuals:
                wt_repo_dir = ch.storage.build_cache // "worktrees" // wt
-               wt_img_git = ch.storage.unpack_base // wt // ".git"
+               wt_img_git = ch.storage.unpack_base // wt // im.GIT_DIR
                wt_img_git.file_write("gitdir: %s\n" % str(wt_repo_dir))
                (wt_repo_dir // "gitdir").file_write(str(wt_img_git) + "\n")
             ch.VERBOSE("fixed %d worktrees" % len(wt_actuals))

@@ -24,7 +24,7 @@ import charliecloud as ch
 # To see the directory formats in released versions:
 #
 #   $ git grep -F 'STORAGE_VERSION =' $(git tag | sort -V)
-STORAGE_VERSION = 5
+STORAGE_VERSION = 6
 
 
 ## Globals ##
@@ -430,7 +430,10 @@ class Path(pathlib.PosixPath):
          ch.FATAL("can’t symlink: %s -> %s: %s" % (self.name, target,
                                                    x.strerror))
 
-   def unlink_(self, *args, **kwargs):
+   def unlink_(self, missing_ok=False):
+      # FIXME: Once we require Python 3.8, we can just pass through missing_ok.
+      if (missing_ok and not self.exists_()):
+         return
       ch.ossafe(super().unlink, "can't unlink: %s" % self.name)
 
 
@@ -553,12 +556,18 @@ class Storage:
          self.build_large.mkdir_()
          self.unpack_base.mkdir_()
          self.upload_cache.mkdir_()
-         for old in self.unpack_base.iterdir():
-            new = old.parent // str(old.name).replace(":", "+")
-            if (old != new):
-               if (new.exists()):
-                  ch.FATAL("can't upgrade: already exists: %s" % new)
-               old.rename(new)
+         if (v_found is not None):  # upgrade
+            if (v_found < 3):
+               # Escape colon in image names as plus starting in v3.
+               for old in self.unpack_base.iterdir():
+                  new = old.parent // str(old.name).replace(":", "+")
+                  if (old != new):
+                     if (new.exists()):
+                        ch.FATAL("can't upgrade: already exists: %s" % new)
+                     old.rename(new)
+            # if (v_vound < 6):
+         # Git metadata moved from /.git to /ch/.git in v6.
+         # FIXME
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can't upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
@@ -728,7 +737,7 @@ class TarFile(tarfile.TarFile):
    def add_(self, name, **kwargs):
       def filter_(ti):
          assert (ti.name == "." or ti.name[:2] == "./")
-         if (ti.name.startswith("./.git") or ti.name == "./ch/git.pickle"):
+         if (ti.name in ("./ch/.git", "./ch/git.pickle")):
             ch.DEBUG("omitting from push: %s" % ti.name)
             return None
          self.fix_member_uidgid(ti)
