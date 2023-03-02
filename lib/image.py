@@ -188,7 +188,7 @@ class Image:
                 "ref",
                 "unpack_path")
 
-   def __init__(self, ref, unpack_path=None, alias=None):
+   def __init__(self, ref, unpack_path=None):
       assert isinstance(ref, Reference)
       self.ref = ref
       if (unpack_path is not None):
@@ -196,8 +196,6 @@ class Image:
          self.unpack_path = unpack_path
       else:
          self.unpack_path = ch.storage.unpack(self.ref)
-      if (alias is not None):
-         self.alias = alias
       self.metadata_init()
 
    @property

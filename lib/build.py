@@ -1035,6 +1035,7 @@ class I_label_space(Label):
 class I_from_(Instruction):
 
    __slots__ = ("alias",
+                "base_alias",
                 "base_image",
                 "base_text")
 
@@ -1047,11 +1048,13 @@ class I_from_(Instruction):
 
    @property
    def str_(self):
-      if (hasattr(self, "image") and hasattr(self.image, "alias")):
-         base_text = self.image.alias
+      if (hasattr(self, "base_alias")):
+         base_text = str(self.base_alias)
+      elif (hasattr(self, "base_image")):
+         base_text = str(self.base_image.ref)
       else:
          # Initialization failed, but we want to print *something*.
-         base_image = self.base_text
+         base_text = self.base_text
       return base_text + ((" AS " + self.alias) if self.alias else "")
 
    def checkout_for_build(self):
@@ -1068,7 +1071,7 @@ class I_from_(Instruction):
       # FROM is special because its preparation involves opening a new stage
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
-      orig_text = self.tree.child_terminals_cat("image_ref", "IMAGE_REF")
+      self.base_text = self.tree.child_terminals_cat("image_ref", "IMAGE_REF")
       self.alias = self.tree.child_terminal("from_alias", "IR_PATH_COMPONENT")
       # Validate instruction.
       if (self.options.pop("platform", False)):
@@ -1087,13 +1090,12 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s_stage%d" % (cli.tag, self.image_i)
-      # Check if FROM references an alias.
-      if orig_text in images:
-         self.base_text = str(images[orig_text].ref)
-      else:
-         self.base_text = orig_text
+      # Check for alias.
+      if self.base_text in images:
+         self.base_alias = self.base_text
+         self.base_text = str(images[self.base_text].ref)
       self.base_image = im.Image(im.Reference(self.base_text, argfrom))
-      self.image = im.Image(im.Reference(tag), alias=orig_text)
+      self.image = im.Image(im.Reference(tag))
       images[self.image_i] = self.image
       if (self.image_alias is not None):
          images[self.image_alias] = self.image
