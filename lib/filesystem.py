@@ -742,7 +742,7 @@ class TarFile(tarfile.TarFile):
    def add_(self, name, **kwargs):
       def filter_(ti):
          assert (ti.name == "." or ti.name[:2] == "./")
-         if (ti.name in ("./ch/.git", "./ch/git.pickle")):
+         if (ti.name in ("./ch/git", "./ch/git.pickle")):
             ch.DEBUG("omitting from push: %s" % ti.name)
             return None
          self.fix_member_uidgid(ti)
