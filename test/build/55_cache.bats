@@ -489,8 +489,10 @@ EOF
     ch-image delete a
     run ch-image build-cache --tree
     echo "$output"
-    [[ $status -eq 0 ]]    
+    [[ $status -eq 0 ]]
     diff -u - <(echo "$output" | treeonly) <<'EOF'
+*  RUN echo bar
+*  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF

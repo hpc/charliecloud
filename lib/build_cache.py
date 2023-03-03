@@ -32,6 +32,10 @@ GIT_CONFIG = {
    # Prioritize write speed over data safety; i.e., increase the risk of cache
    # corruption on system crash while (hopefully) decreasing write speed.
    "core.fsync":             "none",
+   # We want to keep access to commits on deleted branches so they are still
+   # available for cache hits. This setting is necessary but not sufficient;
+   # see branch_delete() below.
+   "core.logAllRefUpdates":  "true",
    # Try to maximize “git add” speed.
    "core.looseCompression":  "0",
    # Enable incremental indexes [1]; it should speed things like “git add”.
@@ -656,9 +660,28 @@ class Enabled_Cache:
                   % (x.filename, x.strerror))
 
    def branch_delete(self, branch):
-      "Delete branch branch if it exists; otherwise, do nothing."
-      if (ch.cmd_quiet(["git", "show-ref", "--quiet", "--heads", branch],
-                       cwd=self.root, fail_ok=True) == 0):
+      """Delete branch branch if it exists; otherwise, do nothing. This
+         removes only the branch ref; its commits remain until garbage
+         collected."""
+      # Note: in a typical Git working directory, HEAD has followed the branch
+      # around, so when we delete a branch ref *and necessarily its reflog
+      # too*, that branch’s commits remain accessible via HEAD’s reflog until
+      # the reflog entries expire. However, in our case, it’s the worktree
+      # HEAD that did the following, and that reflog goes away when the
+      # worktree is deleted, so the branch’s commits become inaccessible
+      # immediately upon branch deletion. Here, the first “update-ref”
+      # shenanigan logs the branch tip in the bare repo’s HEAD reflog, keeping
+      # the commits accessible. The second puts HEAD back where it was,
+      # because it would be confusing for HEAD to point to the most recently
+      # deleted branch tip.
+      cp = ch.cmd_stdout(["git", "show-ref", "--heads", "-s", branch],
+                         cwd=self.root, fail_ok=True)
+      if (cp.returncode == 0):  # branch found
+         branch_tip = cp.stdout.strip()
+         head_old = ch.cmd_stdout(["git", "rev-parse", "HEAD"],
+                                  cwd=self.root).stdout.strip()
+         ch.cmd_quiet(["git", "update-ref", "HEAD", branch_tip], cwd=self.root)
+         ch.cmd_quiet(["git", "update-ref", "HEAD", head_old], cwd=self.root)
          ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
 
    def branch_nocheckout(self, src_ref, dest):
