@@ -55,12 +55,14 @@ rpmbuild root:      %(rpmbuild)s
          # If we're on a branch, we want to build on that branch so the branch
          # name shows up in the version name.
          commit = subprocess.check_output(["git", "symbolic-ref", "-q",
-                                           "--short", "HEAD"])[:-1]
+                                           "--short", "HEAD"],
+                                           encoding="UTF-8")[:-1]
       except subprocess.CalledProcessError as x:
          if (x.returncode != 1): raise
          # Detached HEAD (e.g. CI) is also fine; use commit hash.
          commit = subprocess.check_output(["git", "rev-parse",
-                                           "--verify", "HEAD"])[:-1]
+                                           "--verify", "HEAD"],
+                                           encoding="UTF-8")[:-1]
       rpm_release = "0"
    else:
       m           = re.search(r"([0-9.]+)-([0-9]+)", args.version)
@@ -79,8 +81,7 @@ rpmbuild root:      %(rpmbuild)s
 
    # Determine distro.
    rpms_dist = cmd_out(CH_RUN, args.image,
-                      '--', 'rpmbuild', '--eval', '%{?dist}',
-                      text=True)
+                      '--', 'rpmbuild', '--eval', '%{?dist}')
    rpms_dist = rpms_dist.split(".")[-1]
 
    # FIXME: el8 doesn't have bats; skip for now.
@@ -168,11 +169,11 @@ rpmbuild root:      %(rpmbuild)s
    rpms_src       = "/usr/local/src/RPMS"
    rpms_arch      = "%s/%s" % (rpms_src, ARCH)
    rpms_noarch    = "%s/noarch" % rpms_src
-   rpms = {'charliecloud':           [rpms_arch,   "%s.%s.rpm"     % (rpms_dist, ARCH)],
-           'charliecloud-builder':   [rpms_noarch, "%s.noarch.rpm" % rpms_dist],
-           'charliecloud-debuginfo': [rpms_arch,   "%s.%s.rpm"     % (rpms_dist, ARCH)],
-           'charliecloud-doc':       [rpms_noarch, "%s.noarch.rpm" % rpms_dist],
-           'charliecloud-test':      [rpms_arch,   "%s.%s.rpm"     % (rpms_dist, ARCH)]}
+   rpms = {'charliecloud':           [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
+           'charliecloud-builder':   [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
+           'charliecloud-debuginfo': [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
+           'charliecloud-doc':       [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
+           'charliecloud-test':      [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)]}
    rpm_specs      = "/usr/local/src/SPECS"
    rpm_sources    = "/usr/local/src/SOURCES"
    rpmbuild_args += ["--define", "_topdir /usr/local/src"]
@@ -222,7 +223,7 @@ def cmd_ok(*args, **kwargs):
    return (rc == 0)
 
 def cmd_out(*args, **kwargs):
-   out = cmd_real(subprocess.check_output, *args, **kwargs)
+   out = cmd_real(subprocess.check_output, *args, encoding="UTF-8", **kwargs)
    return out.rstrip()  # remove trailing newline
 
 def cmd_real(runf, *args, **kwargs):
