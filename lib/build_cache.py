@@ -794,7 +794,8 @@ class Enabled_Cache:
                      "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
       t.log("collected garbage")
       t = ch.Timer()
-      digests = ch.cmd_stdout(["git", "rev-list", "--all", "--reflog"],
+      digests = ch.cmd_stdout(["git", "rev-list",
+                               "--all", "--reflog", "--date-order"],
                               cwd=self.root).stdout.split("\n")
       assert (digests[-1] == "")  # trailing newline
       digests[-2:] = []           # discard root commit and trailing newline
