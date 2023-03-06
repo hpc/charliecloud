@@ -377,7 +377,10 @@ dockman_to_tar () {
     INFO 'adding environment ...'
     "$1" inspect "$2" \
             --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
-    tar rf "$tmptar" -b1 -P --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
+    # The tar flavor Docker gives us does not support UIDs or GIDs greater
+    # than 2**21, so use 0/0 rather than what’s on the filesystem. See #1573.
+    tar rf "$tmptar" -b1 -P --owner=0 --group=0 \
+        --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
     INFO 'compressing ...'
     pv_ < "$tmptar" | gzip_ -6 > "$3"
     rm "$tmptar"
