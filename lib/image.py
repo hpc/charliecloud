@@ -80,10 +80,11 @@ _NEWLINES: ( _WSH? "\n" )+       // sequence of newlines
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
 
-# Where in the image the .git “directory” (it’s a file for workdirs but the
-# Git docs call it a directory) is located. We deliberately do not call it
-# “.git” because that makes it hidden, but also more importantly it confuses
-# Git into thinking it’s a different Git repo.
+# Where the .git “directory” in the image is located. (Normally it’s a
+# directory, and that’s what the Git docs call it, but it’s a file for
+# worktrees.) We deliberately do not call it “.git” because that makes it
+# hidden, but also more importantly it confuses Git into thinking /ch is a
+# different Git repo.
 GIT_DIR = ch.Path("ch/git")
 
 # Dockerfile grammar. Note image references are not parsed during Dockerfile
@@ -261,7 +262,7 @@ class Image:
          src_path = other.unpack_path
       ch.VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
       fs.Path(src_path).copytree(self.unpack_path, symlinks=True)
-      # simpler to copy this file then delete it, rather than filter it out
+      # Simpler to copy this file then delete it, rather than filter it out.
       (self.unpack_path // GIT_DIR).unlink_(missing_ok=True)
       self.unpack_init()
 
