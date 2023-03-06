@@ -82,7 +82,7 @@ rpmbuild root:      %(rpmbuild)s
    # Determine distro.
    rpms_dist = cmd_out(CH_RUN, args.image,
                       '--', 'rpmbuild', '--eval', '%{?dist}')
-   rpms_dist = rpms_dist.split(".")[-1]
+   rpms_dist = rpms_dist.split('.')[-1]
 
    # FIXME: el8 doesn't have bats; skip for now.
    if (rpms_dist == 'el8'):
@@ -237,7 +237,7 @@ def cmd_real(runf, *args, **kwargs):
    # print and run
    print("$", end="")
    for arg in args2:
-      arg = shlex.quote(str(arg))
+      arg = shlex.quote(arg)
       print(" " + arg, end="")
    print()
    return runf(args2, **kwargs)
