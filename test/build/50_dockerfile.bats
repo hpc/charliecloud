@@ -877,6 +877,38 @@ EOF
 }
 
 
+@test 'Dockerfile: FROM multistage alias' {
+    scope standard
+    run build_ --no-cache -t tmpimg -f - . <<'EOF'
+ARG BASEIMG=alpine:3.17
+FROM $BASEIMG as a
+RUN echo foo
+FROM a as b
+RUN echo bar
+FROM b
+RUN echo qux
+EOF
+    # We only care that other builders return 0; we only check ch-image output.
+    [[ $status -eq 0 ]]
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
+        [[ $output = *"ARG BASEIMG='alpine:3.17'"* ]]
+        [[ $output = *'FROM alpine.17 AS a'* ]]
+        [[ $output = *'RUN echo foo'* ]]
+        [[ $output = *'FROM a AS b'* ]]
+        [[ $output = *'RUN echo bar'* ]]
+        [[ $output = *'FROM b'* ]]
+        [[ $output = *'RUN echo qux'* ]]
+        run ch-image list
+        echo "$output"
+        [[ $status -eq 0 ]]
+        [[ $output = *'alpine:3.17'* ]]
+        [[ $output = *'tmpimg'* ]]
+        [[ $output = *'tmpimg_stage0' ]]
+        [[ $output = *'tmpimg_stage1' ]]
+    fi
+}
+
+
 @test 'Dockerfile: FROM --arg' {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
@@ -911,7 +943,6 @@ EOF
     [[ $output = *'FROM --arg=foo=bar --arg=os=alpine:3.17 alpine:3.17'* ]]
     [[ $output = *'1: foo=bar os=alpine:3.17'* ]]
 }
-
 
 @test 'Dockerfile: COPY list form' {
     scope standard
