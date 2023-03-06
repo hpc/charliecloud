@@ -812,7 +812,7 @@ class Enabled_Cache:
       ch.INFO("found %d large files used; deleting others" % len(larges_used))
       for l in ch.storage.build_large.listdir():
          if (l not in larges_used):
-            (self.build_large // l).unlink_()
+            (ch.storage.build_large // l).unlink_()
       t.log("deleted unused large files")
 
    def git_prepare(self, unpack_path, files, write=True):
