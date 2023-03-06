@@ -158,7 +158,7 @@ Additional arguments:
   :code:`--img-dir DIR`
     Set unpacked images directory to :code:`DIR`. In a multi-node allocation,
     this directory may not be shared between nodes. Default:
-    :code:`$CH_TEST_IMGDIR` if set; otherwise :code:`/var/tmp/img`.
+    :code:`$CH_TEST_IMGDIR` if set; otherwise :code:`/var/tmp/${USER}.img`.
 
   :code:`--lustre DIR`
     Use :code:`DIR` for run-phase Lustre tests. Default:
@@ -169,7 +169,7 @@ Additional arguments:
 
   :code:`--pack-dir DIR`
     Set packed images directory to :code:`DIR`. Default:
-    :code:`$CH_TEST_TARDIR` if set; otherwise :code:`/var/tmp/pack`.
+    :code:`$CH_TEST_TARDIR` if set; otherwise :code:`/var/tmp/${USER}.pack`.
 
   :code:`--pedantic (yes|no)`
     Some tests require configurations that are very specific (e.g., being a

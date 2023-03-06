@@ -15,18 +15,27 @@ set -e
 
 cd "$(dirname "$0")"/..
 
-pwd
 find . \(    -path ./.git \
           -o -path ./autom4te.cache \
           -o -path ./doc/doctrees \
+          -o -path ./bin/ch-checkns \
+          -o -path ./bin/ch-image \
+          -o -path ./bin/ch-run \
+          -o -path ./bin/ch-run-oci \
+          -o -path ./bin/ch-ssh \
           -o -path ./doc/html \
           -o -path ./doc/man \
-          -o -path ./lib/lark \
+          -o -path ./test/approved-trailing-whitespace \
+          -o -path './lib/lark*' \
+          -o -path '*.patch' \
           -o -name '*.pyc' \
+          -o -name '*.vtk' \
+          -o -name ._.DS_Store \
+          -o -name .DS_Store \
           -o -name configure \
           -o -name 'config.*' \
           -o -name Makefile \
           -o -name Makefile.in \
        \) -prune \
        -o -type f \
-       -exec grep --color=auto -Hn "$@" {} \;
+       -exec grep --color=auto -HIn "$@" {} \;

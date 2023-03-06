@@ -128,7 +128,6 @@ EOF
 warning: not yet supported, ignored: issue #777: .dockerignore file
   1. FROM alpine:3.17
 copying image ...
-available --force: alpine: Alpine, any version
   4. RUN true 
  13. RUN echo test1a
 test1a

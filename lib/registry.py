@@ -368,7 +368,7 @@ class HTTP:
    @property
    def _url_base(self):
       return "https://%s:%d/v2/" % (self.ref.host, self.ref.port)
-   
+
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
       return self._url_base + "/".join((self.ref.path_full, type_, address))

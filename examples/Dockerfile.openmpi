@@ -4,8 +4,12 @@ FROM libfabric
 # See Dockerfile.libfabric for MPI goals and details.
 
 # OpenMPI.
+#
+# Build with PMIx, PMI2, and FLUX-PMI support.
+#
 #   1. --disable-pty-support to avoid "pipe function call failed when
 #      setting up I/O forwarding subsystem".
+#
 #   2. --enable-mca-no-build=plm-slurm to support launching processes using the
 #     host's srun (i.e., the container OpenMPI needs to talk to the host Slurm's
 #     PMIx) but prevent OpenMPI from invoking srun itself from within the
@@ -18,10 +22,13 @@ RUN wget -nv ${MPI_URL}/openmpi-${MPI_VERSION}.tar.gz \
 RUN cd openmpi-${MPI_VERSION} \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
+    FLUX_PMI_CFLAGS=-I/usr/local/include/flux/core,-L/usr/local/lib/flux \
+    FLUX_PMI_LIBS=-lflux-core \
     ./configure --prefix=/usr/local \
                 --sysconfdir=/mnt/0 \
                 --with-pmix=/usr/local \
                 --with-pmi=/usr/local \
+                --with-flux-pmi-library \
                 --with-libfabric=/usr/local \
                 --disable-pty-support \
                 --enable-mca-no-build=btl-openib,plm-slurm \

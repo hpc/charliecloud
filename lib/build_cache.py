@@ -3,6 +3,7 @@ import datetime
 import enum
 import glob
 import hashlib
+import itertools
 import os
 import pickle
 import re
@@ -309,7 +310,7 @@ class File_Metadata:
          return fm
       # Ensure minimum permissions. Some tools like to make files with mode
       # 000, because root ignores the permissions bits.
-      fm.path_abs.chmod_min(0o700 if stat.S_ISDIR(fm.mode) else 0o400, fm.st)
+      fm.path_abs.chmod_min(fm.st)
       # Validate file type and recurse if needed. (Don’t use os.walk() because
       # it’s iterative, and our algorithm is better expressed recursively.)
       if   (   stat.S_ISREG(fm.mode)
@@ -1140,11 +1141,28 @@ class Disabled_Cache(Rebuild_Cache):
       image.unpack_clear()
       image.copy_unpacked(base_image)
 
-   def commit(self, *args):
+   def commit(self, path, *args):
+      self.permissions_fix(path)
       return None
 
    def find_image(self, *args):
       return (None, None)
+
+   def permissions_fix(self, path):
+      # Some distributions create unreadable files; e.g., CentOS 7 after
+      # installing “openssh”:
+      #
+      #   $ ls -lh /scratch/reidpr.ch/img/centos_7ch/usr/bin/ssh-agent
+      #   ---x--s--x 1 reidpr reidpr 374K Nov 24  2021 [...]/ssh-agent
+      #
+      # This makes the image un-copyable, so it can’t be used as a base image.
+      #
+      # Enabled_Cache takes care of this in git_prepare(), and
+      # --force=fakeroot bypasses it in some other way I haven’t looked into.
+      for (dir_, subdirs, files) in ch.walk(path):
+         for i in itertools.chain(subdirs, files):
+            (dir_ // i).chmod_min()
+
 
    def pull_lazy(self, img, src_ref, last_layer=None, pullet=None):
       if (pullet is None and os.path.exists(img.unpack_path)):
@@ -1161,8 +1179,8 @@ class Disabled_Cache(Rebuild_Cache):
    def ready(self, *args):
       pass
 
-   def rollback(self, *args):
-      pass
+   def rollback(self, path):
+      self.permissions_fix(path)
 
    def sid_from_parent(self, *args):
       return None
