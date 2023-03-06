@@ -892,7 +892,7 @@ EOF
     [[ $status -eq 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $output = *"ARG BASEIMG='alpine:3.17'"* ]]
-        [[ $output = *'FROM alpine.17 AS a'* ]]
+        [[ $output = *'FROM alpine:3.17 AS a'* ]]
         [[ $output = *'RUN echo foo'* ]]
         [[ $output = *'FROM a AS b'* ]]
         [[ $output = *'RUN echo bar'* ]]
