@@ -542,11 +542,14 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 1, 2, 3, 4}):  # initialize/upgrade
+      elif (v_found in {None, 2, 3, 4}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
          self.lock()
+         # These directories appeared in various storage versions, but since
+         # the thing to do on upgrade is the same as initialize, we don’t
+         # track the details.
          self.download_cache.mkdir_()
          self.build_cache.mkdir_()
          self.build_large.mkdir_()
