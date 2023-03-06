@@ -142,10 +142,11 @@ class Path(pathlib.PosixPath):
       ch.ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
       return Path(old)
 
-   def chmod_min(self, perms_new, st=None):
-      """Set permissions on path so they are at least mode. If given, st is a
-         stat object for self, to avoid another stat(2) call if unneeded.
-         Return the new file mode (complete, not just permission bits).
+   def chmod_min(self, st=None):
+      """Set my permissions to at least 0o700 for directories and 0o400
+         otherwise. If given, st is a stat object for self, to avoid another
+         stat(2) call if unneeded. Return the new file mode (complete, not
+         just permission bits).
 
          For symlinks, do nothing, because we don’t want to follow symlinks
          and follow_symlinks=False (or os.lchmod) is not supported on some
@@ -156,7 +157,7 @@ class Path(pathlib.PosixPath):
       if (stat.S_ISLNK(st.st_mode)):
          return st.st_mode
       perms_old = stat.S_IMODE(st.st_mode)
-      perms_new |= perms_old
+      perms_new = perms_old | (0o700 if stat.S_ISDIR(st.st_mode) else 0o400)
       if (perms_new != perms_old):
          ch.VERBOSE("fixing permissions: %s: %03o -> %03o"
                  % (self, perms_old, perms_new))

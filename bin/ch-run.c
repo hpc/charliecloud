@@ -58,8 +58,12 @@ const struct argp_option options[] = {
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
+#ifdef HAVE_SECCOMP
+   { "seccomp",       -14, 0,      0,
+                           "fake success for some syscalls with seccomp(2)"},
+#endif
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
-     "set environment variables per ARG"},
+                           "set environment variables per ARG"},
    { "storage",       's', "DIR",  0, "set DIR as storage directory"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unsafe",        -13, 0,      0, "do unsafe things (internal use only)" },
@@ -76,8 +80,11 @@ const struct argp_option options[] = {
 struct args {
    struct container c;
    struct env_delta *env_deltas;
-   char *storage_dir;
    char *initial_dir;
+#ifdef HAVE_SECCOMP
+   bool seccomp_p;
+#endif
+   char *storage_dir;
    bool unsafe;
 };
 
@@ -139,8 +146,11 @@ int main(int argc, char *argv[])
                                .type = IMG_NONE,
                                .writable = false },
       .env_deltas = list_new(sizeof(struct env_delta), 0),
-      .storage_dir = storage_default(),
       .initial_dir = NULL,
+#ifdef HAVE_SECCOMP
+      .seccomp_p = false,
+#endif
+      .storage_dir = storage_default(),
       .unsafe = false };
 
    /* I couldn't find a way to set argp help defaults other than this
@@ -206,9 +216,17 @@ int main(int argc, char *argv[])
    VERBOSE("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
            args.c.join_pid);
    VERBOSE("private /tmp: %d", args.c.private_tmp);
+#ifdef HAVE_SECCOMP
+   VERBOSE("seccomp: %d", args.seccomp_p);
+#endif
+   VERBOSE("unsafe: %d", args.unsafe);
 
    containerize(&args.c);
    fix_environment(&args);
+#ifdef HAVE_SECCOMP
+   if (args.seccomp_p)
+      seccomp_install();
+#endif
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
@@ -414,7 +432,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #else
          exit(1);
 #endif
-      } else
+      } else if (!strcmp(arg, "seccomp")) {
+#ifdef HAVE_SECCOMP
+         exit(0);
+#else
+         exit(1);
+#endif
+      }
+      else
          FATAL("unknown feature: %s", arg);
       break;
    case -12: // --home
@@ -423,6 +448,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case -13: // --unsafe
       args->unsafe = true;
       break;
+#ifdef HAVE_SECCOMP
+   case -14: // --seccomp
+      args->seccomp_p = true;
+      break;
+#endif
    case 'b': {  // --bind
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
