@@ -496,6 +496,14 @@ EOF
 *  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
+
+    # Rebuild, check for cache hit
+    run ch-image build -t a -f bucache/a.df ./bucache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RUN echo foo'* ]]
+    [[ $output = *'* RUN echo bar'* ]]
 }
 
 
@@ -1179,7 +1187,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'* FROM'* ]]
-    [[ $output = *'. RUN'* ]]
+    [[ $output = *'* RUN'* ]]
     [[ $output = *"no image found: $CH_IMAGE_STORAGE/img/tmpimg"* ]]
     [[ $output = *'created worktree'* ]]
 }
@@ -1257,7 +1265,7 @@ EOF
     run ch-image build -t tmpimg -f ./bucache/difficult.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'. RUN echo last'* ]]
+    [[ $output = *'* RUN echo last'* ]]
     statwalk | diff -u <(echo "$stat1") -
 }
 
@@ -1295,8 +1303,8 @@ EOF
 
     # no glob
     ch-image delete 2a
-    # the 2a bucache branch as been "pruned", reset blessed_tree
-    blessed_tree=$(ch-image build-cache --tree | treeonly)
+    # the blessed tree needs to be updated, since 2a is now untagged
+    blessed_tree=$(printf "%s" "$blessed_tree" | sed 's/(2a) RUN echo 2a/RUN echo 2a/g')
     diff -u <(printf "1a\n1b\nalpine:3.17\n") <(ch-image list)
 
     # matches none (non-empty)
