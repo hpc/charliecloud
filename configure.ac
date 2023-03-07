@@ -116,8 +116,28 @@ AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
 
+AC_ARG_WITH([seccomp],
+  AS_HELP_STRING([--with-seccomp=(yes|no)],
+                 [support for --seccomp]))
+AS_CASE([$with_seccomp],
+  [yes],  # explicit “yes”
+    [want_seccomp=yes
+     need_seccomp=yes
+     msg_seccomp=yes],
+  [no],   # explicit “no”
+    [want_seccomp=no
+     need_seccomp=no
+     msg_seccomp=no],
+  [''],   # option not specified
+    [want_seccomp=yes
+     need_seccomp=no
+     msg_seccomp='if tested working'],
+  [*],    # anything else
+    [AC_MSG_ERROR([invalid --with-seccomp arg: $with_seccomp])])
+
 AC_ARG_WITH([libsquashfuse],
-  AS_HELP_STRING([--with-libsquashfuse=foo], [foo]))
+  AS_HELP_STRING([--with-libsquashfuse=@<:@yes|no|PATH@:>@],
+                 [whether to link with libsquashfuse]))
 AS_CASE([$with_libsquashfuse],
   [yes], # explicit “yes”
     [want_libsquashfuse=yes
@@ -324,6 +344,41 @@ AC_CHECK_DECL(FNM_EXTMATCH,
               [have_fnm_extmatch=no],
               [[#define _GNU_SOURCE
                 #include <fnmatch.h>]])
+
+# Should we build seccomp?
+AC_MSG_CHECKING([for seccomp filter support])
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #define _GNU_SOURCE
+    #include <linux/filter.h>
+    #include <linux/seccomp.h>
+    #include <linux/unistd.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <sys/prctl.h>
+
+    #define Z_(x)  if (x) { perror(NULL); exit(1); }
+
+    int main(void)
+    {
+       struct sock_filter f[] = { BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ALLOW) };
+       struct sock_fprog p = { 1, f };
+       Z_ (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0, 0));
+       Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p, 0, 0, 0));
+       return 0;
+    }
+  ]])],
+  [AC_MSG_RESULT([yes])
+   test_seccomp=yes],
+  [AC_MSG_RESULT([no])
+   test_seccomp=no],
+  [AC_MSG_ERROR([cross-compilation not supported])])
+AS_IF([test $test_seccomp = yes],
+      [AS_IF([test $want_seccomp = yes],
+             [have_seccomp=yes],   # works and =yes or not given
+             [have_seccomp=no])],  # works and =no
+      [AS_IF([test $need_seccomp = yes],
+             [have_seccomp=yes],   # doesn’t work and =yes (build anyway)
+             [have_seccomp=no])])  # doesn’t work and =no or not given
 
 
 ### SquashFS #################################################################
@@ -545,7 +600,7 @@ AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
 CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
 
 # Bats
-vmin_bats=0.4.0
+vmin_bats=1.2.0
 AC_CHECK_PROG([BATS], [bats], [bats])
 CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
 
@@ -588,7 +643,7 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #
 #      So this is how you transfer a variable from configure to Make.
 #
-#   2. AC_SUBST_NOTMAKE(foo) does only (a).
+#   2. AC_SUBST_NOTMAKE(foo) does only 1a.
 #
 #   3. AM_CONDITIONAL(foo, test) creates a variable for use in Automake
 #      conditionals. E.g. if you say in configure.ac:
@@ -635,6 +690,8 @@ AC_SUBST([SPHINX])
 
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
+AS_IF([test $have_seccomp = yes],
+      [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
@@ -802,6 +859,10 @@ Building Charliecloud
     libfuse3 ... ${have_libfuse3}
     libsquashfuse_ll ... ${have_libsquashfuse_ll}
     ll.h header ... ${have_ll_h}
+
+  fake system calls with seccomp(2): ${have_seccomp}
+    enabled ... ${msg_seccomp}
+    tested working ... ${test_seccomp}
 
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}

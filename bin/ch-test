@@ -82,6 +82,11 @@ EOF
 )
 
 
+### Global variables
+
+bats_vmin=1.2.0  # FIXME: get from configure somehow?
+
+
 ### Functions
 
 builder_check () {
@@ -924,6 +929,10 @@ done
 
 printf 'ch-run:       %s (%s)\n' "${ch_bin}/ch-run" "$ch_libc"
 printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
+if [[    $(printf "%s\n%s" "$bats_version" "$bats_vmin" | sort -V | head -1) \
+      != "$bats_vmin" ]]; then
+    warning "Bats version unsupported b/c < $bats_vmin"
+fi
 printf 'tests:        %s\n' "$CHTEST_DIR"
 printf 'installed:    %s\n' "${CHTEST_INSTALLED:-no}"
 printf 'locale:       %s\n' "$LC_ALL"
@@ -959,6 +968,17 @@ if [[ -z $phase ]]; then
 fi
 printf '\n'
 
+# See issue #1580
+# shellcheck disable=SC2016
+if [[ -d /var/tmp/img ]] || [[ -d /var/tmp/tar ]]; then
+printf '\n'
+  warning 'NOTE: default image and pack directories changed to:'
+  warning '      CH_TEST_IMGDIR=/var/tmp/${USER}.img'
+  warning '      CH_TEST_TARDIR=/var/tmp/${USER}.pack'
+fi
+
+printf '\n'
+
 #    variable name    CLI              environment         default
 #                     desc. width  description
 vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
@@ -967,9 +987,9 @@ builder_set 21
 pedantry_set 21
 vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     "$use_sudo_default" \
                       21 'use generic sudo'
-vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
+vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   "/var/tmp/${USER}.img" \
                       21 'unpacked images dir'
-vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
+vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   "/var/tmp/${USER}.pack" \
                       21 'packed images dir'
 pack_fmt_set 21
 vset CH_IMAGE_CACHE   "$bucache_mode"  "$CH_IMAGE_CACHE"   enabled \

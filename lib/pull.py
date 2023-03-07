@@ -179,9 +179,9 @@ class Image_Puller:
       fm = self.fatman_path.json_from_file("fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
          # Check for skinny manifest. If not present, create a symlink to the
-         # "fat manifest" with the conventional name for a skinny manifest. Note 
-         # that this works because the file we just saved as the "fat manifest"
-         # is actually a misleadingly named skinny manifest.
+         # "fat manifest" with the conventional name for a skinny manifest.
+         # Note that this works because the file we just saved as the "fat
+         # manifest" is actually a misleadingly named skinny manifest.
          if (not fs.Path(str(self.manifest_path)).exists_()):
             fs.Path(str(self.manifest_path)).symlink_to(str(self.fatman_path))
          raise ch.No_Fatman_Error()

@@ -549,17 +549,24 @@ Options:
     like :code:`docker build`, the context directory is still available in
     this case.
 
-  :code:`--force`
-    Inject the unprivileged build workarounds; see discussion later in this
-    section for details on what this does and when you might need it. If a
-    build fails and :code:`ch-image` thinks :code:`--force` would help, it
-    will suggest it.
+  :code:`--force[=MODE]`
+    Use unprivileged build workarounds of mode :code:`MODE`, which can be
+    :code:`fakeroot` or :code:`seccomp` (the default). See section “Privilege
+    model” below for details on what this does and when you might need it.
+
+  :code:`--force-cmd=CMD,ARG1[,ARG2...]`
+    If command :code:`CMD` is found in a :code:`RUN` instruction, add the
+    comma-separated :code:`ARGs` to it. For example,
+    :code:`--force-cmd=foo,-a,--bar=baz` would transform :code:`RUN foo -c`
+    into :code:`RUN foo -a --bar=baz -c`. This is intended to suppress
+    validation that defeats :code:`--force=seccomp` and implies that option.
+    Can be repeated. If specified, replaces (does not extend) the default
+    suppression options. Literal commas can be escaped with backslash;
+    importantly however, backslash will need to be protected from the shell
+    also. Section “Privilege model” below explains why you might need this.
 
   :code:`-n`, :code:`--dry-run`
     Don’t actually execute any Dockerfile instructions.
-
-  :code:`--no-force-detect`
-    Don’t try to detect if the workarounds in :code:`--force` would help.
 
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
@@ -586,6 +593,9 @@ Options:
 Privilege model
 ---------------
 
+Overview
+~~~~~~~~
+
 :code:`ch-image` is a *fully* unprivileged image builder. It does not use any
 setuid or setcap helper programs, and it does not use configuration files
 :code:`/etc/subuid` or :code:`/etc/subgid`. This contrasts with the “rootless”
@@ -593,16 +603,17 @@ or “`fakeroot <https://sylabs.io/guides/3.7/user-guide/fakeroot.html>`_” mod
 of some competing builders, which do require privileged supporting code or
 utilities.
 
-This approach does yield some quirks. We provide built-in workarounds that
-should mostly work (i.e., :code:`--force`), but it can be helpful to
-understand what is going on.
+Without workarounds provided by :code:`--force`, this approach does confuse
+programs that expect to have real root privileges, most notably distribution
+package installers. This subsection describes why that happens and what you
+can do about it.
 
 :code:`ch-image` executes all instructions as the normal user who invokes it.
-For :code:`RUN`, this is accomplished with :code:`ch-run -w --uid=0 --gid=0`
-(and some other arguments), i.e., your host EUID and EGID both mapped to zero
-inside the container, and only one UID (zero) and GID (zero) are available
-inside the container. Under this arrangement, processes running in the
-container for each :code:`RUN` *appear* to be running as root, but many
+For :code:`RUN`, this is accomplished with :code:`ch-run` arguments including
+:code:`-w --uid=0 --gid=0`. That is, your host EUID and EGID are both mapped
+to zero inside the container, and only one UID (zero) and GID (zero) are
+available inside the container. Under this arrangement, processes running in
+the container for each :code:`RUN` *appear* to be running as root, but many
 privileged system calls will fail without the workarounds described below.
 **This affects any fully unprivileged container build, not just
 Charliecloud.**
@@ -627,11 +638,29 @@ This one is (ironically) :code:`apt-get` failing to drop privileges:
   E: seteuid 100 failed - seteuid (22: Invalid argument)
   E: setgroups 0 failed - setgroups (1: Operation not permitted)
 
-By default, nothing is done to avoid these problems, though :code:`ch-image`
-does try to detect if the workarounds could help. :code:`--force` activates
-the workarounds: :code:`ch-image` injects extra commands to intercept these
-system calls and fake a successful result, using :code:`fakeroot(1)`. There
-are three basic steps:
+Charliecloud provides two different mechanisms to avoid these problems. Both
+involve lying to the containerized process about privileged system calls, but
+at very different levels of complexity.
+
+Workaround mode :code:`fakeroot`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This mode uses :code:`fakeroot(1)` to maintain an elaborate web of deceit that
+is internally consistent. This program intercepts both privileged system calls
+(e.g., :code:`setuid(2)`) as well as other system calls whose return values
+depend on those calls (e.g., :code:`getuid(2)`), faking success for privileged
+system calls (perhaps making no system call at all) and altering return values
+to be consistent with earlier fake success. Charliecloud automatically
+installs the :code:`fakeroot(1)` program inside the container and then wraps
+:code:`RUN` instructions having known privilege needs with it. Thus, this mode
+is only available for certain distributions.
+
+The advantage of this mode is its consistency; e.g., careful programs that
+check the new UID after attempting to change it will not notice anything
+amiss. Its disadvantage is complexity: detailed knowledge and procedures for
+multiple Linux distributions.
+
+This mode has three basic steps:
 
   1. After :code:`FROM`, analyze the image to see what distribution it
      contains, which determines the specific workarounds.
@@ -647,10 +676,62 @@ are three basic steps:
      Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
      RPM-based distributions.
 
+:code:`RUN` instructions that *do not* seem to need modification are
+unaffected by this mode.
+
 The details are specific to each distribution. :code:`ch-image` analyzes image
 content (e.g., grepping :code:`/etc/debian_version`) to select a
-configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
-prints exactly what it is doing.
+configuration; see :code:`lib/force.py` for details. :code:`ch-image` prints
+exactly what it is doing.
+
+.. warning::
+
+   Because of :code:`fakeroot` mode’s complexity, we plan to remove it if
+   :code:`seccomp` mode performs well enough. If you have a situation where
+   :code:`fakeroot` mode works and :code:`seccomp` does not, please let us
+   know.
+
+Workaround mode :code:`seccomp` (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This mode uses the kernel’s :code:`seccomp(2)` system call filtering to
+intercept certain privileged system calls, do absolutely nothing, and return
+success to the program.
+
+The quashed system calls are: :code:`capset(2)`; :code:`chown(2)` and friends;
+:code:`mknod(2)` and :code:`mknodat(2)`; and :code:`setuid(2)`,
+:code:`setgid(2)`, and :code:`setgroups(2)` along with the other system calls
+that change user or group.
+
+The advantages of this approach is that it’s much simpler, it’s faster, it’s
+completely agnostic to libc, and it’s mostly agnostic to distribution. The
+disadvantage is that it’s a very lazy liar; even the most cursory consistency
+checks will fail, e.g., :code:`getuid(2)` after :code:`setuid(2)`.
+
+While this mode does not provide consistency, it does offer a hook to help
+prevent programs asking for consistency. For example, :code:`apt-get -o
+APT::Sandbox::User=root` will prevent :code:`apt-get` from attempting to drop
+privileges, which `it verifies
+<https://salsa.debian.org/apt-team/apt/-/blob/cacdb549/apt-pkg/contrib/fileutl.cc#L3343>`_,
+exiting with failure if the correct IDs are not found (which they won’t be
+under this approach). This can be expressed with
+:code:`--force-cmd=apt-get,-o,APT::Sandbox::User=root`, though this particular
+case is built-in and does not need to be specified. The full default
+configuration, which is applied regardless of the image distribution, can be
+examined in the source file :code:`force.py`. If any :code:`--force-cmd` are
+specified, this replaces (rather than extends) the default configuration.
+
+Note that because the substitutions are a simple regex with no knowledge of
+shell syntax, they can cause unwanted modifications. For example, :code:`RUN
+apt-get install -y apt-get` will be run as :code:`/bin/sh -c "apt-get -o
+APT::Sandbox::User=root install -y apt-get -o APT::Sandbox::User=root"`. One
+workaround is to add escape syntax transparent to the shell; e.g., :code:`RUN
+apt-get install -y a\pt-get`.
+
+This mode executes *all* :code:`RUN` instructions with the :code:`seccomp(2)`
+filter and has no knowledge of which instructions actually used the
+intercepted system calls. Therefore, the printed “instructions modified”
+number is only a count of instructions with a hook applied as described above.
 
 Compatibility with other Dockerfile interpreters
 ------------------------------------------------
@@ -1280,4 +1361,4 @@ Environment variables
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc bae
 ..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
-..  LocalWords:  pstats gprof chofile
+..  LocalWords:  pstats gprof chofile cffd cacdb ARGs

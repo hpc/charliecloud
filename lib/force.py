@@ -1,4 +1,5 @@
 import os.path
+import re
 
 import charliecloud as ch
 import filesystem as fs
@@ -6,7 +7,7 @@ import filesystem as fs
 
 ## Globals ##
 
-DEFAULT_CONFIGS = {
+FAKEROOT_DEFAULT_CONFIGS = {
 
    # General notes:
    #
@@ -280,121 +281,119 @@ DEFAULT_CONFIGS = {
     "each": ["fakeroot"] },
 }
 
+# Default value of --force-cmd.
+#
+# NOTE: apt(8) tells people not to use it in scripts, but they do it anyway.
+FORCE_CMD_DEFAULT = { "apt":     ["-o", "APT::Sandbox::User=root"],
+                      "apt-get": ["-o", "APT::Sandbox::User=root"] }
+
 
 ## Functions ###
 
-def detect(image, force, no_force_detect):
-   f = None
-   if (no_force_detect):
-      ch.VERBOSE("not detecting --force config, per --no-force-detect")
+def new(image_path, force_mode, force_cmds):
+   """Return a new forcer object appropriate for image at image_path in mode
+      force_mode. If no such object can be found, exit with error."""
+   if (force_mode is None):
+      return Nope()
+   elif (force_mode == "fakeroot"):
+      return Fakeroot(image_path)
+   elif (force_mode == "seccomp"):
+      return Seccomp(force_cmds)
    else:
-      # Try to find a real fakeroot config.
-      for (tag, cfg) in DEFAULT_CONFIGS.items():
-         try:
-            f = Fakeroot(image, tag, cfg, force)
-            break
-         except Config_Aint_Matched:
-            pass
-      # Report findings.
-      if (f is None):
-         msg = "--force not available (no suitable config found)"
-         if (force):
-            ch.WARNING(msg)
-         else:
-            ch.VERBOSE(msg)
-      else:
-         if (force):
-            adj = "will use"
-         else:
-            adj = "available"
-         ch.INFO("%s --force: %s: %s" % (adj, f.tag, f.name))
-   # Wrap up
-   if (f is None):
-      f = Fakeroot_Noop()
-   return f
+      assert False, "unreachable code reached"
+
+def force_cmd_parse(text):
+   # 1. Split on “,” preceded by even number of backslashes.
+   #
+   # FIXME: Said backslashes are removed in the split, so you can’t have a
+   # component with trailing backslashes. That seems rare so I’m not fixing
+   # for now.
+   args = re.split(r"(?<!\\)(?:\\\\)*,", text)
+   # 2. Reject list of length < 2.
+   if (len(args) < 2):
+      ch.FATAL("--force-cmd: need at least one ARG")
+   # 3. Reject list with empty first item.
+   if (args[0] == ""):
+      ch.FATAL("--force-cmd: CMD can’t be empty")
+   # 4. Replace “\x” for any char x ⇒ literal “x”.
+   args = [re.sub(r"\\(.)", r"\1", a) for a in args]
+   return (args[0], args[1:])
 
 
 ## Classes ##
 
-class Config_Aint_Matched(Exception):
+class Base:
+
+   __slots__ = ("run_modified_ct",)  # number of RUN instructions modified
+
+   def __init__(self):
+      self.run_modified_ct = 0
+
+   @property
+   def ch_run_args(self):
+      "Extra arguments for ch-run."
+      return []
+
+   def run_modified(self, args, env):
+      """Modify the RUN arguments args as needed, and return the result, which
+         is a new list even if unmodified. env is the environment for the RUN
+         instruction. May have significant side effects, including running
+         other commands in the container."""
+      args_new = self.run_modified_(args, env)
+      if (args_new != args):
+         self.run_modified_ct += 1
+         ch.INFO("--force: RUN: new command: %s" % args_new)
+      return args_new
+
+   def run_modified_(self, args, env):
+      return args.copy()
+
+
+class Nope(Base):
    pass
 
 
-class Fakeroot_Noop:
-
-   __slots__ = ("init_done",
-                "inject_ct")
-
-   def __init__(self):
-      self.init_done = False
-      self.inject_ct = 0
-
-   def init_maybe(self, img_path, args, env):
-      pass
-
-   def inject_run(self, args):
-      return args
-
-
-class Fakeroot:
+class Fakeroot(Base):
 
    __slots__ = ("tag",
                 "name",
                 "init",
                 "cmds",
                 "each",
-                "init_done",
-                "inject_ct",
-                "inject_p")
+                "install_done",
+                "image_path")
 
-   def __init__(self, image_path, tag, cfg, inject_p):
-      ch.VERBOSE("workarounds: testing config: %s" % tag)
-      file_path = fs.Path("%s/%s" % (image_path, cfg["match"][0]))
-      if (not (    file_path.is_file()
-               and file_path.grep_p(cfg["match"][1]))):
-          raise Config_Aint_Matched(tag)
+   def __init__(self, image_path):
+      super().__init__()
+      match = False
+      for (tag, cfg) in FAKEROOT_DEFAULT_CONFIGS.items():
+         ch.VERBOSE("workarounds: testing config: %s" % tag)
+         file_path = fs.Path("%s/%s" % (image_path, cfg["match"][0]))
+         if (file_path.is_file() and file_path.grep_p(cfg["match"][1])):
+            match = True
+            break
+      if (not match):
+         ch.FATAL("--force=fakeroot not available (no suitable config found)")
+      self.image_path = image_path
       self.tag = tag
-      self.inject_ct = 0
-      self.inject_p = inject_p
       for i in ("name", "init", "cmds", "each"):
          setattr(self, i, cfg[i])
-      self.init_done = False
+      self.install_done = False
+      ch.INFO("--force=fakeroot: will use: %s: %s" % (self.tag, self.name))
 
-   def init_maybe(self, img_path, args, env):
-      if (not self.needs_inject(args)):
-         ch.VERBOSE("workarounds: init: instruction doesn’t need injection")
-         return
-      if (self.init_done):
-         ch.VERBOSE("workarounds: init: already initialized")
-         return
+   def install(self, img_path, env):
       for (i, (test_cmd, init_cmd)) in enumerate(self.init, 1):
-         ch.INFO("workarounds: init step %s: checking: $ %s" % (i, test_cmd))
+         ch.INFO("--force=fakeroot: init step %s: checking: $ %s"
+                 % (i, test_cmd))
          args = ["/bin/sh", "-c", test_cmd]
          exit_code = ch.ch_run_modify(img_path, args, env, fail_ok=True)
          if (exit_code == 0):
-            ch.INFO("workarounds: init step %d: exit code %d, step not needed"
+            ch.INFO("--force=fakeroot: init step %d: exit %d, step not needed"
                     % (i, exit_code))
          else:
-            if (not self.inject_p):
-               ch.INFO("workarounds: init step %d: no --force, skipping" % i)
-            else:
-               ch.INFO("workarounds: init step %d: $ %s" % (i, init_cmd))
-               args = ["/bin/sh", "-c", init_cmd]
-               ch.ch_run_modify(img_path, args, env)
-      self.init_done = True
-
-   def inject_run(self, args):
-      if (not self.needs_inject(args)):
-         ch.VERBOSE("workarounds: RUN: instruction doesn’t need injection")
-         return args
-      assert (self.init_done)
-      if (not self.inject_p):
-         ch.INFO("workarounds: RUN: available here with --force")
-         return args
-      args = self.each + args
-      self.inject_ct += 1
-      ch.INFO("workarounds: RUN: new command: %s" % args)
-      return args
+            ch.INFO("--force=fakeroot: init step %d: $ %s" % (i, init_cmd))
+            args = ["/bin/sh", "-c", init_cmd]
+            ch.ch_run_modify(img_path, args, env)
 
    def needs_inject(self, args):
       """Return True if the command in args seems to need fakeroot injection,
@@ -404,3 +403,51 @@ class Fakeroot:
             if (word in arg.split()):  # arg words separate by whitespace
                return True
       return False
+
+   def run_modified_(self, args, env):
+      if (not self.needs_inject(args)):
+         ch.VERBOSE("--force=fakeroot: RUN: doesn’t need injection")
+         return args.copy()
+      if (self.install_done):
+         ch.VERBOSE("--force=fakeroot: already installed")
+      else:
+         self.install(self.image_path, env)
+         self.install_done = True
+      return self.each + args
+
+
+class Seccomp(Base):
+
+   __slots__ = ("force_cmds",)
+
+   def __init__(self, force_cmds):
+      super().__init__()
+      self.force_cmds = force_cmds
+
+   @property
+   def ch_run_args(self):
+      return super().ch_run_args + ["--seccomp"]
+
+   def run_modified_(self, args, env):
+      args = args.copy()
+      for (cmd, args_inject) in self.force_cmds.items():
+         args_new = list()
+         for word in args:
+            if (word == cmd):
+               # It’s a list-style RUN, e.g.:
+               #
+               #   RUN ["apt", "install", "-y", "foo"]
+               args_new += [word] + args_inject
+            else:
+               # It’s a shell-style RUN, e.g.:
+               #
+               #   RUN apt install -y foo
+               #   RUN echo foo&&apt install -y foo
+               #   RUN ["/bin/sh", "-c", "apt install -y foo"]
+               #
+               # Note this is a no-op if the command doesn’t contain cmd.
+               str_inject = ch.argv_to_string(args_inject)
+               args_new.append(re.sub(r"\b(%s)(\s)" % cmd,
+                                      r"\1 %s\2" % str_inject, word))
+         args = args_new
+      return args

@@ -528,14 +528,14 @@ if       [ -z "$no_ldconfig" ] \
         debug "validating ldconfig cache"
         for file in $inject_ofi $inject_files; do
             f="$(basename "${file%%:*}")"
-            f=$("${ch_bin}/ch-run" --no-home "$image" -- find / \
-                                                -not \( -path /proc -prune \) \
-                                                -not \( -path /dev -prune \) \
-                                                -not \( -path /tmp -prune \) \
-                                                -not \( -path /sys -prune \) \
-                                                -not \( -path /var/opt/cray -prune \) \
-                                                -not \( -path /etc/opt/cray -prune \) \
-                                                -name  "$f")
+            f=$("${ch_bin}/ch-run" "$image" -- find / \
+                                               -not \( -path /proc -prune \) \
+                                               -not \( -path /dev -prune \) \
+                                               -not \( -path /tmp -prune \) \
+                                               -not \( -path /sys -prune \) \
+                                               -not \( -path /var/opt/cray -prune \) \
+                                               -not \( -path /etc/opt/cray -prune \) \
+                                               -name  "$f")
             if [ "$("${ch_bin}/ch-run" "$image" -- ldd "$f" | grep -c 'not found ')" -ne 0 ]; then
                 fatal "ldconfig: '${ch_bin}/ch-run $image -- ldd $f' failed"
             fi

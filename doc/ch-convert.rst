@@ -102,7 +102,7 @@ Image formats
 
   :code:`podman`
     Internal storage for Podman.
-    
+
   :code:`squash`
     SquashFS filesystem archive containing the flattened image. SquashFS
     archives are much like tar archives but are mountable, including by

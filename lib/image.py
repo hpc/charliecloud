@@ -301,10 +301,11 @@ class Image:
          except tarfile.TarError as x:
             ch.FATAL("cannot open: %s: %s" % (path, x))
          if (lh in layers and len(members) > 0):
-            ch.FATAL("duplicate non-empty layer %s" % lh)
+            ch.WARNING("ignoring duplicate non-empty layer: %s" % lh_short)
          if (len(members) > 0):
             layers[lh] = TT(fp, members)
          else:
+            ch.WARNING("ignoring empty layer: %s" % lh_short)
             empty_cnt += 1
       ch.VERBOSE("skipped %d empty layers" % empty_cnt)
       return layers
@@ -486,11 +487,11 @@ class Image:
          ch.FATAL("image not found, can’t delete: %s" % self.ref)
       if (self.deleteable):
          ch.INFO("deleting image: %s" % self.ref)
-         self.unpack_path.chmod_min(0o700)
+         self.unpack_path.chmod_min()
          for (dir_, subdirs, _) in os.walk(self.unpack_path):
             # must fix as subdirs so we can traverse into them
             for subdir in subdirs:
-               (fs.Path(dir_) // subdir).chmod_min(0o700)
+               (fs.Path(dir_) // subdir).chmod_min()
          self.unpack_path.rmtree()
       else:
          ch.FATAL("storage directory seems broken: not an image: %s" % self.ref)
