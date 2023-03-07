@@ -178,7 +178,7 @@ rpmbuild root:      %(rpmbuild)s
    rpm_sources    = "/usr/local/src/SOURCES"
    rpmbuild_args += ["--define", "_topdir /usr/local/src"]
    rpmlint_args  += ["--file", "%s/charliecloud.rpmlintrc" % rpm_specs]
-   container     += [CH_BASE + "/bin/ch-run", "-w", "--unsafe",
+   container     += [CH_BASE + "/bin/ch-run", "-w",
                      "-b", "%s:/usr/local/src" % args.rpmbuild,
                      args.image, "--"]
 
@@ -207,7 +207,7 @@ rpmbuild root:      %(rpmbuild)s
    for p in PACKAGES:
       rpm_path = rpms[p][0]
       rpm_ext  = rpms[p][-1]
-      file = "%s/%s-%s.%s" % (rpm_path, p, rpm_vr, rpm_ext)
+      file = '%s/%s-%s.%s' % (rpm_path, p, rpm_vr, rpm_ext)
       cmd(container, "test", "-e", file)
       cmd(container, "rpmlint", rpmlint_args, file)
 
