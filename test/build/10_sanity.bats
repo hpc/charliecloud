@@ -169,6 +169,6 @@ load ../common
     # Note you can update the file by piping this “grep” into it, assuming
     # there is no bogus trailing whitespace present. I have had trouble with
     # copy-and-paste removing the trailing whitespace.
-      ../misc/grep -E '\s+$' \
+      ../misc/grep -E '\s+$' | sort \
     | diff -u approved-trailing-whitespace -
 }
