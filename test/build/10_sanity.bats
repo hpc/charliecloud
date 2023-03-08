@@ -170,6 +170,6 @@ load ../common
     # there is no bogus trailing whitespace present. I have had trouble with
     # copy-and-paste removing the trailing whitespace.
       ../misc/grep -E '\s+$' \
-    | sort -t: -k2n -k1 \
+    | sort -t: -k1,1 -k2n,2 \
     | diff -u approved-trailing-whitespace -
 }
