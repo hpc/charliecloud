@@ -19,7 +19,7 @@ jobs:
         keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
         cache:
-          - disabled
+          - enabled
         include:
           - builder: docker
             pack_fmt: squash-mount
@@ -28,7 +28,7 @@ jobs:
           - builder: ch-image
             pack_fmt: squash-mount
             keep_sudo: false
-            cache: enabled
+            cache: disabled
 
     env:
       CH_IMAGE_CACHE: ${{ matrix.cache }}
@@ -204,7 +204,7 @@ jobs:
           sudo usermod --add-subgids 10000-65536 $USER
 
       - name: disable bundled lark, ch-image
-        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'enabled' }}
+        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'disabled' }}
         run: |
           set -x
           # no install, disable
@@ -385,7 +385,7 @@ jobs:
       - name: run test suite (installed from Git WD, standard)
         if: ${{    ( matrix.builder == 'docker' && ! matrix.keep_sudo )
                 || (    matrix.builder == 'ch-image'
-                     && matrix.cache == 'enabled' ) }}
+                     && matrix.cache == 'disabled' ) }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
 
