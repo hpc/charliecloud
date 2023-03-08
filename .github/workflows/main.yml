@@ -20,7 +20,9 @@ jobs:
           - false
         cache: [enabled, disabled]
         exclude:
-          - builder: [none, docker]
+          - builder: none
+            cache: enabled
+          - builder: docker
             cache: enabled
           - builder: ch-image
             cache: disabled
