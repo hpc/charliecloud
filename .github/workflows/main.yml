@@ -214,8 +214,8 @@ jobs:
           ! test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
-          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/site-packages/lark/__init__.py' ]]
-          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
           make clean
           # install, disable
           ./autogen.sh
@@ -225,7 +225,7 @@ jobs:
           make $ch_makej
           sudo make $ch_makej install
           [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py' ]]
-          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/site-packages/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
           make clean
           # no install, enable: build fails, untested
           # install, enable: normal configuration, remainder of CI
