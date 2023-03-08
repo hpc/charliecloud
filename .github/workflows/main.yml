@@ -131,8 +131,8 @@ jobs:
               dot -V
               # git2dot
               sudo sh -c 'umask 0022 && pip install python-dateutil'
-              git clone https://github.com/jlinoff/git2dot.git
-              cd ./git2dot
+              git clone https://github.com/jlinoff/git2dot.git ~/git2dot
+              cd ~/git2dot
               git checkout $(git tag | sort -Vr | head -1)
               sudo cp -a git2dot.py /usr/local/bin
               command -v git2dot.py

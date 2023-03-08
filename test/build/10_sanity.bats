@@ -168,12 +168,14 @@ load ../common
     #
     # When updating CI to Ubuntu 22.04 (#1561), this test started failing because
     # the output of the "grep" started printing in a different order than what
-    # was expected. Piping it into the "sort" ensures ordering consistency.
+    # was expected. Piping it into the "sort" ensures ordering consistency. The
+    # command sorts first alphabetically by file path, then numerically by line
+    # number.
     #
     # Note you can update the file by piping this “grep” and "sort" into it,
     # assuming there is no bogus trailing whitespace present. I have had trouble
     # with copy-and-paste removing the trailing whitespace.
       ../misc/grep -E '\s+$' \
-    | sort -t: -k1,1 -k2n,2 \
+    | LC_ALL=C sort -t: -k1,1 -k2n,2 \
     | diff -u approved-trailing-whitespace -
 }
