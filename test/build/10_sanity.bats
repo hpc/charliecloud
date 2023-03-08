@@ -166,13 +166,14 @@ load ../common
     # lines because we’re grepping *this* file, so we’d have to add the here
     # document, which would expand the here document, etc.
     #
+    # When updating CI to Ubuntu 22.04 (#1561), this test started failing because
+    # the output of the "grep" started printing in a different order than what
+    # was expected. Piping it into the "sort" ensures ordering consistency.
+    #
     # Note you can update the file by piping this “grep” and "sort" into it,
     # assuming there is no bogus trailing whitespace present. I have had trouble
     # with copy-and-paste removing the trailing whitespace.
       ../misc/grep -E '\s+$' \
-    # When updating CI to Ubuntu 22.04 (#1561), this test started failing because
-    # the output of the "grep" above started printing in a different order than
-    # what was expected. This "sort" ensures ordering consistency.
     | sort -t: -k1,1 -k2n,2 \
     | diff -u approved-trailing-whitespace -
 }
