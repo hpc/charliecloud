@@ -18,8 +18,12 @@ jobs:
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
-        cache:
-          - enabled
+        cache: [enabled, disabled]
+        exclude:
+          - builder: [none, docker]
+            cache: enabled
+          - builder: ch-image
+            cache: disabled
         include:
           - builder: docker
             pack_fmt: squash-mount
