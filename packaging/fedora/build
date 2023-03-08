@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
 # See contributors' guide for documentation of this script.
 
@@ -7,10 +7,10 @@ from __future__ import print_function
 import argparse
 import errno
 import os
-import pipes
 import platform
 import pwd
 import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -55,12 +55,14 @@ rpmbuild root:      %(rpmbuild)s
          # If we're on a branch, we want to build on that branch so the branch
          # name shows up in the version name.
          commit = subprocess.check_output(["git", "symbolic-ref", "-q",
-                                           "--short", "HEAD"])[:-1]
+                                           "--short", "HEAD"],
+                                           encoding="UTF-8")[:-1]
       except subprocess.CalledProcessError as x:
          if (x.returncode != 1): raise
          # Detached HEAD (e.g. CI) is also fine; use commit hash.
          commit = subprocess.check_output(["git", "rev-parse",
-                                           "--verify", "HEAD"])[:-1]
+                                           "--verify", "HEAD"],
+                                           encoding="UTF-8")[:-1]
       rpm_release = "0"
    else:
       m           = re.search(r"([0-9.]+)-([0-9]+)", args.version)
@@ -221,7 +223,7 @@ def cmd_ok(*args, **kwargs):
    return (rc == 0)
 
 def cmd_out(*args, **kwargs):
-   out = cmd_real(subprocess.check_output, *args, **kwargs)
+   out = cmd_real(subprocess.check_output, *args, encoding="UTF-8", **kwargs)
    return out.rstrip()  # remove trailing newline
 
 def cmd_real(runf, *args, **kwargs):
@@ -235,7 +237,7 @@ def cmd_real(runf, *args, **kwargs):
    # print and run
    print("$", end="")
    for arg in args2:
-      arg = pipes.quote(arg)
+      arg = shlex.quote(arg)
       print(" " + arg, end="")
    print()
    return runf(args2, **kwargs)
