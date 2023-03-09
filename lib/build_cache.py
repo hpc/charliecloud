@@ -794,7 +794,8 @@ class Enabled_Cache:
                      "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
       t.log("collected garbage")
       t = ch.Timer()
-      digests = ch.cmd_stdout(["git", "rev-list", "--all", "--reflog"],
+      digests = ch.cmd_stdout(["git", "rev-list",
+                               "--all", "--reflog", "--date-order"],
                               cwd=self.root).stdout.split("\n")
       assert (digests[-1] == "")  # trailing newline
       digests[-2:] = []           # discard root commit and trailing newline
@@ -812,7 +813,7 @@ class Enabled_Cache:
       ch.INFO("found %d large files used; deleting others" % len(larges_used))
       for l in ch.storage.build_large.listdir():
          if (l not in larges_used):
-            (self.build_large // l).unlink_()
+            (ch.storage.build_large // l).unlink_()
       t.log("deleted unused large files")
 
    def git_prepare(self, unpack_path, files, write=True):

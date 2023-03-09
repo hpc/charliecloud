@@ -69,11 +69,10 @@ FROM almalinux_8ch
 #
 # PMI:
 #
-# We use OpenPMIx for OpenMPI and MPICH PMI because PMIx scales better than
-# PMI2, and OpenMPI no longer supports PMI2 as of version 5.
+# We build OpenPMIx, PMI2, and FLUX-PMI.
 
 
-# OS packages needed to build this stuff.
+# OS packages needed to build libfabric providers.
 #
 # Note that libpsm2 is x86-64 only so we skip if missing
 RUN dnf install -y --setopt=install_weak_deps=false \
@@ -142,6 +141,33 @@ RUN git clone https://github.com/openpmix/openpmix.git \
                  --with-hwloc \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../openpmix*
+
+# FLUX-PMI
+ARG FLUX_VERSION=0.45.0
+# Flux requires a number of additional packages. We install them here to
+# distinquish between libfabric provider and flux-pmi dependencies.
+RUN dnf install -y \
+                czmq \
+                czmq-devel \
+                cppzmq-devel \
+                jansson \
+                jansson-devel \
+                libarchive-devel \
+                libsqlite3x-devel \
+                lua-devel \
+                lz4-devel \
+                ncurses-devel \
+                python3-cffi \
+                python3-jsonschema \
+                python3-yaml \
+ && dnf clean all \
+ && git clone https://github.com/flux-framework/flux-core \
+ && cd flux-core \
+ && git checkout v${FLUX_VERSION} \
+ && ./autogen.sh \
+ && ./configure --prefix=/usr/local \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../flux-core
 
 # PMI2
 #
