@@ -167,8 +167,8 @@ load ../common
     # document, which would expand the here document, etc.
     #
     # When updating CI to Ubuntu 22.04 (#1561), this test started failing because
-    # the output of the "grep" started printing in a different order than what
-    # was expected. Piping it into the "sort" ensures ordering consistency. The
+    # the output of the “grep” started printing in a different order than what
+    # was expected. Piping it into the “sort” ensures ordering consistency. The
     # command sorts first alphabetically by file path, then numerically by line
     # number.
     #
