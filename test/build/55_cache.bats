@@ -533,9 +533,9 @@ EOF
     [[ $status -eq 0 ]]
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  (force) WORKDIR /usr
-*  RUN.S dnf install -y ed  # doesn't need --force
+*  RUN.S dnf install -y ed  # doesn’t need --force
 | *  WORKDIR /usr
-| *  RUN dnf install -y ed  # doesn't need --force
+| *  RUN dnf install -y ed  # doesn’t need --force
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
