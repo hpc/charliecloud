@@ -418,8 +418,8 @@ class HTTP:
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
       res = self.request("POST", url, {202})
-      # 3. Upload blob. We do a "monolithic" upload (i.e., send all the
-      # content in a single PUT request) as opposed to a "chunked" upload
+      # 3. Upload blob. We do a “monolithic” upload (i.e., send all the
+      # content in a single PUT request) as opposed to a “chunked” upload
       # (i.e., send data in multiple PATCH requests followed by a PUT request
       # with no body).
       url = res.headers["Location"]

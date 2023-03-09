@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 
 arch_exclude () {
-    # Skip the test if architecture (from "uname -m") matches $1.
+    # Skip the test if architecture (from “uname -m”) matches $1.
     [[ $(uname -m) != "$1" ]] || skip "arch ${1}"
 }
 
@@ -29,7 +29,7 @@ build_ () {
             "$ch_bin"/ch-image build "$@"
             ;;
         docker)
-            # Coordinate this list with test "build.bats/proxy variables".
+            # Coordinate this list with test “build.bats/proxy variables”.
             # shellcheck disable=SC2154
             docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
                           --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
@@ -50,8 +50,8 @@ builder_ok () {
     # FIXME: Currently we make fairly limited tagging for some builders.
     # Uncomment below when they can be supported by all the builders.
     builder_tag_p "$1"
-    #builder_tag_p "${1}:latest"
-    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
+    #builder_tag_p “${1}:latest”
+    #docker_tag_p “${1}:$(ch-run --version |& tr '~+' '--')”
 }
 
 builder_tag_p () {
@@ -172,7 +172,7 @@ pedantic_fail () {
     fi
 }
 
-# If the two images (graphics, not container) are not "almost equal", fail.
+# If the two images (graphics, not container) are not “almost equal”, fail.
 # The first argument is the reference image; the second is the test image. The
 # third argument, if given, is the maximum number of differing pixels (default
 # zero). Also produce a diff image, which highlights the differing pixels in
@@ -236,7 +236,7 @@ scope () {
             return 0
         fi
     fi
-    case $1 in  # $1 is the test's scope
+    case $1 in  # $1 is the test’s scope
         quick)
             ;;  # always run quick-scope tests
         standard)
@@ -330,7 +330,7 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # in tests (see issue #143). We use readlink(1) rather than realpath(2),
 # despite the admonition in the man page, because it's more portable [1].
 #
-# We use "readlink -m" rather than "-e" or "-f" to account for the possibility
+# We use “readlink -m” rather than “-e” or “-f” to account for the possibility
 # of some directory anywhere the path not existing [2], which has bitten us
 # multiple times; see issues #347 and #733. With this switch, if something is
 # missing, readlink(1) returns the path unchanged, and checks later convert
@@ -345,7 +345,7 @@ ch_mounts="${ch_imgdir}/mounts"
 
 # Image information.
 # shellcheck disable=SC2034
-ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
+ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don’t need it
 # shellcheck disable=SC2034
 ch_img=${ch_imgdir}/${ch_tag}
 # shellcheck disable=SC2034
@@ -420,7 +420,7 @@ if [[ $SLURM_JOB_ID ]]; then
     ch_mpirun_2="srun $srun_mpi -n2"
     ch_mpirun_2_1node="srun $srun_mpi -N1 -n2"
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
-    # are present. Work around this by fooling OpenMPI into believing it's not
+    # are present. Work around this by fooling OpenMPI into believing it’s not
     # in a Slurm allocation.
     if [[ $ch_mpi = openmpi ]]; then
         # shellcheck disable=SC2034
@@ -460,7 +460,7 @@ fi
 if    [[ $CH_TEST_SUDO ]] \
    && command -v sudo >/dev/null 2>&1 \
    && sudo -v > /dev/null 2>&1; then
-    # This isn't super reliable; it returns true if we have *any* sudo
+    # This isn’t super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     # shellcheck disable=SC2034
     ch_have_sudo=yes

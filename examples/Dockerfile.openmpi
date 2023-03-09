@@ -4,10 +4,10 @@ FROM libfabric
 # See Dockerfile.libfabric for MPI goals and details.
 
 # OpenMPI.
-#   1. --disable-pty-support to avoid "pipe function call failed when
-#      setting up I/O forwarding subsystem".
+#   1. --disable-pty-support to avoid “pipe function call failed when
+#      setting up I/O forwarding subsystem”.
 #   2. --enable-mca-no-build=plm-slurm to support launching processes using the
-#     host's srun (i.e., the container OpenMPI needs to talk to the host Slurm's
+#     host’s srun (i.e., the container OpenMPI needs to talk to the host Slurm’s
 #     PMIx) but prevent OpenMPI from invoking srun itself from within the
 #     container, where srun is not installed (the error messages from this are
 #     inscrutable).
@@ -29,8 +29,8 @@ RUN cd openmpi-${MPI_VERSION} \
  && rm -Rf ../openmpi-${MPI_VERSION}*
 RUN ldconfig
 
-# OpenMPI expects this program to exist, even if it's not used. Default is
-# "ssh : rsh", but that's not installed.
+# OpenMPI expects this program to exist, even if it’s not used. Default is
+# “ssh : rsh”, but that’s not installed.
 RUN echo 'plm_rsh_agent = false' >> /mnt/0/openmpi-mca-params.conf
 
 # Silence spurious pmix error. https://github.com/open-mpi/ompi/issues/7516.

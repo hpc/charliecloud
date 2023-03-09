@@ -197,7 +197,7 @@ def op_kill():
    ch.VERBOSE("kill operation is a no-op")
 
 def op_start():
-   # Note: Contrary to the implication of its name, the "start" operation
+   # Note: Contrary to the implication of its name, the “start” operation
    # blocks until the user command is done.
 
    c = state.config

@@ -14,7 +14,7 @@ import pull
 import version
 
 
-## argparse "actions" ##
+## argparse “actions” ##
 
 class Action_Exit(argparse.Action):
 

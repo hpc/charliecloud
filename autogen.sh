@@ -60,7 +60,7 @@ set -x
 # Remove all derived files if we can. Note that if you enabled maintainer mode
 # in configure, this will run configure before cleaning.
 [[ -f Makefile ]] && make maintainer-clean
-# "maintainer-clean" target doesn't remove configure and its dependencies,
+# “maintainer-clean” target doesn't remove configure and its dependencies,
 # apparently by design [1], so delete those manually.
 #
 # [1]: https://www.gnu.org/prep/standards/html_node/Standard-Targets.html
@@ -79,16 +79,16 @@ fi
 if [[ -z $clean ]]; then
     autoreconf --force --install -Wall -Werror
     if [[ ! -e lib/lark && ! $lark_no_install ]]; then
-        # Install Lark only if its directory doesn't exist, to avoid excess
+        # Install Lark only if its directory doesn’t exist, to avoid excess
         # re-downloads.
         pip3 --isolated install \
              --target=lib --ignore-installed "lark==${lark_version}"
-        # Lark doesn't honor --no-compile, so remove the .pyc files manually.
+        # Lark doesn’t honor --no-compile, so remove the .pyc files manually.
         rm lib/lark/__pycache__/*.pyc
         rmdir lib/lark/__pycache__
         rm lib/lark/*/__pycache__/*.pyc
         rmdir lib/lark/*/__pycache__
-        # Also remove Lark's installer stuff.
+        # Also remove Lark’s installer stuff.
         rm lib/lark/__pyinstaller/*.py
         rmdir lib/lark/__pyinstaller
     fi

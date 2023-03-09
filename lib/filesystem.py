@@ -243,7 +243,7 @@ class Path(pathlib.PosixPath):
 
    def file_read_all(self, text=True):
       """Return the contents of file at path, or exit with error. If text, read
-         in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
+         in “rt” mode with UTF-8 encoding; otherwise, read in mode “rb”."""
       if (text):
          mode = "rt"
          encoding = "UTF-8"
@@ -593,7 +593,7 @@ class Storage:
       # Now we know (1) the old storage exists and is valid and (2) the new
       # storage exists, is a directory, and contains none of the files we’d
       # move. However, it *may* contain subdirectories other parts of
-      # Charliecloud care about, e.g. "mnt" for ch-run.
+      # Charliecloud care about, e.g. “mnt” for ch-run.
       ch.INFO("storage dir: moving to new default path: %s" % self.root)
       for i in moves:
          src = old.root // i

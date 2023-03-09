@@ -64,27 +64,27 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #       cmds ... List of RUN command words that need fakeroot injection.
    #                Each item in the list is matched against each
    #                whitespace-separated word in the RUN instructions. For
-   #                example, suppose that each is the list "dnf", "rpm", and
-   #                "yum"; consider the following RUN instructions:
+   #                example, suppose that each is the list “dnf”, “rpm”, and
+   #                “yum”; consider the following RUN instructions:
    #
    #                  RUN ['dnf', 'install', 'foo']
    #                  RUN dnf install foo
    #
-   #                These are fairly standard forms. "dnf" matches both, the
+   #                These are fairly standard forms. “dnf” matches both, the
    #                first on the first element in the list and the second
    #                after breaking the shell command on whitespace.
    #
    #                  RUN true&&dnf install foo
    #
    #                This third example does *not* match (false negative)
-   #                because breaking on whitespace yields "true&&dnf",
-   #                "install", and "foo"; none of these words are "dnf".
+   #                because breaking on whitespace yields “true&&dnf”,
+   #                “install”, and “foo”; none of these words are “dnf”.
    #
    #                  RUN echo dnf install foo
    #
    #                This final example *does* match (false positive) becaus
-   #                the second word *is* "dnf"; the algorithm isn’t smart
-   #                enough to realize that it’s an argument to "echo".
+   #                the second word *is* “dnf”; the algorithm isn’t smart
+   #                enough to realize that it’s an argument to “echo”.
    #
    #                The last two illustrate that the algorithm uses simple
    #                whitespace delimiters, not even a partial shell parser.
@@ -101,7 +101,7 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #                   RUN ['fr', '-z', 'dnf', 'install', 'foo']
    #                   RUN ['fr', '-z', '/bin/sh', '-c', 'dnf install foo']
    #
-   #                (Note that "/bin/sh -c" is how shell-form RUN instructions
+   #                (Note that “/bin/sh -c” is how shell-form RUN instructions
    #                are executed regardless of --force.)
    #
    # 2. The first match wins. However, because dictionary ordering can’t be
@@ -177,7 +177,7 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #    installations are left alone. (Such breakage is an EPEL bug, but we do
    #    commonly encounter it.)
    #
-   # 4. "yum repolist" has a lot of side effects, e.g. locking the RPM
+   # 4. “yum repolist” has a lot of side effects, e.g. locking the RPM
    #    database and asking configured repos for something or other.
 
    "rhel7":

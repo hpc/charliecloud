@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# See contributors' guide for documentation of this script.
+# See contributors’ guide for documentation of this script.
 
 from __future__ import print_function
 
@@ -46,13 +46,13 @@ rpmbuild root:      %(rpmbuild)s
 """ % args.__dict__)
 
    # Use the generic base locale, rather than whatever the user has set, as
-   # that's the only one guaranteed to be installed in the containers.
+   # that’s the only one guaranteed to be installed in the containers.
    os.environ["LC_ALL"] = "C"
 
    # What's the real Git version?
    if (args.version == "HEAD"):
       try:
-         # If we're on a branch, we want to build on that branch so the branch
+         # If we’re on a branch, we want to build on that branch so the branch
          # name shows up in the version name.
          commit = subprocess.check_output(["git", "symbolic-ref", "-q",
                                            "--short", "HEAD"],
@@ -84,7 +84,7 @@ rpmbuild root:      %(rpmbuild)s
                       '--', 'rpmbuild', '--eval', '%{?dist}')
    rpms_dist = rpms_dist.split('.')[-1]
 
-   # FIXME: el8 doesn't have bats; skip for now.
+   # FIXME: el8 doesn’t have bats; skip for now.
    if (rpms_dist == 'el8'):
         PACKAGES.remove('charliecloud-test')
 
@@ -161,8 +161,8 @@ rpmbuild root:      %(rpmbuild)s
    container = []
    rpmbuild_args = []
    rpmlint_args = []
-   # Use /usr/local/src because rpmbuild fails with "%{_topdir}/BUILD"
-   # shorter than "/usr/src/debug" (yes, really!) [1,2].
+   # Use /usr/local/src because rpmbuild fails with “%{_topdir}/BUILD”
+   # shorter than “/usr/src/debug” (yes, really!) [1,2].
    #
    # [1]: https://access.redhat.com/solutions/1426113
    # [2]: https://gbenson.net/?p=367
@@ -200,7 +200,7 @@ rpmbuild root:      %(rpmbuild)s
          cmd(container, "rpm", "--install", file)
       cmd(container, "rpm", "-qa", "charliecloud*")
 
-   # Lint RPMs and spec file. Last so problems that don't result in program
+   # Lint RPMs and spec file. Last so problems that don’t result in program
    # returning error are more obvious.
    print("# linting")
    cmd(container, "rpmlint", rpmlint_args, "%s/%s" % (rpm_specs, spec))

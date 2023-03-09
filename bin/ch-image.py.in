@@ -63,7 +63,7 @@ def main():
    #
    # Alternate approaches include:
    #
-   #   * Set the main parser as the "parent" of the subcommand parser [2].
+   #   * Set the main parser as the “parent” of the subcommand parser [2].
    #     This may be the documented approach? However, it adds all the
    #     subcommands to the subparser, which we don’t want. A workaround would
    #     be to create a *third* parser that’s the parent of both the main and

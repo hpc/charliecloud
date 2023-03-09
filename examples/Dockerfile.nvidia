@@ -3,7 +3,7 @@
 
 # This Dockerfile demonstrates a multi-stage build. With a single-stage build
 # that brings along the nVidia build environment, the resulting unpacked image
-# is 2.9 GiB; with the multi-stage build, it's 146 MiB.
+# is 2.9 GiB; with the multi-stage build, it’s 146 MiB.
 #
 # See: https://docs.docker.com/develop/develop-images/multistage-build
 
@@ -34,7 +34,7 @@ RUN wget https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86
  && apt-get install -y --no-install-recommends cuda-toolkit-11-2 \
  && rm -rf /var/lib/apt/lists/* $nvidia_pub
 
-# Build the sample app we'll use to test.
+# Build the sample app we’ll use to test.
 WORKDIR /usr/local/cuda-11.2/samples/0_Simple/matrixMulCUBLAS
 RUN make
 

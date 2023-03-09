@@ -37,7 +37,7 @@ setup () {
 }
 
 @test "${ch_tag}/no first-stage stuff present" {
-    # Can't run GCC.
+    # Can’t run GCC.
     run ch-run "$ch_img" -- gcc --version
     echo "$output"
     [[ $status -eq 1 ]]

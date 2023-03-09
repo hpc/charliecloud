@@ -723,7 +723,7 @@ class I_copy(Instruction):
          subdir = dirpath.relative_to(src)
          dst_dir = dst // subdir
          # dirnames can contain symlinks, which we handle as files, so we’ll
-         # rebuild it; the walk will not descend into those "directories".
+         # rebuild it; the walk will not descend into those “directories”.
          dirnames2 = dirnames.copy()  # shallow copy
          dirnames[:] = list()         # clear in place
          for d in dirnames2:

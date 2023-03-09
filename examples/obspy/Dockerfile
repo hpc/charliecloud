@@ -12,8 +12,8 @@ WORKDIR /usr/local/src
 # Install Miniconda. Notes/gotchas:
 #
 #   1. Install into /usr/local. Some of the instructions [e.g., 1] warn
-#      against putting conda in $PATH; others don't. However it seems to work
-#      and then we don't need to muck with the path.
+#      against putting conda in $PATH; others don’t. However it seems to work
+#      and then we don’t need to muck with the path.
 #
 #   2. Use latest version so we catch sooner if things explode.
 #
@@ -28,7 +28,7 @@ RUN which conda && conda --version
 # Disable automatic conda upgrades for predictable versioning.
 RUN conda config --set auto_update_conda False
 
-# Install obspy, also latest. This is a container, so don't bother creating a
+# Install obspy, also latest. This is a container, so don’t bother creating a
 # new environment for obspy.
 # See: https://github.com/obspy/obspy/wiki/Installation-via-Anaconda
 RUN conda config --add channels conda-forge

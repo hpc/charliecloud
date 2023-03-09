@@ -49,7 +49,7 @@ class Download_Mode(enum.Enum):
 
 ## Constants ##
 
-# Architectures. This maps the "machine" field returned by uname(2), also
+# Architectures. This maps the “machine” field returned by uname(2), also
 # available as "uname -m" and platform.machine(), into architecture names that
 # image registries use. It is incomplete (see e.g. [1], which is itself
 # incomplete) but hopefully includes most architectures encountered in

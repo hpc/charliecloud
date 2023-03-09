@@ -15,7 +15,7 @@ import filesystem as fs
 ## Hairy Imports ##
 
 # Lark is bundled or provided by package dependencies, so assume it’s always
-# importable. There used to be a conflicting package on PyPI called "lark",
+# importable. There used to be a conflicting package on PyPI called “lark”,
 # but it’s gone now [1]. However, verify the version we got.
 #
 # [1]: https://github.com/lark-parser/lark/issues/505
@@ -601,7 +601,7 @@ class Image:
                members.remove(m)
                continue
             # Discard anything under /dev. Docker puts regular files and
-            # directories in here on "docker export". Note leading slashes
+            # directories in here on “docker export”. Note leading slashes
             # already taken care of in TarFile.fix_member_path() above.
             if (re.search(r"^(\./)?dev/.", m.name)):
                ch.VERBOSE("ignoring member under /dev: %s" % m.name)
@@ -649,11 +649,11 @@ class Image:
                wo_ct += 1
                members.remove(m)
                if (filename == ".wh..wh..opq"):
-                  # "Opaque whiteout": remove contents of dir_.
+                  # “Opaque whiteout”: remove contents of dir_.
                   ch.DEBUG("found opaque whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1, dir_)
                else:
-                  # "Explicit whiteout": remove same-name file without ".wh.".
+                  # “Explicit whiteout”: remove same-name file without ".wh.".
                   ch.DEBUG("found explicit whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1,
                                                    dir_ + "/" + filename[4:])
@@ -692,7 +692,7 @@ class Reference:
 
    # Reference parser object. Instantiating a parser took 100ms when we tested
    # it, which means we can’t really put it in a loop. But, at parse time,
-   # "lark" may refer to a dummy module (see above), so we can’t populate the
+   # “lark” may refer to a dummy module (see above), so we can’t populate the
    # parser here either. We use a class varible and populate it at the time of
    # first use.
    parser = None
@@ -834,7 +834,7 @@ fields:
       if (self.port is None): self.port = 443
       if (self.host == "registry-1.docker.io" and len(self.path) == 0):
          # FIXME: For Docker Hub only, images with no path need a path of
-         # "library" substituted. Need to understand/document the rules here.
+         # “library” substituted. Need to understand/document the rules here.
          self.path = ["library"]
       if (self.tag is None and self.digest is None): self.tag = "latest"
 

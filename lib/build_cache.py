@@ -705,7 +705,7 @@ class Enabled_Cache:
       ch.cmd_quiet(["git", "commit", "-q", "--allow-empty",
                     "-m", "%s\n\n%s" % (msg, sid)])
       t.log("committed")
-      # "git commit" does print the new commit’s hash without "-q", but it
+      # “git commit” does print the new commit’s hash without “-q”, but it
       # also prints every file commited, which is rather enormous for us.
       # Therefore, retrieve the hash separately.
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
