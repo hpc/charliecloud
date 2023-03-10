@@ -50,8 +50,8 @@ builder_ok () {
     # FIXME: Currently we make fairly limited tagging for some builders.
     # Uncomment below when they can be supported by all the builders.
     builder_tag_p "$1"
-    #builder_tag_p “${1}:latest”
-    #docker_tag_p “${1}:$(ch-run --version |& tr '~+' '--')”
+    #builder_tag_p "${1}:latest"
+    #docker_tag_p "${1}:$(ch-run --version |& tr '~+' '--')"
 }
 
 builder_tag_p () {

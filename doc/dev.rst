@@ -104,7 +104,7 @@ keywords (variations on `"closes", "fixes", and "resolves"
 descriptions, don’t use this feature, because often the specific issues a PR
 closes change over time, and we don’t want to have to edit the description to
 deal with that. We also want this information in only one place (the commit
-log). Instead, use "addresses", and we’ll edit the keywords into the commit
+log). Instead, use “addresses”, and we’ll edit the keywords into the commit
 message(s) at merge time if needed.
 
 **PR review procedure.** When your draft PR is ready for review — which may or
@@ -200,7 +200,7 @@ acknowledged promptly, including adding or correcting tags.
 
 **Closing issues.** We close issues when we’ve taken the requested action,
 decided not to take action, resolved the question, or actively determined an
-issue is obsolete. It is OK for "stale" issues to sit around indefinitely
+issue is obsolete. It is OK for “stale” issues to sit around indefinitely
 awaiting this. Unlike many projects, we do not automatically close issues just
 because they’re old.
 
@@ -268,7 +268,7 @@ Choose *one type* from:
 
 :code:`refactor`
   Change that will improve Charliecloud but does not materially affect
-  user-visible behavior. Note this doesn’t mean "invisible to the user"; even
+  user-visible behavior. Note this doesn’t mean “invisible to the user”; even
   user-facing documentation or logging changes could feasibly be this, if they
   are more cleanup-oriented.
 
