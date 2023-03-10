@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# This script generates a BATS file to exercise "ch-image build --force"
+# This script generates a BATS file to exercise “ch-image build --force”
 # across a variety of distributions. It's used by Makefile.am.
 #
 # About each distribution, we remember:
@@ -17,20 +17,20 @@
 #   - the value of --force (absent, fakeroot, seccomp) (3)
 #   - whether or not preparation for --force is already done (2)
 #   - commands that (4)
-#       - don't need --force, and fail
-#       - don't need --force, and succeed
+#       - don’t need --force, and fail
+#       - don’t need --force, and succeed
 #       - apparently need --force but in fact do not
 #       - really do need --force
 #
 # This would appear to yield 3×2×4 = 24 tests per distribution. However:
 #
-#   1. We only try pre-prepared images for "really need" commands with --force
+#   1. We only try pre-prepared images for “really need” commands with --force
 #      given, to save time, so it's at most 9 potential tests.
 #
 #   2. The pre-preparation step doesn't make sense for some distros or for
 #      --force=seccomp.
 #
-#   3. We've not yet determined an "apparently need" command for some distros.
+#   3. We've not yet determined an “apparently need” command for some distros.
 #
 # Bottom line, the number of tests per distro varies. See the code below for
 # specific details.
@@ -145,7 +145,7 @@ echo "$output"
 {self.build1_post_hook}"""
       # force
       force = "--force=%s" % (self.force) if self.force else ""
-      # run command we're testing
+      # run command we’re testing
       try:
          run = self.runs[self.run]
       except KeyError:
@@ -189,7 +189,7 @@ echo "$output"
 class EPEL_Mixin:
 
    # Mixin class for RPM distros where we want to pre-install EPEL. I think
-   # this should maybe go away and just go ito a _Red_Hat base class, i.e.
+   # this should maybe go away and just go into a _Red_Hat base class, i.e.
    # test all RPM distros with EPEL pre-installed, but this matches what
    # existed in 50_fakeroot.bats. Note the install-EPEL command is elsewhere.
 
@@ -282,8 +282,8 @@ class SUSE(Test):
             # No openssh packages seem to need --force.
             **{ Run.FAKE_NEEDED: "zypper install -y ed",
                 Run.NEEDED:      "zypper install -y dbus-1" } }
-# As of 2022-06-03, fails with "Signature verification failed for file
-# 'repomd.xml' from repository 'OSS Update'.". Neither opensuse/archive:42.3
+# As of 2022-06-03, fails with “Signature verification failed for file
+# 'repomd.xml' from repository 'OSS Update'.”. Neither opensuse/archive:42.3
 # nor opensuse/leap:42.3 work, though the latter has more architectures.
 #class T_OpenSUSE_42_3(SUSE):
 #   base = "opensuse/archive:42.3"

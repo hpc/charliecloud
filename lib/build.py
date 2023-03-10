@@ -32,8 +32,8 @@ forcer = None
 
 # Images that we are building. Each stage gets its own image. In this
 # dictionary, an image appears exactly once or twice. All images appear with
-# an int key counting stages up from zero. Images with a name (e.g., "FROM ...
-# AS foo") have a second string key of the name.
+# an int key counting stages up from zero. Images with a name (e.g., “FROM ...
+# AS foo”) have a second string key of the name.
 images = dict()
 # Number of stages. This is obtained by counting FROM instructions in the
 # parse tree, so we can use it for error checking.
@@ -124,8 +124,8 @@ def main(cli_):
    ch.DEBUG(cli)
 
    # Guess whether the context is a URL, and error out if so. This can be a
-   # typical looking URL e.g. "https://..." or also something like
-   # "git@github.com:...". The line noise in the second line of the regex is
+   # typical looking URL e.g. “https://...” or also something like
+   # “git@github.com:...”. The line noise in the second line of the regex is
    # to match this second form. Username and host characters from
    # https://tools.ietf.org/html/rfc3986.
    if (re.search(r"""  ^((git|git+ssh|http|https|ssh)://
@@ -867,7 +867,7 @@ class I_copy(Instruction):
                  + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.
       if (cli.context == "-" and self.from_ is None):
-         ch.FATAL("no context because \"-\" given")
+         ch.FATAL("no context because “-” given")
       if (len(self.srcs_raw) < 1):
          ch.FATAL("must specify at least one source")
       # Complain about unsupported stuff.
