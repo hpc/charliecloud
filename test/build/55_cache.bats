@@ -1098,6 +1098,7 @@ EOF
 
 
 @test "${tag}: garbage vs. reset" {
+    scope full
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     # Init build cache.
@@ -1113,7 +1114,7 @@ EOF
     ch-image build -t tmpimg - <<'EOF'
 FROM alpine:3.17
 RUN for i in $(seq 0 1024); do \
-       dd if=/dev/urandom of=/$i bs=1024K count=1 status=none; \
+       dd if=/dev/urandom of=/$i bs=4096K count=1 status=none; \
     done
 EOF
 
