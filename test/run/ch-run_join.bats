@@ -389,7 +389,7 @@ unset_vars () {
     echo "found pid: ${pid}"
     [[ -n $pid ]]
 
-    # Second ch-run joins the first's namespaces.
+    # Second ch-run joins the first’s namespaces.
     run ch-run -v --join-pid="$pid" "$ch_timg" -- \
                /test/printns 0 "${BATS_TMPDIR}/join.2.ns"
     echo "$output"
@@ -463,13 +463,13 @@ unset_vars () {
 
 @test 'ch-run --join-pid: errors' {
 
-    # Can't join namespaces of processes we don't own.
+    # Can’t join namespaces of processes we don’t own.
     run ch-run -v --join-pid=1 "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"join: can't open /proc/1/ns/user: Permission denied"* ]]
 
-    # Can't join namespaces of processes that don't exist.
+    # Can’t join namespaces of processes that don’t exist.
     pid=2147483647
     run ch-run -v --join-pid="$pid" "$ch_timg" -- true
     echo "$output"

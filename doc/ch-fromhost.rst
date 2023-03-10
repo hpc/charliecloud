@@ -426,8 +426,8 @@ then run :code:`ldconfig`::
 
   $ ch-fromhost --nvidia /var/tmp/baz
   asking ldconfig for shared library destination
-  /sbin/ldconfig: Can't stat /libx32: No such file or directory
-  /sbin/ldconfig: Can't stat /usr/libx32: No such file or directory
+  /sbin/ldconfig: Can’t stat /libx32: No such file or directory
+  /sbin/ldconfig: Can’t stat /usr/libx32: No such file or directory
   shared library destination: /usr/lib64//bind9-export
   injecting into image: /var/tmp/baz
     /usr/bin/nvidia-smi -> /usr/bin (inferred)

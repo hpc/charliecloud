@@ -1,9 +1,9 @@
-We'd prefer to run the ObsPy test suite, but it seems quite finicky and we
-weren't able to get it to work. Problems with the test suite include:
+We’d prefer to run the ObsPy test suite, but it seems quite finicky and we
+weren’t able to get it to work. Problems with the test suite include:
 
   1. Requires network access even for the non-network modules. We filed an
      issue about this [1] that did result in likely-actionable exclusions,
-     though we haven't followed up. ObsPy also has a PR [2] unmerged as of
+     though we haven’t followed up. ObsPy also has a PR [2] unmerged as of
      2021-08-04 that could replay the network traffic offline.
 
   2. Expects to write within the install directory (e.g.,
@@ -13,12 +13,12 @@ weren't able to get it to work. Problems with the test suite include:
   3. LOTS of warnings, e.g. hundreds of deprecation gripes from NumPy as well
      as ObsPy itself.
 
-  4. Various errors, e.g. "AttributeError: 'bool' object has no attribute
-     'lower'" from within Matplotlib. (I was able to solve this one by
+  4. Various errors, e.g. “AttributeError: 'bool' object has no attribute
+     'lower'” from within Matplotlib. (I was able to solve this one by
      choosing an older version of Matplotlib than the one depended on by the
      ObsPy Conda package, but we don't have time to maintain that.)
 
-  5. Can't get it to pass. ;)
+  5. Can’t get it to pass. ;)
 
 See also issue #64.
 

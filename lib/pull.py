@@ -11,7 +11,7 @@ import registry as rg
 
 ## Constants ##
 
-# Internal library of manifests, e.g. for "FROM scratch" (issue #1013).
+# Internal library of manifests, e.g. for “FROM scratch” (issue #1013).
 manifests_internal = {
    "scratch": {  # magic empty image
       "schemaVersion": 2,
@@ -102,11 +102,11 @@ class Image_Puller:
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
             except ch.No_Fatman_Error:
-               # currently, this error is only raised if we've downloaded the skinny
+               # currently, this error is only raised if we’ve downloaded the skinny
                # manifest.
                have_skinny = True
                if (ch.arch == "amd64"):
-                  # We're guessing that enough arch-unaware images are amd64 to
+                  # We’re guessing that enough arch-unaware images are amd64 to
                   # barge ahead if requested architecture is amd64.
                   ch.arch = "yolo"
                   ch.WARNING("image is architecture-unaware")
@@ -179,9 +179,9 @@ class Image_Puller:
       fm = self.fatman_path.json_from_file("fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
          # Check for skinny manifest. If not present, create a symlink to the
-         # "fat manifest" with the conventional name for a skinny manifest.
-         # Note that this works because the file we just saved as the "fat
-         # manifest" is actually a misleadingly named skinny manifest.
+         # “fat manifest” with the conventional name for a skinny manifest.
+         # Note that this works because the file we just saved as the “fat
+         # manifest” is actually a misleadingly named skinny manifest.
          if (not fs.Path(str(self.manifest_path)).exists_()):
             fs.Path(str(self.manifest_path)).symlink_to(str(self.fatman_path))
          raise ch.No_Fatman_Error()
@@ -227,7 +227,7 @@ class Image_Puller:
       self.layer_hashes = None
       # obtain the manifest
       try:
-         # internal manifest library, e.g. for "FROM scratch"
+         # internal manifest library, e.g. for “FROM scratch”
          manifest = manifests_internal[str(self.src_ref)]
          ch.INFO("manifest: using internal library")
       except KeyError:
@@ -253,7 +253,7 @@ class Image_Puller:
       #
       # FIXME: Manifest version 1 does not list a config blob. It does have
       # things (plural) that look like a config at history/v1Compatibility as
-      # an embedded JSON string :P but I haven't dug into it.
+      # an embedded JSON string :P but I haven’t dug into it.
       if (version == 1):
          ch.VERBOSE("no config; manifest schema version 1")
          self.config_hash = None
@@ -280,7 +280,7 @@ class Image_Puller:
          self.layer_hashes.append(ch.digest_trim(i[key2]))
       if (version == 1):
          self.layer_hashes.reverse()
-      # Remember State_ID input. We can't rely on the manifest existing in
+      # Remember State_ID input. We can’t rely on the manifest existing in
       # serialized form (e.g. for internal manifests), so re-serialize.
       self.sid_input = json.dumps(manifest, sort_keys=True)
 

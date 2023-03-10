@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 
-# "Reading Seismograms" example from §3 of the ObsPy tutorial, with some of
+# “Reading Seismograms” example from §3 of the ObsPy tutorial, with some of
 # the prints commented out and taking the plot file from the command line.
 #
 # See: https://docs.obspy.org/tutorial/code_snippets/reading_seismograms.html
