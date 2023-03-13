@@ -97,7 +97,7 @@ cv_dir_squash () {
     mksquashfs "$1" "$2" -b 65536 -noappend -all-root -pf "$pflist" \
                          -e "$1"/.git -e "$1"/.gitignore -e "$1"/ch/git.pickle
     # Zero the archive's internal modification time at bytes 8–11, 0-indexed
-    # [1]. Newer SquashFS-Tools ≥4.3 have option "-fstime 0" to do this, but
+    # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
     # CentOS 7 comes with 4.2.  [1]: https://dr-emann.github.io/squashfs/
     printf '\x00\x00\x00\x00' | dd of="$2" bs=1 count=4 seek=8 conv=notrunc
     rm "$pflist"
@@ -196,7 +196,7 @@ cv_squash_dir () {
     #    bad files like devices, this will fail. I don't know to what degree
     #    this will be a problem.
     #
-    # 2. It has no option analagous to tar(1)'s -p, so we have to rely on the
+    # 2. It has no option analagous to tar(1)’s -p, so we have to rely on the
     #    umask to get correct permissions. (Weirdly, it seems to respect umask
     #    for files but not directories.)
     umask_=$(umask)
@@ -243,27 +243,27 @@ cv_tar_dir () {
     mkdir "$2"
     # Unpack the tarball. There's a lot going on here.
     #
-    #   1. Use a pipe b/c PV ignores arguments if it's cat rather than PV.
+    #   1. Use a pipe b/c PV ignores arguments if it’s cat rather than PV.
     #
     #   2. Use --strip-components to turn non-tarbombs into tarbombs so we can
     #      just provide our own root directory and not need to clean up later.
     #
-    #   3. Use --xform to strip leading "./" so --strip-components gets the
-    #      right number. (Leading "/" is always stripped and does not count as
-    #      a component.) The trailing "x" gets extended regular expressions,
-    #      like "sed -E".
+    #   3. Use --xform to strip leading “./” so --strip-components gets the
+    #      right number. (Leading “/” is always stripped and does not count as
+    #      a component.) The trailing “x” gets extended regular expressions,
+    #      like “sed -E”.
     #
-    #   4. Use --exclude to ignore the contents of "/dev", because
+    #   4. Use --exclude to ignore the contents of “/dev”, because
     #      unprivileged users can't make device files and we overmount that
     #      directory anyway. The order appears to be: --exclude, --xform,
     #      --strip-components, so we have to specify it thrice to account for
-    #      for leading "/" and "./".
+    #      for leading “/” and “./”.
     if [ -z "$root" ]; then
         strip_ct=0  # tarbomb
         ex1='dev/*'
     else
         strip_ct=1  # not tarbomb
-        # Escape tar glob wildcards; printf avoids echo's trailing newline.
+        # Escape tar glob wildcards; printf avoids echo’s trailing newline.
         root_escaped=$(printf "%s" "$root" | sed -E 's|([[*?])|\\\1|g')
         ex1="${root_escaped}/dev/*"
     fi
@@ -304,9 +304,9 @@ cv_tar_squash () {
 
 # Use for conversions involving docker or podman. Similarities between the
 # command line instructions for docker and podman allow to write generalized
-# functions that can be used for both (hence 'dockman'). When calling a
-# 'dockman' function, image format is specified by the first argument
-# ('docker_' or 'podman_').
+# functions that can be used for both (hence “dockman”). When calling a
+# “dockman” function, image format is specified by the first argument
+# (“docker_” or “podman_”).
 
 chimage_to_dockman () {
     chimage_tar=${tmpdir}/weirdal.tar.gz
@@ -317,7 +317,7 @@ chimage_to_dockman () {
 
 dir_to_dockman () {
     dirtar=${tmpdir}/weirdal.tar.gz
-    # One could also use "docker build" with "FROM scratch" and "COPY",
+    # One could also use “docker build” with “FROM scratch” and “COPY”,
     # apparently saving a tar step. However, this will in fact tar the source
     # directory anyway to send it to the Docker daemon.
     cv_dir_tar "$2" "$dirtar"  # FIXME: needlessly compresses
@@ -326,7 +326,7 @@ dir_to_dockman () {
 }
 
 dm_fmt_name () {
-    # Format 'docker_' and 'podman_' as 'Docker' and 'Podman' respectively.
+    # Format “docker_” and “podman_” as “Docker” and “Podman” respectively.
     case $1 in
 	docker_)
 	    echo "$1" | tr "d" "D" | tr -d "_"
@@ -377,7 +377,10 @@ dockman_to_tar () {
     INFO 'adding environment ...'
     "$1" inspect "$2" \
             --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
-    tar rf "$tmptar" -b1 -P --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
+    # The tar flavor Docker gives us does not support UIDs or GIDs greater
+    # than 2**21, so use 0/0 rather than what’s on the filesystem. See #1573.
+    tar rf "$tmptar" -b1 -P --owner=0 --group=0 \
+        --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
     INFO 'compressing ...'
     pv_ < "$tmptar" | gzip_ -6 > "$3"
     rm "$tmptar"
@@ -450,8 +453,8 @@ dir_out_validate () {
 docker_out_validate () {
     # When writing the out_validate functions, we had to address a podman bug
     # that caused conversion to fail. Our workaround (see the
-    # 'podman_out_validate' below) is not generalizable to docker, which is
-    # why we've broken from the 'dockman' convention here.
+    # “podman_out_validate” below) is not generalizable to docker, which is
+    # why we've broken from the “dockman” convention here.
     digest=$(docker_ image ls -q "$1")
     if [ -n "$digest" ] && [ -n "$no_clobber" ]; then
 	FATAL "exists in Docker storage, not deleting per --no-clobber: ${1}"
@@ -594,14 +597,14 @@ fmt_validate () {
 # the container (e.g. linuxcontainers.org images; issue #1015).
 #
 # If $2 is non-empty, append missing mount points to a list of mksquashfs(1)
-# "pseudo files" to that file instead of modifying $1. While pseudo files
+# “pseudo files” to that file instead of modifying $1. While pseudo files
 # don't conflict with actual files, they do generate a warning.
 #
 # An alternative approach is to create the mount points in a temporary
 # directory, then append that to the SquashFS archive. However, mksquashfs(1)
 # does not merge the new files. Ff an existing file or directory is given in
 # the appended directory, both go into the archive, with the second renamed
-# (to "foo_1"). This make it impossible to add mount points to a directory
+# (to “foo_1”). This make it impossible to add mount points to a directory
 # that already exists; e.g., if /etc exists, /etc/resolv.conf will end up at
 # /etc_1/resolv.conf.
 #
@@ -683,10 +686,10 @@ tar_decompress_arg () {
 #
 # This is rather messy because:
 #
-#   1. Archive members can start with "/" (slash) or "./" (dot, slash), both
+#   1. Archive members can start with “/” (slash) or “./” (dot, slash), both
 #      of which are ignored on unpacking. For example, the root directory as
-#      listed in the tarball might be "foo", "/foo", or "./foo"; in all three
-#      cases this function prints "foo".
+#      listed in the tarball might be “foo”, “/foo”, or “./foo”; in all three
+#      cases this function prints “foo”.
 #
 #   2. Tarballs have no index, so listing all members requires reading and
 #      decompressing the entire archive (and unpacking is a second full read).
@@ -704,15 +707,15 @@ tar_decompress_arg () {
 #      can contain tens of thousands of files (maybe more).
 #
 #   3. GNU tar lists members newline-separated. This still works for member
-#      names containing newline, because it's escaped as "\n". Some other
-#      characters are escaped too, e.g. tab is "\t". I am assuming this case
+#      names containing newline, because it's escaped as “\n”. Some other
+#      characters are escaped too, e.g. tab is “\t”. I am assuming this case
 #      is unlikely for container image tarballs, so this function has not been
 #      tested with such members.
 #
 # See also: https://unix.stackexchange.com/a/242712
 tar_root () {
-    # The three commands in this sed script are: (1) remove leading "/" or
-    # "./" if present; (2) delete from the first slash to the end of the line
+    # The three commands in this sed script are: (1) remove leading “/” or
+    # “./” if present; (2) delete from the first slash to the end of the line
     # inclusive, i.e. everything except the first component; (3) delete blank
     # lines, because the first component often appears alone. We use sed
     # because --xform does not apply to listing.
@@ -722,7 +725,7 @@ tar_root () {
            | sed -E 's|^\.?/||; s|/.*$||; /^$/d')
     # Get the first path component of the first file in the tarball.
     root1=$(echo "$list" | head -n 1)
-    # Find members whose first component does not match the first member's.
+    # Find members whose first component does not match the first member’s.
     if echo "$list" | grep -Fxvq "$root1"; then
         VERBOSE 'tarbomb: yes'
         echo ''

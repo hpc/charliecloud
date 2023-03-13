@@ -5,10 +5,10 @@
 # This is a little tricky. We want a process that:
 #
 #   1. is certain to exist, to avoid false negatives
-#   2. we shouldn't be able to signal (specifically, we can't create a process
+#   2. we shouldn’t be able to signal (specifically, we can’t create a process
 #      to serve as the target)
 #   3. is outside the container
-#   4. won't crash the host too badly if killed by the signal
+#   4. won’t crash the host too badly if killed by the signal
 #
 # We want a signal that:
 #

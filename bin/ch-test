@@ -5,7 +5,7 @@
 set -e
 
 # Set the locale so we have predictable sorting. However, ch-image crashes on
-# Python 3.6 in locale "C" (see issues #970 and #1262), which is the only
+# Python 3.6 in locale “C” (see issues #970 and #1262), which is the only
 # locale guaranteed to be available, so use a UTF-8 locale if available. This
 # means tests will fail on Python 3.6 systems without this UTF-8 locale.
 if [[ $(locale -a) = *en_US.utf8* ]]; then
@@ -171,7 +171,7 @@ dir_perm_rm () {
     fi
 }
 
-# Remove directory $1 if it's either 1) empty or 2) contains a sentinel file.
+# Remove directory $1 if it’s either 1) empty or 2) contains a sentinel file.
 dir_rm_safe () {
     if [[    $(find "$1" -maxdepth 1 -mindepth 1 | wc -l) == 0 \
           || -e ${1}/WEIRD_AL_YANKOVIC ]]; then
@@ -299,9 +299,9 @@ pedantry_set () {
     fi
     # The motivation here is that in pedantic mode, we want to run all the
     # tests we reasonably can. So, if the user *has* sudo, then default --sudo
-    # to yes. What is a little awkward is that "sudo -v" can generate a
+    # to yes. What is a little awkward is that “sudo -v” can generate a
     # password prompt in the middle of the status output. An alternative is
-    # "sudo -nv", which doesn't; drawbacks are that you have to analyze the
+    # “sudo -nv”, which doesn’t; drawbacks are that you have to analyze the
     # output (not exit code) and it generates a failed password log message if
     # there is not already a sudo session going.
     if    [[ -n $ch_pedantic ]] \
@@ -526,7 +526,7 @@ test_make_check_image () {
             pq_missing "$img" 'builder required'
             img_ok=
         fi
-        # Exclude if included builders are given and $CH_TEST_BUILDER isn't one.
+        # Exclude if included builders are given and $CH_TEST_BUILDER isn’t one.
         if [[ -n $builder_include ]]; then
             builder_ok=
             for b in $builder_include; do
@@ -591,8 +591,8 @@ test_make_tag_from_path () {
     #   3) basicname:  the file name (Dockerfile)
     #   4) extension:  the file's extension (openmpi)
     #
-    # $basicname must be 'Build' or 'Dockerfile'; otherwise error.
-    # if $dir is '.', 'test', or 'examples' then tag=$extension; otherwise
+    # $basicname must be “Build” or “Dockerfile”; otherwise error.
+    # if $dir is “.”, “test”, or “examples” then tag=$extension; otherwise
     # tag is $extension if set or $dir-$exenstion.
     local base
     local basicname
@@ -613,7 +613,7 @@ test_make_tag_from_path () {
     case $basicname in
         Build|Dockerfile)
             case $dir in
-                .|test|examples)  # dot is directory "test"
+                .|test|examples)  # dot is directory “test”
                     if [[ -z $extension ]]; then
                         fatal "can't compute tag: $1"
                     else
@@ -728,7 +728,7 @@ email=
 if command -v git > /dev/null 2>&1; then
     email="$(git config --get user.email || true)"
 fi
-# If that doesn't work, construct it from the environment.
+# If that doesn’t work, construct it from the environment.
 if [[ -z $email ]]; then
     email="$USER@$(hostname --domain)"
 fi
@@ -968,6 +968,17 @@ if [[ -z $phase ]]; then
 fi
 printf '\n'
 
+# See issue #1580
+# shellcheck disable=SC2016
+if [[ -d /var/tmp/img ]] || [[ -d /var/tmp/tar ]]; then
+printf '\n'
+  warning 'NOTE: default image and pack directories changed to:'
+  warning '      CH_TEST_IMGDIR=/var/tmp/${USER}.img'
+  warning '      CH_TEST_TARDIR=/var/tmp/${USER}.pack'
+fi
+
+printf '\n'
+
 #    variable name    CLI              environment         default
 #                     desc. width  description
 vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
@@ -976,9 +987,9 @@ builder_set 21
 pedantry_set 21
 vset CH_TEST_SUDO     "$use_sudo"      "$CH_TEST_SUDO"     "$use_sudo_default" \
                       21 'use generic sudo'
-vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   /var/tmp/img \
+vset CH_TEST_IMGDIR   "$imgdir"        "$CH_TEST_IMGDIR"   "/var/tmp/${USER}.img" \
                       21 'unpacked images dir'
-vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   /var/tmp/tar \
+vset CH_TEST_TARDIR   "$tardir"        "$CH_TEST_TARDIR"   "/var/tmp/${USER}.pack" \
                       21 'packed images dir'
 pack_fmt_set 21
 vset CH_IMAGE_CACHE   "$bucache_mode"  "$CH_IMAGE_CACHE"   enabled \
@@ -1086,9 +1097,9 @@ export PATH=$ch_bin:$PATH
 # we source CHTEST_DIR/common.bash.
 . "${CHTEST_DIR}/common.bash"
 
-# The distinction here is that "images" are purely for testing and have no
-# value as examples for the user, while "examples" are dual-purpose. We call
-# "find" twice for each to preserve desired sort order.
+# The distinction here is that “images” are purely for testing and have no
+# value as examples for the user, while “examples” are dual-purpose. We call
+# “find” twice for each to preserve desired sort order.
 images=$(     find "$CHTEST_DIR"             -name 'Dockerfile.*' | sort \
            && find "$CHTEST_DIR"             -name 'Build' \
                                           -o -name 'Build.*' | sort)

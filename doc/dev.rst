@@ -1,4 +1,4 @@
-Contributor's guide
+Contributor’s guide
 *******************
 
 This section is notes on contributing to Charliecloud development. Currently,
@@ -13,17 +13,17 @@ consult the internal documentation and other resources.
 
 .. note::
 
-   We're interested in and will consider all good-faith contributions. While
+   We’re interested in and will consider all good-faith contributions. While
    it does make things easier and faster if you follow the guidelines here,
-   they are not required. We'll either clean it up for you or walk you through
+   they are not required. We’ll either clean it up for you or walk you through
    any necessary changes.
 
 
 Workflow
 ========
 
-We try to keep procedures and the Git branching model simple. Right now, we're
-pretty similar to Scott Chacon's “`GitHub Flow
+We try to keep procedures and the Git branching model simple. Right now, we’re
+pretty similar to Scott Chacon’s “`GitHub Flow
 <http://scottchacon.com/2011/08/31/github-flow.html>`_”: Master is stable;
 work on short-lived topic branches; use pull requests to ask for merging; keep issues organized with tags and milestones.
 
@@ -61,11 +61,11 @@ given release. There are two groups of milestones:
 * Each release has a milestone. These are dated with the target date for that
   release. We put an issue in when it has actually landed in that release or
   we are willing to delay that release until it does. We put a PR in when we
-  think it's reasonably likely to be merged for that release.
+  think it’s reasonably likely to be merged for that release.
 
 If an issue is assigned to a person, that means they are actively leading the
 work on it or will do so in the near future. Typically this happens when the
-issue ends up in :code:`next`. Issues in a status of "I'll get to this later"
+issue ends up in :code:`next`. Issues in a status of "I’ll get to this later"
 should not be assigned to a person.
 
 Peer review
@@ -101,10 +101,10 @@ changes).
 **No close keywords in PRs.** While GitHub will interpret issue-closing
 keywords (variations on `"closes", "fixes", and "resolves"
 <https://help.github.com/en/articles/closing-issues-using-keywords>`_) in PR
-descriptions, don't use this feature, because often the specific issues a PR
-closes change over time, and we don't want to have to edit the description to
+descriptions, don’t use this feature, because often the specific issues a PR
+closes change over time, and we don’t want to have to edit the description to
 deal with that. We also want this information in only one place (the commit
-log). Instead, use "addresses", and we'll edit the keywords into the commit
+log). Instead, use “addresses”, and we’ll edit the keywords into the commit
 message(s) at merge time if needed.
 
 **PR review procedure.** When your draft PR is ready for review — which may or
@@ -114,20 +114,20 @@ may not be when you want it considered for merging! — do one or both of:
   may be ready for merge, that should include the project lead. The purpose of
   requesting review is so the person is notified you need their help.
 
-* If you think it may be ready to merge (even if you're not sure), then also
+* If you think it may be ready to merge (even if you’re not sure), then also
   mark the PR "ready to review". The purpose of this is so the project lead
   can see which PRs are ready to consider for merging (green icon) and which
-  are not (gray icon). If the project lead decides it's ready, they will
-  merge; otherwise, they'll change it back to draft.
+  are not (gray icon). If the project lead decides it’s ready, they will
+  merge; otherwise, they’ll change it back to draft.
 
 In both cases, the person from whom you requested review now owns the branch,
 and you should stop work on it unless and until you get it back.
 
-Do not hesitate to pester your reviewer if you haven't heard back promptly,
+Do not hesitate to pester your reviewer if you haven’t heard back promptly,
 say within 24 hours.
 
 *Special case 1:* Often, the review consists of code changes, and the reviewer
-will want you to assess those changes. GitHub doesn't let you request review
+will want you to assess those changes. GitHub doesn’t let you request review
 from the PR submitter, so this must be done with a comment, either online or
 offline.
 
@@ -138,14 +138,14 @@ original bug reporter to review, to make sure it solves their problem.
 **Use multi-comment reviews.** Review comments should all be packaged up into
 a single review; click *Start a review* rather than *Add single comment*. Then
 the PR author gets only a single notification instead of one for every comment
-you make, and it's clear when they branch is theirs again.
+you make, and it’s clear when they branch is theirs again.
 
 Branching and merging
 ---------------------
 
-**Don't commit directly to master.** Even the project lead doesn't do this.
+**Don’t commit directly to master.** Even the project lead doesn’t do this.
 While it may appear that some trivial fixes are being committed to the master
-directly, what's really happening is that these are prototyped on a branch and
+directly, what’s really happening is that these are prototyped on a branch and
 then fast-forward merged after the tests pass.
 
 **Merging to master.** Only the project lead should do this.
@@ -157,7 +157,7 @@ master. Commit message example::
 
   PR #268 from @j-ogas: remove ch-docker-run (closes #258)
 
-If the branch closes multiple issues and it's reasonable to separate those
+If the branch closes multiple issues and it’s reasonable to separate those
 issues into independent commits, then the branch is rebased, interactively
 squashed, and force-pushed into a tidy history with close instructions, then
 merged in the web interface with *Create a merge commit*. Example history and
@@ -170,14 +170,14 @@ commit messages::
   |/
   * 322df2f ...
 
-The reason to prefer merge via web interface is that GitHub often doesn't
+The reason to prefer merge via web interface is that GitHub often doesn’t
 notice merges done on the command line.
 
 After merge, the branch is deleted via the web interface.
 
 **Branch history tidiness.** Commit frequently at semantically relevant times,
 and keep in mind that this history will probably be squashed per above. It is
-not necessary to rebase or squash to keep branch history tidy. But, don't go
+not necessary to rebase or squash to keep branch history tidy. But, don’t go
 crazy. Commit messages like "try 2" and "fix CI again" are a bad sign; so are
 carefully proofread ones. Commit messages that are brief, technically
 relevant, and quick to write are what you want on feature branches.
@@ -198,11 +198,11 @@ Miscellaneous issue and pull request notes
 **Acknowledging issues.** Issues and PRs submitted from outside should be
 acknowledged promptly, including adding or correcting tags.
 
-**Closing issues.** We close issues when we've taken the requested action,
+**Closing issues.** We close issues when we’ve taken the requested action,
 decided not to take action, resolved the question, or actively determined an
-issue is obsolete. It is OK for "stale" issues to sit around indefinitely
+issue is obsolete. It is OK for “stale” issues to sit around indefinitely
 awaiting this. Unlike many projects, we do not automatically close issues just
-because they're old.
+because they’re old.
 
 **Closing PR.** Stale PRs, on the other hand, are to be avoided due to bit
 rot. We try to either merge or reject PRs in a timely manner.
@@ -221,16 +221,16 @@ full parity is probably unlikely.
 it, but be mindful of the various costs of this compute time.
 
 Things you can do include testing locally first, cancelling jobs you know will
-fail or that won't give you additional information, and not pushing every
+fail or that won’t give you additional information, and not pushing every
 commit (CI tests only the most recent commit in a pushed group).
 
-**Iterating.** When trying to make CI happy, force-push or squash-merge. Don't
+**Iterating.** When trying to make CI happy, force-push or squash-merge. Don’t
 submit a PR with half a dozen "fix CI" commits.
 
 **Purging Docker cache.** :code:`misc/docker-clean.sh` can be used to purge
 your Docker cache, either by removing all tags or deleting all containers and
 images. The former is generally preferred, as it lets you update only those
-base images that have actually changed (the ones that haven't will be
+base images that have actually changed (the ones that haven’t will be
 re-tagged).
 
 Issue labeling
@@ -256,7 +256,7 @@ What kind of change is it?
 Choose *one type* from:
 
 :code:`bug`
-  Something doesn't work; e.g., it doesn't work as intended or it was
+  Something doesn’t work; e.g., it doesn’t work as intended or it was
   mis-designed. This includes usability and documentation problems. Steps to
   reproduce with expected and actual behavior are almost always very helpful.
 
@@ -268,7 +268,7 @@ Choose *one type* from:
 
 :code:`refactor`
   Change that will improve Charliecloud but does not materially affect
-  user-visible behavior. Note this doesn't mean "invisible to the user"; even
+  user-visible behavior. Note this doesn’t mean “invisible to the user”; even
   user-facing documentation or logging changes could feasibly be this, if they
   are more cleanup-oriented.
 
@@ -287,7 +287,7 @@ Choose *one priority* from:
   Low priority. Note: Unfortunately, due to resource limitations, complex
   issues here are likely to wait a long time, perhaps forever. If that makes
   you particularly sad on a particular issue, please comment to say why. Maybe
-  it's mis-prioritized.
+  it’s mis-prioritized.
 
 :code:`deferred`
   No plans to do this, but not rejected. These issues stay open, because we do
@@ -347,7 +347,7 @@ Special considerations
 Choose *one or more extras* from:
 
 :code:`blocked`
-  We can't do this yet because something else needs to happen first. If that
+  We can’t do this yet because something else needs to happen first. If that
   something is another issue, mention it in a comment.
 
 :code:`hpc`
@@ -372,7 +372,7 @@ choose *one disposition* from:
 
 :code:`cantfix`
   The issue is not something we can resolve. Typically problems with other
-  software, problems with containers in general that we can't work around, or
+  software, problems with containers in general that we can’t work around, or
   not actionable due to clarity or other reasons. *Use caution when blaming a
   problem on user error. Often (or usually) there is a documentation or
   usability bug that caused the "user error".*
@@ -393,16 +393,16 @@ choose *one disposition* from:
   change in plans.
 
 :code:`wontfix`
-  We are not going to do this, and we won't merge PRs. Sometimes you'll want
+  We are not going to do this, and we won’t merge PRs. Sometimes you’ll want
   to tag and then wait a few days before closing, to allow for further
   discussion to catch mistaken tags.
 
 :code:`worksforme`
   We cannot reproduce a bug, and it seems unlikely this will change given
-  available information. Typically you'll want to tag, then wait a few days
+  available information. Typically you’ll want to tag, then wait a few days
   for clarification before closing. Bugs closed with this tag that do gain a
   reproducer later should definitely be re-opened. For some bugs, it really
-  feels like they should be reproducible but we're missing it somehow; such
+  feels like they should be reproducible but we’re missing it somehow; such
   bugs should be left open in hopes of new insight arising.
 
 Deprecated labels
@@ -410,13 +410,13 @@ Deprecated labels
 
 You might see these on old issues, but they are no longer in use.
 
-* :code:`help wanted`: This tended to get stale and wasn't generating any
+* :code:`help wanted`: This tended to get stale and wasn’t generating any
   leads.
 
 * :code:`key issue`: Replaced by priority labels.
 
 * :code:`question`: Replaced by Discussions. (If you report a bug that seems
-  to be a discussion, we'll be happy to convert it to you.)
+  to be a discussion, we’ll be happy to convert it to you.)
 
 
 Test suite
@@ -430,13 +430,13 @@ prepends each line with the elapsed time since the previous line::
 
   $ ch-test -s quick | ts -i '%M:%.S'
 
-Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
+Note: a skipped test isn’t free; I see ~0.15 seconds to do a skip.
 
 :code:`ch-test` complains about inconsistent versions
 -----------------------------------------------------
 
 There are multiple ways to ask Charliecloud for its version number. These
-should all give the same result. If they don't, :code:`ch-test` will fail.
+should all give the same result. If they don’t, :code:`ch-test` will fail.
 Typically, something needs to be rebuilt. Recall that :code:`configure`
 contains the version number as a constant, so a common way to get into this
 situation is to change Git branches without rebuilding it.
@@ -531,7 +531,7 @@ Optional test modification directives are:
 How to write a :code:`Dockerfile` recipe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It's a standard Dockerfile.
+It’s a standard Dockerfile.
 
 How to write a :code:`Build` recipe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -600,7 +600,7 @@ Charliecloud source code. This is for two purposes:
 
 Item 2 is tested; i.e., if you break the RPM build, the test suite will fail.
 
-This section describes how to build the RPMs and the pain we've hopefully
+This section describes how to build the RPMs and the pain we’ve hopefully
 abstracted away.
 
 Dependencies
@@ -689,7 +689,7 @@ is what enables us to make additional RPM releases for a given Charliecloud
 release (e.g. 0.9.7-2).
 
 Corollaries of this policy are that RPM build configuration can be any or no
-commit, and it's not possible to create an RPM of uncommitted source code.
+commit, and it’s not possible to create an RPM of uncommitted source code.
 
 Changelog maintenance
 ~~~~~~~~~~~~~~~~~~~~~
@@ -702,7 +702,7 @@ entry matches the given :code:`VERSION` argument. The timestamp is not
 automatically verified.
 
 For other Charliecloud versions, :code:`build` adds a generic changelog entry
-with the appropriate version stating that it's a pre-release RPM.
+with the appropriate version stating that it’s a pre-release RPM.
 
 
 .. _build-ova:
@@ -710,7 +710,7 @@ with the appropriate version stating that it's a pre-release RPM.
 Style hints
 ===========
 
-We haven't written down a comprehensive style guide. Generally, follow the
+We haven’t written down a comprehensive style guide. Generally, follow the
 style of the surrounding code, think in rectangles rather than lines of code
 or text, and avoid CamelCase.
 
@@ -736,7 +736,7 @@ Writing English
 
 * Use sentence case for titles, not title case.
 
-* If it's not a sentence, start with a lower-case character.
+* If it’s not a sentence, start with a lower-case character.
 
 * Use spell check. Keep your personal dictionary updated so your editor is not
   filled with false positives.
@@ -746,7 +746,7 @@ Documentation
 
 Heading underline characters:
 
-  1. Asterisk, :code:`*`, e.g. "5. Contributor's guide"
+  1. Asterisk, :code:`*`, e.g. "5. Contributor’s guide"
   2. Equals, :code:`=`, e.g. "5.7 OCI technical notes"
   3. Hyphen, :code:`-`, e.g. "5.7.1 Gotchas"
   4. Tilde, :code:`~`, e.g. "5.7.1.1 Namespaces" (try to avoid)
@@ -800,7 +800,7 @@ enough to support Charliecloud. You might need to install additional packages
 For URL downloading in shell code, including Dockerfiles, use :code:`wget -nv`.
 
 Both work fine for our purposes, and we need to use one or the other
-consistently. According to Debian's popularity contest, 99.88% of reporting
+consistently. According to Debian’s popularity contest, 99.88% of reporting
 systems have :code:`wget` installed, vs. about 44% for :code:`curl`. On the
 other hand, :code:`curl` is in the minimal install of CentOS 7 while
 :code:`wget` is not.
@@ -822,7 +822,7 @@ Variable conventions in shell scripts and :code:`.bats` files
   case, :code:`ch_` prefix.
 
 * Surround lower-case variables expanded in strings with curly braces, unless
-  they're the only thing in the string. E.g.:
+  they’re the only thing in the string. E.g.:
 
   .. code-block:: none
 
@@ -839,7 +839,7 @@ Variable conventions in shell scripts and :code:`.bats` files
     "${foo}"/bar  # no
     "$foo"/bar    # no
 
-* Don't quote variable assignments or other places where not needed (e.g.,
+* Don’t quote variable assignments or other places where not needed (e.g.,
   case statements). E.g.:
 
   .. code-block:: none
@@ -865,14 +865,14 @@ example:
 
 is a function that will not alter the string pointed to by :code:`in` but may
 alter the string pointed to by :code:`out`. (Note that :code:`char const` is
-equivalent to :code:`const char`, but we use the latter order because that's
+equivalent to :code:`const char`, but we use the latter order because that’s
 what appears in GCC error messages.)
 
 We do not use :code:`const` on local variables or function arguments passed by
-value. One could do this to be more clear about what is and isn't mutable, but
-it adds quite a lot of noise to the source code, and in our evaluations didn't
+value. One could do this to be more clear about what is and isn’t mutable, but
+it adds quite a lot of noise to the source code, and in our evaluations didn’t
 catch any bugs. We also do not use it on double pointers (e.g., :code:`char
-**out` used when a function allocates a string and sets the caller's pointer
+**out` used when a function allocates a string and sets the caller’s pointer
 to point to it), because so far those are all out-arguments and C has
 `confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
 pointers and :code:`const`.
@@ -1005,7 +1005,7 @@ ch-run-oci
 ----------
 
 Currently, :code:`ch-run-oci` is only tested with Buildah. These notes
-describe what we are seeing from Buildah's runtime expectations.
+describe what we are seeing from Buildah’s runtime expectations.
 
 Gotchas
 ~~~~~~~
@@ -1029,7 +1029,7 @@ Supervisor process and maintaining state
 """"""""""""""""""""""""""""""""""""""""
 
 OCI (and thus Buildah) expects a process that exists throughout the life of
-the container. This conflicts with Charliecloud's lack of a supervisor process.
+the container. This conflicts with Charliecloud’s lack of a supervisor process.
 
 Bundle directory
 ~~~~~~~~~~~~~~~~
@@ -1038,7 +1038,7 @@ Bundle directory
 
 The bundle directory defines the container and is used to communicate between
 Buildah and the runtime. The root filesystem (:code:`mnt/rootfs`) is mounted
-within Buildah's namespaces, so you'll want to join them before examination.
+within Buildah’s namespaces, so you’ll want to join them before examination.
 
 :code:`ch-run-oci` has restrictions on bundle directory path so it can be
 inferred from the container ID (see the man page). This lets us store state in
@@ -1075,9 +1075,9 @@ Example::
 Observations:
 
 #. The weird permissions on :code:`empty` (000) and :code:`mnt` (100) persist
-   within the namespaces, so you'll want to be namespace root to look around.
+   within the namespaces, so you’ll want to be namespace root to look around.
 
-#. :code:`hosts` and :code:`resolv.conf` are identical to the host's.
+#. :code:`hosts` and :code:`resolv.conf` are identical to the host’s.
 
 #. :code:`empty` is still an empty directory with in the namespaces. What is
    this for?
@@ -1217,7 +1217,7 @@ Path to root filesystem; maps to :code:`NEWROOT`. If key :code:`readonly` is
 This says what filesystems to mount in the container. It is a mix; it has
 tmpfses, bind-mounts of both files and directories, and other
 non-device-backed filesystems. The docs suggest a lot of flexibility,
-including stuff that won't work in an unprivileged user namespace (e.g.,
+including stuff that won’t work in an unprivileged user namespace (e.g.,
 filesystems backed by a block device).
 
 The things that matter seem to be the same as Charliecloud defaults.
@@ -1250,7 +1250,7 @@ Maps to :code:`--cd`.
        ],
 
 Maps to :code:`CMD [ARG ...]`. Note that we do not run :code:`ch-run` via the
-shell, so there aren't worries about shell parsing.
+shell, so there aren’t worries about shell parsing.
 
 .. code-block:: javascript
 
@@ -1350,8 +1350,8 @@ Namespaces that Buildah wants. Ignored; Charliecloud just does user and mount.
        ],
 
 Describes the identity map between the namespace and host. Buildah wants it
-much larger than Charliecloud's single entry and asks for container root to be
-host root, which we can't do. Ignored.
+much larger than Charliecloud’s single entry and asks for container root to be
+host root, which we can’t do. Ignored.
 
 .. code-block:: javascript
 
@@ -1381,7 +1381,7 @@ State
 ~~~~~
 
 The OCI spec does not say how the JSON document describing state should be
-given to the caller. Buildah is happy to get it on the runtime's standard
+given to the caller. Buildah is happy to get it on the runtime’s standard
 output.
 
 :code:`ch-run-oci` provides an OCI compliant state document. Status
@@ -1423,7 +1423,7 @@ OCI runtime and image specification information.
 Since various OCI features are unsupported by Charliecloud we push only what is
 necessary to satisfy general image registry requirements.
 
-The pushed config is created on the fly, referencing the image's metadata
+The pushed config is created on the fly, referencing the image’s metadata
 and layer tar hash. For example, including commentary:
 
 .. code-block:: javascript
@@ -1543,7 +1543,7 @@ extensions.
       ],
     }
 
-The history section is collected from the image's metadata and
+The history section is collected from the image’s metadata and
 :code:`empty_layer` added to all entries except the last to represent a
 single-layer image. This is needed because Quay checks that the number of
 non-empty history entries match the number of pushed layers.
@@ -1564,6 +1564,6 @@ catch both dot notation and tuples, but not the list of filenames in
 What to do in each location should either be obvious or commented.
 
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg
+..  LocalWords:  milestoned gh nv cht Chacon’s scottchacon mis cantfix tmpimg
 ..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
 ..  LocalWords:  abd bbf LOGFILE logfile rtd

@@ -2,7 +2,7 @@ What is Charliecloud?
 ---------------------
 
 Charliecloud provides user-defined software stacks (UDSS) for high-performance
-computing (HPC) centers. This "bring your own software stack" functionality
+computing (HPC) centers. This “bring your own software stack” functionality
 addresses needs such as:
 
 * software dependencies that are numerous, complex, unusual, differently
@@ -79,9 +79,9 @@ How can I participate?
 
 Use our GitHub page: https://github.com/hpc/charliecloud
 
-Bug reports and feature requests should be filed as "Issues". Questions,
-comments, support requests, and everything else should use our "Discussions".
-Don't worry if you put something in the wrong place; we'll be more than happy
+Bug reports and feature requests should be filed as “Issues”. Questions,
+comments, support requests, and everything else should use our “Discussions”.
+Don't worry if you put something in the wrong place; we’ll be more than happy
 to help regardless.
 
 We also have a mailing list for announcements: https://groups.io/g/charliecloud
@@ -99,11 +99,11 @@ If Charliecloud helped your research, or it was useful to you in any other
 context where bibliographic citations are appropriate, please cite the
 following open-access paper:
 
-  Reid Priedhorsky and Tim Randles. "Charliecloud: Unprivileged containers for
-  user-defined software stacks in HPC", 2017. In *Proc. Supercomputing*.
+  Reid Priedhorsky and Tim Randles. “Charliecloud: Unprivileged containers for
+  user-defined software stacks in HPC”, 2017. In *Proc. Supercomputing*.
   DOI: `10.1145/3126908.3126925 <https://doi.org/10.1145/3126908.3126925>`_.
 
-*Note:* This paper contains out-of-date number for the size of Charliecloud's
+*Note:* This paper contains out-of-date number for the size of Charliecloud’s
 code. Please instead use the current number in the FAQ.
 
 Copyright and license

@@ -6,7 +6,7 @@ both examples included with the source code as well as new ones you create
 from scratch.
 
 This tutorial assumes that: (a) Charliecloud is in your path, including
-Charliecloud's fully unprivileged image builder :code:`ch-image` and
+Charliecloud’s fully unprivileged image builder :code:`ch-image` and
 (b) Charliecloud is installed under :code:`/usr/local`. (If the second
 assumption isn’t true, you will just need to modify some paths.)
 
@@ -554,7 +554,7 @@ Build cache
 use a build cache to speed repeated operations. That is, an image is created
 by starting from the empty image and executing a sequence of instructions,
 largely Dockerfile instructions but also some others like “pull” and “import”.
-Some instructions are expensive to execute so it's often cheaper to retrieve
+Some instructions are expensive to execute so it’s often cheaper to retrieve
 their results from cache instead.
 
 Let’s set up this example by first resetting the build cache::
@@ -745,7 +745,7 @@ supplementary groups have collapsed into 65534:code:`nogroup`, because they
 are unmapped inside the namespace. (If :code:`id` complains about not finding
 names for IDs, just ignore it.)
 
-We are root!! Let's try something sneaky!!!
+We are root!! Let’s try something sneaky!!!
 
 ::
 
@@ -824,7 +824,7 @@ Let’s revisit the symlinks in :code:`/proc`, but this time with Charliecloud::
 
 The container has different mount (:code:`mnt`) and user (:code:`user`)
 namespaces, but the rest of the namespaces are shared with the host. This
-highlights Charliecloud's focus on functionality (make your container run),
+highlights Charliecloud’s focus on functionality (make your container run),
 rather than isolation (protect the host from your container).
 
 Normally, each invocation of :code:`ch-run` creates a new container, so if you
@@ -988,7 +988,7 @@ a destination that already exists, like those created under :code:`/mnt`::
   $ mkdir /var/tmp/foo1
   $ echo world > /var/tmp/foo1/bar
   $ ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
-  ch-run[1184427]: error: can't mkdir: /var/tmp/hello/var/tmp/foo0: Read-only file system (ch_misc.c:142 30)
+  ch-run[1184427]: error: can’t mkdir: /var/tmp/hello/var/tmp/foo0: Read-only file system (ch_misc.c:142 30)
   $ ch-run -b /var/tmp/foo0:/mnt/0 -b /var/tmp/foo1:/mnt/1 /var/tmp/hello -- bash
   > ls /mnt
   0  1  2  3  4  5  6  7  8  9
@@ -1064,11 +1064,11 @@ variables.
 
    2. Argument :code:`-t` is required for SSH to allocate a pseudo-TTY and
       thus convince your shell to be interactive. In the case of Bash,
-      otherwise you'll get a shell that accepts commands but doesn't print
+      otherwise you’ll get a shell that accepts commands but doesn’t print
       prompts, among other other issues. (`Issue #2
       <https://github.com/hpc/charliecloud/issues/2>`_.)
 
-A third approach may be to edit one's shell initialization scripts to check
+A third approach may be to edit one’s shell initialization scripts to check
 the command line and :code:`exec(1)` :code:`ch-run` if appropriate. This is
 brittle but avoids wrapping :code:`ssh` or altering its command line.
 
@@ -1076,7 +1076,7 @@ User and group IDs
 ~~~~~~~~~~~~~~~~~~
 
 Unlike Docker and some other container systems, Charliecloud tries to make the
-container's users and groups look the same as the host’s. This is accomplished
+container’s users and groups look the same as the host’s. This is accomplished
 by bind-mounting a custom :code:`/etc/passwd` and :code:`/etc/group` into the
 container. For example::
 
@@ -1221,7 +1221,7 @@ we’ll find the Spark master’s IP manually::
   2: eth0  inet 192.168.8.3
   8: eth1  inet 10.8.8.3
 
-Your site support can tell you which to use. In this case, we'll use 10.8.8.3.
+Your site support can tell you which to use. In this case, we’ll use 10.8.8.3.
 
 Create some configuration files. Replace :code:`[MYSECRET]` with a string only
 you know. Edit to match your system; in particular, use local disks instead of
@@ -1309,7 +1309,7 @@ We can now start an interactive shell to do some Spark computing::
 
   $ ch-run -b ~/sparkconf /var/tmp/spark.sqfs -- /spark/bin/pyspark --master $MASTER_URL
 
-Let's use this shell to estimate 𝜋 (this is adapted from one of the Spark
+Let’s use this shell to estimate 𝜋 (this is adapted from one of the Spark
 `examples <http://spark.apache.org/examples.html>`_):
 
 .. code-block:: pycon

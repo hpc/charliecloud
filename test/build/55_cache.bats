@@ -20,7 +20,7 @@ setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     [[ $CH_IMAGE_CACHE = enabled ]] || skip 'build cache enabled only'
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest  # don't mess up main storage
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest  # don’t mess up main storage
     dot_base=$BATS_TMPDIR/bu_
     ch-image gestalt bucache-dot
 }
@@ -76,7 +76,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
 
-    # FROM doesn't pull (same target name)
+    # FROM doesn’t pull (same target name)
     run ch-image build -v -t d -f bucache/from.df .
     echo "$output"
     [[ $status -eq 0 ]]
@@ -91,7 +91,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
 
-    # FROM doesn't pull (different target name)
+    # FROM doesn’t pull (different target name)
     run ch-image build -v -t d2 -f bucache/from.df .
     echo "$output"
     [[ $status -eq 0 ]]
@@ -223,11 +223,11 @@ EOF
 
 
 @test "${tag}: rebuild C" {
-    # Rebuild C. Since C doesn't reference img_a (like img_b does) rebuilding
+    # Rebuild C. Since C doesn’t reference img_a (like img_b does) rebuilding
     # causes a miss on FOO. Thus C makes new FOO and QUX commits.
     #
-    # Shouldn't FOO hit? --reidpr 2/16
-    #  - No! Rebuild forces misses; since c.df has it's own FOO it should miss.
+    # Shouldn’t FOO hit? --reidpr 2/16
+    #  - No! Rebuild forces misses; since c.df has it’s own FOO it should miss.
     #     --jogas 2/24
     blessed_out=$(cat << 'EOF'
 *  (c) RUN echo qux
@@ -533,9 +533,9 @@ EOF
     [[ $status -eq 0 ]]
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  (force) WORKDIR /usr
-*  RUN.S dnf install -y ed  # doesn't need --force
+*  RUN.S dnf install -y ed  # doesn’t need --force
 | *  WORKDIR /usr
-| *  RUN dnf install -y ed  # doesn't need --force
+| *  RUN dnf install -y ed  # doesn’t need --force
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
@@ -550,9 +550,9 @@ EOF
     [[ $status -eq 0 ]]
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  WORKDIR /usr
-*  RUN.S dnf install -y ed  # doesn't need --force
+*  RUN.S dnf install -y ed  # doesn’t need --force
 | *  (force) WORKDIR /usr
-| *  RUN dnf install -y ed  # doesn't need --force
+| *  RUN dnf install -y ed  # doesn’t need --force
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
@@ -564,11 +564,11 @@ EOF
 @test "${tag}: §3.6 rebuild" {
     ch-image build-cache --reset
 
-    # Build. Mode should not matter here, but we use enabled because that's
+    # Build. Mode should not matter here, but we use enabled because that’s
     # more lifelike.
     ch-image build -t a -f ./bucache/a.df ./bucache
 
-    # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
+    # Re-build in “rebuild” mode. FROM should hit, others miss, and we should
     # have two branches.
     sleep 1
     run ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
@@ -592,7 +592,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 
-    # Re-build again in "rebuild" mode. The branch pointer should move to the
+    # Re-build again in “rebuild” mode. The branch pointer should move to the
     # newer execution.
     run ch-image build-cache -v --tree
     echo "$output"
@@ -1098,13 +1098,14 @@ EOF
 
 
 @test "${tag}: garbage vs. reset" {
+    scope full
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     # Init build cache.
     ch-image list
     cd "$CH_IMAGE_STORAGE"/bucache
 
-    # Turn off auto-gc so it's not triggered during the build itself.
+    # Turn off auto-gc so it’s not triggered during the build itself.
     git config gc.auto 0
 
     # Build an image that’s going to be annoying to garbage collect, but not
@@ -1112,8 +1113,8 @@ EOF
     # happening on a tmpfs.
     ch-image build -t tmpimg - <<'EOF'
 FROM alpine:3.17
-RUN for i in $(seq 0 1536); do \
-       dd if=/dev/urandom of=/$i bs=1024K count=1 status=none; \
+RUN for i in $(seq 0 1024); do \
+       dd if=/dev/urandom of=/$i bs=4096K count=1 status=none; \
     done
 EOF
 

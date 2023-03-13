@@ -8,7 +8,7 @@
 # re-building this image. One approach would be to comment out the content
 # types added by #1184 and see if the updated image still triggers the bug.
 #
-# Scope is "skip" because we pull it to test; see test/build/50_pull.bats.
+# Scope is “skip” because we pull it to test; see test/build/50_pull.bats.
 # ch-test-scope: skip
 #
 # To build and push:

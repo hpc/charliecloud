@@ -11,7 +11,7 @@ setup () {
     # One iteration on most of these tests because we just care about
     # correctness, not performance. (If we let the benchmark choose, there is
     # an overwhelming number of errors when MPI calls start failing, e.g. if
-    # CMA isn't working, and this makes the test take really long.)
+    # CMA isn’t working, and this makes the test take really long.)
     #
     # Large -npmin because we only want to test all cores.
     imb_mpi1=/usr/local/src/mpi-benchmarks/src_c/IMB-MPI1
@@ -91,7 +91,7 @@ check_process_ct () {
     [[ $stauts -eq 0 ]]
 }
 
-# This test compares OpenMPI's point to point bandwidth with all high speed
+# This test compares OpenMPI’s point to point bandwidth with all high speed
 # plugins enabled against the performance just using TCP. Pass if HSN
 # performance is at least double TCP.
 @test "${ch_tag}/using the high-speed network (host launch)" {

@@ -121,7 +121,7 @@ COPY file* dir06/
 # Source:  one directory
 # Dest:    existing directory, no trailing slash
 #
-# Note: Again, the reference seems to imply this shouldn't work.
+# Note: Again, the reference seems to imply this shouldn’t work.
 RUN mkdir dir07a
 COPY dirA dir07a
 
@@ -157,7 +157,7 @@ COPY dirA symlink-to-dir07f/
 # Source:  one directory
 # Dest:    new directory, one level, no trailing slash
 #
-# Note: Again, the reference seems to imply this shouldn't work.
+# Note: Again, the reference seems to imply this shouldn’t work.
 COPY dirA dir08a
 
 # Source:  one directory
