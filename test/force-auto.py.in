@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # This script generates a BATS file to exercise “ch-image build --force”
-# across a variety of distributions. It’s used by Makefile.am.
+# across a variety of distributions. It's used by Makefile.am.
 #
 # About each distribution, we remember:
 #
@@ -25,12 +25,12 @@
 # This would appear to yield 3×2×4 = 24 tests per distribution. However:
 #
 #   1. We only try pre-prepared images for “really need” commands with --force
-#      given, to save time, so it’s at most 9 potential tests.
+#      given, to save time, so it's at most 9 potential tests.
 #
-#   2. The pre-preparation step doesn’t make sense for some distros or for
+#   2. The pre-preparation step doesn't make sense for some distros or for
 #      --force=seccomp.
 #
-#   3. We’ve not yet determined an “apparently need” command for some distros.
+#   3. We've not yet determined an “apparently need” command for some distros.
 #
 # Bottom line, the number of tests per distro varies. See the code below for
 # specific details.
@@ -145,7 +145,7 @@ echo "$output"
 {self.build1_post_hook}"""
       # force
       force = "--force=%s" % (self.force) if self.force else ""
-      # run command we're testing
+      # run command we’re testing
       try:
          run = self.runs[self.run]
       except KeyError:

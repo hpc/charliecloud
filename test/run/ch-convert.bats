@@ -6,7 +6,7 @@ load ../common
 # start with a directory, cycle through all the formats one at a time, with
 # directory being last, then compare the starting and ending directories. That
 # corresponds to visiting all the cells in the matrix below, starting from one
-# labeled "a", ending in one labeled "b", and skipping those labeled with a
+# labeled “a”, ending in one labeled “b”, and skipping those labeled with a
 # dash. Also, if visit n is in column i, then the next visit n+1 must be in
 # row i. This approach does each conversion exactly once.
 #
@@ -255,7 +255,7 @@ test_from () {
 
 @test 'ch-convert: format inference' {
     # Test input only; output uses same code. Test cases match all the
-    # criteria to validate the priority. We don't exercise every possible
+    # criteria to validate the priority. We don’t exercise every possible
     # descriptor pattern, only those I thought had potential for error.
 
     # SquashFS

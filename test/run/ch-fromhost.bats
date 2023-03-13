@@ -309,9 +309,9 @@ glibc_version_ok () {
 
     # ldconfig gives no shared library path (#324)
     #
-    # (I don't think this is the best way to get ldconfig to fail, but I
-    # couldn't come up with anything better. E.g., bad ld.so.conf or broken
-    # .so's seem to produce only warnings.)
+    # (I don’t think this is the best way to get ldconfig to fail, but I
+    # couldn’t come up with anything better. E.g., bad ld.so.conf or broken
+    # .so’s seem to produce only warnings.)
     mv "${img}/sbin/ldconfig" "${img}/sbin/ldconfig.foo"
     run ch-fromhost --print-lib "$img"
     mv "${img}/sbin/ldconfig.foo" "${img}/sbin/ldconfig"
@@ -362,10 +362,10 @@ glibc_version_ok () {
         || skip 'nvidia-container-cli not in PATH'
     img=${ch_imgdir}/nvidia
 
-    # nvidia-container-cli --version (to make sure it's linked correctly)
+    # nvidia-container-cli --version (to make sure it’s linked correctly)
     nvidia-container-cli --version
 
-    # Skip if nvidia-container-cli can't find CUDA.
+    # Skip if nvidia-container-cli can’t find CUDA.
     run nvidia-container-cli list --binaries --libraries
     echo "$output"
     if [[ $status -eq 1 ]]; then

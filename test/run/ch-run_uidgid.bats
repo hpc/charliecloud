@@ -50,7 +50,7 @@ setup () {
 }
 
 @test '/dev /proc /sys' {
-    # Read some files in /dev, /proc, and /sys that I shouldn't have access to.
+    # Read some files in /dev, /proc, and /sys that I shouldn’t have access to.
     # shellcheck disable=SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- /test/dev_proc_sys.py
 }
@@ -69,7 +69,7 @@ setup () {
 
 @test 'mknod(2)' {
     # Make some device files. If this works, we might be able to later read or
-    # write them to do things we shouldn't. Try on all mount points.
+    # write them to do things we shouldn’t. Try on all mount points.
     # shellcheck disable=SC2016,SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- \
            sh -c '/test/mknods $(cat /proc/mounts | cut -d" " -f2)'
@@ -78,7 +78,7 @@ setup () {
 @test 'privileged IPv4 bind(2)' {
     # Bind to privileged ports on all host IPv4 addresses.
     #
-    # Some supported distributions don't have "hostname --all-ip-addresses".
+    # Some supported distributions don’t have “hostname --all-ip-addresses”.
     # Hence the awk voodoo.
     addrs=$(ip -o addr | awk '/inet / {gsub(/\/.*/, " ",$4); print $4}')
     # shellcheck disable=SC2086
@@ -88,7 +88,7 @@ setup () {
 @test 'remount host root' {
     # Re-mount the root filesystem. Notes:
     #
-    #   - Because we have /dev from the host, we don't need to create a new
+    #   - Because we have /dev from the host, we don’t need to create a new
     #     device node. This makes the test simpler. In particular, we can
     #     treat network and local root the same.
     #
@@ -109,11 +109,11 @@ setup () {
     # return codes from http://man7.org/linux/man-pages/man8/mount.8.html
     # busybox seems to use the same list
     case $status in
-        0)      # "success"
+        0)      # “success”
             printf 'RISK\tsuccessful mount\n'
             return 1
             ;;
-        1)   ;&  # "incorrect invocation or permissions" (we care which)
+        1)   ;&  # “incorrect invocation or permissions” (we care which)
         111) ;&  # undocumented
         255)     # undocumented
             if [[ $output = *'ermission denied'* ]]; then
@@ -127,7 +127,7 @@ setup () {
                 return 1
             fi
             ;;
-        32)     # "mount failed"
+        32)     # “mount failed”
             printf 'SAFE\tmount exited with code 32\n'
             return 0
             ;;
@@ -143,17 +143,17 @@ setup () {
 }
 
 @test 'seteuid(2)' {
-    # Try to seteuid(2) to another UID we shouldn't have access to
+    # Try to seteuid(2) to another UID we shouldn’t have access to
     # shellcheck disable=SC2086
     ch-run $uid_args $gid_args "$ch_timg" -- /test/setuid
 }
 
 @test 'signal process outside container' {
-    # Send a signal to a process we shouldn't be able to signal, in this case
+    # Send a signal to a process we shouldn’t be able to signal, in this case
     # getty. This requires at least one getty running, i.e., at least one
     # virtual console waiting for login. In the past, distributions ran gettys
     # on several VCs by default, but in recent years they are often started
-    # dynamically, so there may be none running. See your distro's
+    # dynamically, so there may be none running. See your distro’s
     # documentation on how to configure this. See also e.g. issue #840.
     [[ $(pgrep -c getty) -eq 0 ]] && pedantic_fail 'no getty process found'
     # shellcheck disable=SC2086

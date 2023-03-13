@@ -34,13 +34,13 @@ setup () {
 
 
 @test 'ch-image delete' {
-    # Verify image doesn't exist.
+    # Verify image doesn’t exist.
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"delete/test"* ]]
 
-    # Build image. It's called called delete/test to check ref parsing with
+    # Build image. It’s called called delete/test to check ref parsing with
     # slash present.
     ch-image build -t delete/test -f - . << 'EOF'
 FROM alpine:3.17
@@ -69,7 +69,7 @@ EOF
 
 
 @test 'broken image delete' {
-    # Verify image doesn't exist.
+    # Verify image doesn’t exist.
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
@@ -117,8 +117,8 @@ EOF
 
 
 @test 'ch-image import' {
-    # Note: We don't test importing a real image because (1) when this is run
-    # during the build phase there aren't any unpacked images and (2) I can't
+    # Note: We don’t test importing a real image because (1) when this is run
+    # during the build phase there aren’t any unpacked images and (2) I can’t
     # think of a way import could fail that would be real image-specific.
 
     ## Test image (not runnable)
@@ -225,7 +225,7 @@ EOF
     run ch-image import -v /doesnotexist imptest
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: can't copy: not found: /doesnotexist"* ]]
+    [[ $output = *"error: can’t copy: not found: /doesnotexist"* ]]
 
     # invalid destination reference
     run ch-image import -v "${fixtures}/empty" 'badchar*'
@@ -233,7 +233,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'error: image ref syntax, char 8: badchar*'* ]]
 
-    # non-empty file that's not a tarball
+    # non-empty file that’s not a tarball
     run ch-image import -v "${fixtures}/nonempty/ch/metadata.json" imptest
     echo "$output"
     [[ $status -eq 1 ]]
@@ -337,7 +337,7 @@ EOF
 @test 'ch-image reset' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-reset
 
-   # Ensure our test storage dir doesn't exist yet.
+   # Ensure our test storage dir doesn’t exist yet.
    [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
    # Put an image innit.
@@ -684,7 +684,7 @@ EOF
     touch "$fixtures_dir"/dir_/file_
 
     # This will fail after the first file is already copied, because COPY is
-    # non-atomic. We use an unreadable file because if the file didn't exist,
+    # non-atomic. We use an unreadable file because if the file didn’t exist,
     # COPY would fail out before starting.
     ! ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF'
 FROM alpine:3.17
@@ -703,7 +703,7 @@ EOF
 @test 'storage directory versioning' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-version
 
-   # Ensure our test storage dir doesn't exist yet.
+   # Ensure our test storage dir doesn’t exist yet.
    [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
    # Initialize by listing.
