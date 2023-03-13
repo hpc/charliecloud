@@ -1,4 +1,5 @@
 @test 'build %(tag)s' {
+    %(skip)s
     scope %(scope)s
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
         force=--force

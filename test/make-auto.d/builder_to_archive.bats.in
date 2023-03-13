@@ -1,4 +1,5 @@
 @test 'builder to archive %(tag)s' {
+    %(skip)s
     scope %(scope)s
     case $CH_TEST_PACK_FMT in
         squash*)
