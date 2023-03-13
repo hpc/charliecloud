@@ -44,10 +44,10 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 which \
  && dnf clean all
 
-# Need wheel to install bundled Lark, and the RPM version doesn't work.
+# Need wheel to install bundled Lark, and the RPM version doesn’t work.
 RUN pip3 install wheel
 
-# AlmaLinux's linker doesn't search these paths by default; add them because we
+# AlmaLinux's linker doesn’t search these paths by default; add them because we
 # will install stuff later into /usr/local.
 RUN echo "/usr/local/lib" > /etc/ld.so.conf.d/usrlocal.conf \
  && echo "/usr/local/lib64" >> /etc/ld.so.conf.d/usrlocal.conf \

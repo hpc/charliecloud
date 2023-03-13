@@ -12,12 +12,12 @@
 #
 #           - doc/FOO.rst
 #           - doc/man/FOO.1
-#           - an entry under "See also" in charliecloud.7
+#           - an entry under “See also” in charliecloud.7
 #
 #      c. There aren't the things in (b) except for the executables (modulo a
 #         few execeptions for the other documentation source files).
 #
-#      d. Summary in "FOO --help" matches FOO.rst and conf.py.
+#      d. Summary in “FOO --help” matches FOO.rst and conf.py.
 
 from __future__ import print_function
 

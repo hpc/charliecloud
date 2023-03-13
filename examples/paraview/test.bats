@@ -20,7 +20,7 @@ setup () {
     fi
 }
 
-# The first two tests demonstrate ParaView as an "executable" to process a
+# The first two tests demonstrate ParaView as an “executable” to process a
 # non-containerized input deck (cone.py) and produce non-containerized output.
 #
 #   .png: In previous versions, PNG output is antialiased with a single rank
@@ -33,7 +33,7 @@ setup () {
 #         cluster. The resulting VTK file is dependent on whether an image was
 #         rendered serially or using 2 or n processes.
 #
-# We do not check .pvtp (and its companion .vtp) output because it's a
+# We do not check .pvtp (and its companion .vtp) output because it’s a
 # collection of XML files containing binary data and it seems too hairy to me.
 
 @test "${ch_tag}/inject cray mpi ($cray_prov)" {
