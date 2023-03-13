@@ -506,6 +506,7 @@ must appear:
 
 .. code-block:: none
 
+  ch-test-scope: skip
   ch-test-scope: quick
   ch-test-scope: standard
   ch-test-scope: full

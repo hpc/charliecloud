@@ -1,10 +1,10 @@
 #!%PYTHON_SHEBANG%
 
 import argparse
-import distutils.version
 import inspect
 import json
 import os
+import packaging.version
 import re
 import signal
 import subprocess
@@ -301,9 +301,9 @@ def state_load():
    st.config = json.load(fs.Path(args.bundle + "/config.json").open_("rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
-   v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
-   v_actual = distutils.version.LooseVersion(st.config["ociVersion"])
-   v_max = distutils.version.LooseVersion(OCI_VERSION_MAX)
+   v_min = packaging.version.Version(OCI_VERSION_MIN)
+   v_actual = packaging.version.Version(st.config["ociVersion"])
+   v_max = packaging.version.Version(OCI_VERSION_MAX)
    if (not v_min <= v_actual <= v_max):
       ch.FATAL("unsupported OCI version: %s" % st.config["ociVersion"])
 
