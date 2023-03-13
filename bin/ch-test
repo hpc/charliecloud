@@ -479,13 +479,6 @@ test_make_auto () {
             exit 0
         fi
 
-        # If tag is distroless, skip the test (see #896)
-        if [[ $tag == *distroless ]]; then
-            skip="skip 'problem w/ gcr.io, see #896'\n"
-        else
-            skip=""
-        fi
-
         if [[ $mode == build* ]]; then
             case $basename_ in
                 Build|Build.*)
@@ -650,8 +643,7 @@ test_make_template_print () {
                     | sed "s@%(dirname)s@$dirname_@g" \
                     | sed "s@%(path)s@$path_@g" \
                     | sed "s@%(scope)s@$CH_TEST_SCOPE@g" \
-                    | sed "s@%(tag)s@$tag@g" \
-                    | sed "s@%(skip)s@$skip@g"
+                    | sed "s@%(tag)s@$tag@g"
     printf '\n'
     return
 }
