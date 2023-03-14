@@ -1176,7 +1176,7 @@ Using :code:`ch-image build --output` to export at the end of the build sequence
   done
   $ ch-run /var/tmp/hello.sqfs -- echo hello
   hello
-  
+
 ..  LocalWords:  FMT fmt
 
 :code:`gestalt`
