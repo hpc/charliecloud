@@ -17,7 +17,7 @@ load ../common
 }
 
 @test 'version number seems sane' {
-    # This checks the form of the version number but not whether it's
+    # This checks the form of the version number but not whether it’s
     # consistent with anything, because so far that level of strictness has
     # yielded hundreds of false positives but zero actual bugs.
     scope quick
@@ -28,10 +28,10 @@ load ../common
 
 @test 'executables seem sane' {
     scope quick
-    # Assume that everything in $ch_bin is ours if it starts with "ch-" and
-    # either (1) is executable or (2) ends in ".c". Demand satisfaction from
+    # Assume that everything in $ch_bin is ours if it starts with “ch-” and
+    # either (1) is executable or (2) ends in “.c”. Demand satisfaction from
     # each. The latter is to catch cases when we haven't compiled everything;
-    # if we have, the test makes duplicate demands, but that's low cost.
+    # if we have, the test makes duplicate demands, but that’s low cost.
     while IFS= read -r -d '' path; do
         path=${path%.c}
         filename=$(basename "$path")
@@ -41,7 +41,7 @@ load ../common
         run "$path" --version
         echo "$output"
         [[ $status -eq 0 ]]
-        # --help: returns 0, says "Usage:" somewhere.
+        # --help: returns 0, says “Usage:” somewhere.
         run "$path" --help
         echo "$output"
         [[ $status -eq 0 ]]
@@ -82,7 +82,7 @@ load ../common
     #
     scope standard
     arch_exclude ppc64le  # no ShellCheck pre-built
-    # Only do this test in build directory; the reasoning is that we don't
+    # Only do this test in build directory; the reasoning is that we don’t
     # alter the shell scripts during install enough to re-test, and it means
     # we only have to find everything in one path.
     if [[ $CHTEST_INSTALLED ]]; then
@@ -114,10 +114,10 @@ load ../common
                                          {nextfile}' {} + \) )
     # Bats scripts. Use sed to do two things:
     #
-    # 1. Make parseable by ShellCheck by removing "@test '...'". This does
+    # 1. Make parseable by ShellCheck by removing “@test ‘...’”. This does
     #    remove the test names, but line numbers are still valid.
     #
-    # 2. Remove preprocessor substitutions "%(foo)", which also confuse Bats.
+    # 2. Remove preprocessor substitutions “%(foo)”, which also confuse Bats.
     #
     while IFS= read -r i; do
         echo "shellcheck: ${i}"
@@ -136,7 +136,7 @@ load ../common
     #
     # Coordinate this test with common.bash:build_().
     #
-    # Note: ALL_PROXY and all_proxy aren't currently included, because they
+    # Note: ALL_PROXY and all_proxy aren’t currently included, because they
     # cause image builds to fail until Docker 1.13
     # (https://github.com/docker/docker/pull/27412).
     v=' no_proxy http_proxy https_proxy'
@@ -166,9 +166,16 @@ load ../common
     # lines because we’re grepping *this* file, so we’d have to add the here
     # document, which would expand the here document, etc.
     #
-    # Note you can update the file by piping this “grep” into it, assuming
-    # there is no bogus trailing whitespace present. I have had trouble with
-    # copy-and-paste removing the trailing whitespace.
+    # When updating CI to Ubuntu 22.04 (#1561), this test started failing because
+    # the output of the “grep” started printing in a different order than what
+    # was expected. Piping it into the “sort” ensures ordering consistency. The
+    # command sorts first alphabetically by file path, then numerically by line
+    # number.
+    #
+    # Note you can update the file by piping this “grep” and "sort" into it,
+    # assuming there is no bogus trailing whitespace present. I have had trouble
+    # with copy-and-paste removing the trailing whitespace.
       ../misc/grep -E '\s+$' \
+    | LC_ALL=C sort -t: -k1,1 -k2n,2 \
     | diff -u approved-trailing-whitespace -
 }

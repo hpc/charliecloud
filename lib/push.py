@@ -13,12 +13,12 @@ def main(cli):
    src_ref = im.Reference(cli.source_ref)
    ch.INFO("pushing image:   %s" % src_ref)
    image = im.Image(src_ref, cli.image)
-   # FIXME: validate it's an image using Megan's new function (PR #908)
+   # FIXME: validate it’s an image using Megan’s new function (PR #908)
    if (not os.path.isdir(image.unpack_path)):
       if (cli.image is not None):
-         ch.FATAL("can't push: %s does not appear to be an image" % cli.image)
+         ch.FATAL("can’t push: %s does not appear to be an image" % cli.image)
       else:
-         ch.FATAL("can't push: no image %s" % src_ref)
+         ch.FATAL("can’t push: no image %s" % src_ref)
    if (cli.image is not None):
       ch.INFO("image path:      %s" % image.unpack_path)
    else:
@@ -84,7 +84,7 @@ class Image_Pusher:
 
    def cleanup(self):
       ch.INFO("cleaning up")
-      # Delete the tarballs since we can't yet cache them.
+      # Delete the tarballs since we can’t yet cache them.
       for (_, tar_c) in self.layers:
          ch.VERBOSE("deleting tarball: %s" % tar_c)
          tar_c.unlink_()
@@ -95,7 +95,7 @@ class Image_Pusher:
          manifest as a sequence of bytes).
 
          There is not currently any support for re-using any previously
-         prepared files already in the upload cache, because we don't yet have
+         prepared files already in the upload cache, because we don’t yet have
          a way to know if these have changed until they are already build."""
       # Initializing an HTTP instance for the registry and doing a 'GET'
       # request right out the gate ensures the user needs to authenticate
@@ -132,8 +132,8 @@ class Image_Pusher:
                                  for k, v
                                  in self.image.metadata.get("env", {}).items()]
       # History. Some registries, e.g., Quay, use history metadata for simple
-      # sanity checks. For example, when an image's number of "empty_layer"
-      # history entries doesn't match the number of layers being uploaded,
+      # sanity checks. For example, when an image’s number of "empty_layer"
+      # history entries doesn’t match the number of layers being uploaded,
       # Quay will reject the image upload.
       #
       # This type of error checking is odd as the empty_layer key is optional

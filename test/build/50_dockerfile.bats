@@ -6,7 +6,7 @@ setup () {
 
 
 @test 'Dockerfile: syntax quirks' {
-    # These should all yield an output image, but we don't actually care about
+    # These should all yield an output image, but we don’t actually care about
     # it, so re-use the same one.
 
     export CH_IMAGE_CACHE=disabled
@@ -178,7 +178,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     # error message
-    [[ $output = *"can't parse: -:2,1"* ]]
+    [[ $output = *"can’t parse: -:2,1"* ]]
     # internal blabber (varies by version)
     [[ $output = *'No terminal'*"'W'"*'at line 2 col 1'* ]]
 
@@ -189,7 +189,7 @@ COPY --chown= foo bar
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't parse: -:2,14"* ]]
+    [[ $output = *"can’t parse: -:2,14"* ]]
 
     # Empty input.
     run ch-image build -t tmpimg -f /dev/null .
@@ -266,7 +266,7 @@ EOF
 
 
 @test 'Dockerfile: not-yet-supported features' {
-    # This test also creates images we don't care about.
+    # This test also creates images we don’t care about.
 
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
@@ -342,7 +342,7 @@ EOF
 
 
 @test 'Dockerfile: unsupported features' {
-    # This test also creates images we don't care about.
+    # This test also creates images we don’t care about.
 
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
@@ -538,7 +538,7 @@ EOF
    [[ $output = *"ash: /bin/ash"* ]]
    [[ $output = *"sh-v: /bin/sh"* ]]
 
-   # test that it fails if shell doesn't exist
+   # test that it fails if shell doesn’t exist
    run build_ -t tmpimg -f - . <<'EOF'
 FROM alpine:3.17
 SHELL ["/doesnotexist", "-c"]
@@ -651,8 +651,8 @@ EOF
 )
     else
         # Docker and Buildah do not appear to take --build-arg values from the
-        # environment. This is contrary to the "docker build" documentation;
-        # "buildah bud" does not mention it either way. Tested on 18.09.7 and
+        # environment. This is contrary to the “docker build” documentation;
+        # “buildah bud” does not mention it either way. Tested on 18.09.7 and
         # 1.9.1-dev, respectively.
         env_expected=$(cat <<'EOF'
 chse_arg2_df=arg2
@@ -729,7 +729,7 @@ chse_env2_df=env2 env1
 EOF
 )
     else
-        # Docker and Buildah don't substitute provided values.
+        # Docker and Buildah don’t substitute provided values.
         env_expected=$(cat <<'EOF'
 chse_arg2_df=bar2
 chse_arg3_df=bar3 ${chse_arg2_df}
@@ -748,7 +748,7 @@ EOF
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** ARG not in Dockerfile'
-    # Note: We don't test it, but for Buildah, the variable does show up in
+    # Note: We don’t test it, but for Buildah, the variable does show up in
     # the build environment.
     run build_ --build-arg chse_doesnotexist=foo \
                --no-cache -t tmpimg -f ./Dockerfile.argenv .
@@ -1027,7 +1027,7 @@ EOF
 
     # SRC not inside context directory.
     #
-    # Case 1: leading "..".
+    # Case 1: leading “..”.
     run build_ -t tmpimg -f - sotest <<'EOF'
 FROM alpine:3.17
 COPY ../common.bash .
@@ -1035,7 +1035,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'outside'*'context'* ]]
-    # Case 2: ".." inside path.
+    # Case 2: “..” inside path.
     run build_ -t tmpimg -f - sotest <<'EOF'
 FROM alpine:3.17
 COPY lib/../../common.bash .
@@ -1098,7 +1098,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: can't parse: -:2,7"* ]]
+        [[ $output = *"error: can’t parse: -:2,7"* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
@@ -1132,7 +1132,7 @@ EOF
     [[ $status -ne 0 ]]
     [[ $output = *'not found'* ]]
 
-    # No context with Dockerfile on stdin by context "-"
+    # No context with Dockerfile on stdin by context “-”
     run build_ -t tmpimg - <<'EOF'
 FROM alpine:3.17
 COPY fixtures/README .
@@ -1140,7 +1140,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *'error: no context because "-" given'* ]]
+        [[ $output = *'error: no context because “-” given'* ]]
     else
         [[ $output = *'COPY failed: file not found in build context or'* ]]
     fi
@@ -1153,7 +1153,7 @@ EOF
 
     # Note: Docker treats several types of erroneous --from names as another
     # image and tries to pull it. To avoid clashes with real, pullable images,
-    # we use the random name "uhigtsbjmfps" (https://www.random.org/strings/).
+    # we use the random name “uhigtsbjmfps” (https://www.random.org/strings/).
 
     # current index
     run build_ -t tmpimg -f - . <<'EOF'

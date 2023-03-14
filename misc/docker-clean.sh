@@ -18,7 +18,7 @@ done
 #
 #   Error response from daemon: invalid reference format
 #
-# sometimes. I don't know why.
+# sometimes. I don’t know why.
 if [[ $1 != --all ]]; then
     while true; do
         cmd='sudo docker images --filter dangling=false --format {{.Repository}}:{{.Tag}}'

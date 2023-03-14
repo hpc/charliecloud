@@ -46,10 +46,10 @@ load ../common
 
 @test 'ch-run as root: run image' {
     scope standard
-    # Running an image should work as root, but it doesn't, and I'm not sure
+    # Running an image should work as root, but it doesn’t, and I'm not sure
     # why, so skip this test. This fails in the test suite with:
     #
-    #   ch-run: couldn't resolve image path: No such file or directory (ch-run.c:139:2)
+    #   ch-run: couldn’t resolve image path: No such file or directory (ch-run.c:139:2)
     #
     # but when run manually (with same arguments?) it fails differently with:
     #
@@ -65,8 +65,8 @@ load ../common
     [[ -n $ch_have_sudo ]] || skip 'sudo not available'
     if ! (sudo -u root -g "$(id -gn)" true); then
         # Allowing sudo to user root but group non-root is an unusual
-        # configuration. You need e.g. "%foo ALL=(ALL:ALL)" instead of the
-        # more common "%foo ALL=(ALL)". See issue #485.
+        # configuration. You need e.g. “%foo ALL=(ALL:ALL)” instead of the
+        # more common “%foo ALL=(ALL)”. See issue #485.
         pedantic_fail 'sudo not configured for user root and group non-root'
     fi
     run sudo -u root -g "$(id -gn)" "$ch_runfile" -v --version

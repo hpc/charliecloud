@@ -12,7 +12,7 @@ setup () {
 }
 
 @test "${ch_tag}/hello" {
-    # Remove prior test's plot to avoid using it if something else breaks.
+    # Remove prior test’s plot to avoid using it if something else breaks.
     mkdir -p "$outdir"
     rm -f "$outdir"/obspy.png
     ch-run -b "${outdir}:/mnt" "$ch_img" -- /hello.py /mnt/obspy.png
