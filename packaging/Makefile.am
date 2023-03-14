@@ -1,5 +1,6 @@
 EXTRA_DIST = \
 README \
+requirements.txt \
 fedora/build \
 fedora/charliecloud.rpmlintrc \
 fedora/charliecloud.spec \

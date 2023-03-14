@@ -3,6 +3,7 @@ import datetime
 import enum
 import glob
 import hashlib
+import itertools
 import os
 import pickle
 import re
@@ -47,13 +48,13 @@ GIT_CONFIG = {
    "core.untrackedCache":    "true",
    # Quick-and-dirty results suggest that commit is not faster after garbage
    # collection, and checkout is actually a little faster if *not* garbage
-   # collected. Therefore, it's not a high priority to run garbage collection.
+   # collected. Therefore, it’s not a high priority to run garbage collection.
    # Further, I would assume garbaging a lot of files rather than a few gives
    # better opportunities for delta compression. Our most file-ful example
    # image is obspy at about 50K files.
    "gc.auto":                "100000",
    # Leave packs larger than this alone during automatic GC. This is to avoid
-   # excessive resource consumption during GC the user didn't ask for.
+   # excessive resource consumption during GC the user didn’t ask for.
    "gc.bigPackThreshold":    "12G",
    # Anything unreachable from a named branch or the reflog is unavailable to
    # the build cache, so we may as well delete it immediately. However, there
@@ -81,6 +82,10 @@ GIT_CONFIG = {
    "pack.depth":             "36",
    "pack.window":            "24",
 }
+
+# Placeholder for Git hash values that are unknown. This deliberately does not
+# support str operations (e.g., indexing), so trying those will fail loudly.
+GIT_HASH_UNKNOWN = -1
 
 
 ## Globals ##
@@ -110,8 +115,8 @@ def have_dot():
 
 def init(cli):
    # At this point --bucache is what the user wanted, either directly or via
-   # --no-cache. If it's None, chose the right default; otherwise, try what
-   # the user asked for and fail if we can't do it.
+   # --no-cache. If it’s None, chose the right default; otherwise, try what
+   # the user asked for and fail if we can’t do it.
    if (cli.bucache != ch.Build_Mode.DISABLED):
       ok = have_deps(False)
       if (cli.bucache is None):
@@ -220,8 +225,8 @@ class File_Metadata:
       """True if I represent either an empty directory, or a directory that
          contains only children where empty_dir_p is true. E.g., the root of a
          directory tree containing only empty directories returns true."""
-      # In principle this could do a lot of recursion, but in practice I'm
-      # guessing it's not too much.
+      # In principle this could do a lot of recursion, but in practice I’m
+      # guessing it’s not too much.
       if (not stat.S_ISDIR(self.mode)):
          return False  # not a directory
       # True if no children (truly empty directory), or each child is unstored
@@ -285,8 +290,8 @@ class File_Metadata:
                  DB database support files used by RPM. Sometimes, something
                  mishandles the last-modified dates on these files, fooling
                  Git into thinking they have not been modified, and so they
-                 don't get committed or restored, which confuses BDB/RPM.
-                 Fortunately, they can be safely deleted, and that's a simple
+                 don’t get committed or restored, which confuses BDB/RPM.
+                 Fortunately, they can be safely deleted, and that’s a simple
                  workaround, so we do it. See issue #1351.
 
          Return the File_Metadata tree, and if write is True, also save it in
@@ -305,7 +310,7 @@ class File_Metadata:
          return fm
       # Ensure minimum permissions. Some tools like to make files with mode
       # 000, because root ignores the permissions bits.
-      fm.path_abs.chmod_min(0o700 if stat.S_ISDIR(fm.mode) else 0o400, fm.st)
+      fm.path_abs.chmod_min(fm.st)
       # Validate file type and recurse if needed. (Don’t use os.walk() because
       # it’s iterative, and our algorithm is better expressed recursively.)
       if   (   stat.S_ISREG(fm.mode)
@@ -341,6 +346,7 @@ class File_Metadata:
                      % (fm.st.st_dev, fm.st.st_ino, path))
             fm.hardlink_to = hardlinks[(fm.st.st_dev, fm.st.st_ino)]
             fm.path_abs.unlink_()
+            return fm
          else:
             ch.DEBUG("hard link: recording first: %d %d %s"
                      % (fm.st.st_dev, fm.st.st_ino, path))
@@ -359,10 +365,11 @@ class File_Metadata:
       # there when switching the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
          fm.path_abs.rmdir_()
-         return fm  # can’t do anything else after it’s gone
+         return fm
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(fm.mode)):
          fm.path_abs.unlink()
+         return fm
       # Rename if necessary.
       if (path.git_incompatible_p):
          ch.DEBUG("renaming: %s -> %s" % (path, path.git_escaped))
@@ -389,14 +396,11 @@ class File_Metadata:
       #ch.TRACE(self.str_for_log())  # output is extreme even for TRACE?
       # Do-nothing case.
       if (self.dont_restore):
+         if (not (quick or (    self.path.name.startswith(".git")
+                            and len(self.path) == 1))):
+            ch.WARNING("ignoring un-restorable file: /%s" % self.path)
          return
       # Make sure I exist, and with the correct name.
-      if (self.empty_dir_p):
-         ch.ossafe(os.mkdir, "can’t mkdir: %s" % self.path, self.path_abs)
-      if (stat.S_ISFIFO(self.mode)):
-         ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
-      if (self.large_name is not None):
-         self.large_restore()
       if (self.hardlink_to is not None):
          # This relies on prepare and restore having the same traversal order,
          # so the first (stored) link is always available by the time we get
@@ -406,11 +410,14 @@ class File_Metadata:
          ch.ossafe(os.link, "can’t hardlink: %s -> %s" % (self.path_abs,
                                                           target),
                    target, self.path_abs, follow_symlinks=False)
-      if (self.path.git_incompatible_p):
+      elif (self.large_name is not None):
+         self.large_restore()
+      elif (self.empty_dir_p):
+         ch.ossafe(os.mkdir, "can’t mkdir: %s" % self.path, self.path_abs)
+      elif (stat.S_ISFIFO(self.mode)):
+         ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
+      elif (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
-      if (not quick):
-         if (stat.S_ISSOCK(self.mode)):
-            ch.WARNING("ignoring socket in image: %s" % self.path)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
@@ -648,7 +655,7 @@ class Enabled_Cache:
             ch.cmd_quiet(["git", "push", "-q", "origin", "root"])
             cwd.chdir()
       except OSError as x:
-         ch.FATAL("can't create or delete temporary directory: %s: %s"
+         ch.FATAL("can’t create or delete temporary directory: %s: %s"
                   % (x.filename, x.strerror))
 
    def branch_delete(self, branch):
@@ -663,7 +670,7 @@ class Enabled_Cache:
          be either an Ref or a Git commit reference (as a string)."""
       if (isinstance(dest, im.Reference)):
          dest = self.branch_name_ready(dest)
-      # Some versions of Git won't let us update a branch that's already
+      # Some versions of Git won’t let us update a branch that’s already
       # checked out, so detach that worktree if it exists.
       src_img = im.Image(src_ref)
       if (src_img.unpack_exist_p):
@@ -698,7 +705,7 @@ class Enabled_Cache:
       ch.cmd_quiet(["git", "commit", "-q", "--allow-empty",
                     "-m", "%s\n\n%s" % (msg, sid)])
       t.log("committed")
-      # "git commit" does print the new commit's hash without "-q", but it
+      # “git commit” does print the new commit’s hash without “-q”, but it
       # also prints every file commited, which is rather enormous for us.
       # Therefore, retrieve the hash separately.
       cp = ch.cmd_stdout(["git", "rev-parse", "--short", "HEAD"])
@@ -787,7 +794,8 @@ class Enabled_Cache:
                      "-c", "gc.reflogExpire=now", "gc"], cwd=self.root)
       t.log("collected garbage")
       t = ch.Timer()
-      digests = ch.cmd_stdout(["git", "rev-list", "--all", "--reflog"],
+      digests = ch.cmd_stdout(["git", "rev-list",
+                               "--all", "--reflog", "--date-order"],
                               cwd=self.root).stdout.split("\n")
       assert (digests[-1] == "")  # trailing newline
       digests[-2:] = []           # discard root commit and trailing newline
@@ -805,7 +813,7 @@ class Enabled_Cache:
       ch.INFO("found %d large files used; deleting others" % len(larges_used))
       for l in ch.storage.build_large.listdir():
          if (l not in larges_used):
-            (self.build_large // l).unlink_()
+            (ch.storage.build_large // l).unlink_()
       t.log("deleted unused large files")
 
    def git_prepare(self, unpack_path, files, write=True):
@@ -923,7 +931,7 @@ class Enabled_Cache:
    def rollback(self, path):
       """Restore path to the last committed state, including both tracked and
          untracked files."""
-      ch.INFO("rolling back ...")
+      ch.INFO("something went wrong, rolling back ...")
       self.git_prepare(path, [], write=False)
       t = ch.Timer()
       ch.cmd_quiet(["git", "reset", "--hard", "HEAD"], cwd=path)
@@ -985,7 +993,7 @@ class Enabled_Cache:
          fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
       else:
          # ref names, short commit hash, subject (instruction), body (state ID)
-         # FIXME: The body contains a trailing newline I can't figure out how
+         # FIXME: The body contains a trailing newline I can’t figure out how
          # to remove.
          fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
       ch.cmd_base(["git", "log", "--graph", "--all", "--reflog",
@@ -1134,11 +1142,28 @@ class Disabled_Cache(Rebuild_Cache):
       image.unpack_clear()
       image.copy_unpacked(base_image)
 
-   def commit(self, *args):
+   def commit(self, path, *args):
+      self.permissions_fix(path)
       return None
 
    def find_image(self, *args):
       return (None, None)
+
+   def permissions_fix(self, path):
+      # Some distributions create unreadable files; e.g., CentOS 7 after
+      # installing “openssh”:
+      #
+      #   $ ls -lh /scratch/reidpr.ch/img/centos_7ch/usr/bin/ssh-agent
+      #   ---x--s--x 1 reidpr reidpr 374K Nov 24  2021 [...]/ssh-agent
+      #
+      # This makes the image un-copyable, so it can’t be used as a base image.
+      #
+      # Enabled_Cache takes care of this in git_prepare(), and
+      # --force=fakeroot bypasses it in some other way I haven’t looked into.
+      for (dir_, subdirs, files) in ch.walk(path):
+         for i in itertools.chain(subdirs, files):
+            (dir_ // i).chmod_min()
+
 
    def pull_lazy(self, img, src_ref, last_layer=None, pullet=None):
       if (pullet is None and os.path.exists(img.unpack_path)):
@@ -1155,8 +1180,8 @@ class Disabled_Cache(Rebuild_Cache):
    def ready(self, *args):
       pass
 
-   def rollback(self, *args):
-      pass
+   def rollback(self, path):
+      self.permissions_fix(path)
 
    def sid_from_parent(self, *args):
       return None

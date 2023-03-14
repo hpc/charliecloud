@@ -12,7 +12,7 @@ import charliecloud as ch
 ## Hairy imports ##
 
 # Requests is not bundled, so this noise makes the file parse and
-# --version/--help work even if it's not installed.
+# --version/--help work even if it’s not installed.
 try:
    import requests
    import requests.auth
@@ -236,7 +236,7 @@ class Auth_Bearer_IDed(Auth):
    @classmethod
    def authenticate(class_, reg, auth_d):
       # Registries and endpoints vary in what they put in WWW-Authenticate. We
-      # need realm because it's the URL to use for a token. Otherwise, just
+      # need realm because it’s the URL to use for a token. Otherwise, just
       # give back all the keys we got.
       for k in ("realm",):
          if (k not in auth_d):
@@ -333,14 +333,14 @@ class HTTP:
             f = ch.DEBUG
          f("%s: %s" % (h, hs[h]))
       # Friendly message for Docker Hub rate limit.
-      used_ct = period = left_ct = reason = "???"  # keep as strings
+      pull_ct = period = left_ct = reason = "???"  # keep as strings
       if ("ratelimit-limit" in hs):
          h = hs["ratelimit-limit"]
          m = re.search(r"^(\d+);w=(\d+)$", h)
          if (m is None):
             WARNING("can’t parse RateLimit-Limit: %s" % h)
          else:
-            used_ct = m[1]
+            pull_ct = m[1]
             period = str(int(m[2]) / 3600)  # seconds to hours
       if ("ratelimit-remaining" in hs):
          h = hs["ratelimit-remaining"]
@@ -361,14 +361,17 @@ class HTTP:
             else:
                # Overall limits yield HTTP 429 so warning seems legitimate?
                ch.WARNING("can’t parse Docker-RateLimit-Source: %s" % h)
-      if (any(i != "???" for i in (used_ct, period, left_ct,reason))):
+      if (any(i != "???" for i in (pull_ct, period, left_ct))):
          ch.INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
-                 % (used_ct, period, left_ct, reason))
+                 % (left_ct, pull_ct, period, reason))
+
+   @property
+   def _url_base(self):
+      return "https://%s:%d/v2/" % (self.ref.host, self.ref.port)
 
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
-      url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
-      return "/".join((url_base, self.ref.path_full, type_, address))
+      return self._url_base + "/".join((self.ref.path_full, type_, address))
 
    def blob_exists_p(self, digest):
       """Return true if a blob with digest (hex string) exists in the
@@ -376,14 +379,14 @@ class HTTP:
       # Gotchas:
       #
       # 1. HTTP 401 means both unauthorized *or* not found, I assume to avoid
-      #    information leakage about the presence of stuff one isn't allowed
+      #    information leakage about the presence of stuff one isn’t allowed
       #    to see. By the time it gets here, we should be authenticated, so
       #    interpret it as not found.
       #
-      # 2. Sometimes we get 301 Moved Permanently. It doesn't bubble up to
+      # 2. Sometimes we get 301 Moved Permanently. It doesn’t bubble up to
       #    here because requests.request() follows redirects. However,
       #    requests.head() does not follow redirects, and it seems like a
-      #    weird status, so I worry there is a gotcha I haven't figured out.
+      #    weird status, so I worry there is a gotcha I haven’t figured out.
       url = self._url_of("blobs", "sha256:%s" % digest)
       res = self.request("HEAD", url, {200,401,404})
       return (res.status_code == 200)
@@ -398,7 +401,7 @@ class HTTP:
 
    def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
-         can be anything requests can handle; if it's an open file, then it's
+         can be anything requests can handle; if it’s an open file, then it’s
          wrapped in a Progress_Reader object. note is a string to prepend to
          the log messages; default empty string."""
       ch.INFO("%s%s: checking if already in repository" % (note, digest[:7]))
@@ -415,8 +418,8 @@ class HTTP:
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
       res = self.request("POST", url, {202})
-      # 3. Upload blob. We do a "monolithic" upload (i.e., send all the
-      # content in a single PUT request) as opposed to a "chunked" upload
+      # 3. Upload blob. We do a “monolithic” upload (i.e., send all the
+      # content in a single PUT request) as opposed to a “chunked” upload
       # (i.e., send data in multiple PATCH requests followed by a PUT request
       # with no body).
       url = res.headers["Location"]
@@ -484,7 +487,7 @@ class HTTP:
 
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
-      # NOTE: We don't verify the digest b/c that means reading the whole file.
+      # NOTE: We don’t verify the digest b/c that means reading the whole file.
       ch.VERBOSE("layer tarball: %s" % path)
       fp = path.open_("rb") # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
@@ -524,7 +527,7 @@ class HTTP:
          must be non-zero length.
 
          Use current session if there is one, or start a new one if not. If
-         authentication fails (or isn't initialized), then authenticate harder
+         authentication fails (or isn’t initialized), then authenticate harder
          and re-try the request."""
       # Set up.
       self.session_init_maybe()
@@ -564,7 +567,7 @@ class HTTP:
          the requests.Response object.
 
          Session must already exist. If auth arg given, use it; otherwise, use
-         object's stored authentication if initialized; otherwise, use no
+         object’s stored authentication if initialized; otherwise, use no
          authentication."""
       ch.VERBOSE("%s: %s" % (method, url))
       if (auth is None):
@@ -581,7 +584,7 @@ class HTTP:
       return res
 
    def session_init_maybe(self):
-      "Initialize session if it's not initialized; otherwise do nothing."
+      "Initialize session if it’s not initialized; otherwise do nothing."
       if (self.session is None):
          ch.VERBOSE("initializing session")
          self.session = requests.Session()

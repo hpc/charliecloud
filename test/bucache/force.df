@@ -2,5 +2,5 @@
 
 FROM almalinux:8
 WORKDIR /
-RUN dnf install -y ed  # doesn't need --force
+RUN dnf install -y ed  # doesn’t need --force
 WORKDIR /usr

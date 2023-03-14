@@ -1,7 +1,7 @@
 # shellcheck shell=bash
 
 arch_exclude () {
-    # Skip the test if architecture (from "uname -m") matches $1.
+    # Skip the test if architecture (from “uname -m”) matches $1.
     [[ $(uname -m) != "$1" ]] || skip "arch ${1}"
 }
 
@@ -29,7 +29,7 @@ build_ () {
             "$ch_bin"/ch-image build "$@"
             ;;
         docker)
-            # Coordinate this list with test "build.bats/proxy variables".
+            # Coordinate this list with test “build.bats/proxy variables”.
             # shellcheck disable=SC2154
             docker_ build --build-arg HTTP_PROXY="$HTTP_PROXY" \
                           --build-arg HTTPS_PROXY="$HTTPS_PROXY" \
@@ -99,10 +99,26 @@ chtest_fixtures_ok () {
     [[ $(stat -c %a "${1}/maxperms_file") = 777 ]]
 }
 
-crayify_mpi_or_skip () {
+cray_ofi_or_skip () {
     if [[ $ch_cray ]]; then
+        [[ -n "$CH_TEST_OFI_PATH" ]] || skip 'CH_TEST_OFI_PATH not set'
+        [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
         # shellcheck disable=SC2086
-        $ch_mpirun_node ch-fromhost --cray-mpi "$1"
+        if [[ $cray_prov == 'gni' ]]; then
+            export CH_FROMHOST_OFI_GNI=$CH_TEST_OFI_PATH
+            $ch_mpirun_node ch-fromhost -v --cray-gni "$1"
+        fi
+        if [[ $cray_prov == 'cxi' ]]; then
+            export CH_FROMHOST_OFI_CXI=$CH_TEST_OFI_PATH
+            $ch_mpirun_node ch-fromhost --cray-cxi "$1"
+            # Examples use libfabric's fi_info to ensure injection works; when
+            # replacing libfabric we also need to replace this binary.
+            fi_info="$(dirname "$(dirname "$CH_TEST_OFI_PATH")")/bin/fi_info"
+            [[ -x "$fi_info" ]]
+            $ch_mpirun_node ch-fromhost -v -d /usr/local/bin \
+                                           -p "$fi_info" \
+                                              "$1"
+        fi
     else
         skip 'host is not a Cray'
     fi
@@ -139,13 +155,11 @@ localregistry_init () {
 
 multiprocess_ok () {
     [[ $ch_multiprocess ]] || skip 'no multiprocess launch tool found'
-    # If the MPI in the container is MPICH, we only try host launch on Crays.
-    # For the other settings (workstation, other Linux clusters), it may or
-    # may not work; we simply haven't tried.
-    [[ $ch_mpi = mpich && -z $ch_cray ]] \
-        && skip 'MPICH untested'
-    # Exit function successfully.
     true
+}
+
+openmpi_or_skip () {
+    [[ $ch_mpi == 'openmpi' ]] || skip "openmpi only"
 }
 
 pedantic_fail () {
@@ -158,7 +172,7 @@ pedantic_fail () {
     fi
 }
 
-# If the two images (graphics, not container) are not "almost equal", fail.
+# If the two images (graphics, not container) are not “almost equal”, fail.
 # The first argument is the reference image; the second is the test image. The
 # third argument, if given, is the maximum number of differing pixels (default
 # zero). Also produce a diff image, which highlights the differing pixels in
@@ -167,21 +181,31 @@ pict_assert_equal () {
     ref=$1
     sample=$2
     pixel_max_ct=${3:-0}
-    sample_base=${sample%.*}
+    sample_base=$(basename "${sample%.*}")
     sample_ext=${sample##*.}
-    diff_=${sample_base}.diff.${sample_ext}
-    echo "reference:   ${ref}"
-    echo "sample:      ${sample}"
-    echo "diff image:  ${diff_}"
+    diff_dir=${BATS_TMPDIR}/"$(basename "$(dirname "$sample")")"
+    ref_bind="${ref}:/a.png"
+    sample_bind="${sample}:/b.png"
+    diff_bind="${diff_dir}:/diff"
+    diff_="/diff/${sample_base}.diff.${sample_ext}"
+    echo "reference: $ref"
+    echo "   bind: $ref_bind"
+    echo "sample: $sample"
+    echo "   bind: $sample_bind"
+    echo "diff: $diff_"
+    echo "   bind: $diff_bind"
     # See: https://imagemagick.org/script/command-line-options.php#metric
-    pixel_ct=$(compare -metric AE "$ref" "$sample" "$diff_" 2>&1 || true)
+    pixel_ct=$(ch-run "$ch_img" -b "$ref_bind" \
+                                -b "$sample_bind" \
+                                -b "$diff_bind" -- \
+                      compare -metric AE /a.png /b.png "$diff_" 2>&1 || true)
     echo "diff count:  ${pixel_ct} pixels, max ${pixel_max_ct}"
     [[ $pixel_ct -le $pixel_max_ct ]]
 }
 
 # Check if the pict_ functions are usable; if not, pedantic-fail.
 pict_ok () {
-    if ! command -v compare > /dev/null 2>&1; then
+    if "$ch_mpirun_node" ch-run "$ch_img" -- compare > /dev/null 2>&1; then
         pedantic_fail 'need ImageMagick'
     fi
 }
@@ -212,7 +236,7 @@ scope () {
             return 0
         fi
     fi
-    case $1 in  # $1 is the test's scope
+    case $1 in  # $1 is the test’s scope
         quick)
             ;;  # always run quick-scope tests
         standard)
@@ -237,8 +261,8 @@ unpack_img_all_nodes () {
     if [[ $1 ]]; then
         case $CH_TEST_PACK_FMT in
             squash-mount)
-                # Lots of things expect no extension here, so go with that even
-                # though it's a file, not a directory.
+                # Lots of things expect no extension here, so go with that
+                # even though it’s a file, not a directory.
                 $ch_mpirun_node ln -s "${ch_tardir}/${ch_tag}.sqfs" "${ch_imgdir}/${ch_tag}"
                 ;;
             squash-unpack)
@@ -306,7 +330,7 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # in tests (see issue #143). We use readlink(1) rather than realpath(2),
 # despite the admonition in the man page, because it's more portable [1].
 #
-# We use "readlink -m" rather than "-e" or "-f" to account for the possibility
+# We use “readlink -m” rather than “-e” or “-f” to account for the possibility
 # of some directory anywhere the path not existing [2], which has bitten us
 # multiple times; see issues #347 and #733. With this switch, if something is
 # missing, readlink(1) returns the path unchanged, and checks later convert
@@ -321,7 +345,7 @@ ch_mounts="${ch_imgdir}/mounts"
 
 # Image information.
 # shellcheck disable=SC2034
-ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don't need it
+ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don’t need it
 # shellcheck disable=SC2034
 ch_img=${ch_imgdir}/${ch_tag}
 # shellcheck disable=SC2034
@@ -331,23 +355,28 @@ ch_ttar=${ch_tardir}/chtest.tar.gz
 # shellcheck disable=SC2034
 ch_timg=${ch_imgdir}/chtest
 
-# MPICH requires different handling from OpenMPI. Set a variable to enable
-# some kludges.
 if [[ $ch_tag = *'-mpich' ]]; then
     ch_mpi=mpich
-    # First kludge. MPICH's internal launcher is called "Hydra". If Hydra sees
-    # Slurm environment variables, it tries to launch even local ranks with
-    # "srun". This of course fails within the container. You can't turn it off
-    # by building with --without-slurm like OpenMPI, so we fall back to this
-    # environment variable at run time.
-    export HYDRA_LAUNCHER=fork
+    # As of MPICH 4.0.2, using SLURM as the MPICH process manager requires two
+    # configure options that disable the compilation of mpiexec. This may not
+    # always be the case.
+    # shellcheck disable=SC2034
+    ch_mpi_exe=mpiexec
 else
     ch_mpi=openmpi
+    # shellcheck disable=SC2034
+    ch_mpi_exe=mpirun
 fi
 
 # Crays are special.
 if [[ -f /etc/opt/cray/release/cle-release ]]; then
     ch_cray=yes
+    # Prefer gni provider on Cray ugni machines
+    if [[ -d /opt/cray/ugni ]]; then
+        cray_prov=gni
+    elif [[ -f /opt/cray/etc/release/cos ]]; then
+        cray_prov=cxi
+    fi
 else
     ch_cray=
 fi
@@ -384,13 +413,14 @@ ch_mpirun_np="-np ${ch_cores_node}"
 # shellcheck disable=SC2034
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
+    [[ -z "$CH_TEST_SLURM_MPI" ]] || srun_mpi="--mpi=$CH_TEST_SLURM_MPI"
     ch_multiprocess=yes
-    ch_mpirun_node='srun --ntasks-per-node 1'
-    ch_mpirun_core="srun --ntasks-per-node $ch_cores_node"
-    ch_mpirun_2='srun -n2'
-    ch_mpirun_2_1node='srun -N1 -n2'
+    ch_mpirun_node="srun $srun_mpi --ntasks-per-node 1"
+    ch_mpirun_core="srun $srun_mpi --ntasks-per-node $ch_cores_node"
+    ch_mpirun_2="srun $srun_mpi -n2"
+    ch_mpirun_2_1node="srun $srun_mpi -N1 -n2"
     # OpenMPI 3.1 pukes when guest-launched and Slurm environment variables
-    # are present. Work around this by fooling OpenMPI into believing it's not
+    # are present. Work around this by fooling OpenMPI into believing it’s not
     # in a Slurm allocation.
     if [[ $ch_mpi = openmpi ]]; then
         # shellcheck disable=SC2034
@@ -401,7 +431,7 @@ if [[ $SLURM_JOB_ID ]]; then
         ch_mpirun_2_2node=false
     else
         ch_multinode=yes
-        ch_mpirun_2_2node='srun -N2 -n2'
+        ch_mpirun_2_2node="srun $srun_mpi -N2 -n2"
     fi
 else
     # shellcheck disable=SC2034
@@ -430,7 +460,7 @@ fi
 if    [[ $CH_TEST_SUDO ]] \
    && command -v sudo >/dev/null 2>&1 \
    && sudo -v > /dev/null 2>&1; then
-    # This isn't super reliable; it returns true if we have *any* sudo
+    # This isn’t super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     # shellcheck disable=SC2034
     ch_have_sudo=yes

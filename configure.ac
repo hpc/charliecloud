@@ -5,7 +5,7 @@
 #    See: https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Quadrigraphs.html
 #
 # 2. Booleans. The convention for Autoconf variables, which we follow, is
-#    "yes" for true and "no" for false. This differs from the Charliecloud
+#    “yes” for true and “no” for false. This differs from the Charliecloud
 #    convention of non-empty for true and empty for false.
 
 
@@ -33,28 +33,28 @@ AS_CASE([$host_os],
 # in a situation where I felt it helped, but (2) fairly regularly re-builds or
 # re-configures at surprising times.
 #
-# In particular, it often rebuilds before "make clean" and friends, e.g. if
+# In particular, it often rebuilds before “make clean” and friends, e.g. if
 # you change branches and then clean. This seems wrong. In my view, clean
 # should remove what is currently there, not what *would have been there* had
 # the build used a different, not-yet-existing build system. Disabling
-# maintainer mode also lets us put "make maintainer-clean" in autogen.sh
+# maintainer mode also lets us put “make maintainer-clean” in autogen.sh
 # without triggering spurious rebuilds.
 AM_MAINTAINER_MODE([disable])
 
 # By default, Autotools honors umask for directories but not files. Thus, if
-# you "sudo make install" with a umask more restrictive than 0022, the result
+# you “sudo make install” with a umask more restrictive than 0022, the result
 # is an installation unavailable to most users (issue #947). This appears to
 # be a somewhat common complaint.
 #
-# Our workaround is to set the "mkdir -p" command [1]. (Note those
+# Our workaround is to set the “mkdir -p” command [1]. (Note those
 # instructions also mention a different variable ac_cv_path_mkdir, but I
-# couldn't figure out how to set it.) This needs to be before AM_INIT_AUTOMAKE
-# because that macro does something with the value. We use "install -d" rather
-# than "mkdir -m" because the latter still uses only umask for intermediate
+# couldn’t figure out how to set it.) This needs to be before AM_INIT_AUTOMAKE
+# because that macro does something with the value. We use “install -d” rather
+# than “mkdir -m” because the latter still uses only umask for intermediate
 # directories [2].
 #
 # This can still be overridden on the configure command line; for example, to
-# restore the previous behavior, use "./configure MKDIR_P='mkdir -p'" [3].
+# restore the previous behavior, use “./configure MKDIR_P='mkdir -p'” [3].
 #
 # [1]: https://unix.stackexchange.com/a/436000
 # [2]: http://gnu-automake.7480.n7.nabble.com/bug-12130-sudo-make-install-applies-umask-to-new-directories-tp18545p18548.html
@@ -116,8 +116,28 @@ AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
 
+AC_ARG_WITH([seccomp],
+  AS_HELP_STRING([--with-seccomp=(yes|no)],
+                 [support for --seccomp]))
+AS_CASE([$with_seccomp],
+  [yes],  # explicit “yes”
+    [want_seccomp=yes
+     need_seccomp=yes
+     msg_seccomp=yes],
+  [no],   # explicit “no”
+    [want_seccomp=no
+     need_seccomp=no
+     msg_seccomp=no],
+  [''],   # option not specified
+    [want_seccomp=yes
+     need_seccomp=no
+     msg_seccomp='if tested working'],
+  [*],    # anything else
+    [AC_MSG_ERROR([invalid --with-seccomp arg: $with_seccomp])])
+
 AC_ARG_WITH([libsquashfuse],
-  AS_HELP_STRING([--with-libsquashfuse=foo], [foo]))
+  AS_HELP_STRING([--with-libsquashfuse=@<:@yes|no|PATH@:>@],
+                 [whether to link with libsquashfuse]))
 AS_CASE([$with_libsquashfuse],
   [yes], # explicit “yes”
     [want_libsquashfuse=yes
@@ -141,7 +161,7 @@ AC_ARG_WITH([python],
   [PYTHON_SHEBANG="$withval"],
   [PYTHON_SHEBANG='/usr/bin/env python3'])
 
-# Can't deduce shebang from Gentoo "sphinx-python"; allow override. See #629.
+# Can’t deduce shebang from Gentoo “sphinx-python”; allow override. See #629.
 AC_ARG_WITH([sphinx-python],
   AS_HELP_STRING(
     [--with-sphinx-python=SHEBANG],
@@ -165,8 +185,8 @@ AC_ARG_WITH([sphinx-python],
 # the name of a program in $PATH. A prior macro such as AX_WITH_PROG can be
 # used to ensure this condition.
 #
-# If ${!1} is an absolute path, and that file isn't executable, error out. If
-# it's something other than an absolute path, assume it's the name of a
+# If ${!1} is an absolute path, and that file isn’t executable, error out. If
+# it’s something other than an absolute path, assume it’s the name of a
 # program in $PATH; if not, the behavior is undefined but not good (FIXME).
 #
 # Post-conditions:
@@ -216,15 +236,15 @@ AC_PROG_CC
 # Set up CFLAGS.
 ch_cflags='-std=c99 -Wall'
 AS_IF([test -n "$lib_libsquashfuse"],
-      [ch_cflags+=" -I$inc_libsquashfuse -L$lib_libsquashfuse"
-       # Without this, clang fails with "error: argument unused during
-       # compilation" on the -L. GCC ignores it.
-       ch_cflags+=' -Wno-unused-command-line-argument'])
+      [ch_cflags="$ch_cflags -I$inc_libsquashfuse -L$lib_libsquashfuse"
+       # Without this, clang fails with “error: argument unused during
+       # compilation” on the -L. GCC ignores it.
+       ch_cflags="$ch_cflags -Wno-unused-command-line-argument"])
 AS_IF([test $use_werror = yes],
-      [ch_cflags+=' -Werror'])
+      [ch_cflags="$ch_cflags -Werror"])
 
 AX_CHECK_COMPILE_FLAG([$ch_cflags], [
-  CFLAGS+=" $ch_cflags"
+  CFLAGS="$CFLAGS $ch_cflags"
 ], [
   AC_MSG_ERROR([no suitable C99 compiler found])
 ])
@@ -237,7 +257,7 @@ AS_IF([test "$CC" = icc],
 # Only ch-run needs any kind of interesting library stuff; this variable holds
 # the library arguments we need. This also requires us to use AC_CHECK_LIB
 # instead of the (recommended by docs) AC_SEARCH_LIBS, because that adds
-# things to LIBS, which we don't want because it's applied to all executables.
+# things to LIBS, which we don’t want because it’s applied to all executables.
 CH_RUN_LIBS=
 
 # asprintf(3)
@@ -282,7 +302,7 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([[
      [CH_RUN_LIBS="-largp $CH_RUN_LIBS"],
      [AC_MSG_ERROR([argp_parse(3) not found; please report this bug])])])
 
-# pthreads; needed for "ch-run --join".
+# pthreads; needed for “ch-run --join”.
 AX_PTHREAD
 
 # POSIX IPC lives in librt.
@@ -324,6 +344,41 @@ AC_CHECK_DECL(FNM_EXTMATCH,
               [have_fnm_extmatch=no],
               [[#define _GNU_SOURCE
                 #include <fnmatch.h>]])
+
+# Should we build seccomp?
+AC_MSG_CHECKING([for seccomp filter support])
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #define _GNU_SOURCE
+    #include <linux/filter.h>
+    #include <linux/seccomp.h>
+    #include <linux/unistd.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <sys/prctl.h>
+
+    #define Z_(x)  if (x) { perror(NULL); exit(1); }
+
+    int main(void)
+    {
+       struct sock_filter f[] = { BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ALLOW) };
+       struct sock_fprog p = { 1, f };
+       Z_ (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0, 0));
+       Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p, 0, 0, 0));
+       return 0;
+    }
+  ]])],
+  [AC_MSG_RESULT([yes])
+   test_seccomp=yes],
+  [AC_MSG_RESULT([no])
+   test_seccomp=no],
+  [AC_MSG_ERROR([cross-compilation not supported])])
+AS_IF([test $test_seccomp = yes],
+      [AS_IF([test $want_seccomp = yes],
+             [have_seccomp=yes],   # works and =yes or not given
+             [have_seccomp=no])],  # works and =no
+      [AS_IF([test $need_seccomp = yes],
+             [have_seccomp=yes],   # doesn’t work and =yes (build anyway)
+             [have_seccomp=no])])  # doesn’t work and =no or not given
 
 
 ### SquashFS #################################################################
@@ -395,8 +450,8 @@ AS_CASE([$python],
 CH_CHECK_VERSION([PYTHON], [$vmin_python],
                  [--version | head -1 | cut -d' ' -f2])
 
-# Python module "requests"
-vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
+# Python module “requests”
+vmin_requests=2.6.0  # CentOS 7; FIXME: haven’t actually tested this
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for requests module])
   cat <<EOF | $PYTHON_SHEBANG
@@ -415,8 +470,8 @@ EOF
 ])
 
 # Check for bundled Lark; we do not verify or report version. Note this
-# assumes that $PWD is the top of the source tree. I don't believe anything
-# else is supported (see issue #820), but it's brittle.
+# assumes that $PWD is the top of the source tree. I don’t believe anything
+# else is supported (see issue #820), but it’s brittle.
 AC_MSG_CHECKING([for bundled Lark module])
 AS_IF([test -e ./lib/lark-*.dist-info],
       [lark_status=bundled],
@@ -434,7 +489,7 @@ CH_CHECK_VERSION([GIT], [$vmin_git], [--version | cut -d' ' -f3])
 # DOT
 vmin_dot=2.30.1
 AC_CHECK_PROG([DOT], [dot], [dot])
-CH_CHECK_VERSION([DOT], [$vmin_dot], [dot -V |& cut -d' ' -f5])
+CH_CHECK_VERSION([DOT], [$vmin_dot], [dot -V 2>&1 | cut -d' ' -f5])
 
 # git2dot
 vmin_git2dot=0.8.3
@@ -450,7 +505,7 @@ AX_WITH_PROG([SPHINX], [sphinx-build])
 CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
                  [--version | sed -E 's/sphinx-build //'])
 
-# Get the Sphinx Python. We don't care about version.
+# Get the Sphinx Python. We don’t care about version.
 AS_IF([test -n "$SPHINX"], [
   AS_IF([test -z "$sphinx_python"], [
     AC_MSG_CHECKING([for sphinx-build Python])
@@ -463,18 +518,18 @@ AS_IF([test -n "$SPHINX"], [
            AC_MSG_ERROR([--with-sphinx-python: must start with slash])])
 ])])
 
-# "docutils" module
+# “docutils” module
 vmin_docutils=0.14
 AS_IF([test -n "$SPHINX"], [
-  # Sphinx depends on docutils, so we don't need to check if the module exists
-  # before checking its version. (CH_CHECK_VERSION isn't smart enough to deal
+  # Sphinx depends on docutils, so we don’t need to check if the module exists
+  # before checking its version. (CH_CHECK_VERSION isn’t smart enough to deal
   # with Python being present but a module not.)
   DOCUTILS=$sphinx_python  # FIXME: output is confusing
   CH_CHECK_VERSION([DOCUTILS], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
 ], [DOCUTILS_VERSION_NOTE='moot b/c no sphinx-build'])
 
-# "sphinx-rtd-theme" module
+# “sphinx-rtd-theme” module
 vmin_rtd=0.2.4
 AS_IF([test -n "$SPHINX"], [
   AC_MSG_CHECKING([for sphinx_rtd_theme module])
@@ -545,7 +600,7 @@ AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
 CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
 
 # Bats
-vmin_bats=0.4.0
+vmin_bats=1.2.0
 AC_CHECK_PROG([BATS], [bats], [bats])
 CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
 
@@ -583,12 +638,12 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #      a. Replace the string "@foo@" with the value of foo anywhere it
 #         appears.
 #
-#      b. Set the Make variable foo to the same value, i.e., add "foo = @foo@"
+#      b. Set the Make variable foo to the same value, i.e., add “foo = @foo@”
 #         which is then substituted as in item 1.
 #
 #      So this is how you transfer a variable from configure to Make.
 #
-#   2. AC_SUBST_NOTMAKE(foo) does only (a).
+#   2. AC_SUBST_NOTMAKE(foo) does only 1a.
 #
 #   3. AM_CONDITIONAL(foo, test) creates a variable for use in Automake
 #      conditionals. E.g. if you say in configure.ac:
@@ -603,13 +658,13 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #            ... baz ...
 #        endif
 #
-#      then if the configure variable $foo is "yes", lines "... bar ..." will
-#      be placed in the Makefile; otherwise, "... baz ..." will be included.
+#      then if the configure variable $foo is “yes”, lines “... bar ...” will
+#      be placed in the Makefile; otherwise, “... baz ...” will be included.
 #
 #      This is how you include and exclude portions of the Makefile.am from
 #      the output Makefile. It *does not* create a Make variable.
 #
-#   4. AC_DEFINE(foo, value, comment) #define's the preprocessor symbol foo to
+#   4. AC_DEFINE(foo, value, comment) #define’s the preprocessor symbol foo to
 #      value in config.h. (Supposedly value and comment are optional but I got
 #      warnings doing that.) So this is how you make configure values
 #      available in C code (as macros, not variables). Typically you would
@@ -617,7 +672,7 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #      true or false (which would require #if).
 #
 #   5. AC_DEFINE_UNQUOTES adds some extra transformations to the above. I
-#      didn't quite follow.
+#      didn’t quite follow.
 #
 # Below are all the variables we want available outside configure.
 
@@ -635,6 +690,8 @@ AC_SUBST([SPHINX])
 
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
+AS_IF([test $have_seccomp = yes],
+      [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
@@ -802,6 +859,10 @@ Building Charliecloud
     libfuse3 ... ${have_libfuse3}
     libsquashfuse_ll ... ${have_libsquashfuse_ll}
     ll.h header ... ${have_ll_h}
+
+  fake system calls with seccomp(2): ${have_seccomp}
+    enabled ... ${msg_seccomp}
+    tested working ... ${test_seccomp}
 
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}

@@ -13,36 +13,42 @@ import sys
 
 import charliecloud as ch
 import build_cache as bu
-import image as im
-import fakeroot
-import pull
 import filesystem as fs
+import force
+import image as im
+import pull
 
 
 ## Globals ##
 
+# ARG values that are set before FROM.
+argfrom = {}
+
 # Namespace from command line arguments. FIXME: be more tidy about this ...
 cli = None
 
-# Fakeroot configuration (initialized during FROM).
-fakeroot_config = None
+# --force injector object (initialized to something meaningful during FROM).
+forcer = None
 
 # Images that we are building. Each stage gets its own image. In this
 # dictionary, an image appears exactly once or twice. All images appear with
-# an int key counting stages up from zero. Images with a name (e.g., "FROM ...
-# AS foo") have a second string key of the name.
+# an int key counting stages up from zero. Images with a name (e.g., “FROM ...
+# AS foo”) have a second string key of the name.
 images = dict()
 # Number of stages. This is obtained by counting FROM instructions in the
 # parse tree, so we can use it for error checking.
 image_ct = None
 
-# ARG values that are set before FROM.
-argfrom = {}
 
 ## Imports not in standard library ##
 
 # See charliecloud.py for the messy import of this.
 lark = im.lark
+
+
+## Exceptions ##
+
+class Instruction_Ignored(Exception): pass
 
 
 ## Main ##
@@ -52,10 +58,6 @@ def main(cli_):
    # CLI namespace. :P
    global cli
    cli = cli_
-
-   # Check argument validity.
-   if (cli.force and cli.no_force_detect):
-      ch.FATAL("--force and --no-force-detect are incompatible")
 
    # Infer input file if needed.
    if (cli.file is None):
@@ -86,6 +88,28 @@ def main(cli_):
       cli.tag = re.sub(r"[^a-z0-9_.-]", "", cli.tag.lower())
       ch.INFO("inferred image name: %s" % cli.tag)
 
+   # --force and friends.
+   if (cli.force_cmd and cli.force == "fakeroot"):
+      ch.FATAL("--force-cmd and --force=fakeroot are incompatible")
+   if (not cli.force_cmd):
+      cli.force_cmd = force.FORCE_CMD_DEFAULT
+   else:
+      cli.force = "seccomp"
+      # convert cli.force_cmd to parsed dict
+      force_cmd = dict()
+      for line in cli.force_cmd:
+         (cmd, args) = force.force_cmd_parse(line)
+         force_cmd[cmd] = args
+      cli.force_cmd = force_cmd
+   ch.VERBOSE("force mode: %s" % cli.force)
+   if (cli.force == "seccomp"):
+      for (cmd, args) in cli.force_cmd.items():
+         ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
+   if (    cli.force == "seccomp"
+       and ch.cmd([ch.CH_BIN + "/ch-run", "--feature=seccomp"],
+                  fail_ok=True) != 0):
+      ch.FATAL("ch-run was not built with seccomp(2) support")
+
    # Deal with build arguments.
    def build_arg_get(arg):
       kv = arg.split("=")
@@ -100,8 +124,8 @@ def main(cli_):
    ch.DEBUG(cli)
 
    # Guess whether the context is a URL, and error out if so. This can be a
-   # typical looking URL e.g. "https://..." or also something like
-   # "git@github.com:...". The line noise in the second line of the regex is
+   # typical looking URL e.g. “https://...” or also something like
+   # “git@github.com:...”. The line noise in the second line of the regex is
    # to match this second form. Username and host characters from
    # https://tools.ietf.org/html/rfc3986.
    if (re.search(r"""  ^((git|git+ssh|http|https|ssh)://
@@ -113,17 +137,17 @@ def main(cli_):
 
    # Read input file.
    if (cli.file == "-" or cli.context == "-"):
-      text = ch.ossafe(sys.stdin.read, "can't read stdin")
+      text = ch.ossafe(sys.stdin.read, "can’t read stdin")
    elif (not os.path.isdir(cli.context)):
       ch.FATAL("context must be a directory: %s" % cli.context)
    else:
       fp = fs.Path(cli.file).open_("rt")
-      text = ch.ossafe(fp.read, "can't read: %s" % cli.file)
+      text = ch.ossafe(fp.read, "can’t read: %s" % cli.file)
       ch.close_(fp)
 
    # Parse it.
    parser = lark.Lark(im.GRAMMAR_DOCKERFILE, parser="earley",
-                      propagate_positions=True)
+                      propagate_positions=True, tree_class=im.Tree)
    # Avoid Lark issue #237: lark.exceptions.UnexpectedEOF if the file does not
    # end in newline.
    text += "\n"
@@ -131,7 +155,7 @@ def main(cli_):
       tree = parser.parse(text)
    except lark.exceptions.UnexpectedInput as x:
       ch.VERBOSE(x)  # noise about what was expected in the grammar
-      ch.FATAL("can't parse: %s:%d,%d\n\n%s"
+      ch.FATAL("can’t parse: %s:%d,%d\n\n%s"
                % (cli.file, x.line, x.column, x.get_context(text, 39)))
    ch.VERBOSE(tree.pretty())
 
@@ -141,11 +165,11 @@ def main(cli_):
 
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
-   image_ct = sum(1 for i in im.tree_children(tree, "from_"))
+   image_ct = sum(1 for i in tree.children_("from_"))
 
    # Traverse the tree and do what it says.
    #
-   # We don't actually care whether the tree is traversed breadth-first or
+   # We don’t actually care whether the tree is traversed breadth-first or
    # depth-first, but we *do* care that instruction nodes are visited in
    # order. Neither visit() nor visit_topdown() are documented as of
    # 2020-06-11 [1], but examining source code [2] shows that visit_topdown()
@@ -172,20 +196,16 @@ def main(cli_):
    if (len(cli.build_arg) != 0):
       ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
 
-   # Print summary & we're done.
+   # Print summary & we’re done.
    if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
    assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
    if (cli.force and ml.miss_ct != 0):
-      if (fakeroot_config.inject_ct == 0):
-         assert (not fakeroot_config.init_done)
-         ch.WARNING("--force specified, but nothing to do")
-      else:
-         ch.INFO("--force: init OK & modified %d RUN instructions"
-                 % fakeroot_config.inject_ct)
+      ch.INFO("--force=%s: modified %d RUN instructions"
+              % (cli.force, forcer.run_modified_ct))
    ch.INFO("grown in %d instructions: %s"
            % (ml.instruction_total_ct, ml.inst_prev.image))
-   # FIXME: remove when we're done encouraging people to use the build cache.
+   # FIXME: remove when we’re done encouraging people to use the build cache.
    if (isinstance(bu.cache, bu.Disabled_Cache)):
       ch.INFO("build slow? consider enabling the new build cache",
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
@@ -213,16 +233,23 @@ class Main_Loop(lark.Visitor):
                   or isinstance(inst, Instruction_No_Image))):
                ch.FATAL("first instruction must be ARG or FROM")
          inst.init(self.inst_prev)
+         # The three announce_maybe() calls are clunky but I couldn’t figure
+         # out how to avoid the repeats.
          try:
             self.miss_ct = inst.prepare(self.miss_ct)
+            inst.announce_maybe()
          except Instruction_Ignored:
+            inst.announce_maybe()
             return
+         except ch.Fatal_Error:
+            inst.announce_maybe()
+            raise
          if (inst.miss):
             if (self.miss_ct == 1):
                inst.checkout_for_build()
             try:
                inst.execute()
-            except SystemExit:  # fatal error
+            except ch.Fatal_Error:
                inst.rollback()
                raise
             if (inst.image_i >= 0):
@@ -236,7 +263,8 @@ class Main_Loop(lark.Visitor):
 
 class Instruction(abc.ABC):
 
-   __slots__ = ("commit_files",  # modified files; default: anything
+   __slots__ = ("announced_p",
+                "commit_files",  # modified files; default: anything
                 "git_hash",      # Git commit where sid was found
                 "image",
                 "image_alias",
@@ -250,25 +278,27 @@ class Instruction(abc.ABC):
 
    def __init__(self, tree):
       """Note: When this is called, all we know about the instruction is
-         what's in the parse tree. In particular, you must not call
+         what’s in the parse tree. In particular, you must not call
          ch.variables_sub() here."""
+      self.announced_p = False
       self.commit_files = set()
+      self.git_hash = bu.GIT_HASH_UNKNOWN
       self.lineno = tree.meta.line
       self.options = dict()
       # saving options with only 1 saved value
-      for st in im.tree_children(tree, "option"):
-         k = im.tree_terminal(st, "OPTION_KEY")
-         v = im.tree_terminal(st, "OPTION_VALUE")
+      for st in tree.children_("option"):
+         k = st.terminal("OPTION_KEY")
+         v = st.terminal("OPTION_VALUE")
          if (k in self.options):
             ch.FATAL("%3d %s: repeated option --%s"
                      % (self.lineno, self.str_name, k))
          self.options[k] = v
 
       # saving keypair options in a dictionary
-      for st in im.tree_children(tree, "option_keypair"):
-         k = im.tree_terminal(st, "OPTION_KEY")
-         s = im.tree_terminal(st, "OPTION_VAR")
-         v = im.tree_terminal(st, "OPTION_VALUE")
+      for st in tree.children_("option_keypair"):
+         k = st.terminal("OPTION_KEY")
+         s = st.terminal("OPTION_VAR")
+         v = st.terminal("OPTION_VALUE")
          # assuming all key pair options allow multiple options
          self.options.setdefault(k, {}).update({s: v})
 
@@ -307,7 +337,15 @@ class Instruction(abc.ABC):
 
    @property
    def miss(self):
-      return (self.git_hash is None)
+      """This is actually a three-valued property:
+
+           1. True  => miss
+           2. False => hit
+           3. None  => unknown or n/a"""
+      if (self.git_hash == bu.GIT_HASH_UNKNOWN):
+         return None
+      else:
+         return (self.git_hash is None)
 
    @property
    def shell(self):
@@ -338,10 +376,6 @@ class Instruction(abc.ABC):
       return self.__class__.__name__.split("_")[1].upper()
 
    @property
-   def str_log(self):
-      return ("%3s%s %s" % (self.lineno, self.status_char, self))
-
-   @property
    def workdir(self):
       return fs.Path(self.image.metadata["cwd"])
 
@@ -355,6 +389,12 @@ class Instruction(abc.ABC):
          options = " " + options
       return "%s%s %s" % (self.str_name, options, self.str_)
 
+   def announce_maybe(self):
+      "Announce myself if I haven’t already been announced."
+      if (not self.announced_p):
+         ch.INFO("%3s%s %s" % (self.lineno, self.status_char, self))
+         self.announced_p = True
+
    def chdir(self, path):
       if (path.is_absolute()):
          self.workdir = path
@@ -366,9 +406,8 @@ class Instruction(abc.ABC):
 
    def checkout_for_build(self, base_image=None):
       self.parent.checkout(base_image)
-      global fakeroot_config
-      fakeroot_config = fakeroot.detect(self.image.unpack_path,
-                                        cli.force, cli.no_force_detect)
+      global forcer
+      forcer = force.new(self.image.unpack_path, cli.force, cli.force_cmd)
 
    def commit(self):
       path = self.image.unpack_path
@@ -383,18 +422,14 @@ class Instruction(abc.ABC):
          all ready to go. Thus, the method is cache-ignorant."""
       pass
 
-   def ignore(self):
-      ch.INFO(self.str_log)
-      raise Instruction_Ignored()
-
    def init(self, parent):
-      """Initialize attributes defining this instruction's context, much of
+      """Initialize attributes defining this instruction’s context, much of
          which is not available until the previous instruction is processed.
          After this is called, the instruction has a valid image and parent
-         instruction, unless it's the first instruction, in which case
+         instruction, unless it’s the first instruction, in which case
          prepare() does the initialization."""
-      # Separate from prepare() because subclasses shouldn't need to override
-      # it. If a subclass doesn't like the result, it can just change things
+      # Separate from prepare() because subclasses shouldn’t need to override
+      # it. If a subclass doesn’t like the result, it can just change things
       # in prepare().
       self.parent = parent
       if (self.parent is None):
@@ -428,12 +463,25 @@ class Instruction(abc.ABC):
          Typically, subclasses will set up enough state for self.sid_input to
          be valid, then call super().prepare().
 
-         WARNING: Instructions that modify image metadata (at this writing,
-         ARG ENV FROM SHELL WORKDIR) must do so here, not in execute(), so
-         that metadata is available to late instructions even on cache hit."""
+         Gotchas:
+
+           1. Announcing the instruction: Subclasses that are fast can let the
+              caller announce. However, subclasses that consume non-trivial
+              time in prepare() should call announce_maybe() as soon as they
+              know hit/miss status.
+
+           2. Errors: Calling ch.FATAL() normally exits immediately, but here
+              this often happens before the instruction has been announced
+              (see issue #1486). Therefore, the caller catches Fatal_Error,
+              announces, and then re-raises.
+
+           3. Modifying image metadata: Instructions like ARG, ENV, FROM,
+              LABEL, SHELL, and WORKDIR must modify metadata here, not in
+              execute(), so it’s available to later instructions even on
+              cache hit."""
+
       self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
-      ch.INFO(self.str_log)
       return miss_ct + int(self.miss)
 
    def rollback(self):
@@ -451,11 +499,6 @@ class Instruction(abc.ABC):
    def unsupported_yet_fatal(self, msg, issue_no):
       ch.FATAL("not yet supported: issue #%d: %s %s"
                % (issue_no, self.str_name, msg))
-
-
-class Instruction_Ignored(Exception):
-   __slots__ = ()
-   pass
 
 
 class Instruction_Unsupported(Instruction):
@@ -477,7 +520,7 @@ class Instruction_Supported_Never(Instruction_Unsupported):
 
    def prepare(self, *args):
       self.unsupported_forever_warn("instruction")
-      self.ignore()
+      raise Instruction_Ignored()
 
 
 class Instruction_No_Image(Instruction):
@@ -496,7 +539,7 @@ class Instruction_No_Image(Instruction):
 
    @property
    def status_char(self):
-      return " "
+      return bu.cache.status_char(None)
 
    def checkout_for_build(self):
       pass
@@ -505,7 +548,6 @@ class Instruction_No_Image(Instruction):
       pass
 
    def prepare(self, miss_ct):
-      ch.INFO(self.str_log)
       return miss_ct + int(self.miss)
 
 
@@ -517,7 +559,7 @@ class Arg(Instruction):
    def __init__(self, *args):
       super().__init__(*args)
       self.commit_files.add(fs.Path("ch/metadata.json"))
-      self.key = im.tree_terminal(self.tree, "WORD", 0)
+      self.key = self.tree.terminal("WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
          del cli.build_arg[self.key]
@@ -560,9 +602,9 @@ class I_arg_equals(Arg):
    __slots__ = ()
 
    def value_default(self):
-      v = im.tree_terminal(self.tree, "WORD", 1)
+      v = self.tree.terminal("WORD", 1)
       if (v is None):
-         v = unescape(im.tree_terminal(self.tree, "STRING_QUOTED"))
+         v = unescape(self.tree.terminal("STRING_QUOTED"))
       return v
 
 
@@ -573,7 +615,7 @@ class Arg_First(Instruction_No_Image):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = im.tree_terminal(self.tree, "WORD", 0)
+      self.key = self.tree.terminal("WORD", 0)
       if (self.key in cli.build_arg):
          self.value = cli.build_arg[self.key]
          del cli.build_arg[self.key]
@@ -608,9 +650,9 @@ class I_arg_first_equals(Arg_First):
    __slots__ = ()
 
    def value_default(self):
-      v = im.tree_terminal(self.tree, "WORD", 1)
+      v = self.tree.terminal("WORD", 1)
       if (v is None):
-         v = unescape(im.tree_terminal(self.tree, "STRING_QUOTED"))
+         v = unescape(self.tree.terminal("STRING_QUOTED"))
       return v
 
 
@@ -623,7 +665,7 @@ class I_copy(Instruction):
    # bug-compatible with Docker but probably are not 100%. See the FAQ.
    #
    # Because of these weird semantics, none of this abstracted into a general
-   # copy function. I don't want people calling it except from here.
+   # copy function. I don’t want people calling it except from here.
 
    __slots__ = ("dst",
                 "dst_raw",
@@ -641,11 +683,10 @@ class I_copy(Instruction):
          except ValueError:
             pass
       # No subclasses, so check what parse tree matched.
-      if (im.tree_child(self.tree, "copy_shell") is not None):
-         args = list(im.tree_child_terminals(self.tree, "copy_shell", "WORD"))
-      elif (im.tree_child(self.tree, "copy_list") is not None):
-         args = list(im.tree_child_terminals(self.tree, "copy_list",
-                                             "STRING_QUOTED"))
+      if (self.tree.child("copy_shell") is not None):
+         args = list(self.tree.child_terminals("copy_shell", "WORD"))
+      elif (self.tree.child("copy_list") is not None):
+         args = list(self.tree.child_terminals("copy_list", "STRING_QUOTED"))
          for i in range(len(args)):
             args[i] = args[i][1:-1]  # strip quotes
       else:
@@ -659,7 +700,8 @@ class I_copy(Instruction):
 
    @property
    def str_(self):
-      return "%s -> %s" % (self.srcs_raw, repr(self.dst))
+      dst = repr(self.dst) if hasattr(self, "dst") else self.dst_raw
+      return "%s -> %s" % (self.srcs_raw, dst)
 
    def copy_src_dir(self, src, dst):
       """Copy the contents of directory src, named by COPY, either explicitly
@@ -669,7 +711,7 @@ class I_copy(Instruction):
          must exist already and be a directory. Unlike subdirectories, the
          metadata of dst will not be altered to match src."""
       def onerror(x):
-         ch.FATAL("can't scan directory: %s: %s" % (x.filename, x.strerror))
+         ch.FATAL("can’t scan directory: %s: %s" % (x.filename, x.strerror))
       # Use Path objects in this method because the path arithmetic was
       # getting too hard with strings.
       src = src.resolve()  # alternative to os.path.realpath()
@@ -680,8 +722,8 @@ class I_copy(Instruction):
       for (dirpath, dirnames, filenames) in ch.walk(src, onerror=onerror):
          subdir = dirpath.relative_to(src)
          dst_dir = dst // subdir
-         # dirnames can contain symlinks, which we handle as files, so we'll
-         # rebuild it; the walk will not descend into those "directories".
+         # dirnames can contain symlinks, which we handle as files, so we’ll
+         # rebuild it; the walk will not descend into those “directories”.
          dirnames2 = dirnames.copy()  # shallow copy
          dirnames[:] = list()         # clear in place
          for d in dirnames2:
@@ -694,21 +736,21 @@ class I_copy(Instruction):
                continue
             else:
                dirnames.append(d)   # directory, descend into later
-            # If destination exists, but isn't a directory, remove it.
+            # If destination exists, but isn’t a directory, remove it.
             if (os.path.exists(dst_path)):
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   ch.TRACE("dst_path exists and is a directory")
                else:
                   ch.TRACE("dst_path exists, not a directory, removing")
                   dst_path.unlink_()
-            # If destination directory doesn't exist, create it.
+            # If destination directory doesn’t exist, create it.
             if (not os.path.exists(dst_path)):
                ch.TRACE("mkdir dst_path")
-               ch.ossafe(os.mkdir, "can't mkdir: %s" % dst_path, dst_path)
+               ch.ossafe(os.mkdir, "can’t mkdir: %s" % dst_path, dst_path)
             # Copy metadata, now that we know the destination exists and is a
             # directory.
             ch.ossafe(shutil.copystat,
-                      "can't copy metadata: %s -> %s" % (src_path, dst_path),
+                      "can’t copy metadata: %s -> %s" % (src_path, dst_path),
                       src_path, dst_path, follow_symlinks=False)
          for f in filenames:
             src_path = dirpath // f
@@ -716,7 +758,7 @@ class I_copy(Instruction):
             ch.TRACE("file or symlink via copy2: %s -> %s"
                       % (src_path, dst_path))
             if (not (os.path.isfile(src_path) or os.path.islink(src_path))):
-               ch.FATAL("can't COPY: unknown file type: %s" % src_path)
+               ch.FATAL("can’t COPY: unknown file type: %s" % src_path)
             if (os.path.exists(dst_path)):
                ch.TRACE("destination exists, removing")
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
@@ -750,8 +792,8 @@ class I_copy(Instruction):
 
    def dest_realpath(self, unpack_path, dst):
       """Return the canonicalized version of path dst within (canonical) image
-         path unpack_path. We can't use os.path.realpath() because if dst is
-         an absolute symlink, we need to use the *image's* root directory, not
+         path unpack_path. We can’t use os.path.realpath() because if dst is
+         an absolute symlink, we need to use the *image’s* root directory, not
          the host. Thus, we have to resolve symlinks manually."""
       dst_canon = unpack_path
       dst_parts = list(reversed(dst.parts))  # easier to operate on end of list
@@ -759,7 +801,7 @@ class I_copy(Instruction):
       while (len(dst_parts) > 0):
          iter_ct += 1
          if (iter_ct > 100):  # arbitrary
-            ch.FATAL("can't COPY: too many path components")
+            ch.FATAL("can’t COPY: too many path components")
          ch.TRACE("current destination: %d %s" % (iter_ct, dst_canon))
          #ch.TRACE("parts remaining: %s" % dst_parts)
          part = dst_parts.pop()
@@ -795,7 +837,7 @@ class I_copy(Instruction):
       ch.VERBOSE("destination, canonical: %s" % dst_canon)
       if (not os.path.commonpath([dst_canon, unpack_canon])
               .startswith(str(unpack_canon))):
-         ch.FATAL("can't COPY: destination not in image: %s" % dst_canon)
+         ch.FATAL("can’t COPY: destination not in image: %s" % dst_canon)
       # Create the destination directory if needed.
       if (   self.dst.endswith("/")
           or len(self.srcs) > 1
@@ -803,7 +845,7 @@ class I_copy(Instruction):
          if (not dst_canon.exists()):
             dst_canon.mkdirs()
          elif (not dst_canon.is_dir()):  # not symlink b/c realpath()
-            ch.FATAL("can't COPY: not a directory: %s" % dst_canon)
+            ch.FATAL("can’t COPY: not a directory: %s" % dst_canon)
       if (dst_canon.parent.exists()):
          if (not dst_canon.parent.is_dir()):
             ch.FATAL("can’t COPY: not a directory: %s" % dst_canon.parent)
@@ -816,7 +858,7 @@ class I_copy(Instruction):
          elif (src.is_dir()):
             self.copy_src_dir(src, dst_canon)
          else:
-            ch.FATAL("can't COPY: unknown file type: %s" % src)
+            ch.FATAL("can’t COPY: unknown file type: %s" % src)
 
    def prepare(self, miss_ct):
       def stat_bytes(path, links=False):
@@ -825,9 +867,9 @@ class I_copy(Instruction):
                  + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.
       if (cli.context == "-" and self.from_ is None):
-         ch.FATAL("can't COPY: no context because \"-\" given")
+         ch.FATAL("no context because “-” given")
       if (len(self.srcs_raw) < 1):
-         ch.FATAL("can't COPY: must specify at least one source")
+         ch.FATAL("must specify at least one source")
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
@@ -838,18 +880,18 @@ class I_copy(Instruction):
          context = cli.context
       else:
          if (self.from_ == self.image_i or self.from_ == self.image_alias):
-            ch.FATAL("COPY --from: stage %s is the current stage" % self.from_)
+            ch.FATAL("--from: stage %s is the current stage" % self.from_)
          if (not self.from_ in images):
             # FIXME: Would be nice to also report if a named stage is below.
             if (isinstance(self.from_, int) and self.from_ < image_ct):
                if (self.from_ < 0):
-                  ch.FATAL("COPY --from: invalid negative stage index %d"
+                  ch.FATAL("--from: invalid negative stage index %d"
                            % self.from_)
                else:
-                  ch.FATAL("COPY --from: stage %d does not exist yet"
+                  ch.FATAL("--from: stage %d does not exist yet"
                            % self.from_)
             else:
-               ch.FATAL("COPY --from: stage %s does not exist" % self.from_)
+               ch.FATAL("--from: stage %s does not exist" % self.from_)
          context = images[self.from_].unpack_path
       context_canon = os.path.realpath(context)
       ch.VERBOSE("context: %s" % context)
@@ -859,20 +901,20 @@ class I_copy(Instruction):
          # glob can’t take Path
          matches = [fs.Path(i) for i in glob.glob("%s/%s" % (context, src))]
          if (len(matches) == 0):
-            ch.FATAL("can't copy: source file not found: %s" % src)
+            ch.FATAL("source file not found: %s" % src)
          for i in matches:
             self.srcs.append(i)
             ch.VERBOSE("source: %s" % i)
       # Expand destination.
       self.dst = ch.variables_sub(self.dst_raw, self.env_build)
-      # Validate sources are within context directory. (Can't convert to
+      # Validate sources are within context directory. (Can’t convert to
       # canonical paths yet because we need the source path as given.)
       for src in self.srcs:
          src_canon = src.resolve()
          if (not os.path.commonpath([src_canon, context_canon])
                  .startswith(context_canon)): # no clear substitute for
                                               # commonpath in pathlib
-            ch.FATAL("can't COPY from outside context: %s" % src)
+            ch.FATAL("can’t copy from outside context: %s" % src)
       # Gather metadata for hashing.
       # FIXME: Locale issues related to sorting?
       self.src_metadata = bytearray()
@@ -894,11 +936,11 @@ class I_directive(Instruction_Supported_Never):
 
    @property
    def str_name(self):
-      return "#%s" % im.tree_terminal(self.tree, "DIRECTIVE_NAME")
+      return "#%s" % self.tree.terminal("DIRECTIVE_NAME")
 
    def prepare(self, *args):
       ch.WARNING("not supported, ignored: parser directives")
-      self.ignore()
+      raise Instruction_Ignored()
 
 
 class Env(Instruction):
@@ -933,10 +975,10 @@ class I_env_equals(Env):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = im.tree_terminal(self.tree, "WORD", 0)
-      self.value = im.tree_terminal(self.tree, "WORD", 1)
+      self.key = self.tree.terminal("WORD", 0)
+      self.value = self.tree.terminal("WORD", 1)
       if (self.value is None):
-         self.value = im.tree_terminal(self.tree, "STRING_QUOTED")
+         self.value = self.tree.terminal("STRING_QUOTED")
 
 
 class I_env_space(Env):
@@ -945,14 +987,56 @@ class I_env_space(Env):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.key = im.tree_terminal(self.tree, "WORD")
-      self.value = im.tree_terminals_cat(self.tree, "LINE_CHUNK")
+      self.key = self.tree.terminal("WORD")
+      self.value = self.tree.terminals_cat("LINE_CHUNK")
+
+
+class Label(Instruction):
+
+   __slots__ = ("key",
+                "value")
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.commit_files |= {ch.Path("ch/metadata.json")}
+
+   @property
+   def str_(self):
+      return "%s='%s'" % (self.key, self.value)
+
+   def prepare(self, *args):
+      self.value = ch.variables_sub(unescape(self.value), self.env_build)
+      self.image.metadata["labels"][self.key] = self.value
+      return super().prepare(*args)
+
+
+class I_label_equals(Label):
+
+   __slots__ = ()
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.tree.terminal("WORD", 0)
+      self.value = self.tree.terminal("WORD", 1)
+      if (self.value is None):
+         self.value = self.tree.terminal("STRING_QUOTED")
+
+
+class I_label_space(Label):
+
+   __slots__ = ()
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.tree.terminal("WORD")
+      self.value = self.tree.terminals_cat("LINE_CHUNK")
 
 
 class I_from_(Instruction):
 
    __slots__ = ("alias",
-                "base_image")
+                "base_image",
+                "base_text")
 
    def __init__(self, *args):
       super().__init__(*args)
@@ -963,8 +1047,12 @@ class I_from_(Instruction):
 
    @property
    def str_(self):
-      alias = " AS %s" % self.alias if self.alias else ""
-      return "%s%s" % (self.base_image.ref, alias)
+      if (hasattr(self, "base_image")):
+         base_image = str(self.base_image.ref)
+      else:
+         # Initialization failed, but we want to print *something*.
+         base_image = self.base_text
+      return base_image + ((" AS " + self.alias) if self.alias else "")
 
    def checkout_for_build(self):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
@@ -980,13 +1068,9 @@ class I_from_(Instruction):
       # FROM is special because its preparation involves opening a new stage
       # and closing the previous if there was one. Because of this, the actual
       # parent is the last instruction of the base image.
-      #
-      image_ref = im.Reference(
-         im.tree_child_terminals_cat(self.tree, "image_ref", "IMAGE_REF"),
-         argfrom)
-      self.base_image = im.Image(image_ref)
-      self.alias = im.tree_child_terminal(self.tree, "from_alias",
-                                          "IR_PATH_COMPONENT")
+      self.base_text = self.tree.child_terminals_cat("image_ref", "IMAGE_REF")
+      self.alias = self.tree.child_terminal("from_alias", "IR_PATH_COMPONENT")
+      self.base_image = im.Image(im.Reference(self.base_text, argfrom))
       # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
@@ -1014,8 +1098,8 @@ class I_from_(Instruction):
          ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
       # Close previous stage if needed.
       if (miss_ct == 0 and self.image_i > 0):
-         # While there haven't been any misses so far, we do need to check out
-         # the previous stage (a) to read its metadata and (b) in case there's
+         # While there haven’t been any misses so far, we do need to check out
+         # the previous stage (a) to read its metadata and (b) in case there’s
          # a COPY later. This will still be fast most of the time since the
          # correct branch is likely to be checked out already.
          self.parent.checkout()
@@ -1023,12 +1107,13 @@ class I_from_(Instruction):
       # At this point any meaningful parent of FROM, e.g., previous stage, has
       # been closed; thus, act as own parent.
       self.parent = self
-      # Pull base image if needed.
+      # Pull base image if needed. This tells us hit/miss.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       unpack_no_git = (    self.base_image.unpack_exist_p
                        and not self.base_image.unpack_cache_linked)
-      ch.INFO(self.str_log)  # announce before we start pulling
-      # FIXME: shouldn't know or care whether build cache is enabled here.
+      # Announce (before we start pulling).
+      self.announce_maybe()
+      # FIXME: shouldn’t know or care whether build cache is enabled here.
       if (self.miss):
          if (unpack_no_git):
             # Use case is mostly images built by old ch-image still in storage.
@@ -1056,34 +1141,33 @@ class Run(Instruction):
 
    __slots__ = ("cmd")
 
-   # FIXME: This causes spurious misses because it adds the force bit to *all*
-   # RUN instructions, not just those that actually were modified (i.e, any
-   # RUN instruction will miss the equivalent RUN with --force inverted). But
-   # we don't know know if an instruction needs modifications until the result
-   # is checked out, which happens after we check the cache. See issue #FIXME.
    @property
    def str_name(self):
-      return super().str_name + (".F" if cli.force else "")
+      # Can’t get this from the forcer object because it might not have been
+      # initialized yet.
+      if (cli.force is None):
+         tag = ""
+      elif (cli.force == "fakeroot"):
+         # FIXME: This causes spurious misses because it adds the force tag to
+         # *all* RUN instructions, not just those that actually were modified
+         # (i.e, any RUN instruction will miss the equivalent RUN without
+         # --force=fakeroot). But we don’t know know if an instruction needs
+         # modifications until the result is checked out, which happens after
+         # we check the cache. See issue #1339.
+         tag = ".F"
+      elif (cli.force == "seccomp"):
+         tag = ".S"
+      else:
+         assert False, "unreachable code reached"
+      return super().str_name + tag
 
    def execute(self):
       rootfs = self.image.unpack_path
-      fakeroot_config.init_maybe(rootfs, self.cmd, self.env_build)
-      cmd = fakeroot_config.inject_run(self.cmd)
+      cmd = forcer.run_modified(self.cmd, self.env_build)
       exit_code = ch.ch_run_modify(rootfs, cmd, self.env_build, self.workdir,
-                                   cli.bind, fail_ok=True)
+                                   cli.bind, forcer.ch_run_args, fail_ok=True)
       if (exit_code != 0):
-         msg = "build failed: RUN command exited with %d" % exit_code
-         if (cli.force):
-            if (isinstance(fakeroot_config, fakeroot.Fakeroot_Noop)):
-               ch.FATAL(msg, "--force specified, but no suitable config found")
-            else:
-               ch.FATAL(msg)  # --force inited OK but the build still failed
-         elif (not cli.no_force_detect):
-            if (fakeroot_config.init_done):
-               ch.FATAL(msg, "--force may fix it")
-            else:
-               ch.FATAL(msg, "current version of --force wouldn't help")
-         assert False, "unreachable code reached"
+         ch.FATAL("build failed: RUN command exited with %d" % exit_code)
 
 
 class I_run_exec(Run):
@@ -1096,7 +1180,7 @@ class I_run_exec(Run):
 
    def prepare(self, *args):
       self.cmd = [    ch.variables_sub(unescape(i), self.env_build)
-                  for i in im.tree_terminals(self.tree, "STRING_QUOTED")]
+                  for i in self.tree.terminals("STRING_QUOTED")]
       return super().prepare(*args)
 
 
@@ -1110,10 +1194,10 @@ class I_run_shell(Run):
 
    @property
    def str_(self):
-      return self._str_  # can't replace abstract property with attribute
+      return self._str_  # can’t replace abstract property with attribute
 
    def prepare(self, *args):
-      cmd = im.tree_terminals_cat(self.tree, "LINE_CHUNK")
+      cmd = self.tree.terminals_cat("LINE_CHUNK")
       self.cmd = self.shell + [cmd]
       self._str_ = cmd
       return super().prepare(*args)
@@ -1131,7 +1215,7 @@ class I_shell(Instruction):
 
    def prepare(self, *args):
       self.shell = [    ch.variables_sub(unescape(i), self.env_build)
-                    for i in im.tree_terminals(self.tree, "STRING_QUOTED")]
+                    for i in self.tree.terminals("STRING_QUOTED")]
       return super().prepare(*args)
 
 
@@ -1148,7 +1232,7 @@ class I_workdir(Instruction):
 
    def prepare(self, *args):
       self.path = fs.Path(ch.variables_sub(
-         im.tree_terminals_cat(self.tree, "LINE_CHUNK"), self.env_build))
+         self.tree.terminals_cat("LINE_CHUNK"), self.env_build))
       self.chdir(self.path)
       return super().prepare(*args)
 
@@ -1159,7 +1243,7 @@ class I_uns_forever(Instruction_Supported_Never):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.name = im.tree_terminal(self.tree, "UNS_FOREVER")
+      self.name = self.tree.terminal("UNS_FOREVER")
 
    @property
    def str_name(self):
@@ -1173,11 +1257,10 @@ class I_uns_yet(Instruction_Unsupported):
 
    def __init__(self, *args):
       super().__init__(*args)
-      self.name = im.tree_terminal(self.tree, "UNS_YET")
+      self.name = self.tree.terminal("UNS_YET")
       self.issue_no = { "ADD":         782,
                         "CMD":         780,
                         "ENTRYPOINT":  780,
-                        "LABEL":       781,
                         "ONBUILD":     788 }[self.name]
 
    @property
@@ -1186,7 +1269,7 @@ class I_uns_yet(Instruction_Unsupported):
 
    def prepare(self, *args):
       self.unsupported_yet_warn("instruction", self.issue_no)
-      self.ignore()
+      raise Instruction_Ignored()
 
 
 ## Supporting classes ##
@@ -1197,13 +1280,13 @@ class Environment:
 
    # FIXME:
    # - problem:
-   #   1. COPY (at least) needs a valid build environment to figure out if it's
+   #   1. COPY (at least) needs a valid build environment to figure out if it’s
    #      a hit or miss, which happens in prepare()
-   #   2. no files from the image are available in prepare(), so we can't read
+   #   2. no files from the image are available in prepare(), so we can’t read
    #      image metadata then
    #      - could get it from Git if needed, but that seems complicated
    # - valid during prepare() and execute() but not __init__()
-   #   - in particular, don't ch.variables_sub() in __init__()
+   #   - in particular, don’t ch.variables_sub() in __init__()
    # - instructions that update it need to change the env object in prepare()
    #   - WORKDIR SHELL ARG ENV
    #   - FROM
@@ -1218,8 +1301,8 @@ class Environment:
 def unescape(sl):
    # FIXME: This is also ugly and should go in the grammar.
    #
-   # The Dockerfile spec does not precisely define string escaping, but I'm
-   # guessing it's the Go rules. You will note that we are using Python rules.
+   # The Dockerfile spec does not precisely define string escaping, but I’m
+   # guessing it’s the Go rules. You will note that we are using Python rules.
    # This is wrong but close enough for now (see also gripe in previous
    # paragraph).
    if (    not sl.startswith('"')                          # no start quote
@@ -1227,3 +1310,6 @@ def unescape(sl):
       sl = '"%s"' % sl
    assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
    return ast.literal_eval(sl)
+
+
+#  LocalWords:  earley topdown iter lineno sid keypair dst srcs pathlib

@@ -14,9 +14,9 @@ import filesystem as fs
 
 ## Hairy Imports ##
 
-# Lark is bundled or provided by package dependencies, so assume it's always
-# importable. There used to be a conflicting package on PyPI called "lark",
-# but it's gone now [1]. However, verify the version we got.
+# Lark is bundled or provided by package dependencies, so assume it’s always
+# importable. There used to be a conflicting package on PyPI called “lark”,
+# but it’s gone now [1]. However, verify the version we got.
 #
 # [1]: https://github.com/lark-parser/lark/issues/505
 import lark
@@ -88,7 +88,7 @@ start: dockerfile
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( arg_first | directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
+?instruction: _WS? ( arg | copy | env | from_ | label | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
@@ -116,6 +116,11 @@ env_equals: WORD "=" ( WORD | STRING_QUOTED )
 from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref [ _WS from_alias ] _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
+label: "LABEL"i _WS ( label_space | label_equalses ) _NEWLINES
+label_space: WORD _WS _line
+label_equalses: label_equals ( _WS label_equals )*
+label_equals: WORD "=" ( WORD | STRING_QUOTED )
+
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
 run_shell: _line
@@ -128,7 +133,7 @@ uns_forever: UNS_FOREVER _WS _line _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
 uns_yet: UNS_YET _WS _line _NEWLINES
-UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "ONBUILD"i )
 
 /// Common ///
 
@@ -146,7 +151,7 @@ IMAGE_REF: /[A-Za-z0-9$:._\/-]+/
 GRAMMAR_IMAGE_REF = r"""
 // Note: Hostnames with no dot and no port get parsed as a hostname, which
 // is wrong; it should be the first path component. We patch this error later.
-// FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
+// FIXME: Supposedly this can be fixed with priorities, but I couldn’t get it
 // to work with brief trying.
 
 start: image_ref
@@ -194,7 +199,7 @@ class Image:
 
    @property
    def deleteable(self):
-      """True if it's OK to delete me, either my unpack directory (a) is at
+      """True if it’s OK to delete me, either my unpack directory (a) is at
          the expected location within the storage directory xor (b) is not not
          but it looks like an image; False otherwise."""
       if (self.unpack_path == ch.storage.unpack_base // self.unpack_path.name):
@@ -278,13 +283,13 @@ class Image:
          Important note: TarFile.extractall() extracts the given members in
          the order they are specified, so we need to preserve their order from
          the file, as returned by getmembers(). We also need to quickly remove
-         members we don't want from this sequence. Thus, we use the OrderedSet
+         members we don’t want from this sequence. Thus, we use the OrderedSet
          class defined in this module."""
       TT = collections.namedtuple("TT", ["fp", "members"])
       layers = collections.OrderedDict()
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
-      # Unpacking an empty layer doesn't accomplish anything, so ignore them.
+      # Unpacking an empty layer doesn’t accomplish anything, so ignore them.
       empty_cnt = 0
       for (i, path) in enumerate(layer_tars, start=1):
          lh = os.path.basename(path).split(".", 1)[0]
@@ -296,10 +301,11 @@ class Image:
          except tarfile.TarError as x:
             ch.FATAL("cannot open: %s: %s" % (path, x))
          if (lh in layers and len(members) > 0):
-            ch.FATAL("duplicate non-empty layer %s" % lh)
+            ch.WARNING("ignoring duplicate non-empty layer: %s" % lh_short)
          if (len(members) > 0):
             layers[lh] = TT(fp, members)
          else:
+            ch.WARNING("ignoring empty layer: %s" % lh_short)
             empty_cnt += 1
       ch.VERBOSE("skipped %d empty layers" % empty_cnt)
       return layers
@@ -314,12 +320,12 @@ class Image:
                         "history": list(),
                         "labels": dict(),
                         "shell": ["/bin/sh", "-c"],
-                        "volumes": list() }  # set isn't JSON-serializable
+                        "volumes": list() }  # set isn’t JSON-serializable
 
    def metadata_load(self, target_img=None):
       """Load metadata file, replacing the existing metadata object. If
-         metadata doesn't exist, warn and use defaults. If target_img is
-         non-None, use that image's metadata instead of self's."""
+         metadata doesn’t exist, warn and use defaults. If target_img is
+         non-None, use that image’s metadata instead of self’s."""
       if (target_img is not None):
          path = target_img.metadata_path
       else:
@@ -341,7 +347,7 @@ class Image:
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is
          meaningful to us, and add it to self.metadata. Ignore anything we
-         expect in config that's missing."""
+         expect in config that’s missing."""
       def get(*keys):
          d = config
          keys = list(keys)
@@ -369,7 +375,7 @@ class Image:
             try:
                (k,v) = line.split("=", maxsplit=1)
             except AttributeError:
-               ch.FATAL("can't parse config: bad Env line: %s" % line)
+               ch.FATAL("can’t parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
       # History.
       if ("history" not in config):
@@ -398,9 +404,9 @@ class Image:
       self.metadata_save()
 
    def metadata_save(self):
-      """Dump image's metadata to disk, including the main data structure but
+      """Dump image’s metadata to disk, including the main data structure but
          also all auxiliary files, e.g. ch/environment."""
-      # Adjust since we don't save everything.
+      # Adjust since we don’t save everything.
       metadata = copy.deepcopy(self.metadata)
       for k in ARGS_MAGIC:
          metadata["arg"].pop(k, None)
@@ -426,7 +432,7 @@ class Image:
    def tarballs_write(self, tarball_dir):
       """Write one uncompressed tarball per layer to tarball_dir. Return a
          sequence of tarball basenames, with the lowest layer first."""
-      # FIXME: Yes, there is only one layer for now and we'll need to update
+      # FIXME: Yes, there is only one layer for now and we’ll need to update
       # it when (if) we have multiple layers. But, I wanted the interface to
       # support multiple layers.
       base = "%s.tar" % self.ref.for_path
@@ -440,7 +446,7 @@ class Image:
          fp.add_(unpack_path, arcname=".")
          fp.close()
       except OSError as x:
-         ch.FATAL("can't write tarball: %s" % x.strerror)
+         ch.FATAL("can’t write tarball: %s" % x.strerror)
       return [base]
 
    def unpack(self, layer_tars, last_layer=None):
@@ -465,10 +471,10 @@ class Image:
          ch.VERBOSE("no image found: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
-            ch.FATAL("can't flatten: %s exists but is not a directory"
+            ch.FATAL("can’t flatten: %s exists but is not a directory"
                   % self.unpack_path)
          if (not self.deleteable):
-            ch.FATAL("can't flatten: %s exists but does not appear to be an image"
+            ch.FATAL("can’t flatten: %s exists but does not appear to be an image"
                      % self.unpack_path)
          ch.VERBOSE("removing image: %s" % self.unpack_path)
          t = ch.Timer()
@@ -481,11 +487,11 @@ class Image:
          ch.FATAL("image not found, can’t delete: %s" % self.ref)
       if (self.deleteable):
          ch.INFO("deleting image: %s" % self.ref)
-         self.unpack_path.chmod_min(0o700)
+         self.unpack_path.chmod_min()
          for (dir_, subdirs, _) in os.walk(self.unpack_path):
             # must fix as subdirs so we can traverse into them
             for subdir in subdirs:
-               (fs.Path(dir_) // subdir).chmod_min(0o700)
+               (fs.Path(dir_) // subdir).chmod_min()
          self.unpack_path.rmtree()
       else:
          ch.FATAL("storage directory seems broken: not an image: %s" % self.ref)
@@ -498,8 +504,8 @@ class Image:
       (self.unpack_path // "ch").mkdir_()
       (self.unpack_path // "ch/environment").file_ensure_exists()
       # Essential directories & mount points. Do nothing if something already
-      # exists, without dereferencing, in case it's a symlink, which will work
-      # for bind-mount later but won't resolve correctly now outside the
+      # exists, without dereferencing, in case it’s a symlink, which will work
+      # for bind-mount later but won’t resolve correctly now outside the
       # container (e.g. linuxcontainers.org images; issue #1015).
       #
       # WARNING: Keep in sync with shell scripts.
@@ -525,7 +531,7 @@ class Image:
             try:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
-               ch.FATAL("can't extract layer %d: %s" % (i, x.strerror))
+               ch.FATAL("can’t extract layer %d: %s" % (i, x.strerror))
 
    def validate_members(self, layers):
       ch.INFO("validating tarball members")
@@ -595,7 +601,7 @@ class Image:
                members.remove(m)
                continue
             # Discard anything under /dev. Docker puts regular files and
-            # directories in here on "docker export". Note leading slashes
+            # directories in here on “docker export”. Note leading slashes
             # already taken care of in TarFile.fix_member_path() above.
             if (re.search(r"^(\./)?dev/.", m.name)):
                ch.VERBOSE("ignoring member under /dev: %s" % m.name)
@@ -619,7 +625,7 @@ class Image:
       ignore_ct = 0
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          if (i > max_i): break
-         members2 = list(members)  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we’ll alter members
          for m in members2:
             if (ch.prefix_path(prefix, m.name)):
                ignore_ct += 1
@@ -635,7 +641,7 @@ class Image:
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          wo_ct = 0
          ig_ct = 0
-         members2 = list(members)  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we’ll alter members
          for m in members2:
             dir_ = os.path.dirname(m.name)
             filename = os.path.basename(m.name)
@@ -643,11 +649,11 @@ class Image:
                wo_ct += 1
                members.remove(m)
                if (filename == ".wh..wh..opq"):
-                  # "Opaque whiteout": remove contents of dir_.
+                  # “Opaque whiteout”: remove contents of dir_.
                   ch.DEBUG("found opaque whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1, dir_)
                else:
-                  # "Explicit whiteout": remove same-name file without ".wh.".
+                  # “Explicit whiteout”: remove same-name file without ".wh.".
                   ch.DEBUG("found explicit whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1,
                                                    dir_ + "/" + filename[4:])
@@ -685,8 +691,8 @@ class Reference:
                 "variables")
 
    # Reference parser object. Instantiating a parser took 100ms when we tested
-   # it, which means we can't really put it in a loop. But, at parse time,
-   # "lark" may refer to a dummy module (see above), so we can't populate the
+   # it, which means we can’t really put it in a loop. But, at parse time,
+   # “lark” may refer to a dummy module (see above), so we can’t populate the
    # parser here either. We use a class varible and populate it at the time of
    # first use.
    parser = None
@@ -742,7 +748,7 @@ class Reference:
    def parse(class_, s, variables):
       if (class_.parser is None):
          class_.parser = lark.Lark(GRAMMAR_IMAGE_REF, parser="earley",
-                                   propagate_positions=True)
+                                   propagate_positions=True, tree_class=Tree)
       s = s.replace("%", "/").replace("+", ":")
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       s = ch.variables_sub(s, variables)
@@ -757,7 +763,7 @@ class Reference:
             ch.FATAL("image ref syntax, char %d: %s" % (x.column, s), hint)
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
-         # doesn't have a column location.
+         # doesn’t have a column location.
          ch.FATAL("image ref syntax, at end: %s" % s, hint)
       ch.DEBUG(tree.pretty())
       return tree
@@ -828,21 +834,20 @@ fields:
       if (self.port is None): self.port = 443
       if (self.host == "registry-1.docker.io" and len(self.path) == 0):
          # FIXME: For Docker Hub only, images with no path need a path of
-         # "library" substituted. Need to understand/document the rules here.
+         # “library” substituted. Need to understand/document the rules here.
          self.path = ["library"]
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
    def from_tree(self, t):
-      self.host = tree_child_terminal(t, "ir_hostport", "IR_HOST")
-      self.port = tree_child_terminal(t, "ir_hostport", "IR_PORT")
+      self.host = t.child_terminal("ir_hostport", "IR_HOST")
+      self.port = t.child_terminal("ir_hostport", "IR_PORT")
       if (self.port is not None):
          self.port = int(self.port)
       self.path = [    ch.variables_sub(s, self.variables)
-                   for s in tree_child_terminals(t, "ir_path",
-                                                 "IR_PATH_COMPONENT")]
-      self.name = tree_child_terminal(t, "ir_name", "IR_PATH_COMPONENT")
-      self.tag = tree_child_terminal(t, "ir_tag", "IR_TAG")
-      self.digest = tree_child_terminal(t, "ir_digest", "HEX_STRING")
+                   for s in t.child_terminals("ir_path", "IR_PATH_COMPONENT")]
+      self.name = t.child_terminal("ir_name", "IR_PATH_COMPONENT")
+      self.tag = t.child_terminal("ir_tag", "IR_TAG")
+      self.digest = t.child_terminal("ir_digest", "HEX_STRING")
       for a in ("host", "port", "name", "tag", "digest"):
          setattr(self, a, ch.variables_sub(getattr(self, a), self.variables))
       # Resolve grammar ambiguity for hostnames w/o dot or port.
@@ -853,59 +858,62 @@ fields:
          self.host = None
 
 
-## Functions ##
+class Tree(lark.tree.Tree):
 
-def tree_child(tree, cname):
-   """Locate a descendant subtree named cname using breadth-first search and
-      return it. If no such subtree exists, return None."""
-   return next(tree_children(tree, cname), None)
+   def child(self, cname):
+      """Locate a descendant subtree named cname using breadth-first search
+         and return it. If no such subtree exists, return None."""
+      return next(self.children_(cname), None)
 
-def tree_child_terminal(tree, cname, tname, i=0):
-   """Locate a descendant subtree named cname using breadth-first search and
-      return its first child terminal named tname. If no such subtree exists,
-      or it doesn't have such a terminal, return None."""
-   st = tree_child(tree, cname)
-   if (st is not None):
-      return tree_terminal(st, tname, i)
-   else:
+   def child_terminal(self, cname, tname, i=0):
+      """Locate a descendant subtree named cname using breadth-first search
+         and return its first child terminal named tname. If no such subtree
+         exists, or it doesn’t have such a terminal, return None."""
+      st = self.child(cname)
+      if (st is not None):
+         return st.terminal(tname, i)
+      else:
+         return None
+
+   def child_terminals(self, cname, tname):
+      """Locate a descendant substree named cname using breadth-first search
+         and yield the values of its child terminals named tname. If no such
+         subtree exists, or it has no such terminals, yield empty sequence."""
+      for d in self.iter_subtrees_topdown():
+         if (d.data == cname):
+            return d.terminals(tname)
+      return []
+
+   def child_terminals_cat(self, cname, tname):
+      """Return the concatenated values of all child terminals named tname as
+         a string, with no delimiters. If none, return the empty string."""
+      return "".join(self.child_terminals(cname, tname))
+
+   def children_(self, cname):
+      "Yield children of tree named cname using breadth-first search."
+      for st in self.iter_subtrees_topdown():
+         if (st.data == cname):
+            yield st
+
+   def iter_subtrees_topdown(self, *args, **kwargs):
+      return super().iter_subtrees_topdown(*args, **kwargs)
+
+   def terminal(self, tname, i=0):
+      """Return the value of the ith child terminal named tname (zero-based),
+         or None if not found."""
+      for (j, t) in enumerate(self.terminals(tname)):
+         if (j == i):
+            return t
       return None
 
-def tree_child_terminals(tree, cname, tname):
-   """Locate a descendant substree named cname using breadth-first search and
-      yield the values of its child terminals named tname. If no such subtree
-      exists, or it has no such terminals, yield an empty sequence."""
-   for d in tree.iter_subtrees_topdown():
-      if (d.data == cname):
-         return tree_terminals(d, tname)
-   return []
+   def terminals(self, tname):
+      """Yield values of all child terminals named tname, or empty list if
+         none found."""
+      for j in self.children:
+         if (isinstance(j, lark.lexer.Token) and j.type == tname):
+            yield j.value
 
-def tree_child_terminals_cat(tree, cname, tname):
-   """Return the concatenated values of all child terminals named tname as a
-      string, with no delimiters. If none, return the empty string."""
-   return "".join(tree_child_terminals(tree, cname, tname))
-
-def tree_children(tree, cname):
-   "Yield children of tree named cname using breadth-first search."
-   for st in tree.iter_subtrees_topdown():
-      if (st.data == cname):
-         yield st
-
-def tree_terminal(tree, tname, i=0):
-   """Return the value of the ith child terminal named tname (zero-based), or
-      None if not found."""
-   for (j, t) in enumerate(tree_terminals(tree, tname)):
-      if (j == i):
-         return t
-   return None
-
-def tree_terminals(tree, tname):
-   """Yield values of all child terminals named tname, or empty list if none
-      found."""
-   for j in tree.children:
-      if (isinstance(j, lark.lexer.Token) and j.type == tname):
-         yield j.value
-
-def tree_terminals_cat(tree, tname):
-   """Return the concatenated values of all child terminals named tname as a
-      string, with no delimiters. If none, return the empty string."""
-   return "".join(tree_terminals(tree, tname))
+   def terminals_cat(self, tname):
+      """Return the concatenated values of all child terminals named tname as
+         a string, with no delimiters. If none, return the empty string."""
+      return "".join(self.terminals(tname))

@@ -6,7 +6,6 @@ load ../common
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
-
 @test 'symlink to image' {  # issue #50
     scope quick
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
@@ -35,13 +34,13 @@ EOF
 
 
 @test '/usr/bin/ch-ssh' {
-    # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".
+    # Note: --ch-ssh without /usr/bin/ch-ssh is in test “broken image errors”.
     scope quick
     ls -l "$ch_bin/ch-ssh"
     ch-run --ch-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
     ch-run --ch-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
-    # Test bind-mount by comparing size rather than e.g. "ch-ssh --version"
-    # because ch-ssh won't run on Alpine (issue #4).
+    # Test bind-mount by comparing size rather than e.g. “ch-ssh --version”
+    # because ch-ssh won’t run on Alpine (issue #4).
     host_size=$(stat -c %s "${ch_bin}/ch-ssh")
     guest_size=$(ch-run --ch-ssh "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
     echo "host: ${host_size}, guest: ${guest_size}"
@@ -139,7 +138,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "$PATH2" ]]
-    # if /bin isn't in $PATH, former is added to end
+    # if /bin isn’t in $PATH, former is added to end
     PATH2="$ch_bin:/usr/bin"
     echo "$PATH2"
     # shellcheck disable=SC2016
@@ -250,7 +249,7 @@ EOF
            "$ch_timg" \
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
 
-    # omit tmpfs at /home, which shouldn't be empty
+    # omit tmpfs at /home, which shouldn’t be empty
     ch-run "$ch_timg" -- cat /home/overmount-me
     # bind to /home without overmount
     ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
@@ -408,7 +407,7 @@ EOF
 
     # Quirk that is probably too obscure to put in the documentation: The
     # string containing only two straight quotes does not round-trip through
-    # "printenv" or "env", though it does round-trip through Bash "set":
+    # “printenv” or “env”, though it does round-trip through Bash “set”:
     #
     #   $ export foo="''"
     #   $ echo [$foo]
@@ -576,10 +575,10 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"can't open: /ch/environment: No such file or directory"* ]]
 
-    # Note: I'm not sure how to test an error during reading, i.e., getline(3)
-    # rather than fopen(3). Hence no test for "error reading".
+    # Note: I’m not sure how to test an error during reading, i.e., getline(3)
+    # rather than fopen(3). Hence no test for “error reading”.
 
-    # invalid line: missing '='
+    # invalid line: missing “=”
     echo 'FOO bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
@@ -598,7 +597,7 @@ EOF
 @test 'ch-run --set-env command line' {
     scope standard
 
-    # missing '''
+    # missing “'”
     # shellcheck disable=SC2086
     run ch-run --set-env=foo='$test:app' --env-no-expand -v "$ch_timg" -- /bin/true
     echo "$output"
@@ -811,11 +810,12 @@ EOF
 
     # -m option
     mountpt="${BATS_TMPDIR}/sqfs_tmpdir"
+    mountpt_real=$(realpath "$mountpt")
     [[ -e $mountpt ]] || mkdir "$mountpt"
     run ch-run -m "$mountpt" -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: ${mountpt}"* ]]
+    [[ $output = *"newroot: ${mountpt_real}"* ]]
     rmdir "$mountpt"
 
     # -m with non-sqfs img
@@ -839,7 +839,7 @@ EOF
     [[ $status -ne 0 ]]  # exits with status of 139
     [[ $output = *"mount point can't be empty string"* ]]
 
-    # mount point doesn't exist
+    # mount point doesn’t exist
     run ch-run -m /doesnotexist "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]  # exits with status of 139
@@ -849,14 +849,14 @@ EOF
     run ch-run -m ./fixtures/README "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'not a directory: ./fixtures/README'* ]]
+    [[ $output = *'not a directory: '*'/fixtures/README'* ]]
 
     # image is file but not sqfs
     run ch-run -vv ./fixtures/README -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
-    [[ $output = *'unknown image type: ./fixtures/README'* ]]
+    [[ $output = *'unknown image type: '*'/fixtures/README'* ]]
 
     # image is a broken sqfs
     sq_tmp="$BATS_TMPDIR"/b0rken.sqfs
@@ -893,7 +893,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
-    # For each required file, we want a correct error if it's missing.
+    # For each required file, we want a correct error if it’s missing.
     for f in $files; do
         echo "required: ${f}"
         rm "${img}/${f}"
@@ -907,7 +907,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each optional file, we want no error if it's missing.
+    # For each optional file, we want no error if it’s missing.
     for f in $files_optional; do
         echo "optional: ${f}"
         rm "${img}/${f}"
@@ -918,7 +918,7 @@ EOF
         [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
     done
 
-    # For all files, we want a correct error if it's not a regular file.
+    # For all files, we want a correct error if it’s not a regular file.
     for f in $files $files_optional; do
         echo "not a regular file: ${f}"
         rm "${img}/${f}"
@@ -933,7 +933,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each directory, we want a correct error if it's missing.
+    # For each directory, we want a correct error if it’s missing.
     for d in $dirs tmp; do
         echo "required: ${d}"
         rmdir "${img}/${d}"
@@ -946,7 +946,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each directory, we want a correct error if it's not a directory.
+    # For each directory, we want a correct error if it’s not a directory.
     for d in $dirs tmp; do
         echo "not a directory: ${d}"
         rmdir "${img}/${d}"
@@ -982,7 +982,7 @@ EOF
     echo "expected: ${r}"
     [[ $output =~ $r ]]
 
-    # default shouldn't care if /home is missing
+    # default shouldn’t care if /home is missing
     rmdir "${img}/home"
     run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
@@ -1018,19 +1018,19 @@ EOF
     gid_bad=8675310
 
     # UID
-    run ch-run -v --uid=$uid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --uid="$uid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
 
     # GID
-    run ch-run -v --gid=$gid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --gid="$gid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 
     # both
-    run ch-run -v --uid=$uid_bad --gid=$gid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --uid="$uid_bad" --gid="$gid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]

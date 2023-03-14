@@ -22,8 +22,8 @@ import traceback
 import filesystem as fs
 import registry as rg
 
-# Compatibility link. Sometimes we load pickled data from when Path was defined
-# in this file. This alias lets us still load such pickles. 
+# Compatibility link. Sometimes we load pickled data from when Path was
+# defined in this file. This alias lets us still load such pickles.
 Path = fs.Path
 
 
@@ -49,7 +49,7 @@ class Download_Mode(enum.Enum):
 
 ## Constants ##
 
-# Architectures. This maps the "machine" field returned by uname(2), also
+# Architectures. This maps the “machine” field returned by uname(2), also
 # available as "uname -m" and platform.machine(), into architecture names that
 # image registries use. It is incomplete (see e.g. [1], which is itself
 # incomplete) but hopefully includes most architectures encountered in
@@ -127,6 +127,10 @@ profile = None
 
 ## Exceptions ##
 
+class Fatal_Error(Exception):
+   def __init__(self, *args, **kwargs):
+      self.args = args
+      self.kwargs = kwargs
 class No_Fatman_Error(Exception): pass
 class Image_Unavailable_Error(Exception): pass
 
@@ -218,7 +222,7 @@ class ArgumentParser(argparse.ArgumentParser):
 class OrderedSet(collections.abc.MutableSet):
 
    # Note: The superclass provides basic implementations of all the other
-   # methods. I didn't evaluate any of these.
+   # methods. I didn’t evaluate any of these.
 
    __slots__ = ("data",)
 
@@ -243,7 +247,7 @@ class OrderedSet(collections.abc.MutableSet):
       self.data[x] = None
 
    def clear(self):
-      # Superclass provides an implementation but warns it's slow (and it is).
+      # Superclass provides an implementation but warns it’s slow (and it is).
       self.data.clear()
 
    def discard(self, x):
@@ -253,7 +257,7 @@ class OrderedSet(collections.abc.MutableSet):
 class Progress:
    """Simple progress meter for countable things that updates at most once per
       second. Writes first update upon creation. If length is None, then just
-      count up (this is for registries like Red Hat that sometimes don't
+      count up (this is for registries like Red Hat that sometimes don’t
       provide a Content-Length header for blobs).
 
       The purpose of the divisor is to allow counting things that are much
@@ -302,7 +306,7 @@ class Progress:
                                 self.precision, self.length / self.divisor)
             pct = "%d%%" % (100 * self.progress / self.length)
             if (ct == "0.0/0.0"):
-               # too small, don't print count
+               # too small, don’t print count
                line = "%s: %s" % (self.msg, pct)
             else:
                line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
@@ -343,7 +347,7 @@ class Progress_Reader:
          close_(self.fp)
 
    def read(self, size=-1):
-     data = ossafe(self.fp.read, "can't read: %s" % self.fp.name, size)
+     data = ossafe(self.fp.read, "can’t read: %s" % self.fp.name, size)
      self.progress.update(len(data))
      return data
 
@@ -351,10 +355,10 @@ class Progress_Reader:
       raise io.UnsupportedOperation
 
    def start(self):
-      # Get file size. This seems awkward, but I wasn't able to find anything
+      # Get file size. This seems awkward, but I wasn’t able to find anything
       # better. See: https://stackoverflow.com/questions/283707
       old_pos = self.fp.tell()
-      assert (old_pos == 0)  # math will be wrong if this isn't true
+      assert (old_pos == 0)  # math will be wrong if this isn’t true
       length = self.fp.seek(0, os.SEEK_END)
       self.fp.seek(old_pos)
       self.progress = Progress(self.msg, "MiB", 2**20, length)
@@ -385,7 +389,7 @@ class Progress_Writer:
 
    def write(self, data):
       self.progress.update(len(data))
-      ossafe(self.fp.write, "can't write: %s" % self.path, data)
+      ossafe(self.fp.write, "can’t write: %s" % self.path, data)
 
 
 class Timer:
@@ -407,7 +411,7 @@ def DEBUG(msg, hint=None, **kwargs):
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
    log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
-      
+
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
@@ -417,8 +421,7 @@ def FATAL(msg, hint=None, **kwargs):
                      for f in reversed(traceback.extract_stack()[1:-1]))
    else:
       tr = None
-   ERROR(msg, hint, tr, **kwargs)
-   exit(1)
+   raise Fatal_Error(msg, hint, tr, **kwargs)
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
@@ -455,10 +458,12 @@ def bytes_hash(data):
    h.update(data)
    return h.hexdigest()
 
-def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
+def ch_run_modify(img, args, env, workdir="/", binds=[], ch_run_args=[],
+                  fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
-           + ["-w", "-u0", "-g0", "--no-passwd", "--cd", workdir]
+           + ch_run_args
+           + ["-w", "-u0", "-g0", "--no-passwd", "--cd", workdir, "--unsafe"]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
    return cmd(args, env=env, fail_ok=fail_ok)
@@ -468,7 +473,7 @@ def close_(fp):
       path = fp.name
    except AttributeError:
       path = "(no path)"
-   ossafe(fp.close, "can't close: %s" % path)
+   ossafe(fp.close, "can’t close: %s" % path)
 
 def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
@@ -491,11 +496,11 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
       profile_start()
    except OSError as x:
-      VERBOSE("can't execute %s: %s" % (argv[0], x.strerror))
-      # Most common reason we are here is that the command isn't found, which
+      VERBOSE("can’t execute %s: %s" % (argv[0], x.strerror))
+      # Most common reason we are here is that the command isn’t found, which
       # generates a FileNotFoundError. Use fake return value 127; this is
       # consistent with the shell [1]. This is a kludge, but we assume the
-      # caller doesn't care about the distinction between some problem within
+      # caller doesn’t care about the distinction between some problem within
       # the subprocess and inability to start the subprocess.
       #
       # [1]: https://devdocs.io/bash/exit-status#Exit-Status
@@ -521,8 +526,8 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
 
 def cmd_quiet(argv, **kwargs):
    """Run command using cmd() and return the exit code. If logging is info,
-      discard both stdout and stderr; if it's verbose, discard stdout only; if
-      it's debug or higher, discard nothing."""
+      discard both stdout and stderr; if it’s verbose, discard stdout only; if
+      it’s debug or higher, discard nothing."""
    if (verbose >= 2):  # debug or higher
       stdout=None
    else:
@@ -543,7 +548,7 @@ def color_set(color, fp):
 
 def copy2(src, dst, **kwargs):
    "Wrapper for shutil.copy2() with error checking."
-   ossafe(shutil.copy2, "can't copy: %s -> %s" % (src, dst), src, dst, **kwargs)
+   ossafe(shutil.copy2, "can’t copy: %s -> %s" % (src, dst), src, dst, **kwargs)
 
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
@@ -757,18 +762,18 @@ def si_decimal(ct):
    assert False, "unreachable"
 
 def user():
-   "Return the current username; exit with error if it can't be obtained."
+   "Return the current username; exit with error if it can’t be obtained."
    try:
       return os.environ["USER"]
    except KeyError:
-      FATAL("can't get username: $USER not set")
+      FATAL("can’t get username: $USER not set")
 
 def variables_sub(s, variables):
    if (s is None):
       return s
    # FIXME: This should go in the grammar rather than being a regex kludge.
    #
-   # Dockerfile spec does not say what to do if substituting a value that's
+   # Dockerfile spec does not say what to do if substituting a value that’s
    # not set. We ignore those subsitutions. This is probably wrong (the shell
    # substitutes the empty string).
    for (k, v) in variables.items():
@@ -798,13 +803,13 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
       return False
    m = re.search(regex, cp.stdout)
    if (m is None):
-      bad_parse("can't parse %s version, assuming not present: %s"
+      bad_parse("can’t parse %s version, assuming not present: %s"
                 % (prog, cp.stdout))
       return False
    try:
       v = tuple(int(i) for i in m.groups())
    except ValueError:
-      bad_parse("can't parse %s version part, assuming not present: %s"
+      bad_parse("can’t parse %s version part, assuming not present: %s"
                 % (prog, cp.stdout))
       return False
    if (min_ > v):

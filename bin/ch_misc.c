@@ -371,7 +371,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    if (denylist == NULL)
       denylist = denylist_null;  // literal here causes intermittent segfaults
 
-   basec = realpath_safe(base);
+   basec = realpath_(base, false);
 
    TRACE("mkdirs: base: %s", basec);
    TRACE("mkdirs: path: %s", path);
@@ -397,7 +397,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
          }
          Tf (S_ISDIR(sb.st_mode) || !component,   // last component not dir OK
              "can't mkdir: exists but not a directory: %s", next);
-         nextc = realpath_safe(next);
+         nextc = realpath_(next, false);
          TRACE("mkdirs: exists, canonical: %s", nextc);
       } else {
          Te (path_subdir_p(basec, next),
@@ -475,7 +475,7 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
 /* Return true if the given path exists, false otherwise. On error, exit. If
    statbuf is non-null, store the result of stat(2) there. If follow_symlink
    is true and the last component of path is a symlink, stat(2) the target of
-   the symlnk; otherwise, lstat(2) the link itself. */
+   the symlink; otherwise, lstat(2) the link itself. */
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
 {
    struct stat statbuf_;
@@ -558,8 +558,15 @@ void path_split(const char *path, char **dir, char **base)
 bool path_subdir_p(const char *base, const char *path)
 {
    int base_len = strlen(base);
+   int path_len = strlen(base);
 
-   if (base_len > strlen(path))
+   // remove trailing slashes
+   while (base[base_len-1] == '/' && base_len >= 1)
+      base_len--;
+   while (path[path_len-1] == '/' && path_len >= 1)
+      path_len--;
+
+   if (base_len > path_len)
       return false;
 
    if (!strcmp(base, "/"))  // below logic breaks if base is root
@@ -569,14 +576,35 @@ bool path_subdir_p(const char *base, const char *path)
            && (path[base_len] == '/' || path[base_len] == 0));
 }
 
-/* Like realpath(3), but exit with error on failure. */
-char *realpath_safe(const char *path)
+/* Like realpath(3), but never returns an error. If the underlying realpath(3)
+   fails or path is NULL, and fail_ok is true, then return a copy of the
+   input; otherwise (i.e., fail_ok is false) exit with error. */
+char *realpath_(const char *path, bool fail_ok)
 {
    char *pathc;
 
+   if (path == NULL)
+      return NULL;
+
    pathc = realpath(path, NULL);
-   Tf (pathc != NULL, "can't canonicalize: %s", path);
+
+   if (pathc == NULL) {
+      if (fail_ok) {
+         T_ (pathc = strdup(path));
+      } else {
+         Tf (false, "can't canonicalize: %s", path);
+      }
+   }
+
    return pathc;
+}
+
+/* Replace all instances of character “old” in “s” with “new”. */
+void replace_char(char *s, char old, char new)
+{
+   for (int i = 0; s[i] != '\0'; i++)
+      if(s[i] == old)
+         s[i] = new;
 }
 
 /* Split string str at first instance of delimiter del. Set *a to the part

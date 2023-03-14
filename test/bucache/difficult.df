@@ -1,4 +1,4 @@
-FROM alpine:3.16
+FROM alpine:3.17
 
 WORKDIR /test
 
@@ -29,5 +29,5 @@ RUN ln -s soft_target soft_src
 RUN apk add git
 RUN git init gitrepo
 
-# Well-known last instruction so we can check if it's cached.
+# Well-known last instruction so we can check if it’s cached.
 RUN echo last
