@@ -143,9 +143,16 @@ RUN git clone https://github.com/openpmix/openpmix.git \
  && rm -Rf ../openpmix*
 
 # FLUX-PMI
-ARG FLUX_VERSION=0.45.0
+#
 # Flux requires a number of additional packages. We install them here to
 # distinquish between libfabric provider and flux-pmi dependencies.
+#
+# Flux pmi library, libpmi.so, conflicts with SLURM pmi2. To use FLUX you must
+# set LD_PRELOAD, as follows, in the container at run time.
+#
+#ENV LD_PRELOAD=/usr/local/lib/flux/libpmi.so
+#
+ARG FLUX_VERSION=0.45.0
 RUN dnf install -y \
                 czmq \
                 czmq-devel \
@@ -167,7 +174,11 @@ RUN dnf install -y \
  && ./autogen.sh \
  && ./configure --prefix=/usr/local \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../flux-core
+ && rm -Rf ../flux-core \
+ && echo '/usr/local/lib/flux' >> /etc/ld.so.conf.d/usrlocal.conf \
+ && ldconfig
+# FLUX stores job information at /var/tmp/${USER}. Make the bind point.
+RUN mkdir -p /var/tmp
 
 # PMI2
 #
