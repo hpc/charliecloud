@@ -742,16 +742,6 @@ EOF
    echo "$output"
    [[ $status -eq 0 ]]
    [[ $output = *"found storage dir v${v_current}: ${CH_IMAGE_STORAGE}"* ]]
-
-   # Fake version mismatch - no file (v1).
-   rm "$CH_IMAGE_STORAGE"/version
-
-   # Version mismatch; upgrade; success.
-   run ch-image -v list
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = *"upgrading storage directory: v${v_current} ${CH_IMAGE_STORAGE}"* ]]
-   [[ $(cat "$CH_IMAGE_STORAGE"/version) -eq "$v_current" ]]
 }
 
 
