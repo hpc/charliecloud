@@ -1105,13 +1105,17 @@ class I_from_(Instruction):
       if (str(self.image.ref) == str(self.base_image.ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
       # Close previous stage if needed.
-      ch.WARNING("image_unpack: %s" % self.image.unpack_path)
       if (self.image_i > 0):
          # We need to check out the previous stage (a) to read its metadata
          # and (b) in case there's a COPY later. This will still be fast most
          # of the time since the correct branch is likely to be checked out
          # already.
-         self.parent.checkout(self.parent.base_image)
+         if (isinstance(self.parent, I_from_)):
+            # In the odd case where the parent is FROM, pass the parent base
+            # image object to the checkout method to avoid issue.
+            self.parent.checkout(self.parent.base_image)
+         else:
+            self.parent.checkout()
          self.parent.ready()
       # At this point any meaningful parent of FROM, e.g., previous stage, has
       # been closed; thus, act as own parent.
