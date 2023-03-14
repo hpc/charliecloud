@@ -68,7 +68,7 @@ struct bind BINDS_DEFAULT[] = {
    { "/var/opt/cray/alps",       "/var/opt/cray/alps",       BD_OPTIONAL },
    /* Cray Shasta/Slingshot bind-mounts. */
    { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_OPTIONAL },
-   /* FLUX job information bind mount. */
+   /* FLUX job information bind-mount. */
    { "/var/tmp",                 "/var/tmp",                 BD_OPTIONAL },
    { 0 }
 };
