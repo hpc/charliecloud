@@ -903,8 +903,8 @@ EOF
         [[ $status -eq 0 ]]
         [[ $output = *'alpine:3.17'* ]]
         [[ $output = *'tmpimg'* ]]
-        [[ $output = *'tmpimg_stage0' ]]
-        [[ $output = *'tmpimg_stage1' ]]
+        [[ $output = *'tmpimg_stage0'* ]]
+        [[ $output = *'tmpimg_stage1'* ]]
     fi
 }
 
