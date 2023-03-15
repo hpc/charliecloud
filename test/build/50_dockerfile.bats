@@ -889,6 +889,7 @@ FROM b
 RUN echo qux
 EOF
     # We only care that other builders return 0; we only check ch-image output.
+    echo "$output"
     [[ $status -eq 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $output = *"ARG BASEIMG='alpine:3.17'"* ]]
