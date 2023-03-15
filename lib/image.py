@@ -80,6 +80,13 @@ _NEWLINES: ( _WSH? "\n" )+       // sequence of newlines
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
 
+# Where the .git “directory” in the image is located. (Normally it’s a
+# directory, and that’s what the Git docs call it, but it’s a file for
+# worktrees.) We deliberately do not call it “.git” because that makes it
+# hidden, but also more importantly it confuses Git into thinking /ch is a
+# different Git repo.
+GIT_DIR = ch.Path("ch/git")
+
 # Dockerfile grammar. Note image references are not parsed during Dockerfile
 # parsing.
 GRAMMAR_DOCKERFILE = r"""
@@ -228,7 +235,7 @@ class Image:
 
    @property
    def unpack_cache_linked(self):
-      return self.unpack_exist_p and os.path.exists(self.unpack_path // ".git")
+      return (self.unpack_path // GIT_DIR).exists_()
 
    def __str__(self):
       return str(self.ref)
@@ -249,24 +256,14 @@ class Image:
          can be either a path (string or fs.Path object) or an Image object;
          in the latter case other.unpack_path is used. other need not be a
          valid image; the essentials will be created if needed."""
-      def ignore(path, names):
-         # Need this path conversion, since shutil._copytree() calls ignore()
-         # and passes a string, not a fs.Path. See:
-         # https://github.com/python/cpython/blob/main/Lib/shutil.py#L456
-         path = fs.Path(path)
-         ignore = list()
-         if (path == src_path):
-            for name in names:
-               if (name.startswith(".git")):
-                  ch.VERBOSE("ignoring from source image: /%s" % name)
-                  ignore.append(name)
-         return ignore
       if (isinstance(other, str) or isinstance(other, fs.Path)):
          src_path = other
       else:
          src_path = other.unpack_path
       ch.VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
-      fs.Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
+      fs.Path(src_path).copytree(self.unpack_path, symlinks=True)
+      # Simpler to copy this file then delete it, rather than filter it out.
+      (self.unpack_path // GIT_DIR).unlink_(missing_ok=True)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
