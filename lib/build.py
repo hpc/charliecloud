@@ -1150,8 +1150,6 @@ class Run(Instruction):
 
    __slots__ = ("cmd")
 
-
-
    @property
    def str_name(self):
       # Can’t get this from the forcer object because it might not have been
