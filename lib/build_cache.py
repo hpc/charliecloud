@@ -677,13 +677,11 @@ class Enabled_Cache:
       # the commits accessible. The second puts HEAD back where it was,
       # because it would be confusing for HEAD to point to the most recently
       # deleted branch tip.
-      cp = ch.cmd_stdout(["git", "show-ref", "--heads", "-s", branch],
-                         cwd=self.root, fail_ok=True)
-      if (cp.returncode == 0):  # branch found
-         branch_tip = cp.stdout.strip()
+      if (ch.cmd_stdout(["git", "show-ref", "--heads", "-s", branch],
+                         cwd=self.root, fail_ok=True).returncode == 0): # branch found
          head_old = ch.cmd_stdout(["git", "rev-parse", "HEAD"],
                                   cwd=self.root).stdout.strip()
-         ch.cmd_quiet(["git", "update-ref", "HEAD", branch_tip], cwd=self.root)
+         ch.cmd_quiet(["git", "update-ref", "HEAD", branch], cwd=self.root)
          ch.cmd_quiet(["git", "update-ref", "HEAD", head_old], cwd=self.root)
          ch.cmd_quiet(["git", "branch", "-D", branch], cwd=self.root)
 
