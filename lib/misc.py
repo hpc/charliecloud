@@ -130,7 +130,7 @@ def list_(cli):
       else:
          cached = "yes (state ID %s, commit %s)" % (sid.short, commit[:7])
          if (os.path.exists(img.unpack_path)):
-            wdc = bu.cache.worktree_get_head(img)
+            wdc = bu.cache.worktree_head(img)
             if (wdc is None):
                ch.WARNING("stored image not connected to build cache")
             elif (wdc != commit):
