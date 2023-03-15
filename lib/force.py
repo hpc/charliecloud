@@ -17,8 +17,8 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #    a. This is a dictionary of configurations, which themselves are
    #       dictionaries.
    #
-   #    b. Key is an arbitrary tag; user-visible. There's no enforced
-   #       character set but let's stick with [a-z0-9_] for now and limit to
+   #    b. Key is an arbitrary tag; user-visible. There’s no enforced
+   #       character set but let’s stick with [a-z0-9_] for now and limit to
    #       at most 10 characters.
    #
    #    c. A configuration has the following keys.
@@ -41,7 +41,7 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #
    #                  The test should be fairly permissive; e.g., if the image
    #                  already has a fakeroot implementation installed, but
-   #                  it's a different one than we would have chosen, the
+   #                  it’s a different one than we would have chosen, the
    #                  command should succeed.
    #
    #                  IMPORTANT: This command must have no side effects,
@@ -64,27 +64,27 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #       cmds ... List of RUN command words that need fakeroot injection.
    #                Each item in the list is matched against each
    #                whitespace-separated word in the RUN instructions. For
-   #                example, suppose that each is the list "dnf", "rpm", and
-   #                "yum"; consider the following RUN instructions:
+   #                example, suppose that each is the list “dnf”, “rpm”, and
+   #                “yum”; consider the following RUN instructions:
    #
    #                  RUN ['dnf', 'install', 'foo']
    #                  RUN dnf install foo
    #
-   #                These are fairly standard forms. "dnf" matches both, the
+   #                These are fairly standard forms. “dnf” matches both, the
    #                first on the first element in the list and the second
    #                after breaking the shell command on whitespace.
    #
    #                  RUN true&&dnf install foo
    #
    #                This third example does *not* match (false negative)
-   #                because breaking on whitespace yields "true&&dnf",
-   #                "install", and "foo"; none of these words are "dnf".
+   #                because breaking on whitespace yields “true&&dnf”,
+   #                “install”, and “foo”; none of these words are “dnf”.
    #
    #                  RUN echo dnf install foo
    #
    #                This final example *does* match (false positive) becaus
-   #                the second word *is* "dnf"; the algorithm isn't smart
-   #                enough to realize that it's an argument to "echo".
+   #                the second word *is* “dnf”; the algorithm isn’t smart
+   #                enough to realize that it’s an argument to “echo”.
    #
    #                The last two illustrate that the algorithm uses simple
    #                whitespace delimiters, not even a partial shell parser.
@@ -101,17 +101,17 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #                   RUN ['fr', '-z', 'dnf', 'install', 'foo']
    #                   RUN ['fr', '-z', '/bin/sh', '-c', 'dnf install foo']
    #
-   #                (Note that "/bin/sh -c" is how shell-form RUN instructions
+   #                (Note that “/bin/sh -c” is how shell-form RUN instructions
    #                are executed regardless of --force.)
    #
-   # 2. The first match wins. However, because dictionary ordering can't be
+   # 2. The first match wins. However, because dictionary ordering can’t be
    #    relied on yet, since it was introduced in Python 3.6 [1], matches
    #    should be disjoint.
    #
    #    [1]: https://docs.python.org/3/library/stdtypes.html#dict
    #
    # 3. A matching configuration is considered applicable if any of the
-   #    fakeroot-able commands are present. We do nothing if the config isn't
+   #    fakeroot-able commands are present. We do nothing if the config isn’t
    #    applicable. We do not look for other matches.
    #
    # 4. There are three implementations of fakeroot that I could find:
@@ -168,7 +168,7 @@ FAKEROOT_DEFAULT_CONFIGS = {
    # 1. These seem to have only fakeroot, which is in EPEL, not the standard
    #    repos.
    #
-   # 2. Unlike some derivatives, RHEL itself doesn't have the epel-release rpm
+   # 2. Unlike some derivatives, RHEL itself doesn’t have the epel-release rpm
    #    in the standard repos; install via rpm for both to be consistent.
    #
    # 3. Enabling EPEL can have undesirable side effects, e.g. different
@@ -177,7 +177,7 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #    installations are left alone. (Such breakage is an EPEL bug, but we do
    #    commonly encounter it.)
    #
-   # 4. "yum repolist" has a lot of side effects, e.g. locking the RPM
+   # 4. “yum repolist” has a lot of side effects, e.g. locking the RPM
    #    database and asking configured repos for something or other.
 
    "rhel7":
@@ -216,13 +216,13 @@ FAKEROOT_DEFAULT_CONFIGS = {
    #
    # 1. In recent Debian-based distributions apt(8) runs as an unprivileged
    #    user by default. This makes *all* apt operations fail in an
-   #    unprivileged container because it can't drop privileges. There are
+   #    unprivileged container because it can’t drop privileges. There are
    #    multiple ways to turn the “sandbox” off. AFAICT, none are documented,
    #    but this one at least appears in Google searches a lot.
    #
-   #    apt also doesn't drop privileges if there is no user _apt; in my
+   #    apt also doesn’t drop privileges if there is no user _apt; in my
    #    testing, sometimes this user is present and sometimes not, for reasons
-   #    I don't understand. If not present, you get this warning:
+   #    I don’t understand. If not present, you get this warning:
    #
    #      W: No sandbox user '_apt' on the system, can not drop privileges
    #
@@ -249,7 +249,7 @@ FAKEROOT_DEFAULT_CONFIGS = {
 
    "suse":
    { "name": "(Open)SUSE 42.2+",  # no fakeroot before this
-     # I don't know if there are OpenSUSE derivatives
+     # I don’t know if there are OpenSUSE derivatives
      "match": ("/etc/os-release", r"ID_LIKE=.*suse"),
      "init": [ ("command -v fakeroot > /dev/null",
                 # fakeroot seems to have a missing dependency, otherwise

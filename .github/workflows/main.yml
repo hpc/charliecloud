@@ -9,7 +9,7 @@ on:
 
 jobs:
   main:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 90
     strategy:
       fail-fast: false  # Actions seems kind of flaky lately
@@ -18,8 +18,14 @@ jobs:
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
-        cache:
-          - disabled
+        cache: [enabled, disabled]
+        exclude:
+          - builder: none
+            cache: enabled
+          - builder: docker
+            cache: enabled
+          - builder: ch-image
+            cache: disabled
         include:
           - builder: docker
             pack_fmt: squash-mount
@@ -28,7 +34,7 @@ jobs:
           - builder: ch-image
             pack_fmt: squash-mount
             keep_sudo: false
-            cache: enabled
+            cache: disabled
 
     env:
       CH_IMAGE_CACHE: ${{ matrix.cache }}
@@ -115,19 +121,6 @@ jobs:
       - name: install/configure dependencies, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
-          # Install the minimum Python version we support (issue #959). Python
-          # is pretty quick to build, so this only takes a couple of minutes.
-          cd /usr/local/src
-          wget -nv https://www.python.org/ftp/python/3.6.12/Python-3.6.12.tar.xz
-          tar xf Python-3.6.12.tar.xz
-          cd Python-3.6.12
-          ./configure --prefix=/usr/local
-          make $ch_makej
-          sudo sh -c 'umask 0022 && make install'
-          command -v pip3
-          command -v python3
-          [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
-          [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark requests wheel'
           # Configure Git and friends for build cache.
@@ -144,8 +137,8 @@ jobs:
               dot -V
               # git2dot
               sudo sh -c 'umask 0022 && pip install python-dateutil'
-              git clone https://github.com/jlinoff/git2dot.git
-              cd ./git2dot
+              git clone https://github.com/jlinoff/git2dot.git ~/git2dot
+              cd ~/git2dot
               git checkout $(git tag | sort -Vr | head -1)
               sudo cp -a git2dot.py /usr/local/bin
               command -v git2dot.py
@@ -217,7 +210,7 @@ jobs:
           sudo usermod --add-subgids 10000-65536 $USER
 
       - name: disable bundled lark, ch-image
-        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'enabled' }}
+        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'disabled' }}
         run: |
           set -x
           # no install, disable
@@ -227,8 +220,8 @@ jobs:
           ! test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
-          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
-          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
           make clean
           # install, disable
           ./autogen.sh
@@ -238,7 +231,7 @@ jobs:
           make $ch_makej
           sudo make $ch_makej install
           [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py' ]]
-          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
           make clean
           # no install, enable: build fails, untested
           # install, enable: normal configuration, remainder of CI
@@ -301,9 +294,9 @@ jobs:
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
           set -x
-          [[ $(bin/ch-image gestalt python-path) = /usr/local/bin/python3 ]]
+          [[ $(bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
           [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py" ]]
-          [[ $($ch_prefix/from-git/bin/ch-image gestalt python-path) = /usr/local/bin/python3 ]]
+          [[ $($ch_prefix/from-git/bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
           [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git/lib/charliecloud/lark/__init__.py" ]]
 
       - name: late setup & validation, all
@@ -398,7 +391,7 @@ jobs:
       - name: run test suite (installed from Git WD, standard)
         if: ${{    ( matrix.builder == 'docker' && ! matrix.keep_sudo )
                 || (    matrix.builder == 'ch-image'
-                     && matrix.cache == 'enabled' ) }}
+                     && matrix.cache == 'disabled' ) }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
 
