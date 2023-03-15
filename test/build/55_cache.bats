@@ -32,7 +32,7 @@ setup () {
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     blessed_tree=$(cat << EOF
-initializing storage directory: v5 ${CH_IMAGE_STORAGE}
+initializing storage directory: v6 ${CH_IMAGE_STORAGE}
 initializing empty build cache
 *  (HEAD -> root) ROOT
 EOF
@@ -1363,5 +1363,19 @@ RUN mkdir -p a/c
 RUN touch a/b/.gitignore
 RUN ln a/b/.gitignore a/c/.gitignore
 RUN stat -c'%n %h %d/%i' a/?/.gitignore
+EOF
+}
+
+
+@test "${tag}: Git commands at image root" {  # issue 1285
+    ch-image build-cache --reset
+    # Use mount(8) to create a private /tmp; otherwise the bucache repo under
+    # $BATS_TMPDIR *does* exist because /tmp is shared with the host.
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.17
+RUN apk add git
+RUN cat /proc/mounts
+RUN mount -t tmpfs -o size=4m none /tmp \
+ && git config --system http.sslVerify false
 EOF
 }
