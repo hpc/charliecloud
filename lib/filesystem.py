@@ -430,7 +430,6 @@ class Path(pathlib.PosixPath):
          ch.FATAL("can’t symlink: %s -> %s: %s" % (self.name, target,
                                                    x.strerror))
 
-
    def unlink_(self, missing_ok=False):
       # FIXME: Once we require Python 3.8, we can just pass through missing_ok.
       if (missing_ok and not self.exists_()):
