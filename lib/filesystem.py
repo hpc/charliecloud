@@ -530,7 +530,6 @@ class Storage:
       # point is to lock as soon as we know the storage directory exists, and
       # definitely before writing anything, to reduce the race conditions that
       # surely exist. Ensure new code paths also call self.lock().
-      self.init_move_old()  # see issues #1160 and #1243
       if (not os.path.isdir(self.root)):
          op = "initializing"
          v_found = None
@@ -546,11 +545,14 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 1, 2, 3, 4, 5}):  # initialize/upgrade
+      elif (v_found in {None, 2, 3, 4, 5}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
          self.lock()
+         # These directories appeared in various storage versions, but since
+         # the thing to do on upgrade is the same as initialize, we don’t
+         # track the details.
          self.download_cache.mkdir_()
          self.build_cache.mkdir_()
          self.build_large.mkdir_()
@@ -579,50 +581,6 @@ class Storage:
                   % (v_found, self.root),
                   'you can delete and re-initialize with "ch-image reset"')
       self.validate_strict()
-
-   def init_move_old(self):
-      """If appropriate, move storage directory from old default path to new.
-         See issues #1160 and #1243."""
-      old = Storage(Path("/var/tmp") // ch.user() // "ch-image")
-      moves = ( "dlcache", "img", "ulcache", "version" )
-      if (self.root != self.root_default()):
-         return  # do nothing silently unless using default storage dir
-      if (not os.path.exists(old.root)):
-         return  # do nothing silently unless old default storage dir exists
-      if (not old.valid_p):
-         ch.WARNING("storage dir: invalid at old default, ignoring: %s"
-                    % old.root)
-         return
-      ch.INFO("storage dir: valid at old default: %s" % old.root)
-      if (not os.path.exists(self.root)):
-         self.root.mkdir_()
-      elif (self.valid_p):
-         ch.WARNING("storage dir: also valid at new default: %s" % self.root,
-                 hint="consider deleting the old one")
-         return
-      elif (not os.path.isdir(self.root)):
-         return  # new isn’t a directory; init/upgrade code will error later
-      elif (any(os.path.exists(self.root // i) for i in moves)):
-         return  # new is broken; init/upgrade should error later
-      # Now we know (1) the old storage exists and is valid and (2) the new
-      # storage exists, is a directory, and contains none of the files we’d
-      # move. However, it *may* contain subdirectories other parts of
-      # Charliecloud care about, e.g. “mnt” for ch-run.
-      ch.INFO("storage dir: moving to new default path: %s" % self.root)
-      for i in moves:
-         src = old.root // i
-         dst = self.root // i
-         if (os.path.exists(src)):
-            ch.DEBUG("moving: %s -> %s" % (src, dst))
-            try:
-               shutil.move(src, dst)
-            except OSError as x:
-               ch.FATAL("can’t move: %s -> %s: %s"
-                     % (x.filename, x.filename2, x.strerror))
-      old.root.rmdir_()
-      if (not old.root.parent.listdir()):
-         ch.WARNING("parent of old storage dir now empty: %s" % old.root.parent,
-                 hint="consider deleting it")
 
    def lock(self):
       """Lock the storage directory. Charliecloud does not at present support
