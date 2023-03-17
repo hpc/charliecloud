@@ -8,11 +8,25 @@ PATH=${ch_bin}:$PATH
 
 # shellcheck disable=SC2034
 usage=$(cat <<EOF
+Usage: $(basename "$0") [-i FMT] [-o FMT] [OPTION ...] IN OUT
+
 Convert an image from one format to another.
 
-Usage:
+-i and -o image formats and format inferences:
+  squash: *.sqfs, *.squash, *.squashfs
+  tar: *.tar, *.t?z, *.tar.?, *.tar.??
+  dir: abosulte or relative path
+  ch-image: internal storage
+  podman: internal storage
+  docker: internal storage
 
-  $ $(basename "$0") [-i FMT] [-o FMT] [OPTION ...] IN OUT
+Example:
+
+  $ ch-convert foo/bar:latest /var/tmp/foobar.sqfs
+  input:   docker    foo/bar:latest
+  output:  squashfs  /var/tmp/foobar.sqfs
+  copying ...
+  done
 EOF
 )
 
