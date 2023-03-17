@@ -583,7 +583,8 @@ class Storage:
                # it from all commits. This requires Git operations, which we
                # can’t do here because the build cache may be disabled. The
                # actual upgrade happens in Enabled_Cache.configure().
-               self.bucache_needs_ignore_upgrade.file_ensure_exists()
+               if (len(self.build_cache.listdir()) > 0):
+                   self.bucache_needs_ignore_upgrade.file_ensure_exists()
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
