@@ -744,11 +744,37 @@ class Enabled_Cache:
       ch.close_(fp)
       # Ignore list entries:
       #
-      # 1. Git has no default gitignore, but cancel any global gitignore rules
-      #    the user might have. https://stackoverflow.com/a/26681066
+      #   1. Git has no default gitignore, but cancel any global gitignore rules
+      #      the user might have. https://stackoverflow.com/a/26681066
       #
-      # 2. The oddly-named GIT_DIR.
+      #   2. The oddly-named GIT_DIR.
+      #
+      # It it easier to just write list we want every time, rather than trying
+      # to figure out if an update is needed.
       (self.root // "info/exclude").file_write("!*\n%s\n" % im.GIT_DIR)
+      # Remove old .gitignore files from all commits. While there are nice
+      # tools to do this (e.g. “git filter-repo”), we don’t want to depend on
+      # an external tool. Thus, the options seem to be “filter-branch” or
+      # “export” followed by “import”. Around half of the “filter-branch” man
+      # page is devoted to explaining why not to use it, so we use the latter.
+      #
+      # NOTE: Without --reflog, “fast-export” will omit commits on unnamed
+      # branches (i.e., accessible only via reflog), but with it, we get
+      # “commit” instructions in the stream with no branch name, which
+      # “fast-import” won’t accept. Therefore, we just delete those commits,
+      # to keep bad .gitignore from creeping back in. (I couldn’t figure out
+      # how to fix this for “filter-branch” either, which I didn’t want to use
+      # anyway for the reasons above.)
+      if (ch.storage.bucache_needs_ignore_upgrade.exists_()):
+         ch.INFO("upgrading build cache to v6+, some cached data may be lost",
+                 "see release notes for v0.32")
+         old = self.git(["fast-export", "--no-data", "--", "--all"]).stdout
+         new = re.sub(r"^(D|M [0-7]+ [0-9a-f]+) \.(git|weirdal_)ignore$",
+                      "#\g<0>", old, flags=re.MULTILINE)
+         #fs.Path("/tmp/new").file_write(new)
+         self.git(["fast-import", "--force"], input=new)
+         self.git(["reflog", "expire", "--all", "--expire=now"])
+         ch.storage.bucache_needs_ignore_upgrade.unlink()
 
    def find_commit(self, git_id):
       """Return (state ID, commit) of commit-ish git_id, or (None, None) if it
@@ -1069,6 +1095,7 @@ class Enabled_Cache:
          self.git(["worktree", "add", "-f", "-B",
                    self.branch_name_unready(image.ref),
                    image.unpack_path, base])
+         # Move GIT_DIR from default location to where we want it.
          git_dir_default = image.unpack_path // ".git"
          git_dir_new = image.unpack_path // im.GIT_DIR
          git_dir_new.parent.mkdir_()
