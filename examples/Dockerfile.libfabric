@@ -177,9 +177,6 @@ RUN dnf install -y \
  && rm -Rf ../flux-core \
  && echo '/usr/local/lib/flux' >> /etc/ld.so.conf.d/usrlocal.conf \
  && ldconfig
-# FLUX stores job information at /var/tmp/${USER}. Make the bind-point if it
-# does not exist.
-RUN mkdir -p /var/tmp
 
 # PMI2
 #
