@@ -325,7 +325,7 @@ class File_Metadata:
             or stat.S_ISLNK(fm.mode)
             or stat.S_ISFIFO(fm.mode)):
          # RPM databases get corrupted. Easy fix is delete them. See #1351.
-         if (path.match("*/var/lib/rpm/__db.*")):
+         if (path.match("var/lib/rpm/__db.*")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
             fm.path_abs.unlink()
             fm.dont_restore = True
