@@ -768,11 +768,32 @@ class Enabled_Cache:
       if (ch.storage.bucache_needs_ignore_upgrade.exists_()):
          ch.INFO("upgrading build cache to v6+, some cached data may be lost",
                  "see release notes for v0.32")
-         old = self.git(["fast-export", "--no-data", "--", "--all"]).stdout
-         new = re.sub(r"^(D|M [0-7]+ [0-9a-f]+) \.(git|weirdal_)ignore$",
-                      "#\g<0>", old, flags=re.MULTILINE)
-         #fs.Path("/tmp/new").file_write(new)
-         self.git(["fast-import", "--force"], input=new)
+         text = self.git(["fast-export", "--no-data", "--", "--all"],
+                         encoding="UTF-8").stdout
+         #fs.Path("/tmp/old").file_write(text)
+         # There is a bug in Git that loses files that become directories [1].
+         # We work around this by moving delete commands within each commit to
+         # be first. This makes a number of assumptions about the output of
+         # “fast-export” that are true only for us, e.g. that it’s all
+         # line-based, including data like commit messages.
+         #
+         # [1]: FIXME
+         lines = text.split("\n")
+         data_p = re.compile(r"^[DM] ")
+         i = 0
+         while i < len(lines):
+            if (data_p.search(lines[i])):
+               j = i + 1
+               while (data_p.search(lines[j])):
+                  j += 1
+               lines[i:j] = sorted(lines[i:j], key=lambda x: x[0])
+               i = j - 1
+            i += 1
+         text = "\n".join(lines)
+         text = re.sub(r"^(D|M [0-7]+ [0-9a-f]+) \.(git|weirdal_)ignore$",
+                       "#\g<0>", text, flags=re.MULTILINE)
+         #fs.Path("/tmp/new").file_write(text)
+         self.git(["fast-import", "--force"], input=text)
          self.git(["reflog", "expire", "--all", "--expire=now"])
          ch.storage.bucache_needs_ignore_upgrade.unlink()
 

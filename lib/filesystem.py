@@ -572,19 +572,22 @@ class Storage:
                         ch.FATAL("can’t upgrade: already exists: %s" % new)
                      old.rename(new)
             if (v_found < 6):
-               # Git metadata moved from /.git to /ch/.git.
+               # Git metadata moved from /.git to /ch/.git, and /.gitignore
+               # went out-of-band (to info/exclude in the repository).
                for img in self.unpack_base.iterdir():
                   old = img // ".git"
                   new = img // "ch/git"
                   if (old.exists_()):
                      new.parent.mkdir_()
                      old.rename_(new)
-               # The gitignore moved from /.gitignore to out-of-band; remove
-               # it from all commits. This requires Git operations, which we
-               # can’t do here because the build cache may be disabled. The
-               # actual upgrade happens in Enabled_Cache.configure().
+                     gi = img // ".gitignore"
+                     if (gi.exists_()):
+                        gi.unlink()
+               # Must also remove .gitignore from all commits. This requires
+               # Git operations, which we can’t do here because the build
+               # cache may be disabled. Do it in Enabled_Cache.configure().
                if (len(self.build_cache.listdir()) > 0):
-                   self.bucache_needs_ignore_upgrade.file_ensure_exists()
+                  self.bucache_needs_ignore_upgrade.file_ensure_exists()
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
