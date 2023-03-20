@@ -71,6 +71,10 @@ struct bind BINDS_DEFAULT[] = {
    { 0 }
 };
 
+#ifdef ADD_BINDS
+    /* add more optional binds based on autoconf. */
+#endif
+
 /* Architectures that we support for seccomp. Order matches the
    corresponding table below.
 

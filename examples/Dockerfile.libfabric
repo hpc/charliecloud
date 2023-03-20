@@ -95,6 +95,7 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 libibumad-devel \
                 librdmacm \
                 librdmacm-devel \
+                libssh \
                 rdma-core \
                 make \
                 numactl-devel \
