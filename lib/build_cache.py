@@ -777,7 +777,7 @@ class Enabled_Cache:
          # “fast-export” that are true only for us, e.g. that it’s all
          # line-based, including data like commit messages.
          #
-         # [1]: FIXME
+         # [1]: https://lore.kernel.org/git/6486D136-23D8-4C90-AEDA-DD037A5CD2B5@lanl.gov/T/#t
          lines = text.split("\n")
          data_p = re.compile(r"^[DM] ")
          i = 0
