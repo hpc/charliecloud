@@ -749,8 +749,8 @@ class Enabled_Cache:
       #
       #   2. The oddly-named GIT_DIR.
       #
-      # It it easier to just write list we want every time, rather than trying
-      # to figure out if an update is needed.
+      # It is easier to just write the list we want every time, rather than
+      # trying to figure out if an update is needed.
       (self.root // "info/exclude").file_write("!*\n%s\n" % im.GIT_DIR)
       # Remove old .gitignore files from all commits. While there are nice
       # tools to do this (e.g. “git filter-repo”), we don’t want to depend on
@@ -762,9 +762,9 @@ class Enabled_Cache:
       # branches (i.e., accessible only via reflog), but with it, we get
       # “commit” instructions in the stream with no branch name, which
       # “fast-import” won’t accept. Therefore, we just delete those commits,
-      # to keep bad .gitignore from creeping back in. (I couldn’t figure out
-      # how to fix this for “filter-branch” either, which I didn’t want to use
-      # anyway for the reasons above.)
+      # to prevent deleted .gitignore files from creeping back in. (I couldn’t
+      # figure out how to fix this for “filter-branch” either, which I didn’t
+      # want to use anyway for the reasons above.)
       if (ch.storage.bucache_needs_ignore_upgrade.exists_()):
          ch.INFO("upgrading build cache to v6+, some cached data may be lost",
                  "see release notes for v0.32")
