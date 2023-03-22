@@ -171,7 +171,7 @@ RUN dnf install -y \
  && ./autogen.sh \
  && ./configure --prefix=/usr/local \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../flux-core
+ && rm -Rf ../flux-core \
  && echo '/usr/local/lib/flux' >> /etc/ld.so.conf.d/usrlocal.conf \
  && ldconfig
 
