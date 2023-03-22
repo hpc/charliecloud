@@ -77,6 +77,7 @@ FROM almalinux_8ch
 # Note that libpsm2 is x86-64 only so we skip if missing
 RUN dnf install -y --setopt=install_weak_deps=false \
                 automake \
+                brotli \
                 file \
                 flex \
                 gcc \
@@ -95,6 +96,7 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 libibumad-devel \
                 librdmacm \
                 librdmacm-devel \
+                libssh \
                 rdma-core \
                 make \
                 numactl-devel \
@@ -146,12 +148,6 @@ RUN git clone https://github.com/openpmix/openpmix.git \
 #
 # Flux requires a number of additional packages. We install them here to
 # distinquish between libfabric provider and flux-pmi dependencies.
-#
-# Flux pmi library, libpmi.so, conflicts with SLURM pmi2. To use FLUX you must
-# set LD_PRELOAD, as follows, in the container at run time.
-#
-#ENV LD_PRELOAD=/usr/local/lib/flux/libpmi.so
-#
 ARG FLUX_VERSION=0.45.0
 RUN dnf install -y \
                 czmq \
@@ -167,6 +163,7 @@ RUN dnf install -y \
                 python3-cffi \
                 python3-jsonschema \
                 python3-yaml \
+                tree \
  && dnf clean all \
  && git clone https://github.com/flux-framework/flux-core \
  && cd flux-core \
@@ -174,7 +171,7 @@ RUN dnf install -y \
  && ./autogen.sh \
  && ./configure --prefix=/usr/local \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
- && rm -Rf ../flux-core \
+ && rm -Rf ../flux-core
  && echo '/usr/local/lib/flux' >> /etc/ld.so.conf.d/usrlocal.conf \
  && ldconfig
 
@@ -191,3 +188,5 @@ RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz 
  && cd contribs/pmi2 \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../../../slurm*
+
+RUN ls -lh /usr/local/lib/flux
