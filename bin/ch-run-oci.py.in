@@ -322,7 +322,7 @@ def state_load():
 def version_parse_simple(s):
    # Dead-simple version parsing function that’s good enough for OCI in this
    # context.
-   return tuple(re.split(r"[.-]", "1.0.1-dev")[:3])
+   return tuple(re.split(r"[.-]", s)[:3])
 
 
 if (__name__ == "__main__"):
