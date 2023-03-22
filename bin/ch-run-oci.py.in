@@ -4,7 +4,6 @@ import argparse
 import inspect
 import json
 import os
-import packaging.version
 import re
 import signal
 import subprocess
@@ -22,8 +21,8 @@ import filesystem as fs
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
-OCI_VERSION_MIN = "1.0.1-dev"  # inclusive
-OCI_VERSION_MAX = "1.0.999"    # inclusive
+OCI_VERSION_MIN = "1.0.1"    # inclusive
+OCI_VERSION_MAX = "1.0.999"  # inclusive
 
 args = None   # CLI Namespace
 state = None  # state object
@@ -301,9 +300,9 @@ def state_load():
    st.config = json.load(fs.Path(args.bundle + "/config.json").open_("rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
-   v_min = packaging.version.Version(OCI_VERSION_MIN)
-   v_actual = packaging.version.Version(st.config["ociVersion"])
-   v_max = packaging.version.Version(OCI_VERSION_MAX)
+   v_min = version_parse_simple(OCI_VERSION_MIN)
+   v_actual = version_parse_simple(st.config["ociVersion"])
+   v_max = version_parse_simple(OCI_VERSION_MAX)
    if (not v_min <= v_actual <= v_max):
       ch.FATAL("unsupported OCI version: %s" % st.config["ociVersion"])
 
@@ -319,6 +318,11 @@ def state_load():
    st.user_command_done = os.path.isfile(args.bundle + "/user_done")
 
    return st
+
+def version_parse_simple(s):
+   # Dead-simple version parsing function that’s good enough for OCI in this
+   # context.
+   return tuple(re.split(r"[.-]", "1.0.1-dev")[:3])
 
 
 if (__name__ == "__main__"):
