@@ -496,9 +496,11 @@ def cmd_base(argv, fail_ok=False, **kwargs):
    if ("stderr" not in kwargs):
       if (verbose <= 1):  # VERBOSE or lower: capture for printing on fail only
          kwargs["stderr"] = subprocess.PIPE
+   if ("input" not in kwargs):
+      kwargs["stdin"] = subprocess.DEVNULL
    try:
       profile_stop()
-      cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+      cp = subprocess.run(argv, **kwargs)
       profile_start()
    except OSError as x:
       VERBOSE("can’t execute %s: %s" % (argv[0], x.strerror))

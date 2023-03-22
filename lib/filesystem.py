@@ -455,6 +455,10 @@ class Storage:
          self.root = os.getcwd() // self.root
 
    @property
+   def bucache_needs_ignore_upgrade(self):
+      return self.build_cache // "ch_upgrade-ignore"
+
+   @property
    def build_cache(self):
       return self.root // "bucache"
 
@@ -540,7 +544,7 @@ class Storage:
                hint = "let Charliecloud create %s; see FAQ" % self.root.name
             else:
                hint = None
-            ch.FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
+            ch.FATAL("storage directory seems invalid: %s" % self.root, hint)
          v_found = self.version_read()
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
@@ -568,13 +572,22 @@ class Storage:
                         ch.FATAL("can’t upgrade: already exists: %s" % new)
                      old.rename(new)
             if (v_found < 6):
-               # Git metadata moved from /.git to /ch/.git in v6.
+               # Git metadata moved from /.git to /ch/.git, and /.gitignore
+               # went out-of-band (to info/exclude in the repository).
                for img in self.unpack_base.iterdir():
                   old = img // ".git"
                   new = img // "ch/git"
                   if (old.exists_()):
                      new.parent.mkdir_()
                      old.rename_(new)
+                     gi = img // ".gitignore"
+                     if (gi.exists_()):
+                        gi.unlink()
+               # Must also remove .gitignore from all commits. This requires
+               # Git operations, which we can’t do here because the build
+               # cache may be disabled. Do it in Enabled_Cache.configure().
+               if (len(self.build_cache.listdir()) > 0):
+                  self.bucache_needs_ignore_upgrade.file_ensure_exists()
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
