@@ -1035,6 +1035,7 @@ class I_label_space(Label):
 class I_from_(Instruction):
 
    __slots__ = ("alias",
+                "base_alias",
                 "base_image",
                 "base_text")
 
@@ -1047,12 +1048,14 @@ class I_from_(Instruction):
 
    @property
    def str_(self):
-      if (hasattr(self, "base_image")):
-         base_image = str(self.base_image.ref)
+      if (hasattr(self, "base_alias")):
+         base_text = str(self.base_alias)
+      elif (hasattr(self, "base_image")):
+         base_text = str(self.base_image.ref)
       else:
          # Initialization failed, but we want to print *something*.
-         base_image = self.base_text
-      return base_image + ((" AS " + self.alias) if self.alias else "")
+         base_text = self.base_text
+      return base_text + ((" AS " + self.alias) if self.alias else "")
 
    def checkout_for_build(self):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
@@ -1070,7 +1073,6 @@ class I_from_(Instruction):
       # parent is the last instruction of the base image.
       self.base_text = self.tree.child_terminals_cat("image_ref", "IMAGE_REF")
       self.alias = self.tree.child_terminal("from_alias", "IR_PATH_COMPONENT")
-      self.base_image = im.Image(im.Reference(self.base_text, argfrom))
       # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
@@ -1088,6 +1090,12 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s_stage%d" % (cli.tag, self.image_i)
+      if self.base_text in images:
+         # Is alias; store base_text as the “alias used” to target a previous
+         # stage as the base.
+         self.base_alias = self.base_text
+         self.base_text = str(images[self.base_text].ref)
+      self.base_image = im.Image(im.Reference(self.base_text, argfrom))
       self.image = im.Image(im.Reference(tag))
       images[self.image_i] = self.image
       if (self.image_alias is not None):
@@ -1096,13 +1104,17 @@ class I_from_(Instruction):
       # More error checking.
       if (str(self.image.ref) == str(self.base_image.ref)):
          ch.FATAL("output image ref same as FROM: %s" % self.base_image.ref)
-      # Close previous stage if needed.
-      if (miss_ct == 0 and self.image_i > 0):
-         # While there haven’t been any misses so far, we do need to check out
-         # the previous stage (a) to read its metadata and (b) in case there’s
-         # a COPY later. This will still be fast most of the time since the
-         # correct branch is likely to be checked out already.
-         self.parent.checkout()
+      # Close previous stage if needed. In particular, we need the previous
+      # stage’s image directory to exist because (a) we need to read its
+      # metadata and (b) in case there’s a COPY later. Cache disabled will
+      # already have the image directory and there is no notion of branch
+      # “ready”, so do nothing in that case.
+      if (self.image_i > 0 and not isinstance(bu.cache, bu.Disabled_Cache)):
+         if (miss_ct == 0):
+            # No previous miss already checked out the image. This will still
+            # be fast most of the time since the correct branch is likely
+            # checked out already.
+            self.parent.checkout()
          self.parent.ready()
       # At this point any meaningful parent of FROM, e.g., previous stage, has
       # been closed; thus, act as own parent.
