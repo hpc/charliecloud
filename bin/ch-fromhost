@@ -145,7 +145,7 @@ enqueue_file () {
     old_ifs="$IFS"
     IFS="$newline"
     d="${dest:-$2}"
-    debug "queueing files"
+    debug "enqueue file(s)"
     for f in $1; do
         case $f in
             *:*)
@@ -337,7 +337,6 @@ if [ -n "$cray_fi_found" ]; then
             continue
         fi
         enqueue_file "$l"
-        [ ! -L "$l" ] || enqueue_file "$(readlink -f "$f")"
         file_dir=$(dirname "$l")
         # Avoid duplicates.
         if [ "$(echo "$ld_conf" | grep -c "$file_dir")" -eq 0 ]; then
