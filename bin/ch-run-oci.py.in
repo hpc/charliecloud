@@ -300,9 +300,9 @@ def state_load():
    st.config = json.load(fs.Path(args.bundle + "/config.json").open_("rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
-   v_min = version_parse_simple(OCI_VERSION_MIN)
-   v_actual = version_parse_simple(st.config["ociVersion"])
-   v_max = version_parse_simple(OCI_VERSION_MAX)
+   v_min = version_parse_oci(OCI_VERSION_MIN)
+   v_actual = version_parse_oci(st.config["ociVersion"])
+   v_max = version_parse_oci(OCI_VERSION_MAX)
    if (not v_min <= v_actual <= v_max):
       ch.FATAL("unsupported OCI version: %s" % st.config["ociVersion"])
 
@@ -319,9 +319,8 @@ def state_load():
 
    return st
 
-def version_parse_simple(s):
-   # Dead-simple version parsing function that’s good enough for OCI in this
-   # context.
+def version_parse_oci(s):
+   # Dead-simple version parsing for OCI; not intended for other uses.
    return tuple(re.split(r"[.-]", s)[:3])
 
 
