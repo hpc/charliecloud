@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>6. ch-image &mdash; Charliecloud 0.31 documentation</title>
+  <title>6. ch-image &mdash; Charliecloud 0.32 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.31
+                0.32
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -64,39 +64,45 @@
 <li class="toctree-l2"><a class="reference internal" href="#build">6.7. <code class="code docutils literal notranslate"><span class="pre">build</span></code></a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#id2">6.7.1. Synopsis</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#id3">6.7.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#privilege-model">6.7.3. Privilege model</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#privilege-model">6.7.3. Privilege model</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id4">6.7.3.1. Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#workaround-mode-fakeroot">6.7.3.2. Workaround mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#workaround-mode-seccomp-default">6.7.3.3. Workaround mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)</a></li>
+</ul>
+</li>
 <li class="toctree-l3"><a class="reference internal" href="#compatibility-with-other-dockerfile-interpreters">6.7.4. Compatibility with other Dockerfile interpreters</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#context-directory">6.7.4.1. Context directory</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#variable-substitution">6.7.4.2. Variable substitution</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#arg">6.7.4.3. <code class="code docutils literal notranslate"><span class="pre">ARG</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#from">6.7.4.4. <code class="code docutils literal notranslate"><span class="pre">FROM</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#copy">6.7.4.5. <code class="code docutils literal notranslate"><span class="pre">COPY</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#features-we-do-not-plan-to-support">6.7.4.6. Features we do not plan to support</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#label">6.7.4.5. <code class="code docutils literal notranslate"><span class="pre">LABEL</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#copy">6.7.4.6. <code class="code docutils literal notranslate"><span class="pre">COPY</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#features-we-do-not-plan-to-support">6.7.4.7. Features we do not plan to support</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#examples">6.7.5. Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id4">6.8. <code class="code docutils literal notranslate"><span class="pre">build-cache</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">6.8. <code class="code docutils literal notranslate"><span class="pre">build-cache</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#delete">6.9. <code class="code docutils literal notranslate"><span class="pre">delete</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#gestalt">6.10. <code class="code docutils literal notranslate"><span class="pre">gestalt</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#list">6.11. <code class="code docutils literal notranslate"><span class="pre">list</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id5">6.11.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id6">6.11.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id7">6.11.3. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id7">6.11.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id8">6.11.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">6.11.3. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#import">6.12. <code class="code docutils literal notranslate"><span class="pre">import</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pull">6.13. <code class="code docutils literal notranslate"><span class="pre">pull</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id8">6.13.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id9">6.13.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id10">6.13.3. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id10">6.13.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id11">6.13.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">6.13.3. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#push">6.14. <code class="code docutils literal notranslate"><span class="pre">push</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id11">6.14.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id12">6.14.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id13">6.14.3. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">6.14.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">6.14.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">6.14.3. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#reset">6.15. <code class="code docutils literal notranslate"><span class="pre">reset</span></code></a></li>
@@ -487,14 +493,14 @@ likely be used. Unused versions <em>are</em> deleted by <code class="code docuti
 <h3><span class="section-number">6.6.5. </span>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
 <p>Suppose we have this Dockerfile:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat a.df
-<span class="go">FROM alpine:3.9</span>
+<span class="go">FROM alpine:3.17</span>
 <span class="go">RUN echo foo</span>
 <span class="go">RUN echo bar</span>
 </pre></div>
 </div>
 <p>On our first build, we get:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t foo -f a.df .
-<span class="go">  1. FROM alpine:3.9</span>
+<span class="go">  1. FROM alpine:3.17</span>
 <span class="go">[ ... pull chatter omitted ... ]</span>
 <span class="go">  2. RUN echo foo</span>
 <span class="go">copying image ...</span>
@@ -509,7 +515,7 @@ instruction was executed. You can also see this by the output of the two
 <code class="code docutils literal notranslate"><span class="pre">echo</span></code> commands.</p>
 <p>But on our second build, we get:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t foo -f a.df .
-<span class="go">  1* FROM alpine:3.9</span>
+<span class="go">  1* FROM alpine:3.17</span>
 <span class="go">  2* RUN echo foo</span>
 <span class="go">  3* RUN echo bar</span>
 <span class="go">copying image ...</span>
@@ -525,11 +531,11 @@ than the first.</p>
 <p>We can also try a second, slightly different Dockerfile. Note that the first
 three instructions are the same, but the third is different:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat c.df
-<span class="go">FROM alpine:3.9</span>
+<span class="go">FROM alpine:3.17</span>
 <span class="go">RUN echo foo</span>
 <span class="go">RUN echo qux</span>
 <span class="gp">$</span> ch-image build -t c -f c.df .
-<span class="go">  1* FROM alpine:3.9</span>
+<span class="go">  1* FROM alpine:3.17</span>
 <span class="go">  2* RUN echo foo</span>
 <span class="go">  3. RUN echo qux</span>
 <span class="go">copying image ...</span>
@@ -545,7 +551,7 @@ third is a miss, so Charliecloud retrieves that state and continues building.</p
 <span class="go">| *  (a) RUN echo bar</span>
 <span class="go">|/</span>
 <span class="go">*  RUN echo foo</span>
-<span class="go">*  (alpine+3.9) PULL alpine:3.9</span>
+<span class="go">*  (alpine+3.9) PULL alpine:3.17</span>
 <span class="go">*  (HEAD -&gt; root) ROOT</span>
 
 <span class="go">named images:     4</span>
@@ -556,7 +562,7 @@ third is a miss, so Charliecloud retrieves that state and continues building.</p
 </pre></div>
 </div>
 <p>Here there are four named images: <code class="code docutils literal notranslate"><span class="pre">a</span></code> and <code class="code docutils literal notranslate"><span class="pre">c</span></code> that we built, the
-base image <code class="code docutils literal notranslate"><span class="pre">alpine:3.9</span></code> (written as <code class="code docutils literal notranslate"><span class="pre">alpine+3.9</span></code> because colon is
+base image <code class="code docutils literal notranslate"><span class="pre">alpine:3.17</span></code> (written as <code class="code docutils literal notranslate"><span class="pre">alpine+3.9</span></code> because colon is
 not allowed in Git branch names), and the empty base of everything
 <code class="code docutils literal notranslate"><span class="pre">root</span></code>. Also note how <code class="code docutils literal notranslate"><span class="pre">a</span></code> and <code class="code docutils literal notranslate"><span class="pre">c</span></code> diverge after the last
 common instruction <code class="code docutils literal notranslate"><span class="pre">RUN</span> <span class="pre">echo</span> <span class="pre">foo</span></code>.</p>
@@ -613,14 +619,21 @@ hyphen (<code class="code docutils literal notranslate"><span class="pre">-</spa
 like <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code>, the context directory is still available in
 this case.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--force</span></code></dt><dd><p>Inject the unprivileged build workarounds; see discussion later in this
-section for details on what this does and when you might need it. If a
-build fails and <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> thinks <code class="code docutils literal notranslate"><span class="pre">--force</span></code> would help, it
-will suggest it.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--force[=MODE]</span></code></dt><dd><p>Use unprivileged build workarounds of mode <code class="code docutils literal notranslate"><span class="pre">MODE</span></code>, which can be
+<code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code> or <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (the default). See section “Privilege
+model” below for details on what this does and when you might need it.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--force-cmd=CMD,ARG1[,ARG2...]</span></code></dt><dd><p>If command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code> is found in a <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instruction, add the
+comma-separated <code class="code docutils literal notranslate"><span class="pre">ARGs</span></code> to it. For example,
+<code class="code docutils literal notranslate"><span class="pre">--force-cmd=foo,-a,--bar=baz</span></code> would transform <code class="code docutils literal notranslate"><span class="pre">RUN</span> <span class="pre">foo</span> <span class="pre">-c</span></code>
+into <code class="code docutils literal notranslate"><span class="pre">RUN</span> <span class="pre">foo</span> <span class="pre">-a</span> <span class="pre">--bar=baz</span> <span class="pre">-c</span></code>. This is intended to suppress
+validation that defeats <code class="code docutils literal notranslate"><span class="pre">--force=seccomp</span></code> and implies that option.
+Can be repeated. If specified, replaces (does not extend) the default
+suppression options. Literal commas can be escaped with backslash;
+importantly however, backslash will need to be protected from the shell
+also. Section “Privilege model” below explains why you might need this.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt><dd><p>Don’t actually execute any Dockerfile instructions.</p>
-</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--no-force-detect</span></code></dt><dd><p>Don’t try to detect if the workarounds in <code class="code docutils literal notranslate"><span class="pre">--force</span></code> would help.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--parse-only</span></code></dt><dd><p>Stop after parsing the Dockerfile.</p>
 </dd>
@@ -644,21 +657,24 @@ transformation,</p></li>
 </section>
 <section id="privilege-model">
 <h3><span class="section-number">6.7.3. </span>Privilege model<a class="headerlink" href="#privilege-model" title="Permalink to this headline">¶</a></h3>
+<section id="id4">
+<h4><span class="section-number">6.7.3.1. </span>Overview<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is a <em>fully</em> unprivileged image builder. It does not use any
 setuid or setcap helper programs, and it does not use configuration files
 <code class="code docutils literal notranslate"><span class="pre">/etc/subuid</span></code> or <code class="code docutils literal notranslate"><span class="pre">/etc/subgid</span></code>. This contrasts with the “rootless”
 or “<a class="reference external" href="https://sylabs.io/guides/3.7/user-guide/fakeroot.html">fakeroot</a>” modes
 of some competing builders, which do require privileged supporting code or
 utilities.</p>
-<p>This approach does yield some quirks. We provide built-in workarounds that
-should mostly work (i.e., <code class="code docutils literal notranslate"><span class="pre">--force</span></code>), but it can be helpful to
-understand what is going on.</p>
+<p>Without workarounds provided by <code class="code docutils literal notranslate"><span class="pre">--force</span></code>, this approach does confuse
+programs that expect to have real root privileges, most notably distribution
+package installers. This subsection describes why that happens and what you
+can do about it.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> executes all instructions as the normal user who invokes it.
-For <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>, this is accomplished with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span> <span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>
-(and some other arguments), i.e., your host EUID and EGID both mapped to zero
-inside the container, and only one UID (zero) and GID (zero) are available
-inside the container. Under this arrangement, processes running in the
-container for each <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> <em>appear</em> to be running as root, but many
+For <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>, this is accomplished with <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> arguments including
+<code class="code docutils literal notranslate"><span class="pre">-w</span> <span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>. That is, your host EUID and EGID are both mapped
+to zero inside the container, and only one UID (zero) and GID (zero) are
+available inside the container. Under this arrangement, processes running in
+the container for each <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> <em>appear</em> to be running as root, but many
 privileged system calls will fail without the workarounds described below.
 <strong>This affects any fully unprivileged container build, not just
 Charliecloud.</strong></p>
@@ -678,11 +694,26 @@ E: seteuid 100 failed - seteuid (22: Invalid argument)
 E: setgroups 0 failed - setgroups (1: Operation not permitted)
 </pre></div>
 </div>
-<p>By default, nothing is done to avoid these problems, though <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>
-does try to detect if the workarounds could help. <code class="code docutils literal notranslate"><span class="pre">--force</span></code> activates
-the workarounds: <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> injects extra commands to intercept these
-system calls and fake a successful result, using <code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code>. There
-are three basic steps:</p>
+<p>Charliecloud provides two different mechanisms to avoid these problems. Both
+involve lying to the containerized process about privileged system calls, but
+at very different levels of complexity.</p>
+</section>
+<section id="workaround-mode-fakeroot">
+<h4><span class="section-number">6.7.3.2. </span>Workaround mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code><a class="headerlink" href="#workaround-mode-fakeroot" title="Permalink to this headline">¶</a></h4>
+<p>This mode uses <code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code> to maintain an elaborate web of deceit that
+is internally consistent. This program intercepts both privileged system calls
+(e.g., <code class="code docutils literal notranslate"><span class="pre">setuid(2)</span></code>) as well as other system calls whose return values
+depend on those calls (e.g., <code class="code docutils literal notranslate"><span class="pre">getuid(2)</span></code>), faking success for privileged
+system calls (perhaps making no system call at all) and altering return values
+to be consistent with earlier fake success. Charliecloud automatically
+installs the <code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code> program inside the container and then wraps
+<code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions having known privilege needs with it. Thus, this mode
+is only available for certain distributions.</p>
+<p>The advantage of this mode is its consistency; e.g., careful programs that
+check the new UID after attempting to change it will not notice anything
+amiss. Its disadvantage is complexity: detailed knowledge and procedures for
+multiple Linux distributions.</p>
+<p>This mode has three basic steps:</p>
 <blockquote>
 <div><ol class="arabic simple">
 <li><p>After <code class="code docutils literal notranslate"><span class="pre">FROM</span></code>, analyze the image to see what distribution it
@@ -698,10 +729,55 @@ Debian derivatives and <code class="code docutils literal notranslate"><span cla
 RPM-based distributions.</p></li>
 </ol>
 </div></blockquote>
+<p><code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions that <em>do not</em> seem to need modification are
+unaffected by this mode.</p>
 <p>The details are specific to each distribution. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> analyzes image
 content (e.g., grepping <code class="code docutils literal notranslate"><span class="pre">/etc/debian_version</span></code>) to select a
-configuration; see <code class="code docutils literal notranslate"><span class="pre">lib/fakeroot.py</span></code> for details. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>
-prints exactly what it is doing.</p>
+configuration; see <code class="code docutils literal notranslate"><span class="pre">lib/force.py</span></code> for details. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> prints
+exactly what it is doing.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Because of <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code> mode’s complexity, we plan to remove it if
+<code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> mode performs well enough. If you have a situation where
+<code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code> mode works and <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> does not, please let us
+know.</p>
+</div>
+</section>
+<section id="workaround-mode-seccomp-default">
+<h4><span class="section-number">6.7.3.3. </span>Workaround mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)<a class="headerlink" href="#workaround-mode-seccomp-default" title="Permalink to this headline">¶</a></h4>
+<p>This mode uses the kernel’s <code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code> system call filtering to
+intercept certain privileged system calls, do absolutely nothing, and return
+success to the program.</p>
+<p>The quashed system calls are: <code class="code docutils literal notranslate"><span class="pre">capset(2)</span></code>; <code class="code docutils literal notranslate"><span class="pre">chown(2)</span></code> and friends;
+<code class="code docutils literal notranslate"><span class="pre">mknod(2)</span></code> and <code class="code docutils literal notranslate"><span class="pre">mknodat(2)</span></code>; and <code class="code docutils literal notranslate"><span class="pre">setuid(2)</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">setgid(2)</span></code>, and <code class="code docutils literal notranslate"><span class="pre">setgroups(2)</span></code> along with the other system calls
+that change user or group.</p>
+<p>The advantages of this approach is that it’s much simpler, it’s faster, it’s
+completely agnostic to libc, and it’s mostly agnostic to distribution. The
+disadvantage is that it’s a very lazy liar; even the most cursory consistency
+checks will fail, e.g., <code class="code docutils literal notranslate"><span class="pre">getuid(2)</span></code> after <code class="code docutils literal notranslate"><span class="pre">setuid(2)</span></code>.</p>
+<p>While this mode does not provide consistency, it does offer a hook to help
+prevent programs asking for consistency. For example, <code class="code docutils literal notranslate"><span class="pre">apt-get</span> <span class="pre">-o</span>
+<span class="pre">APT::Sandbox::User=root</span></code> will prevent <code class="code docutils literal notranslate"><span class="pre">apt-get</span></code> from attempting to drop
+privileges, which <a class="reference external" href="https://salsa.debian.org/apt-team/apt/-/blob/cacdb549/apt-pkg/contrib/fileutl.cc#L3343">it verifies</a>,
+exiting with failure if the correct IDs are not found (which they won’t be
+under this approach). This can be expressed with
+<code class="code docutils literal notranslate"><span class="pre">--force-cmd=apt-get,-o,APT::Sandbox::User=root</span></code>, though this particular
+case is built-in and does not need to be specified. The full default
+configuration, which is applied regardless of the image distribution, can be
+examined in the source file <code class="code docutils literal notranslate"><span class="pre">force.py</span></code>. If any <code class="code docutils literal notranslate"><span class="pre">--force-cmd</span></code> are
+specified, this replaces (rather than extends) the default configuration.</p>
+<p>Note that because the substitutions are a simple regex with no knowledge of
+shell syntax, they can cause unwanted modifications. For example, <code class="code docutils literal notranslate"><span class="pre">RUN</span>
+<span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">apt-get</span></code> will be run as <code class="code docutils literal notranslate"><span class="pre">/bin/sh</span> <span class="pre">-c</span> <span class="pre">&quot;apt-get</span> <span class="pre">-o</span>
+<span class="pre">APT::Sandbox::User=root</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">apt-get</span> <span class="pre">-o</span> <span class="pre">APT::Sandbox::User=root&quot;</span></code>. One
+workaround is to add escape syntax transparent to the shell; e.g., <code class="code docutils literal notranslate"><span class="pre">RUN</span>
+<span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">a\pt-get</span></code>.</p>
+<p>This mode executes <em>all</em> <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions with the <code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code>
+filter and has no knowledge of which instructions actually used the
+intercepted system calls. Therefore, the printed “instructions modified”
+number is only a count of instructions with a hook applied as described above.</p>
+</section>
 </section>
 <section id="compatibility-with-other-dockerfile-interpreters">
 <h3><span class="section-number">6.7.4. </span>Compatibility with other Dockerfile interpreters<a class="headerlink" href="#compatibility-with-other-dockerfile-interpreters" title="Permalink to this headline">¶</a></h3>
@@ -781,8 +857,15 @@ in other <code class="code docutils literal notranslate"><span class="pre">ARG</
 <p>The <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instruction accepts option <code class="code docutils literal notranslate"><span class="pre">--arg=NAME=VALUE</span></code>, which
 serves the same purpose as the <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> instruction. It can be repeated.</p>
 </section>
+<section id="label">
+<h4><span class="section-number">6.7.4.5. </span><code class="code docutils literal notranslate"><span class="pre">LABEL</span></code><a class="headerlink" href="#label" title="Permalink to this headline">¶</a></h4>
+<p>The <code class="code docutils literal notranslate"><span class="pre">LABEL</span></code> instruction accepts <code class="code docutils literal notranslate"><span class="pre">key=value</span></code> pairs to
+add metadata for an image. Unlike Docker, multiline values are not supported;
+see issue <a class="reference external" href="https://github.com/hpc/charliecloud/issues/1512">#1512</a>.
+Can be repeated.</p>
+</section>
 <section id="copy">
-<h4><span class="section-number">6.7.4.5. </span><code class="code docutils literal notranslate"><span class="pre">COPY</span></code><a class="headerlink" href="#copy" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.6. </span><code class="code docutils literal notranslate"><span class="pre">COPY</span></code><a class="headerlink" href="#copy" title="Permalink to this headline">¶</a></h4>
 <p>Especially for people used to UNIX <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code>, the semantics of the
 Dockerfile <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instruction can be confusing.</p>
 <p>Most notably, when a source of the copy is a directory, the <em>contents</em> of that
@@ -844,7 +927,7 @@ unprivileged build.</p></li>
 </ul>
 </section>
 <section id="features-we-do-not-plan-to-support">
-<h4><span class="section-number">6.7.4.6. </span>Features we do not plan to support<a class="headerlink" href="#features-we-do-not-plan-to-support" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.7. </span>Features we do not plan to support<a class="headerlink" href="#features-we-do-not-plan-to-support" title="Permalink to this headline">¶</a></h4>
 <ul class="simple">
 <li><p>Parser directives are not supported. We have not identified a need for any
 of them.</p></li>
@@ -888,15 +971,15 @@ installing into the image:</p>
 <span class="go">FROM centos:7</span>
 
 <span class="go">RUN /opt/bin/cc hello.c</span>
-<span class="gp">#</span>COPY /opt/lib/*.so /usr/local/lib   <span class="c1"># fail: COPY doesn&#39;t bind mount</span>
+<span class="gp">#</span>COPY /opt/lib/*.so /usr/local/lib   <span class="c1"># fail: COPY doesn’t bind mount</span>
 <span class="go">RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround</span>
 <span class="go">RUN ldconfig</span>
 </pre></div>
 </div>
 </section>
 </section>
-<section id="id4">
-<h2><span class="section-number">6.8. </span><code class="code docutils literal notranslate"><span class="pre">build-cache</span></code><a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h2>
+<section id="id6">
+<h2><span class="section-number">6.8. </span><code class="code docutils literal notranslate"><span class="pre">build-cache</span></code><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build-cache <span class="o">[</span>...<span class="o">]</span>
 </pre></div>
 </div>
@@ -971,14 +1054,14 @@ successfully.</p></li>
 <h2><span class="section-number">6.11. </span><code class="code docutils literal notranslate"><span class="pre">list</span></code><a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h2>
 <p>Print information about images. If no argument given, list the images in
 builder storage.</p>
-<section id="id5">
-<h3><span class="section-number">6.11.1. </span>Synopsis<a class="headerlink" href="#id5" title="Permalink to this headline">¶</a></h3>
+<section id="id7">
+<h3><span class="section-number">6.11.1. </span>Synopsis<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> list <span class="o">[</span>-l<span class="o">]</span> <span class="o">[</span>IMAGE_REF<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="id6">
-<h3><span class="section-number">6.11.2. </span>Description<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h3>
+<section id="id8">
+<h3><span class="section-number">6.11.2. </span>Description<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
 <p>Optional argument:</p>
 <blockquote>
 <div><dl class="simple">
@@ -990,11 +1073,11 @@ the remote registry, if any.</p>
 </dl>
 </div></blockquote>
 </section>
-<section id="id7">
-<h3><span class="section-number">6.11.3. </span>Examples<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<section id="id9">
+<h3><span class="section-number">6.11.3. </span>Examples<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
 <p>List images in builder storage:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list
-<span class="go">alpine:3.9 (amd64)</span>
+<span class="go">alpine:3.17 (amd64)</span>
 <span class="go">alpine:latest (amd64)</span>
 <span class="go">debian:buster (amd64)</span>
 </pre></div>
@@ -1043,15 +1126,15 @@ already been imported.</p>
 <h2><span class="section-number">6.13. </span><code class="code docutils literal notranslate"><span class="pre">pull</span></code><a class="headerlink" href="#pull" title="Permalink to this headline">¶</a></h2>
 <p>Pull the image described by the image reference <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from a
 repository to the local filesystem.</p>
-<section id="id8">
-<h3><span class="section-number">6.13.1. </span>Synopsis<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<section id="id10">
+<h3><span class="section-number">6.13.1. </span>Synopsis<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> pull <span class="o">[</span>...<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
 </pre></div>
 </div>
 <p>See the FAQ for the gory details on specifying image references.</p>
 </section>
-<section id="id9">
-<h3><span class="section-number">6.13.2. </span>Description<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<section id="id11">
+<h3><span class="section-number">6.13.2. </span>Description<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
 <p>Destination:</p>
 <blockquote>
 <div><dl class="simple">
@@ -1096,8 +1179,8 @@ image if they don’t exist, but no other action is taken.</p></li>
 <p>Note that some images (e.g., those with a “version 1 manifest”) do not contain
 metadata. A warning is printed in this case.</p>
 </section>
-<section id="id10">
-<h3><span class="section-number">6.13.3. </span>Examples<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<section id="id12">
+<h3><span class="section-number">6.13.3. </span>Examples<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <p>Download the Debian Buster image matching the host’s architecture and place it
 in the storage directory:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> uname -m
@@ -1139,15 +1222,15 @@ in the storage directory:</p>
 <h2><span class="section-number">6.14. </span><code class="code docutils literal notranslate"><span class="pre">push</span></code><a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h2>
 <p>Push the image described by the image reference <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from the
 local filesystem to a repository.</p>
-<section id="id11">
-<h3><span class="section-number">6.14.1. </span>Synopsis<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<section id="id13">
+<h3><span class="section-number">6.14.1. </span>Synopsis<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> push <span class="o">[</span>--image DIR<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
 </pre></div>
 </div>
 <p>See the FAQ for the gory details on specifying image references.</p>
 </section>
-<section id="id12">
-<h3><span class="section-number">6.14.2. </span>Description<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<section id="id14">
+<h3><span class="section-number">6.14.2. </span>Description<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
 <p>Destination:</p>
 <blockquote>
 <div><dl class="simple">
@@ -1171,8 +1254,8 @@ everything in the image is flattened to user:group <code class="code docutils li
 setuid/setgid bits are removed, to avoid surprises if the image is pulled by a
 privileged container implementation.</p>
 </section>
-<section id="id13">
-<h3><span class="section-number">6.14.3. </span>Examples<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<section id="id15">
+<h3><span class="section-number">6.14.3. </span>Examples<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <p>Push a local image to the registry <code class="code docutils literal notranslate"><span class="pre">example.com:5000</span></code> at path
 <code class="code docutils literal notranslate"><span class="pre">/foo/bar</span></code> with tag <code class="code docutils literal notranslate"><span class="pre">latest</span></code>. Note that in this form, the local
 image must be named to match that remote reference.</p>
@@ -1191,10 +1274,10 @@ image must be named to match that remote reference.</p>
 <span class="go">done</span>
 </pre></div>
 </div>
-<p>Same, except use local image <code class="code docutils literal notranslate"><span class="pre">alpine:3.9</span></code>. In this form, the local image
+<p>Same, except use local image <code class="code docutils literal notranslate"><span class="pre">alpine:3.17</span></code>. In this form, the local image
 name does not have to match the destination reference.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push alpine:3.9 example.com:5000/foo/bar:latest
-<span class="go">pushing image:   alpine:3.9</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push alpine:3.17 example.com:5000/foo/bar:latest
+<span class="go">pushing image:   alpine:3.17</span>
 <span class="go">destination:     example.com:5000/foo/bar:latest</span>
 <span class="go">layer 1/1: gathering</span>
 <span class="go">layer 1/1: preparing</span>

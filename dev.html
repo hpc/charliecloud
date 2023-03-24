@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>13. Contributor’s guide &mdash; Charliecloud 0.31 documentation</title>
+  <title>13. Contributor’s guide &mdash; Charliecloud 0.32 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -30,7 +30,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.31
+                0.32
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -159,8 +159,8 @@
           <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
            <div itemprop="articleBody">
              
-  <section id="contributor-s-guide">
-<h1><span class="section-number">13. </span>Contributor’s guide<a class="headerlink" href="#contributor-s-guide" title="Permalink to this headline">¶</a></h1>
+  <section id="contributors-guide">
+<h1><span class="section-number">13. </span>Contributor’s guide<a class="headerlink" href="#contributors-guide" title="Permalink to this headline">¶</a></h1>
 <p>This section is notes on contributing to Charliecloud development. Currently,
 it is messy and incomplete. Patches welcome!</p>
 <p>It documents public stuff only. If you are on the core team at LANL, also
@@ -628,7 +628,8 @@ already been built by a Dockerfile, which is often more straightforward.</p>
 running, which must be greater than or equal than the scope of all tests in
 any corresponding <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files. Exactly one of the following strings
 must appear:</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>ch-test-scope: quick
+<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>ch-test-scope: skip
+ch-test-scope: quick
 ch-test-scope: standard
 ch-test-scope: full
 </pre></div>
@@ -1285,7 +1286,6 @@ including stuff that won’t work in an unprivileged user namespace (e.g.,
 filesystems backed by a block device).</p>
 <p>The things that matter seem to be the same as Charliecloud defaults.
 Therefore, for now we just ignore mounts.</p>
-<p>We do add <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code> in OCI mode.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;process&quot;</span><span class="o">:</span> <span class="p">{</span>
   <span class="s2">&quot;terminal&quot;</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
 </pre></div>

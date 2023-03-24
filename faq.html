@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>11. Frequently asked questions (FAQ) &mdash; Charliecloud 0.31 documentation</title>
+  <title>11. Frequently asked questions (FAQ) &mdash; Charliecloud 0.32 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.31
+                0.32
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -220,7 +220,7 @@ is, <em>Charlie Cloud</em> and <em>CharlieCloud</em> are both incorrect.</p>
 <section id="how-large-is-charliecloud">
 <h3><a class="toc-backref" href="#id6"><span class="section-number">11.1.3. </span>How large is Charliecloud?</a><a class="headerlink" href="#how-large-is-charliecloud" title="Permalink to this headline">¶</a></h3>
 <p>We pride ourselves on keeping Charliecloud lightweight and simple. The lines
-of code as of version 0.31 is:</p>
+of code as of version 0.32 is:</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 50%" />
@@ -228,25 +228,25 @@ of code as of version 0.31 is:</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p>Program itself</p></td>
-<td><p>7166</p></td>
+<td><p>7636</p></td>
 </tr>
 <tr class="row-even"><td><p>Test suite &amp; examples</p></td>
-<td><p>10431</p></td>
+<td><p>10595</p></td>
 </tr>
 <tr class="row-odd"><td><p>Documentation</p></td>
-<td><p>5352</p></td>
+<td><p>5535</p></td>
 </tr>
 <tr class="row-even"><td><p>Build system</p></td>
-<td><p>1149</p></td>
+<td><p>1202</p></td>
 </tr>
 <tr class="row-odd"><td><p>Packaging</p></td>
-<td><p>630</p></td>
+<td><p>632</p></td>
 </tr>
 <tr class="row-even"><td><p>Miscellaneous</p></td>
-<td><p>411</p></td>
+<td><p>422</p></td>
 </tr>
 <tr class="row-odd"><td><p>Total</p></td>
-<td><p>25139</p></td>
+<td><p>26022</p></td>
 </tr>
 </tbody>
 </table>
@@ -363,11 +363,11 @@ Charliecloud issue
 <h3><a class="toc-backref" href="#id13"><span class="section-number">11.2.6. </span>“fatal: <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> not set” from Git, or similar</a><a class="headerlink" href="#fatal-home-not-set-from-git-or-similar" title="Permalink to this headline">¶</a></h3>
 <p>For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat Dockerfile
-<span class="go">FROM alpine:3.9</span>
+<span class="go">FROM alpine:3.17</span>
 <span class="go">RUN apk add git</span>
 <span class="go">RUN git config --global http.sslVerify false</span>
 <span class="gp">$</span> ch-image build -t foo -f Dockerfile .
-<span class="go">  1 FROM alpine:3.9</span>
+<span class="go">  1 FROM alpine:3.17</span>
 <span class="go">  2 RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;apk add git&#39;]</span>
 <span class="go">[...]</span>
 <span class="go">  3 RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;git config --global http.sslVerify false&#39;]</span>
@@ -376,15 +376,15 @@ Charliecloud issue
 </pre></div>
 </div>
 <p>The reason this happens is that <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">build</span></code> executes <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
-instructions with <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> options including <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code>, under
-which the environment variable <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> is unset. Thus, tools like Git
-that try to use it will fail.</p>
+instructions with <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> options including the absence of
+<code class="code docutils literal notranslate"><span class="pre">--home</span></code>, under which the environment variable <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> is unset.
+Thus, tools like Git that try to use it will fail.</p>
 <p>The reasoning for leaving the variable unset is that because Charliecloud runs
 unprivileged, it isn’t really meaningful for a container to have multiple
 users, and thus building images with things in the home directory is an
-antipattern. In fact, by default (i.e., without <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code>),
-<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> sets <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> to <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code> and bind-mounts the
-user’s host home directory at that path.</p>
+antipattern. In fact, with <code class="code docutils literal notranslate"><span class="pre">--home</span></code> specified, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> sets
+<code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> to <code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code> and bind-mounts the user’s host home
+directory at that path.</p>
 <p>The concern with setting <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> to some default value during build is
 that it could simply hide the problem until runtime later, where it would be
 even more confusing. (That said, if this pattern is desired, it can be
@@ -787,25 +787,19 @@ happens in <code class="code docutils literal notranslate"><span class="pre">MPI
 the host’s Slurm, we need it to provide something for the containerized
 processes for such coordination. OpenMPI must be compiled to use what that
 Slurm has to offer, and Slurm must be told to offer it. What works for us is a
-something called “PMI2”. You can see if your Slurm supports it with:</p>
+something called “PMIx”. You can see if your Slurm supports it with:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun --mpi<span class="o">=</span>list
-<span class="go">srun: MPI types are...</span>
-<span class="go">srun: mpi/pmi2</span>
-<span class="go">srun: mpi/openmpi</span>
-<span class="go">srun: mpi/mpich1_shmem</span>
-<span class="go">srun: mpi/mpich1_p4</span>
-<span class="go">srun: mpi/lam</span>
-<span class="go">srun: mpi/none</span>
-<span class="go">srun: mpi/mvapich</span>
-<span class="go">srun: mpi/mpichmx</span>
-<span class="go">srun: mpi/mpichgm</span>
+<span class="go">  cray_shasta</span>
+<span class="go">  none</span>
+<span class="go">  pmi2</span>
+<span class="go">  pmix</span>
 </pre></div>
 </div>
-<p>If <code class="code docutils literal notranslate"><span class="pre">pmi2</span></code> is not in the list, you must ask your admins to enable Slurm’s
-PMI2 support. If it is in the list, but you’re seeing this problem, that means
+<p>If <code class="code docutils literal notranslate"><span class="pre">pmix</span></code> is not in the list, you must either (a) ask your admins to
+enable Slurm’s PMIx support, or (b) rebuild your container MPI against an PMI
+in the list. If it is in the list, but you’re seeing this problem, that means
 it is not the default, and you need to tell Slurm you want it. Try:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">SLURM_MPI_TYPE</span><span class="o">=</span>pmi2
-<span class="gp">$</span> srun ch-run /var/tmp/mpihello-openmpi -- /hello/hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun --mpi<span class="o">=</span>pmix ch-run /var/tmp/mpihello-openmpi -- /hello/hello
 <span class="go">0: init ok wc035.localdomain, 2 ranks, userns 4026554634</span>
 <span class="go">1: init ok wc036.localdomain, 2 ranks, userns 4026554634</span>
 <span class="go">0: send/receive ok</span>
@@ -927,21 +921,21 @@ likes, you can enter the workflow.</p>
 pull images to OCI format, and <a class="reference external" href="https://umo.ci">umoci</a> can flatten an OCI
 image to a directory. Thus, you can use the following commands to run an
 Alpine 3.9 image pulled from Docker hub:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> skopeo copy docker://alpine:3.9 oci:/tmp/oci:img
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> skopeo copy docker://alpine:3.17 oci:/tmp/oci:img
 <span class="go">[...]</span>
 <span class="gp">$</span> ls /tmp/oci
 <span class="go">blobs  index.json  oci-layout</span>
-<span class="gp">$</span> umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.9
+<span class="gp">$</span> umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.17
 <span class="go">[...]</span>
-<span class="gp">$</span> ls /tmp/alpine:3.9
+<span class="gp">$</span> ls /tmp/alpine:3.17
 <span class="go">config.json</span>
 <span class="go">rootfs</span>
 <span class="go">sha256_2ca27acab3a0f4057852d9a8b775791ad8ff62fbedfc99529754549d33965941.mtree</span>
 <span class="go">umoci.json</span>
-<span class="gp">$</span> ls /tmp/alpine:3.9/rootfs
+<span class="gp">$</span> ls /tmp/alpine:3.17/rootfs
 <span class="go">bin  etc   lib    mnt  proc  run   srv  tmp  var</span>
 <span class="go">dev  home  media  opt  root  sbin  sys  usr</span>
-<span class="gp">$</span> ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
+<span class="gp">$</span> ch-run /tmp/alpine:3.17/rootfs -- cat /etc/alpine-release
 <span class="go">3.9.5</span>
 </pre></div>
 </div>
@@ -1009,7 +1003,7 @@ realistic example.</p>
 <p>At this point, the build stops while SSH waits for input.</p>
 <p>This happens even if you have <code class="code docutils literal notranslate"><span class="pre">github.com</span></code> in your
 <code class="code docutils literal notranslate"><span class="pre">~/.ssh/known_hosts</span></code>. This file is not available to the build because
-<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> runs <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> with <code class="code docutils literal notranslate"><span class="pre">--no-home</span></code>, so <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> runs <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> without <code class="code docutils literal notranslate"><span class="pre">--home</span></code>, so <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
 instructions can’t see anything in your home directory.</p>
 <p>Solutions include:</p>
 <blockquote>
@@ -1187,9 +1181,9 @@ x86 one.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> uname -m
 <span class="go">x86_64</span>
 <span class="gp">$</span> sudo apt install qemu-user-static
-<span class="gp">$</span> ch-image pull --arch ppc64le alpine:3.15
-<span class="gp">$</span> <span class="nb">printf</span> <span class="s1">&#39;FROM alpine:3.15\nRUN apk add coreutils\n&#39;</span> <span class="p">|</span> ch-image build -t foo -
-<span class="gp">$</span> ch-convert alpine:3.15 /var/tmp/foo
+<span class="gp">$</span> ch-image pull --arch ppc64le alpine:3.17
+<span class="gp">$</span> <span class="nb">printf</span> <span class="s1">&#39;FROM alpine:3.17\nRUN apk add coreutils\n&#39;</span> <span class="p">|</span> ch-image build -t foo -
+<span class="gp">$</span> ch-convert alpine:3.17 /var/tmp/foo
 <span class="gp">$</span> ch-run /var/tmp/foo -- uname -m
 <span class="go">ppc64le</span>
 </pre></div>
@@ -1209,11 +1203,11 @@ distribution package).</p>
 and architecture of interest, it is worth looking at the extensive collection
 of rootfs archives <a class="reference external" href="https://uk.lxd.images.canonical.com/images/">maintained by linuxcontainers.org</a>. They are meant for LXC, but
 are fine as a basis for Charliecloud.</p>
-<p>For example, this would leave a <code class="code docutils literal notranslate"><span class="pre">ppc64le/alpine:3.15</span></code> image du jour in
+<p>For example, this would leave a <code class="code docutils literal notranslate"><span class="pre">ppc64le/alpine:3.17</span></code> image du jour in
 the registry for use in a Dockerfile <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> line. Note that
 linuxcontainers.org uses the opposite order for “le” in the architecture name.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
-<span class="gp">$</span> ch-image import rootfs.tar.xz ppc64le/alpine:3.15
+<span class="gp">$</span> ch-image import rootfs.tar.xz ppc64le/alpine:3.17
 </pre></div>
 </div>
 </section>

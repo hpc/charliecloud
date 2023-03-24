@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>12. Best practices &mdash; Charliecloud 0.31 documentation</title>
+  <title>12. Best practices &mdash; Charliecloud 0.32 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.31
+                0.32
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -154,8 +154,9 @@ this with two chained Dockerfiles. First, we build a basic AlmaLinux image
 <blockquote>
 <div><div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
 
-<span class="c"># This image has two purposes: (1) demonstrate we can build a AlmaLinux 8 image</span>
-<span class="c"># and (2) provide a build environment for Charliecloud EPEL 8 RPMs.</span>
+<span class="c"># This image has three purposes: (1) demonstrate we can build a AlmaLinux 8</span>
+<span class="c"># image, (2) provide a build environment for Charliecloud EPEL 8 RPMs, and (3)</span>
+<span class="c"># provide image packages necessary for Obspy and Paraview.</span>
 <span class="c">#</span>
 <span class="c"># Quirks:</span>
 <span class="c">#</span>
@@ -179,6 +180,7 @@ this with two chained Dockerfiles. First, we build a basic AlmaLinux image
                 gcc <span class="se">\</span>
                 git <span class="se">\</span>
                 libarchive <span class="se">\</span>
+                libpng-devel <span class="se">\</span>
                 make <span class="se">\</span>
                 python3 <span class="se">\</span>
                 python3-devel <span class="se">\</span>
@@ -192,16 +194,34 @@ this with two chained Dockerfiles. First, we build a basic AlmaLinux image
                 squashfs-tools <span class="se">\</span>
                 squashfuse <span class="se">\</span>
                 wget <span class="se">\</span>
+                which <span class="se">\</span>
  <span class="o">&amp;&amp;</span> dnf clean all
 
-<span class="c"># Need wheel to install bundled Lark, and the RPM version doesn&#39;t work.</span>
+<span class="c"># Need wheel to install bundled Lark, and the RPM version doesn’t work.</span>
 <span class="k">RUN</span> pip3 install wheel
 
-<span class="c"># AlmaLinux&#39;s linker doesn&#39;t search these paths by default; add them because we</span>
+<span class="c"># AlmaLinux&#39;s linker doesn’t search these paths by default; add them because we</span>
 <span class="c"># will install stuff later into /usr/local.</span>
 <span class="k">RUN</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib&quot;</span> &gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
  <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib64&quot;</span> &gt;&gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
  <span class="o">&amp;&amp;</span> ldconfig
+
+<span class="c"># Install ImageMagick</span>
+<span class="c"># The latest, 7.1.0, fails to install with a cryptic libtool error. ¯\_(ツ)_/¯</span>
+<span class="k">ARG</span> <span class="nv">MAGICK_VERSION</span><span class="o">=</span><span class="m">7</span>.0.11-14
+<span class="k">RUN</span> wget -nv -O ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
+    <span class="s2">&quot;https://github.com/ImageMagick/ImageMagick/archive/refs/tags/</span><span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span><span class="s2">.tar.gz&quot;</span> <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> tar xf ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span> <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> make -j <span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> rm -Rf ../ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>
+
+<span class="c"># Add mount points for files and directories for paraview and obspy comparison</span>
+<span class="c"># tests.</span>
+<span class="k">RUN</span> mkdir /diff <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;example bind mount file&quot;</span> &gt; /a.png <span class="se">\</span>
+ <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;example bind mount file&quot;</span> &gt; /b.png
 </pre></div>
 </div>
 </div></blockquote>
@@ -209,148 +229,49 @@ this with two chained Dockerfiles. First, we build a basic AlmaLinux image
 This is a complex Dockerfile that compiles several dependencies in addition to
 OpenMPI. For the purposes of this documentation, you can skip most of it, but
 we felt it would be useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux_8ch</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">libfabric</span>
 
-<span class="c"># A key goal of this Dockerfile is to demonstrate best practices for building</span>
-<span class="c"># OpenMPI for use inside a container.</span>
-<span class="c">#</span>
-<span class="c"># This OpenMPI aspires to work close to optimally on clusters with any of the</span>
-<span class="c"># following interconnects:</span>
-<span class="c">#</span>
-<span class="c">#    - Ethernet (TCP/IP)</span>
-<span class="c">#    - InfiniBand (IB)</span>
-<span class="c">#    - Omni-Path (OPA)</span>
-<span class="c">#    - RDMA over Converged Ethernet (RoCE) interconnects</span>
-<span class="c">#</span>
-<span class="c"># with no environment variables, command line arguments, or additional</span>
-<span class="c"># configuration files. Thus, we try to implement decisions at build time.</span>
-<span class="c">#</span>
-<span class="c"># This is a work in progress, and we&#39;re very interested in feedback.</span>
-<span class="c">#</span>
-<span class="c"># OpenMPI has numerous ways to communicate messages [1]. The ones relevant to</span>
-<span class="c"># this build and the interconnects they support are:</span>
-<span class="c">#</span>
-<span class="c">#   Module        Eth   IB    OPA   RoCE    note  decision</span>
-<span class="c">#   ------------  ----  ----  ----  ----    ----  --------</span>
-<span class="c">#</span>
-<span class="c">#   ob1 : tcp      Y*    X     X     X      a     include</span>
-<span class="c">#   ob1 : openib   N     Y     Y     Y      b,c   exclude</span>
-<span class="c">#   cm  : psm2     N     N     Y*    N            include</span>
-<span class="c">#       : ucx      Y?    Y*    N     Y?     b,d   include</span>
-<span class="c">#</span>
-<span class="c">#   Y : supported</span>
-<span class="c">#   Y*: best choice for that interconnect</span>
-<span class="c">#   X : supported but sub-optimal</span>
-<span class="c">#</span>
-<span class="c">#   a : No RDMA, so performance will suffer.</span>
-<span class="c">#   b : Uses libibverbs.</span>
-<span class="c">#   c : Will be removed in OpenMPI 5.</span>
-<span class="c">#   d : Uses Mellanox libraries if available in preference to libibverbs.</span>
-<span class="c">#</span>
-<span class="c"># You can check what&#39;s available with:</span>
-<span class="c">#</span>
-<span class="c">#   $ ch-run /var/tmp/openmpi -- ompi_info | egrep &#39;(btl|mtl|pml)&#39;</span>
-<span class="c">#</span>
-<span class="c"># The other build decisions are:</span>
-<span class="c">#</span>
-<span class="c">#   1. PMI/PMIx: Include these so that we can use srun or any other PMI[x]</span>
-<span class="c">#      provider, with no matching OpenMPI needed on the host.</span>
-<span class="c">#</span>
-<span class="c">#   2. --disable-pty-support to avoid &quot;pipe function call failed when</span>
-<span class="c">#      setting up I/O forwarding subsystem&quot;.</span>
-<span class="c">#</span>
-<span class="c">#   3. --enable-mca-no-build=plm-slurm to support launching processes using</span>
-<span class="c">#      the host&#39;s srun (i.e., the container OpenMPI needs to talk to the host</span>
-<span class="c">#      Slurm&#39;s PMI) but prevent OpenMPI from invoking srun itself from within</span>
-<span class="c">#      the container, where srun is not installed (the error messages from</span>
-<span class="c">#      this are inscrutable).</span>
-<span class="c">#</span>
-<span class="c"># [1]: https://github.com/open-mpi/ompi/blob/master/README</span>
-
-<span class="c"># OS packages needed to build this stuff.</span>
-<span class="c">#</span>
-<span class="c"># Note that libpsm2 is x86-64 only so we skip if missing</span>
-<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-                automake <span class="se">\</span>
-                file <span class="se">\</span>
-                flex <span class="se">\</span>
-                gcc <span class="se">\</span>
-                gcc-c++ <span class="se">\</span>
-                gcc-gfortran <span class="se">\</span>
-                git <span class="se">\</span>
-                ibacm <span class="se">\</span>
-                libevent-devel <span class="se">\</span>
-                libtool <span class="se">\</span>
-                libibumad <span class="se">\</span>
-                libibumad-devel <span class="se">\</span>
-                libibverbs <span class="se">\</span>
-                libibverbs-devel <span class="se">\</span>
-                libibverbs-utils <span class="se">\</span>
-                librdmacm <span class="se">\</span>
-                librdmacm-devel <span class="se">\</span>
-                rdma-core <span class="se">\</span>
-                make <span class="se">\</span>
-                numactl-devel <span class="se">\</span>
-                wget <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> --skip-broken <span class="se">\</span>
-                libpsm2 <span class="se">\</span>
-                libpsm2-devel <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf clean all
-
-<span class="k">WORKDIR</span><span class="s"> /usr/local/src</span>
-
-<span class="c"># UCX. There is a package but we want control over build options, specifically</span>
-<span class="c"># multithreaded support.</span>
-<span class="k">ARG</span> <span class="nv">UCX_VERSION</span><span class="o">=</span><span class="m">1</span>.11.2
-<span class="k">RUN</span> git clone --branch v<span class="si">${</span><span class="nv">UCX_VERSION</span><span class="si">}</span> --depth <span class="m">1</span> <span class="se">\</span>
-              https://github.com/openucx/ucx.git <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ucx <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ./autogen.sh <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ./contrib/configure-release-mt --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
- <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -Rf ../ucx*
-
-<span class="c"># PMI2.</span>
-<span class="c">#</span>
-<span class="c"># There isn&#39;t a package available with the Slurm PMI2 libraries we need, so</span>
-<span class="c"># build them from Slurm&#39;s release.</span>
-<span class="k">ARG</span> <span class="nv">SLURM_VERSION</span><span class="o">=</span><span class="m">19</span>-05-3-2
-<span class="k">RUN</span> wget https://github.com/SchedMD/slurm/archive/slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
- <span class="o">&amp;&amp;</span> tar -xf slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">cd</span> slurm-slurm-<span class="si">${</span><span class="nv">SLURM_VERSION</span><span class="si">}</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">cd</span> contribs/pmi2 <span class="se">\</span>
- <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -Rf ../../../slurm*
+<span class="c"># See Dockerfile.libfabric for MPI goals and details.</span>
 
 <span class="c"># OpenMPI.</span>
 <span class="c">#</span>
-<span class="c"># Patch OpenMPI to disable UCX plugin on systems with Intel or Cray HSNs. UCX</span>
-<span class="c"># has inferior performance than PSM2/uGNI but higher priority.</span>
-<span class="k">ARG</span> <span class="nv">MPI_URL</span><span class="o">=</span>https://www.open-mpi.org/software/ompi/v3.1/downloads
-<span class="k">ARG</span> <span class="nv">MPI_VERSION</span><span class="o">=</span><span class="m">3</span>.1.6
+<span class="c"># Build with PMIx, PMI2, and FLUX-PMI support.</span>
+<span class="c">#</span>
+<span class="c">#   1. --disable-pty-support to avoid “pipe function call failed when</span>
+<span class="c">#      setting up I/O forwarding subsystem”.</span>
+<span class="c">#</span>
+<span class="c">#   2. --enable-mca-no-build=plm-slurm to support launching processes using the</span>
+<span class="c">#     host’s srun (i.e., the container OpenMPI needs to talk to the host Slurm’s</span>
+<span class="c">#     PMIx) but prevent OpenMPI from invoking srun itself from within the</span>
+<span class="c">#     container, where srun is not installed (the error messages from this are</span>
+<span class="c">#     inscrutable).</span>
+<span class="k">ARG</span> <span class="nv">MPI_URL</span><span class="o">=</span>https://www.open-mpi.org/software/ompi/v4.1/downloads
+<span class="k">ARG</span> <span class="nv">MPI_VERSION</span><span class="o">=</span><span class="m">4</span>.1.4
 <span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
  <span class="o">&amp;&amp;</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
-<span class="k">COPY</span> dont-init-ucx-on-intel-cray.patch ./openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>
 <span class="k">RUN</span> <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> patch -p1 dont-init-ucx-on-intel-cray.patch <span class="se">\</span>
  <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
     <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
+    <span class="nv">FLUX_PMI_CFLAGS</span><span class="o">=</span>-I/usr/local/include/flux/core,-L/usr/local/lib/flux <span class="se">\</span>
+    <span class="nv">FLUX_PMI_LIBS</span><span class="o">=</span>-lpmi <span class="se">\</span>
     ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
                 --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
-                --with-slurm <span class="se">\</span>
+                --with-pmix<span class="o">=</span>/usr/local <span class="se">\</span>
                 --with-pmi<span class="o">=</span>/usr/local <span class="se">\</span>
-                --with-pmix <span class="se">\</span>
-                --with-ucx <span class="se">\</span>
+                --with-flux-pmi-library <span class="se">\</span>
+                --with-libfabric<span class="o">=</span>/usr/local <span class="se">\</span>
                 --disable-pty-support <span class="se">\</span>
                 --enable-mca-no-build<span class="o">=</span>btl-openib,plm-slurm <span class="se">\</span>
  <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
  <span class="o">&amp;&amp;</span> rm -Rf ../openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
 <span class="k">RUN</span> ldconfig
 
-<span class="c"># OpenMPI expects this program to exist, even if it&#39;s not used. Default is</span>
-<span class="c"># &quot;ssh : rsh&quot;, but that&#39;s not installed.</span>
+<span class="c"># OpenMPI expects this program to exist, even if it’s not used. Default is</span>
+<span class="c"># “ssh : rsh”, but that’s not installed.</span>
 <span class="k">RUN</span> <span class="nb">echo</span> <span class="s1">&#39;plm_rsh_agent = false&#39;</span> &gt;&gt; /mnt/0/openmpi-mca-params.conf
+
+<span class="c"># Silence spurious pmix error. https://github.com/open-mpi/ompi/issues/7516.</span>
+<span class="k">ENV</span> <span class="nv">PMIX_MCA_gds</span><span class="o">=</span><span class="nb">hash</span>
 </pre></div>
 </div>
 <p>So what is going on here?</p>

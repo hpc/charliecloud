@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>5. ch-fromhost &mdash; Charliecloud 0.31 documentation</title>
+  <title>5. ch-fromhost &mdash; Charliecloud 0.32 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.31
+                0.32
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,7 +48,11 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#synopsis">5.1. Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#description">5.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">5.2. Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#arbitrary-files">5.2.1. Arbitrary files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#libfabric">5.2.2. Libfabric</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#options">5.3. Options</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#to-specify-which-files-to-inject">5.3.1. To specify which files to inject</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#to-specify-the-destination-within-the-image">5.3.2. To specify the destination within the image</a></li>
@@ -56,10 +60,14 @@
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#when-to-use-ch-fromhost">5.4. When to use <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#cray-mpi-dependencies-and-quirks">5.5. <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> dependencies and quirks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#libfabric-usage-and-quirks">5.5. Libfabric usage and quirks</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#notes">5.6. Notes</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#bugs">5.7. Bugs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">5.8. Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">5.8. Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id1">5.8.1. libfabric</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#arbitrary">5.8.2. Arbitrary</a></li>
+</ul>
+</li>
 <li class="toctree-l2"><a class="reference internal" href="#acknowledgements">5.9. Acknowledgements</a></li>
 </ul>
 </li>
@@ -114,23 +122,51 @@ Please report any issues you find, so we can fix them!</p>
 </div>
 <p>Inject files from the host into the Charliecloud image directory
 <code class="code docutils literal notranslate"><span class="pre">IMGDIR</span></code>.</p>
-<p>The purpose of this command is to inject files into a container image that are
-necessary to run the container on a specific host; e.g., GPU libraries that
-are tied to a specific kernel version. <strong>It is not a general copy-to-image
-tool</strong>; see further discussion on use cases below. It should be run after
-<code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> and before <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>. After invocation, the image is
-no longer portable to other hosts.</p>
+<p>The purpose of this command is to inject arbitrary host files into a container
+necessary to access host specific resources; usually GPU or proprietary
+interconnets. <strong>It is not a general copy-to-image tool</strong>; see further discussion
+on use cases below.</p>
+<p>It should be run after:code:<cite>ch-convert</cite> and before <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>. After
+invocation, the image is no longer portable to other hosts.</p>
 <p>Injection is not atomic; if an error occurs partway through injection, the
-image is left in an undefined state. Injection is currently implemented using
-a simple file copy, but that may change in the future.</p>
-<p>By default, file paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> or <code class="code docutils literal notranslate"><span class="pre">/sbin</span></code>
-are assumed to be executables and placed in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code> within the
-container. File paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/lib</span></code> or <code class="code docutils literal notranslate"><span class="pre">.so</span></code> are
-assumed to be shared libraries and are placed in the first-priority directory
-reported by <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> (see <code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code> below). Other files are
-placed in the directory specified by <code class="code docutils literal notranslate"><span class="pre">--dest</span></code>.</p>
+image is left in an undefined state and should be re-unpacked from storage.
+Injection is currently implemented using a simple file copy, but that may
+change in the future.</p>
+<p>Arbitrary file and libfabric injection are handled differently.</p>
+<section id="arbitrary-files">
+<h3><span class="section-number">5.2.1. </span>Arbitrary files<a class="headerlink" href="#arbitrary-files" title="Permalink to this headline">¶</a></h3>
+<p>Arbitrary file paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> or
+<code class="code docutils literal notranslate"><span class="pre">/sbin</span></code> are assumed to be executables and placed in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code>
+within the container. Paths that are not loadable libfabric providers and
+contain the strings <code class="code docutils literal notranslate"><span class="pre">/lib</span></code> or <code class="code docutils literal notranslate"><span class="pre">.so</span></code> are assumed to be shared
+libraries and are placed in the first-priority directory reported by
+<code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> (see <code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code> below). Other files are placed in the
+directory specified by <code class="code docutils literal notranslate"><span class="pre">--dest</span></code>.</p>
 <p>If any shared libraries are injected, run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> inside the
 container (using <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>) after injection.</p>
+</section>
+<section id="libfabric">
+<h3><span class="section-number">5.2.2. </span>Libfabric<a class="headerlink" href="#libfabric" title="Permalink to this headline">¶</a></h3>
+<p>MPI implementations have numerous ways of communicating messages over
+interconnects. We use libfabric (OFI), an OpenFabric framework that
+exports fabric communication services to applications, to manage these
+communcations with built-in, or loadable, fabric providers.</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><a class="reference external" href="https://ofiwg.github.io/libfabric">https://ofiwg.github.io/libfabric</a></p></li>
+<li><p><a class="reference external" href="https://ofiwg.github.io/libfabric/v1.14.0/man/fi_provider.3.html">https://ofiwg.github.io/libfabric/v1.14.0/man/fi_provider.3.html</a></p></li>
+</ul>
+</div></blockquote>
+<p>Using OFI, we can (a) uniformly manage fabric communcation services for both
+OpenMPI and MPICH, and (b) use simplified methods of accessing proprietary host
+hardware, e.g., Cray’s Gemini/Aries and Slingshot (CXI).</p>
+<p>OFI providers implement the application facing software interfaces needed to
+access network specific protocols, drivers, and hardware. Loadable providers,
+i.e., compiled OFI libraries that end in <code class="code docutils literal notranslate"><span class="pre">-fi.so</span></code>, for example, Cray’s
+<code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code>, can be copied into, and used, by an image with a MPI
+configured against OFI. Alternatively, the image’s <code class="code docutils literal notranslate"><span class="pre">libfabric.so</span></code> can
+be overwritten with the host’s. See details and quirks below.</p>
+</section>
 </section>
 <section id="options">
 <h2><span class="section-number">5.3. </span>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
@@ -144,8 +180,14 @@ container (using <code class="code docutils literal notranslate"><span class="pr
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-p</span></code>, <code class="code docutils literal notranslate"><span class="pre">--path</span> <span class="pre">PATH</span></code></dt><dd><p>Inject the file at <code class="code docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code></dt><dd><p>Cray-enable MPICH/OpenMPI installed inside the image. See important details
-below.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--cray-mpi-cxi</span></code></dt><dd><p>Inject cray-libfabric for slingshot. This is equivalent to
+<code class="code docutils literal notranslate"><span class="pre">--path</span> <span class="pre">$CH_FROMHOST_OFI_CXI</span></code>, where <code class="code docutils literal notranslate"><span class="pre">$CH_FROMHOST_OFI_CXI</span></code> is
+the path the Cray host libfabric <code class="code docutils literal notranslate"><span class="pre">libfabric.so</span></code>.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--cray-mpi-gni</span></code></dt><dd><p>Inject cray gemini/aries GNI libfabric provider <code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code>. This
+is equivalent to <code class="code docutils literal notranslate"><span class="pre">--fi-provider</span> <span class="pre">$CH_FROMHOST_OFI_GNI</span></code>, where
+<code class="code docutils literal notranslate"><span class="pre">CH_FROMHOST_OFI_GNI</span></code> is the path to the Cray host ugni provider
+<code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--nvidia</span></code></dt><dd><p>Use <code class="code docutils literal notranslate"><span class="pre">nvidia-container-cli</span> <span class="pre">list</span></code> (from <code class="code docutils literal notranslate"><span class="pre">libnvidia-container</span></code>)
 to find executables and libraries to inject.</p>
@@ -170,6 +212,8 @@ repeated to place files in varying destinations.</p>
 <h3><span class="section-number">5.3.3. </span>Additional arguments<a class="headerlink" href="#additional-arguments" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">--fi-path</span></code></dt><dd><p>Print the guest destination path for libfabric providers and replacement.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code></dt><dd><p>Print the guest destination path for shared libraries inferred as
 described above.</p>
 </dd>
@@ -205,49 +249,70 @@ the image in a non-reproducible way.</p></li>
 <li><p><em>I have some shared libraries that I need in the image for functionality or
 performance, and they aren’t available in a place where I can use</em>
 <code class="code docutils literal notranslate"><span class="pre">COPY</span></code>. This is the intended use case of <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code>. You can
-use <code class="code docutils literal notranslate"><span class="pre">--cmd</span></code>, <code class="code docutils literal notranslate"><span class="pre">--file</span></code>, and/or <code class="code docutils literal notranslate"><span class="pre">--path</span></code> to put together a
-custom solution. But, please consider filing an issue so we can package
-your functionality with a tidy option like <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> or
-<code class="code docutils literal notranslate"><span class="pre">--nvidia</span></code>.</p></li>
+use <code class="code docutils literal notranslate"><span class="pre">--cmd</span></code>, <code class="code docutils literal notranslate"><span class="pre">--file</span></code>, <code class="code docutils literal notranslate"><span class="pre">--ofi</span></code>, and/or <code class="code docutils literal notranslate"><span class="pre">--path</span></code> to
+put together a custom solution. But, please consider filing an issue so we
+can package your functionality with a tidy option like <code class="code docutils literal notranslate"><span class="pre">--nvidia</span></code>.</p></li>
 </ol>
 </section>
-<section id="cray-mpi-dependencies-and-quirks">
-<h2><span class="section-number">5.5. </span><code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> dependencies and quirks<a class="headerlink" href="#cray-mpi-dependencies-and-quirks" title="Permalink to this headline">¶</a></h2>
-<p>The implementation of <code class="code docutils literal notranslate"><span class="pre">--cray-mpi</span></code> is messy, foul smelling, and brittle.
-It replaces or overrides the MPICH or OpenMPI libraries installed in the
-container. Users should be aware of the following.</p>
-<ol class="arabic simple">
+<section id="libfabric-usage-and-quirks">
+<h2><span class="section-number">5.5. </span>Libfabric usage and quirks<a class="headerlink" href="#libfabric-usage-and-quirks" title="Permalink to this headline">¶</a></h2>
+<p>The implementation of libfabric provider injection and replacement is
+experimental and has a couple quirks.</p>
+<ol class="arabic">
 <li><p>Containers must have the following software installed:</p>
 <ol class="loweralpha simple">
-<li><p>Corresponding open source MPI implementation. (<a class="reference external" href="https://www.mpich.org/">MPICH</a> and <a class="reference external" href="https://www.open-mpi.org/">OpenMPI</a>.)</p></li>
-<li><p><a class="reference external" href="https://github.com/hpc/patchelf">PatchELF with our patches</a>.
-Use the <code class="code docutils literal notranslate"><span class="pre">shrink-soname</span></code> branch. (MPICH only.)</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">libgfortran.so.3</span></code>, because Cray’s <code class="code docutils literal notranslate"><span class="pre">libmpi.so.12</span></code>
-links to it. (MPICH only.)</p></li>
+<li><p>libfabric (<a class="reference external" href="https://ofiwg.github.io/libfabric/">https://ofiwg.github.io/libfabric/</a>). See
+<code class="code docutils literal notranslate"><span class="pre">charliecloud/examples/Dockerfile.libfabric</span></code>.</p></li>
+<li><p>Corresponding open source MPI implementation configured and built against
+the container libfabric, e.g.,
+- <a class="reference external" href="https://www.mpich.org/">MPICH</a>, or
+- <a class="reference external" href="https://www.open-mpi.org/">OpenMPI</a>.
+See <code class="code docutils literal notranslate"><span class="pre">charliecloud/examples/Dockerfile.mpich</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">charliecloud/examples/Dockerfile.openmpi</span></code>.</p></li>
 </ol>
 </li>
-<li><p>Applications must be dynamically linked to <code class="code docutils literal notranslate"><span class="pre">libmpi.so.12</span></code> (not e.g.
-<code class="code docutils literal notranslate"><span class="pre">libmpich.so.12</span></code>).</p>
-<ol class="loweralpha simple">
-<li><p>How to configure MPICH to accomplish this is not yet clear to us;
-<code class="code docutils literal notranslate"><span class="pre">test/Dockerfile.mpich</span></code> does it, while the Debian packages do not.
-(MPICH only.)</p></li>
-</ol>
+<li><p>At run time, a libfabric provider can be specified with the variable
+<code class="code docutils literal notranslate"><span class="pre">FI_PROVIDER</span></code>. The path to search for shared providers can be specified
+with <code class="code docutils literal notranslate"><span class="pre">FI_PROVIDER_PATH</span></code>. These variables can be inherited from the host
+or explicitly set with the container’s environment file
+<code class="code docutils literal notranslate"><span class="pre">/ch/environent</span></code> via <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>.</p>
+<p>To avoid issues and reduce complexity, the inferred injection destination
+for libfabric providers and replacement will always at the path in the image
+where <code class="code docutils literal notranslate"><span class="pre">libfabric.so</span></code> is found.</p>
 </li>
-<li><p>An ABI compatible module for the given MPI implementation must be loaded
-when <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code> is invoked.</p>
-<ol class="loweralpha simple">
-<li><p>Load the <code class="code docutils literal notranslate"><span class="pre">cray-mpich-abi</span></code> module. (MPICH only.)</p></li>
-<li><p>We recommend loading the module of a version as close to what
-is installed in the image as possible. This OpenMPI install needs to be
-built such that libmpi contains all needed plugins (as opposed to them
-being standalone shared libraries). See <a class="reference external" href="https://www.open-mpi.org/faq/?category=building">OpenMPI’s documentation</a> for how to do this.
-(OpenMPI only.)</p></li>
-</ol>
+<li><p>The Cray GNI loadable provider, <code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code>, will link to
+compiler(s) in the programming environment by default. For example, if it
+is built under the <code class="code docutils literal notranslate"><span class="pre">PrgEnv-intel</span></code> programming environment, it will have
+links to files at paths <code class="code docutils literal notranslate"><span class="pre">/opt/gcc</span></code> and <code class="code docutils literal notranslate"><span class="pre">/opt/intel</span></code> that
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> will not bind automatically.</p>
+<p>Managing all possible bind mount paths is untenable. Thus, this experimental
+implementation injects libraries linked to a <code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code> built
+with the minimal modules necessary to compile, i.e.:</p>
+<ul class="simple">
+<li><p>modules</p></li>
+<li><p>craype-network-aries</p></li>
+<li><p>eproxy</p></li>
+<li><p>slurm</p></li>
+<li><p>cray-mpich</p></li>
+<li><p>craype-haswell</p></li>
+<li><p>craype-hugepages2M</p></li>
+</ul>
+<p>A Cray GNI provider linked against more complicated PE’s will still work,
+assuming 1) the user explicitly bind-mounts missing libraries listed from
+its <code class="code docutils literal notranslate"><span class="pre">ldd</span></code> output, and 2) all such libraries do not conflict with
+container functionality, e.g., <code class="code docutils literal notranslate"><span class="pre">glibc.so</span></code>, etc.</p>
 </li>
-<li><p>Tested only for C programs compiled with GCC, and it probably won’t work
-otherwise. If you’d like to use another compiler or another programming
-language, please get in touch so we can implement the necessary support.</p></li>
+<li><p>At the time of this writing, a Cray Slingshot optimized provider is not
+available; however, recent libfabric source acitivity indicates there may be
+at some point, see: <a class="reference external" href="https://github.com/ofiwg/libfabric/pull/7839We">https://github.com/ofiwg/libfabric/pull/7839We</a>.</p>
+<p>For now, on Cray systems with Slingshot, CXI, we need overwrite the
+container’s <code class="code docutils literal notranslate"><span class="pre">libfabric.so</span></code> with the hosts using <code class="code docutils literal notranslate"><span class="pre">--path</span></code>. See
+examples for details.</p>
+</li>
+<li><p>Tested only for C programs compiled with GCC. Additional bind mount or
+kludging may be needed for untested use cases. If you’d like to use another
+compiler or programming environment, please get in touch so we can implement
+the necessary support.</p></li>
 </ol>
 <p>Please file a bug if we missed anything above or if you know how to make the
 code better.</p>
@@ -285,6 +350,109 @@ non-fatal and occur when trying to probe common library paths. See <a class="ref
 </section>
 <section id="examples">
 <h2><span class="section-number">5.8. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<section id="id1">
+<h3><span class="section-number">5.8.1. </span>libfabric<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<p>Cray Slingshot CXI injection.</p>
+<p>Replace image libabfric, i.e., <code class="code docutils literal notranslate"><span class="pre">libfabric.so</span></code>, with Cray host’s
+libfabric at host path <code class="code docutils literal notranslate"><span class="pre">/opt/cray-libfabric/lib64/libfabric.so</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost -v --path /opt/cray-libfabric/lib64/libfabric.so /tmp/ompi
+<span class="go">[ debug ] queueing files</span>
+<span class="go">[ debug ]    cray libfabric: /opt/cray-libfabric/lib64/libfabric.so</span>
+<span class="go">[ debug ] searching image for inferred libfabric destiation</span>
+<span class="go">[ debug ]    found /tmp/ompi/usr/local/lib/libfabric.so</span>
+<span class="go">[ debug ] adding cray libfabric libraries</span>
+<span class="go">[ debug ]    skipping /lib64/libcom_err.so.2</span>
+<span class="go">[...]</span>
+<span class="go">[ debug ] queueing files</span>
+<span class="go">[ debug ]    shared library: /usr/lib64/libcxi.so.1</span>
+<span class="go">[ debug ] queueing files</span>
+<span class="go">[ debug ]    shared library: /usr/lib64/libcxi.so.1.2.1</span>
+<span class="go">[ debug ] queueing files</span>
+<span class="go">[ debug ]    shared library: /usr/lib64/libjson-c.so.3</span>
+<span class="go">[ debug ] queueing files</span>
+<span class="go">[ debug ]    shared library: /usr/lib64/libjson-c.so.3.0.1</span>
+<span class="go">[...]</span>
+<span class="go">[ debug ] queueing files</span>
+<span class="go">[ debug ]    shared library: /usr/lib64/libssh.so.4</span>
+<span class="go">[ debug ] queueing files</span>
+<span class="go">[ debug ]    shared library: /usr/lib64/libssh.so.4.7.4</span>
+<span class="go">[...]</span>
+<span class="go">[ debug ] inferred shared library destination: /tmp/ompi//usr/local/lib</span>
+<span class="go">[ debug ] injecting into image: /tmp/ompi/</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi//var/lib/hugetlbfs</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi//var/spool/slurmd</span>
+<span class="go">[ debug ]    echo &#39;/usr/lib64&#39; &gt;&gt; /tmp/ompi//etc/ld.so.conf.d/ch-ofi.conf</span>
+<span class="go">[ debug ]    /opt/cray-libfabric/lib64/libfabric.so -&gt; /usr/local/lib (inferred)</span>
+<span class="go">[ debug ]    /usr/lib64/libcxi.so.1 -&gt; /usr/local/lib (inferred)</span>
+<span class="go">[ debug ]    /usr/lib64/libcxi.so.1.2.1 -&gt; /usr/local/lib (inferred)</span>
+<span class="go">[ debug ]    /usr/lib64/libjson-c.so.3 -&gt; /usr/local/lib (inferred)</span>
+<span class="go">[ debug ]    /usr/lib64/libjson-c.so.3.0.1 -&gt; /usr/local/lib (inferred)</span>
+<span class="go">[ debug ]    /usr/lib64/libssh.so.4 -&gt; /usr/local/lib (inferred)</span>
+<span class="go">[ debug ]    /usr/lib64/libssh.so.4.7.4 -&gt; /usr/local/lib (inferred)</span>
+<span class="go">[ debug ] running ldconfig</span>
+<span class="go">[ debug ]    ch-run -w /tmp/ompi/ -- /sbin/ldconfig</span>
+<span class="go">[ debug ] validating ldconfig cache</span>
+<span class="go">done</span>
+</pre></div>
+</div>
+<p>Same as above, except also inject Cray’s <code class="code docutils literal notranslate"><span class="pre">fi_info</span></code> to verify Slingshot
+provider access.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost -v --path /opt/cray/libfabric/1.15.0.0/lib64/libfabric.so <span class="se">\</span>
+              -d /usr/local/bin <span class="se">\</span>
+              --path /opt/cray/libfabric/1.15.0.0/lib64/libfabric.so <span class="se">\</span>
+              /tmp/ompi
+<span class="go">[...]</span>
+<span class="gp">$</span> ch-run /tmp/ompi/ -- fi_info -p cxi
+<span class="go">provider: cxi</span>
+<span class="go">  fabric: cxi</span>
+<span class="go">  [...]</span>
+<span class="go">  type: FI_EP_RDM</span>
+<span class="go">  protocol: FI_PROTO_CXI</span>
+</pre></div>
+</div>
+<p>Cray GNI shared provider injection.</p>
+<p>Add Cray host built GNI provider <code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code> to the image and verify
+with <code class="code docutils literal notranslate"><span class="pre">fi_info</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost -v --path /home/ofi/libgnix-fi.so /tmp/ompi
+<span class="go">[ debug ] queueing files</span>
+<span class="go">[ debug ]    libfabric shared provider: /home/ofi/libgnix-fi.so</span>
+<span class="go">[ debug ] searching /tmp/ompi for libfabric shared provider destination</span>
+<span class="go">[ debug ]    found: /tmp/ompi/usr/local/lib/libfabric.so</span>
+<span class="go">[ debug ] inferred provider destination: //usr/local/lib/libfabric</span>
+<span class="go">[ debug ] injecting into image: /tmp/ompi</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi//usr/local/lib/libfabric</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi/var/lib/hugetlbfs</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi/var/opt/cray/alps/spool</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi/opt/cray/wlm_detect</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi/etc/opt/cray/wlm_detect</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi/opt/cray/udreg</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi/opt/cray/xpmem</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi/opt/cray/ugni</span>
+<span class="go">[ debug ]    mkdir -p /tmp/ompi/opt/cray/alps</span>
+<span class="go">[ debug ]    echo &#39;/lib64&#39; &gt;&gt; /tmp/ompi/etc/ld.so.conf.d/ch-ofi.conf</span>
+<span class="go">[ debug ]    echo &#39;/opt/cray/alps/lib64&#39; &gt;&gt; /tmp/ompi/etc/ld.so.conf.d/ch-ofi.conf</span>
+<span class="go">[ debug ]    echo &#39;/opt/cray/udreg/lib64&#39; &gt;&gt; /tmp/ompi/etc/ld.so.conf.d/ch-ofi.conf</span>
+<span class="go">[ debug ]    echo &#39;/opt/cray/ugni/lib64&#39; &gt;&gt; /tmp/ompi/etc/ld.so.conf.d/ch-ofi.conf</span>
+<span class="go">[ debug ]    echo &#39;/opt/cray/wlm_detect/lib64&#39; &gt;&gt; /tmp/ompi/etc/ld.so.conf.d/ch-ofi.conf</span>
+<span class="go">[ debug ]    echo &#39;/opt/cray/xpmem/lib64&#39; &gt;&gt; /tmp/ompi/etc/ld.so.conf.d/ch-ofi.conf</span>
+<span class="go">[ debug ]    echo &#39;/usr/lib64&#39; &gt;&gt; /tmp/ompi/etc/ld.so.conf.d/ch-ofi.conf</span>
+<span class="go">[ debug ]    /home/ofi/libgnix-fi.so -&gt; //usr/local/lib/libfabric (inferred)</span>
+<span class="go">[ debug ] running ldconfig</span>
+<span class="go">[ debug ]    ch-run -w /tmp/ompi -- /sbin/ldconfig</span>
+<span class="go">[ debug ] validating ldconfig cache</span>
+<span class="go">done</span>
+
+<span class="gp">$</span> ch-run /tmp/ompi -- fi_info -p gni
+<span class="go">provider: gni</span>
+<span class="go">  fabric: gni</span>
+<span class="go">  [...]</span>
+<span class="go">  type: FI_EP_RDM</span>
+<span class="go">  protocol: FI_PROTO_GNI</span>
+</pre></div>
+</div>
+</section>
+<section id="arbitrary">
+<h3><span class="section-number">5.8.2. </span>Arbitrary<a class="headerlink" href="#arbitrary" title="Permalink to this headline">¶</a></h3>
 <p>Place shared library <code class="code docutils literal notranslate"><span class="pre">/usr/lib64/libfoo.so</span></code> at path
 <code class="code docutils literal notranslate"><span class="pre">/usr/lib/libfoo.so</span></code> (assuming <code class="code docutils literal notranslate"><span class="pre">/usr/lib</span></code> is the first directory
 searched by the dynamic loader in the image), within the image
@@ -319,8 +487,8 @@ within the container:</p>
 then run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --nvidia /var/tmp/baz
 <span class="go">asking ldconfig for shared library destination</span>
-<span class="go">/sbin/ldconfig: Can&#39;t stat /libx32: No such file or directory</span>
-<span class="go">/sbin/ldconfig: Can&#39;t stat /usr/libx32: No such file or directory</span>
+<span class="go">/sbin/ldconfig: Can’t stat /libx32: No such file or directory</span>
+<span class="go">/sbin/ldconfig: Can’t stat /usr/libx32: No such file or directory</span>
 <span class="go">shared library destination: /usr/lib64//bind9-export</span>
 <span class="go">injecting into image: /var/tmp/baz</span>
 <span class="go">  /usr/bin/nvidia-smi -&gt; /usr/bin (inferred)</span>
@@ -336,30 +504,7 @@ then run <code class="code docutils literal notranslate"><span class="pre">ldcon
 <span class="go">running ldconfig</span>
 </pre></div>
 </div>
-<p>Inject the Cray-enabled MPI libraries into the image, and then run
-<code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --cray-mpi /var/tmp/baz
-<span class="go">asking ldconfig for shared library destination</span>
-<span class="go">/sbin/ldconfig: Can&#39;t stat /libx32: No such file or directory</span>
-<span class="go">/sbin/ldconfig: Can&#39;t stat /usr/libx32: No such file or directory</span>
-<span class="go">shared library destination: /usr/lib64//bind9-export</span>
-<span class="go">found shared library: /usr/lib64/liblustreapi.so.1</span>
-<span class="go">found shared library: /opt/cray/xpmem/default/lib64/libxpmem.so.0</span>
-<span class="go">[...]</span>
-<span class="go">injecting into image: /var/tmp/baz</span>
-<span class="go">  rm -f /var/tmp/openmpi/usr/lib64//bind9-export/libopen-rte.so.40</span>
-<span class="go">  rm -f /var/tmp/openmpi/usr/lib64/bind9-export/libopen-rte.so.40</span>
-<span class="go">[...]</span>
-<span class="go">  mkdir -p /var/tmp/openmpi/var/opt/cray/alps/spool</span>
-<span class="go">  mkdir -p /var/tmp/openmpi/etc/opt/cray/wlm_detect</span>
-<span class="go">[...]</span>
-<span class="go">  /usr/lib64/liblustreapi.so.1 -&gt; /usr/lib64//bind9-export (inferred)</span>
-<span class="go">  /opt/cray/xpmem/default/lib64/libxpmem.so.0 -&gt; /usr/lib64//bind9-export (inferred)</span>
-<span class="go">[...]</span>
-<span class="go">  /etc/opt/cray/wlm_detect/active_wlm -&gt; /etc/opt/cray/wlm_detect</span>
-<span class="go">running ldconfig</span>
-</pre></div>
-</div>
+</section>
 </section>
 <section id="acknowledgements">
 <h2><span class="section-number">5.9. </span>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>

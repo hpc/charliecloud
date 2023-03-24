@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>10. ch-test &mdash; Charliecloud 0.31 documentation</title>
+  <title>10. ch-test &mdash; Charliecloud 0.32 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.31
+                0.32
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -153,6 +153,8 @@ order.</p>
 <dt><code class="code docutils literal notranslate"><span class="pre">mk-perm-dirs</span></code></dt><dd><p>Create the filesystem permissions directories. Requires
 <code class="code docutils literal notranslate"><span class="pre">--perm-dirs</span></code>.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">build-images</span></code></dt><dd><p>Build images from <code class="code docutils literal notranslate"><span class="pre">build</span></code> phase, without running the associated tests.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">clean</span></code></dt><dd><p>Delete automatically-generated test files, and packed and unpacked image
 directories.</p>
 </dd>
@@ -218,7 +220,7 @@ before running.</p></li>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--img-dir</span> <span class="pre">DIR</span></code></dt><dd><p>Set unpacked images directory to <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>. In a multi-node allocation,
 this directory may not be shared between nodes. Default:
-<code class="code docutils literal notranslate"><span class="pre">$CH_TEST_IMGDIR</span></code> if set; otherwise <code class="code docutils literal notranslate"><span class="pre">/var/tmp/img</span></code>.</p>
+<code class="code docutils literal notranslate"><span class="pre">$CH_TEST_IMGDIR</span></code> if set; otherwise <code class="code docutils literal notranslate"><span class="pre">/var/tmp/${USER}.img</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--lustre</span> <span class="pre">DIR</span></code></dt><dd><p>Use <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> for run-phase Lustre tests. Default:
 <code class="code docutils literal notranslate"><span class="pre">CH_TEST_LUSTREDIR</span></code> if set; otherwise skip them.</p>
@@ -226,7 +228,7 @@ this directory may not be shared between nodes. Default:
 <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>, leaving everything else in <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> untouched.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--pack-dir</span> <span class="pre">DIR</span></code></dt><dd><p>Set packed images directory to <code class="code docutils literal notranslate"><span class="pre">DIR</span></code>. Default:
-<code class="code docutils literal notranslate"><span class="pre">$CH_TEST_TARDIR</span></code> if set; otherwise <code class="code docutils literal notranslate"><span class="pre">/var/tmp/pack</span></code>.</p>
+<code class="code docutils literal notranslate"><span class="pre">$CH_TEST_TARDIR</span></code> if set; otherwise <code class="code docutils literal notranslate"><span class="pre">/var/tmp/${USER}.pack</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--pedantic</span> <span class="pre">(yes|no)</span></code></dt><dd><p>Some tests require configurations that are very specific (e.g., being a
 member of at least two groups) or unusual (e.g., sudo to a non-root

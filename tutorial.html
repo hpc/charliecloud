@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Tutorial &mdash; Charliecloud 0.31 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.32 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.31
+                0.32
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -1055,7 +1055,7 @@ a destination that already exists, like those created under <code class="code do
 <span class="gp">$</span> mkdir /var/tmp/foo1
 <span class="gp">$</span> <span class="nb">echo</span> world &gt; /var/tmp/foo1/bar
 <span class="gp">$</span> ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
-<span class="go">ch-run[1184427]: error: can&#39;t mkdir: /var/tmp/hello/var/tmp/foo0: Read-only file system (ch_misc.c:142 30)</span>
+<span class="go">ch-run[1184427]: error: can’t mkdir: /var/tmp/hello/var/tmp/foo0: Read-only file system (ch_misc.c:142 30)</span>
 <span class="gp">$</span> ch-run -b /var/tmp/foo0:/mnt/0 -b /var/tmp/foo1:/mnt/1 /var/tmp/hello -- bash
 <span class="gp">&gt;</span> ls /mnt
 <span class="go">0  1  2  3  4  5  6  7  8  9</span>

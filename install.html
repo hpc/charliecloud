@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1. Installing &mdash; Charliecloud 0.31 documentation</title>
+  <title>1. Installing &mdash; Charliecloud 0.32 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.31
+                0.32
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -70,16 +70,15 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#notes-on-specific-dependencies">1.3.5. Notes on specific dependencies</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#bash">1.3.5.1. Bash</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bats">1.3.5.2. Bats</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#buildah">1.3.5.3. Buildah</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#c-compiler">1.3.5.4. C compiler</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#image-repository-access">1.3.5.5. image repository access</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#python">1.3.5.6. Python</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#shellcheck">1.3.5.7. ShellCheck</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sphinx">1.3.5.8. Sphinx</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#squashfs-and-squashfuse">1.3.5.9. SquashFS and SquashFUSE</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#sudo-generic">1.3.5.10. sudo, generic</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#wget">1.3.5.11. Wget</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#buildah">1.3.5.2. Buildah</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#c-compiler">1.3.5.3. C compiler</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#image-repository-access">1.3.5.4. image repository access</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#python">1.3.5.5. Python</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#shellcheck">1.3.5.6. ShellCheck</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sphinx">1.3.5.7. Sphinx</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#squashfs-and-squashfuse">1.3.5.8. SquashFS and SquashFUSE</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#sudo-generic">1.3.5.9. sudo, generic</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#wget">1.3.5.10. Wget</a></li>
 </ul>
 </li>
 </ul>
@@ -445,6 +444,13 @@ shell and utilities.</p>
 <li><p>ll.h header</p></li>
 </ul>
 </div></blockquote>
+<p>fake system calls with seccomp(2):</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>enabled</p></li>
+<li><p>tested working</p></li>
+</ul>
+</div></blockquote>
 <p>documentation:</p>
 <blockquote>
 <div><ul class="simple">
@@ -546,7 +552,7 @@ the builder directly.</p>
 <li><p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></p></li>
 <li><p>any builder above</p></li>
 <li><p>access to Docker Hub or mirror</p></li>
-<li><p>Bats ≥ 0.4.0</p></li>
+<li><p>Bats ≥ 1.2.0</p></li>
 <li><p>Bash ≥ 4.1</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">wget</span></code> ≥ 1.11</p></li>
 </ul>
@@ -609,18 +615,8 @@ available.</p></li>
 </ul>
 </div></blockquote>
 </section>
-<section id="bats">
-<h4><span class="section-number">1.3.5.2. </span>Bats<a class="headerlink" href="#bats" title="Permalink to this headline">¶</a></h4>
-<p>Bats (“Bash Automated Testing System”) is a test framework for tests written
-as Bash shell scripts.</p>
-<p><a class="reference external" href="https://github.com/sstephenson/bats">Upstream Bats</a> is unmaintained, but
-widely available. Both version 0.4.0, which tends to be in distributions, and
-upstream master branch (commit 0360811) should work. There is a maintained
-fork called <a class="reference external" href="https://github.com/bats-core/bats-core">Bats-core</a>, but the
-test suite currently does not pass with it; see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/582">issue #582</a>. Patches welcome!</p>
-</section>
 <section id="buildah">
-<h4><span class="section-number">1.3.5.3. </span>Buildah<a class="headerlink" href="#buildah" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.2. </span>Buildah<a class="headerlink" href="#buildah" title="Permalink to this headline">¶</a></h4>
 <p>Charliecloud uses Buildah’s “rootless” mode and <code class="code docutils literal notranslate"><span class="pre">ignore-chown-errors</span></code>
 storage configuration for a fully unprivileged workflow with no sudo and no
 setuid binaries. Note that in this mode, images in Buildah internal storage
@@ -634,7 +630,7 @@ also has configuration in <code class="code docutils literal notranslate"><span 
 to diagnose.</p>
 </section>
 <section id="c-compiler">
-<h4><span class="section-number">1.3.5.4. </span>C compiler<a class="headerlink" href="#c-compiler" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.3. </span>C compiler<a class="headerlink" href="#c-compiler" title="Permalink to this headline">¶</a></h4>
 <p>We test with GCC. Core team members use whatever version comes with their
 distribution.</p>
 <p>In principle, any C99 compiler should work. Please let us know any success or
@@ -643,7 +639,7 @@ failure reports.</p>
 that our test suite can’t deal with. See <a class="reference external" href="https://github.com/hpc/charliecloud/pull/481">PR #481</a>.</p>
 </section>
 <section id="image-repository-access">
-<h4><span class="section-number">1.3.5.5. </span>image repository access<a class="headerlink" href="#image-repository-access" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.4. </span>image repository access<a class="headerlink" href="#image-repository-access" title="Permalink to this headline">¶</a></h4>
 <p><code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instructions in Dockerfiles and image pushing/pulling require
 access to an image repository and configuring the builder for that repository.
 Options include:</p>
@@ -659,12 +655,12 @@ GitLab instance.</p></li>
 </div></blockquote>
 </section>
 <section id="python">
-<h4><span class="section-number">1.3.5.6. </span>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.5. </span>Python<a class="headerlink" href="#python" title="Permalink to this headline">¶</a></h4>
 <p>We use Python for scripts that would be really hard to do in Bash, when we
 think Python is likely to be available.</p>
 </section>
 <section id="shellcheck">
-<h4><span class="section-number">1.3.5.7. </span>ShellCheck<a class="headerlink" href="#shellcheck" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.6. </span>ShellCheck<a class="headerlink" href="#shellcheck" title="Permalink to this headline">¶</a></h4>
 <p><a class="reference external" href="https://www.shellcheck.net/">ShellCheck</a> is a very thorough and capable
 linter for shell scripts. In order to pass the full test suite, all the shell
 scripts need to pass ShellCheck.</p>
@@ -674,7 +670,7 @@ isn’t a widely available tool chain. Fortunately, the developers provide
 pre-compiled <a class="reference external" href="https://github.com/koalaman/shellcheck/releases">static binaries</a> on their GitHub page.</p>
 </section>
 <section id="sphinx">
-<h4><span class="section-number">1.3.5.8. </span>Sphinx<a class="headerlink" href="#sphinx" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.7. </span>Sphinx<a class="headerlink" href="#sphinx" title="Permalink to this headline">¶</a></h4>
 <p>We use Sphinx to build the documentation; the theme is
 <a class="reference external" href="https://sphinx-rtd-theme.readthedocs.io/en/stable/">sphinx-rtd-theme</a>.</p>
 <p>Minimum versions are listed above. Note that while anything greater than the
@@ -691,7 +687,7 @@ write to <code class="code docutils literal notranslate"><span class="pre">/usr/
 matches previous <code class="code docutils literal notranslate"><span class="pre">pip</span></code> behavior.) See Debian bugs <a class="reference external" href="https://bugs.debian.org/725848">725848</a> and <a class="reference external" href="https://bugs.debian.org/cgi-bin/bugreport.cgi?bug=820856">820856</a>.</p>
 </section>
 <section id="squashfs-and-squashfuse">
-<h4><span class="section-number">1.3.5.9. </span>SquashFS and SquashFUSE<a class="headerlink" href="#squashfs-and-squashfuse" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.8. </span>SquashFS and SquashFUSE<a class="headerlink" href="#squashfs-and-squashfuse" title="Permalink to this headline">¶</a></h4>
 <p>The SquashFS workflow requires <a class="reference external" href="https://github.com/plougher/squashfs-tools">SquashFS Tools</a> to create SquashFS archives.</p>
 <p>To mount these archives using <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s internal code, you need:</p>
 <ol class="arabic simple">
@@ -723,7 +719,7 @@ proper components will not be available, so Charliecloud’s
 </div>
 </section>
 <section id="sudo-generic">
-<h4><span class="section-number">1.3.5.10. </span>sudo, generic<a class="headerlink" href="#sudo-generic" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.9. </span>sudo, generic<a class="headerlink" href="#sudo-generic" title="Permalink to this headline">¶</a></h4>
 <p>Privilege escalation via sudo is used in the test suite to:</p>
 <blockquote>
 <div><ul class="simple">
@@ -734,7 +730,7 @@ proper components will not be available, so Charliecloud’s
 <p>(Note that Charliecloud also uses <code class="code docutils literal notranslate"><span class="pre">sudo</span> <span class="pre">docker</span></code>; see above.)</p>
 </section>
 <section id="wget">
-<h4><span class="section-number">1.3.5.11. </span>Wget<a class="headerlink" href="#wget" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">1.3.5.10. </span>Wget<a class="headerlink" href="#wget" title="Permalink to this headline">¶</a></h4>
 <p>Wget is used to demonstrate building an image without a builder (the main test
 image used to exercise Charliecloud itself).</p>
 </section>
