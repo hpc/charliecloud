@@ -149,9 +149,16 @@ jobs:
         if: ${{ matrix.pack_fmt == 'squash-mount' }}
         run: |
           set -x
-          # Ubuntu’s SquashFUSE isn’t the necessary version, but it contains a
-          # patch to create the shared library we need.
-          sudo apt-get install -y libfuse3-dev libsquashfuse-dev
+          sudo apt-get install -y libfuse3-dev
+          # Currently we need the master branch of SquashFUSE.
+          cd /usr/local/src
+          git clone https://github.com/vasi/squashfuse.git
+          cd squashfuse
+          ./autogen.sh
+          ./configure --prefix=/usr/local
+          make
+          sudo sh -c 'umask 0022 && make install'
+          sudo ldconfig
           # Unset setuid on all fusermount3(1) on the system.
           sudo chmod -v u-s /usr/bin/fusermount*
           ls -lh $(command -v fusermount3)
