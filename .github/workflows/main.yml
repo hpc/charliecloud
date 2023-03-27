@@ -374,7 +374,7 @@ jobs:
           $ch_prefix/from-tarball/bin/ch-run --version
 
       - name: run test suite (Git WD, quick)
-        if: ${{ matrix.builder == 'ch-image' && matrix.cache = 'enabled' }}
+        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'enabled' }}
         run: |
           bin/ch-test --scope=quick all
 
@@ -383,7 +383,7 @@ jobs:
           bin/ch-test all
 
       - name: run test suite (installed from Git WD, standard)
-        if: ${{ matrix.builder == ch-image && matrix.cache == 'enabled' }}
+        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
 
