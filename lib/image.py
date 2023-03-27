@@ -195,6 +195,8 @@ class Image:
                 "unpack_path")
 
    def __init__(self, ref, unpack_path=None):
+      if (isinstance(ref, str)):
+         ref = Reference(ref)
       assert isinstance(ref, Reference)
       self.ref = ref
       if (unpack_path is not None):

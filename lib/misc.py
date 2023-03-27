@@ -98,7 +98,12 @@ def import_(cli):
    ch.done_notify()
 
 def list_(cli):
-   imgdir = ch.storage.unpack_base
+   if (cli.undeleteable | cli.undeletable):
+      # list undeleteable images
+      imgdir = ch.storage.build_cache // "refs/tags"
+   else:
+      # list images
+      imgdir = ch.storage.unpack_base
    if (cli.image_ref is None):
       # list all images
       if (not os.path.isdir(ch.storage.root)):
@@ -109,6 +114,7 @@ def list_(cli):
       if (len(images) >= 1):
          img_width = max(len(ref) for ref in images)
          for ref in images:
+            ref = ref.replace("&","") # get rid of deleted delimiter
             img = im.Image(im.Reference(fs.Path(ref).parts[-1]))
             if cli.long:
                print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
@@ -184,5 +190,9 @@ def undelete(cli):
       ch.FATAL("image exists; will not overwrite")
    (_, git_hash) = bu.cache.find_image(img)
    if (git_hash is None):
-      ch.FATAL("image not in cache")
+      img_pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
+      git_hash = bu.cache.git(["log", "--format=%h%n%B", "-n", "1",
+                          "&%s" % img_pathstr])
+      bu.cache.git(["tag", "-d", "&%s" % img_pathstr])
    bu.cache.checkout(img, git_hash, None)
+   bu.cache.ready(img)

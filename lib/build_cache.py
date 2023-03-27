@@ -689,6 +689,8 @@ class Enabled_Cache:
       # deleted branch tip.
       if (self.git(["show-ref", "--quiet", "--heads", branch],
                     fail_ok=True).returncode == 0): # branch found
+         if (not branch.endswith("#")):
+            self.git(["tag", "-a", "&%s" % branch, branch, "-m", "''"])
          head_old = self.git(["rev-parse", "HEAD"]).stdout.strip()
          self.git(["update-ref", "HEAD", branch])
          self.git(["update-ref", "HEAD", head_old])
@@ -778,9 +780,19 @@ class Enabled_Cache:
       # collisions.
       cp = self.git(["log", "--format=%h%n%B", "-n", "1", git_id],
                     fail_ok=True)
+      deleted = self.git(["log", "--format=%h%n%B", "-n", "1",
+                          "&%s" % git_id],fail_ok=True)#.stdout.replace("\n","")
       if (cp.returncode == 0):  # branch exists
          sid = State_ID.from_text(cp.stdout)
          commit = cp.stdout.split("\n", maxsplit=1)[0]
+      elif (deleted.returncode == 0):
+         # Commit was previously deleted but is still cached. Recover it.
+         sid = State_ID.from_text(deleted.stdout)
+         commit = deleted.stdout.split("\n", maxsplit=1)[0]
+         self.git(["tag", "-d", "&%s" % git_id])
+         img = im.Image(im.Reference.path_to_ref(git_id))
+         self.checkout(img, commit, None)
+         self.ready(img)
       else:
          sid = None
          commit = None
@@ -912,6 +924,11 @@ class Enabled_Cache:
       if (dl_git_hash is not None):
          # Downloaded image is in cache, check it out.
          ch.INFO("pulled image: found in build cache")
+         if (self.git(["tag", "-l",
+                       "&%s" % img.ref.for_path]).stdout != ''):
+            # Branch was previously deleted. Remove tag to avoid
+            # problems.
+            self.git(["tag", "-d", "&%s" % img.ref.for_path])
          self.checkout(img, dl_git_hash, None)
          self.ready(img)
       else:
@@ -1045,7 +1062,8 @@ class Enabled_Cache:
          # FIXME: The body contains a trailing newline I can’t figure out how
          # to remove.
          fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
-      self.git(["log", "--graph", "--all", "--reflog",
+      self.git(["log", "--graph", "--decorate-refs-exclude=refs/tags/*",
+                       "--all", "--reflog",
                        "--topo-order", "--format=%s" % fmt], quiet=False)
       print()  # blank line to separate from summary
 
