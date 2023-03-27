@@ -1,0 +1,5 @@
+# Minimal test image to exercise a Dockerfile build in quick scope.
+# ch-test-scope: quick
+
+FROM alpine:3.17
+RUN apk add bc
