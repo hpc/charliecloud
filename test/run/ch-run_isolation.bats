@@ -1,7 +1,7 @@
 load ../common
 
 @test 'mountns id differs' {
-    scope quick
+    scope full
     host_ns=$(stat -Lc '%i' /proc/self/ns/mnt)
     echo "host:  ${host_ns}"
     guest_ns=$(ch-run "$ch_timg" -- stat -Lc %i /proc/self/ns/mnt)
@@ -10,7 +10,7 @@ load ../common
 }
 
 @test 'userns id differs' {
-    scope quick
+    scope full
     host_ns=$(stat -Lc '%i' /proc/self/ns/user)
     echo "host:  ${host_userns}"
     guest_ns=$(ch-run "$ch_timg" -- stat -Lc %i /proc/self/ns/user)
@@ -19,7 +19,7 @@ load ../common
 }
 
 @test 'distro differs' {
-    scope quick
+    scope full
     # This is a catch-all and a bit of a guess. Even if it fails, however, we
     # get an empty string, which is fine for the purposes of the test.
     host_distro=$(  cat /etc/os-release /etc/*-release /etc/*_version \
@@ -41,7 +41,7 @@ load ../common
 }
 
 @test 'user and group match host' {
-    scope quick
+    scope full
     host_uid=$(id -u)
     guest_uid=$(ch-run "$ch_timg" -- id -u)
     [[ $host_uid = "$guest_uid" ]]

@@ -2,19 +2,20 @@ load ../common
 
 
 @test 'relative path to image' {  # issue #6
-    scope quick
+    scope full
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
+
 @test 'symlink to image' {  # issue #50
-    scope quick
+    scope full
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
     ch-run "${BATS_TMPDIR}/symlink-test" -- /bin/true
 }
 
 
 @test 'mount image read-only' {
-    scope quick
+    scope standard
     run ch-run "$ch_timg" sh <<EOF
 set -e
 dd if=/dev/zero bs=1 count=1 of=/out
@@ -26,7 +27,7 @@ EOF
 
 
 @test 'mount image read-write' {
-    scope quick
+    scope standard
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
@@ -35,7 +36,7 @@ EOF
 
 @test '/usr/bin/ch-ssh' {
     # Note: --ch-ssh without /usr/bin/ch-ssh is in test “broken image errors”.
-    scope quick
+    scope standard
     ls -l "$ch_bin/ch-ssh"
     ch-run --ch-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
     ch-run --ch-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh

@@ -128,7 +128,7 @@ load ../common
 }
 
 @test 'proxy variables' {
-    scope quick
+    scope standard
     # Proxy variables are a mess on UNIX. There are a lot them, and different
     # programs use them inconsistently. This test is based on the assumption
     # that if one of the proxy variables are set, then they all should be, in
