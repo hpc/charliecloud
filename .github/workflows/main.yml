@@ -27,7 +27,7 @@ jobs:
             keep_sudo: false
             cache: disabled
           - builder: docker
-            pack_fmt: squash-mount
+            pack_fmt: tar-unpack
             keep_sudo: true
             cache: enabled
           - builder: ch-image
@@ -331,9 +331,6 @@ jobs:
           docker ps -a
 
       - name: build/install from tarball
-        if: ${{    matrix.builder == 'ch-image'
-                && matrix.pack_fmt == 'squash-mount'
-                && matrix.cache == 'enabled' }}
         run: |
           # Create and unpack tarball. The wildcard saves us having to put the
           # version in a variable. This assumes there isn’t already a tarball
@@ -400,10 +397,8 @@ jobs:
         run: |
           $ch_prefix/from-tarball/bin/ch-test all
 
-      - name: make uninstall from tarball
-        if: ${{    matrix.builder == 'ch-image'
-                && matrix.pack_fmt == 'squash-mount'
-                && matrix.cache == 'enabled' }}
+      - name: uninstall from tarball
+        if: ${{ matrix.keep_sudo }}
         run: |
           cd $ch_prefix/charliecloud-*
           sudo make uninstall
@@ -459,8 +454,6 @@ jobs:
           fi
           ! python3 -c 'import requests'
           ! python3 -c 'import lark'
-          test -e bin/ch-image
-          bin/ch-test -f test/build/10_sanity.bats  # issue #806
 
       - name: rebuild
         if: ${{ matrix.builder == 'docker' }}
