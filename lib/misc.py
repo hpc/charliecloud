@@ -86,6 +86,10 @@ def gestalt_storage_path(cli):
 def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can’t copy: not found: %s" % cli.path)
+   pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
+   if (bu.cache.git(["tag", "--list", "&%s" % pathstr]).stdout != ""):
+      # Un-tag previously deleted branch, if it exists.
+      bu.cache.git(["tag", "-d", "&%s" % pathstr])
    dst = im.Image(im.Reference(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
@@ -194,5 +198,4 @@ def undelete(cli):
       git_hash = bu.cache.git(["log", "--format=%h%n%B", "-n", "1",
                           "&%s" % img_pathstr])
       bu.cache.git(["tag", "-d", "&%s" % img_pathstr])
-   bu.cache.checkout(img, git_hash, None)
-   bu.cache.ready(img)
+   bu.cache.checkout_ready(img, git_hash)

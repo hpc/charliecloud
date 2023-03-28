@@ -714,6 +714,11 @@ class Enabled_Cache:
       self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path, [], False)
 
+   def checkout_ready(self, image, git_hash, base_image=None):
+      # Wrapper for “checkout()” followed by “ready()”
+      self.checkout(image, git_hash, base_image)
+      self.ready(image)
+
    def commit(self, path, sid, msg, files):
       # Commit image at path into the build cache. If set files is empty, any
       # and all image content may have been changed. Otherwise, assume files
@@ -781,7 +786,7 @@ class Enabled_Cache:
       cp = self.git(["log", "--format=%h%n%B", "-n", "1", git_id],
                     fail_ok=True)
       deleted = self.git(["log", "--format=%h%n%B", "-n", "1",
-                          "&%s" % git_id],fail_ok=True)#.stdout.replace("\n","")
+                          "&%s" % git_id],fail_ok=True)
       if (cp.returncode == 0):  # branch exists
          sid = State_ID.from_text(cp.stdout)
          commit = cp.stdout.split("\n", maxsplit=1)[0]
@@ -791,8 +796,7 @@ class Enabled_Cache:
          commit = deleted.stdout.split("\n", maxsplit=1)[0]
          self.git(["tag", "-d", "&%s" % git_id])
          img = im.Image(im.Reference.path_to_ref(git_id))
-         self.checkout(img, commit, None)
-         self.ready(img)
+         self.checkout_ready(img, commit)
       else:
          sid = None
          commit = None
@@ -929,8 +933,7 @@ class Enabled_Cache:
             # Branch was previously deleted. Remove tag to avoid
             # problems.
             self.git(["tag", "-d", "&%s" % img.ref.for_path])
-         self.checkout(img, dl_git_hash, None)
-         self.ready(img)
+         self.checkout_ready(img, dl_git_hash)
       else:
          # Unpack and commit downloaded image. This also creates the worktree.
          ch.INFO("pulled image: adding to build cache")
@@ -1054,17 +1057,18 @@ class Enabled_Cache:
    def tree_print(self):
       # Note the percent codes are interpreted by Git.
       # See: https://git-scm.com/docs/git-log#_pretty_formats
+      ch.INFO("CALLED")
+      args = ["log", "--graph", "--all", "--reflog", "--topo-order"]
       if (ch.verbose == 0):
          # ref names, subject (instruction)
          fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
+         args.append("--decorate-refs-exclude=refs/tags")
       else:
          # ref names, short commit hash, subject (instruction), body (state ID)
          # FIXME: The body contains a trailing newline I can’t figure out how
          # to remove.
          fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
-      self.git(["log", "--graph", "--decorate-refs-exclude=refs/tags/*",
-                       "--all", "--reflog",
-                       "--topo-order", "--format=%s" % fmt], quiet=False)
+      self.git(args + ["--format=%s" % fmt], quiet=False)
       print()  # blank line to separate from summary
 
    def tree_dot(self):
