@@ -330,20 +330,10 @@ jobs:
                   -v ~/registry-etc:/etc/docker/registry registry:2
           docker ps -a
 
-      - name: configure sudo to user root, group non-root
-        if: ${{ matrix.keep_sudo }}
-        run: |
-          sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/runner
-          sudo cat /etc/sudoers.d/runner
-
-      - name: remove sudo
-        if: ${{ ! matrix.keep_sudo }}
-        run: |
-          sudo rm /etc/sudoers.d/runner
-          ! sudo echo hello
-
       - name: build/install from tarball
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
         run: |
           # Create and unpack tarball. The wildcard saves us having to put the
           # version in a variable. This assumes there isn’t already a tarball
@@ -380,27 +370,40 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-tarball/bin/ch-run --version
 
-      - name: run test suite (Git WD, quick)
-        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'enabled' }}
+      - name: configure sudo to user root, group non-root
+        if: ${{ matrix.keep_sudo }}
         run: |
-          bin/ch-test --scope=quick all
+          sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/runner
+          sudo cat /etc/sudoers.d/runner
+
+      - name: remove sudo
+        if: ${{ ! matrix.keep_sudo }}
+        run: |
+          sudo rm /etc/sudoers.d/runner
+          ! sudo echo hello
 
       - name: run test suite (Git WD, standard)
         run: |
           bin/ch-test all
 
       - name: run test suite (installed from Git WD, standard)
-        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'enabled' }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
 
       - name: run test suite (installed from tarball, standard)
-        if: ${{ matrix.cache == 'enabled' }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-tarball/bin/ch-test all
 
-      - name: make uninstall
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+      - name: make uninstall from tarball
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
         run: |
           cd $ch_prefix/charliecloud-*
           sudo make uninstall
@@ -449,10 +452,10 @@ jobs:
                     pigz \
                     pv \
                     python3-requests \
-                    squashfs-tools \
+                    squashfs-tools
           sudo pip3 uninstall -y sphinx sphinx-rtd-theme
           if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
-              ( cd /usr/local/src/squashfuse && make uninstall )
+              ( cd /usr/local/src/squashfuse && sudo make uninstall )
           fi
           ! python3 -c 'import requests'
           ! python3 -c 'import lark'
