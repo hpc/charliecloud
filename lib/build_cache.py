@@ -68,6 +68,9 @@ GIT_CONFIG = {
    # that reduces index size by 30%-50% on large repositories” [1].
    # [1]: https://git-scm.com/docs/git-update-index
    "index.version":          "4",
+   # Print logs in short format by default. This helps ensure consistency
+   # across different systems and git versions.
+   "log.decorate":           "short",
    # States on the reflog are available to the build cache, but the default
    # prune time is 90 and 30 days respectively, which seems too long.
    #"gc.reflogExpire":        "14.days.ago",  # changed my mind
@@ -1057,12 +1060,11 @@ class Enabled_Cache:
    def tree_print(self):
       # Note the percent codes are interpreted by Git.
       # See: https://git-scm.com/docs/git-log#_pretty_formats
-      ch.INFO("CALLED")
       args = ["log", "--graph", "--all", "--reflog", "--topo-order"]
       if (ch.verbose == 0):
          # ref names, subject (instruction)
          fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
-         args.append("--decorate-refs-exclude=refs/tags")
+         args.append("--decorate-refs=refs/heads")
       else:
          # ref names, short commit hash, subject (instruction), body (state ID)
          # FIXME: The body contains a trailing newline I can’t figure out how

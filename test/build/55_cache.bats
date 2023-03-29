@@ -34,7 +34,7 @@ setup () {
     blessed_tree=$(cat << EOF
 initializing storage directory: v6 ${CH_IMAGE_STORAGE}
 initializing empty build cache
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}empty"
@@ -49,7 +49,7 @@ EOF
 
     blessed_tree=$(cat << 'EOF'
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}initial-pull"
@@ -68,7 +68,7 @@ EOF
     [[ $output = *'1. FROM alpine:3.17'* ]]
     blessed_tree=$(cat << 'EOF'
 *  (d, alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}from"
@@ -83,7 +83,7 @@ EOF
     [[ $output = *'1* FROM alpine:3.17'* ]]
     blessed_tree=$(cat << 'EOF'
 *  (d, alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -98,7 +98,7 @@ EOF
     [[ $output = *'1* FROM alpine:3.17'* ]]
     blessed_tree=$(cat << 'EOF'
 *  (d2, d, alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -117,7 +117,7 @@ EOF
 *  (a) RUN echo bar
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}a"
@@ -138,7 +138,7 @@ EOF
 *  (a) RUN echo bar
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}b"
@@ -163,7 +163,7 @@ EOF
 |/
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}c"
@@ -186,7 +186,7 @@ EOF
 | *  RUN echo foo
 |/
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     ch-image --rebuild build -t a -f bucache/a.df .
@@ -212,7 +212,7 @@ EOF
 | *  RUN echo foo
 |/
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     ch-image --rebuild build -t b -f bucache/b.df .
@@ -243,7 +243,7 @@ EOF
 | *  RUN echo foo
 |/
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     ch-image --rebuild build -t c -f bucache/c.df .
@@ -269,7 +269,7 @@ EOF
 |/
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}revert1"
@@ -286,7 +286,7 @@ EOF
 |/
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}revert2"
@@ -303,7 +303,7 @@ EOF
 
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -336,7 +336,7 @@ EOF
     tree_ours_before=$(cat <<'EOF'
 *  (wc) RUN cat /worldchampion
 *  (localhost+5000%champ) PULL localhost:5000/champ
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
 
@@ -440,7 +440,7 @@ EOF
 | *  (wc) RUN cat /worldchampion
 | *  PULL localhost:5000/champ
 |/
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 
     echo
@@ -465,7 +465,7 @@ EOF
 | *  RUN cat /worldchampion
 | *  PULL localhost:5000/champ
 |/
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 }
 
@@ -482,7 +482,7 @@ EOF
 *  (a) RUN echo bar
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 
     # Delete image
@@ -494,7 +494,7 @@ EOF
 *  RUN echo bar
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 
     # Rebuild, check for cache hit
@@ -532,7 +532,7 @@ EOF
 *  (foo) RUN echo bar
 *  (foo#) RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -549,7 +549,7 @@ EOF
 |/
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -576,7 +576,7 @@ EOF
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 
     # Third build, without --force. This should re-use the first build.
@@ -593,7 +593,7 @@ EOF
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 }
 
@@ -621,7 +621,7 @@ EOF
 | *  RUN echo foo
 |/
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree --dot="${dot_base}rebuild"
@@ -762,7 +762,7 @@ EOF
 |/
 *  ARG argA='vargA'
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
@@ -927,7 +927,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (foo) RUN echo foo
 *  (alpine+3.17) IMPORT alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -944,7 +944,7 @@ EOF
 *  (a2, a) RUN echo bar
 *  RUN echo foo
 *  (alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     ch-image build -t a -f ./bucache/a.df .
@@ -981,7 +981,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.17) RUN echo foo
 *  (foo) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -998,7 +998,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
 *  (foo, alpine+3.17) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -1012,7 +1012,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
 *  (foo, alpine+3.17, alpine+3.16) PULL alpine:3.17
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -1030,7 +1030,7 @@ EOF
 | *  RUN echo foo
 | *  (foo, alpine+3.17) PULL alpine:3.17
 |/
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
@@ -1093,7 +1093,7 @@ EOF
 *  (bar, alpine+3.17) PULL alpine:3.17
 | *  (scratch, foo) PULL scratch
 |/
-*  (HEAD -> root) ROOT
+*  (root) ROOT
 EOF
 )
     run ch-image build-cache --tree
