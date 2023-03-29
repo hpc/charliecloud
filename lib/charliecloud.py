@@ -19,18 +19,14 @@ import sys
 import time
 import traceback
 
+
+# List of dependency problems. This variable needs to be created before we
+# import any other Charliecloud stuff to avoid #806.
+depfails = []
+
+
 import filesystem as fs
 import registry as rg
-
-# Compatibility link. Sometimes we load pickled data from when Path was
-# defined in this file. This alias lets us still load such pickles.
-Path = fs.Path
-
-
-## Hairy imports ##
-
-# List of dependency problems.
-depfails = []
 
 
 ## Enums ##
@@ -102,6 +98,10 @@ PYTHON_MIN = (3,6)
 
 
 ## Globals ##
+
+# Compatibility link. Sometimes we load pickled data from when Path was
+# defined in this file. This alias lets us still load such pickles.
+Path = fs.Path
 
 # Active architecture (both using registry vocabulary)
 arch = None       # requested by user
