@@ -1,7 +1,7 @@
 load ../common
 
 @test 'ch-run refuses to run if setgid' {
-    scope quick
+    scope standard
     ch_run_tmp=$BATS_TMPDIR/ch-run.setgid
     gid=$(id -g)
     gid2=$(id -G | cut -d' ' -f2)
@@ -21,7 +21,7 @@ load ../common
 }
 
 @test 'ch-run refuses to run if setuid' {
-    scope quick
+    scope standard
     [[ -n $ch_have_sudo ]] || skip 'sudo not available'
     ch_run_tmp=$BATS_TMPDIR/ch-run.setuid
     cp -a "$ch_runfile" "$ch_run_tmp"
@@ -38,7 +38,7 @@ load ../common
 }
 
 @test 'ch-run as root: --version and --test' {
-    scope quick
+    scope standard
     [[ -n $ch_have_sudo ]] || skip 'sudo not available'
     sudo "$ch_runfile" --version
     sudo "$ch_runfile" --help

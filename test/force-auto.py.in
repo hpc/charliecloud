@@ -122,7 +122,8 @@ class Test(abc.ABC):
          print(f"\n# skip: {self}: --force=%s excluded" % self.force)
          return
       # scope
-      if (self.scope == Scope.STANDARD or self.run == Run.NEEDED):
+      if (    (self.scope == Scope.STANDARD or self.run == Run.NEEDED)
+          and self.force != "fakeroot"):
          scope = "standard"
       else:
          scope = "full"

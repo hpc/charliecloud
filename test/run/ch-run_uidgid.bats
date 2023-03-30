@@ -1,7 +1,7 @@
 load ../common
 
 setup () {
-    scope standard
+    scope full
     if [[ -n $GUEST_USER ]]; then
         # Specific user requested for testing.
         [[ -n $GUEST_GROUP ]]

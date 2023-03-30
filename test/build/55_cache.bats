@@ -246,9 +246,9 @@ EOF
 *  (HEAD -> root) ROOT
 EOF
 )
-    ch-image --rebuild build -t c -f bucache/c.df .
     # avoid race condition
     sleep 1
+    ch-image --rebuild build -t c -f bucache/c.df .
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
