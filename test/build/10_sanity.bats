@@ -73,6 +73,7 @@ load ../common
     #  SC2002  useless use of cat
     #  SC2103  cd exit code unchecked (Bats checks for failure)
     #  SC2164  same as SC2103
+    #  SC2317  unreachable code (ShellCheck thinks all in @test is unreachable)
     #
     # Additional excludes work around issue #210, and I think are required for
     # the Bats tests forever:
@@ -104,7 +105,7 @@ load ../common
     # For awk program, see: https://unix.stackexchange.com/a/66099
     while IFS= read -r i; do
         echo "shellcheck: ${i}"
-        shellcheck -x -P "$ch_lib" -e SC1090,SC1112,SC2002,SC2154,SC2317 "$i"
+        shellcheck -x -P "$ch_lib" -e SC1090,SC1112,SC2002,SC2154 "$i"
     done < <( find "$ch_base" \
                    \(    -name .git \
                       -o -name build-aux \) -prune \

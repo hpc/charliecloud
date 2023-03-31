@@ -919,7 +919,7 @@ while [[ $# -gt 0 ]]; do
         lustredir=${opt#*=}
         ;;
     --version)
-        version; exit 0
+        version
         ;;
     *)
         fatal "unrecognized argument: $opt"
