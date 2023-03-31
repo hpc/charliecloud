@@ -18,41 +18,33 @@
 #
 # 
 
-# might need to disable shellcheck SC2034 for this (see base.sh)
+# FIXME: disable shellcheck SC2034 for this? (See base.sh)
 CH_BIN="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
+# Debugging log
 if [[ -f "/tmp/ch-completion.log" ]]; then
     rm /tmp/ch-completion.log
 fi
 
 ## ch-image ##
 
-# Subcommands for ch-image and their options
-#
-# FIXME: Figure out whether or not opts should be assigned to different
-#        lists based on whether or not they accept/require args.
+# Subcommands and options for ch-image
 #
 __image_subcommands="build build-cache delete gestalt
                      import list pull push reset undelete"
 
-#__image_build_opts="-b --bind --build-arg -f --file --force
-#                    --force-cmd -n --dry-run --parse-only -t --tag"
+__image_build_opts="-b --bind --build-arg -f --file --force
+                    --force-cmd -n --dry-run --parse-only -t --tag"
 
-__image_build_opts_noarg="-n --dry-run --parse-only"
+__image_common_opts="-a --arch --always-download --auth --cache 
+                     --cache-large --dependencies -h --help 
+                     --no-cache --no-lock --profile --rebuild 
+                     --password-many -s --storage-dir --tls-no-verify 
+                     -v --verbose --version"
 
-__image_build_opts_arg="-b --bind --build-arg -f --file --force --force-cmd
-                        -t --tag"
+## ch-image ##
 
-__image_build_opts="$__image_build_opts_noarg $__image_build_opts_arg"
-
-__image_common_opts_noarg="--always-download --auth --cache --no-cache
-                           --no-lock --profile --rebuild --password-many
-                           --tls-no-verify -v --verbose"
-
-__image_common_opts_arg="-a --arch --cache-large -s --storage-dir"
-
-__image_common_opts="$__image_common_opts_arg $__image_common_opts_noarg"
-
-# Autocompletion function for ch-image
+# Completion function for ch-image
 #
 __ch-image_completion () {
     local prev
@@ -62,19 +54,41 @@ __ch-image_completion () {
     local extras=""
     _get_comp_words_by_ref -n : cur prev words
 
-    #echo "all but last: ${words[@]::${#words[@]}-1}" >> /tmp/ch-completion.log
-    #
     # If "$cur" is non-empty, we want to ignore it as a potential subcommand
-    # to avoid unwanted behavior. To do this, we pass __ch_subcommand_get
-    # the command line minus the last word if "$cur" is non-empty, and the
-    # full command line otherwise.
+    # to avoid unwanted behavior. “${words[@]::${#words[@]}-1}” gives you all
+    # but the last element of the array “words,” so if "$cur" is non-empty,
+    # pass it to __ch_subcommand_get. Otherwise pass all elements of “words.”
     if [[ -n "$cur" ]]; then
         sub_cmd=$(__ch_subcommand_get "$__image_subcommands" "${words[@]::${#words[@]}-1}")
     else
         sub_cmd=$(__ch_subcommand_get "$__image_subcommands" "${words[@]}")
     fi
-    #local sub_cmd=$(__ch_subcommand_get "$__image_subcommands" "${words[@]}")
     echo "sub command: $sub_cmd" >> /tmp/ch-completion.log
+
+    # Common opts that take args
+    #
+    # FIXME: Add subcommand-specific opts to this list?
+    #        I don't *think* that would break anything.
+    # NOTE:  Actually maybe not a good idea. That would
+    #        Lead to completion suggesting invalid options
+    #        at certain points. For now, leave as is.
+    case "$prev" in
+    -a | --arch )
+        # FIXME: Add commonly available architectures?
+        COMPREPLY=( $(compgen -W "host yolo" -- $cur) )
+        return 0
+        ;;
+    --cache-large )
+        # This is just a user-specified number. Can't autocomplete
+        COMPREPLY=()
+        return 0
+        ;;
+    -s | --storage )
+        compopt -o nospace
+        COMPREPLY=( $(compgen -d -S / -- $cur) )
+        return 0
+        ;;
+    esac
 
     case "$sub_cmd" in
     build )
@@ -91,11 +105,13 @@ __ch-image_completion () {
         -f|--file )
             compopt -o nospace
             COMPREPLY=( $(__compgen_filepaths "$cur") )
+            return 0
             ;;
         -t )
             # We can't autocomplete a tag, so we're not even gonna allow
             # autocomplete after this option.
             COMPREPLY=()
+            return 0
             ;;
         *)
             # Autocomplete to context directory, common opt, or noarg opt
@@ -112,6 +128,11 @@ __ch-image_completion () {
             #           https://stackoverflow.com/questions/2339246/add-spaces-to-the-end-of-some-bash-autocomplete-options-but-not-to-others
             #           https://stackoverflow.com/questions/26509260/bash-tab-completion-with-spaces
             #
+            #        Note: Removing the “return 0” from this case and adding
+            #              common opts as a “+=” statement below this switch
+            #              might complicate this issue even further... For now
+            #              I'm saying it's slightly inconvenient but good enough.
+            #
             echo "compgen bit:" >> /tmp/ch-completion.log
             # --force can take “fakeroot” or “seccomp” as an argument, or
             # no argument at all, in which case it defaults to seccomp. To
@@ -122,26 +143,33 @@ __ch-image_completion () {
             if [[ "$prev" == "--force" ]]; then
                 extras="$extras fakeroot seccomp"
             fi
-            #foo=$(compgen -d -S / -- $cur)
-            #echo $(compgen -d -S / -- $cur) >> /tmp/ch-completion.log
             compopt -o nospace
-            #COMPREPLY=( $(compgen -W "$__image_build_opts $__image_common_opts $foo $extras"  -- $cur) )
-            COMPREPLY=( $(compgen -W "$__image_build_opts $__image_common_opts $(compgen -d -S / -- $cur) $extras"  -- $cur) )
+            COMPREPLY=( $(compgen -W "$__image_build_opts $(compgen -d -S / -- $cur) $extras"  -- $cur) )
             ;;
         esac
         ;;
-    delete )
-        # FIXME: use filepath for ch-image or assume it's in PATH?
-        COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list)" -- $cur) )
+    delete | list)
+        # FIXME: Is it janky to include “list” here? I'm leaning towards
+        #        “not that janky,” others may disagree.
+        if [[ "$sub_cmd" == "list" ]]; then
+            extras="$extras -l --long"
+        fi
+        COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list) $extras" -- $cur) )
         __ltrim_colon_completions "$cur"
-        return 0
         ;;
     '' )
         # Only autocomplete subcommands if there's no subcommand present.
         COMPREPLY=( $(compgen -W "$__image_subcommands" -- $cur) )
-        return 0
         ;;
     esac
+
+    # If we've made it this far, the last remaining option for completion
+    # is common opts. Note that we do the “-n” check to avoid being overzealous
+    # with our suggestions.
+    if [[ -n "$cur" ]]; then
+        COMPREPLY+=( $(compgen -W "$__image_common_opts" -- $cur) )
+        return 0
+    fi
 }
 
 ## Helper functions ##
@@ -196,5 +224,4 @@ __compgen_filepaths() {
     compgen -d -S / -- "$cur"
 }
 
-#complete -o default -F __ch-image_completion ch-image
 complete -F __ch-image_completion ch-image
