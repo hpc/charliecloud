@@ -94,7 +94,7 @@ load ../common
     fi
     # ShellCheck minimum version?
     version=$(shellcheck --version | grep -E '^version:' | cut -d' ' -f2)
-    needed=0.7.2
+    needed=0.9.0
     lesser=$(printf "%s\n%s\n" "$version" "$needed" | sort -V | head -1)
     echo "shellcheck: have ${version}, need ${needed}, lesser ${lesser}"
     if  [[ $lesser != "$needed" ]]; then
