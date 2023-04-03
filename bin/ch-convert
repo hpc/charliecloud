@@ -6,7 +6,6 @@ lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
 . "${lib}/base.sh"
 PATH=${ch_bin}:$PATH
 
-# shellcheck disable=SC2034
 usage=$(cat <<EOF
 Convert an image from one format to another.
 

@@ -1,7 +1,6 @@
 # shellcheck shell=sh
 set -e
 
-# shellcheck disable=SC2034
 ch_bin="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2034
 ch_base=${ch_bin%/*}
@@ -15,31 +14,22 @@ verbose=0
 
 DEBUG () {
     if [ "$verbose" -ge 2 ]; then
-        # shellcheck disable=SC2059
-        printf "$@" 1>&2
-        printf '\n' 1>&2
+        printf "%s\n" "$@" 1>&2
     fi
 }
 
 FATAL () {
-    printf 'error: ' 1>&2
-    # shellcheck disable=SC2059
-    printf "$@" 1>&2
-    printf '\n' 1>&2
+    printf 'error: %s\n' "$@" 1>&2
     exit 1
 }
 
 INFO () {
-    # shellcheck disable=SC2059
-    printf "$@" 1>&2
-    printf '\n' 1>&2
+    printf "%s\n" "$@" 1>&2
 }
 
 VERBOSE () {
     if [ "$verbose" -ge 1 ]; then
-        # shellcheck disable=SC2059
-        printf "$@" 1>&2
-        printf '\n' 1>&2
+        printf "%s\n" "$@" 1>&2
     fi
 }
 
@@ -95,7 +85,6 @@ usage () {
 }
 
 version () {
-    # shellcheck disable=SC2154
     echo 1>&2 "$ch_version"
     exit 0
 }

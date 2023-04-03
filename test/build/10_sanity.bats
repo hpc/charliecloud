@@ -108,19 +108,24 @@ load ../common
                                          {nextfile}' {} + \) )
     # Bats scripts. Use sed to do several things:
     #
-    #   1. Make parseable by ShellCheck by removing “@test ‘...’”. This does
-    #      remove the test names, but line numbers are still valid.
-    #   2. Remove preprocessor substitutions “%(foo)”, which also confuse
-    #      Bats.
+    #   1. Make parseable by ShellCheck by removing “@test ‘...’”. The name of
+    #      the test is converted to an “echo” command to avoid warnings about
+    #      variables whos only reference is in that string.
+    #
+    #   2. Remove ch-test substitutions “%(foo)”, which also confuse Bats.
+    #
     #   3. Add extension “.bash” to “common” when needed.
+    #
     #   4. Change “load” to “source”, which is close enough for this purpose.
     #
+    # WARNING: If you change these expressions, ensure none of them changes
+    # the number of lines, so line numbers (used in reporting) stay the same.
     while IFS= read -r i; do
         echo "shellcheck: ${i}"
-          sed -r -e 's/@test (.+) \{/test_ () {/g' "$i" \
-                 -e 's/%\(([a-zA-Z0-9_]+)\)/SUBST_\1/g' \
-                 -e 's/^load (.*)common$/load common.bash/g' \
-                 -e 's/^load /source /g' \
+          sed -E  "$i" -e 's/@test (.+) \{/test_ () { echo \1;/g' \
+                       -e 's/%\(([a-zA-Z0-9_]+)\)/SUBST_\1/g' \
+                       -e 's/^load (.*)common$/load common.bash/g' \
+                       -e 's/^load /source /g' \
         | shellcheck -s bash -e SC1112,SC2002,SC2103,SC2164,SC2317 \
                      - "$CHTEST_DIR"/common.bash
     done < <( find "$ch_base" -name '*.bats' -o -name '*.bats.in' )

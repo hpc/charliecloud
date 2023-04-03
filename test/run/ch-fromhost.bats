@@ -3,8 +3,6 @@ load ../common
 setup () {
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'need writeable image'
     [[ $ch_libc = glibc ]] || skip 'glibc only'
-    # shellcheck disable=SC2034
-    fi_provider=$FI_PROVIDER_PATH
     fi_provider_path=$FI_PROVIDER_PATH
 }
 
@@ -352,7 +350,7 @@ glibc_version_ok () {
     [[ $output = *'warn'*'FI_PROVIDER_PATH'* ]]
     test -f "${img}/usr/lib/libsotest-fi.so"
     fromhost_clean "$img"
-    export FI_PROVIDER_PATH="$fi_provider_path"
+    export FI_PROVIDER_PATH=$fi_provider_path
 }
 
 @test 'ch-fromhost --nvidia with GPU' {

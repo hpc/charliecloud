@@ -646,8 +646,7 @@ EOF
     # the changelog [1] for version bash-5.0-alpha.
     #
     # [1]: https://git.savannah.gnu.org/cgit/bash.git/tree/CHANGES
-    # shellcheck disable=SC1003
-    df=$(cat <<'EOF' | tr '%' '\\'
+    df=$(cat <<'EOF' | tr '%' "\\"
 FROM alpine:3.17
 RUN set -o noclobber %
  && echo hello > file_ %

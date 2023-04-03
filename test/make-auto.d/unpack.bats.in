@@ -3,7 +3,6 @@ source common.bash  # for ShellCheck; removed by ch-test
 @test 'unpack %(tag)s' {
     scope %(scope)s
     prerequisites_ok %(tag)s
-    # shellcheck disable=SC2034
     ch_tag=%(tag)s
     unpack_img_all_nodes "true"
 }

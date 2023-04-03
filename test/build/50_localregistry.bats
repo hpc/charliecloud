@@ -1,6 +1,4 @@
 load ../common
-
-# shellcheck disable=SC2034
 tag='ch-image push'
 
 # Note: These tests use a local registry listening on localhost:5000 but do

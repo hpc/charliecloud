@@ -39,7 +39,6 @@ lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
 
 set -e
 
-# shellcheck disable=SC2034
 usage=$(cat <<EOF
 Inject files from the host into an image directory, with various magic.
 

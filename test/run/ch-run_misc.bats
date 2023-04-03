@@ -881,7 +881,6 @@ EOF
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
     files=$(echo etc/{group,passwd})
-    # shellcheck disable=SC2116
     files_optional=$(echo etc/{hosts,resolv.conf})
     mkdir -p "$img"
     for d in $dirs; do mkdir -p "${img}/$d"; done
