@@ -2,6 +2,7 @@
 
 # Completion script for Charliecloud
 #
+#
 # Resources for understanding this script:
 #
 #   * Bash parameter expansion:
@@ -13,10 +14,14 @@
 #   * Bash completion variables (e.g. COMPREPLY):
 #     https://devmanual.gentoo.org/tasks-reference/completion/index.html
 #
+#   * Call-by-reference for bash function args:
+#     https://unix.stackexchange.com/a/224564
+#
 #
 # SYNTAX GLOSSARY
 #
-# 
+# FIXME: Add syntax glossary
+#
 
 # FIXME: disable shellcheck SC2034 for this? (See base.sh)
 CH_BIN="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
@@ -39,7 +44,7 @@ __image_build_opts="-b --bind --build-arg -f --file --force
 __image_common_opts="-a --arch --always-download --auth --cache 
                      --cache-large --dependencies -h --help 
                      --no-cache --no-lock --profile --rebuild 
-                     --password-many -s --storage-dir --tls-no-verify 
+                     --password-many -s --storage --tls-no-verify 
                      -v --verbose --version"
 
 ## ch-image ##
@@ -67,11 +72,6 @@ __ch-image_completion () {
 
     # Common opts that take args
     #
-    # FIXME: Add subcommand-specific opts to this list?
-    #        I don't *think* that would break anything.
-    # NOTE:  Actually maybe not a good idea. That would
-    #        Lead to completion suggesting invalid options
-    #        at certain points. For now, leave as is.
     case "$prev" in
     -a | --arch )
         # FIXME: Add commonly available architectures?
@@ -97,11 +97,10 @@ __ch-image_completion () {
         #   * --build-arg KEY[=VALUE]
         #   * --force-cmd=CMD,ARG1[,ARG2...]
         #
-        echo "  \$prev: $prev" >> /tmp/ch-completion.log
         case "$prev" in
         # Go through a list of potential subcommand-specific opts to see if
-        # “$cur” should be an argument. Otherwise, default to CONTEXT or a
-        # non-argument-accepting opt. (FIXME: revise this comment)
+        # “$cur” should be an argument. Otherwise, default to CONTEXT or any
+        # valid option (common or subcommand-specific).
         -f|--file )
             compopt -o nospace
             COMPREPLY=( $(__compgen_filepaths "$cur") )
@@ -114,39 +113,30 @@ __ch-image_completion () {
             return 0
             ;;
         *)
-            # Autocomplete to context directory, common opt, or noarg opt
-            #
-            # FIXME: Need to add switch statement that goes through list of
-            #        common opts that accept args.
-            #
-            # FIXME: “compopt -o nospace” means spaces don't get appended to
-            #        “$cur” for this “compgen” call. This is useful when you're
-            #        trying to specify the context directory, not so useful if
-            #        you want an option instead. Look into alternative?
-            #        Resources that might be of interest: 
-            #           https://stackoverflow.com/a/40227233
-            #           https://stackoverflow.com/questions/2339246/add-spaces-to-the-end-of-some-bash-autocomplete-options-but-not-to-others
-            #           https://stackoverflow.com/questions/26509260/bash-tab-completion-with-spaces
-            #
-            #        Note: Removing the “return 0” from this case and adding
-            #              common opts as a “+=” statement below this switch
-            #              might complicate this issue even further... For now
-            #              I'm saying it's slightly inconvenient but good enough.
-            #
+            # Autocomplete to context directory, common opt, or build-specific opt
             echo "compgen bit:" >> /tmp/ch-completion.log
-            # --force can take “fakeroot” or “seccomp” as an argument, or
-            # no argument at all, in which case it defaults to seccomp. To
-            # account for this, we simply add those two arguments to the
-            # list of compgen suggestions, which allows compgen to autocomplete
+            # --force can take “fakeroot” or “seccomp” as an argument, or no
+            # argument at all. To account for this, we add those two arguments
+            # to the list of compgen suggestions, which allows compgen to autocomplete
             # to “fakeroot,” “seccomp,” or anything that could logically follow
             # “--force” with no argument.
             if [[ "$prev" == "--force" ]]; then
                 extras="$extras fakeroot seccomp"
             fi
-            compopt -o nospace
-            COMPREPLY=( $(compgen -W "$__image_build_opts $(compgen -d -S / -- $cur) $extras"  -- $cur) )
+            COMPREPLY=( $(compgen -W "$__image_build_opts $extras"  -- $cur) )
+            # Completion for the context directory. Note that we put this under an
+            # “if” statement so that the “nospace” option isn't applied to all
+            # completions that come after the “build” subcommand, as that would be
+            # inconvenient.
+            if [[ -n "$(compgen -d -S / -- $cur)" ]]; then
+                compopt -o nospace
+                COMPREPLY+=( $(compgen -d -S / -- $cur) )
+            fi
             ;;
         esac
+        ;;
+    build-cache )
+        COMPREPLY=( $(compgen -W "--reset --gc --tree --dot" -- $cur) )
         ;;
     delete | list)
         # FIXME: Is it janky to include “list” here? I'm leaning towards
@@ -154,8 +144,23 @@ __ch-image_completion () {
         if [[ "$sub_cmd" == "list" ]]; then
             extras="$extras -l --long"
         fi
+        # FIXME: This call to “ch-image list” likely won't work if the user
+        #        has specified a non-standard storage directory. Likely need
+        #        to make a parser for that.
         COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list) $extras" -- $cur) )
         __ltrim_colon_completions "$cur"
+        ;;
+    gestalt )
+        COMPREPLY=( $(compgen -W "bucache bucache-dot python-path 
+                                  storage-path" -- $cur) )
+        ;;
+    import )
+        # FIXME: Unimplemented
+        COMPREPLY=()
+        ;;
+    push )
+        # FIXME: Unimplemented
+        COMPREPLY=()
         ;;
     '' )
         # Only autocomplete subcommands if there's no subcommand present.
