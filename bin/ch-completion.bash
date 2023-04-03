@@ -41,10 +41,10 @@ __image_subcommands="build build-cache delete gestalt
 __image_build_opts="-b --bind --build-arg -f --file --force
                     --force-cmd -n --dry-run --parse-only -t --tag"
 
-__image_common_opts="-a --arch --always-download --auth --cache 
-                     --cache-large --dependencies -h --help 
-                     --no-cache --no-lock --profile --rebuild 
-                     --password-many -s --storage --tls-no-verify 
+__image_common_opts="-a --arch --always-download --auth --cache
+                     --cache-large --dependencies -h --help
+                     --no-cache --no-lock --profile --rebuild
+                     --password-many -s --storage --tls-no-verify
                      -v --verbose --version"
 
 ## ch-image ##
@@ -151,12 +151,16 @@ __ch-image_completion () {
         __ltrim_colon_completions "$cur"
         ;;
     gestalt )
-        COMPREPLY=( $(compgen -W "bucache bucache-dot python-path 
+        COMPREPLY=( $(compgen -W "bucache bucache-dot python-path
                                   storage-path" -- $cur) )
         ;;
     import )
-        # FIXME: Unimplemented
-        COMPREPLY=()
+        # Complete dirs and files matching the globs “*.tar.*” and “*.tgz”
+        # (a.k.a. tarballs).
+        COMPREPLY+=( $(__compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
+        if [[ ${#COMPREPLY} -gt 0 ]]; then
+            compopt -o nospace
+        fi
         ;;
     push )
         # FIXME: Unimplemented
@@ -179,7 +183,7 @@ __ch-image_completion () {
 
 ## Helper functions ##
 
-# Kludge up a way to look through array of words and determine the 
+# Kludge up a way to look through array of words and determine the
 # subcommand. Note that the double for loop doesn't take that much
 # time, since the Charliecloud command line is relatively short.
 #
@@ -206,25 +210,44 @@ __ch_subcommand_get () {
     echo "$subcmd"
 }
 
-# Code that I shamelessly stole from StackOverflow 
+# Code that I shamelessly stole from StackOverflow
 #   (https://stackoverflow.com/a/40227233)
 # Returns filenames and directories, appending a slash to directory names.
+# This function takes option “-X,” a string of space-separated glob patterns
+# to be excluded from file completion using the compgen option of the same
+# name (see https://devdocs.io/bash/programmable-completion-builtins#index-compgen)
 __compgen_filepaths() {
+    local filterpats=("")
+    if [[ "$1" == "-X" && 1 < ${#@} ]]; then
+        # Read a string into an array:
+        # https://stackoverflow.com/a/10586169
+        # Pitfalls:
+        # https://stackoverflow.com/a/45201229
+        read -ra filterpats <<< "$2"
+        shift 2
+    fi
+
     local cur="$1"
 
     # Files, excluding directories, with no trailing slashes. The
     # grep performs an inverted substring match on the list of
-    # directories and the list of files respectively produced by 
+    # directories and the list of files respectively produced by
     # compgen. The compgen statements also prepend (-P) a “^” and
     # append (-S) a “$” to the file/dir names to avoid the case
     # where a substring matching a dirname is erroniously removed
     # from a filename by the inverted match. These delimiters are
     # then removed by the “sed”. (See the StackOverflow post cited
-    # above for OP’s explanation of this code).
-    grep -v -F -f <(compgen -d -P ^ -S '$' -- "$cur") \
-        <(compgen -f -P ^ -S '$' -- "$cur") |
-        sed -e 's/^\^//' -e 's/\$$/ /'
-    
+    # above for OP’s explanation of this code). The for loop iterates
+    # through exclusion patterns specified by the “-X” option. If
+    # “-X” isn't specified, the code in the loop executes once,
+    # with no patterns excluded (“-X ""”).
+    for pat in "${filterpats[@]}"
+    do
+        grep -v -F -f <(compgen -d -P ^ -S '$' -X "$pat" -- "$cur") \
+            <(compgen -f -P ^ -S '$' -X "$pat" -- "$cur") |
+            sed -e 's/^\^//' -e 's/\$$/ /'
+    done
+
     # Directories with trailing slashes:
     compgen -d -S / -- "$cur"
 }
