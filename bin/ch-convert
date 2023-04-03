@@ -692,7 +692,7 @@ tar_decompress_arg () {
             echo z
             ;;
         *)
-            FATAL "unknown extension: ${tarball}"
+            FATAL "unknown extension: ${1}"
             ;;
     esac
 }

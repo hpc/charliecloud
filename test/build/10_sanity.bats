@@ -74,13 +74,6 @@ load ../common
     #  SC2103  cd exit code unchecked (Bats checks for failure)
     #  SC2164  same as SC2103
     #  SC2317  unreachable code (ShellCheck thinks all in @test is unreachable)
-    #
-    # Additional excludes work around issue #210, and I think are required for
-    # the Bats tests forever:
-    #
-    #  SC1090  can’t find sourced file
-    #  SC2154  variable referenced but not assigned
-    #
     scope standard
     arch_exclude ppc64le  # no ShellCheck pre-built
     # Only do this test in build directory; the reasoning is that we don’t
@@ -105,7 +98,7 @@ load ../common
     # For awk program, see: https://unix.stackexchange.com/a/66099
     while IFS= read -r i; do
         echo "shellcheck: ${i}"
-        shellcheck -x -P "$ch_lib" -e SC1090,SC1112,SC2002,SC2154 "$i"
+        shellcheck -x -P "$ch_lib" -e SC1112,SC2002 "$i"
     done < <( find "$ch_base" \
                    \(    -name .git \
                       -o -name build-aux \) -prune \
@@ -113,18 +106,23 @@ load ../common
                 -o \( -name '*.bash' -print \) \
                 -o \( -type f -exec awk '/^#!\/bin\/(ba)?sh/ {print FILENAME}
                                          {nextfile}' {} + \) )
-    # Bats scripts. Use sed to do two things:
+    # Bats scripts. Use sed to do several things:
     #
-    # 1. Make parseable by ShellCheck by removing “@test ‘...’”. This does
-    #    remove the test names, but line numbers are still valid.
-    #
-    # 2. Remove preprocessor substitutions “%(foo)”, which also confuse Bats.
+    #   1. Make parseable by ShellCheck by removing “@test ‘...’”. This does
+    #      remove the test names, but line numbers are still valid.
+    #   2. Remove preprocessor substitutions “%(foo)”, which also confuse
+    #      Bats.
+    #   3. Add extension “.bash” to “common” when needed.
+    #   4. Change “load” to “source”, which is close enough for this purpose.
     #
     while IFS= read -r i; do
         echo "shellcheck: ${i}"
           sed -r -e 's/@test (.+) \{/test_ () {/g' "$i" \
                  -e 's/%\(([a-zA-Z0-9_]+)\)/SUBST_\1/g' \
-        | shellcheck -s bash -e SC1090,SC1112,SC2002,SC2103,SC2154,SC2164,SC2317  -
+                 -e 's/^load (.*)common$/load common.bash/g' \
+                 -e 's/^load /source /g' \
+        | shellcheck -s bash -e SC1112,SC2002,SC2103,SC2164,SC2317 \
+                     - "$CHTEST_DIR"/common.bash
     done < <( find "$ch_base" -name '*.bats' -o -name '*.bats.in' )
 }
 

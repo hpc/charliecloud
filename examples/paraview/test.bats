@@ -42,7 +42,7 @@ setup () {
     echo "$output"
     [[ $output == *"provider: $cray_prov"* ]]
     [[ $output == *"fabric: $cray_prov"* ]]
-    [[ $stauts -eq 0 ]]
+    [[ $status -eq 0 ]]
 }
 
 @test "${ch_tag}/cone serial" {

@@ -1,3 +1,5 @@
+source common.bash  # for ShellCheck; removed by ch-test
+
 @test 'unpack %(tag)s' {
     scope %(scope)s
     prerequisites_ok %(tag)s

@@ -1,5 +1,24 @@
 # shellcheck shell=bash
 
+# These variables are set, but in ways ShellCheck can’t figure out. Some may
+# be movable into this script but I haven’t looked in detail. We list them in
+# this unreachable code block to convince ShellCheck that they are assigned
+# (SC2154), and amusingly ShellCheck doesn’t know this code is unreachable. 😂
+#
+# shellcheck disable=SC2034
+if false; then
+    # from ch-test
+    ch_base=
+    ch_bin=
+    ch_lib=
+    ch_libc=
+    ch_test_tag=
+    # from Bats
+    lines=
+    output=
+    status=
+fi
+
 arch_exclude () {
     # Skip the test if architecture (from “uname -m”) matches $1.
     [[ $(uname -m) != "$1" ]] || skip "arch ${1}"

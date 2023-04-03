@@ -639,13 +639,16 @@ test_make_template_print () {
     local template
     template="./make-auto.d/$1"
 
-    cat "$template" | sed "s@%(basename)s@$basename_@g" \
-                    | sed "s@%(dirname)s@$dirname_@g" \
-                    | sed "s@%(path)s@$path_@g" \
-                    | sed "s@%(scope)s@$CH_TEST_SCOPE@g" \
-                    | sed "s@%(tag)s@$tag@g"
+    # Subsitute template variables and remove “source” command that is only
+    # for ShellCheck.
+      cat "$template" \
+    | sed -E -e 's/^(source common\.bash.*)$/#\1/' \
+             -e "s@%\(basename\)s@$basename_@g" \
+             -e "s@%\(dirname\)s@$dirname_@g" \
+             -e "s@%\(path\)s@$path_@g" \
+             -e "s@%\(scope\)s@$CH_TEST_SCOPE@g" \
+             -e "s@%\(tag\)s@$tag@g"
     printf '\n'
-    return
 }
 
 test_one_file () {
