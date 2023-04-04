@@ -60,8 +60,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$CH_RUNNING' {
+@test "\$CH_RUNNING" {
     scope standard
 
     if [[ -v CH_RUNNING ]]; then
@@ -75,8 +74,7 @@ EOF
     [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
 }
 
-# shellcheck disable=SC2016
-@test '$HOME' {
+@test "\$HOME" {
     scope quick
     echo "host: $HOME"
     [[ $HOME ]]
@@ -120,8 +118,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: add /bin' {
+@test "\$PATH: add /bin" {
     scope quick
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
@@ -150,8 +147,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: unset' {
+@test "\$PATH: unset" {
     scope standard
     old_path=$PATH
     unset PATH
@@ -166,8 +162,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$TMPDIR' {
+@test "\$TMPDIR" {
     scope standard
     mkdir -p "${BATS_TMPDIR}/tmpdir"
     touch "${BATS_TMPDIR}/tmpdir/file-in-tmpdir"
@@ -594,6 +589,7 @@ EOF
     [[ $output = *"can't parse variable: empty name: ${f_in}:1"* ]]
 }
 
+
 # shellcheck disable=SC2016
 @test 'ch-run --set-env command line' {
     scope standard
@@ -611,6 +607,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
+
 
 @test 'ch-run --unset-env' {
     scope standard
