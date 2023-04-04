@@ -14,22 +14,31 @@ verbose=0
 
 DEBUG () {
     if [ "$verbose" -ge 2 ]; then
-        printf "%s\n" "$@" 1>&2
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
     fi
 }
 
 FATAL () {
-    printf 'error: %s\n' "$@" 1>&2
+    printf 'error: ' 1>&2
+    # shellcheck disable=SC2059
+    printf "$@" 1>&2
+    printf '\n' 1>&2
     exit 1
 }
 
 INFO () {
-    printf "%s\n" "$@" 1>&2
+    # shellcheck disable=SC2059
+    printf "$@" 1>&2
+    printf '\n' 1>&2
 }
 
 VERBOSE () {
     if [ "$verbose" -ge 1 ]; then
-        printf "%s\n" "$@" 1>&2
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
     fi
 }
 
