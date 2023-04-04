@@ -73,9 +73,10 @@ __ch-image_completion () {
     fi
     echo "sub command: $sub_cmd" >> /tmp/ch-completion.log
     echo "storage dir: $strg_dir" >> /tmp/ch-completion.log
-    if [[ -n "$strg_dir" ]]; then
-        strg_dir="-s $strg_dir"
-    fi
+    echo "len storage dir: ${#strg_dir}" >> /tmp/ch-completion.log
+    #if [[ -n "$strg_dir" ]]; then
+    #    strg_dir="-s $strg_dir"
+    #fi
 
     # Common opts that take args
     #
@@ -93,8 +94,14 @@ __ch-image_completion () {
         return 0
         ;;
     -s | --storage )
-        compopt -o nospace
-        COMPREPLY=( $(compgen -d -S / -- $cur) )
+        # This “if” helps avoid overzealous completion. E.g. if there's
+        # only one subdir of the current dir, this command completes to
+        # that dir even if "$cur" is empty. I didn't like that, hence the
+        # “if”.
+        if [[ -n "$cur" ]]; then
+            compopt -o nospace
+            COMPREPLY=( $(compgen -d -S / -- $cur) )
+        fi
         return 0
         ;;
     esac
@@ -156,8 +163,13 @@ __ch-image_completion () {
         # FIXME: This call to “ch-image list” likely won't work if the user
         #        has specified a non-standard storage directory. Likely need
         #        to make a parser for that.
-        COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list $strg_dir) $extras" -- $cur) )
-        __ltrim_colon_completions "$cur"
+        #
+        # The following check seems to fix a bug where the completion
+        # function initialzes an empty storage directory.
+        if [[ -n "$(ls $strg_dir/img)" ]]; then
+            COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list -s $strg_dir) $extras" -- $cur) )
+            __ltrim_colon_completions "$cur"
+        fi
         ;;
     gestalt )
         COMPREPLY=( $(compgen -W "bucache bucache-dot python-path
@@ -176,8 +188,10 @@ __ch-image_completion () {
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- $cur) )
             return 0
-        else
-            COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list $strg_dir) --image" -- "$cur") )
+        # The following check seems to fix a bug where the completion
+        # function initialzes an empty storage directory.
+        elif [[ -n "$(ls "$strg_dir"/img)" ]]; then
+            COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list -s $strg_dir) --image" -- "$cur") )
             __ltrim_colon_completions "$cur"
         fi
         ;;
@@ -202,12 +216,17 @@ __ch-image_completion () {
 
 ## Helper functions ##
 
-# Find storage in command line, if specified.
+# Figure out which storage directory to use (including cli-specified
+# storage).
 # FIXME: Can probably cook up a sed pattern that'll remove the need
 #        for the “if” statement.
 __ch_find_storage () {
     if [[ -n "$(grep -Eo "(\-\-storage|[^\-]\-s)" <<< "$@")" ]]; then
         sed -e 's/\(.*\)\(--storage\|[^-]-s\)\ *\([^ ]*\)\(.*$\)/\3/g' <<< "$@"
+    elif [[ -n "$CH_IMAGE_STORAGE" ]]; then
+        echo "$CH_IMAGE_STORAGE"
+    else
+        echo "/var/tmp/$USER.ch/"
     fi
 }
 
@@ -281,4 +300,4 @@ __compgen_filepaths() {
     compgen -d -S / -- "$cur"
 }
 
-complete -F __ch-image_completion ./ch-image
+complete -F __ch-image_completion ch-image
