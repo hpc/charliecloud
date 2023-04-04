@@ -235,7 +235,7 @@ _ch_find_storage () {
 #
 # Example:
 #   >> _ch_subcommand_get "build build-cache ... undelete" \
-#                          "ch-image --foo build ..."
+#                         "ch-image --foo build ..."
 #      build
 _ch_subcommand_get () {
     local cmd subcmd
