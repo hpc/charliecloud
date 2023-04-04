@@ -35,23 +35,23 @@ fi
 
 # Subcommands and options for ch-image
 #
-__image_subcommands="build build-cache delete gestalt
-                     import list pull push reset undelete"
+_image_subcommands="build build-cache delete gestalt
+                    import list pull push reset undelete"
 
-__image_build_opts="-b --bind --build-arg -f --file --force
-                    --force-cmd -n --dry-run --parse-only -t --tag"
+_image_build_opts="-b --bind --build-arg -f --file --force
+                   --force-cmd -n --dry-run --parse-only -t --tag"
 
-__image_common_opts="-a --arch --always-download --auth --cache
-                     --cache-large --dependencies -h --help
-                     --no-cache --no-lock --profile --rebuild
-                     --password-many -s --storage --tls-no-verify
-                     -v --verbose --version"
+_image_common_opts="-a --arch --always-download --auth --cache
+                    --cache-large --dependencies -h --help
+                    --no-cache --no-lock --profile --rebuild
+                    --password-many -s --storage --tls-no-verify
+                    -v --verbose --version"
 
 ## ch-image ##
 
 # Completion function for ch-image
 #
-__ch-image_completion () {
+_ch_image_completion () {
     local prev
     local cur
     local words
@@ -63,13 +63,13 @@ __ch-image_completion () {
     # If "$cur" is non-empty, we want to ignore it as a potential subcommand
     # to avoid unwanted behavior. “${words[@]::${#words[@]}-1}” gives you all
     # but the last element of the array “words,” so if "$cur" is non-empty,
-    # pass it to __ch_subcommand_get. Otherwise pass all elements of “words.”
+    # pass it to _ch_subcommand_get. Otherwise pass all elements of “words.”
     if [[ -n "$cur" ]]; then
-        sub_cmd=$(__ch_subcommand_get "$__image_subcommands" "${words[@]::${#words[@]}-1}")
-        strg_dir=$(__ch_find_storage "${words[@]::${#words[@]}-1}")
+        sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]::${#words[@]}-1}")
+        strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
     else
-        sub_cmd=$(__ch_subcommand_get "$__image_subcommands" "${words[@]}")
-        strg_dir=$(__ch_find_storage "${words[@]}")
+        sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]}")
+        strg_dir=$(_ch_find_storage "${words[@]}")
     fi
     echo "sub command: $sub_cmd" >> /tmp/ch-completion.log
     echo "storage dir: $strg_dir" >> /tmp/ch-completion.log
@@ -119,7 +119,7 @@ __ch-image_completion () {
         # valid option (common or subcommand-specific).
         -f|--file )
             compopt -o nospace
-            COMPREPLY=( $(__compgen_filepaths "$cur") )
+            COMPREPLY=( $(_compgen_filepaths "$cur") )
             return 0
             ;;
         -t )
@@ -139,7 +139,7 @@ __ch-image_completion () {
             if [[ "$prev" == "--force" ]]; then
                 extras="$extras fakeroot seccomp"
             fi
-            COMPREPLY=( $(compgen -W "$__image_build_opts $extras"  -- $cur) )
+            COMPREPLY=( $(compgen -W "$_image_build_opts $extras"  -- $cur) )
             # Completion for the context directory. Note that we put this under an
             # “if” statement so that the “nospace” option isn't applied to all
             # completions that come after the “build” subcommand, as that would be
@@ -174,7 +174,7 @@ __ch-image_completion () {
     import )
         # Complete dirs and files matching the globs “*.tar.*” and “*.tgz”
         # (a.k.a. tarballs).
-        COMPREPLY+=( $(__compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
+        COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
         if [[ ${#COMPREPLY} -gt 0 ]]; then
             compopt -o nospace
         fi
@@ -188,7 +188,7 @@ __ch-image_completion () {
         # function initialzes an empty storage directory.
         elif [[ -n "$(ls "$strg_dir"/img)" ]]; then
             COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list -s $strg_dir) --image" -- "$cur") )
-            __ltrim_colon_completions "$cur"
+            _ltrim_colon_completions "$cur"
         fi
         ;;
     undelete )
@@ -197,7 +197,7 @@ __ch-image_completion () {
         ;;
     '' )
         # Only autocomplete subcommands if there's no subcommand present.
-        COMPREPLY=( $(compgen -W "$__image_subcommands" -- $cur) )
+        COMPREPLY=( $(compgen -W "$_image_subcommands" -- $cur) )
         ;;
     esac
 
@@ -205,7 +205,7 @@ __ch-image_completion () {
     # is common opts. Note that we do the “-n” check to avoid being overzealous
     # with our suggestions.
     if [[ -n "$cur" ]]; then
-        COMPREPLY+=( $(compgen -W "$__image_common_opts" -- $cur) )
+        COMPREPLY+=( $(compgen -W "$_image_common_opts" -- $cur) )
         return 0
     fi
 }
@@ -216,7 +216,7 @@ __ch-image_completion () {
 # storage).
 # FIXME: Can probably cook up a sed pattern that'll remove the need
 #        for the “if” statement.
-__ch_find_storage () {
+_ch_find_storage () {
     if [[ -n "$(grep -Eo "(\-\-storage|[^\-]\-s)" <<< "$@")" ]]; then
         sed -e 's/\(.*\)\(--storage\|[^-]-s\)\ *\([^ ]*\)\(.*$\)/\3/g' <<< "$@"
     elif [[ -n "$CH_IMAGE_STORAGE" ]]; then
@@ -231,13 +231,13 @@ __ch_find_storage () {
 # time, since the Charliecloud command line is relatively short.
 #
 # Usage:
-#   __ch_subcommand_get [subcommands] [words]
+#   _ch_subcommand_get [subcommands] [words]
 #
 # Example:
-#   >> __ch_subcommand_get "build build-cache ... undelete" \
+#   >> _ch_subcommand_get "build build-cache ... undelete" \
 #                          "ch-image --foo build ..."
 #      build
-__ch_subcommand_get () {
+_ch_subcommand_get () {
     local cmd subcmd
     local cmds="$1"
     shift 1
@@ -259,7 +259,7 @@ __ch_subcommand_get () {
 # This function takes option “-X,” a string of space-separated glob patterns
 # to be excluded from file completion using the compgen option of the same
 # name (see https://devdocs.io/bash/programmable-completion-builtins#index-compgen)
-__compgen_filepaths() {
+_compgen_filepaths() {
     local filterpats=("")
     if [[ "$1" == "-X" && 1 < ${#@} ]]; then
         # Read a string into an array:
@@ -296,4 +296,4 @@ __compgen_filepaths() {
     compgen -d -S / -- "$cur"
 }
 
-complete -F __ch-image_completion ch-image
+complete -F _ch_image_completion ch-image
