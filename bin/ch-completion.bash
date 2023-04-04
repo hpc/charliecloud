@@ -5,6 +5,9 @@
 #
 # Resources for understanding this script:
 #
+#   * Everything bash:
+#     https://www.gnu.org/software/bash/manual/html_node/index.html
+#
 #   * Bash parameter expansion:
 #     https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
 #
@@ -18,9 +21,54 @@
 #     https://unix.stackexchange.com/a/224564
 #
 #
-# SYNTAX GLOSSARY
+## SYNTAX GLOSSARY ##
+#
+# Source:
+# https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+#
+# ${array[i]}
+#   Gives the ith element of “array”. Note that bash arrays are indexed
+#   at zero, as all things should be.
+#
+# ${array[@]}
+#   Expands “array” to its member elements.
+#
+# ${#parameter}
+#   Gives the length of “parameter.” If “parameter” is a string, this
+#   expansion gives you the character length of the string. If “paramter”
+#   is an array subscripted by “@” or “*” (e.g. “foo[@]”), then the
+#   expansion gives you the number of elements in the array.
+#
+# ${parameter:offset:length}
+#   A.k.a. substring expansion. If “parameter” is a string, expand up to
+#   “length” characters, starting with the character at position “offset.”
+#   If “offset” is unspecified, start at the first character. If “parameter”
+#   is an array subscripted by “@” or “*,” (e.g. “foo[@]”) expand up to
+#   “length” elements, starting at the element at position “offset” (e.g.
+#   “${foo[offset]}”).
+#
+#   Example 1 (string):
+#   $ foo="foo_bar_baz"
+#   $ echo ${foo::7}
+#   foo_bar
+#   $ echo ${foo:1:7}
+#   oo_bar_
+#
+#   Example 2 (array):
+#   $ foo=("foo" "bar" "baz" "qux")
+#   $ echo ${foo[@]::3}
+#   foo bar baz
+#   $ echo ${foo[@]:1:3}
+#   bar baz qux
 #
 # FIXME: Add syntax glossary
+#
+
+# Possible extensions once this is merged:
+#   * Add completion support for non-bash shells (e.g. zsh and tchs).
+#     see https://github.com/git/git/tree/master/contrib/completion
+#   * Add support for mid-line completion (possibly using COMP_POINT,
+#     see https://devmanual.gentoo.org/tasks-reference/completion/index.html).
 #
 
 # FIXME: disable shellcheck SC2034 for this? (See base.sh)
@@ -62,8 +110,9 @@ _ch_image_completion () {
 
     # If "$cur" is non-empty, we want to ignore it as a potential subcommand
     # to avoid unwanted behavior. “${words[@]::${#words[@]}-1}” gives you all
-    # but the last element of the array “words,” so if "$cur" is non-empty,
-    # pass it to _ch_subcommand_get. Otherwise pass all elements of “words.”
+    # but the last element of the array “words” (see syntax glossary above) so 
+    # if "$cur" is non-empty, pass it to _ch_subcommand_get. Otherwise pass all
+    # elements of “words.”
     if [[ -n "$cur" ]]; then
         sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]::${#words[@]}-1}")
         strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
@@ -74,16 +123,13 @@ _ch_image_completion () {
     echo "sub command: $sub_cmd" >> /tmp/ch-completion.log
     echo "storage dir: $strg_dir" >> /tmp/ch-completion.log
     echo "len storage dir: ${#strg_dir}" >> /tmp/ch-completion.log
-    #if [[ -n "$strg_dir" ]]; then
-    #    strg_dir="-s $strg_dir"
-    #fi
 
     # Common opts that take args
     #
     case "$prev" in
     -a | --arch )
         # FIXME: Remove yolo?
-        # FIxME: Missing common architectures?
+        # FIXME: Missing common architectures?
         COMPREPLY=( $(compgen -W "host yolo 386 amd64 arm/v6 
                                   arm/v7 arm64/v8 ppc64le s390x" -- $cur) )
         return 0
