@@ -181,8 +181,8 @@ rpmbuild root:      %(rpmbuild)s
            'charliecloud-test':      [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)]}
    rpm_specs      = "/usr/local/src/SPECS"
    rpm_sources    = "/usr/local/src/SOURCES"
-   # Map el# to rhel# to avoid unresolved macro errors.
-   rpmbuild_args += ["--define", "rhel " % rpm_dist[-1]]
+   # Set rhel macro to avoid rpmbuild issues.
+   rpmbuild_args += ["--define", "rhel 0"]
    rpmbuild_args += ["--define", "_topdir /usr/local/src"]
    rpmlint_args  += ["--file", "%s/charliecloud.rpmlintrc" % rpm_specs]
    container     += [CH_BASE + "/bin/ch-run", "-w",
