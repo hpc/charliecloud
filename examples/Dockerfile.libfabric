@@ -110,10 +110,9 @@ WORKDIR /usr/local/src
 
 # Libfabric (OFI)
 #
-# PSM3 is the preferred provider for OPA, however, it requires libpsm2, which
-# is x86_64 only. We kludge around this with the 'PSM_CONFIG' variable below.
-# Note, we could get around this, perhaps more elegantly, with a multistage
-# build that compiled psm3 as a shared provider that is copied.
+# PSM3 is our preferred provider for OPA, however, it requires libpsm2, which
+# is x86_64 only. Thus, the 'PSM_CONFIG' variable is used to avoid building PSM3
+# on aarch64 machines.
 ARG LIBFABRIC_VERSION=1.15.1
 RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
               https://github.com/ofiwg/libfabric/ \
