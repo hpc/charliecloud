@@ -42,7 +42,7 @@ setup () {
 
     # No GCC or Make.
     ls -lh "${ch_img}/usr/bin/gcc" || true
-    ! test -f "${ch_img}/usr/bin/gcc"
+    [[ ! -f "${ch_img}/usr/bin/gcc" ]]
     ls -lh "${ch_img}/usr/bin/make" || true
-    ! test -f "${ch_img}/usr/bin/make"
+    [[ ! -f "${ch_img}/usr/bin/make" ]]
 }

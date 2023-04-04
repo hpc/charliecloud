@@ -111,7 +111,7 @@ setup () {
     case $status in
         0)      # “success”
             printf 'RISK\tsuccessful mount\n'
-            return 1
+            false
             ;;
         1)   ;&  # “incorrect invocation or permissions” (we care which)
         111) ;&  # undocumented
@@ -124,7 +124,7 @@ setup () {
                 return 0
             else
                 printf 'RISK\tmount exit %d w/o known explanation\n' "$status"
-                return 1
+                false
             fi
             ;;
         32)     # “mount failed”
@@ -133,7 +133,7 @@ setup () {
             ;;
     esac
     printf 'ERROR\tunknown exit code: %s\n' "$status"
-    return 1
+    false
 }
 
 @test 'setgroups(2)' {

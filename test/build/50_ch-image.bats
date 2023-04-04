@@ -335,26 +335,26 @@ EOF
 
 
 @test 'ch-image reset' {
-   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-reset
+    CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-reset
 
-   # Ensure our test storage dir doesn’t exist yet.
-   [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+    # Ensure our test storage dir doesn’t exist yet.
+    [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
-   # Put an image innit.
-   ch-image pull alpine:3.17
-   ls "$CH_IMAGE_STORAGE"
+    # Put an image innit.
+    ch-image pull alpine:3.17
+    ls "$CH_IMAGE_STORAGE"
 
-   # List images; should be only the one we just pulled.
-   run ch-image list
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = "alpine:3.17" ]]
+    # List images; should be only the one we just pulled.
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = "alpine:3.17" ]]
 
-   # Reset.
-   ch-image reset
+    # Reset.
+    ch-image reset
 
-   # Image storage directory should be empty now.
-   expected=$(cat <<'EOF'
+    # Image storage directory should be empty now.
+    expected=$(cat <<'EOF'
 .:
 bucache
 bularge
@@ -375,17 +375,17 @@ version
 ./ulcache:
 EOF
 )
-   actual=$(cd "$CH_IMAGE_STORAGE" && ls -1R)
-   diff -u <(echo "$expected") <(echo "$actual")
+    actual=$(cd "$CH_IMAGE_STORAGE" && ls -1R)
+    diff -u <(echo "$expected") <(echo "$actual")
 
-   # Remove storage directory.
-   rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+    # Remove storage directory.
+    rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
-   # Reset again; should error.
-   run ch-image reset
-   echo "$output"
-   [[ $status -eq 1 ]]
-   [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
+    # Reset again; should error.
+    run ch-image reset
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
 }
 
 
@@ -656,7 +656,7 @@ RUN set -o noclobber %
 EOF
         )
 
-    ! ch-image build -t tmpimg - <<EOF
+    ch-image build -t tmpimg - <<EOF && exit 1  # SC2314
 ${df}
  && false
 EOF
@@ -685,7 +685,7 @@ EOF
     # This will fail after the first file is already copied, because COPY is
     # non-atomic. We use an unreadable file because if the file didn’t exist,
     # COPY would fail out before starting.
-    ! ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF'
+    ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF' && exit 1
 FROM alpine:3.17
 COPY /file_readable /file_unreadable /
 EOF

@@ -112,10 +112,10 @@ glibc_version_ok () {
 
     # --no-ldconfig
     ch-fromhost -v --no-ldconfig --file sotest/files_inferrable.txt "$img"
-      test -f "${img}/usr/bin/sotest"
-      test -f "${img}${libpath}/libsotest.so.1.0"
-    ! test -L "${img}${libpath}/libsotest.so.1"
-    ! ( ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest )
+    [[   -f "${img}/usr/bin/sotest" ]]
+    [[   -f "${img}${libpath}/libsotest.so.1.0" ]]
+    [[ ! -L "${img}${libpath}/libsotest.so.1" ]]
+    ch-run "$img" -- /sbin/ldconfig -p | grep -FL libsotest
     run ch-run "$img" -- sotest
     echo "$output"
     [[ $status -eq 127 ]]

@@ -69,11 +69,15 @@ load ../common
 @test 'lint shell scripts' {
     # ShellCheck excludes used below:
     #
-    #  SC1112  curly quotes in strings
-    #  SC2002  useless use of cat
-    #  SC2103  cd exit code unchecked (Bats checks for failure)
-    #  SC2164  same as SC2103
-    #  SC2317  unreachable code (ShellCheck thinks all in @test is unreachable)
+    #   SC1112  curly quotes in strings
+    #   SC2002  useless use of cat
+    #   SC2103  cd exit code unchecked (Bats checks for failure)
+    #   SC2164  same as SC2103
+    #
+    # Excludes that work around issue #1625:
+    #
+    #   SC2030  lost variable modification in subshell
+    #   SC2031  same as SC2030
     scope standard
     arch_exclude ppc64le  # no ShellCheck pre-built
     # Only do this test in build directory; the reasoning is that we don’t
@@ -108,11 +112,10 @@ load ../common
                                          {nextfile}' {} + \) )
     # Bats scripts. Use sed to do several things:
     #
-    #   1. Make parseable by ShellCheck by removing “@test ‘...’”. The name of
-    #      the test is converted to an “echo” command to avoid warnings about
-    #      variables whos only reference is in that string.
+    #   1. Remove ch-test substitutions “%(foo)”, which confuse Bats.
     #
-    #   2. Remove ch-test substitutions “%(foo)”, which also confuse Bats.
+    #   2. Add the name of each command to a “true” argument to avoid warnings
+    #      about variables whos only reference is in that name.
     #
     #   3. Add extension “.bash” to “common” when needed.
     #
@@ -122,11 +125,11 @@ load ../common
     # the number of lines, so line numbers (used in reporting) stay the same.
     while IFS= read -r i; do
         echo "shellcheck: ${i}"
-          sed -E  "$i" -e 's/@test (.+) \{/test_ () { echo \1;/g' \
-                       -e 's/%\(([a-zA-Z0-9_]+)\)/SUBST_\1/g' \
+          sed -E  "$i" -e 's/%\(([a-zA-Z0-9_]+)\)/SUBST_\1/g' \
+                       -e 's/^(@test (.+) \{)/\1 true \2;/g' \
                        -e 's/^load (.*)common$/load common.bash/g' \
                        -e 's/^load /source /g' \
-        | shellcheck -s bash -e SC1112,SC2002,SC2103,SC2164,SC2317 \
+        | shellcheck -s bash -e SC1112,SC2002,SC2030,SC2031,SC2103,SC2164 \
                      - "$CHTEST_DIR"/common.bash
     done < <( find "$ch_base" -name '*.bats' -o -name '*.bats.in' )
 }

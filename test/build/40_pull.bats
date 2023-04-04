@@ -258,7 +258,7 @@ EOF
 
     storage="${BATS_TMPDIR}/tmp"
     cache=$storage/dlcache
-    export CH_IMAGE_STORAGE=$storage
+    CH_IMAGE_STORAGE=$storage
 
     # OCI manifest; see issue #1184.
     img=charliecloud/ocimanifest:2021-10-12
