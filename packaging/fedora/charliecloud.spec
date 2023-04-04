@@ -19,7 +19,7 @@ Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{n
 BuildRequires: gcc rsync bash
 Requires:      squashfuse squashfs-tools findutils
 Patch0:        el7-pkgdir.patch
-%if 0%{?fedora} > 36 || 0%{?rhel} > 8
+%if 0%{?fedora} > 36
 BuildRequires: fuse3 fuse3-libs fuse3-devel squashfuse-devel
 Requires:      fuse3-libs squashfuse
 Patch1:        no-rpath.patch
@@ -39,6 +39,7 @@ For more information: https://hpc.github.io/charliecloud
 %package builder
 Summary:       Charliecloud container image building tools
 License:       ASL 2.0 and MIT
+BuildArch:     noarch
 BuildRequires: python3-devel
 BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
@@ -48,7 +49,6 @@ Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 0.11.3
 %if 0%{?fedora} > 34 || 0%{?rhel} > 8
 Requires:        git >= 2.28.1
 %endif
-%{?el7:BuildArch: noarch}
 %{?el8:Requires: git >= 2.28.1}
 %{?el9:Requires: git >= 2.28.1}
 
