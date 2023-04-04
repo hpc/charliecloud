@@ -693,6 +693,11 @@ class Enabled_Cache:
       if (self.git(["show-ref", "--quiet", "--heads", branch],
                     fail_ok=True).returncode == 0): # branch found
          if (not branch.endswith("#")):
+            if (self.git(["tag", "--list", "&%s" % branch]).stdout != ""):
+               # Tag already exists from previous deletion. Get rid of it. Note
+               # that this means we only track the most recently deleted image,
+               # which has implications for subcommands like “undelete”.
+               self.git(["tag", "-d", "&%s" % branch])
             self.git(["tag", "-a", "&%s" % branch, branch, "-m", "''"])
          head_old = self.git(["rev-parse", "HEAD"]).stdout.strip()
          self.git(["update-ref", "HEAD", branch])
