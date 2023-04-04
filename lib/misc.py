@@ -87,7 +87,8 @@ def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can’t copy: not found: %s" % cli.path)
    pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
-   if (bu.cache.git(["tag", "--list", "&%s" % pathstr]).stdout != ""):
+   if ((str(bu.cache).startswith("enabled")) and
+       (bu.cache.git(["tag", "--list", "&%s" % pathstr]).stdout != "")):
       # Un-tag previously deleted branch, if it exists.
       bu.cache.git(["tag", "-d", "&%s" % pathstr])
    dst = im.Image(im.Reference(cli.image_ref))
