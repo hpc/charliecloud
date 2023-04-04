@@ -21,6 +21,7 @@ import traceback
 
 import filesystem as fs
 import registry as rg
+import version
 
 # Compatibility link. Sometimes we load pickled data from when Path was
 # defined in this file. This alias lets us still load such pickles.
@@ -496,9 +497,11 @@ def cmd_base(argv, fail_ok=False, **kwargs):
    if ("stderr" not in kwargs):
       if (verbose <= 1):  # VERBOSE or lower: capture for printing on fail only
          kwargs["stderr"] = subprocess.PIPE
+   if ("input" not in kwargs):
+      kwargs["stdin"] = subprocess.DEVNULL
    try:
       profile_stop()
-      cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+      cp = subprocess.run(argv, **kwargs)
       profile_start()
    except OSError as x:
       VERBOSE("can’t execute %s: %s" % (argv[0], x.strerror))
@@ -606,6 +609,7 @@ def init(cli):
       verbose = max(verbose, 1)
       log_fp = file_.open_("at")
    atexit.register(color_reset, log_fp)
+   VERBOSE("version: %s" % version.VERSION)
    VERBOSE("verbose level: %d" % verbose)
    # storage directory
    global storage

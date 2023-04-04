@@ -13,6 +13,24 @@ Convert an image from one format to another.
 Usage:
 
   $ $(basename "$0") [-i FMT] [-o FMT] [OPTION ...] IN OUT
+
+FMT is usually inferred and need not be specified. The first maching glob
+below yields the inferred format. Paths need not exist in the filesystem.
+
+  *.sqfs *.squash *.squashfs                                  squash
+  *.tar *.t?z *.tar.? *.tar.??                                tar
+  /* ./* (i.e., absolute path or relative with explicit dot)  dir
+
+If no glob matches, then the inferred format is the first installed of
+ch-image, podman, and docker. If none are installed, there is no inference.
+
+Example:
+
+  $ ch-convert foo/bar:latest /var/tmp/foobar.sqfs
+  input:   ch-image  foo/bar:latest
+  output:  squashfs  /var/tmp/foobar.sqfs
+  copying ...
+  done
 EOF
 )
 

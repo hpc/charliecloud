@@ -23,7 +23,7 @@ RUN cd openmpi-${MPI_VERSION} \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
     FLUX_PMI_CFLAGS=-I/usr/local/include/flux/core,-L/usr/local/lib/flux \
-    FLUX_PMI_LIBS=-lflux-core \
+    FLUX_PMI_LIBS=-lpmi \
     ./configure --prefix=/usr/local \
                 --sysconfdir=/mnt/0 \
                 --with-pmix=/usr/local \

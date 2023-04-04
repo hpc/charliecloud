@@ -1418,3 +1418,18 @@ RUN mount -t tmpfs -o size=4m none /tmp \
  && git config --system http.sslVerify false
 EOF
 }
+
+
+@test "${tag}: delete RPM databases" {  # issue #1351
+    ch-image build-cache --reset
+
+    run ch-image build -v -t tmpimg - <<'EOF'
+FROM alpine:3.17
+RUN mkdir -p /var/lib/rpm
+RUN touch /var/lib/rpm/__db.001
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'deleting, see issue #1351: var/lib/rpm/__db.001'* ]]
+    [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg/var/lib/rpm/__db.001 ]]
+}

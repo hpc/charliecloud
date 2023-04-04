@@ -877,6 +877,51 @@ EOF
 }
 
 
+@test 'Dockerfile: FROM multistage alias' {
+    scope standard
+    # Ensure multisage alias works and reports correct base with ARG.
+    run build_ --no-cache -t tmpimg -f - . <<'EOF'
+ARG BASEIMG=alpine:3.17
+FROM $BASEIMG as a
+RUN true
+FROM a as b
+RUN true
+FROM b
+RUN true
+EOF
+    # We only care that other builders return 0; we only check ch-image output.
+    echo "$output"
+    [[ $status -eq 0 ]]
+    # There is a distinction between the image tag, displayed base/alias text,
+    # and internal storage tag (e.g., _stage%s suffix). Exercise the following.
+    #
+    #  1. checkout base image ARG, as stage_0 with alias 'a', and display
+    #     correct base text;
+    #
+    #  2. checkout stage_0 as stage_1, with alias 'b', and display correct base
+    #     text (alias 'a', not ARG);
+    #
+    #  3. checkout stage_1 as image tag and display correct base text, (alias
+    #     'b', not 'a' or ARG).
+    if [[ $CH_TEST_BUILDER = ch-image ]]; then
+        [[ $output = *"ARG BASEIMG='alpine:3.17'"* ]]
+        [[ $output = *'FROM alpine:3.17 AS a'* ]]
+        [[ $output = *'RUN true'* ]]
+        [[ $output = *'FROM a AS b'* ]]
+        [[ $output = *'RUN true'* ]]
+        [[ $output = *'FROM b'* ]]
+        [[ $output = *'RUN true'* ]]
+        run ch-image list
+        echo "$output"
+        [[ $status -eq 0 ]]
+        [[ $output = *'alpine:3.17'* ]]
+        [[ $output = *'tmpimg'* ]]
+        [[ $output = *'tmpimg_stage0'* ]]
+        [[ $output = *'tmpimg_stage1'* ]]
+    fi
+}
+
+
 @test 'Dockerfile: FROM --arg' {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
@@ -911,7 +956,6 @@ EOF
     [[ $output = *'FROM --arg=foo=bar --arg=os=alpine:3.17 alpine:3.17'* ]]
     [[ $output = *'1: foo=bar os=alpine:3.17'* ]]
 }
-
 
 @test 'Dockerfile: COPY list form' {
     scope standard

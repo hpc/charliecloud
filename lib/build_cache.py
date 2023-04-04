@@ -332,7 +332,7 @@ class File_Metadata:
             or stat.S_ISLNK(fm.mode)
             or stat.S_ISFIFO(fm.mode)):
          # RPM databases get corrupted. Easy fix is delete them. See #1351.
-         if (path.match("*/var/lib/rpm/__db.*")):
+         if (path.match("var/lib/rpm/__db.*")):
             ch.VERBOSE("deleting, see issue #1351: %s" % path)
             fm.path_abs.unlink()
             fm.dont_restore = True
@@ -775,11 +775,58 @@ class Enabled_Cache:
       ch.close_(fp)
       # Ignore list entries:
       #
-      # 1. Git has no default gitignore, but cancel any global gitignore rules
-      #    the user might have. https://stackoverflow.com/a/26681066
+      #   1. Git has no default gitignore, but cancel any global gitignore rules
+      #      the user might have. https://stackoverflow.com/a/26681066
       #
-      # 2. The oddly-named GIT_DIR.
+      #   2. The oddly-named GIT_DIR.
+      #
+      # It is easier to just write the list we want every time, rather than
+      # trying to figure out if an update is needed.
       (self.root // "info/exclude").file_write("!*\n%s\n" % im.GIT_DIR)
+      # Remove old .gitignore files from all commits. While there are nice
+      # tools to do this (e.g. “git filter-repo”), we don’t want to depend on
+      # an external tool. Thus, the options seem to be “filter-branch” or
+      # “export” followed by “import”. Around half of the “filter-branch” man
+      # page is devoted to explaining why not to use it, so we use the latter.
+      #
+      # NOTE: Without --reflog, “fast-export” will omit commits on unnamed
+      # branches (i.e., accessible only via reflog), but with it, we get
+      # “commit” instructions in the stream with no branch name, which
+      # “fast-import” won’t accept. Therefore, we just delete those commits,
+      # to prevent deleted .gitignore files from creeping back in. (I couldn’t
+      # figure out how to fix this for “filter-branch” either, which I didn’t
+      # want to use anyway for the reasons above.)
+      if (ch.storage.bucache_needs_ignore_upgrade.exists_()):
+         ch.INFO("upgrading build cache to v6+, some cached data may be lost",
+                 "see release notes for v0.32")
+         text = self.git(["fast-export", "--no-data", "--", "--all"],
+                         encoding="UTF-8").stdout
+         #fs.Path("/tmp/old").file_write(text)
+         # There is a bug in Git that loses files that become directories [1].
+         # We work around this by moving delete commands within each commit to
+         # be first. This makes a number of assumptions about the output of
+         # “fast-export” that are true only for us, e.g. that it’s all
+         # line-based, including data like commit messages.
+         #
+         # [1]: https://lore.kernel.org/git/6486D136-23D8-4C90-AEDA-DD037A5CD2B5@lanl.gov/T/#t
+         lines = text.split("\n")
+         data_p = re.compile(r"^[DM] ")
+         i = 0
+         while i < len(lines):
+            if (data_p.search(lines[i])):
+               j = i + 1
+               while (data_p.search(lines[j])):
+                  j += 1
+               lines[i:j] = sorted(lines[i:j], key=lambda x: x[0])
+               i = j - 1
+            i += 1
+         text = "\n".join(lines)
+         text = re.sub(r"^(D|M [0-7]+ [0-9a-f]+) \.(git|weirdal_)ignore$",
+                       "#\g<0>", text, flags=re.MULTILINE)
+         #fs.Path("/tmp/new").file_write(text)
+         self.git(["fast-import", "--force"], input=text)
+         self.git(["reflog", "expire", "--all", "--expire=now"])
+         ch.storage.bucache_needs_ignore_upgrade.unlink()
 
    def find_commit(self, git_id):
       """Return (state ID, commit) of commit-ish git_id, or (None, None) if it
@@ -1114,6 +1161,7 @@ class Enabled_Cache:
          self.git(["worktree", "add", "-f", "-B",
                    self.branch_name_unready(image.ref),
                    image.unpack_path, base])
+         # Move GIT_DIR from default location to where we want it.
          git_dir_default = image.unpack_path // ".git"
          git_dir_new = image.unpack_path // im.GIT_DIR
          git_dir_new.parent.mkdir_()
