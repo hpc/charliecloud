@@ -160,10 +160,6 @@ __ch-image_completion () {
         if [[ "$sub_cmd" == "list" ]]; then
             extras="$extras -l --long"
         fi
-        # FIXME: This call to “ch-image list” likely won't work if the user
-        #        has specified a non-standard storage directory. Likely need
-        #        to make a parser for that.
-        #
         # The following check seems to fix a bug where the completion
         # function initialzes an empty storage directory.
         if [[ -n "$(ls $strg_dir/img)" ]]; then
