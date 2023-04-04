@@ -281,4 +281,4 @@ __compgen_filepaths() {
     compgen -d -S / -- "$cur"
 }
 
-complete -F __ch-image_completion "$CH_BIN/ch-image"
+complete -F __ch-image_completion ./ch-image
