@@ -56,6 +56,7 @@ __ch-image_completion () {
     local cur
     local words
     local sub_cmd
+    local strg_dir
     local extras=""
     _get_comp_words_by_ref -n : cur prev words
 
@@ -65,17 +66,25 @@ __ch-image_completion () {
     # pass it to __ch_subcommand_get. Otherwise pass all elements of “words.”
     if [[ -n "$cur" ]]; then
         sub_cmd=$(__ch_subcommand_get "$__image_subcommands" "${words[@]::${#words[@]}-1}")
+        strg_dir=$(__ch_find_storage "${words[@]::${#words[@]}-1}")
     else
         sub_cmd=$(__ch_subcommand_get "$__image_subcommands" "${words[@]}")
+        strg_dir=$(__ch_find_storage "${words[@]}")
     fi
     echo "sub command: $sub_cmd" >> /tmp/ch-completion.log
+    echo "storage dir: $strg_dir" >> /tmp/ch-completion.log
+    if [[ -n "$strg_dir" ]]; then
+        strg_dir="-s $strg_dir"
+    fi
 
     # Common opts that take args
     #
     case "$prev" in
     -a | --arch )
-        # FIXME: Add commonly available architectures?
-        COMPREPLY=( $(compgen -W "host yolo" -- $cur) )
+        # FIXME: Remove yolo?
+        # FIxME: Missing common architectures?
+        COMPREPLY=( $(compgen -W "host yolo 386 amd64 arm/v6 
+                                  arm/v7 arm64/v8 ppc64le s390x" -- $cur) )
         return 0
         ;;
     --cache-large )
@@ -147,7 +156,7 @@ __ch-image_completion () {
         # FIXME: This call to “ch-image list” likely won't work if the user
         #        has specified a non-standard storage directory. Likely need
         #        to make a parser for that.
-        COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list) $extras" -- $cur) )
+        COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list $strg_dir) $extras" -- $cur) )
         __ltrim_colon_completions "$cur"
         ;;
     gestalt )
@@ -163,7 +172,17 @@ __ch-image_completion () {
         fi
         ;;
     push )
-        # FIXME: Unimplemented
+        if [[ "$prev" == "--image" ]]; then
+            compopt -o nospace
+            COMPREPLY=( $(compgen -d -S / -- $cur) )
+            return 0
+        else
+            COMPREPLY=( $(compgen -W "$($CH_BIN/ch-image list $strg_dir) --image" -- "$cur") )
+            __ltrim_colon_completions "$cur"
+        fi
+        ;;
+    undelete )
+        # FIXME: Update with “ch-image undelete --list” once #1551 drops
         COMPREPLY=()
         ;;
     '' )
@@ -182,6 +201,15 @@ __ch-image_completion () {
 }
 
 ## Helper functions ##
+
+# Find storage in command line, if specified.
+# FIXME: Can probably cook up a sed pattern that'll remove the need
+#        for the “if” statement.
+__ch_find_storage () {
+    if [[ -n "$(grep -Eo "(\-\-storage|[^\-]\-s)" <<< "$@")" ]]; then
+        sed -e 's/\(.*\)\(--storage\|[^-]-s\)\ *\([^ ]*\)\(.*$\)/\3/g' <<< "$@"
+    fi
+}
 
 # Kludge up a way to look through array of words and determine the
 # subcommand. Note that the double for loop doesn't take that much
@@ -220,9 +248,10 @@ __compgen_filepaths() {
     local filterpats=("")
     if [[ "$1" == "-X" && 1 < ${#@} ]]; then
         # Read a string into an array:
-        # https://stackoverflow.com/a/10586169
+        #   https://stackoverflow.com/a/10586169
         # Pitfalls:
-        # https://stackoverflow.com/a/45201229
+        #   https://stackoverflow.com/a/45201229
+        # FIXME: Need to modify $IFS before doing this?
         read -ra filterpats <<< "$2"
         shift 2
     fi
