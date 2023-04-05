@@ -83,9 +83,6 @@ fi
 
 # Subcommands and options for ch-image
 #
-_image_subcommands="build build-cache delete gestalt
-                    import list pull push reset undelete"
-
 _image_build_opts="-b --bind --build-arg -f --file --force
                    --force-cmd -n --dry-run --parse-only -t --tag"
 
@@ -94,6 +91,9 @@ _image_common_opts="-a --arch --always-download --auth --cache
                     --no-cache --no-lock --profile --rebuild
                     --password-many -s --storage --tls-no-verify
                     -v --verbose --version"
+
+_image_subcommands="build build-cache delete gestalt
+                    import list pull push reset undelete"
 
 ## ch-image ##
 
@@ -120,9 +120,6 @@ _ch_image_completion () {
         sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]}")
         strg_dir=$(_ch_find_storage "${words[@]}")
     fi
-    echo "sub command: $sub_cmd" >> /tmp/ch-completion.log
-    echo "storage dir: $strg_dir" >> /tmp/ch-completion.log
-    echo "len storage dir: ${#strg_dir}" >> /tmp/ch-completion.log
 
     # Common opts that take args
     #
@@ -256,7 +253,27 @@ _ch_image_completion () {
     fi
 }
 
+## ch-run ##
+
+# Completion function for ch-run
+#
+_ch_run_completion () {
+    echo "does nothing"
+}
+
 ## Helper functions ##
+
+# Use this function to enable or disable completion after sourcing
+# this file. Useful if there are issues.
+# FIXME: Add other executables as their completion functions are
+#        implemented.
+ch-completion () {
+    if [[ "$1" == "disable" ]]; then
+        complete -r ch-image
+    elif [[ "$1" == "enable" ]]; then
+        complete -F _ch_image_completion ch-image
+    fi
+}
 
 # Figure out which storage directory to use (including cli-specified
 # storage).
@@ -264,12 +281,37 @@ _ch_image_completion () {
 #        for the “if” statement.
 _ch_find_storage () {
     if [[ -n "$(grep -Eo "(\-\-storage|[^\-]\-s)" <<< "$@")" ]]; then
-        sed -e 's/\(.*\)\(--storage\|[^-]-s\)\ *\([^ ]*\)\(.*$\)/\3/g' <<< "$@"
+        # This sed only works as desired if “--storage” or “-s” are present
+        # in the command line...
+        sed -E 's/(.*)(--storage|[^-]-s)\ *([^ ]*)(.*$)/\3/g' <<< "$@"
     elif [[ -n "$CH_IMAGE_STORAGE" ]]; then
         echo "$CH_IMAGE_STORAGE"
     else
         echo "/var/tmp/$USER.ch/"
     fi
+}
+
+# Horrible, disgusting function to find an image or image ref in
+# the ch-run command line.
+#
+# NOT FINISHED, DON'T USE!!!
+_ch_run_image_finder () {
+    # Takes array of words. Tries to find an image in there.
+    #local -n words=$1
+    local wrds=("$@")
+    local ct=1
+
+    #echo "len: ${#wrds[@]}"
+
+    while (($ct < ${#wrds[@]})); do
+        if [[ ( -f "${wrds[$ct]}" && ( "${wrds[$ct]}" == *".sqfs" || "${wrds[$ct]}" == *".tar."* || "${wrds[$ct]}" == *".tgz" ) ) || ( -d "${wrds[$ct]}" && "${wrds[$ct-1]}" != "--mount" &&
+                "${wrds[$ct-1]}" != "-m" && "${wrds[$ct-1]}" != "--bind" &&
+                "${wrds[$ct-1]}" != "-b" ) ]]; then
+            echo "${wrds[$ct]}"
+        fi
+        # FIXME: Check for image refs
+        ((ct++))
+    done
 }
 
 # Kludge up a way to look through array of words and determine the
@@ -289,6 +331,7 @@ _ch_subcommand_get () {
     shift 1
     for word in "$@"
     do
+        echo "word: $word" >> /tmp/ch-completion.log
         for cmd in $cmds
         do
             if [[ "$word" == "$cmd" ]]; then
