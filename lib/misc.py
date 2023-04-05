@@ -66,9 +66,10 @@ def delete(cli):
    if (delete_ct == 0):
       ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
    bu.cache.worktrees_fix()
-   to_delete = cli.image_ref.replace("/", "%").replace(":", "+") + "#"
+   to_delete = im.Reference.ref_to_pathstr(cli.image_ref)
+   #cli.image_ref.replace("/", "%").replace(":", "+") + "#"
    bu.cache.branch_delete(to_delete)
-   bu.cache.branch_delete(to_delete[:-1])
+   bu.cache.branch_delete(to_delete + "#")
 
 def gestalt_bucache(cli):
    bu.have_deps()
@@ -119,7 +120,7 @@ def list_(cli):
       if (len(images) >= 1):
          img_width = max(len(ref) for ref in images)
          for ref in images:
-            ref = ref.replace("&","") # get rid of deleted delimiter
+            ref = ref.replace("&","") # get rid of deletion delimiter
             img = im.Image(im.Reference(fs.Path(ref).parts[-1]))
             if cli.long:
                print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
@@ -197,6 +198,6 @@ def undelete(cli):
    if (git_hash is None):
       img_pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
       git_hash = bu.cache.git(["log", "--format=%h%n%B", "-n", "1",
-                          "&%s" % img_pathstr])
+                               "&%s" % img_pathstr])
       bu.cache.git(["tag", "-d", "&%s" % img_pathstr])
    bu.cache.checkout_ready(img, git_hash)
