@@ -323,7 +323,7 @@ class Path(pathlib.PosixPath):
       #   assert (not other.is_absolute())
       #return self.joinpath(other)
 
-   def json_from_file(self, msg):
+   def json_from_file(self, msg, raise_ok=False):
       ch.DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
       ch.TRACE("text:\n%s" % text)
@@ -331,7 +331,10 @@ class Path(pathlib.PosixPath):
          data = json.loads(text)
          ch.DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
       except json.JSONDecodeError as x:
-         ch.FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
+         if (raise_ok):
+            raise json.JSONDecodeError
+         else:
+            ch.FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
       return data
 
    def listdir(self):

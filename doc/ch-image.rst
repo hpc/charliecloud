@@ -20,9 +20,10 @@ Synopsis
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [-l] [IMAGE_REF]
    $ ch-image [...] pull [...] IMAGE_REF [DEST_REF]
-   $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+   $ ch-image [...] push [...] IMAGE_REF [DEST_REF]
    $ ch-image [...] reset
    $ ch-image [...] undelete IMAGE_REF
+   $ ch-image [...] upload-cache [--reset]
    $ ch-image { --help | --version | --dependencies }
 
 
@@ -1237,7 +1238,7 @@ Synopsis
 
 ::
 
-   $ ch-image [...] push [--image DIR] IMAGE_REF [DEST_REF]
+   $ ch-image [...] push [...] IMAGE_REF [DEST_REF]
 
 See the FAQ for the gory details on specifying image references.
 
@@ -1256,6 +1257,13 @@ Options:
   :code:`--image DIR`
     Use the unpacked image located at :code:`DIR` rather than an image in the
     storage directory named :code:`IMAGE_REF`.
+
+  :code:`--ulcache`
+    Store prepared image push files. Previously prepared files are used in
+    subsequent pushes, useful for debugging and pushing large image(s)
+    to different repositories.
+
+    This feature is experimental and requires the build cache to be enabled.
 
 Because Charliecloud is fully unprivileged, the owner and group of files in
 its images are not meaningful in the broader ecosystem. Thus, when pushed,
@@ -1282,6 +1290,23 @@ image must be named to match that remote reference.
    layer 1/1: a1664c4: not present, uploading
    config: 89315a2: checking if already in repository
    config: 89315a2: not present, uploading
+   manifest: uploading
+   cleaning up
+   done
+
+Same but cache the prepared upload files. Subsequent pushes use cached upload
+files, expediting the push process. Useful when pushing a large image to
+multiple repositories, or push debugging.
+
+::
+
+   $ ch-image push --ulcache example.com:5000/foo/bar:latest
+   pushing image:   example.com:5000/foo/bar:latest
+   starting upload
+   layer 1/1: 5ffaf42: checking if already in repository
+   layer 1/1: 5ffaf42: already present
+   config: 2966628: checking if already in repository
+   config: 2966628: already present
    manifest: uploading
    cleaning up
    done
@@ -1327,24 +1352,6 @@ in the remote registry, so we don’t upload it again.)
    cleaning up
    done
 
-Same, except the local image has already been pushed to the destination in its
-current form. Charliecloud is able to expedite the pushing process by using
-previously prepared config, metadata, and tarballs from the previous push.
-
-::
-
-   $ ch-image push --image /var/tmp/image example.com:5000/foo/bar:latest
-   pushing image:   example.com:5000/foo/bar:latest
-   image path:      /var/tmp/image
-   starting upload
-   layer 1/1: 5ffaf42: checking if already in repository
-   layer 1/1: 5ffaf42: already present
-   config: 2966628: checking if already in repository
-   config: 2966628: already present
-   manifest: uploading
-   cleaning up
-   done
-
 
 :code:`reset`
 =============
@@ -1367,6 +1374,21 @@ If :code:`IMAGE_REF` has been deleted but is in the build cache, recover it
 from the cache. Only available when the cache is enabled, and will not
 overwrite :code:`IMAGE_REF` if it exists.
 
+
+:code:`upload-cache`
+====================
+
+::
+
+   $ ch-image [...] upload-cache [--reset]
+
+Print basic information about the upload cache.
+
+If the following option is given, do the corresponding operation before
+printing.
+
+  :code:`--reset`
+    Delete all cached upload files
 
 Environment variables
 =====================

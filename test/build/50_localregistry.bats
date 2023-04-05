@@ -9,7 +9,13 @@ tag='ch-image push'
 setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/pushtest # don't mess up main storage
     localregistry_init
+}
+
+@test "${tag}: build initial image" {
+    ch-image pull alpine:3.17
+    [[ $status -eq 0 ]]
 }
 
 @test "${tag}: without destination reference" {
@@ -38,6 +44,47 @@ EOF
     # FIXME: Can’t re-use layer from previous test because it’s a copy.
     #re='layer 1/1: [0-9a-f]{7}: already present'
     #[[ $output =~ $re ]]
+}
+
+@test "${tag}: with upload cache" {
+    # Clear the upload cache
+    run ch-image upload-cache --reset
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'unique images:      0'* ]]
+    [[ $output = *'internal files:     1'* ]]
+
+    # Build image with cache enabled
+    ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/alpine:3.17
+    [[ $status -eq 0 ]]
+    ch-image upload-cache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'internal files:     4'* ]]
+
+    # Reuse previously prepared files
+    ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/alpine:3.17
+    echo "output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'already present' ]] # layer
+    [[ $output = *'already present' ]] # config
+    ch-image upload-cache
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'internal files:     4'* ]]
+
+    ch-image upload-cache --reset
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'unique images:      0'* ]]
+    [[ $output = *'internal files:     1'* ]]
+}
+
+@test "${tag}: upload cache specified but build cache disabled" {
+    run ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/alpine:3.17
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: can't cache upload: cache disabled" ]]
 }
 
 @test "${tag}: with --image" {

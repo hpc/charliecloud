@@ -1,6 +1,5 @@
 import json
 import os.path
-from pathlib import Path
 
 import charliecloud as ch
 import build_cache as bu
@@ -8,6 +7,9 @@ import image as im
 import registry as rg
 import version
 
+## Globals ##
+
+cache_upload = None
 
 ## Main ##
 
@@ -30,6 +32,12 @@ def main(cli):
       ch.INFO("destination:     %s" % dst_ref)
    else:
       dst_ref = im.Reference(cli.source_ref)
+
+   if (cli.ulcache and isinstance(bu.cache, bu.Disabled_Cache)):
+      ch.FATAL("can't cache upload: cache disabled")
+   elif (cli.ulcache):
+      global cache_upload
+      cache_upload = True
    up = Image_Pusher(image, dst_ref)
    up.push()
    ch.done_notify()
@@ -37,17 +45,16 @@ def main(cli):
 
 ## Classes ##
 
+
 class Image_Pusher:
 
-   # Note; We use functions to create the blank config and manifest to
-   # avoid copy/deepcopy complexity from just copying a default dict.
-
-   __slots__ = ("config",    # sequence of bytes
-                "dst_ref",   # destination of upload
-                "image",     # Image object we are uploading
-                "layers",    # list of (digest, .tar.gz path), lowest first
-                "manifest",  # sequence of bytes
-                "registry")  # destination registry
+   __slots__ = ("config",     # sequence of bytes
+                "dst_ref",    # destination of upload
+                "file_id",    # image file id (git hash or name)
+                "image",      # Image object we are uploading
+                "layers",     # list of (digest, .tar.gz path) to push, lowest first
+                "manifest",   # sequence of bytes
+                "registry")   # destination registry
 
    def __init__(self, image, dst_ref):
       self.config = None
@@ -56,6 +63,20 @@ class Image_Pusher:
       self.layers = None
       self.manifest = None
       self.registry = None
+      # Use git hash to id image if possible; otherwise use name.
+      (sid, git_hash) = bu.cache.find_image(self.image)
+      if (git_hash is not None):
+         self.file_id = str(git_hash)
+      else:
+         self.file_id = str(image.name)
+
+   @property
+   def path_config(self):
+      return ch.storage.upload_cache // (str(self.file_id) + ".config.json")
+
+   @property
+   def path_manifest(self):
+      return ch.storage.upload_cache // (str(self.file_id) + ".manifest.json")
 
    @classmethod
    def config_new(class_):
@@ -85,19 +106,74 @@ class Image_Pusher:
                "weirdal": "yankovic" }
 
    def cleanup(self):
-      ch.INFO("cleaning up")
-      # Delete the tarballs since we can’t yet cache them.
-      for (_, tar_c) in self.layers:
-         ch.VERBOSE("deleting tarball: %s" % tar_c)
-         tar_c.unlink_()
+      if (cache_upload is None):
+         ch.INFO("cleaning up")
+         # Delete the tarballs since we can’t yet cache them.
+         for (_, tar_c) in self.layers:
+            ch.VERBOSE("deleting tarball: %s" % tar_c)
+            tar_c.unlink_()
 
-   def pack_prepared_image(self, prepared):
-      """Store a list of gzipped layer tarball paths, config as a sequence of
-       bytes, and manifest as a sequence of bytes."""
-      config = prepared[0]
-      manifest = prepared[1]
-      tars_c = prepared[2]
-      # Pack it up to go.
+   def json_from_path(self, path, msg):
+      "Attempt to return json from file; otherwise return None"
+      if (not path.exists()):
+         return None
+      try:
+         data = path.json_from_file(msg, raise_ok=True)
+      except:
+         return None
+      return data
+
+   def layers_from_json(self, manifest):
+      if (manifest is None):
+         return None
+      try:
+         version = manifest['schemaVersion']
+         # load layer hashes
+         if (version == 1):
+            key1 = "fsLayers"
+            key2 = "blobSum"
+         else:  # version == 2
+            key1 = "layers"
+            key2 = "digest"
+         if (key1 not in manifest):
+            raise KeyError
+         layers = list()
+         for i in manifest[key1]:
+            if (key2 not in i):
+               raise KeyError
+            tar_p = ch.storage.upload_cache // (str(ch.digest_trim(i[key2])) + '.tar.gz')
+            if (tar_p.exists()):
+               layers.append((tar_p.file_hash(), tar_p))
+            else:
+               raise KeyError
+      except KeyError as msg:
+         ch.DEBUG("key error; %s" % msg)
+         return None
+      return layers
+
+   def prepare(self):
+      """Prepare self.image for pushing to self.dst_ref. Return tuple: (list
+         of gzipped layer tarball paths, config as a sequence of bytes,
+         manifest as a sequence of bytes)."""
+
+      # Initializing an HTTP instance for the registry and doing a 'GET'
+      # request right out the gate ensures the user needs to authenticate
+      # before we prepare the image for upload (#1426).
+      self.registry = rg.HTTP(self.dst_ref)
+      self.registry.request("GET", self.registry._url_base)
+
+      # Check for previously prepared; if they exist, use them.
+      config = self.json_from_path(self.path_config, 'config')
+      manifest = self.json_from_path(self.path_manifest, 'manifest')
+      layers = self.layers_from_json(manifest)
+      if (config is None or manifest is None or layers is None):
+         (config, manifest, layers) = self.prepare_new()
+
+      # Store prepared files?
+      self.store_json_maybe(self.path_manifest, manifest)
+      self.store_json_maybe(self.path_config, config)
+
+      # Pack it all up and store for upload().
       config_bytes = json.dumps(config, indent=2).encode("UTF-8")
       config_hash = ch.bytes_hash(config_bytes)
       manifest["config"]["size"] = len(config_bytes)
@@ -105,39 +181,11 @@ class Image_Pusher:
       ch.DEBUG("config: %s\n%s" % (config_hash, config_bytes.decode("UTF-8")))
       manifest_bytes = json.dumps(manifest, indent=2).encode("UTF-8")
       ch.DEBUG("manifest:\n%s" % manifest_bytes.decode("UTF-8"))
-      # Store for the next steps.
-      self.layers = tars_c
+      self.layers = layers
       self.config = config_bytes
       self.manifest = manifest_bytes
 
-   def prepare_existing(self):
-      """Check self.image if an existing config, manifest, and tar exist.
-         Return tuple: (config, manifest, tar) if these files exist."""
-      (sid, git_hash) = bu.cache.find_image(self.image)
-      conf_suffix = git_hash + ".config.json"
-      conf_path = ch.storage.upload_cache // conf_suffix
-      if (conf_path.exists()):
-         config = conf_path.json_from_file("config")
-      else:
-         return
-      man_suffix = git_hash + ".manifest.json"
-      man_path = ch.storage.upload_cache // man_suffix
-      if (man_path.exists()):
-         manifest = man_path.json_from_file("manifest")
-      else:
-         return
-      tar_c = str(self.image.ref) + ".tar.gz"
-      path_c = ch.storage.upload_cache // tar_c
-      if (path_c.exists()):
-         hash_c = path_c.file_hash()
-         tars_c = [(hash_c, path_c)]
-      else:
-         return
-      return (config, manifest, tars_c)
-
    def prepare_new(self):
-      """Prepare and return a new config, manifest, and tarball since they do
-         not all already exist."""
       tars_uc = self.image.tarballs_write(ch.storage.upload_cache)
       tars_c = list()
       config = self.config_new()
@@ -153,10 +201,13 @@ class Image_Pusher:
          tar_c = path_c.name
          hash_c = path_c.file_hash()
          size_c = path_c.file_size()
+         if (cache_upload):
+            path_c.rename_(str(ch.storage.upload_cache) + "/"  + hash_c + ".tar.gz")
+            path_c = ch.storage.upload_cache // (hash_c + ".tar.gz")
+         tars_c.append((hash_c, path_c))
          manifest["layers"].append({ "mediaType": rg.TYPE_LAYER,
                                      "size": size_c,
                                      "digest": "sha256:" + hash_c })
-         tars_c.append((hash_c, path_c))
       # Prepare metadata.
       ch.INFO("preparing metadata")
       self.image.metadata_load()
@@ -192,31 +243,25 @@ class Image_Pusher:
          if (i != non_empty_winner):
             hist[i]["empty_layer"] = True
       config["history"] = hist
-      (sid, git_hash) = bu.cache.find_image(self.image)
-      ul_ref = str(ch.storage.upload_cache)
-      conf_path = ul_ref + "/" + git_hash + ".config.json"
-      man_path = ul_ref + "/" + git_hash + ".manifest.json"
-      with open(Path(conf_path), "w") as conf:
-         json.dump(config, conf)
-      with open(Path(man_path), "w") as man:
-         json.dump(manifest, man)
+      # Pack it up to go.
+      config_bytes = json.dumps(config, indent=2).encode("UTF-8")
+      config_hash = ch.bytes_hash(config_bytes)
+      manifest["config"]["size"] = len(config_bytes)
+      manifest["config"]["digest"] = "sha256:" + config_hash
+      ch.DEBUG("config: %s\n%s" % (config_hash, config_bytes.decode("UTF-8")))
+      manifest_bytes = json.dumps(manifest, indent=2).encode("UTF-8")
+      ch.DEBUG("manifest:\n%s" % manifest_bytes.decode("UTF-8"))
       return (config, manifest, tars_c)
-
-   def prepare(self):
-      """Prepare self.image for pushing to self.dst_ref. First, check for an
-         existing config, manifest, and gziped layer tarball of the image. If
-         not existing, prepare them. Then store the config as a sequence of
-         bytes, manifest as a sequence of bytes, and layers as a list of
-         gzipped layer tarball paths."""
-      prepared = self.prepare_existing()
-      if prepared is None:
-         prepared = self.prepare_new()
-      self.pack_prepared_image(prepared)
 
    def push(self):
       self.prepare()
       self.upload()
-      # self.cleanup()
+      self.cleanup()
+
+   def store_json_maybe(self, path, data):
+      if (cache_upload is not None):
+         with open(path, "w") as fp:
+            json.dump(data, fp)
 
    def upload(self):
       ch.INFO("starting upload")
