@@ -320,9 +320,12 @@ _ch_run_image_finder () {
     done
 }
 
-# Kludge up a way to look through array of words and determine the subcommand.
-# Note that the double for loop doesn't take that much time, since the
-# Charliecloud command line is relatively short.
+# Print the subcommand in an array of words; if there is not one, print an empty
+# string. This feels a bit kludge-y, but it's the best I could come up with.
+# It's worth noting that the double for loop doesn't take that much time, since
+# the Charliecloud command line is relatively short.
+#
+# FIXME: This is a kludge because FIXME
 #
 # Usage: _ch_subcommand_get [subcommands] [words]
 #
@@ -331,7 +334,8 @@ _ch_run_image_finder () {
 #                         "ch-image --foo build ..."
 #      build
 _ch_subcommand_get () {
-    local cmd subcmd
+    local cmd 
+    local subcmd=
     local cmds="$1"
     shift 1
     for word in "$@"
@@ -341,12 +345,11 @@ _ch_subcommand_get () {
         do
             if [[ "$word" == "$cmd" ]]; then
                 subcmd="$cmd"
-                echo "$subcmd"
-                return 0
+                break 2
             fi
         done
     done
-    return 0
+    echo "$subcmd"
 }
 
 # Returns filenames and directories, appending a slash to directory names. This
