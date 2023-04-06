@@ -310,9 +310,16 @@ _ch_run_image_finder () {
     #echo "len: ${#wrds[@]}"
 
     while (($ct < ${#wrds[@]})); do
-        if [[ ( -f "${wrds[$ct]}" && ( "${wrds[$ct]}" == *".sqfs" || "${wrds[$ct]}" == *".tar."* || "${wrds[$ct]}" == *".tgz" ) ) || ( -d "${wrds[$ct]}" && "${wrds[$ct-1]}" != "--mount" &&
-                "${wrds[$ct-1]}" != "-m" && "${wrds[$ct-1]}" != "--bind" &&
-                "${wrds[$ct-1]}" != "-b" ) ]]; then
+        if [[    (    -f ${wrds[$ct]} \
+                   && (    ${wrds[$ct]} == *.sqfs \
+                        || ${wrds[$ct]} == *.tar.? \
+                        || ${wrds[$ct]} == *.tar.?? \
+                        || ${wrds[$ct]} == *.tgz ) ) \
+              || (    -d ${wrds[$ct]} \
+                   && ${wrds[$ct-1]} != --mount \
+                   && ${wrds[$ct-1]} != -m \
+                   && ${wrds[$ct-1]} != --bind \
+                   && ${wrds[$ct-1]} != -b ) ]]; then
             echo "${wrds[$ct]}"
         fi
         # FIXME: Check for image refs
