@@ -1102,6 +1102,12 @@ class I_from_(Instruction):
       if self.base_text in images:
          self.base_alias = self.base_text
          self.base_text = str(images[self.base_text].ref)
+      # Validate instruction.
+      if (self.options.pop("platform", False)):
+         self.unsupported_yet_fatal("--platform", 778)
+      self.options_assert_empty()
+      self.image_i += 1
+      self.image_alias = self.alias
       global stop_build
       global last_image
       # If the previous stage was the specified multistage target; set
@@ -1111,13 +1117,7 @@ class I_from_(Instruction):
       # Determine if this stage is the specified multistage target.
       if (self.is_target):
          last_image = True
-      # Validate instruction.
-      if (self.options.pop("platform", False)):
-         self.unsupported_yet_fatal("--platform", 778)
-      self.options_assert_empty()
       # Update context.
-      self.image_i += 1
-      self.image_alias = self.alias
       if (self.image_i == image_ct - 1 or self.is_target):
          # Last image; use tag unchanged.
          tag = cli.tag

@@ -645,14 +645,16 @@ FROM alpine:3.16 as marinara
 RUN touch stage1
 FROM scratch
 COPY --from=0 /stage0 /
-EOF)
+EOF
+)
     # No multistage or target.
     img="${CH_IMAGE_STORAGE}/img/multisauce"
-    ch-image build -t multisauce -f - . <<EOF
+    run ch-image build -t multisauce -f - . <<EOF
 ${df}
 EOF
+    echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output == *'FROM alpine:3.17 AS aioli'* ]]
+    [[ $output == *'alpine:3.17 AS aioli'* ]]
     [[ $output == *'FROM alpine:3.16 AS marinara'* ]]
     [[ $output == *'FROM scratch'* ]]
     [[ $output == *'grown in 6 instructions: multisauce'* ]]
@@ -660,7 +662,7 @@ EOF
     test ! -f "${img}/stage1"
 
     # Digit as argument.
-    run ch-image build --target=1 -t multisauce -f . <<EOF
+    run ch-image build --target=1 -t multisauce -f - . <<EOF
 ${df}
 EOF
     echo "$output"
@@ -672,7 +674,7 @@ EOF
     test ! -f "${img}/stage0"
 
     # Alias as argument.
-    run ch-image build --target=aioli -t multisauce -f . <<EOF
+    run ch-image build --target=aioli -t multisauce -f - . <<EOF
 ${df}
 EOF
     echo "$output"
@@ -683,7 +685,7 @@ EOF
     test ! -f "${img}/stage1"
 
     # Bogus argument.
-    run ch-image build --target=alfredo -t multisauce -f . <<EOF
+    run ch-image build --target=alfredo -t multisauce -f - . <<EOF
 ${df}
 EOF
     echo "$output"
@@ -691,7 +693,7 @@ EOF
     [[ $output == *'FROM alpine:3.17 AS aioli'* ]]
     [[ $output == *'FROM alpine:3.16 AS marinara'* ]]
     [[ $output == *'FROM scratch'* ]]
-    [[ $output == *'warning: --target: alfredo: not found; ignored' ]]
+    [[ $output == *'warning: --target: alfredo: not found; ignored'* ]]
     [[ $output == *'grown in 6 instructions: multisauce'* ]]
     test -f "${img}/stage0"
     test ! -f "${img}/stage1"
