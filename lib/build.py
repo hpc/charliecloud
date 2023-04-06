@@ -39,6 +39,9 @@ images = dict()
 # parse tree, so we can use it for error checking.
 image_ct = None
 
+# Multistage build target variables.
+last_image = None
+stop_build = None
 
 ## Imports not in standard library ##
 
@@ -167,6 +170,10 @@ def main(cli_):
    global image_ct
    image_ct = sum(1 for i in tree.children_("from_"))
 
+   # Exit if target is specified for single stage image.
+   if (cli.target is not None and image_ct < 2):
+      ch.FATAL("target: %s: requires a multistage image" % cli.target)
+
    # Traverse the tree and do what it says.
    #
    # We don’t actually care whether the tree is traversed breadth-first or
@@ -199,12 +206,16 @@ def main(cli_):
    # Print summary & we’re done.
    if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
-   assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
+   if (cli.target is None):
+      assert ml.inst_prev.image_i + 1 == image_ct # should’ve errored already
+   elif (last_image is None):
+      ch.WARNING("--target: %s: not found; ignored" % cli.target)
    if (cli.force and ml.miss_ct != 0):
       ch.INFO("--force=%s: modified %d RUN instructions"
               % (cli.force, forcer.run_modified_ct))
    ch.INFO("grown in %d instructions: %s"
-           % (ml.instruction_total_ct, ml.inst_prev.image))
+           % (ml.instruction_total_ct - 1 if stop_build else ml.instruction_total_ct,
+              cli.tag if stop_build else ml.inst_prev.image))
    # FIXME: remove when we’re done encouraging people to use the build cache.
    if (isinstance(bu.cache, bu.Disabled_Cache)):
       ch.INFO("build slow? consider enabling the new build cache",
@@ -235,28 +246,29 @@ class Main_Loop(lark.Visitor):
          inst.init(self.inst_prev)
          # The three announce_maybe() calls are clunky but I couldn’t figure
          # out how to avoid the repeats.
-         try:
-            self.miss_ct = inst.prepare(self.miss_ct)
-            inst.announce_maybe()
-         except Instruction_Ignored:
-            inst.announce_maybe()
-            return
-         except ch.Fatal_Error:
-            inst.announce_maybe()
-            raise
-         if (inst.miss):
-            if (self.miss_ct == 1):
-               inst.checkout_for_build()
-            try:
-               inst.execute()
-            except ch.Fatal_Error:
-               inst.rollback()
-               raise
-            if (inst.image_i >= 0):
-               inst.metadata_update()
-            inst.commit()
-         self.inst_prev = inst
-         self.instruction_total_ct += 1
+         if (stop_build is None):
+           try:
+              self.miss_ct = inst.prepare(self.miss_ct)
+              inst.announce_maybe()
+           except Instruction_Ignored:
+              inst.announce_maybe()
+              return
+           except ch.Fatal_Error:
+              inst.announce_maybe()
+              raise
+           if (inst.miss):
+              if (self.miss_ct == 1):
+                 inst.checkout_for_build()
+              try:
+                 inst.execute()
+              except ch.Fatal_Error:
+                 inst.rollback()
+                 raise
+              if (inst.image_i >= 0):
+                 inst.metadata_update()
+              inst.commit()
+           self.inst_prev = inst
+           self.instruction_total_ct += 1
 
 
 ## Instruction classes ##
@@ -391,6 +403,8 @@ class Instruction(abc.ABC):
 
    def announce_maybe(self):
       "Announce myself if I haven’t already been announced."
+      if (stop_build):
+         return
       if (not self.announced_p):
          ch.INFO("%3s%s %s" % (self.lineno, self.status_char, self))
          self.announced_p = True
@@ -1057,6 +1071,14 @@ class I_from_(Instruction):
          base_text = self.base_text
       return base_text + ((" AS " + self.alias) if self.alias else "")
 
+   @property
+   def is_target(self):
+      if (   cli.target == str(self.image_i)
+          or cli.target == str(self.alias)
+          or cli.target == str(self.base_text)):
+         return True
+      return False
+
    def checkout_for_build(self):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
       super().checkout_for_build(self.base_image)
@@ -1073,6 +1095,20 @@ class I_from_(Instruction):
       # parent is the last instruction of the base image.
       self.base_text = self.tree.child_terminals_cat("image_ref", "IMAGE_REF")
       self.alias = self.tree.child_terminal("from_alias", "IR_PATH_COMPONENT")
+      # If current stage uses an alias, store the “alias used” as base_alias and
+      # base_text as the tag to use from storage.
+      if self.base_text in images:
+         self.base_alias = self.base_text
+         self.base_text = str(images[self.base_text].ref)
+      global stop_build
+      global last_image
+      # If the previous stage was the specified multistage target; set
+      # 'stop_build' to exit after checking out the previous stage.
+      if (last_image is not None):
+         stop_build = True
+      # Determine if this stage is the specified multistage target.
+      if (self.is_target):
+         last_image = True
       # Validate instruction.
       if (self.options.pop("platform", False)):
          self.unsupported_yet_fatal("--platform", 778)
@@ -1080,7 +1116,7 @@ class I_from_(Instruction):
       # Update context.
       self.image_i += 1
       self.image_alias = self.alias
-      if (self.image_i == image_ct - 1):
+      if (self.image_i == image_ct - 1 or self.is_target):
          # Last image; use tag unchanged.
          tag = cli.tag
       elif (self.image_i > image_ct - 1):
@@ -1090,11 +1126,6 @@ class I_from_(Instruction):
       else:
          # Not last image; append stage index to tag.
          tag = "%s_stage%d" % (cli.tag, self.image_i)
-      if self.base_text in images:
-         # Is alias; store base_text as the “alias used” to target a previous
-         # stage as the base.
-         self.base_alias = self.base_text
-         self.base_text = str(images[self.base_text].ref)
       self.base_image = im.Image(im.Reference(self.base_text, argfrom))
       self.image = im.Image(im.Reference(tag))
       images[self.image_i] = self.image
@@ -1110,7 +1141,7 @@ class I_from_(Instruction):
       # already have the image directory and there is no notion of branch
       # “ready”, so do nothing in that case.
       if (self.image_i > 0 and not isinstance(bu.cache, bu.Disabled_Cache)):
-         if (miss_ct == 0):
+         if (miss_ct == 0 or stop_build is not None):
             # No previous miss already checked out the image. This will still
             # be fast most of the time since the correct branch is likely
             # checked out already.
@@ -1119,6 +1150,8 @@ class I_from_(Instruction):
       # At this point any meaningful parent of FROM, e.g., previous stage, has
       # been closed; thus, act as own parent.
       self.parent = self
+      if (stop_build is not None):
+         return
       # Pull base image if needed. This tells us hit/miss.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       unpack_no_git = (    self.base_image.unpack_exist_p

@@ -637,6 +637,66 @@ EOF
     ch-image delete tmpimg:tagged
 }
 
+@test 'ch-image build: multistage with --target' {
+    df=$(cat <<'EOF'
+FROM alpine:3.17 as aioli
+RUN touch stage0
+FROM alpine:3.16 as marinara
+RUN touch stage1
+FROM scratch
+COPY --from=0 /stage0 /
+EOF)
+    # No multistage or target.
+    img="${CH_IMAGE_STORAGE}/img/multisauce"
+    ch-image build -t multisauce -f - . <<EOF
+${df}
+EOF
+    [[ $status -eq 0 ]]
+    [[ $output == *'FROM alpine:3.17 AS aioli'* ]]
+    [[ $output == *'FROM alpine:3.16 AS marinara'* ]]
+    [[ $output == *'FROM scratch'* ]]
+    [[ $output == *'grown in 6 instructions: multisauce'* ]]
+    test -f "${img}/stage0"
+    test ! -f "${img}/stage1"
+
+    # Digit as argument.
+    run ch-image build --target=1 -t multisauce -f . <<EOF
+${df}
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *'FROM alpine:3.17 AS aioli'* ]]
+    [[ $output == *'FROM alpine:3.16 AS marinara'* ]]
+    [[ $output == *'grown in 4 instructions: multisauce'* ]]
+    test -f "${img}/stage1"
+    test ! -f "${img}/stage0"
+
+    # Alias as argument.
+    run ch-image build --target=aioli -t multisauce -f . <<EOF
+${df}
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *'FROM alpine:3.17 AS aioli'* ]]
+    [[ $output == *'grown in 2 instructions: multisauce'* ]]
+    test -f "${img}/stage0"
+    test ! -f "${img}/stage1"
+
+    # Bogus argument.
+    run ch-image build --target=alfredo -t multisauce -f . <<EOF
+${df}
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *'FROM alpine:3.17 AS aioli'* ]]
+    [[ $output == *'FROM alpine:3.16 AS marinara'* ]]
+    [[ $output == *'FROM scratch'* ]]
+    [[ $output == *'warning: --target: alfredo: not found; ignored' ]]
+    [[ $output == *'grown in 6 instructions: multisauce'* ]]
+    test -f "${img}/stage0"
+    test ! -f "${img}/stage1"
+}
+
 
 @test 'ch-image build: failed RUN' {
     ch-image delete tmpimg || true
