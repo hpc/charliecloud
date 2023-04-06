@@ -39,7 +39,6 @@ lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
 
 set -e
 
-# shellcheck disable=SC2034
 usage=$(cat <<EOF
 Inject files from the host into an image directory, with various magic.
 
@@ -525,7 +524,7 @@ if       [ -z "$no_ldconfig" ] \
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || fatal 'ldconfig error'
     if [ -n "$fi_prov_found" ] || [ -n "$cray_fi_found" ]; then
         debug "validating ldconfig cache"
-        for file in $inject_ofi $inject_files; do
+        for file in $inject_files; do
             f="$(basename "${file%%:*}")"
             f=$("${ch_bin}/ch-run" "$image" -- find / \
                                                -not \( -path /proc -prune \) \
