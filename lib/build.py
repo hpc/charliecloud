@@ -39,7 +39,9 @@ images = dict()
 # parse tree, so we can use it for error checking.
 image_ct = None
 
-# Multistage build target variables.
+# Build stage modifiers. Each stage of a multistage build may be designated as
+# the _last_ stage. These variables are used with I_from objects in conjunction
+# the with Main loop to ignore subsequent stages when set.
 last_image = None
 stop_build = None
 
@@ -170,7 +172,7 @@ def main(cli_):
    global image_ct
    image_ct = sum(1 for i in tree.children_("from_"))
 
-   # Exit if target is specified for single stage image.
+   # Exit if multistage target is specified for single stage Dockerfile.
    if (cli.target is not None and image_ct < 2):
       ch.FATAL("target: %s: requires a multistage image" % cli.target)
 
