@@ -147,8 +147,8 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_prefix}/lib/%{name}/build.py
 %{_prefix}/lib/%{name}/build_cache.py
 %{_prefix}/lib/%{name}/charliecloud.py
-%{_prefix}/lib/%{name}/fakeroot.py
 %{_prefix}/lib/%{name}/filesystem.py
+%{_prefix}/lib/%{name}/force.py
 %{_prefix}/lib/%{name}/image.py
 %{_prefix}/lib/%{name}/lark
 %{_prefix}/lib/%{name}/lark-0.11.3.dist-info

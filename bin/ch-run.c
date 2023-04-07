@@ -55,11 +55,14 @@ const struct argp_option options[] = {
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
-   { "no-home",        -2, 0,      0, "(deprecated)"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
+#ifdef HAVE_SECCOMP
+   { "seccomp",       -14, 0,      0,
+                           "fake success for some syscalls with seccomp(2)"},
+#endif
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
-     "set environment variables per ARG"},
+                           "set environment variables per ARG"},
    { "storage",       's', "DIR",  0, "set DIR as storage directory"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unsafe",        -13, 0,      0, "do unsafe things (internal use only)" },
@@ -76,8 +79,11 @@ const struct argp_option options[] = {
 struct args {
    struct container c;
    struct env_delta *env_deltas;
-   char *storage_dir;
    char *initial_dir;
+#ifdef HAVE_SECCOMP
+   bool seccomp_p;
+#endif
+   char *storage_dir;
    bool unsafe;
 };
 
@@ -138,8 +144,11 @@ int main(int argc, char *argv[])
                                .type = IMG_NONE,
                                .writable = false },
       .env_deltas = list_new(sizeof(struct env_delta), 0),
-      .storage_dir = storage_default(),
       .initial_dir = NULL,
+#ifdef HAVE_SECCOMP
+      .seccomp_p = false,
+#endif
+      .storage_dir = storage_default(),
       .unsafe = false };
 
    /* I couldn't find a way to set argp help defaults other than this
@@ -154,19 +163,20 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
-   Te (arg_next < argc - 1, "NEWROOT and/or CMD not specified");
+   Te (arg_next < argc - 1, "IMAGE and/or CMD not specified");
    args.c.img_ref = argv[arg_next++];
+   args.c.newroot = realpath_(args.c.newroot, true);
+   args.storage_dir = realpath_(args.storage_dir, true);
    args.c.type = image_type(args.c.img_ref, args.storage_dir);
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
       if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-      args.c.newroot = realpath_safe(args.c.img_ref);
+      args.c.newroot = realpath_(args.c.img_ref, false);
       img_directory_verify(args.c.newroot, &args);
       break;
    case IMG_NAME:
-      args.storage_dir = realpath_safe(args.storage_dir);
       args.c.newroot = img_name2path(args.c.img_ref, args.storage_dir);
       Tf (!args.c.writable || args.unsafe,
           "--write invalid when running by name");
@@ -204,9 +214,17 @@ int main(int argc, char *argv[])
    VERBOSE("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
            args.c.join_pid);
    VERBOSE("private /tmp: %d", args.c.private_tmp);
+#ifdef HAVE_SECCOMP
+   VERBOSE("seccomp: %d", args.seccomp_p);
+#endif
+   VERBOSE("unsafe: %d", args.unsafe);
 
    containerize(&args.c);
    fix_environment(&args);
+#ifdef HAVE_SECCOMP
+   if (args.seccomp_p)
+      seccomp_install();
+#endif
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
@@ -282,8 +300,8 @@ bool get_first_env(char **array, char **name, char **value)
    not, exit with error. */
 void img_directory_verify(const char *newroot, const struct args *args)
 {
-   Tf (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
-   Tf (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
+   Te (args->c.newroot != NULL, "can't find image: %s", args->c.newroot);
+   Te (args->unsafe || !path_subdir_p(args->storage_dir, args->c.newroot),
        "can't run directory images from storage (hint: run by name)");
 }
 
@@ -365,9 +383,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    int i;
 
    switch (key) {
-   case -2: // --no-home
-      WARNING("deprecated --no-home is now default; ignoring")
-      break;
    case -3: // --join-ct
       args->c.join = true;
       args->c.join_ct = parse_int(arg, false, "--join-ct");
@@ -412,7 +427,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #else
          exit(1);
 #endif
-      } else
+      } else if (!strcmp(arg, "seccomp")) {
+#ifdef HAVE_SECCOMP
+         exit(0);
+#else
+         exit(1);
+#endif
+      }
+      else
          FATAL("unknown feature: %s", arg);
       break;
    case -11: // --home
@@ -421,6 +443,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case -12: // --unsafe
       args->unsafe = true;
       break;
+#ifdef HAVE_SECCOMP
+   case -14: // --seccomp
+      args->seccomp_p = true;
+      break;
+#endif
    case 'b': {  // --bind
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds

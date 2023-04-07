@@ -1,7 +1,4 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
@@ -17,6 +14,7 @@ count_ranks () {
 }
 
 @test "${ch_tag}/guest starts ranks" {
+    openmpi_or_skip
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- mpirun $ch_mpirun_np /hello/hello
     echo "$output"
@@ -28,8 +26,29 @@ count_ranks () {
     [[ $output = *'0: finalize ok'* ]]
 }
 
-@test "${ch_tag}/crayify image" {
-    crayify_mpi_or_skip "$ch_img"
+@test "${ch_tag}/inject cray mpi ($cray_prov)" {
+    cray_ofi_or_skip "$ch_img"
+    run ch-run "$ch_img" -- fi_info
+    echo "$output"
+    [[ $output == *"provider: $cray_prov"* ]]
+    [[ $output == *"fabric: $cray_prov"* ]]
+    [[ $status -eq 0 ]]
+}
+
+@test "${ch_tag}/validate $cray_prov injection" {
+    [[ -n "$ch_cray" ]] || skip "host is not cray"
+    [[ -n "$CH_TEST_OFI_PATH" ]] || skip "--fi-provider not set"
+    run $ch_mpirun_node ch-run --join "$ch_img" -- sh -c \
+                    "FI_PROVIDER=$cray_prov FI_LOG_LEVEL=info /hello/hello 2>&1"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    if [[ "$cray_prov" == gni ]]; then
+        [[ "$output" == *' registering provider: gni'* ]]
+        [[ "$output" == *'gni:'*'gnix_ep_nic_init()'*'Allocated new NIC for EP'* ]]
+    fi
+    if [[ "$cray_prov" == cxi ]]; then
+        [[ "$output" == *'cxi:mr:ofi_'*'stats:'*'searches'*'deletes'*'hits'* ]]
+    fi
 }
 
 @test "${ch_tag}/MPI version" {
@@ -73,13 +92,13 @@ count_ranks () {
 
 @test "${ch_tag}/host starts ranks" {
     multiprocess_ok
-    echo "starting ranks with: ${mpirun_core}"
+    echo "starting ranks with: ${ch_mpirun_core}"
 
     guest_mpi=$(ch-run "$ch_img" -- mpirun --version | head -1)
     echo "guest MPI: ${guest_mpi}"
 
     # shellcheck disable=SC2086
-    run $ch_mpirun_core ch-run --join "$ch_img" -- /hello/hello
+    run $ch_mpirun_core ch-run --join "$ch_img" -- /hello/hello 2>&1
     echo "$output"
     [[ $status -eq 0 ]]
     rank_ct=$(count_ranks "$output")
@@ -92,8 +111,12 @@ count_ranks () {
 @test "${ch_tag}/Cray bind mounts" {
     [[ $ch_cray ]] || skip 'host is not a Cray'
 
-    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
-    ch-run "$ch_img" -- mount | grep -F /var/opt/cray/hugetlbfs
+    ch-run "$ch_img" -- mount | grep -F /dev/hugepages
+    if [[ $cray_prov == 'gni' ]]; then
+        ch-run "$ch_img" -- mount | grep -F /var/opt/cray/alps/spool
+    else
+        ch-run "$ch_img" -- mount | grep -F /var/spool/slurmd
+    fi
 }
 
 @test "${ch_tag}/revert image" {

@@ -1,7 +1,6 @@
 # shellcheck shell=sh
 set -e
 
-# shellcheck disable=SC2034
 ch_bin="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2034
 ch_base=${ch_bin%/*}
@@ -44,7 +43,7 @@ VERBOSE () {
 }
 
 # Return success if path $1 exists, without dereferencing links, failure
-# otherwise. ("test -e" dereferences.)
+# otherwise. (“test -e” dereferences.)
 exist_p () {
     stat "$1" > /dev/null 2>&1
 }
@@ -95,7 +94,6 @@ usage () {
 }
 
 version () {
-    # shellcheck disable=SC2154
     echo 1>&2 "$ch_version"
     exit 0
 }

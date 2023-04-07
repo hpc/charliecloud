@@ -22,10 +22,10 @@ RUN apt-get update \
 
 # Download and install Spark. Notes:
 #
-# 1. We aren't using SPARK_NO_DAEMONIZE to make sure can deal with daemonized
+# 1. We aren’t using SPARK_NO_DAEMONIZE to make sure can deal with daemonized
 #    applications.
 #
-# 2. Spark is installed to /opt/spark, which is Spark's new default location.
+# 2. Spark is installed to /opt/spark, which is Spark’s new default location.
 ARG URLPATH=https://archive.apache.org/dist/spark/spark-3.2.0/
 ARG DIR=spark-3.2.0-bin-hadoop3.2
 ARG TAR=$DIR.tgz

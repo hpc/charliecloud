@@ -1,7 +1,4 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
@@ -11,7 +8,7 @@ setup () {
     # One iteration on most of these tests because we just care about
     # correctness, not performance. (If we let the benchmark choose, there is
     # an overwhelming number of errors when MPI calls start failing, e.g. if
-    # CMA isn't working, and this makes the test take really long.)
+    # CMA isn’t working, and this makes the test take really long.)
     #
     # Large -npmin because we only want to test all cores.
     imb_mpi1=/usr/local/src/mpi-benchmarks/src_c/IMB-MPI1
@@ -45,9 +42,10 @@ check_process_ct () {
 
 # one from "Single Transfer Benchmarks"
 @test "${ch_tag}/pingpong (guest launch)" {
+    openmpi_or_skip
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
-               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
+               "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args PingPong
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -57,9 +55,10 @@ check_process_ct () {
 
 # one from "Parallel Transfer Benchmarks"
 @test "${ch_tag}/sendrecv (guest launch)" {
+    openmpi_or_skip
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
-               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
+               "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args Sendrecv
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -69,9 +68,10 @@ check_process_ct () {
 
 # one from "Collective Benchmarks"
 @test "${ch_tag}/allreduce (guest launch)" {
+    openmpi_or_skip
     # shellcheck disable=SC2086
     run ch-run $ch_unslurm "$ch_img" -- \
-               mpirun $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
+               "$ch_mpi_exe" $ch_mpirun_np "$imb_mpi1" $imb_args Allreduce
     echo "$output"
     [[ $status -eq 0 ]]
     check_errors "$output"
@@ -79,29 +79,38 @@ check_process_ct () {
     check_finalized "$output"
 }
 
-@test "${ch_tag}/crayify image" {
-    crayify_mpi_or_skip "$ch_img"
+@test "${ch_tag}/inject cray mpi ($cray_prov)" {
+    cray_ofi_or_skip "$ch_img"
+    run ch-run "$ch_img" -- fi_info
+    echo "$output"
+    [[ $output == *"provider: $cray_prov"* ]]
+    [[ $output == *"fabric: $cray_prov"* ]]
+    [[ $status -eq 0 ]]
 }
 
-# This test compares OpenMPI's point to point bandwidth with all high speed
+# This test compares OpenMPI’s point to point bandwidth with all high speed
 # plugins enabled against the performance just using TCP. Pass if HSN
 # performance is at least double TCP.
 @test "${ch_tag}/using the high-speed network (host launch)" {
     multiprocess_ok
     [[ $ch_multinode ]] || skip "multinode only"
-    [[ $ch_cray ]] && skip "Cray doesn't support running on tcp"
+    if [[ $ch_cray ]]; then
+        [[ $cray_prov == 'gni' ]] && skip "gni doesn't support tcp"
+    fi
+    openmpi_or_skip
     # Verify we have known HSN devices present. (Note that -d tests for
     # directory, not device.)
-    [[ ! -d /dev/infiniband ]] && pedantic_fail "no high speed network detected"
+    if [[ ! -d /dev/infiniband ]] && [[ ! -e /dev/cxi0 ]]; then
+        pedantic_fail "no high speed network detected"
+    fi
     # shellcheck disable=SC2086
-    hsn_enabled_bw=$($ch_mpirun_2_2node ch-run "$ch_img" -- \
-                     "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
-                     | sort -nrk6 | head -1 | awk '{print $6}')
+    hsn_enabled_bw=$($ch_mpirun_2_2node ch-run \
+                       "$ch_img" -- "$imb_mpi1" $imb_perf_args Sendrecv \
+                     | tail -n +35 | sort -nrk6 | head -1 | awk '{print $6}')
     # Configure network transport plugins to TCP only.
-    export OMPI_MCA_pml=ob1
-    export OMPI_MCA_btl=tcp,self
     # shellcheck disable=SC2086
-    hsn_disabled_bw=$($ch_mpirun_2_2node ch-run "$ch_img" -- \
+    hsn_disabled_bw=$(OMPI_MCA_pml=ob1 OMPI_MCA_btl=tcp,self \
+                      $ch_mpirun_2_2node ch-run "$ch_img" -- \
                       "$imb_mpi1" $imb_perf_args Sendrecv | tail -n +35 \
                       | sort -nrk6 | head -1 | awk '{print $6}')
     echo "Max bandwidth with high speed network: $hsn_enabled_bw MB/s"

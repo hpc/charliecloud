@@ -1,14 +1,11 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 @test "${ch_tag}/ls" {
     scope standard
     prerequisites_ok copy
 
-    # "ls -F" trailing symbol list: https://unix.stackexchange.com/a/82358
+    # “ls -F” trailing symbol list: https://unix.stackexchange.com/a/82358
     diff -u - <(ch-run --cd /test "$ch_img" -- ls -1FR .) <<EOF
 .:
 dir01a/

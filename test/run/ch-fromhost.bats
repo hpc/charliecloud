@@ -3,6 +3,7 @@ load ../common
 setup () {
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'need writeable image'
     [[ $ch_libc = glibc ]] || skip 'glibc only'
+    fi_provider_path=$FI_PROVIDER_PATH
 }
 
 fromhost_clean () {
@@ -13,6 +14,8 @@ fromhost_clean () {
     find "$1" -xdev \(           \
          -name 'libcuda*'        \
       -o -name 'libnvidia*'      \
+      -o -name 'libfabric'       \
+      -o -name libsotest-fi.so   \
       -o -name libsotest.so.1    \
       -o -name libsotest.so.1.0  \
       -o -name sotest            \
@@ -57,7 +60,7 @@ glibc_version_ok () {
     # check glibc version compatibility.
     glibc_version_ok "$img"
 
-    libpath=$(ch-fromhost --lib-path "$img")
+    libpath=$(ch-fromhost --print-lib "$img")
     echo "libpath: ${libpath}"
 
     # --file
@@ -109,10 +112,10 @@ glibc_version_ok () {
 
     # --no-ldconfig
     ch-fromhost -v --no-ldconfig --file sotest/files_inferrable.txt "$img"
-      test -f "${img}/usr/bin/sotest"
-      test -f "${img}${libpath}/libsotest.so.1.0"
-    ! test -L "${img}${libpath}/libsotest.so.1"
-    ! ( ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest )
+    [[   -f "${img}/usr/bin/sotest" ]]
+    [[   -f "${img}${libpath}/libsotest.so.1.0" ]]
+    [[ ! -L "${img}${libpath}/libsotest.so.1" ]]
+    ch-run "$img" -- /sbin/ldconfig -p | grep -FL libsotest
     run ch-run "$img" -- sotest
     echo "$output"
     [[ $status -eq 127 ]]
@@ -140,7 +143,7 @@ glibc_version_ok () {
     # check glibc version compatibility.
     glibc_version_ok "$img"
 
-    libpath=$(ch-fromhost --lib-path "$img")
+    libpath=$(ch-fromhost --print-lib "$img")
     echo "libpath: ${libpath}"
 
     fromhost_clean "$img"
@@ -304,11 +307,11 @@ glibc_version_ok () {
 
     # ldconfig gives no shared library path (#324)
     #
-    # (I don't think this is the best way to get ldconfig to fail, but I
-    # couldn't come up with anything better. E.g., bad ld.so.conf or broken
-    # .so's seem to produce only warnings.)
+    # (I don’t think this is the best way to get ldconfig to fail, but I
+    # couldn’t come up with anything better. E.g., bad ld.so.conf or broken
+    # .so’s seem to produce only warnings.)
     mv "${img}/sbin/ldconfig" "${img}/sbin/ldconfig.foo"
-    run ch-fromhost --lib-path "$img"
+    run ch-fromhost --print-lib "$img"
     mv "${img}/sbin/ldconfig.foo" "${img}/sbin/ldconfig"
     echo "$output"
     [[ $status -eq 1 ]]
@@ -316,22 +319,38 @@ glibc_version_ok () {
     fromhost_clean_p "$img"
 }
 
-@test 'ch-fromhost --cray-mpi not on a Cray' {
+@test 'ch-fromhost --path with libfabric' {
     scope full
-    [[ $ch_cray ]] && skip 'host is a Cray'
-    run ch-fromhost --cray-mpi "$ch_timg"
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'are you on a Cray?'* ]]
-}
+    prerequisites_ok openmpi
+    img=${ch_imgdir}/openmpi
+    unset FI_PROVIDER_PATH
 
-@test 'ch-fromhost --cray-mpi with no MPI installed' {
-    scope full
-    [[ $ch_cray ]] || skip 'host is not a Cray'
-    run ch-fromhost --cray-mpi "$ch_timg"
+    ofidest=$(ch-fromhost --print-fi "$img")
+    echo "provider dest: ${ofidest}"
+
+    # The libsotest-fi.so is a dummy provider intended to exercise ch-fromhost
+    # script logic. Succeed if ch-fromhost finds the container libfabric.so and
+    # injects the libfabric-fi.so dummy executable in the directory /libfabric
+    # where libfabric.so is found.
+    #
+    # Inferred dest from image libfabric.so.
+    img=${ch_imgdir}/openmpi
+    ofi=${CHTEST_DIR}/sotest/lib/libfabric/libsotest-fi.so
+    run ch-fromhost -p "${ofi}" "$img"
     echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't find MPI in image"* ]]
+    [[ $status -eq 0 ]]
+    test -f "${img}/${ofidest}/libsotest-fi.so"
+    fromhost_clean "$img"
+
+    # host FI_PROVIDER_PATH with --dest
+    export FI_PROVIDER_PATH=/usr/lib
+    run ch-fromhost "$img" -d /usr/lib -p "$ofi" -v
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warn'*'FI_PROVIDER_PATH'* ]]
+    test -f "${img}/usr/lib/libsotest-fi.so"
+    fromhost_clean "$img"
+    export FI_PROVIDER_PATH=$fi_provider_path
 }
 
 @test 'ch-fromhost --nvidia with GPU' {
@@ -341,10 +360,10 @@ glibc_version_ok () {
         || skip 'nvidia-container-cli not in PATH'
     img=${ch_imgdir}/nvidia
 
-    # nvidia-container-cli --version (to make sure it's linked correctly)
+    # nvidia-container-cli --version (to make sure it’s linked correctly)
     nvidia-container-cli --version
 
-    # Skip if nvidia-container-cli can't find CUDA.
+    # Skip if nvidia-container-cli can’t find CUDA.
     run nvidia-container-cli list --binaries --libraries
     echo "$output"
     if [[ $status -eq 1 ]]; then

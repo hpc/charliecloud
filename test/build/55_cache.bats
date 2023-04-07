@@ -20,7 +20,7 @@ setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     [[ $CH_IMAGE_CACHE = enabled ]] || skip 'build cache enabled only'
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest  # don't mess up main storage
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/butest  # don’t mess up main storage
     dot_base=$BATS_TMPDIR/bu_
     ch-image gestalt bucache-dot
 }
@@ -32,7 +32,7 @@ setup () {
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     blessed_tree=$(cat << EOF
-initializing storage directory: v5 ${CH_IMAGE_STORAGE}
+initializing storage directory: v6 ${CH_IMAGE_STORAGE}
 initializing empty build cache
 *  (HEAD -> root) ROOT
 EOF
@@ -45,10 +45,10 @@ EOF
 
 
 @test "${tag}: §3.2.1 initial pull" {
-    ch-image pull alpine:3.9
+    ch-image pull alpine:3.17
 
     blessed_tree=$(cat << 'EOF'
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -65,9 +65,9 @@ EOF
     run ch-image build -v -t d -f bucache/from.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'1. FROM alpine:3.9'* ]]
+    [[ $output = *'1. FROM alpine:3.17'* ]]
     blessed_tree=$(cat << 'EOF'
-*  (d, alpine+3.9) PULL alpine:3.9
+*  (d, alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -76,13 +76,13 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
 
-    # FROM doesn't pull (same target name)
+    # FROM doesn’t pull (same target name)
     run ch-image build -v -t d -f bucache/from.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'1* FROM alpine:3.9'* ]]
+    [[ $output = *'1* FROM alpine:3.17'* ]]
     blessed_tree=$(cat << 'EOF'
-*  (d, alpine+3.9) PULL alpine:3.9
+*  (d, alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -91,13 +91,13 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
 
-    # FROM doesn't pull (different target name)
+    # FROM doesn’t pull (different target name)
     run ch-image build -v -t d2 -f bucache/from.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'1* FROM alpine:3.9'* ]]
+    [[ $output = *'1* FROM alpine:3.17'* ]]
     blessed_tree=$(cat << 'EOF'
-*  (d2, d, alpine+3.9) PULL alpine:3.9
+*  (d2, d, alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -116,7 +116,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -137,7 +137,7 @@ EOF
 *  (b) RUN echo baz
 *  (a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -162,7 +162,7 @@ EOF
 | *  (a) RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -185,7 +185,7 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -211,7 +211,7 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -223,11 +223,11 @@ EOF
 
 
 @test "${tag}: rebuild C" {
-    # Rebuild C. Since C doesn't reference img_a (like img_b does) rebuilding
+    # Rebuild C. Since C doesn’t reference img_a (like img_b does) rebuilding
     # causes a miss on FOO. Thus C makes new FOO and QUX commits.
     #
-    # Shouldn't FOO hit? --reidpr 2/16
-    #  - No! Rebuild forces misses; since c.df has it's own FOO it should miss.
+    # Shouldn’t FOO hit? --reidpr 2/16
+    #  - No! Rebuild forces misses; since c.df has it’s own FOO it should miss.
     #     --jogas 2/24
     blessed_out=$(cat << 'EOF'
 *  (c) RUN echo qux
@@ -242,10 +242,12 @@ EOF
 | |/
 | *  RUN echo foo
 |/
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
+    # avoid race condition
+    sleep 1
     ch-image --rebuild build -t c -f bucache/c.df .
     run ch-image build-cache --tree
     [[ $status -eq 0 ]]
@@ -266,7 +268,7 @@ EOF
 | *  RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -283,7 +285,7 @@ EOF
 | *  (e) RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -296,11 +298,11 @@ EOF
 
 @test "${tag}: §3.4.1 two pulls, same" {
     ch-image build-cache --reset
-    ch-image pull alpine:3.9
-    ch-image pull alpine:3.9
+    ch-image pull alpine:3.17
+    ch-image pull alpine:3.17
 
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -347,7 +349,7 @@ EOF
     echo
     echo '*** Them: Create the initial image state.'
     ch-image -s "$st" build -v -t capablanca -f - . <<EOF
-FROM alpine:3.9
+FROM alpine:3.17
 RUN echo josé > /worldchampion
 EOF
     ch-image -s "$st" --auth --tls-no-verify \
@@ -363,7 +365,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'. FROM'* ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output = *'manifest: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
     [[ $output = *'config: downloading'* ]]
     [[ $output = *'. RUN'* ]]
     run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
@@ -387,7 +389,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output = *'manifest: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
     [[ $output = *'config: using existing file'* ]]
     [[ $output = *'layer'*'using existing file'* ]]
     run ch-image -s "$so" build-cache --tree
@@ -398,7 +400,7 @@ EOF
     echo
     echo '*** Them: Change and push the image.'
     ch-image -s "$st" build -t fischer -f - . <<EOF
-FROM alpine:3.9
+FROM alpine:3.17
 RUN echo "bobby" > /worldchampion
 EOF
     ch-image -s "$st" --auth --tls-no-verify push fischer localhost:5000/champ
@@ -427,7 +429,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'manifest list: downloading'* ]]
-    [[ $output = *'manifest: downloading'* ]]
+    [[ $output != *'manifest: downloading'* ]]
     [[ $output = *'config: downloading'* ]]
     [[ $output = *'layer'*'downloading:'*'100%'* ]]
     run ch-image -s "$so" build-cache --tree
@@ -492,7 +494,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (foo) RUN echo bar
 *  (foo#) RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -509,7 +511,7 @@ EOF
 | *  RUN echo bar
 |/
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -531,9 +533,9 @@ EOF
     [[ $status -eq 0 ]]
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  (force) WORKDIR /usr
-*  RUN.F dnf install -y ed  # doesn't need --force
+*  RUN.S dnf install -y ed  # doesn’t need --force
 | *  WORKDIR /usr
-| *  RUN dnf install -y ed  # doesn't need --force
+| *  RUN dnf install -y ed  # doesn’t need --force
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
@@ -548,9 +550,9 @@ EOF
     [[ $status -eq 0 ]]
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  WORKDIR /usr
-*  RUN.F dnf install -y ed  # doesn't need --force
+*  RUN.S dnf install -y ed  # doesn’t need --force
 | *  (force) WORKDIR /usr
-| *  RUN dnf install -y ed  # doesn't need --force
+| *  RUN dnf install -y ed  # doesn’t need --force
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
@@ -562,11 +564,11 @@ EOF
 @test "${tag}: §3.6 rebuild" {
     ch-image build-cache --reset
 
-    # Build. Mode should not matter here, but we use enabled because that's
+    # Build. Mode should not matter here, but we use enabled because that’s
     # more lifelike.
     ch-image build -t a -f ./bucache/a.df ./bucache
 
-    # Re-build in "rebuild" mode. FROM should hit, others miss, and we should
+    # Re-build in “rebuild” mode. FROM should hit, others miss, and we should
     # have two branches.
     sleep 1
     run ch-image build --rebuild -t a -f ./bucache/a.df ./bucache
@@ -581,7 +583,7 @@ EOF
 | *  RUN echo bar
 | *  RUN echo foo
 |/
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -590,7 +592,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 
-    # Re-build again in "rebuild" mode. The branch pointer should move to the
+    # Re-build again in “rebuild” mode. The branch pointer should move to the
     # newer execution.
     run ch-image build-cache -v --tree
     echo "$output"
@@ -722,7 +724,7 @@ EOF
 | *  ARG argB='vargBvargA'
 |/
 *  ARG argA='vargA'
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -870,12 +872,12 @@ EOF
     ch-image build-cache --reset
 
     # Pull base image w/o cache.
-    ch-image pull --no-cache alpine:3.9
-    [[ ! -e $CH_IMAGE_STORAGE/img/alpine+3.9/.git ]]
+    ch-image pull --no-cache alpine:3.17
+    [[ ! -e $CH_IMAGE_STORAGE/img/alpine+3.17/.git ]]
 
     # Build child image.
     run ch-image build -t foo - <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 RUN echo foo
 EOF
     echo "$output"
@@ -887,7 +889,7 @@ EOF
     # Check tree.
     blessed_out=$(cat << 'EOF'
 *  (foo) RUN echo foo
-*  (alpine+3.9) IMPORT alpine:3.9
+*  (alpine+3.17) IMPORT alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -904,7 +906,7 @@ EOF
     blessed_out=$(cat << 'EOF'
 *  (a2, a) RUN echo bar
 *  RUN echo foo
-*  (alpine+3.9) PULL alpine:3.9
+*  (alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -921,27 +923,27 @@ EOF
     ch-image build-cache --reset
 
     printf '\n*** Case 1: Not in build cache\n\n'
-    run ch-image pull alpine:3.9
+    run ch-image pull alpine:3.17
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pulling image:    alpine:3.9'* ]]
+    [[ $output = *'pulling image:    alpine:3.17'* ]]
     [[ $output  = *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
 
     printf '\n*** Case 2: In build cache, up to date\n\n'
-    run ch-image pull alpine:3.9
+    run ch-image pull alpine:3.17
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pulling image:    alpine:3.9'* ]]
+    [[ $output = *'pulling image:    alpine:3.17'* ]]
     [[ $output != *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
 
     printf '\n*** Case 3: In build cache, not UTD, UTD commit present\n\n'
-    printf 'FROM alpine:3.9\n' | ch-image build -t foo -
-    printf 'FROM foo\nRUN echo foo\n' | ch-image build -t alpine:3.9 -
+    printf 'FROM alpine:3.17\n' | ch-image build -t foo -
+    printf 'FROM foo\nRUN echo foo\n' | ch-image build -t alpine:3.17 -
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.9) RUN echo foo
-*  (foo) PULL alpine:3.9
+*  (alpine+3.17) RUN echo foo
+*  (foo) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -950,15 +952,15 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
     sleep 1
-    run ch-image pull alpine:3.9
+    run ch-image pull alpine:3.17
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pulling image:    alpine:3.9'* ]]
+    [[ $output = *'pulling image:    alpine:3.17'* ]]
     [[ $output != *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
-*  (foo, alpine+3.9) PULL alpine:3.9
+*  (foo, alpine+3.17) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -969,10 +971,10 @@ EOF
 
     printf '\n*** Case 4: In build cache, not UTD, UTD commit absent\n\n'
     sleep 1
-    printf 'FROM alpine:3.9\n' | ch-image build -t alpine:3.10 -
+    printf 'FROM alpine:3.17\n' | ch-image build -t alpine:3.16 -
     blessed_out=$(cat << 'EOF'
 *  RUN echo foo
-*  (foo, alpine+3.9, alpine+3.10) PULL alpine:3.9
+*  (foo, alpine+3.17, alpine+3.16) PULL alpine:3.17
 *  (HEAD -> root) ROOT
 EOF
 )
@@ -980,16 +982,16 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
-    run ch-image pull alpine:3.10
+    run ch-image pull alpine:3.16
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'pulling image:    alpine:3.10'* ]]
+    [[ $output = *'pulling image:    alpine:3.16'* ]]
     [[ $output  = *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.10) PULL alpine:3.10
+*  (alpine+3.16) PULL alpine:3.16
 | *  RUN echo foo
-| *  (foo, alpine+3.9) PULL alpine:3.9
+| *  (foo, alpine+3.17) PULL alpine:3.17
 |/
 *  (HEAD -> root) ROOT
 EOF
@@ -1003,16 +1005,16 @@ EOF
 @test "${tag}: multistage COPY" {
     # Multi-stage build with no instructions in the first stage.
     df_no=$(cat <<'EOF'
-FROM alpine:3.9
-FROM alpine:3.10
+FROM alpine:3.17
+FROM alpine:3.16
 COPY --from=0 /etc/os-release /
 EOF
            )
     # Multi-stage build with instruction in the first stage.
     df_yes=$(cat <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 RUN echo foo
-FROM alpine:3.10
+FROM alpine:3.16
 COPY --from=0 /etc/os-release /
 EOF
             )
@@ -1047,11 +1049,11 @@ EOF
 
     # pull normal image to weird destination
     sleep 1
-    ch-image pull alpine:3.9 bar
+    ch-image pull alpine:3.17 bar
 
     # everything in order?
     blessed_tree=$(cat << 'EOF'
-*  (bar, alpine+3.9) PULL alpine:3.9
+*  (bar, alpine+3.17) PULL alpine:3.17
 | *  (scratch, foo) PULL scratch
 |/
 *  (HEAD -> root) ROOT
@@ -1066,7 +1068,7 @@ EOF
 
     # pull same normal image normally
     sleep 1
-    ch-image pull alpine:3.9
+    ch-image pull alpine:3.17
 
     # everything still in order?
     run ch-image build-cache --tree
@@ -1074,34 +1076,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_tree") <(echo "$output" | treeonly)
     ls -x "$CH_IMAGE_STORAGE"/img
-    [[ $(ls -x "$CH_IMAGE_STORAGE"/img) == "alpine+3.9  bar  foo" ]]
-}
-
-
-@test "${tag}: multistage COPY" {
-    # Multi-stage build with no instructions in the first stage.
-    df_no=$(cat <<'EOF'
-FROM alpine:3.9
-FROM alpine:3.10
-COPY --from=0 /etc/os-release /
-EOF
-           )
-    # Multi-stage build with instruction in the first stage.
-    df_yes=$(cat <<'EOF'
-FROM alpine:3.9
-RUN echo foo
-FROM alpine:3.10
-COPY --from=0 /etc/os-release /
-EOF
-            )
-
-    ch-image build-cache --reset
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_no" | ch-image build -t tmpimg -f - .  # hot
-
-    ch-image build-cache --reset
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # cold
-    echo "$df_yes" | ch-image build -t tmpimg -f - .  # hot
+    [[ $(ls -x "$CH_IMAGE_STORAGE"/img) == "alpine+3.17  bar  foo" ]]
 }
 
 
@@ -1110,12 +1085,12 @@ EOF
     ch-image delete tmpimg || true
 
     ch-image build -t tmpimg - <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 RUN mkdir /foo && mkdir /foo/bar
 EOF
     sleep 1
     ch-image build -t tmpimg - <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 RUN true        # miss
 RUN mkdir /foo  # should not collide with leftover /foo from above
 EOF
@@ -1123,22 +1098,23 @@ EOF
 
 
 @test "${tag}: garbage vs. reset" {
+    scope full
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     # Init build cache.
     ch-image list
     cd "$CH_IMAGE_STORAGE"/bucache
 
-    # Turn off auto-gc so it's not triggered during the build itself.
+    # Turn off auto-gc so it’s not triggered during the build itself.
     git config gc.auto 0
 
     # Build an image that’s going to be annoying to garbage collect, but not
     # too annoying, so the test isn’t too long. Keep in mind this is probably
     # happening on a tmpfs.
     ch-image build -t tmpimg - <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 RUN for i in $(seq 0 1024); do \
-       dd if=/dev/urandom of=/$i bs=1024K count=1 status=none; \
+       dd if=/dev/urandom of=/$i bs=4096K count=1 status=none; \
     done
 EOF
 
@@ -1162,7 +1138,7 @@ EOF
 
 @test "${tag}: all hits, no image" {
     df=$(cat <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 RUN echo foo
 EOF
         )
@@ -1265,7 +1241,7 @@ EOF
     ch-image build-cache --reset
 
     df=$(cat <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 RUN touch __ch-test_ignore__
 EOF
         )
@@ -1279,19 +1255,19 @@ EOF
 @test "${tag}: delete" {
     ch-image build-cache --reset
 
-    printf 'FROM alpine:3.9\nRUN echo 1a\n' | ch-image build -t 1a -
-    printf 'FROM alpine:3.9\nRUN echo 1b\n' | ch-image build -t 1b -
-    printf 'FROM alpine:3.9\nRUN echo 2a\n' | ch-image build -t 2a -
+    printf 'FROM alpine:3.17\nRUN echo 1a\n' | ch-image build -t 1a -
+    printf 'FROM alpine:3.17\nRUN echo 1b\n' | ch-image build -t 1b -
+    printf 'FROM alpine:3.17\nRUN echo 2a\n' | ch-image build -t 2a -
 
     blessed_tree=$(ch-image build-cache --tree | treeonly)
     echo "$blessed_tree"
 
     # starting point
-    diff -u <(printf "1a\n1b\n2a\nalpine:3.9\n") <(ch-image list)
+    diff -u <(printf "1a\n1b\n2a\nalpine:3.17\n") <(ch-image list)
 
     # no glob
     ch-image delete 2a
-    diff -u <(printf "1a\n1b\nalpine:3.9\n") <(ch-image list)
+    diff -u <(printf "1a\n1b\nalpine:3.17\n") <(ch-image list)
 
     # matches none (non-empty)
     run ch-image delete 'foo*'
@@ -1301,7 +1277,7 @@ EOF
 
     # matches some
     ch-image delete '1*'
-    diff -u <(printf "alpine:3.9\n") <(ch-image list)
+    diff -u <(printf "alpine:3.17\n") <(ch-image list)
 
     # matches all
     ch-image delete '*'
@@ -1317,11 +1293,12 @@ EOF
     diff -u <(echo "$blessed_tree") <(ch-image build-cache --tree | treeonly)
 }
 
+
 @test "${tag}: large files" {
     # We use files of size 3, 4, 5 MiB to avoid /lib/libcrypto.so.1.1, which
     # is about 2.5 MIB and which we don’t have control over.
     df=$(cat <<'EOF'
-FROM alpine:3.9
+FROM alpine:3.17
 RUN dd if=/dev/urandom of=/bigfile3 bs=1M count=3 \
  && dd if=/dev/urandom of=/bigfile4 bs=1M count=4 \
  && dd if=/dev/urandom of=/bigfile5 bs=1M count=5 \
@@ -1374,4 +1351,46 @@ EOF
 6f7a3513121d79c42283f6f758439c3a%bigfile4
 b2dbc2a2bb35d6d0d5590aedc122cab6%bigfile5
 EOF
+}
+
+
+@test "${tag}: hard links with Git-incompatible name" {  # issue #1569
+    ch-image build-cache --reset
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.17
+RUN mkdir -p a/b
+RUN mkdir -p a/c
+RUN touch a/b/.gitignore
+RUN ln a/b/.gitignore a/c/.gitignore
+RUN stat -c'%n %h %d/%i' a/?/.gitignore
+EOF
+}
+
+
+@test "${tag}: Git commands at image root" {  # issue 1285
+    ch-image build-cache --reset
+    # Use mount(8) to create a private /tmp; otherwise the bucache repo under
+    # $BATS_TMPDIR *does* exist because /tmp is shared with the host.
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.17
+RUN apk add git
+RUN cat /proc/mounts
+RUN mount -t tmpfs -o size=4m none /tmp \
+ && git config --system http.sslVerify false
+EOF
+}
+
+
+@test "${tag}: delete RPM databases" {  # issue #1351
+    ch-image build-cache --reset
+
+    run ch-image build -v -t tmpimg - <<'EOF'
+FROM alpine:3.17
+RUN mkdir -p /var/lib/rpm
+RUN touch /var/lib/rpm/__db.001
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'deleting, see issue #1351: var/lib/rpm/__db.001'* ]]
+    [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg/var/lib/rpm/__db.001 ]]
 }

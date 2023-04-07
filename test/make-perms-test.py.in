@@ -19,13 +19,13 @@
 # directories against user, primary group, and supplemental group access.
 #
 # For files, we test read and write. For directories, read, write, and
-# traverse. Files are not tested for execute because it's a more complicated
+# traverse. Files are not tested for execute because it’s a more complicated
 # test (new process needed) and if readable, someone could simply make their
 # own executable copy.
 #
 # Compatibility: As of February 2016, this needs to be compatible with Python
-# 2.6 because that's the highest version that comes with RHEL 6. We're also
-# aiming to be source-compatible with Python 3.4+, but that's untested.
+# 2.6 because that’s the highest version that comes with RHEL 6. We’re also
+# aiming to be source-compatible with Python 3.4+, but that’s untested.
 #
 # Help: http://python-future.org/compatible_idioms.html
 

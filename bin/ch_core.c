@@ -1,13 +1,24 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#include "config.h"
+
 #include <fcntl.h>
 #include <grp.h>
 #include <libgen.h>
+#ifdef HAVE_SECCOMP
+#include <linux/audit.h>
+#include <linux/filter.h>
+#include <linux/seccomp.h>
+#endif
 #include <pwd.h>
 #include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
+#ifdef HAVE_SECCOMP
+#include <stddef.h>
+#include <stdint.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -18,7 +29,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "config.h"
 #include "ch_misc.h"
 #include "ch_core.h"
 #ifdef HAVE_LIBSQUASHFUSE
@@ -46,10 +56,98 @@ struct bind BINDS_DEFAULT[] = {
    { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
    { "/etc/machine-id",          "/etc/machine-id",          BD_OPTIONAL },
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
-   { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs",  BD_OPTIONAL },
-   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
+   /* Cray bind-mounts. See #1473. */
+   { "/var/lib/hugetlbfs",       "/var/lib/hugetlbfs",       BD_OPTIONAL },
+   /* Cray Gemini/Aries interconnect bind-mounts. */
+   { "/etc/opt/cray/wlm_detect", "/etc/opt/cray/wlm_detect", BD_OPTIONAL },
+   { "/opt/cray/wlm_detect",     "/opt/cray/wlm_detect",     BD_OPTIONAL },
+   { "/opt/cray/alps",           "/opt/cray/alps",           BD_OPTIONAL },
+   { "/opt/cray/udreg",          "/opt/cray/udreg",          BD_OPTIONAL },
+   { "/opt/cray/ugni",           "/opt/cray/ugni",           BD_OPTIONAL },
+   { "/opt/cray/xpmem",          "/opt/cray/xpmem",          BD_OPTIONAL },
+   { "/var/opt/cray/alps",       "/var/opt/cray/alps",       BD_OPTIONAL },
+   /* Cray Shasta/Slingshot bind-mounts. */
+   { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_OPTIONAL },
    { 0 }
 };
+
+/* Architectures that we support for seccomp. Order matches the
+   corresponding table below.
+
+   Note: On some distros (e.g., CentOS 7), some of the architecture numbers
+   are missing. The workaround is to use the numbers I have on Debian
+   Bullseye. The reason I (Reid) feel moderately comfortable doing this is how
+   militant Linux is about not changing the userspace API. */
+#ifdef HAVE_SECCOMP
+#ifndef AUDIT_ARCH_AARCH64
+#define AUDIT_ARCH_AARCH64 0xC00000B7u  // undeclared on CentOS 7
+#undef  AUDIT_ARCH_ARM                  // uses undeclared EM_ARM on CentOS 7
+#define AUDIT_ARCH_ARM     0x40000028u
+#endif
+int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
+                        AUDIT_ARCH_ARM,       // arm32
+                        AUDIT_ARCH_I386,      // x86 (32-bit)
+                        AUDIT_ARCH_PPC64,     // PPC
+                        AUDIT_ARCH_X86_64,    // x86-64
+                        -1 };
+#endif
+
+/* System call numbers that we fake with seccomp (by doing nothing and
+   returning success). Some processors can execute multiple architectures
+   (e.g., 64-bit Intel CPUs can run both x64-64 and x86 code), and a process’
+   architecture can even change (if you execve(2) binary of different
+   architecture), so we can’t just use the build host’s architecture.
+
+   I haven’t figured out how to gather these system call numbers
+   automatically, so they are compiled from [1] and [2]. See also [3] for a
+   more general reference.
+
+   Zero means the syscall does not exist on that architecture.
+
+   NOTE: The total number of faked syscalls (i.e., non-zero entries below)
+   must be somewhat less than 256. I haven’t computed the exact limit. There
+   will be an assertion failure at runtime if this is exceeded.
+
+   WARNING: Keep this list consistent with the ch-image(1) man page!
+
+   [1]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#Cross_arch-Numbers
+   [2]: https://github.com/strace/strace/blob/v4.26/linux/powerpc64/syscallent.h
+   [3]: https://unix.stackexchange.com/questions/421750 */
+#ifdef HAVE_SECCOMP
+int FAKE_SYSCALL_NRS[][5] = {
+   // arm64   arm32   x86     PPC64   x86-64
+   // ------  ------  ------  ------  ------
+   {      91,    185,    185,    184,    126 },  // capset
+   {       0,    182,    182,    181,     92 },  // chown
+   {       0,    212,    212,      0,      0 },  // chown32
+   {      55,     95,     95,     95,     93 },  // fchown
+   {       0,    207,    207,      0,      0 },  // fchown32
+   {      54,    325,    298,    289,    260 },  // fchownat
+   {       0,     16,     16,     16,     94 },  // lchown
+   {       0,    198,    198,      0,      0 },  // lchown32
+   {       0,     14,     14,     14,    133 },  // mknod
+   {      33,    324,    297,    288,    259 },  // mknodat
+   {     152,    139,    139,    139,    123 },  // setfsgid
+   {       0,    216,    216,      0,      0 },  // setfsgid32
+   {     151,    138,    138,    138,    122 },  // setfsuid
+   {       0,    215,    215,      0,      0 },  // setfsuid32
+   {     144,     46,     46,     46,    106 },  // setgid
+   {       0,    214,    214,      0,      0 },  // setgid32
+   {     159,     81,     81,     81,    116 },  // setgroups
+   {       0,    206,    206,      0,      0 },  // setgroups32
+   {     143,     71,     71,     71,    114 },  // setregid
+   {       0,    204,    204,      0,      0 },  // setregid32
+   {     149,    170,    170,    169,    119 },  // setresgid
+   {       0,    210,    210,      0,      0 },  // setresgid32
+   {     147,    164,    164,    164,    117 },  // setresuid
+   {       0,    208,    208,      0,      0 },  // setresuid32
+   {     145,     70,     70,     70,    113 },  // setreuid
+   {       0,    203,    203,      0,      0 },  // setreuid32
+   {     146,     23,     23,     23,    105 },  // setuid
+   {       0,    213,    213,      0,      0 },  // setuid32
+   { -1 }, // end
+};
+#endif
 
 
 /** Global variables **/
@@ -77,6 +175,10 @@ void bind_mount(const char *src, const char *dst, enum bind_dep,
 void bind_mounts(const struct bind *binds, const char *newroot,
                  unsigned long flags);
 void enter_udss(struct container *c);
+#ifdef HAVE_SECCOMP
+void iw(struct sock_fprog *p, int i,
+        uint16_t op, uint32_t k, uint8_t jt, uint8_t jf);
+#endif
 void join_begin(const char *join_tag);
 void join_namespace(pid_t pid, const char *ns);
 void join_namespaces(pid_t pid);
@@ -117,8 +219,8 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
          break;
       }
 
-   newrootc = realpath_safe(newroot);
-   dst_fullc = realpath_safe(dst_full);
+   newrootc = realpath_(newroot, false);
+   dst_fullc = realpath_(dst_full, false);
    Tf (path_subdir_p(newrootc, dst_fullc),
        "can't bind: %s not subdirectory of %s", dst_fullc, newrootc);
    if (strcmp(newroot, "/"))  // don't record if newroot is "/"
@@ -280,6 +382,16 @@ char *img_name2path(const char *name, const char *storage_dir)
    return path;
 }
 
+/* Helper function to write seccomp-bpf programs. */
+#ifdef HAVE_SECCOMP
+void iw(struct sock_fprog *p, int i,
+        uint16_t op, uint32_t k, uint8_t jt, uint8_t jf)
+{
+   p->filter[i] = (struct sock_filter){ op, jt, jf, k };
+   DEBUG("%4d: { op=%2x k=%8x jt=%3d jf=%3d }", i, op, k, jt, jf);
+}
+#endif
+
 /* Begin coordinated section of namespace joining. */
 void join_begin(const char *join_tag)
 {
@@ -397,6 +509,91 @@ void run_user_command(char *argv[], const char *initial_dir)
    execvp(argv[0], argv);  // only returns if error
    Tf (0, "can't execve(2): %s", argv[0]);
 }
+
+/* Set up the fake-syscall seccomp(2) filter. This computes and installs a
+   long-ish but fairly simple BPF program to implement the filter. To
+   understand this rather hairy language:
+
+     1. https://man7.org/training/download/secisol_seccomp_slides.pdf
+     2. https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html
+     3. https://elixir.bootlin.com/linux/latest/source/samples/seccomp */
+#ifdef HAVE_SECCOMP
+void seccomp_install(void)
+{
+   int arch_ct = sizeof(SECCOMP_ARCHS)/sizeof(SECCOMP_ARCHS[0]) - 1;
+   int syscall_cts[arch_ct];
+   struct sock_fprog p = { 0 };
+   int ii, idx_allow, idx_fake, idx_next_arch;
+
+   // Count how many syscalls we are going to fake. We need this to compute
+   // the right offsets for all the jumps.
+   for (int ai = 0; SECCOMP_ARCHS[ai] != -1; ai++) {
+      p.len += 4;  // arch test, end-of-arch jump, load arch & syscall nr
+      syscall_cts[ai] = 0;
+      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != -1; si++) {
+         bool syscall_p = FAKE_SYSCALL_NRS[si][ai] > 0;
+         syscall_cts[ai] += syscall_p;
+         p.len += syscall_p;  // syscall jump table entry
+      }
+      DEBUG("seccomp: %x: %d", SECCOMP_ARCHS[ai], syscall_cts[ai]);
+   }
+
+   // Initialize program buffer.
+   p.len += 2;  // return instructions (allow and fake success)
+   DEBUG("seccomp(2) program has %d instructions", p.len);
+   T_ (p.len <= 258);  // avoid jumps > 255
+   T_ (p.filter = calloc(p.len, sizeof(struct sock_filter)));
+
+   // Return call addresses. Allow needs to come first because we’ll jump to
+   // it for unknown architectures.
+   idx_allow = p.len - 2;
+   idx_fake = p.len - 1;
+
+   // Build a jump table for each architecture. The gist is: if architecture
+   // matches, fall through into the jump table, otherwise jump to the next
+   // architecture (or ALLOW for the last architecture).
+   ii = 0;
+   idx_next_arch = -1;  // avoid warning on some compilers
+   for (int ai = 0; SECCOMP_ARCHS[ai] != -1; ai++) {
+      int jump;
+      idx_next_arch = ii + syscall_cts[ai] + 4;
+      // load arch into accumulator
+      iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+         offsetof(struct seccomp_data, arch), 0, 0);
+      // jump to next arch if arch doesn't match
+      jump = idx_next_arch - ii - 1;
+      T_ (jump <= 255);
+      iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, SECCOMP_ARCHS[ai], 0, jump);
+      // load syscall number into accumulator
+      iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+         offsetof(struct seccomp_data, nr), 0, 0);
+      // jump table of syscalls
+      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != -1; si++) {
+         int nr = FAKE_SYSCALL_NRS[si][ai];
+         if (nr > 0) {
+            jump = idx_fake - ii - 1;
+            T_ (jump <= 255);
+            iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, nr, jump, 0);
+         }
+      }
+      // jump to allow (distance limit of 255 does not apply to JA)
+      iw(&p, ii, BPF_JMP|BPF_JA, idx_allow - ii - 1, 0, 0);
+      ii++;
+   }
+   T_ (idx_next_arch == idx_allow);
+
+   // Returns. (Note that if we wanted a non-zero errno, we’d bitwise-or with
+   // SECCOMP_RET_ERRNO. But because fake success is errno == 0, we don’t need
+   // a no-op “| 0”.)
+   iw(&p, idx_allow, BPF_RET|BPF_K, SECCOMP_RET_ALLOW, 0, 0);
+   iw(&p, idx_fake, BPF_RET|BPF_K, SECCOMP_RET_ERRNO, 0, 0);
+
+   // Install filter. Use prctl(2) rather than seccomp(2) for slightly greater
+   // compatibility (Linux 3.5 rather than 3.17) and because there is a glibc
+   // wrapper.
+   Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p));
+}
+#endif
 
 /* Wait for semaphore sem for up to timeout seconds. If timeout or an error,
    exit unsuccessfully. */

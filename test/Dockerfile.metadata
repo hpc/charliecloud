@@ -2,7 +2,7 @@
 # all the instructions that seemed like they ought to create metadata, even if
 # unsupported by ch-image.
 #
-# Scope is "skip" because we pull the image to test it; see
+# Scope is “skip” because we pull the image to test it; see
 # test/build/50_pull.bats.
 #
 # To build and push:
@@ -16,7 +16,7 @@
 #
 # ch-test-scope: skip
 
-FROM 00_tiny
+FROM alpine:3.17
 
 CMD ["bar", "baz"]
 ENTRYPOINT ["/bin/echo","foo"]

@@ -73,7 +73,7 @@ def discotheque(prefix, et):
                print("RUN " + " && ".join(rms))
 
 
-print("FROM alpine:3.9")
+print("FROM alpine:3.17")
 
 print("RUN mkdir /w /w/v")
 

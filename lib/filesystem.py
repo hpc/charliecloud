@@ -24,7 +24,7 @@ import charliecloud as ch
 # To see the directory formats in released versions:
 #
 #   $ git grep -F 'STORAGE_VERSION =' $(git tag | sort -V)
-STORAGE_VERSION = 5
+STORAGE_VERSION = 6
 
 
 ## Globals ##
@@ -53,7 +53,7 @@ class Path(pathlib.PosixPath):
       It seems to be inherited from os.path.join().
 
       Even with the relatively limited use of Path objects so far, this has
-      caused quite a few bugs. IMO it's too difficult and error-prone to
+      caused quite a few bugs. IMO it’s too difficult and error-prone to
       manually manage whether paths are absolute or relative. Thus, this
       subclass introduces a new operator "//" which does the right thing,
       i.e., if the right operand is absolute, that fact is ignored. E.g.:
@@ -142,10 +142,11 @@ class Path(pathlib.PosixPath):
       ch.ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
       return Path(old)
 
-   def chmod_min(self, perms_new, st=None):
-      """Set permissions on path so they are at least mode. If given, st is a
-         stat object for self, to avoid another stat(2) call if unneeded.
-         Return the new file mode (complete, not just permission bits).
+   def chmod_min(self, st=None):
+      """Set my permissions to at least 0o700 for directories and 0o400
+         otherwise. If given, st is a stat object for self, to avoid another
+         stat(2) call if unneeded. Return the new file mode (complete, not
+         just permission bits).
 
          For symlinks, do nothing, because we don’t want to follow symlinks
          and follow_symlinks=False (or os.lchmod) is not supported on some
@@ -156,7 +157,7 @@ class Path(pathlib.PosixPath):
       if (stat.S_ISLNK(st.st_mode)):
          return st.st_mode
       perms_old = stat.S_IMODE(st.st_mode)
-      perms_new |= perms_old
+      perms_new = perms_old | (0o700 if stat.S_ISDIR(st.st_mode) else 0o400)
       if (perms_new != perms_old):
          ch.VERBOSE("fixing permissions: %s: %03o -> %03o"
                  % (self, perms_old, perms_new))
@@ -186,7 +187,7 @@ class Path(pathlib.PosixPath):
    def exists_(self, links=False):
       "Return True if I exist, False otherwise. Iff links, follow symlinks."
       try:
-         # Don’t wrap self.exists() because that always follows symlnks. Use
+         # Don’t wrap self.exists() because that always follows symlinks. Use
          # os.stat() b/c it has follow_symlinks in 3.6, unlike self.stat().
          os.stat(self, follow_symlinks=links)
       except FileNotFoundError:
@@ -204,7 +205,7 @@ class Path(pathlib.PosixPath):
 
    def file_gzip(self, args=[]):
       """Run pigz(1) if it’s available, otherwise gzip(1), on file at path and
-         return the file's new name. Pass args to the gzip executable. This
+         return the file’s new name. Pass args to the gzip executable. This
          lets us gzip files (a) in parallel if pigz(1) is installed and
          (b) without reading them into memory."""
       path_c = self.add_suffix(".gz")
@@ -242,7 +243,7 @@ class Path(pathlib.PosixPath):
 
    def file_read_all(self, text=True):
       """Return the contents of file at path, or exit with error. If text, read
-         in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
+         in “rt” mode with UTF-8 encoding; otherwise, read in mode “rb”."""
       if (text):
          mode = "rt"
          encoding = "UTF-8"
@@ -250,7 +251,7 @@ class Path(pathlib.PosixPath):
          mode = "rb"
          encoding = None
       fp = self.open_(mode, encoding=encoding)
-      data = ch.ossafe(fp.read, "can't read: %s" % self.name)
+      data = ch.ossafe(fp.read, "can’t read: %s" % self.name)
       ch.close_(fp)
       return data
 
@@ -376,7 +377,7 @@ class Path(pathlib.PosixPath):
 
    def open_(self, mode, *args, **kwargs):
       return ch.ossafe(super().open,
-                       "can't open for %s: %s" % (mode, self.name),
+                       "can’t open for %s: %s" % (mode, self.name),
                        mode, *args, **kwargs)
 
    def rename_(self, name_new):
@@ -420,7 +421,7 @@ class Path(pathlib.PosixPath):
          super().symlink_to(target)
       except FileExistsError:
          if (not self.is_symlink()):
-            ch.FATAL("can’t symlink: source exists and isn't a symlink: %s"
+            ch.FATAL("can’t symlink: source exists and isn’t a symlink: %s"
                      % self.name)
          if (self.readlink() != target):
             ch.FATAL("can’t symlink: %s exists; want target %s but existing is %s"
@@ -429,8 +430,11 @@ class Path(pathlib.PosixPath):
          ch.FATAL("can’t symlink: %s -> %s: %s" % (self.name, target,
                                                    x.strerror))
 
-   def unlink_(self, *args, **kwargs):
-      ch.ossafe(super().unlink, "can't unlink: %s" % self.name)
+   def unlink_(self, missing_ok=False):
+      # FIXME: Once we require Python 3.8, we can just pass through missing_ok.
+      if (missing_ok and not self.exists_()):
+         return
+      ch.ossafe(super().unlink, "can’t unlink: %s" % self.name)
 
 
 class Storage:
@@ -449,6 +453,10 @@ class Storage:
          self.root = self.root_default()
       if (not self.root.is_absolute()):
          self.root = os.getcwd() // self.root
+
+   @property
+   def bucache_needs_ignore_upgrade(self):
+      return self.build_cache // "ch_upgrade-ignore"
 
    @property
    def build_cache(self):
@@ -488,7 +496,7 @@ class Storage:
          otherwise. This answers “is the storage directory real”, not “can
          this storage directory be used”; it should return True for more or
          less any Charliecloud storage directory we might feasibly come
-         across, even if it can't be upgraded. See also #1147."""
+         across, even if it can’t be upgraded. See also #1147."""
       return (os.path.isdir(self.unpack_base) and
               os.path.isdir(self.download_cache))
 
@@ -499,7 +507,7 @@ class Storage:
    @staticmethod
    def root_default():
       # FIXME: Perhaps we should use getpass.getch.user() instead of the $USER
-      # environment variable? It seems a lot more robust. But, (1) we'd have
+      # environment variable? It seems a lot more robust. But, (1) we’d have
       # to match it in some scripts and (2) it makes the documentation less
       # clear becase we have to explain the fallback behavior.
       return Path("/var/tmp/%s.ch" % ch.user())
@@ -526,7 +534,6 @@ class Storage:
       # point is to lock as soon as we know the storage directory exists, and
       # definitely before writing anything, to reduce the race conditions that
       # surely exist. Ensure new code paths also call self.lock().
-      self.init_move_old()  # see issues #1160 and #1243
       if (not os.path.isdir(self.root)):
          op = "initializing"
          v_found = None
@@ -537,77 +544,56 @@ class Storage:
                hint = "let Charliecloud create %s; see FAQ" % self.root.name
             else:
                hint = None
-            ch.FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
+            ch.FATAL("storage directory seems invalid: %s" % self.root, hint)
          v_found = self.version_read()
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 1, 2, 3, 4}):  # initialize/upgrade
+      elif (v_found in {None, 2, 3, 4, 5}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
          self.lock()
+         # These directories appeared in various storage versions, but since
+         # the thing to do on upgrade is the same as initialize, we don’t
+         # track the details.
          self.download_cache.mkdir_()
          self.build_cache.mkdir_()
          self.build_large.mkdir_()
          self.unpack_base.mkdir_()
          self.upload_cache.mkdir_()
-         for old in self.unpack_base.iterdir():
-            new = old.parent // str(old.name).replace(":", "+")
-            if (old != new):
-               if (new.exists()):
-                  ch.FATAL("can't upgrade: already exists: %s" % new)
-               old.rename(new)
+         if (v_found is not None):  # upgrade
+            if (v_found < 3):
+               # Escape colon in image names as plus starting in v3.
+               for old in self.unpack_base.iterdir():
+                  new = old.parent // str(old.name).replace(":", "+")
+                  if (old != new):
+                     if (new.exists()):
+                        ch.FATAL("can’t upgrade: already exists: %s" % new)
+                     old.rename(new)
+            if (v_found < 6):
+               # Git metadata moved from /.git to /ch/.git, and /.gitignore
+               # went out-of-band (to info/exclude in the repository).
+               for img in self.unpack_base.iterdir():
+                  old = img // ".git"
+                  new = img // "ch/git"
+                  if (old.exists_()):
+                     new.parent.mkdir_()
+                     old.rename_(new)
+                     gi = img // ".gitignore"
+                     if (gi.exists_()):
+                        gi.unlink()
+               # Must also remove .gitignore from all commits. This requires
+               # Git operations, which we can’t do here because the build
+               # cache may be disabled. Do it in Enabled_Cache.configure().
+               if (len(self.build_cache.listdir()) > 0):
+                  self.bucache_needs_ignore_upgrade.file_ensure_exists()
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
-      else:                         # can't upgrade
+      else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
                   % (v_found, self.root),
                   'you can delete and re-initialize with "ch-image reset"')
       self.validate_strict()
-
-   def init_move_old(self):
-      """If appropriate, move storage directory from old default path to new.
-         See issues #1160 and #1243."""
-      old = Storage(Path("/var/tmp") // ch.user() // "ch-image")
-      moves = ( "dlcache", "img", "ulcache", "version" )
-      if (self.root != self.root_default()):
-         return  # do nothing silently unless using default storage dir
-      if (not os.path.exists(old.root)):
-         return  # do nothing silently unless old default storage dir exists
-      if (not old.valid_p):
-         ch.WARNING("storage dir: invalid at old default, ignoring: %s"
-                    % old.root)
-         return
-      ch.INFO("storage dir: valid at old default: %s" % old.root)
-      if (not os.path.exists(self.root)):
-         self.root.mkdir_()
-      elif (self.valid_p):
-         ch.WARNING("storage dir: also valid at new default: %s" % self.root,
-                 hint="consider deleting the old one")
-         return
-      elif (not os.path.isdir(self.root)):
-         return  # new isn't a directory; init/upgrade code will error later
-      elif (any(os.path.exists(self.root // i) for i in moves)):
-         return  # new is broken; init/upgrade should error later
-      # Now we know (1) the old storage exists and is valid and (2) the new
-      # storage exists, is a directory, and contains none of the files we'd
-      # move. However, it *may* contain subdirectories other parts of
-      # Charliecloud care about, e.g. "mnt" for ch-run.
-      ch.INFO("storage dir: moving to new default path: %s" % self.root)
-      for i in moves:
-         src = old.root // i
-         dst = self.root // i
-         if (os.path.exists(src)):
-            ch.DEBUG("moving: %s -> %s" % (src, dst))
-            try:
-               shutil.move(src, dst)
-            except OSError as x:
-               ch.FATAL("can't move: %s -> %s: %s"
-                     % (x.filename, x.filename2, x.strerror))
-      old.root.rmdir_()
-      if (not old.root.parent.listdir()):
-         ch.WARNING("parent of old storage dir now empty: %s" % old.root.parent,
-                 hint="consider deleting it")
 
    def lock(self):
       """Lock the storage directory. Charliecloud does not at present support
@@ -630,7 +616,7 @@ class Storage:
             ch.FATAL("storage directory is already in use",
                      "concurrent instances of ch-image cannot share the same storage directory")
          else:
-            ch.FATAL("can't lock storage directory: %s" % x.strerror)
+            ch.FATAL("can’t lock storage directory: %s" % x.strerror)
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
@@ -660,7 +646,7 @@ class Storage:
          errors, not meddling."""
       ch.DEBUG("validating storage directory: %s" % self.root)
       msg_prefix = "invalid storage directory"
-      # Check that all expected files exist, and no others. Note that we don't
+      # Check that all expected files exist, and no others. Note that we don’t
       # verify file *type*, assuming that kind of error is rare.
       entries = self.root.listdir()
       for entry in { i.name for i in (self.build_cache,
@@ -711,7 +697,7 @@ class TarFile(tarfile.TarFile):
    # class method TarFile.open(), and the source code recommends subclassing
    # TarFile [2].
    #
-   # It's here because the standard library class has problems with symlinks
+   # It’s here because the standard library class has problems with symlinks
    # and replacing one file type with another; see issues #819 and #825 as
    # well as multiple unfixed Python bugs [e.g. 3,4,5]. We work around this
    # with manual deletions.
@@ -722,12 +708,12 @@ class TarFile(tarfile.TarFile):
    # [4]: https://bugs.python.org/issue19974
    # [5]: https://bugs.python.org/issue23228
 
-   # Need new method name because add() is called recursively and we don't
+   # Need new method name because add() is called recursively and we don’t
    # want those internal calls to get our special sauce.
    def add_(self, name, **kwargs):
       def filter_(ti):
          assert (ti.name == "." or ti.name[:2] == "./")
-         if (ti.name.startswith("./.git") or ti.name == "./ch/git.pickle"):
+         if (ti.name in ("./ch/git", "./ch/git.pickle")):
             ch.DEBUG("omitting from push: %s" % ti.name)
             return None
          self.fix_member_uidgid(ti)
@@ -745,7 +731,7 @@ class TarFile(tarfile.TarFile):
          # other than lstat().
          st = None
       except OSError as x:
-         ch.FATAL("can't lstat: %s" % targetpath, targetpath)
+         ch.FATAL("can’t lstat: %s" % targetpath, targetpath)
       if (st is not None):
          if (stat.S_ISREG(st.st_mode)):
             if (regulars):
@@ -797,7 +783,7 @@ class TarFile(tarfile.TarFile):
 
    @staticmethod
    def fix_member_uidgid(ti):
-      assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
+      assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn’t happen
       if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
          ch.FATAL("invalid file type: %s" % ti.name)
       ti.uid = 0

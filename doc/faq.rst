@@ -160,11 +160,11 @@ Charliecloud issue
 For example::
 
   $ cat Dockerfile
-  FROM alpine:3.9
+  FROM alpine:3.17
   RUN apk add git
   RUN git config --global http.sslVerify false
   $ ch-image build -t foo -f Dockerfile .
-    1 FROM alpine:3.9
+    1 FROM alpine:3.17
     2 RUN ['/bin/sh', '-c', 'apk add git']
   [...]
     3 RUN ['/bin/sh', '-c', 'git config --global http.sslVerify false']
@@ -172,16 +172,16 @@ For example::
   error: build failed: RUN command exited with 128
 
 The reason this happens is that :code:`ch-image build` executes :code:`RUN`
-instructions with :code:`ch-run` options including :code:`--no-home`, under
-which the environment variable :code:`$HOME` is unset. Thus, tools like Git
-that try to use it will fail.
+instructions with :code:`ch-run` options including the absence of
+:code:`--home`, under which the environment variable :code:`$HOME` is unset.
+Thus, tools like Git that try to use it will fail.
 
 The reasoning for leaving the variable unset is that because Charliecloud runs
 unprivileged, it isn’t really meaningful for a container to have multiple
 users, and thus building images with things in the home directory is an
-antipattern. In fact, by default (i.e., without :code:`--no-home`),
-:code:`ch-run` sets :code:`$HOME` to :code:`/home/$USER` and bind-mounts the
-user’s host home directory at that path.
+antipattern. In fact, with :code:`--home` specified, :code:`ch-run` sets
+:code:`$HOME` to :code:`/home/$USER` and bind-mounts the user’s host home
+directory at that path.
 
 The concern with setting :code:`$HOME` to some default value during build is
 that it could simply hide the problem until runtime later, where it would be
@@ -468,6 +468,23 @@ files.
 Note the non-preserved bits may *sometimes* be retained, but this is undefined
 behavior. The specified behavior is that they may be zeroed at any time.
 
+Why is my wildcard in :code:`ch-run` not working?
+-------------------------------------------------
+Be aware that wildcards in the :code:`ch-run` command are interpreted by the
+host, not the container, unless protected. One workaround is to use a
+sub-shell. For example::
+
+  $ ls /usr/bin/oldfind
+  ls: cannot access '/usr/bin/oldfind': No such file or directory
+  $ ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldfind
+  /usr/bin/oldfind
+  $ ls /usr/bin/oldf*
+  ls: cannot access '/usr/bin/oldf*': No such file or directory
+  $ ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldf*
+  ls: cannot access /usr/bin/oldf*: No such file or directory
+  $ ch-run /var/tmp/hello.sqfs -- sh -c 'ls /usr/bin/oldf*'
+  /usr/bin/oldfind
+
 
 How do I ...
 ============
@@ -633,26 +650,20 @@ There are lots of ways to do this coordination. Because we are launching with
 the host’s Slurm, we need it to provide something for the containerized
 processes for such coordination. OpenMPI must be compiled to use what that
 Slurm has to offer, and Slurm must be told to offer it. What works for us is a
-something called "PMI2". You can see if your Slurm supports it with::
+something called "PMIx". You can see if your Slurm supports it with::
 
   $ srun --mpi=list
-  srun: MPI types are...
-  srun: mpi/pmi2
-  srun: mpi/openmpi
-  srun: mpi/mpich1_shmem
-  srun: mpi/mpich1_p4
-  srun: mpi/lam
-  srun: mpi/none
-  srun: mpi/mvapich
-  srun: mpi/mpichmx
-  srun: mpi/mpichgm
+    cray_shasta
+    none
+    pmi2
+    pmix
 
-If :code:`pmi2` is not in the list, you must ask your admins to enable Slurm’s
-PMI2 support. If it is in the list, but you’re seeing this problem, that means
+If :code:`pmix` is not in the list, you must either (a) ask your admins to
+enable Slurm’s PMIx support, or (b) rebuild your container MPI against an PMI
+in the list. If it is in the list, but you’re seeing this problem, that means
 it is not the default, and you need to tell Slurm you want it. Try::
 
-  $ export SLURM_MPI_TYPE=pmi2
-  $ srun ch-run /var/tmp/mpihello-openmpi -- /hello/hello
+  $ srun --mpi=pmix ch-run /var/tmp/mpihello-openmpi -- /hello/hello
   0: init ok wc035.localdomain, 2 ranks, userns 4026554634
   1: init ok wc036.localdomain, 2 ranks, userns 4026554634
   0: send/receive ok
@@ -786,21 +797,21 @@ pull images to OCI format, and `umoci <https://umo.ci>`_ can flatten an OCI
 image to a directory. Thus, you can use the following commands to run an
 Alpine 3.9 image pulled from Docker hub::
 
-  $ skopeo copy docker://alpine:3.9 oci:/tmp/oci:img
+  $ skopeo copy docker://alpine:3.17 oci:/tmp/oci:img
   [...]
   $ ls /tmp/oci
   blobs  index.json  oci-layout
-  $ umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.9
+  $ umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.17
   [...]
-  $ ls /tmp/alpine:3.9
+  $ ls /tmp/alpine:3.17
   config.json
   rootfs
   sha256_2ca27acab3a0f4057852d9a8b775791ad8ff62fbedfc99529754549d33965941.mtree
   umoci.json
-  $ ls /tmp/alpine:3.9/rootfs
+  $ ls /tmp/alpine:3.17/rootfs
   bin  etc   lib    mnt  proc  run   srv  tmp  var
   dev  home  media  opt  root  sbin  sys  usr
-  $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
+  $ ch-run /tmp/alpine:3.17/rootfs -- cat /etc/alpine-release
   3.9.5
 
 How do I authenticate with SSH during :code:`ch-image` build?
@@ -873,7 +884,7 @@ At this point, the build stops while SSH waits for input.
 
 This happens even if you have :code:`github.com` in your
 :code:`~/.ssh/known_hosts`. This file is not available to the build because
-:code:`ch-image` runs :code:`ch-run` with :code:`--no-home`, so :code:`RUN`
+:code:`ch-image` runs :code:`ch-run` without :code:`--home`, so :code:`RUN`
 instructions can’t see anything in your home directory.
 
 Solutions include:
@@ -1074,9 +1085,9 @@ For example, to build a ppc64le image on a Debian Buster amd64 host::
   $ uname -m
   x86_64
   $ sudo apt install qemu-user-static
-  $ ch-image pull --arch ppc64le alpine:3.15
-  $ printf 'FROM alpine:3.15\nRUN apk add coreutils\n' | ch-image build -t foo -
-  $ ch-convert alpine:3.15 /var/tmp/foo
+  $ ch-image pull --arch ppc64le alpine:3.17
+  $ printf 'FROM alpine:3.17\nRUN apk add coreutils\n' | ch-image build -t foo -
+  $ ch-convert alpine:3.17 /var/tmp/foo
   $ ch-run /var/tmp/foo -- uname -m
   ppc64le
 
@@ -1099,14 +1110,14 @@ of rootfs archives `maintained by linuxcontainers.org
 <https://uk.lxd.images.canonical.com/images/>`_. They are meant for LXC, but
 are fine as a basis for Charliecloud.
 
-For example, this would leave a :code:`ppc64le/alpine:3.15` image du jour in
+For example, this would leave a :code:`ppc64le/alpine:3.17` image du jour in
 the registry for use in a Dockerfile :code:`FROM` line. Note that
 linuxcontainers.org uses the opposite order for “le” in the architecture name.
 
 ::
 
   $ wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
-  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.15
+  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.17
 
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du

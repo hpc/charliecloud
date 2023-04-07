@@ -28,4 +28,5 @@ Overview
    ch-run-oci
    ch-test
    faq
+   best_practices
    dev

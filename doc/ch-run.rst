@@ -54,7 +54,7 @@ mounting SquashFS images with FUSE.
     Initial working directory in container.
 
   :code:`--env-no-expand`
-    don’t expand variables when using :code:`--set-env`
+    Don’t expand variables when using :code:`--set-env`.
 
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.
@@ -94,6 +94,12 @@ mounting SquashFS images with FUSE.
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory. Equivalent to the same option for
     :code:`ch-image(1)`.
+
+  :code:`--seccomp`
+    Using seccomp, intercept some system calls that would fail due to lack of
+    privilege, do nothing, and return fake success to the calling program.
+    This is intended for use by :code:`ch-image(1)` when building images; see
+    that man page for a detailed discussion.
 
   :code:`-t`, :code:`--private-tmp`
     By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
@@ -528,7 +534,7 @@ Example valid assignments that are probably not what you want:
    * - :code:`FOO="bar"`
      - :code:`FOO`
      - :code:`"bar"`
-     - double quotes aren't stripped
+     - double quotes aren’t stripped
    * - :code:`FOO=bar # baz`
      - :code:`FOO`
      - :code:`bar # baz`

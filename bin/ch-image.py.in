@@ -18,7 +18,7 @@ import push
 
 ## Constants ##
 
-# FIXME: It's currently easy to get the ch-run path from another script, but
+# FIXME: It’s currently easy to get the ch-run path from another script, but
 # hard from something in lib. So, we set it here for now.
 ch.CH_BIN = os.path.dirname(os.path.abspath(
                  inspect.getframeinfo(inspect.currentframe()).filename))
@@ -56,17 +56,17 @@ def main():
    #      because before the subcommand is preferred.
    #
    #   2. We suppress defaults in the subcommand [1]. Without this, the
-   #      subcommand option value wins even it it's the default. :P Currently,
+   #      subcommand option value wins even it it’s the default. :P Currently,
    #      if specified in both places, the subcommand value wins and the
    #      before value is not considered at all, e.g. "ch-image -vv foo -v"
    #      gives verbosity 1, not 3. This oddity seemed acceptable.
    #
    # Alternate approaches include:
    #
-   #   * Set the main parser as the "parent" of the subcommand parser [2].
+   #   * Set the main parser as the “parent” of the subcommand parser [2].
    #     This may be the documented approach? However, it adds all the
-   #     subcommands to the subparser, which we don't want. A workaround would
-   #     be to create a *third* parser that's the parent of both the main and
+   #     subcommands to the subparser, which we don’t want. A workaround would
+   #     be to create a *third* parser that’s the parent of both the main and
    #     subcommand parsers, but that seems like too much indirection to me.
    #
    #   * A two-stage parse (parse_known_args(), then parse_args() to have the
@@ -154,7 +154,7 @@ def main():
    # Helper function to set up a subparser. The star forces the latter two
    # arguments to be called by keyword, for clarity.
    def add_opts(p, dispatch, *, deps_check, stog_init, help_=False):
-      assert (not stog_init or deps_check)  # can't init storage w/o deps
+      assert (not stog_init or deps_check)  # can’t init storage w/o deps
       if (dispatch is not None):
          p.set_defaults(func=dispatch)
          dependencies_check[dispatch] = deps_check
@@ -186,12 +186,14 @@ def main():
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
-   sp.add_argument("--force", action="store_true",
+   sp.add_argument("--force", metavar="MODE", nargs="?", default=None,
+                   choices=["fakeroot", "seccomp"], const="seccomp",
                    help="inject unprivileged build workarounds")
+   sp.add_argument("--force-cmd", metavar="CMD,ARG1[,ARG2...]",
+                   action="append", default=[],
+                   help="command arg(s) to add under --force=seccomp")
    sp.add_argument("-n", "--dry-run", action="store_true",
-                   help="don't execute instructions")
-   sp.add_argument("--no-force-detect", action="store_true",
-                   help="don't try to detect if --force workarounds would work")
+                   help="don’t execute instructions")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",

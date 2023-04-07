@@ -13,7 +13,7 @@
 #
 # ch-test-scope: skip
 
-FROM 00_tiny
+FROM alpine:3.17
 WORKDIR /test
 
 
@@ -23,13 +23,13 @@ WORKDIR /test
 RUN echo target1 > ss_target1 \
  && echo target2 > ss_target2 \
  && ln -s ss_target1 ss_link
-# link and target should both contain "target1"
+# link and target should both contain “target1”
 RUN ls -l \
  && for i in ss_*; do printf '%s : ' $i; cat $i; done
 # Overwrite it with a new symlink.
 RUN rm ss_link \
  && ln -s ss_target2 ss_link
-# Now link should still be a symlink but contain "target2".
+# Now link should still be a symlink but contain “target2”.
 RUN ls -l \
  && for i in ss_*; do printf '%s : ' $i; cat $i; done
 
@@ -39,13 +39,13 @@ RUN ls -l \
 # Set up a symlink.
 RUN echo target > sf_target \
  && ln -s sf_target sf_link
-# Link and target should both contain "target".
+# Link and target should both contain “target”.
 RUN ls -l \
  && for i in sf_*; do printf '%s : ' $i; cat $i; done
 # Overwrite it with a regular file.
 RUN rm sf_link \
  && echo regular > sf_link
-# Now link should be a regular file and contain "regular".
+# Now link should be a regular file and contain “regular”.
 RUN ls -l \
  && for i in sf_*; do printf '%s : ' $i; cat $i; done
 
@@ -55,13 +55,13 @@ RUN ls -l \
 # Set up two regular files.
 RUN echo regular > fs_link \
  && echo target > fs_target
-# Link should be a regular file and contain "regular".
+# Link should be a regular file and contain “regular”.
 RUN ls -l \
  && for i in fs_*; do printf '%s : ' $i; cat $i; done
 # Overwrite it with a symlink.
 RUN rm fs_link \
  && ln -s fs_target fs_link
-# Now link should be a symlink; both should contain "target".
+# Now link should be a symlink; both should contain “target”.
 RUN ls -l \
  && for i in fs_*; do printf '%s : ' $i; cat $i; done
 
@@ -71,7 +71,7 @@ RUN ls -l \
 # Set up a symlink.
 RUN echo target > sd_target \
  && ln -s sd_target sd_link
-# link and target should both contain "target"
+# link and target should both contain “target”.
 RUN ls -l \
  && for i in sd_*; do printf '%s : ' $i; cat $i; done
 # Overwrite it with a directory.
@@ -83,8 +83,8 @@ RUN ls -l
 
 ## Replace directory with symlink.
 
-# I think this is what's in image ppc64le.neo4j/2.3.5, as reported in issue
-# #825, but it doesn't cause the same infinite recursion.
+# I think this is what’s in image ppc64le.neo4j/2.3.5, as reported in issue
+# #825, but it doesn’t cause the same infinite recursion.
 
 # Set up a directory and a target.
 RUN mkdir ds_link \
@@ -94,7 +94,7 @@ RUN ls -l
 # Overwrite it with a symlink.
 RUN rmdir ds_link \
  && ln -s ds_target ds_link
-# Now link should be a symlink; both should contain "target".
+# Now link should be a symlink; both should contain “target”.
 RUN ls -l \
  && for i in ds_*; do printf '%s : ' $i; cat $i; done
 

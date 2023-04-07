@@ -1,7 +1,6 @@
 #!%PYTHON_SHEBANG%
 
 import argparse
-import distutils.version
 import inspect
 import json
 import os
@@ -22,8 +21,8 @@ import filesystem as fs
 BUNDLE_PREFIX = ["/tmp", "/var/tmp"]
 CH_BIN = os.path.dirname(os.path.abspath(
            inspect.getframeinfo(inspect.currentframe()).filename))
-OCI_VERSION_MIN = "1.0.1-dev"  # inclusive
-OCI_VERSION_MAX = "1.0.999"    # inclusive
+OCI_VERSION_MIN = "1.0.1"    # inclusive
+OCI_VERSION_MAX = "1.0.999"  # inclusive
 
 args = None   # CLI Namespace
 state = None  # state object
@@ -102,13 +101,13 @@ def args_parse():
 
    bundle_ = bundle_from_cid(args_.cid)
    if ("bundle" in args_ and args_.bundle != bundle_):
-      ch.FATAL("bundle argument \"%s\" differs from inferred bundle \"%s\""
+      ch.FATAL("bundle argument “%s” differs from inferred bundle “%s”"
                % (args_.bundle, bundle_))
    args_.bundle = bundle_
 
    pid_file_ = pid_file_from_bundle(args_.bundle)
    if ("pid_file" in args_ and args_.pid_file != pid_file_):
-      ch.FATAL("pid_file argument \"%s\" differs from inferred \"%s\""
+      ch.FATAL("pid_file argument “%s” differs from inferred “%s”"
                % (args_.pid_file, pid_file_))
    args_.pid_file = pid_file_
 
@@ -123,7 +122,7 @@ def bundle_from_cid(cid):
       paths.append("%s/buildah%s" % (p, m[1]))
       if (os.path.exists(paths[-1])):
          return paths[-1]
-   ch.FATAL("can't infer bundle path; none of these exist: %s"
+   ch.FATAL("can’t infer bundle path; none of these exist: %s"
             % " ".join(paths))
 
 def debug_lines(s):
@@ -153,9 +152,9 @@ nogroup:x:65534:
    fs.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path)
    fs.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
    # Debian package management also wants to mess around with users. This is
-   # causing problems with /etc/gshadow and other files. These links don't
+   # causing problems with /etc/gshadow and other files. These links don’t
    # work if they are in /ch/bin, I think because dpkg is resetting the path?
-   # For now we'll do this, but I don't like it. fakeroot(1) also solves the
+   # For now we’ll do this, but I don’t like it. fakeroot(1) also solves the
    # problem (see issue #472).
    fs.Path("/bin/true").symlink("%s/bin/chown" % path, clobber=True)
    fs.Path("/bin/true").symlink("%s/usr/sbin/groupadd" % path, clobber=True)
@@ -171,7 +170,7 @@ def op_create():
    # Start dummy supervisor.
    if (state.pid is not None):
       ch.FATAL("container already created")
-   pid = ch.ossafe(os.fork, "can't fork")
+   pid = ch.ossafe(os.fork, "can’t fork")
    if (pid == 0):
       # Child; the only reason to exist is so Buildah sees a process when it
       # looks for one. Sleep until told to exit.
@@ -197,14 +196,14 @@ def op_kill():
    ch.VERBOSE("kill operation is a no-op")
 
 def op_start():
-   # Note: Contrary to the implication of its name, the "start" operation
+   # Note: Contrary to the implication of its name, the “start” operation
    # blocks until the user command is done.
 
    c = state.config
 
    # Unsupported features to barf about.
    if (state.pid is None):
-      ch.FATAL("can't start: not created yet")
+      ch.FATAL("can’t start: not created yet")
    if (c["process"].get("terminal", False)):
       ch.FATAL("not supported: pseudoterminals")
    if ("annotations" in c):
@@ -219,8 +218,8 @@ def op_start():
 
    # Environment file. This is a list of lines, not a dict.
    #
-   # GNU tar, when it thinks it's running as root, tries to chown(2) and
-   # chgrp(2) files to whatever's in the tarball. --no-same-owner avoids this.
+   # GNU tar, when it thinks it’s running as root, tries to chown(2) and
+   # chgrp(2) files to whatever’s in the tarball. --no-same-owner avoids this.
    with fs.Path(args.bundle + "/environment").open_("wt") as fp:
       for line in (  c["process"]["env"]                  # from Dockerfile
                    + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
@@ -232,7 +231,6 @@ def op_start():
    cmd = CH_BIN + "/ch-run"
    ca = [cmd,
          "--cd", c["process"]["cwd"],
-         "--no-home",
          "--no-passwd",
          "--gid", str(c["process"]["user"]["gid"]),
          "--uid", str(c["process"]["user"]["uid"]),
@@ -245,7 +243,7 @@ def op_start():
    # Fix up root filesystem.
    image_fixup(args.bundle + "/mnt/rootfs")
 
-   # Execute user command. We can't execv(2) because we have to do cleanup
+   # Execute user command. We can’t execv(2) because we have to do cleanup
    # after it exits.
    fs.Path(args.bundle + "/user_started").file_ensure_exists()
    ch.VERBOSE("user command: %s" % ca)
@@ -262,7 +260,7 @@ def op_start():
       state.pid = None
       os.unlink(args.pid_file)
    except OSError as x:
-      ch.FATAL("can't kill PID %d: %s (%d)" % (state.pid, x.strerror, x.errno))
+      ch.FATAL("can’t kill PID %d: %s (%d)" % (state.pid, x.strerror, x.errno))
 
    # Puke if user command failed.
    if (cp.returncode != 0):
@@ -291,7 +289,7 @@ def op_state():
 
 def sleep_forever():
    while True:
-      time.sleep(60)  # can't provide infinity here
+      time.sleep(60)  # can’t provide infinity here
 
 def pid_file_from_bundle(bundle):
    return bundle + "/pid"
@@ -302,15 +300,15 @@ def state_load():
    st.config = json.load(fs.Path(args.bundle + "/config.json").open_("rt"))
    #debug_lines(json.dumps(st.config, indent=2))
 
-   v_min = distutils.version.LooseVersion(OCI_VERSION_MIN)
-   v_actual = distutils.version.LooseVersion(st.config["ociVersion"])
-   v_max = distutils.version.LooseVersion(OCI_VERSION_MAX)
+   v_min = version_parse_oci(OCI_VERSION_MIN)
+   v_actual = version_parse_oci(st.config["ociVersion"])
+   v_max = version_parse_oci(OCI_VERSION_MAX)
    if (not v_min <= v_actual <= v_max):
       ch.FATAL("unsupported OCI version: %s" % st.config["ociVersion"])
 
    try:
       fp = open(args.pid_file, "rt")
-      st.pid = int(ch.ossafe(fp.read, "can't read: %s" % args.pid_file))
+      st.pid = int(ch.ossafe(fp.read, "can’t read: %s" % args.pid_file))
       ch.VERBOSE("found supervisor pid: %d" % st.pid)
    except FileNotFoundError:
       st.pid = None
@@ -320,6 +318,10 @@ def state_load():
    st.user_command_done = os.path.isfile(args.bundle + "/user_done")
 
    return st
+
+def version_parse_oci(s):
+   # Dead-simple version parsing for OCI; not intended for other uses.
+   return tuple(re.split(r"[.-]", s)[:3])
 
 
 if (__name__ == "__main__"):

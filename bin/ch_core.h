@@ -52,3 +52,6 @@ void containerize(struct container *c);
 enum img_type image_type(const char *ref, const char *images_dir);
 char *img_name2path(const char *name, const char *storage_dir);
 void run_user_command(char *argv[], const char *initial_dir);
+#ifdef HAVE_SECCOMP
+void seccomp_install(void);
+#endif

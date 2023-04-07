@@ -1,4 +1,4 @@
-# ch-test-scope: standard
+# ch-test-scope: full
 FROM centos:7
 
 # This image has two purposes: (1) demonstrate we can build a CentOS 7 image
@@ -33,5 +33,5 @@ RUN yum install -y epel-release \
 # https://lists.fedoraproject.org/archives/list/devel@lists.fedoraproject.org/thread/K4EH7V3OUFJFVL6A72IILJUA6JFX2HZW/
 RUN yum install -y epel-rpm-macros
 
-# Need wheel to install bundled Lark, and the RPM version doesn't work.
+# Need wheel to install bundled Lark, and the RPM version doesn’t work.
 RUN pip3 install wheel

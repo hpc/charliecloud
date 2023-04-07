@@ -34,19 +34,19 @@ setup () {
 
 
 @test 'ch-image delete' {
-    # Verify image doesn't exist.
+    # Verify image doesn’t exist.
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"delete/test"* ]]
 
-    # Build image. It's called called delete/test to check ref parsing with
+    # Build image. It’s called called delete/test to check ref parsing with
     # slash present.
     ch-image build -t delete/test -f - . << 'EOF'
-FROM 00_tiny
-FROM 00_tiny
-FROM 00_tiny
-FROM 00_tiny
+FROM alpine:3.17
+FROM alpine:3.17
+FROM alpine:3.17
+FROM alpine:3.17
 EOF
     run ch-image list
     echo "$output"
@@ -69,7 +69,7 @@ EOF
 
 
 @test 'broken image delete' {
-    # Verify image doesn't exist.
+    # Verify image doesn’t exist.
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
@@ -77,7 +77,7 @@ EOF
 
     # Build image.
     ch-image build -t deletetest -f - . << 'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 EOF
     run ch-image list
     echo "$output"
@@ -99,7 +99,7 @@ EOF
 @test 'broken image overwrite' {
     # Build image.
     ch-image build -t tmpimg -f - . << 'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 EOF
 
     # Break image.
@@ -107,7 +107,7 @@ EOF
 
     # Rebuild image.
     ch-image build -t tmpimg -f - . << 'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 EOF
     run ch-image list
     echo "$output"
@@ -117,8 +117,8 @@ EOF
 
 
 @test 'ch-image import' {
-    # Note: We don't test importing a real image because (1) when this is run
-    # during the build phase there aren't any unpacked images and (2) I can't
+    # Note: We don’t test importing a real image because (1) when this is run
+    # during the build phase there aren’t any unpacked images and (2) I can’t
     # think of a way import could fail that would be real image-specific.
 
     ## Test image (not runnable)
@@ -225,7 +225,7 @@ EOF
     run ch-image import -v /doesnotexist imptest
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: can't copy: not found: /doesnotexist"* ]]
+    [[ $output = *"error: can’t copy: not found: /doesnotexist"* ]]
 
     # invalid destination reference
     run ch-image import -v "${fixtures}/empty" 'badchar*'
@@ -233,7 +233,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'error: image ref syntax, char 8: badchar*'* ]]
 
-    # non-empty file that's not a tarball
+    # non-empty file that’s not a tarball
     run ch-image import -v "${fixtures}/nonempty/ch/metadata.json" imptest
     echo "$output"
     [[ $status -eq 1 ]]
@@ -251,7 +251,7 @@ EOF
     run ch-image list
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"00_tiny"* ]]
+    [[ $output = *"alpine:3.17"* ]]
 
     # name does not exist remotely, in library
     run ch-image list doesnotexist:latest
@@ -290,7 +290,7 @@ EOF
     [[ $output = *'archs available:     n/a'* ]]
 
     # in storage, does not exist remotely
-    run ch-image list 00_tiny
+    run ch-image list argenv
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'in local storage:    yes'* ]]
@@ -335,26 +335,26 @@ EOF
 
 
 @test 'ch-image reset' {
-   export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-reset
+    CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-reset
 
-   # Ensure our test storage dir doesn't exist yet.
-   [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+    # Ensure our test storage dir doesn’t exist yet.
+    [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
-   # Put an image innit.
-   ch-image pull alpine:3.9
-   ls "$CH_IMAGE_STORAGE"
+    # Put an image innit.
+    ch-image pull alpine:3.17
+    ls "$CH_IMAGE_STORAGE"
 
-   # List images; should be only the one we just pulled.
-   run ch-image list
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = "alpine:3.9" ]]
+    # List images; should be only the one we just pulled.
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = "alpine:3.17" ]]
 
-   # Reset.
-   ch-image reset
+    # Reset.
+    ch-image reset
 
-   # Image storage directory should be empty now.
-   expected=$(cat <<'EOF'
+    # Image storage directory should be empty now.
+    expected=$(cat <<'EOF'
 .:
 bucache
 bularge
@@ -375,17 +375,17 @@ version
 ./ulcache:
 EOF
 )
-   actual=$(cd "$CH_IMAGE_STORAGE" && ls -1R)
-   diff -u <(echo "$expected") <(echo "$actual")
+    actual=$(cd "$CH_IMAGE_STORAGE" && ls -1R)
+    diff -u <(echo "$expected") <(echo "$actual")
 
-   # Remove storage directory.
-   rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+    # Remove storage directory.
+    rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
-   # Reset again; should error.
-   run ch-image reset
-   echo "$output"
-   [[ $status -eq 1 ]]
-   [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
+    # Reset again; should error.
+    run ch-image reset
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"$CH_IMAGE_STORAGE not a builder storage"* ]]
 }
 
 
@@ -401,7 +401,7 @@ EOF
 @test 'ch-image build --bind' {
     ch-image --no-cache build -t tmpimg -f - \
              -b "${PWD}/fixtures" -b ./fixtures:/mnt/0 . <<EOF
-FROM 00_tiny
+FROM alpine:3.17
 RUN mount
 RUN ls -lR '${PWD}/fixtures'
 RUN test -f '${PWD}/fixtures/empty-file'
@@ -630,8 +630,8 @@ EOF
 
 @test 'ch-image build: multistage with colon' {
 cat <<'EOF' | ch-image --no-cache build -t tmpimg:tagged -f - .
-FROM alpine:3.9
-FROM alpine:3.10
+FROM alpine:3.17
+FROM alpine:3.16
 COPY --from=0 /etc/os-release /
 EOF
     ch-image delete tmpimg:tagged
@@ -646,9 +646,8 @@ EOF
     # the changelog [1] for version bash-5.0-alpha.
     #
     # [1]: https://git.savannah.gnu.org/cgit/bash.git/tree/CHANGES
-    # shellcheck disable=SC1003
-    df=$(cat <<'EOF' | tr '%' '\\'
-FROM 00_tiny
+    df=$(cat <<'EOF' | tr '%' "\\"
+FROM alpine:3.17
 RUN set -o noclobber %
  && echo hello > file_ %
  && mkdir dir_empty %
@@ -657,7 +656,7 @@ RUN set -o noclobber %
 EOF
         )
 
-    ! ch-image build -t tmpimg - <<EOF
+    ch-image build -t tmpimg - <<EOF && exit 1  # SC2314
 ${df}
  && false
 EOF
@@ -684,17 +683,17 @@ EOF
     touch "$fixtures_dir"/dir_/file_
 
     # This will fail after the first file is already copied, because COPY is
-    # non-atomic. We use an unreadable file because if the file didn't exist,
+    # non-atomic. We use an unreadable file because if the file didn’t exist,
     # COPY would fail out before starting.
-    ! ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF'
-FROM 00_tiny
+    ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF' && exit 1
+FROM alpine:3.17
 COPY /file_readable /file_unreadable /
 EOF
 
     # This will succeed unless there’s leftover junk from failed COPY above.
     # Otherwise, it will fail because can’t overwrite a file with a directory.
     ch-image build -t tmpimg -f - "$fixtures_dir" <<'EOF'
-FROM 00_tiny
+FROM alpine:3.17
 COPY /dir_ /file_readable
 EOF
 }
@@ -703,7 +702,7 @@ EOF
 @test 'storage directory versioning' {
    export CH_IMAGE_STORAGE="$BATS_TMPDIR"/sd-version
 
-   # Ensure our test storage dir doesn't exist yet.
+   # Ensure our test storage dir doesn’t exist yet.
    [[ -e $CH_IMAGE_STORAGE ]] && rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
    # Initialize by listing.
@@ -742,145 +741,70 @@ EOF
    echo "$output"
    [[ $status -eq 0 ]]
    [[ $output = *"found storage dir v${v_current}: ${CH_IMAGE_STORAGE}"* ]]
-
-   # Fake version mismatch - no file (v1).
-   rm "$CH_IMAGE_STORAGE"/version
-
-   # Version mismatch; upgrade; success.
-   run ch-image -v list
-   echo "$output"
-   [[ $status -eq 0 ]]
-   [[ $output = *"upgrading storage directory: v${v_current} ${CH_IMAGE_STORAGE}"* ]]
-   [[ $(cat "$CH_IMAGE_STORAGE"/version) -eq "$v_current" ]]
 }
 
 
-@test 'storage directory default path move' {
+@test 'ch-run --unsafe' {
+    my_storage=${BATS_TMPDIR}/unsafe
+
+    # Default storage location.
+    if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
+        sold=$CH_IMAGE_STORAGE
+        unset CH_IMAGE_STORAGE
+        [[ ! -e .%3.17 ]]
+        ch-run --unsafe alpine:3.17 -- /bin/true
+        CH_IMAGE_STORAGE=$sold
+    fi
+
+    # Rest of test uses custom storage path.
+    rm -rf "$my_storage"
+    mkdir -p "$my_storage"/img
+    ch-convert -i ch-image -o dir alpine:3.17 "${my_storage}/img/alpine+3.17"
     unset CH_IMAGE_STORAGE
 
-    old=/var/tmp/${USER}/ch-image
-    old_parent=$(dirname "$old")
-    new=/var/tmp/${USER}.ch
-    new_bak=/var/tmp/${USER}.ch.test-save
-    if [[ -e $old ]]; then
-         pedantic_fail 'old default storage dir exists'
-    fi
+    # Specified on command line.
+    ch-run --unsafe -s "$my_storage" alpine:3.17 -- /bin/true
 
-    printf '\n*** move real storage dir out of the way\n'
-    echo 'WARNING: If this test fails, your storage directory may be broken'
-    if [[ -e $new ]]; then
-        [[ ! -e $new_bak ]]
-        mv -v "$new" "$new_bak"
-    fi
+    # Specified with environment variable.
+    export CH_IMAGE_STORAGE=$my_storage
 
-    printf '\n*** old valid and needs upgrade\n'
-    [[ -d "$old_parent" ]] || mkdir "$old_parent"
-    mkdir "$old"
-    mkdir "$old"/{dlcache,img,ulcache}
-    echo 1 > "$old"/version
-    run ch-image -vv list
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"storage dir: valid at old default: ${old}"* ]]
-    [[ $output = *"storage dir: moving to new default path: ${new}"* ]]
-    [[ $output = *"moving: ${old}/dlcache -> ${new}/dlcache"* ]]
-    [[ $output = *"moving: ${old}/img -> ${new}/img"* ]]
-    [[ $output = *"moving: ${old}/ulcache -> ${new}/ulcache"* ]]
-    [[ $output = *"moving: ${old}/version -> ${new}/version"* ]]
-    [[ $output = *"warning: parent of old storage dir now empty: ${old_parent}"* ]]
-    [[ $output = *'hint: consider deleting it'* ]]
-    [[ $output = *'upgrading storage directory: v'?" ${new}"* ]]
-    [[ ! -e $old ]]
-    [[ -d ${new}/dlcache ]]
-    [[ -d ${new}/img ]]
-    [[ -d ${new}/ulcache ]]
-    [[ -f ${new}/version ]]
+    # Basic environment-variable specified.
+    ch-run --unsafe alpine:3.17 -- /bin/true
+}
 
-    printf '\n*** old and new both valid\n'
-    mkdir "$old"
-    mkdir "$old"/{dlcache,img,ulcache}
-    echo 2 > "$old"/version
-    run ch-image -vv list
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"storage dir: valid at old default: ${old}"* ]]
-    [[ $output = *"warning: storage dir: also valid at new default: ${new}"* ]]
-    [[ $output = *'hint: consider deleting the old one'* ]]
-    [[ $output = *'found storage dir v'?": ${new}"* ]]
-    [[ -d $old ]]
-    [[ -d ${new}/dlcache ]]
-    [[ -d ${new}/img ]]
-    [[ -d ${new}/ulcache ]]
-    [[ -f ${new}/version ]]
-    rm -Rfv --one-file-system "$new"
 
-    printf '\n*** old is invalid, new absent\n'
-    rmdir "$old"/img
-    run ch-image -vv list
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"warning: storage dir: invalid at old default, ignoring: ${old}"* ]]
-    [[ $output = *'initializing storage directory: v'?" ${new}"* ]]
-    [[ -d $old ]]
-    [[ -d ${new}/dlcache ]]
-    [[ -d ${new}/img ]]
-    [[ -d ${new}/ulcache ]]
-    [[ -f ${new}/version ]]
-    rm -Rfv --one-file-system "$new"
-
-    printf '\n*** old is valid, new exists but is regular file\n'
-    mkdir "$old"/img
-    echo weirdal > "$new"
-    run ch-image -vv list
+@test 'ch-run storage errors' {
+    run ch-run -v -w alpine:3.17 -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"storage dir: valid at old default: ${old}"* ]]
-    [[ $output = *'initializing storage directory: v'?" ${new}"* ]]
-    [[ $output = *"error: can’t mkdir: exists and not a directory: ${new}"* ]]
-    [[ -d $old ]]
-    [[ -f $new ]]
-    rm -v "$new"
+    [[ $output = *'error: --write invalid when running by name'* ]]
 
-    printf '\n*** old is valid, new exists and is empty directory\n'
-    run ch-image -vv list
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"storage dir: valid at old default: ${old}"* ]]
-    [[ $output = *"storage dir: moving to new default path: ${new}"* ]]
-    [[ $output = *"moving: ${old}/dlcache -> ${new}/dlcache"* ]]
-    [[ $output = *"moving: ${old}/img -> ${new}/img"* ]]
-    [[ $output = *"moving: ${old}/ulcache -> ${new}/ulcache"* ]]
-    [[ $output = *"moving: ${old}/version -> ${new}/version"* ]]
-    [[ $output = *"warning: parent of old storage dir now empty: ${old_parent}"* ]]
-    [[ $output = *'hint: consider deleting it'* ]]
-    [[ $output = *'upgrading storage directory: v'?" ${new}"* ]]
-    [[ ! -e $old ]]
-    [[ -d ${new}/dlcache ]]
-    [[ -d ${new}/img ]]
-    [[ -d ${new}/ulcache ]]
-    [[ -f ${new}/version ]]
-
-    printf '\n*** old is valid, new exists, is invalid with one moved item\n'
-    mkdir "$old"
-    mkdir "$old"/{dlcache,img,ulcache}
-    echo 2 > "$old"/version
-    rm -Rfv --one-file-system "$new"/{dlcache,ulcache,version}
-    run ch-image -vv list
+    run ch-run -v "$CH_IMAGE_STORAGE"/img/alpine+3.17 -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"storage dir: valid at old default: ${old}"* ]]
-    [[ $output = *"error: storage directory seems invalid: ${new}"* ]]
-    [[ -d $old ]]
-    [[ ! -e ${new}/dlcache ]]
-    [[ -d ${new}/img ]]
-    [[ ! -e ${new}/ulcache ]]
-    [[ ! -e ${new}/version ]]
-    rm -Rfv --one-file-system "$old"
-    rm -Rfv --one-file-system "$new"
+    [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
 
-    printf '\n*** put real storage dir back\n'
-    if [[ -e $new_bak ]]; then
-        rm -Rfv --one-file-system "$new"
-        mv -v "$new_bak" "$new"
-    fi
+    run ch-run -v -s /doesnotexist alpine:3.17 -- /bin/true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
+    [[ $output = *"error: can't stat: alpine:3.17: No such file or directory"* ]]
+}
+
+
+@test 'ch-run image in both storage and cwd' {
+    cd "$BATS_TMPDIR"
+
+    # Set up a fixure image in $CWD that causes a collision with the named
+    # image, and that’s missing /bin/true so it pukes if we try to run it.
+    # That is, in both cases, we want run-by-name to win.
+    rm -rf ./alpine+3.17
+    ch-convert -i ch-image -o dir alpine:3.17 ./alpine+3.17
+    rm ./alpine+3.17/bin/true
+
+    # Default.
+    ch-run alpine:3.17 -- /bin/true
+
+    # With --unsafe.
+    ch-run --unsafe alpine:3.17 -- /bin/true
 }

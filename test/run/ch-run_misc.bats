@@ -2,40 +2,20 @@ load ../common
 
 
 @test 'relative path to image' {  # issue #6
-    scope quick
+    scope full
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
-@test 'storage errors' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-
-    run ch-run -w 00_tiny -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'error: --write invalid when running by name'* ]]
-
-    run ch-run "$CH_IMAGE_STORAGE"/img/00_tiny -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
-
-    run ch-run -s /doesnotexist 00_tiny -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
-    [[ $output = *"error: can't stat: 00_tiny: No such file or directory"* ]]
-}
 
 @test 'symlink to image' {  # issue #50
-    scope quick
+    scope full
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
     ch-run "${BATS_TMPDIR}/symlink-test" -- /bin/true
 }
 
 
 @test 'mount image read-only' {
-    scope quick
+    scope standard
     run ch-run "$ch_timg" sh <<EOF
 set -e
 dd if=/dev/zero bs=1 count=1 of=/out
@@ -47,60 +27,10 @@ EOF
 
 
 @test 'mount image read-write' {
-    scope quick
+    scope standard
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
-}
-
-@test '--unsafe' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    my_storage=${BATS_TMPDIR}/unsafe
-
-    # Default storage location.
-    if [[ $CH_IMAGE_STORAGE = /var/tmp/$USER.ch ]]; then
-        sold=$CH_IMAGE_STORAGE
-        unset CH_IMAGE_STORAGE
-        [[ ! -e ./00_tiny ]]
-        ch-run --unsafe 00_tiny -- /bin/true
-        CH_IMAGE_STORAGE=$sold
-    fi
-
-    # Rest of test uses custom storage path.
-    unset CH_IMAGE_STORAGE
-
-    # Specified on command line.
-    rm -rf "$my_storage"
-    mkdir -p "$my_storage"/img
-    ch-convert -i ch-image -o dir 00_tiny "${my_storage}/img/00_tiny"
-    ch-run --unsafe -s "$my_storage" 00_tiny -- /bin/true
-
-    # Specifie with environment variable.
-    export CH_IMAGE_STORAGE=$my_storage
-
-    # Basic environment-variable specified.
-    ch-run --unsafe 00_tiny -- /bin/true
-}
-
-@test 'image in both storage and cwd' {
-    scope standard
-    [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-
-    cd "$BATS_TMPDIR"
-
-    # Set up a fixure image in $CWD that causes a collision with the named
-    # image, and that’s missing /bin/true so it pukes if we try to run it.
-    # That is, in both cases, we want run-by-name to win.
-    rm -rf ./00_tiny
-    ch-convert -i ch-image -o dir 00_tiny ./00_tiny
-    rm ./00_tiny/bin/true
-
-    # Default.
-    ch-run 00_tiny -- /bin/true
-
-    # With --unsafe.
-    ch-run --unsafe 00_tiny -- /bin/true
 }
 
 
@@ -115,8 +45,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$CH_RUNNING' {
+@test "\$CH_RUNNING" {
     scope standard
 
     if [[ -v CH_RUNNING ]]; then
@@ -130,8 +59,7 @@ EOF
     [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
 }
 
-# shellcheck disable=SC2016
-@test '$HOME' {
+@test "\$HOME" {
     scope quick
     echo "host: $HOME"
     [[ $HOME ]]
@@ -175,8 +103,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: add /bin' {
+@test "\$PATH: add /bin" {
     scope quick
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
@@ -194,7 +121,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "$PATH2" ]]
-    # if /bin isn't in $PATH, former is added to end
+    # if /bin isn’t in $PATH, former is added to end
     PATH2="$ch_bin:/usr/bin"
     echo "$PATH2"
     # shellcheck disable=SC2016
@@ -205,8 +132,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: unset' {
+@test "\$PATH: unset" {
     scope standard
     old_path=$PATH
     unset PATH
@@ -221,8 +147,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$TMPDIR' {
+@test "\$TMPDIR" {
     scope standard
     mkdir -p "${BATS_TMPDIR}/tmpdir"
     touch "${BATS_TMPDIR}/tmpdir/file-in-tmpdir"
@@ -305,7 +230,7 @@ EOF
            "$ch_timg" \
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
 
-    # omit tmpfs at /home, which shouldn't be empty
+    # omit tmpfs at /home, which shouldn’t be empty
     ch-run "$ch_timg" -- cat /home/overmount-me
     # bind to /home without overmount
     ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
@@ -463,7 +388,7 @@ EOF
 
     # Quirk that is probably too obscure to put in the documentation: The
     # string containing only two straight quotes does not round-trip through
-    # "printenv" or "env", though it does round-trip through Bash "set":
+    # “printenv” or “env”, though it does round-trip through Bash “set”:
     #
     #   $ export foo="''"
     #   $ echo [$foo]
@@ -631,10 +556,10 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"can't open: /ch/environment: No such file or directory"* ]]
 
-    # Note: I'm not sure how to test an error during reading, i.e., getline(3)
-    # rather than fopen(3). Hence no test for "error reading".
+    # Note: I’m not sure how to test an error during reading, i.e., getline(3)
+    # rather than fopen(3). Hence no test for “error reading”.
 
-    # invalid line: missing '='
+    # invalid line: missing “=”
     echo 'FOO bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
@@ -649,11 +574,12 @@ EOF
     [[ $output = *"can't parse variable: empty name: ${f_in}:1"* ]]
 }
 
+
 # shellcheck disable=SC2016
 @test 'ch-run --set-env command line' {
     scope standard
 
-    # missing '''
+    # missing “'”
     # shellcheck disable=SC2086
     run ch-run --set-env=foo='$test:app' --env-no-expand -v "$ch_timg" -- /bin/true
     echo "$output"
@@ -666,6 +592,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
+
 
 @test 'ch-run --unset-env' {
     scope standard
@@ -866,11 +793,12 @@ EOF
 
     # -m option
     mountpt="${BATS_TMPDIR}/sqfs_tmpdir"
+    mountpt_real=$(realpath "$mountpt")
     [[ -e $mountpt ]] || mkdir "$mountpt"
     run ch-run -m "$mountpt" -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: ${mountpt}"* ]]
+    [[ $output = *"newroot: ${mountpt_real}"* ]]
     rmdir "$mountpt"
 
     # -m with non-sqfs img
@@ -894,7 +822,7 @@ EOF
     [[ $status -ne 0 ]]  # exits with status of 139
     [[ $output = *"mount point can't be empty string"* ]]
 
-    # mount point doesn't exist
+    # mount point doesn’t exist
     run ch-run -m /doesnotexist "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]  # exits with status of 139
@@ -904,14 +832,14 @@ EOF
     run ch-run -m ./fixtures/README "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'not a directory: ./fixtures/README'* ]]
+    [[ $output = *'not a directory: '*'/fixtures/README'* ]]
 
     # image is file but not sqfs
     run ch-run -vv ./fixtures/README -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
-    [[ $output = *'unknown image type: ./fixtures/README'* ]]
+    [[ $output = *'unknown image type: '*'/fixtures/README'* ]]
 
     # image is a broken sqfs
     sq_tmp="$BATS_TMPDIR"/b0rken.sqfs
@@ -935,7 +863,6 @@ EOF
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
     files=$(echo etc/{group,passwd})
-    # shellcheck disable=SC2116
     files_optional=$(echo etc/{hosts,resolv.conf})
     mkdir -p "$img"
     for d in $dirs; do mkdir -p "${img}/$d"; done
@@ -948,7 +875,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
-    # For each required file, we want a correct error if it's missing.
+    # For each required file, we want a correct error if it’s missing.
     for f in $files; do
         echo "required: ${f}"
         rm "${img}/${f}"
@@ -962,7 +889,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each optional file, we want no error if it's missing.
+    # For each optional file, we want no error if it’s missing.
     for f in $files_optional; do
         echo "optional: ${f}"
         rm "${img}/${f}"
@@ -973,7 +900,7 @@ EOF
         [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
     done
 
-    # For all files, we want a correct error if it's not a regular file.
+    # For all files, we want a correct error if it’s not a regular file.
     for f in $files $files_optional; do
         echo "not a regular file: ${f}"
         rm "${img}/${f}"
@@ -988,7 +915,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each directory, we want a correct error if it's missing.
+    # For each directory, we want a correct error if it’s missing.
     for d in $dirs tmp; do
         echo "required: ${d}"
         rmdir "${img}/${d}"
@@ -1001,7 +928,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each directory, we want a correct error if it's not a directory.
+    # For each directory, we want a correct error if it’s not a directory.
     for d in $dirs tmp; do
         echo "not a directory: ${d}"
         rmdir "${img}/${d}"
@@ -1037,7 +964,7 @@ EOF
     echo "expected: ${r}"
     [[ $output =~ $r ]]
 
-    # default shouldn't care if /home is missing
+    # default shouldn’t care if /home is missing
     rmdir "${img}/home"
     run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
@@ -1097,9 +1024,11 @@ EOF
     # it on GitHub Actions.
     [[ -n $GITHUB_ACTIONS ]] || skip 'GitHub Actions only'
     [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
-    expected="ch-run: uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
+    expected="uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
     echo "$expected"
     #shellcheck disable=SC2016
     ch-run "$ch_timg" -- echo foo  'b a}$r'
-    sudo tail -n 10 /var/log/syslog | grep -F "$expected"
+    text=$(sudo tail -n 10 /var/log/syslog)
+    echo "$text"
+    echo "$text" | grep -F "$expected"
 }

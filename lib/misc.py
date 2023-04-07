@@ -14,7 +14,7 @@ import pull
 import version
 
 
-## argparse "actions" ##
+## argparse “actions” ##
 
 class Action_Exit(argparse.Action):
 
@@ -82,7 +82,7 @@ def gestalt_storage_path(cli):
 
 def import_(cli):
    if (not os.path.exists(cli.path)):
-      ch.FATAL("can't copy: not found: %s" % cli.path)
+      ch.FATAL("can’t copy: not found: %s" % cli.path)
    dst = im.Image(im.Reference(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
@@ -130,11 +130,11 @@ def list_(cli):
       else:
          cached = "yes (state ID %s, commit %s)" % (sid.short, commit[:7])
          if (os.path.exists(img.unpack_path)):
-            wdc = bu.cache.worktree_get_head(img)
+            wdc = bu.cache.worktree_head(img)
             if (wdc is None):
                ch.WARNING("stored image not connected to build cache")
             elif (wdc != commit):
-               ch.WARNING("stored image doesn't match build cache: %s" % wdc)
+               ch.WARNING("stored image doesn’t match build cache: %s" % wdc)
       print("in build cache:      %s" % cached)
       # present remotely?
       print("full remote ref:     %s" % img.ref.canonical)
