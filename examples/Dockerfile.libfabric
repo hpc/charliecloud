@@ -118,8 +118,8 @@ RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
               https://github.com/ofiwg/libfabric/ \
  && cd libfabric \
  && ./autogen.sh \
- &&    PSM_CONFIG='enable' && [[ "$(uname -m)" == 'x86_64' ]] \
-    || PSM_CONFIG='disable' \
+ && if [[ $(uname -m) == x86_64 ]]; then PSM_CONFIG='enable'; \
+    else PSM_CONFIG='disable'; fi \
  && ./configure --prefix=/usr/local \
                 --disable-opx \
                 --disable-psm2 \
