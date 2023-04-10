@@ -34,7 +34,8 @@
 #   at zero, as all things should be.
 #
 # ${array[@]}
-#   Expands “array” to its member elements.
+#   Expands “array” to its member elements as a sequence of words, one word per
+#   element.
 #
 # ${#parameter}
 #   Gives the length of “parameter.” If “parameter” is a string, this expansion
@@ -83,7 +84,7 @@ bash_vmin="4.2.0"
 ch_bin="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # Debugging log
-if [[ -f "/tmp/ch-completion.log" ]]; then
+if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
     rm /tmp/ch-completion.log
 fi
 
@@ -117,7 +118,7 @@ _ch_image_complete () {
     local sub_cmd
     local strg_dir
     local extras=
-    _get_comp_words_by_ref -n : cur prev words
+    _get_comp_words_by_ref -n := cur prev words
 
     # If "$cur" is non-empty, we want to ignore it as a potential subcommand
     # to avoid unwanted behavior. “${words[@]::${#words[@]}-1}” gives you all
@@ -125,11 +126,20 @@ _ch_image_complete () {
     # if "$cur" is non-empty, pass it to _ch_subcommand_get. Otherwise pass all
     # elements of “words.”
     if [[ -n "$cur" ]]; then
-        sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]::${#words[@]}-1}")
+        #sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]::${#words[@]}-1}")
+        sub_cmd=$(_ch_subcommand_get "${words[@]::${#words[@]}-1}")
         strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
     else
-        sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]}")
+        #sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]}")
+        sub_cmd=$(_ch_subcommand_get "${words[@]}")
         strg_dir=$(_ch_find_storage "${words[@]}")
+    fi
+
+    if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
+        echo "\$ ${words[@]}" >> /tmp/ch-completion.log
+        echo "  cur: $cur" >> /tmp/ch-completion.log
+        echo "  prev: $prev" >> /tmp/ch-completion.log
+        echo "  sub command: $sub_cmd" >> /tmp/ch-completion.log
     fi
 
     # Common opts that take args
@@ -181,20 +191,24 @@ _ch_image_complete () {
             ;;
         *)
             # Autocomplete to context directory, common opt, or build-specific opt
-            echo "compgen bit:" >> /tmp/ch-completion.log
             # --force can take “fakeroot” or “seccomp” as an argument, or no
             # argument at all. To account for this, we add those two arguments
             # to the list of compgen suggestions, which allows compgen to
             # autocomplete to “fakeroot,” “seccomp,” or anything that could
             # logically follow “--force” with no argument.
             if [[ "$prev" == "--force" ]]; then
-                extras="$extras fakeroot seccomp"
+                extras+="$extras fakeroot seccomp"
+            elif [[ "$cur" == "--force="* ]]; then
+                COMPREPLY=( $(compgen -W "--force=fakeroot --force=seccomp" -- $cur) )
+                return 0;
             fi
             COMPREPLY=( $(compgen -W "$_image_build_opts $extras"  -- $cur) )
-            # Completion for the context directory. Note that we put this under
-            # an “if” statement so that the “nospace” option isn't applied to
-            # all completions that come after the “build” subcommand, as that
-            # would be inconvenient.
+            # By default, “complete” adds a space after each completed word.
+            # This is incredibly inconvenient when completing directories and
+            # filepaths, so we enable the “nospace” option. We want to make sure
+            # that this option is only enabled if there are valid path
+            # completions for “cur,” otherwise spaces would never be added after
+            # a completed word, which is also inconveninet.
             if [[ -n "$(compgen -d -S / -- $cur)" ]]; then
                 compopt -o nospace
                 COMPREPLY+=( $(compgen -d -S / -- $cur) )
@@ -205,11 +219,9 @@ _ch_image_complete () {
     build-cache )
         COMPREPLY=( $(compgen -W "--reset --gc --tree --dot" -- $cur) )
         ;;
-    delete | list)
-        # FIXME: Is it janky to include “list” here? I'm leaning towards “not
-        #        that janky,” others may disagree.
+    delete | list )
         if [[ "$sub_cmd" == "list" ]]; then
-            extras="$extras -l --long"
+            extras+="$extras -l --long"
         fi
         # The following check seems to fix a bug where the completion function
         # initialzes an empty storage directory.
@@ -271,22 +283,16 @@ _ch_run_completion () {
 
 ## Helper functions ##
 
-# Use this function to enable or disable completion after sourcing this file.
-# Useful if there are issues. FIXME: Add other executables as their completion
-# functions are implemented.
-ch-completion () {
-    if [[ "$1" == "disable" ]]; then
-        complete -r ch-image
-    elif [[ "$1" == "enable" ]]; then
-        complete -F _ch_image_complete ch-image
-    fi
+# Disable completion.
+ch-completion-disable () {
+    complete -r ch-image
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
 # FIXME: Can probably cook up a sed pattern that'll remove the need for the “if”
 # statement.
 _ch_find_storage () {
-    if [[ -n "$(grep -Eo "(\-\-storage|[^\-]\-s)" <<< "$@")" ]]; then
+    if echo "$@" | grep -Eq -- '\s(--storage|-\w*s)'; then
         # This sed only works as desired if “--storage” or “-s” are present in
         # the command line...
         sed -E 's/(.*)(--storage|[^-]-s)\ *([^ ]*)(.*$)/\3/g' <<< "$@"
@@ -330,11 +336,9 @@ _ch_run_image_finder () {
 # Print the subcommand in an array of words; if there is not one, print an empty
 # string. This feels a bit kludge-y, but it's the best I could come up with.
 # It's worth noting that the double for loop doesn't take that much time, since
-# the Charliecloud command line is relatively short.
+# the Charliecloud command line, even in the wost case, is relatively short.
 #
-# FIXME: This is a kludge because FIXME
-#
-# Usage: _ch_subcommand_get [subcommands] [words]
+# Usage: _ch_subcommand_get [words]
 #
 # Example:
 #   >> _ch_subcommand_get "build build-cache ... undelete" \
@@ -343,12 +347,9 @@ _ch_run_image_finder () {
 _ch_subcommand_get () {
     local cmd 
     local subcmd=
-    local cmds="$1"
-    shift 1
     for word in "$@"
     do
-        echo "word: $word" >> /tmp/ch-completion.log
-        for cmd in $cmds
+        for cmd in $_image_subcommands
         do
             if [[ "$word" == "$cmd" ]]; then
                 subcmd="$cmd"
