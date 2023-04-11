@@ -79,6 +79,13 @@
 # script is unsupported for bash < 4.2.0.
 bash_vmin="4.2.0"
 
+# Check bash version
+bash_v=$(bash --version | head -1 | grep -Eo "[0-9\.]{2,}[0-9]")
+if [[ $(printf "%s\n%s\n" "$bash_vmin" "$bash_v" | sort -V) < "$bash_vmin" ]]; then
+    echo "ch-completion.bash: unsupported bash version ($bash_v < $bash_vmin)"
+    return
+fi
+
 ch_bin="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # Debugging log
@@ -132,7 +139,8 @@ _ch_image_complete () {
 
     # Populate debug log
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
-        echo "\$ ${words[@]}" >> /tmp/ch-completion.log
+        # shellcheck disable=SC2129
+        echo "\$ ${words[*]}" >> /tmp/ch-completion.log
         echo "  current: $cur" >> /tmp/ch-completion.log
         echo "  previous: $prev" >> /tmp/ch-completion.log
         echo "  sub command: $sub_cmd" >> /tmp/ch-completion.log
@@ -142,7 +150,7 @@ _ch_image_complete () {
     #
     case "$prev" in
     -a | --arch )
-        COMPREPLY=( $(compgen -W "host yolo $_archs" -- $cur) )
+        COMPREPLY=( $(compgen -W "host yolo $_archs" -- "$cur") )
         return 0
         ;;
     --cache-large )
@@ -157,7 +165,7 @@ _ch_image_complete () {
         # generate a completion). I didn't like that, hence the “if”.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
-            COMPREPLY=( $(compgen -d -S / -- $cur) )
+            COMPREPLY=( $(compgen -d -S / -- "$cur") )
         fi
         return 0
         ;;
@@ -195,22 +203,22 @@ _ch_image_complete () {
             if [[ "$prev" == "--force" ]]; then
                 extras+="$extras fakeroot seccomp"
             fi
-            COMPREPLY=( $(compgen -W "$_image_build_opts $extras"  -- $cur) )
+            COMPREPLY=( $(compgen -W "$_image_build_opts $extras"  -- "$cur") )
             # By default, “complete” adds a space after each completed word.
             # This is incredibly inconvenient when completing directories and
             # filepaths, so we enable the “nospace” option. We want to make sure
             # that this option is only enabled if there are valid path
             # completions for “cur,” otherwise spaces would never be added after
             # a completed word, which is also inconveninet.
-            if [[ -n "$(compgen -d -S / -- $cur)" ]]; then
+            if [[ -n "$(compgen -d -S / -- "$cur")" ]]; then
                 compopt -o nospace
-                COMPREPLY+=( $(compgen -d -S / -- $cur) )
+                COMPREPLY+=( $(compgen -d -S / -- "$cur") )
             fi
             ;;
         esac
         ;;
     build-cache )
-        COMPREPLY=( $(compgen -W "--reset --gc --tree --dot" -- $cur) )
+        COMPREPLY=( $(compgen -W "--reset --gc --tree --dot" -- "$cur") )
         ;;
     delete | list )
         if [[ "$sub_cmd" == "list" ]]; then
@@ -218,14 +226,14 @@ _ch_image_complete () {
         fi
         # The following check seems to fix a bug where the completion function
         # initialzes an empty storage directory.
-        if [[ -n "$(ls $strg_dir/img)" ]]; then
-            COMPREPLY=( $(compgen -W "$($ch_bin/ch-image list -s $strg_dir) $extras" -- $cur) )
+        if [[ -n "$(ls "$strg_dir/img")" ]]; then
+            COMPREPLY=( $(compgen -W "$("$ch_bin/ch-image" list -s "$strg_dir") $extras" -- "$cur") )
             __ltrim_colon_completions "$cur"
         fi
         ;;
     gestalt )
         COMPREPLY=( $(compgen -W "bucache bucache-dot python-path
-                                  storage-path" -- $cur) )
+                                  storage-path" -- "$cur") )
         ;;
     import )
         # Complete dirs and files matching the globs “*.tar.*” and “*.tgz”
@@ -238,12 +246,12 @@ _ch_image_complete () {
     push )
         if [[ "$prev" == "--image" ]]; then
             compopt -o nospace
-            COMPREPLY=( $(compgen -d -S / -- $cur) )
+            COMPREPLY=( $(compgen -d -S / -- "$cur") )
             return 0
         # The following check seems to fix a bug where the completion function
         # initialzes an empty storage directory.
         elif [[ -n "$(ls "$strg_dir"/img)" ]]; then
-            COMPREPLY=( $(compgen -W "$($ch_bin/ch-image list -s $strg_dir) --image" -- "$cur") )
+            COMPREPLY=( $(compgen -W "$("$ch_bin/ch-image" list -s "$strg_dir") --image" -- "$cur") )
             _ltrim_colon_completions "$cur"
         fi
         ;;
@@ -253,7 +261,7 @@ _ch_image_complete () {
         ;;
     '' )
         # Only autocomplete subcommands if there's no subcommand present.
-        COMPREPLY=( $(compgen -W "$_image_subcommands" -- $cur) )
+        COMPREPLY=( $(compgen -W "$_image_subcommands" -- "$cur") )
         ;;
     esac
 
@@ -261,7 +269,7 @@ _ch_image_complete () {
     # common opts. Note that we do the “-n” check to avoid being overzealous
     # with our suggestions.
     if [[ -n "$cur" ]]; then
-        COMPREPLY+=( $(compgen -W "$_image_common_opts" -- $cur) )
+        COMPREPLY+=( $(compgen -W "$_image_common_opts" -- "$cur") )
         return 0
     fi
 }
@@ -306,7 +314,7 @@ _ch_run_image_finder () {
 
     #echo "len: ${#wrds[@]}"
 
-    while (($ct < ${#wrds[@]})); do
+    while ((ct < ${#wrds[@]})); do
         if [[    (    -f ${wrds[$ct]} \
                    && (    ${wrds[$ct]} == *.sqfs \
                         || ${wrds[$ct]} == *.tar.? \
@@ -335,7 +343,7 @@ _ch_run_image_finder () {
 #   >> _ch_image_subcmd_get "ch-image [...] build [...]"
 #      build
 _ch_image_subcmd_get () {
-    local cmd 
+    local cmd
     local subcmd=
     for word in "$@"
     do
@@ -357,7 +365,7 @@ _ch_image_subcmd_get () {
 # https://devdocs.io/bash/programmable-completion-builtins#index-compgen)
 _compgen_filepaths() {
     local filterpats=("")
-    if [[ "$1" == "-X" && 1 < ${#@} ]]; then
+    if [[ "$1" == "-X" && 1 -lt ${#@} ]]; then
         # Read a string into an array:
         #   https://stackoverflow.com/a/10586169
         # Pitfalls:

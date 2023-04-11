@@ -194,6 +194,37 @@ The main use case for these options is to support package maintainers. If this
 is you and does not meet your needs, please get in touch with us and we will
 help.
 
+Enabling command line completion
+--------------------------------
+
+.. warning::
+
+  Command line completion is currently an experimental feature. Please submit
+  any bug reports to `the Charliecloud github <https://github.com/hpc/charliecloud>`_.
+
+.. note::
+
+  This feature has only been implemented for :code:`ch-image`.
+
+Command line completion allows users to have incomplete command line arguments
+autofilled by pressing [TAB]. This feature is available to users running bash
+version :code:`4.2.0` or later via the :code:`ch-completion.bash` script located
+in the Charliecloud bin. To enable command line completion, simply source this
+file
+
+::
+
+  $ source path/to/charliecloud/bin/ch-completion.bash
+
+Completion can be subsequently disabled with the command
+
+::
+
+  $ ch-completion-disable
+
+To permanently enable command line completion, source the completion script (as shown
+above) in your :code:`.bashrc` rather than the command line.
+
 Install with package manager
 ============================
 
