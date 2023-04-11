@@ -23,8 +23,7 @@ ENTRYPOINT ["/bin/echo","foo"]
 ENV ch_foo=foo-ev ch_bar=bar-ev
 EXPOSE 867 5309/udp
 HEALTHCHECK --interval=60s --timeout=5s CMD ["/bin/true"]
-LABEL ch-foo=foo-label \
-    ch-bar=bar-label
+LABEL ch-foo=foo-label ch-bar=bar-label
 MAINTAINER charlie@example.com
 ONBUILD RUN echo hello
 RUN echo hello
