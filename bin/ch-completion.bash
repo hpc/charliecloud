@@ -65,8 +65,6 @@
 #   $ echo ${foo[@]:1:3}
 #   b c d
 #
-# FIXME: Add syntax glossary
-#
 
 # Possible extensions once this is merged:
 #   * Add completion support for non-bash shells (e.g. zsh and tchs).
@@ -86,6 +84,7 @@ ch_bin="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # Debugging log
 if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
     rm /tmp/ch-completion.log
+    printf "completion log\n\n" >> /tmp/ch-completion.log
 fi
 
 ## ch-image ##
@@ -118,27 +117,24 @@ _ch_image_complete () {
     local sub_cmd
     local strg_dir
     local extras=
-    _get_comp_words_by_ref -n := cur prev words
+    _get_comp_words_by_ref -n : cur prev words
 
-    # If "$cur" is non-empty, we want to ignore it as a potential subcommand
-    # to avoid unwanted behavior. “${words[@]::${#words[@]}-1}” gives you all
-    # but the last element of the array “words” (see syntax glossary above) so 
-    # if "$cur" is non-empty, pass it to _ch_subcommand_get. Otherwise pass all
-    # elements of “words.”
-    if [[ -n "$cur" ]]; then
-        #sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]::${#words[@]}-1}")
-        sub_cmd=$(_ch_subcommand_get "${words[@]::${#words[@]}-1}")
-        strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
-    else
-        #sub_cmd=$(_ch_subcommand_get "$_image_subcommands" "${words[@]}")
-        sub_cmd=$(_ch_subcommand_get "${words[@]}")
-        strg_dir=$(_ch_find_storage "${words[@]}")
-    fi
+    # To find the subcommand and storage directory, we pass the associated
+    # functions the current command line minus the last word (note that
+    # “${words[@]::${#words[@]}-1}” in bash is analagous to “words[:-1]” in
+    # python). We do this because the last word is most likely either an empty
+    # string, or is not yet complete. We don't lose anything by dropping the
+    # empty string, and an incomplete word in the command line can lead to false
+    # positives from these functions and consequently unexpected behavior, so we
+    # don't consider it.
+    sub_cmd=$(_ch_image_subcmd_get "${words[@]::${#words[@]}-1}")
+    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
 
+    # Populate debug log
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         echo "\$ ${words[@]}" >> /tmp/ch-completion.log
-        echo "  cur: $cur" >> /tmp/ch-completion.log
-        echo "  prev: $prev" >> /tmp/ch-completion.log
+        echo "  current: $cur" >> /tmp/ch-completion.log
+        echo "  previous: $prev" >> /tmp/ch-completion.log
         echo "  sub command: $sub_cmd" >> /tmp/ch-completion.log
     fi
 
@@ -198,9 +194,6 @@ _ch_image_complete () {
             # logically follow “--force” with no argument.
             if [[ "$prev" == "--force" ]]; then
                 extras+="$extras fakeroot seccomp"
-            elif [[ "$cur" == "--force="* ]]; then
-                COMPREPLY=( $(compgen -W "--force=fakeroot --force=seccomp" -- $cur) )
-                return 0;
             fi
             COMPREPLY=( $(compgen -W "$_image_build_opts $extras"  -- $cur) )
             # By default, “complete” adds a space after each completed word.
@@ -289,13 +282,11 @@ ch-completion-disable () {
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
-# FIXME: Can probably cook up a sed pattern that'll remove the need for the “if”
-# statement.
 _ch_find_storage () {
     if echo "$@" | grep -Eq -- '\s(--storage|-\w*s)'; then
         # This sed only works as desired if “--storage” or “-s” are present in
         # the command line...
-        sed -E 's/(.*)(--storage|[^-]-s)\ *([^ ]*)(.*$)/\3/g' <<< "$@"
+        sed -E 's/(.*)(--storage=*|[^-]-s=*)\ *([^ ]*)(.*$)/\3/g' <<< "$@"
     elif [[ -n "$CH_IMAGE_STORAGE" ]]; then
         echo "$CH_IMAGE_STORAGE"
     else
@@ -338,13 +329,12 @@ _ch_run_image_finder () {
 # It's worth noting that the double for loop doesn't take that much time, since
 # the Charliecloud command line, even in the wost case, is relatively short.
 #
-# Usage: _ch_subcommand_get [words]
+# Usage: _ch_image_subcmd_get [words]
 #
 # Example:
-#   >> _ch_subcommand_get "build build-cache ... undelete" \
-#                         "ch-image --foo build ..."
+#   >> _ch_image_subcmd_get "ch-image [...] build [...]"
 #      build
-_ch_subcommand_get () {
+_ch_image_subcmd_get () {
     local cmd 
     local subcmd=
     for word in "$@"
