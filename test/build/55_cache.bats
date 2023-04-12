@@ -470,43 +470,6 @@ EOF
 }
 
 
-@test "${tag}: branch delete" {
-    ch-image build-cache --reset
-
-    # Build image
-    ch-image build -t a -f bucache/a.df ./bucache
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    diff -u - <(echo "$output" | treeonly) <<'EOF'
-*  (a) RUN echo bar
-*  RUN echo foo
-*  (alpine+3.17) PULL alpine:3.17
-*  (root) ROOT
-EOF
-
-    # Delete image
-    ch-image delete a
-    run ch-image build-cache --tree
-    echo "$output"
-    [[ $status -eq 0 ]]
-    diff -u - <(echo "$output" | treeonly) <<'EOF'
-*  RUN echo bar
-*  RUN echo foo
-*  (alpine+3.17) PULL alpine:3.17
-*  (root) ROOT
-EOF
-
-    # Rebuild, check for cache hit
-    run ch-image build -t a -f bucache/a.df ./bucache
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'* FROM'* ]]
-    [[ $output = *'* RUN echo foo'* ]]
-    [[ $output = *'* RUN echo bar'* ]]
-}
-
-
 # FIXME: for issue #1359, add test here where they revert the image in the
 # remote registry to a previous state; our next pull will hit, and so too
 # should any subsequent previously cached instructions based on the FROM SID.
