@@ -982,11 +982,8 @@ class Enabled_Cache:
       if (dl_git_hash is not None):
          # Downloaded image is in cache, check it out.
          ch.INFO("pulled image: found in build cache")
-         if (self.git(["tag", "-l",
-                       "&%s" % img.ref.for_path]).stdout != ''):
-            # Branch was previously deleted. Remove tag to avoid
-            # problems.
-            self.git(["tag", "-d", "&%s" % img.ref.for_path])
+         # Remove tag for previously deleted branch, if it exists.
+         self.git(["tag", "-d", "&%s" % img.ref.for_path], fail_ok=True)
          self.checkout_ready(img, dl_git_hash)
       else:
          # Unpack and commit downloaded image. This also creates the worktree.

@@ -67,7 +67,6 @@ def delete(cli):
       ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
    bu.cache.worktrees_fix()
    to_delete = im.Reference.ref_to_pathstr(cli.image_ref)
-   #cli.image_ref.replace("/", "%").replace(":", "+") + "#"
    bu.cache.branch_delete(to_delete)
    bu.cache.branch_delete(to_delete + "#")
 
@@ -88,10 +87,9 @@ def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can’t copy: not found: %s" % cli.path)
    pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
-   if ((str(bu.cache).startswith("enabled")) and
-       (bu.cache.git(["tag", "--list", "&%s" % pathstr]).stdout != "")):
+   if (str(bu.cache).startswith("enabled")):
       # Un-tag previously deleted branch, if it exists.
-      bu.cache.git(["tag", "-d", "&%s" % pathstr])
+      bu.cache.git(["tag", "-d", "&%s" % pathstr], fail_ok=True)
    dst = im.Image(im.Reference(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
@@ -196,8 +194,5 @@ def undelete(cli):
       ch.FATAL("image exists; will not overwrite")
    (_, git_hash) = bu.cache.find_image(img)
    if (git_hash is None):
-      img_pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
-      git_hash = bu.cache.git(["log", "--format=%h%n%B", "-n", "1",
-                               "&%s" % img_pathstr])
-      bu.cache.git(["tag", "-d", "&%s" % img_pathstr])
+      ch.FATAL("image not in cache")
    bu.cache.checkout_ready(img, git_hash)
