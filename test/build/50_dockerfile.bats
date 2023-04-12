@@ -564,7 +564,7 @@ EOF
 
    # test that it works with python3
    run build_ -t tmpimg -f - . <<'EOF'
-FROM centos_7ch
+FROM almalinux_8ch
 SHELL ["/usr/bin/python3", "-c"]
 RUN print ("hello")
 EOF

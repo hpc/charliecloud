@@ -1,4 +1,4 @@
-# ch-test-scope: standard
+# ch-test-scope: full
 FROM centos:7
 
 # This image has two purposes: (1) demonstrate we can build a CentOS 7 image

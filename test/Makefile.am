@@ -4,6 +4,7 @@ testdir = $(pkglibexecdir)/test
 testfiles = \
 .dockerignore \
 Dockerfile.argenv \
+Dockerfile.quick \
 approved-trailing-whitespace \
 bucache/a.df \
 bucache/a-fail.df \
