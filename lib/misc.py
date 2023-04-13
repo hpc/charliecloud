@@ -67,7 +67,7 @@ def delete(cli):
          delete_ct += 1
       if (delete_ct == 0):
          fail = True
-         ch.ERROR("no matching image, can't delete: %s" % ref)
+         ch.ERROR("no matching image, can’t delete: %s" % ref)
    bu.cache.worktrees_fix()
    if (fail):
       ch.FATAL("one or more invalid images")
