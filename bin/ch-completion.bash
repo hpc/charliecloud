@@ -226,10 +226,11 @@ _ch_image_complete () {
         if [[ "$sub_cmd" == "list" ]]; then
             extras+="$extras -l --long"
         fi
-        # The following check seems to fix a bug where the completion function
+        # The following check seems to protects against trying to ls a
+        # non-existent directory, and fixes a bug where the completion function
         # initialzes an empty storage directory.
-        if [[ -n "$(ls "$strg_dir/img")" ]]; then
-            COMPREPLY=( $(compgen -W "$("$ch_bin/ch-image" list -s "$strg_dir") $extras" -- "$cur") )
+        if [[ -f "$strg_dir" && -n "$(ls "$strg_dir/img")" ]]; then
+            COMPREPLY=( $(compgen -W "$(ls "$strg_dir/img" | sed 's/+/:/g' | sed 's/%/\//g') $extras" -- "$cur") )
             __ltrim_colon_completions "$cur"
         fi
         ;;
@@ -253,7 +254,7 @@ _ch_image_complete () {
         # The following check seems to fix a bug where the completion function
         # initialzes an empty storage directory.
         elif [[ -n "$(ls "$strg_dir"/img)" ]]; then
-            COMPREPLY=( $(compgen -W "$("$ch_bin/ch-image" list -s "$strg_dir") --image" -- "$cur") )
+            COMPREPLY=( $(compgen -W "$(ls "$strg_dir/img" | sed 's/+/:/g' | sed 's/%/\//g') --image" -- "$cur") )
             _ltrim_colon_completions "$cur"
         fi
         ;;
