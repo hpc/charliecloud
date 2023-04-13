@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# shellcheck disable=SC2207
+
 # Completion script for Charliecloud
 #
 #
