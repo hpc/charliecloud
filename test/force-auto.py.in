@@ -130,6 +130,12 @@ class Test(abc.ABC):
       # architecture excludes
       arch_excludes = "\n".join("arch_exclude %s" % i
                                 for i in self.arch_excludes)
+      if (str(self) == "alpine:latest, needed, fakeroot, no preprep"):
+         bucache_reset = f"""\
+# Test assumes alpine:latest is absent from bucache. Make it so.
+ch-image build-cace --reset\n"""
+      else:
+         bucache_reset = ""
       # build 1 to make prep-prepped image (e.g. install EPEL) if needed
       if (not self.preprep):
          build1 = "# skipped: no separate prep"
@@ -170,7 +176,7 @@ echo "$output"
 @test "ch-image --force: {self}" {{
 scope {scope}
 {arch_excludes}
-
+{bucache_reset}
 # build 1: intermediate image for preparatory commands
 {build1}
 
@@ -326,8 +332,6 @@ load ../common
 
 setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    # FIXME: Would be good to test with build cache enabled, but there are
-    # lots of assumptions about output that are not valid in that case.
     [[ $CH_IMAGE_CACHE = enabled ]] || skip 'bucache enabled only'
 }
 """)
