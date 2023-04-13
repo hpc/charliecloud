@@ -1,5 +1,6 @@
 #!/bin/bash
 
+# shellcheck disable=SC2012
 # shellcheck disable=SC2207
 
 # Completion script for Charliecloud
@@ -87,8 +88,6 @@ if [[ $(printf "%s\n%s\n" "$bash_vmin" "$bash_v" | sort -V) < "$bash_vmin" ]]; t
     echo "ch-completion.bash: unsupported bash version ($bash_v < $bash_vmin)"
     return
 fi
-
-ch_bin="$(cd "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 
 # Debugging log
 if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
