@@ -999,15 +999,15 @@ this order.
 
 ::
 
-   $ ch-image [...] delete IMAGE_GLOBS
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ... ]
 
-Delete the image(s) described by :code:`IMAGE_GLOBS` from the storage directory
-(including all build stages).
+Delete the image(s) described by each :code:`IMAGE_GLOB` from the storage
+directory (including all build stages).
 
-:code:`IMAGE_GLOBS` can be either a plain image reference, an image reference
-with glob characters to match multiple images, or a list of image globs and
-plain image references. For example, :code:`ch-image delete 'foo*'` will delete
-all images whose names start with :code:`foo`, while :code:`ch-image delete foo 'bar*'`
+:code:`IMAGE_GLOB` can be either a plain image reference or an image reference
+with glob characters to match multiple images. For example, :code:`ch-image delete 'foo*'`
+will delete all images whose names start with :code:`foo`. Multiple images and/or
+globs can also be given in a single command line, E.G. :code:`ch-image delete foo 'bar*'`
 will delete the image named :code:`foo` and all images whose names start with :code:`bar`.
 
 Importantly, this sub-command *does not* also remove the image from the build
