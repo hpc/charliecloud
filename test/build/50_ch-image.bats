@@ -65,6 +65,20 @@ EOF
     [[ $output != *"delete/test_stage0"* ]]
     [[ $output != *"delete/test_stage1"* ]]
     [[ $output != *"delete/test_stage2"* ]]
+
+    # Delete list of images
+    ch-image build -t delete/test -f - . << 'EOF'
+FROM alpine:3.17
+EOF
+    ch-image build -t delete/test2 -f - . << 'EOF'
+FROM alpine:3.17
+EOF
+    ch-image delete delete/test delete/test2
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"delete/test"* ]]
+    [[ $output != *"delete/test1"* ]]
 }
 
 
