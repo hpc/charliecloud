@@ -426,7 +426,8 @@ def FATAL(msg, hint=None, **kwargs):
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(msg, hint, None, "33m", "", **kwargs)  # yellow
+   if (not log_quiet):
+      log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
    if (verbose >= 3):
@@ -598,7 +599,8 @@ def exit(code):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, trace_fatal, verbose
+   global log_festoon, log_fp, log_quiet, trace_fatal, verbose
+   log_quiet = cli.quiet
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
