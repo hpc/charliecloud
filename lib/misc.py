@@ -102,7 +102,7 @@ def import_(cli):
    ch.done_notify()
 
 def list_(cli):
-   if (cli.undeleteable | cli.undeletable):
+   if (cli.undeleteable):
       # list undeleteable images
       imgdir = ch.storage.build_cache // "refs/tags"
    else:
