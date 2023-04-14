@@ -41,6 +41,9 @@ char *host_tmp = NULL;
 /* Username of invoking users. Set during command line processing. */
 char *username = NULL;
 
+/* Change log level from INFO to WARNING */
+bool log_quiet;
+
 
 /** Function prototypes (private) **/
 
@@ -442,6 +445,9 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
    if (level > verbose)
+      return;
+
+   if (log_quiet && level != LL_FATAL && level != LL_WARNING)
       return;
 
    fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
