@@ -131,11 +131,9 @@ class Test(abc.ABC):
       arch_excludes = "\n".join("arch_exclude %s" % i
                                 for i in self.arch_excludes)
       if (str(self) == "alpine:latest, needed, fakeroot, no preprep"):
-         bucache_reset = f"""\
-# Test assumes alpine:latest is absent from bucache. Make it so.
-ch-image build-cace --reset\n"""
+         rebuild = "--rebuild"
       else:
-         bucache_reset = ""
+         rebuild = ""
       # build 1 to make prep-prepped image (e.g. install EPEL) if needed
       if (not self.preprep):
          build1 = "# skipped: no separate prep"
@@ -176,12 +174,12 @@ echo "$output"
 @test "ch-image --force: {self}" {{
 scope {scope}
 {arch_excludes}
-{bucache_reset}
+s
 # build 1: intermediate image for preparatory commands
 {build1}
 
 # build 2: image we're testing
-run ch-image -v build {force} -t tmpimg2 -f - . << 'EOF'
+run ch-image -v build {rebuild} {force} -t tmpimg2 -f - . << 'EOF'
 FROM {build2_base}
 RUN {run}
 EOF
