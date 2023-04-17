@@ -130,7 +130,7 @@ class Test(abc.ABC):
       # architecture excludes
       arch_excludes = "\n".join("arch_exclude %s" % i
                                 for i in self.arch_excludes)
-      if (str(self) == "alpine:latest, needed, fakeroot, no preprep"):
+      if ((str(self.base) == "alpine:latest") and (str(self.run.value) == "needed") and (str(self.force) == "fakeroot") and (not preprep)):
          rebuild = "--rebuild"
       else:
          rebuild = ""
@@ -174,7 +174,7 @@ echo "$output"
 @test "ch-image --force: {self}" {{
 scope {scope}
 {arch_excludes}
-s
+
 # build 1: intermediate image for preparatory commands
 {build1}
 
