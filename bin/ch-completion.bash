@@ -5,7 +5,6 @@
 
 # Completion script for Charliecloud
 #
-#
 # Resources for understanding this script:
 #
 #   * Everything bash:
@@ -22,8 +21,8 @@
 #
 #   * Call-by-reference for bash function args:
 #     https://unix.stackexchange.com/a/224564
-#
-#
+
+
 ## SYNTAX GLOSSARY ##
 #
 # This script uses syntax that may be confusing for bash newbies and those who
@@ -33,41 +32,42 @@
 # https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
 #
 # ${array[i]}
-#   Gives the ith element of “array”. Note that bash arrays are indexed
-#   at zero, as all things should be.
+#   Gives the ith element of “array”. Note that bash arrays are indexed at
+#   zero, as all things should be.
 #
 # ${array[@]}
-#   Expands “array” to its member elements as a sequence of words, one word per
-#   element.
+#   Expands “array” to its member elements as a sequence of words, one word
+#   per element.
 #
 # ${#parameter}
-#   Gives the length of “parameter.” If “parameter” is a string, this expansion
-#   gives you the character length of the string. If “paramter” is an array
-#   subscripted by “@” or “*” (e.g. “foo[@]”), then the expansion gives you the
-#   number of elements in the array.
+#   Gives the length of “parameter”. If “parameter” is a string, this
+#   expansion gives you the character length of the string. If “parameter” is
+#   an array subscripted by “@” or “*” (e.g. “foo[@]”), then the expansion
+#   gives you the number of elements in the array.
 #
 # ${parameter:offset:length}
 #   A.k.a. substring expansion. If “parameter” is a string, expand up to
 #   “length” characters, starting with the character at position “offset.” If
-#   “offset” is unspecified, start at the first character. If “parameter” is an
-#   array subscripted by “@” or “*,” (e.g. “foo[@]”) expand up to “length”
+#   “offset” is unspecified, start at the first character. If “parameter” is
+#   an array subscripted by “@” or “*,” (e.g. “foo[@]”) expand up to “length”
 #   elements, starting at the element at position “offset” (e.g.
 #   “${foo[offset]}”).
 #
 #   Example 1 (string):
-#   $ foo="abcdef"
-#   $ echo ${foo::3}
-#   abc
-#   $ echo ${foo:1:3}
-#   bcd
+#
+#     $ foo="abcdef"
+#     $ echo ${foo::3}
+#     abc
+#     $ echo ${foo:1:3}
+#     bcd
 #
 #   Example 2 (array):
-#   $ foo=("a" "b" "c" "d" "e" "f")
-#   $ echo ${foo[@]::3}
-#   a b c
-#   $ echo ${foo[@]:1:3}
-#   b c d
 #
+#     $ foo=("a" "b" "c" "d" "e" "f")
+#     $ echo ${foo[@]::3}
+#     a b c
+#     $ echo ${foo[@]:1:3}
+#     b c d
 
 # Possible extensions once this is merged:
 #   * Add completion support for non-bash shells (e.g. zsh and tchs).
@@ -76,13 +76,12 @@
 #     see https://devmanual.gentoo.org/tasks-reference/completion/index.html).
 #
 
-# Minimum supported bash version. According to
-# http://mywiki.wooledge.org/BashFAQ/061 and my own testing, negative array
-# indexing was introduced in this version. To simplify confusing syntax, we this
-# script is unsupported for bash < 4.2.0.
-bash_vmin="4.2.0"
+# Minimum supported Bash version. Per http://mywiki.wooledge.org/BashFAQ/061
+# and my own testing, negative array indexing was introduced in this version;
+# we require it to simplify confusing syntax.
+bash_vmin=4.2.0
 
-# Check bash version
+# Check Bash version
 bash_v=$(bash --version | head -1 | grep -Eo "[0-9\.]{2,}[0-9]")
 if [[ $(printf "%s\n%s\n" "$bash_vmin" "$bash_v" | sort -V) < "$bash_vmin" ]]; then
     echo "ch-completion.bash: unsupported bash version ($bash_v < $bash_vmin)"
@@ -128,13 +127,13 @@ _ch_image_complete () {
     _get_comp_words_by_ref -n : cur prev words
 
     # To find the subcommand and storage directory, we pass the associated
-    # functions the current command line minus the last word (note that
+    # functions the current command line without the last word (note that
     # “${words[@]::${#words[@]}-1}” in bash is analagous to “words[:-1]” in
     # python). We do this because the last word is most likely either an empty
-    # string, or is not yet complete. We don't lose anything by dropping the
-    # empty string, and an incomplete word in the command line can lead to false
-    # positives from these functions and consequently unexpected behavior, so we
-    # don't consider it.
+    # string, or is not yet complete. We don’t lose anything by dropping the
+    # empty string, and an incomplete word in the command line can lead to
+    # false positives from these functions and consequently unexpected
+    # behavior, so we don’t consider it.
     sub_cmd=$(_ch_image_subcmd_get "${words[@]::${#words[@]}-1}")
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
 
@@ -155,15 +154,15 @@ _ch_image_complete () {
         return 0
         ;;
     --cache-large )
-        # This is just a user-specified number. Can't autocomplete
+        # This is just a user-specified number. Can’t autocomplete
         COMPREPLY=()
         return 0
         ;;
     -s | --storage )
-        # This “if” helps avoid overzealous completion. E.g. if there's only one
-        # subdir of the current dir, this command completes to that dir even if
-        # "$cur" is empty (i.e. the user hasn't yet typed anything that could
-        # generate a completion). I didn't like that, hence the “if”.
+        # Avoid overzealous completion. E.g. if there’s only one subdir of the
+        # current dir, this command completes to that dir even if $cur is
+        # empty (i.e. the user hasn’t yet typed anything), which seems
+        # confusing for the user.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -181,7 +180,7 @@ _ch_image_complete () {
         #
         case "$prev" in
         # Go through a list of potential subcommand-specific opts to see if
-        # “$cur” should be an argument. Otherwise, default to CONTEXT or any
+        # $cur should be an argument. Otherwise, default to CONTEXT or any
         # valid option (common or subcommand-specific).
         -f|--file )
             compopt -o nospace
@@ -195,22 +194,19 @@ _ch_image_complete () {
             return 0
             ;;
         *)
-            # Autocomplete to context directory, common opt, or build-specific opt
-            # --force can take “fakeroot” or “seccomp” as an argument, or no
-            # argument at all. To account for this, we add those two arguments
-            # to the list of compgen suggestions, which allows compgen to
-            # autocomplete to “fakeroot,” “seccomp,” or anything that could
-            # logically follow “--force” with no argument.
+            # Autocomplete to context directory, common opt, or build-specific
+            # opt --force can take “fakeroot” or “seccomp” as an argument, or
+            # no argument at all.
             if [[ "$prev" == "--force" ]]; then
                 extras+="$extras fakeroot seccomp"
             fi
             COMPREPLY=( $(compgen -W "$_image_build_opts $extras"  -- "$cur") )
             # By default, “complete” adds a space after each completed word.
             # This is incredibly inconvenient when completing directories and
-            # filepaths, so we enable the “nospace” option. We want to make sure
-            # that this option is only enabled if there are valid path
-            # completions for “cur,” otherwise spaces would never be added after
-            # a completed word, which is also inconveninet.
+            # filepaths, so we enable the “nospace” option. We want to make
+            # sure that this option is only enabled if there are valid path
+            # completions for $cur, otherwise spaces would never be added
+            # after a completed word, which is also inconveninet.
             if [[ -n "$(compgen -d -S / -- "$cur")" ]]; then
                 compopt -o nospace
                 COMPREPLY+=( $(compgen -d -S / -- "$cur") )
@@ -226,8 +222,8 @@ _ch_image_complete () {
             extras+="$extras -l --long"
         fi
         # The following check seems to protects against trying to ls a
-        # non-existent directory, and fixes a bug where the completion function
-        # initialzes an empty storage directory.
+        # non-existent directory, and fixes a bug where the completion
+        # function initialzes an empty storage directory.
         if [[ -f "$strg_dir" && -n "$(ls "$strg_dir/img")" ]]; then
             COMPREPLY=( $(compgen -W "$(ls "$strg_dir/img" | sed 's/+/:/g' | sed 's/%/\//g') $extras" -- "$cur") )
             __ltrim_colon_completions "$cur"
@@ -238,8 +234,7 @@ _ch_image_complete () {
                                   storage-path" -- "$cur") )
         ;;
     import )
-        # Complete dirs and files matching the globs “*.tar.*” and “*.tgz”
-        # (a.k.a. tarballs).
+        # Complete (1) directories and (2) files named like targalls.
         COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
         if [[ ${#COMPREPLY} -gt 0 ]]; then
             compopt -o nospace
@@ -294,8 +289,7 @@ ch-completion-disable () {
 # Figure out which storage directory to use (including cli-specified storage).
 _ch_find_storage () {
     if echo "$@" | grep -Eq -- '\s(--storage|-\w*s)'; then
-        # This sed only works as desired if “--storage” or “-s” are present in
-        # the command line...
+        # This if “--storage” or “-s” are in the command line.
         sed -E 's/(.*)(--storage=*|[^-]-s=*)\ *([^ ]*)(.*$)/\3/g' <<< "$@"
     elif [[ -n "$CH_IMAGE_STORAGE" ]]; then
         echo "$CH_IMAGE_STORAGE"
@@ -343,7 +337,7 @@ _ch_run_image_finder () {
 #
 # Example:
 #   >> _ch_image_subcmd_get "ch-image [...] build [...]"
-#      build
+#   build
 _ch_image_subcmd_get () {
     local cmd
     local subcmd=
@@ -360,10 +354,10 @@ _ch_image_subcmd_get () {
     echo "$subcmd"
 }
 
-# Returns filenames and directories, appending a slash to directory names. This
-# function takes option “-X,” a string of space-separated glob patterns to be
-# excluded from file completion using the compgen option of the same name
-# (source: https://stackoverflow.com/a/40227233 see also:
+# Returns filenames and directories, appending a slash to directory names.
+# This function takes option “-X”, a string of space-separated glob patterns
+# to be excluded from file completion using the compgen option of the same
+# name (source: https://stackoverflow.com/a/40227233, see also:
 # https://devdocs.io/bash/programmable-completion-builtins#index-compgen)
 _compgen_filepaths() {
     local filterpats=("")
@@ -379,16 +373,16 @@ _compgen_filepaths() {
 
     local cur="$1"
 
-    # Files, excluding directories, with no trailing slashes. The grep performs
-    # an inverted substring match on the list of directories and the list of
-    # files respectively produced by compgen. The compgen statements also
-    # prepend (-P) a “^” and append (-S) a “$” to the file/dir names to avoid
-    # the case where a substring matching a dirname is erroniously removed from
-    # a filename by the inverted match. These delimiters are then removed by the
-    # “sed”. (See the StackOverflow post cited above for OP’s explanation of
-    # this code). The for loop iterates through exclusion patterns specified by
-    # the “-X” option. If “-X” isn't specified, the code in the loop executes
-    # once, with no patterns excluded (“-X ""”).
+    # Files, excluding directories, with no trailing slashes. The grep
+    # performs an inverted substring match on the list of directories and the
+    # list of files respectively produced by compgen. The compgen statements
+    # also prepend (-P) a “^” and append (-S) a “$” to the file/dir names to
+    # avoid the case where a substring matching a dirname is erroniously
+    # removed from a filename by the inverted match. These delimiters are then
+    # removed by the “sed”. (See the StackOverflow post cited above for OP’s
+    # explanation of this code). The for loop iterates through exclusion
+    # patterns specified by the “-X” option. If “-X” isn't specified, the code
+    # in the loop executes once, with no patterns excluded (“-X ""”).
     for pat in "${filterpats[@]}"
     do
         grep -v -F -f <(compgen -d -P ^ -S '$' -X "$pat" -- "$cur") \
