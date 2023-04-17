@@ -411,7 +411,8 @@ def DEBUG(msg, hint=None, **kwargs):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
-   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
+   if (log_quiet < 2):
+      log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
 
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
@@ -426,7 +427,7 @@ def FATAL(msg, hint=None, **kwargs):
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   if (not log_quiet):
+   if (log_quiet == 0):
       log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
@@ -434,11 +435,12 @@ def TRACE(msg, hint=None, **kwargs):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def VERBOSE(msg, hint=None, **kwargs):
-   if (verbose >= 1):
+   if ((verbose >= 1) and (log_quiet == 0)):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
 def WARNING(msg, hint=None, **kwargs):
-   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
+   if (log_quiet < 2):
+      log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -604,6 +606,10 @@ def init(cli):
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
+   if ((trace_fatal) and (log_quiet > 0)):
+      log_quiet = 0
+      trace_fatal = False
+      FATAL("“debug” and “quiet” incompatible.")
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
