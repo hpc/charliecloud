@@ -1007,9 +1007,7 @@ directory (including all build stages).
 :code:`IMAGE_GLOB` can be either a plain image reference or an image reference
 with glob characters to match multiple images. For example, :code:`ch-image
 delete 'foo*'` will delete all images whose names start with :code:`foo`.
-Multiple images and/or globs can also be given in a single command line, E.G.
-:code:`ch-image delete foo 'bar*'` will delete the image named :code:`foo` and
-all images whose names start with :code:`bar`.
+Multiple images and/or globs can also be given in a single command line.
 
 Importantly, this sub-command *does not* also remove the image from the build
 cache. Therefore, it can be used to reduce the size of the storage directory,
