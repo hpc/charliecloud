@@ -56,7 +56,7 @@ def build_cache(cli):
    bu.cache.summary_print()
 
 def delete(cli):
-   fail = False
+   fail_ct = 0
    for ref in cli.image_ref:
       delete_ct = 0
       for img in im.Image.glob(ref):
@@ -66,11 +66,11 @@ def delete(cli):
          img.unpack_delete()
          delete_ct += 1
       if (delete_ct == 0):
-         fail = True
+         fail_ct += 1
          ch.ERROR("no matching image, can’t delete: %s" % ref)
    bu.cache.worktrees_fix()
-   if (fail):
-      ch.FATAL("one or more invalid images")
+   if (fail_ct > 0):
+      ch.FATAL("unable to delete %d invalid image(s)" % fail_ct)
 
 def gestalt_bucache(cli):
    bu.have_deps()

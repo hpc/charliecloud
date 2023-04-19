@@ -5,6 +5,14 @@ setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
+tmpimg_build () {
+  for img in "$@"; do
+    ch-image build -t "$img" -f - . << 'EOF'
+FROM alpine:3.17
+EOF
+  done
+}
+
 
 @test 'ch-image common options' {
     # no common options
