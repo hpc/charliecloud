@@ -1,5 +1,3 @@
-# shellcheck disable=SC2207
-
 # Completion script for Charliecloud
 #
 # Resources for understanding this script:
@@ -65,6 +63,11 @@
 #     a b c
 #     $ echo ${foo[@]:1:3}
 #     b c d
+
+# This ShellCheck error pops up whenever we do “COMPREPLY=( $(compgen [...]) )”.
+# This seems to be standard for implementations of bash completion, and we didn't
+# like the suggested alternatives, so we disable it here.
+# shellcheck disable=SC2207
 
 # Minimum supported Bash version. Per http://mywiki.wooledge.org/BashFAQ/061
 # and my own testing, negative array indexing was introduced in this version;
