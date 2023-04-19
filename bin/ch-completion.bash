@@ -1,6 +1,3 @@
-#!/bin/bash
-
-# shellcheck disable=SC2012
 # shellcheck disable=SC2207
 
 # Completion script for Charliecloud
@@ -85,7 +82,19 @@ bash_vmin=4.2.0
 bash_v=$(bash --version | head -1 | grep -Eo "[0-9\.]{2,}[0-9]")
 if [[ $(printf "%s\n%s\n" "$bash_vmin" "$bash_v" | sort -V) < "$bash_vmin" ]]; then
     echo "ch-completion.bash: unsupported bash version ($bash_v < $bash_vmin)"
-    return
+    return 1
+fi
+
+# Check for bash completion, exit if not found. FIXME: #1640.
+if [[ -z "$(declare -f -F _get_comp_words_by_ref)" ]]; then
+    if [[ -f /usr/share/bash-completion/bash_completion ]]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [[ -f /etc/bash_completion ]]; then
+        . /etc/bash_completion
+    else
+        echo "ch-completion.bash: dependency \"bash_completion\" not found, exiting"
+        return 1
+    fi
 fi
 
 # Debugging log
@@ -141,6 +150,7 @@ _ch_image_complete () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         # shellcheck disable=SC2129
         echo "\$ ${words[*]}" >> /tmp/ch-completion.log
+        echo "  storage dir: $strg_dir" >> /tmp/ch-completion.log
         echo "  current: $cur" >> /tmp/ch-completion.log
         echo "  previous: $prev" >> /tmp/ch-completion.log
         echo "  sub command: $sub_cmd" >> /tmp/ch-completion.log
@@ -224,8 +234,8 @@ _ch_image_complete () {
         # The following check seems to protects against trying to ls a
         # non-existent directory, and fixes a bug where the completion
         # function initialzes an empty storage directory.
-        if [[ -f "$strg_dir" && -n "$(ls "$strg_dir/img")" ]]; then
-            COMPREPLY=( $(compgen -W "$(ls "$strg_dir/img" | sed 's/+/:/g' | sed 's/%/\//g') $extras" -- "$cur") )
+        if [[ -d "$strg_dir" && -n "$(ls -A "$strg_dir/img")" ]]; then
+            COMPREPLY=( $(compgen -W "$(_ch_list_images "$strg_dir") $extras" -- "$cur") )
             __ltrim_colon_completions "$cur"
         fi
         ;;
@@ -234,7 +244,7 @@ _ch_image_complete () {
                                   storage-path" -- "$cur") )
         ;;
     import )
-        # Complete (1) directories and (2) files named like targalls.
+        # Complete (1) directories and (2) files named like tarballs.
         COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
         if [[ ${#COMPREPLY} -gt 0 ]]; then
             compopt -o nospace
@@ -247,9 +257,9 @@ _ch_image_complete () {
             return 0
         # The following check seems to fix a bug where the completion function
         # initialzes an empty storage directory.
-        elif [[ -n "$(ls "$strg_dir"/img)" ]]; then
-            COMPREPLY=( $(compgen -W "$(ls "$strg_dir/img" | sed 's/+/:/g' | sed 's/%/\//g') --image" -- "$cur") )
-            _ltrim_colon_completions "$cur"
+        elif [[ -n "$(ls -A "$strg_dir"/img)" ]]; then
+            COMPREPLY=( $(compgen -W "$(_ch_list_images "$strg_dir") --image" -- "$cur") )
+            __ltrim_colon_completions "$cur"
         fi
         ;;
     undelete )
@@ -263,12 +273,9 @@ _ch_image_complete () {
     esac
 
     # If we've made it this far, the last remaining option for completion is
-    # common opts. Note that we do the “-n” check to avoid being overzealous
-    # with our suggestions.
-    if [[ -n "$cur" ]]; then
-        COMPREPLY+=( $(compgen -W "$_image_common_opts" -- "$cur") )
-        return 0
-    fi
+    # common opts.
+    COMPREPLY+=( $(compgen -W "$_image_common_opts" -- "$cur") )
+    return 0
 }
 
 ## ch-run ##
@@ -287,15 +294,21 @@ ch-completion-disable () {
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
+# Remove trailing slash.
 _ch_find_storage () {
     if echo "$@" | grep -Eq -- '\s(--storage|-\w*s)'; then
         # This if “--storage” or “-s” are in the command line.
-        sed -E 's/(.*)(--storage=*|[^-]-s=*)\ *([^ ]*)(.*$)/\3/g' <<< "$@"
+        sed -Ee 's/(.*)(--storage=*|[^-]-s=*)\ *([^ ]*)(.*$)/\3/g' -Ee 's|/$||g' <<< "$@"
     elif [[ -n "$CH_IMAGE_STORAGE" ]]; then
-        echo "$CH_IMAGE_STORAGE"
+        echo "$CH_IMAGE_STORAGE" | sed -Ee 's|/$||g'
     else
-        echo "/var/tmp/$USER.ch/"
+        echo "/var/tmp/$USER.ch"
     fi
+}
+
+# List images in storage directory.
+_ch_list_images () {
+    find "$1/img/"* -maxdepth 0 -printf "%f\n" | sed -e 's/+/:/g' -e 's/%/\//g'
 }
 
 # Horrible, disgusting function to find an image or image ref in the ch-run
