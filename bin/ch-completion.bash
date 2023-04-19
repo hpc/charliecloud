@@ -66,13 +66,6 @@
 #     $ echo ${foo[@]:1:3}
 #     b c d
 
-# Possible extensions once this is merged:
-#   * Add completion support for non-bash shells (e.g. zsh and tchs).
-#     see https://github.com/git/git/tree/master/contrib/completion
-#   * Add support for mid-line completion (possibly using COMP_POINT,
-#     see https://devmanual.gentoo.org/tasks-reference/completion/index.html).
-#
-
 # Minimum supported Bash version. Per http://mywiki.wooledge.org/BashFAQ/061
 # and my own testing, negative array indexing was introduced in this version;
 # we require it to simplify confusing syntax.
@@ -80,7 +73,7 @@ bash_vmin=4.2.0
 
 # Check Bash version
 bash_v=$(bash --version | head -1 | grep -Eo "[0-9\.]{2,}[0-9]")
-if [[ $(printf "%s\n%s\n" "$bash_vmin" "$bash_v" | sort -V) < "$bash_vmin" ]]; then
+if [[ $(printf "%s\n%s\n" "$bash_vmin" "$bash_v" | sort -V | head -1) != "$bash_vmin" ]]; then
     echo "ch-completion.bash: unsupported bash version ($bash_v < $bash_vmin)"
     return 1
 fi
@@ -99,7 +92,6 @@ fi
 
 # Debugging log
 if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
-    rm /tmp/ch-completion.log
     printf "completion log\n\n" >> /tmp/ch-completion.log
 fi
 
@@ -147,28 +139,33 @@ _ch_image_complete () {
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
 
     # Populate debug log
-    if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
-        # shellcheck disable=SC2129
-        echo "\$ ${words[*]}" >> /tmp/ch-completion.log
-        echo "  storage dir: $strg_dir" >> /tmp/ch-completion.log
-        echo "  current: $cur" >> /tmp/ch-completion.log
-        echo "  previous: $prev" >> /tmp/ch-completion.log
-        echo "  sub command: $sub_cmd" >> /tmp/ch-completion.log
-    fi
+    #if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
+    #    # shellcheck disable=SC2129
+    #    echo "\$ ${words[*]}" >> /tmp/ch-completion.log
+    #    echo "  storage dir: $strg_dir" >> /tmp/ch-completion.log
+    #    echo "  current: $cur" >> /tmp/ch-completion.log
+    #    echo "  previous: $prev" >> /tmp/ch-completion.log
+    #    echo "  sub command: $sub_cmd" >> /tmp/ch-completion.log
+    #fi
+    DEBUG "\$ ${words[*]}"
+    DEBUG " storage: dir: $strg_dir"
+    DEBUG " current: $cur"
+    DEBUG " previous: $prev"
+    DEBUG " sub command: $sub_cmd"
 
     # Common opts that take args
     #
     case "$prev" in
-    -a | --arch )
+    -a|--arch)
         COMPREPLY=( $(compgen -W "host yolo $_archs" -- "$cur") )
         return 0
         ;;
-    --cache-large )
+    --cache-large)
         # This is just a user-specified number. Can’t autocomplete
         COMPREPLY=()
         return 0
         ;;
-    -s | --storage )
+    -s|--storage)
         # Avoid overzealous completion. E.g. if there’s only one subdir of the
         # current dir, this command completes to that dir even if $cur is
         # empty (i.e. the user hasn’t yet typed anything), which seems
@@ -182,23 +179,18 @@ _ch_image_complete () {
     esac
 
     case "$sub_cmd" in
-    build )
-        # FIXME: opts with args that I need to revisit for this logic
-        #
-        #   * --build-arg KEY[=VALUE]
-        #   * --force-cmd=CMD,ARG1[,ARG2...]
-        #
+    build)
         case "$prev" in
         # Go through a list of potential subcommand-specific opts to see if
         # $cur should be an argument. Otherwise, default to CONTEXT or any
         # valid option (common or subcommand-specific).
-        -f|--file )
+        -f|--file)
             compopt -o nospace
             COMPREPLY=( $(_compgen_filepaths "$cur") )
             return 0
             ;;
-        -t )
-            # We can't autocomplete a tag, so we're not even gonna allow
+        -t)
+            # We can’t autocomplete a tag, so we're not even gonna allow
             # autocomplete after this option.
             COMPREPLY=()
             return 0
@@ -207,7 +199,7 @@ _ch_image_complete () {
             # Autocomplete to context directory, common opt, or build-specific
             # opt --force can take “fakeroot” or “seccomp” as an argument, or
             # no argument at all.
-            if [[ "$prev" == "--force" ]]; then
+            if [[ $prev == --force ]]; then
                 extras+="$extras fakeroot seccomp"
             fi
             COMPREPLY=( $(compgen -W "$_image_build_opts $extras"  -- "$cur") )
@@ -224,55 +216,47 @@ _ch_image_complete () {
             ;;
         esac
         ;;
-    build-cache )
+    build-cache)
         COMPREPLY=( $(compgen -W "--reset --gc --tree --dot" -- "$cur") )
         ;;
-    delete | list )
+    delete|list)
         if [[ "$sub_cmd" == "list" ]]; then
             extras+="$extras -l --long"
         fi
-        # The following check seems to protects against trying to ls a
-        # non-existent directory, and fixes a bug where the completion
-        # function initialzes an empty storage directory.
-        if [[ -d "$strg_dir" && -n "$(ls -A "$strg_dir/img")" ]]; then
-            COMPREPLY=( $(compgen -W "$(_ch_list_images "$strg_dir") $extras" -- "$cur") )
-            __ltrim_colon_completions "$cur"
-        fi
+        COMPREPLY=( $(compgen -W "$(_ch_list_images "$strg_dir") $extras" -- "$cur") )
+        __ltrim_colon_completions "$cur"
         ;;
-    gestalt )
+    gestalt)
         COMPREPLY=( $(compgen -W "bucache bucache-dot python-path
                                   storage-path" -- "$cur") )
         ;;
-    import )
+    import)
         # Complete (1) directories and (2) files named like tarballs.
         COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
         if [[ ${#COMPREPLY} -gt 0 ]]; then
             compopt -o nospace
         fi
         ;;
-    push )
+    push)
         if [[ "$prev" == "--image" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
             return 0
-        # The following check seems to fix a bug where the completion function
-        # initialzes an empty storage directory.
-        elif [[ -n "$(ls -A "$strg_dir"/img)" ]]; then
-            COMPREPLY=( $(compgen -W "$(_ch_list_images "$strg_dir") --image" -- "$cur") )
-            __ltrim_colon_completions "$cur"
         fi
+        COMPREPLY=( $(compgen -W "$(_ch_list_images "$strg_dir") --image" -- "$cur") )
+        __ltrim_colon_completions "$cur"
         ;;
-    undelete )
+    undelete)
         # FIXME: Update with “ch-image undelete --list” once #1551 drops
         COMPREPLY=()
         ;;
-    '' )
+    '')
         # Only autocomplete subcommands if there's no subcommand present.
         COMPREPLY=( $(compgen -W "$_image_subcommands" -- "$cur") )
         ;;
     esac
 
-    # If we've made it this far, the last remaining option for completion is
+    # If we’ve made it this far, the last remaining option for completion is
     # common opts.
     COMPREPLY+=( $(compgen -W "$_image_common_opts" -- "$cur") )
     return 0
@@ -283,10 +267,16 @@ _ch_image_complete () {
 # Completion function for ch-run
 #
 _ch_run_completion () {
-    echo "does nothing"
+    echo "does nothing... yet"
 }
 
 ## Helper functions ##
+
+DEBUG () {
+    if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
+        echo "$@" >> /tmp/ch-completion.log
+    fi
+}
 
 # Disable completion.
 ch-completion-disable () {
@@ -294,7 +284,9 @@ ch-completion-disable () {
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
-# Remove trailing slash.
+# Remove trailing slash. Note that this isn't performed when the script is
+# sourced because the working storage directory can effectively change at any
+# time with “CH_IMAGE_STORAGE” or the “--storage” option.
 _ch_find_storage () {
     if echo "$@" | grep -Eq -- '\s(--storage|-\w*s)'; then
         # This if “--storage” or “-s” are in the command line.
@@ -308,37 +300,11 @@ _ch_find_storage () {
 
 # List images in storage directory.
 _ch_list_images () {
-    find "$1/img/"* -maxdepth 0 -printf "%f\n" | sed -e 's/+/:/g' -e 's/%/\//g'
-}
-
-# Horrible, disgusting function to find an image or image ref in the ch-run
-# command line.
-#
-# NOT FINISHED, DON'T USE!!!
-_ch_run_image_finder () {
-    # Takes array of words. Tries to find an image in there.
-    #local -n words=$1
-    local wrds=("$@")
-    local ct=1
-
-    #echo "len: ${#wrds[@]}"
-
-    while ((ct < ${#wrds[@]})); do
-        if [[    (    -f ${wrds[$ct]} \
-                   && (    ${wrds[$ct]} == *.sqfs \
-                        || ${wrds[$ct]} == *.tar.? \
-                        || ${wrds[$ct]} == *.tar.?? \
-                        || ${wrds[$ct]} == *.tgz ) ) \
-              || (    -d ${wrds[$ct]} \
-                   && ${wrds[$ct-1]} != --mount \
-                   && ${wrds[$ct-1]} != -m \
-                   && ${wrds[$ct-1]} != --bind \
-                   && ${wrds[$ct-1]} != -b ) ]]; then
-            echo "${wrds[$ct]}"
-        fi
-        # FIXME: Check for image refs
-        ((ct++))
-    done
+    # “find” throws an error if “img” subdir doesn't exist or is empty, so check
+    # before proceeding.
+    if [[ -d "$1/img" && -n "$(ls -A "$1/img")" ]]; then
+        find "$1/img/"* -maxdepth 0 -printf "%f\n" | sed -e 's|+|:|g' -e 's|%|/|g'
+    fi
 }
 
 # Print the subcommand in an array of words; if there is not one, print an empty
@@ -352,14 +318,11 @@ _ch_run_image_finder () {
 #   >> _ch_image_subcmd_get "ch-image [...] build [...]"
 #   build
 _ch_image_subcmd_get () {
-    local cmd
-    local subcmd=
-    for word in "$@"
-    do
-        for cmd in $_image_subcommands
-        do
-            if [[ "$word" == "$cmd" ]]; then
-                subcmd="$cmd"
+    local subcmd
+    for word in "$@"; do
+        for subcmd_i in $_image_subcommands; do
+            if [[ "$word" == "$subcmd_i" ]]; then
+                subcmd="$subcmd_i"
                 break 2
             fi
         done
