@@ -10,6 +10,9 @@ tmpimg_build () {
     ch-image build -t "$img" -f - . << 'EOF'
 FROM alpine:3.17
 EOF
+    run ch-image list
+    [[ $status -eq 0 ]]
+    [[ $output == *"$img"* ]]
   done
 }
 
@@ -74,13 +77,7 @@ EOF
     [[ $output != *"delete/test_stage1"* ]]
     [[ $output != *"delete/test_stage2"* ]]
 
-    # Delete list of images
-    ch-image build -t tmpimg1 -f - . << 'EOF'
-FROM alpine:3.17
-EOF
-    ch-image build -t tmpimg2 -f - . << 'EOF'
-FROM alpine:3.17
-EOF
+    tmpimg_build tmpimg1 tmpimg2
     ch-image delete tmpimg1 tmpimg2
     run ch-image list
     echo "$output"
@@ -89,35 +86,25 @@ EOF
     [[ $output != *"tmpimg2"* ]]
 
     # Delete list of images with invalid image
-    ch-image build -t tmpimg1 -f - . << 'EOF'
-FROM alpine:3.17
-EOF
-    ch-image build -t tmpimg2 -f - . << 'EOF'
-FROM alpine:3.17
-EOF
+    tmpimg_build tmpimg1 tmpimg2
     run ch-image delete tmpimg1 doesnotexist tmpimg2
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output == *"deleting image: tmpimg1"* ]]
     [[ $output == *"error: no matching image, can’t delete: doesnotexist"* ]]
-    [[ $output == *"deleting image: tmpimg1"* ]]
-    [[ $output == *"error: one or more invalid images"* ]]
+    [[ $output == *"deleting image: tmpimg2"* ]]
+    [[ $output == *"error: unable to delete 1 invalid image(s)"* ]]
 
     # Delete list of images with multiple invalid images
-    ch-image build -t tmpimg1 -f - . << 'EOF'
-FROM alpine:3.17
-EOF
-    ch-image build -t tmpimg2 -f - . << 'EOF'
-FROM alpine:3.17
-EOF
+    tmpimg_build tmpimg1 tmpimg2
     run ch-image delete tmpimg1 doesnotexist tmpimg2 doesnotexist2
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output == *"deleting image: tmpimg1"* ]]
     [[ $output == *"error: no matching image, can’t delete: doesnotexist"* ]]
-    [[ $output == *"deleting image: tmpimg1"* ]]
+    [[ $output == *"deleting image: tmpimg2"* ]]
     [[ $output == *"error: no matching image, can’t delete: doesnotexist2"* ]]
-    [[ $output == *"error: one or more invalid images"* ]]
+    [[ $output == *"error: unable to delete 2 invalid image(s)"* ]]
 }
 
 
