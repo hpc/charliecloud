@@ -15,7 +15,7 @@ Synopsis
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] build-cache [...]
-   $ ch-image [...] delete IMAGE_GLOB
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ...]
    $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [-l] [IMAGE_REF]
