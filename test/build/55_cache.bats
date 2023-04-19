@@ -1273,7 +1273,7 @@ EOF
     run ch-image delete 'foo*'
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'no image matching glob, can’t delete: foo*'* ]]
+    [[ $output = *'no matching image, can’t delete: foo*'* ]]
 
     # matches some
     ch-image delete '1*'
@@ -1287,7 +1287,7 @@ EOF
     run ch-image delete '*'
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *'no image matching glob, can’t delete: *'* ]]
+    [[ $output = *'no matching image, can’t delete: *'* ]]
 
     # build cache unchanged
     diff -u <(echo "$blessed_tree") <(ch-image build-cache --tree | treeonly)
