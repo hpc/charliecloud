@@ -688,18 +688,20 @@ class Enabled_Cache:
       # immediately upon branch deletion. Here, the first “update-ref”
       # shenanigan logs the branch tip in the bare repo’s HEAD reflog, keeping
       # the commits accessible. The second puts HEAD back where it was.
-      if (self.git(["show-ref", "--quiet", "--heads", branch],
-                   fail_ok=True).returncode == 0): # branch found
-         if (not branch.endswith("#")):
-            # Tag deleted branch. This is allows images to be recovered with
-            # “undelete.” Note that the “-f” flag overwrites existing tags with
-            # the same name, meaning we only track the most recently deleted
-            # branch.
-            self.git(["tag", "-a", "-f", "&%s" % branch, branch, "-m", "''"])
-         head_old = self.git(["rev-parse", "HEAD"]).stdout.strip()
-         self.git(["update-ref", "HEAD", branch])
-         self.git(["update-ref", "HEAD", head_old])
-         self.git(["branch", "-D", branch])
+      branches = [branch]
+      if (not branch.endswith("#")):
+         branches.append(branch + "#")
+         # Tag deleted branch. This is allows images to be recovered with
+         # “undelete.” Note that the “-f” flag overwrites existing tags with the
+         # same name, meaning we only track the most recently deleted branch.
+         self.git(["tag", "-a", "-f", "&%s" % branch, branch, "-m", "''"])
+      for brnch in branches:
+         if (self.git(["show-ref", "--quiet", "--heads", brnch],
+                     fail_ok=True).returncode == 0): # branch found
+            head_old = self.git(["rev-parse", "HEAD"]).stdout.strip()
+            self.git(["update-ref", "HEAD", brnch])
+            self.git(["update-ref", "HEAD", head_old])
+            self.git(["branch", "-D", brnch])
 
 
    def branch_nocheckout(self, src_ref, dest):
