@@ -56,19 +56,23 @@ def build_cache(cli):
    bu.cache.summary_print()
 
 def delete(cli):
-   delete_ct = 0
-   for img in im.Image.glob(cli.image_ref):
-      img.unpack_delete()
-      delete_ct += 1
-   for img in im.Image.glob(cli.image_ref + "_stage[0-9]*"):
-      img.unpack_delete()
-      delete_ct += 1
-   if (delete_ct == 0):
-      ch.FATAL("no image matching glob, can’t delete: %s" % cli.image_ref)
+   fail_ct = 0
+   for ref in cli.image_ref:
+      delete_ct = 0
+      for img in im.Image.glob(ref):
+         img.unpack_delete()
+         delete_ct += 1
+      for img in im.Image.glob(ref + "_stage[0-9]*"):
+         img.unpack_delete()
+         delete_ct += 1
+      if (delete_ct == 0):
+         fail_ct += 1
+         ch.ERROR("no matching image, can’t delete: %s" % ref)
    bu.cache.worktrees_fix()
    to_delete = im.Reference.ref_to_pathstr(cli.image_ref)
    bu.cache.branch_delete(to_delete)
-   bu.cache.branch_delete(to_delete + "#")
+   if (fail_ct > 0):
+      ch.FATAL("unable to delete %d invalid image(s)" % fail_ct)
 
 def gestalt_bucache(cli):
    bu.have_deps()
