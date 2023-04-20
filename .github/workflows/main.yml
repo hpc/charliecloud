@@ -14,23 +14,22 @@ jobs:
     strategy:
       fail-fast: false  # Actions seems kind of flaky lately
       matrix:
-        builder: [none, docker, ch-image]
+        builder:
+          - ch-image
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
-        cache: [enabled, disabled]
-        exclude:
-          - builder: none
-            cache: enabled
-          - builder: docker
-            cache: enabled
-          - builder: ch-image
-            cache: disabled
+        cache:
+          - enabled
         include:
-          - builder: docker
+          - builder: none
             pack_fmt: squash-mount
-            keep_sudo: true
+            keep_sudo: false
             cache: disabled
+          - builder: docker
+            pack_fmt: tar-unpack
+            keep_sudo: true
+            cache: enabled
           - builder: ch-image
             pack_fmt: squash-mount
             keep_sudo: false
@@ -65,8 +64,8 @@ jobs:
           echo "PATH=$path_new" >> $GITHUB_ENV
           # Set sudo umask to something quite restrictive. The default is
           # 0022, but we had a "make install" bug (issue #947) that was
-          # tickled by 0027, which is a better setting. For reasons I don't
-          # understand, this only affects sudo, but since that's what we want,
+          # tickled by 0027, which is a better setting. For reasons I don’t
+          # understand, this only affects sudo, but since that’s what we want,
           # I left it. Note there are a few dependency installs below that
           # have similar permissions bugs; these relax the umask on a
           # case-by-case basis.
@@ -104,7 +103,7 @@ jobs:
 
       - name: install/configure dependencies, all
         run: |
-          # configure doesn't tell us about these.
+          # configure doesn’t tell us about these.
           sudo apt-get install attr pigz pv
           # configure does tell us about these.
           sudo apt-get install bats squashfs-tools
@@ -162,7 +161,6 @@ jobs:
           sudo ldconfig
           # Unset setuid on all fusermount3(1) on the system.
           sudo chmod -v u-s /usr/bin/fusermount*
-          sudo find / -name 'fusermount*' -ls
           ls -lh $(command -v fusermount3)
           [[ ! -u $(command -v fusermount3) ]]
 
@@ -172,7 +170,7 @@ jobs:
         run: |
           sudo apt-get install -y musl-tools
           # At present we use argp to parse command line arguments. This is
-          # not portable; it's a glibc extension (see #1260). Thus, install a
+          # not portable; it’s a glibc extension (see #1260). Thus, install a
           # standalone argp.
           cd /usr/local/src
           git clone --depth=1 https://github.com/ericonr/argp-standalone.git
@@ -211,7 +209,9 @@ jobs:
           sudo usermod --add-subgids 10000-65536 $USER
 
       - name: disable bundled lark, ch-image
-        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'disabled' }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'disabled' }}
         run: |
           set -x
           # no install, disable
@@ -255,7 +255,7 @@ jobs:
           # workflow also use glibc.
           if [[ $CH_TEST_PACK_FMT == tar-unpack ]]; then
               export CC=musl-gcc
-              # GNU ldd(1) doesn't work on musl binaries.
+              # GNU ldd(1) doesn’t work on musl binaries.
               LDD='/lib/ld-musl-x86_64.so.1 --list'
           else
               LDD=ldd
@@ -330,23 +330,10 @@ jobs:
                   -v ~/registry-etc:/etc/docker/registry registry:2
           docker ps -a
 
-      - name: configure sudo to user root, group non-root
-        if: ${{ matrix.keep_sudo }}
-        run: |
-          sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/runner
-          sudo cat /etc/sudoers.d/runner
-
-      - name: remove sudo
-        if: ${{ ! matrix.keep_sudo }}
-        run: |
-          sudo rm /etc/sudoers.d/runner
-          ! sudo echo hello
-
       - name: build/install from tarball
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
           # Create and unpack tarball. The wildcard saves us having to put the
-          # version in a variable. This assumes there isn't already a tarball
+          # version in a variable. This assumes there isn’t already a tarball
           # or unpacked directory in $ch_prefix, which is true on the clean
           # VMs GitHub gives us. Note that cd fails if it gets more than one
           # argument, which helps, but this is probably kind of brittle.
@@ -380,29 +367,38 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-tarball/bin/ch-run --version
 
-      - name: run test suite (Git WD, quick)
-        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+      - name: configure sudo to user root, group non-root
+        if: ${{ matrix.keep_sudo }}
         run: |
-          bin/ch-test --scope=quick all
+          sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/runner
+          sudo cat /etc/sudoers.d/runner
+
+      - name: remove sudo
+        if: ${{ ! matrix.keep_sudo }}
+        run: |
+          sudo rm /etc/sudoers.d/runner
+          ! sudo echo hello
 
       - name: run test suite (Git WD, standard)
         run: |
           bin/ch-test all
 
       - name: run test suite (installed from Git WD, standard)
-        if: ${{    ( matrix.builder == 'docker' && ! matrix.keep_sudo )
-                || (    matrix.builder == 'ch-image'
-                     && matrix.cache == 'disabled' ) }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
 
       - name: run test suite (installed from tarball, standard)
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-tarball/bin/ch-test all
 
-      - name: make uninstall
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+      - name: uninstall from tarball
+        if: ${{ matrix.keep_sudo }}
         run: |
           cd $ch_prefix/charliecloud-*
           sudo make uninstall
@@ -419,7 +415,7 @@ jobs:
           EOF
 
       - name: rebuild with most things --disable’d
-        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           make distclean
           ./configure --prefix=/doesnotexist \
@@ -438,12 +434,12 @@ jobs:
           bin/ch-run --version
 
       - name: run test suite (Git WD, standard)
-        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           bin/ch-test all
 
       - name: remove non-essential dependencies
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           set -x
           # This breaks lots of dependencies unrelated to our build but YOLO.
@@ -451,18 +447,16 @@ jobs:
                     pigz \
                     pv \
                     python3-requests \
-                    squashfs-tools \
+                    squashfs-tools
           sudo pip3 uninstall -y sphinx sphinx-rtd-theme
           if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
-              ( cd /usr/local/src/squashfuse && make uninstall )
+              ( cd /usr/local/src/squashfuse && sudo make uninstall )
           fi
           ! python3 -c 'import requests'
           ! python3 -c 'import lark'
-          test -e bin/ch-image
-          bin/ch-test -f test/build/10_sanity.bats  # issue #806
 
       - name: rebuild
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           make distclean
           ./configure --prefix=/doesnotexist
@@ -478,7 +472,7 @@ jobs:
           bin/ch-run --version
 
       - name: run test suite (Git WD, standard)
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           bin/ch-test all
 

@@ -2,19 +2,20 @@ load ../common
 
 
 @test 'relative path to image' {  # issue #6
-    scope quick
+    scope full
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
+
 @test 'symlink to image' {  # issue #50
-    scope quick
+    scope full
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
     ch-run "${BATS_TMPDIR}/symlink-test" -- /bin/true
 }
 
 
 @test 'mount image read-only' {
-    scope quick
+    scope standard
     run ch-run "$ch_timg" sh <<EOF
 set -e
 dd if=/dev/zero bs=1 count=1 of=/out
@@ -26,7 +27,7 @@ EOF
 
 
 @test 'mount image read-write' {
-    scope quick
+    scope standard
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
@@ -35,7 +36,7 @@ EOF
 
 @test '/usr/bin/ch-ssh' {
     # Note: --ch-ssh without /usr/bin/ch-ssh is in test “broken image errors”.
-    scope quick
+    scope standard
     ls -l "$ch_bin/ch-ssh"
     ch-run --ch-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
     ch-run --ch-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
@@ -59,8 +60,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$CH_RUNNING' {
+@test "\$CH_RUNNING" {
     scope standard
 
     if [[ -v CH_RUNNING ]]; then
@@ -74,8 +74,7 @@ EOF
     [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
 }
 
-# shellcheck disable=SC2016
-@test '$HOME' {
+@test "\$HOME" {
     scope quick
     echo "host: $HOME"
     [[ $HOME ]]
@@ -119,8 +118,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: add /bin' {
+@test "\$PATH: add /bin" {
     scope quick
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
@@ -149,8 +147,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: unset' {
+@test "\$PATH: unset" {
     scope standard
     old_path=$PATH
     unset PATH
@@ -165,8 +162,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$TMPDIR' {
+@test "\$TMPDIR" {
     scope standard
     mkdir -p "${BATS_TMPDIR}/tmpdir"
     touch "${BATS_TMPDIR}/tmpdir/file-in-tmpdir"
@@ -593,6 +589,7 @@ EOF
     [[ $output = *"can't parse variable: empty name: ${f_in}:1"* ]]
 }
 
+
 # shellcheck disable=SC2016
 @test 'ch-run --set-env command line' {
     scope standard
@@ -610,6 +607,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
+
 
 @test 'ch-run --unset-env' {
     scope standard
@@ -880,7 +878,6 @@ EOF
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
     files=$(echo etc/{group,passwd})
-    # shellcheck disable=SC2116
     files_optional=$(echo etc/{hosts,resolv.conf})
     mkdir -p "$img"
     for d in $dirs; do mkdir -p "${img}/$d"; done
@@ -1042,9 +1039,11 @@ EOF
     # it on GitHub Actions.
     [[ -n $GITHUB_ACTIONS ]] || skip 'GitHub Actions only'
     [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
-    expected="ch-run: uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
+    expected="uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
     echo "$expected"
     #shellcheck disable=SC2016
     ch-run "$ch_timg" -- echo foo  'b a}$r'
-    sudo tail -n 10 /var/log/syslog | grep -F "$expected"
+    text=$(sudo tail -n 10 /var/log/syslog)
+    echo "$text"
+    echo "$text" | grep -F "$expected"
 }

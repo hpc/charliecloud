@@ -1,7 +1,4 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
@@ -35,7 +32,7 @@ count_ranks () {
     echo "$output"
     [[ $output == *"provider: $cray_prov"* ]]
     [[ $output == *"fabric: $cray_prov"* ]]
-    [[ $stauts -eq 0 ]]
+    [[ $status -eq 0 ]]
 }
 
 @test "${ch_tag}/validate $cray_prov injection" {
@@ -95,7 +92,7 @@ count_ranks () {
 
 @test "${ch_tag}/host starts ranks" {
     multiprocess_ok
-    echo "starting ranks with: ${mpirun_core}"
+    echo "starting ranks with: ${ch_mpirun_core}"
 
     guest_mpi=$(ch-run "$ch_img" -- mpirun --version | head -1)
     echo "guest MPI: ${guest_mpi}"

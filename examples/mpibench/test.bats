@@ -1,7 +1,4 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
@@ -88,7 +85,7 @@ check_process_ct () {
     echo "$output"
     [[ $output == *"provider: $cray_prov"* ]]
     [[ $output == *"fabric: $cray_prov"* ]]
-    [[ $stauts -eq 0 ]]
+    [[ $status -eq 0 ]]
 }
 
 # This test compares OpenMPI’s point to point bandwidth with all high speed

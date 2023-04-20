@@ -89,6 +89,7 @@ Dockerfile
     filename Dockerfile.nvidia
     filename Dockerfile.ocimanifest
     filename Dockerfile.openmpi
+    filename Dockerfile.quick
     3rd_gen_scale 2.00
     end_of_line_continuation \\$
 m4
