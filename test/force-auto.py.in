@@ -130,6 +130,14 @@ class Test(abc.ABC):
       # architecture excludes
       arch_excludes = "\n".join("arch_exclude %s" % i
                                 for i in self.arch_excludes)
+      # Temporary fix for debian:stretch
+      if (self.base == "debian:9"):
+         stretch_tmpfix = f"""\
+RUN sed -i s/deb.debian.org/archive.debian.org/g /etc/apt/sources.list
+RUN sed -i 's|security.debian.org|archive.debian.org/|g' /etc/apt/sources.list
+RUN sed -i '/stretch-updates/d' /etc/apt/sources.list"""
+      else:
+         stretch_tmpfix = ""
       # build 1 to make prep-prepped image (e.g. install EPEL) if needed
       if (not self.preprep):
          build1 = "# skipped: no separate prep"
@@ -177,6 +185,7 @@ scope {scope}
 # build 2: image we're testing
 run ch-image -v build {force} -t tmpimg2 -f - . << 'EOF'
 FROM {build2_base}
+{stretch_tmpfix}
 RUN {run}
 EOF
 echo "$output"
