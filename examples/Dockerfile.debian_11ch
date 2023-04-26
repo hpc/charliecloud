@@ -1,0 +1,7 @@
+# ch-test-scope: standard
+FROM debian:bullseye
+
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends apt-utils \
+ && rm -rf /var/lib/apt/lists/*
