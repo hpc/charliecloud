@@ -1279,6 +1279,9 @@ EOF
 
     # matches some
     ch-image delete '1*'
+    blessed_tree=$(printf "%s" "$blessed_tree" | sed -e 's/(1a) RUN echo 1a/RUN echo 1a/g' \
+                                                     -e 's/(1b) RUN echo 1b/RUN echo 1b/g' \
+                                                     -e 's/(alpine+3.17) PULL alpine:3.17/PULL alpine:3.17/g')
     diff -u <(printf "alpine:3.17\n") <(ch-image list)
 
     # matches all
