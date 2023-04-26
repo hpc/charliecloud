@@ -61,17 +61,16 @@ def delete(cli):
       delete_ct = 0
       for img in im.Image.glob(ref):
          img.unpack_delete()
-         bu.cache.wortrees_fix()
-         to_delete = im.Reference.ref_to_pathstr(str(ref))
+         bu.cache.worktrees_fix()
+         to_delete = im.Reference.ref_to_pathstr(str(img))
          bu.cache.branch_delete(to_delete)
          delete_ct += 1
       for img in im.Image.glob(ref + "_stage[0-9]*"):
          img.unpack_delete()
-         bu.cache.wortrees_fix()
-         to_delete = im.Reference.ref_to_pathstr(str(ref))
+         bu.cache.worktrees_fix()
+         to_delete = im.Reference.ref_to_pathstr(str(img))
          bu.cache.branch_delete(to_delete)
          delete_ct += 1
-      bu.cache.worktrees_fix()
       if (delete_ct == 0):
          fail_ct += 1
          ch.ERROR("no matching image, can’t delete: %s" % ref)
