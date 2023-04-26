@@ -74,9 +74,6 @@ def delete(cli):
       if (delete_ct == 0):
          fail_ct += 1
          ch.ERROR("no matching image, can’t delete: %s" % ref)
-      #else:
-      #   to_delete = im.Reference.ref_to_pathstr(str(ref))
-      #   bu.cache.branch_delete(to_delete)
    if (fail_ct > 0):
       ch.FATAL("unable to delete %d invalid image(s)" % fail_ct)
 

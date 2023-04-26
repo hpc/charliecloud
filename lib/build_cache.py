@@ -689,7 +689,7 @@ class Enabled_Cache:
       # shenanigan logs the branch tip in the bare repo’s HEAD reflog, keeping
       # the commits accessible. The second puts HEAD back where it was.
       branches = [branch]
-      if (not branch.endswith("#")):
+      if ((not branch.endswith("#")) and (self.cached_p(branch))):
          branches.append(branch + "#")
          # Tag deleted branch. This is allows images to be recovered with
          # “undelete.” Note that the “-f” flag overwrites existing tags with the
@@ -715,6 +715,11 @@ class Enabled_Cache:
       if (src_img.unpack_exist_p):
          self.git(["checkout", "--detach"], cwd=src_img.unpack_path)
       self.git(["branch", "-f", self.branch_name_ready(src_ref), dest])
+
+   def cached_p(self, git_id):
+      """Return True if image corresponding to “git_id” is in the cache, False
+         otherwise."""
+      return self.find_commit(git_id)[1] != None
 
    def checkout(self, image, git_hash, base_image):
       # base_image used in other subclasses

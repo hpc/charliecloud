@@ -16,7 +16,7 @@ RUN dnf install -y \
 WORKDIR /usr/local/src
 
 # GNU Hello. Install using DESTDIR to make copying below easier.
-RUN wget -nv https://ftp.gnu.org/gnu/hello/hello-2.10.tar.gz
+RUN wget -nv https://ftpmirror.gnu.org/gnu/hello/hello-2.10.tar.gz
 RUN tar xf hello-2.10.tar.gz \
  && cd hello-2.10 \
  && ./configure \
