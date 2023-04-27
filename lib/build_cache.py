@@ -845,23 +845,32 @@ class Enabled_Cache:
       # collisions.
       cp = self.git(["log", "--format=%h%n%B", "-n", "1", git_id],
                     fail_ok=True)
-      deleted = self.git(["log", "--format=%h%n%B", "-n", "1",
-                          "&%s" % git_id],fail_ok=True)
       if (cp.returncode == 0):  # branch exists
          sid = State_ID.from_text(cp.stdout)
          commit = cp.stdout.split("\n", maxsplit=1)[0]
-      elif (deleted.returncode == 0):
-         # Commit was previously deleted but is still cached. Recover it.
-         sid = State_ID.from_text(deleted.stdout)
-         commit = deleted.stdout.split("\n", maxsplit=1)[0]
-         self.git(["tag", "-d", "&%s" % git_id])
-         img = im.Image(im.Reference.path_to_ref(git_id))
-         self.checkout_ready(img, commit)
       else:
          sid = None
          commit = None
       ch.VERBOSE("commit-ish %s: %s %s" % (git_id, commit, sid))
       return (sid, commit)
+
+   def find_deleted_commit(self, git_id):
+      deleted = self.git(["log", "--format=%h%n%B", "-n", "1",
+                          "&%s" % git_id],fail_ok=True)
+      if (deleted.returncode == 0):
+         # Commit was previously deleted but is still cached. Get info.
+         sid = State_ID.from_text(deleted.stdout)
+         commit = deleted.stdout.split("\n", maxsplit=1)[0]
+         #self.git(["tag", "-d", "&%s" % git_id])
+         #img = im.Image(im.Reference.path_to_ref(git_id))
+         #self.checkout_ready(img, commit)
+      else:
+         sid = None
+         commit = None
+      return (sid, commit)
+
+   def find_deleted_image(self, image):
+      return self.find_deleted_commit(image.ref.for_path)
 
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
@@ -1017,6 +1026,11 @@ class Enabled_Cache:
       return (sid, commit)
 
    def ready(self, image):
+      (_, git_hash) = self.find_deleted_image(image)
+      if (not (git_hash is None)):
+         # Branch was deleted.
+         #ch.FATAL("IMAGE: %s" % image)
+         self.git(["tag", "-d", "&%s" % image.ref.for_path])
       self.git(["checkout", "-B", self.branch_name_ready(image.ref)],
                cwd=image.unpack_path)
       self.branch_delete(self.branch_name_unready(image.ref))

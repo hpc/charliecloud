@@ -199,7 +199,8 @@ def undelete(cli):
    img = im.Image(im.Reference(cli.image_ref))
    if (img.unpack_exist_p):
       ch.FATAL("image exists; will not overwrite")
-   (_, git_hash) = bu.cache.find_image(img)
+   #(_, git_hash) = bu.cache.find_image(img)
+   (_, git_hash) = bu.cache.find_deleted_image(img)
    if (git_hash is None):
       ch.FATAL("image not in cache")
    bu.cache.checkout_ready(img, git_hash)
