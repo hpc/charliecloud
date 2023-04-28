@@ -717,7 +717,7 @@ class Enabled_Cache:
       self.git(["branch", "-f", self.branch_name_ready(src_ref), dest])
 
    def cached_p(self, git_id):
-      """Return True if image corresponding to “git_id” is in the cache, False
+      """True if image corresponding to “git_id” is in the cache, False
          otherwise."""
       return self.find_commit(git_id)[1] != None
 
@@ -727,8 +727,8 @@ class Enabled_Cache:
       self.git_restore(image.unpack_path, [], False)
 
    def checkout_ready(self, image, git_hash, base_image=None):
-      # “checkout()” followed by “ready()” is an operation that appears several
-      # times throughout the code, so we wrap it here.
+      """“checkout()” followed by “ready()” is an operation that appears several
+         times throughout the code, so we wrap it here."""
       self.checkout(image, git_hash, base_image)
       self.ready(image)
 
