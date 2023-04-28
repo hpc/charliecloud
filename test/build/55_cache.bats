@@ -1259,7 +1259,13 @@ EOF
     printf 'FROM alpine:3.17\nRUN echo 1b\n' | ch-image build -t 1b -
     printf 'FROM alpine:3.17\nRUN echo 2a\n' | ch-image build -t 2a -
 
-    blessed_tree=$(ch-image build-cache --tree | treeonly)
+    # Blessèd tree, with substitutions corresponding to images that will be
+    # deleted.
+    blessed_tree=$(ch-image build-cache --tree | treeonly \
+                                               | sed -e 's/(2a) RUN echo 2a/RUN echo 2a/g' \
+                                                     -e 's/(1a) RUN echo 1a/RUN echo 1a/g' \
+                                                     -e 's/(1b) RUN echo 1b/RUN echo 1b/g' \
+                                                     -e 's/(alpine+3.17) PULL alpine:3.17/PULL alpine:3.17/g')
     echo "$blessed_tree"
 
     # starting point
@@ -1268,7 +1274,6 @@ EOF
     # no glob
     ch-image delete 2a
     # the blessed tree needs to be updated, since 2a is now untagged
-    blessed_tree=$(printf "%s" "$blessed_tree" | sed 's/(2a) RUN echo 2a/RUN echo 2a/g')
     diff -u <(printf "1a\n1b\nalpine:3.17\n") <(ch-image list)
 
     # matches none (non-empty)
@@ -1279,9 +1284,6 @@ EOF
 
     # matches some
     ch-image delete '1*'
-    blessed_tree=$(printf "%s" "$blessed_tree" | sed -e 's/(1a) RUN echo 1a/RUN echo 1a/g' \
-                                                     -e 's/(1b) RUN echo 1b/RUN echo 1b/g' \
-                                                     -e 's/(alpine+3.17) PULL alpine:3.17/PULL alpine:3.17/g')
     diff -u <(printf "alpine:3.17\n") <(ch-image list)
 
     # matches all

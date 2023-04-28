@@ -861,9 +861,6 @@ class Enabled_Cache:
          # Commit was previously deleted but is still cached. Get info.
          sid = State_ID.from_text(deleted.stdout)
          commit = deleted.stdout.split("\n", maxsplit=1)[0]
-         #self.git(["tag", "-d", "&%s" % git_id])
-         #img = im.Image(im.Reference.path_to_ref(git_id))
-         #self.checkout_ready(img, commit)
       else:
          sid = None
          commit = None
@@ -998,7 +995,7 @@ class Enabled_Cache:
          # Downloaded image is in cache, check it out.
          ch.INFO("pulled image: found in build cache")
          # Remove tag for previously deleted branch, if it exists.
-         self.git(["tag", "-d", "&%s" % img.ref.for_path], fail_ok=True)
+         self.tag_delete(img.ref.for_path, fail_ok=True)
          self.checkout_ready(img, dl_git_hash)
       else:
          # Unpack and commit downloaded image. This also creates the worktree.
@@ -1029,8 +1026,7 @@ class Enabled_Cache:
       (_, git_hash) = self.find_deleted_image(image)
       if (not (git_hash is None)):
          # Branch was deleted.
-         #ch.FATAL("IMAGE: %s" % image)
-         self.git(["tag", "-d", "&%s" % image.ref.for_path])
+         self.tag_delete(image.ref.for_path)
       self.git(["checkout", "-B", self.branch_name_ready(image.ref)],
                cwd=image.unpack_path)
       self.branch_delete(self.branch_name_unready(image.ref))
@@ -1125,12 +1121,17 @@ class Enabled_Cache:
          print("Git config:")
          print(textwrap.indent(out, "  "), end="")
 
+   def tag_delete(self, tag, *args, **kwargs):
+      """Delete specified git tag in bucache. Used for recovering deleted
+         branches."""
+      return self.git(["tag", "-d", "&%s" % tag], *args, **kwargs)
+
    def tree_print(self):
       # Note the percent codes are interpreted by Git.
       # See: https://git-scm.com/docs/git-log#_pretty_formats
       args = ["log", "--graph", "--all", "--reflog", "--topo-order"]
       if (ch.verbose == 0):
-         # ref names, subject (instruction)
+         # ref names, subject (instruction), branch heads.
          fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
          args.append("--decorate-refs=refs/heads")
       else:
@@ -1163,6 +1164,16 @@ class Enabled_Cache:
  "-l", "@SID@|%s", str(path_gv)], cwd=self.root)
       ch.VERBOSE("writing %s" % path_pdf)
       ch.cmd_quiet(["dot", "-Tpdf", "-o%s" % path_pdf, str(path_gv)])
+
+   def unpack_delete(self, image):
+      """Wrapper for Image.unpack_delete() that first detaches the work tree's
+         head. Useful for deleting multiple images and their cache branches
+         without additional calls to worktrees_fix()."""
+      (_, commit) = self.find_commit(image.ref.for_path)
+      if (commit is not None):
+         # Off with her head!
+         self.git(["checkout", "%s" % commit], cwd=image.unpack_path)
+      image.unpack_delete()
 
    def worktree_add(self, image, base):
       if (image.unpack_cache_linked):

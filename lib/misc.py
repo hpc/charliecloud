@@ -60,20 +60,19 @@ def delete(cli):
    for ref in cli.image_ref:
       delete_ct = 0
       for img in im.Image.glob(ref):
-         img.unpack_delete()
-         bu.cache.worktrees_fix()
+         bu.cache.unpack_delete(img)
          to_delete = im.Reference.ref_to_pathstr(str(img))
          bu.cache.branch_delete(to_delete)
          delete_ct += 1
       for img in im.Image.glob(ref + "_stage[0-9]*"):
-         img.unpack_delete()
-         bu.cache.worktrees_fix()
+         bu.cache.unpack_delete(img)
          to_delete = im.Reference.ref_to_pathstr(str(img))
          bu.cache.branch_delete(to_delete)
          delete_ct += 1
       if (delete_ct == 0):
          fail_ct += 1
          ch.ERROR("no matching image, can’t delete: %s" % ref)
+   bu.cache.worktrees_fix()
    if (fail_ct > 0):
       ch.FATAL("unable to delete %d invalid image(s)" % fail_ct)
 
@@ -94,9 +93,9 @@ def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can’t copy: not found: %s" % cli.path)
    pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
-   if (str(bu.cache).startswith("enabled")):
+   if (cli.bucache == ch.Build_Mode.ENABLED):
       # Un-tag previously deleted branch, if it exists.
-      bu.cache.git(["tag", "-d", "&%s" % pathstr], fail_ok=True)
+      bu.cache.tag_delete(pathstr, fail_ok=True)
    dst = im.Image(im.Reference(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
@@ -125,7 +124,6 @@ def list_(cli):
       if (len(images) >= 1):
          img_width = max(len(ref) for ref in images)
          for ref in images:
-            ref = ref.replace("&","") # get rid of deletion delimiter
             img = im.Image(im.Reference(fs.Path(ref).parts[-1]))
             if cli.long:
                print("%-*s | %s" % (img_width, img, img.last_modified.ctime()))
@@ -199,7 +197,6 @@ def undelete(cli):
    img = im.Image(im.Reference(cli.image_ref))
    if (img.unpack_exist_p):
       ch.FATAL("image exists; will not overwrite")
-   #(_, git_hash) = bu.cache.find_image(img)
    (_, git_hash) = bu.cache.find_deleted_image(img)
    if (git_hash is None):
       ch.FATAL("image not in cache")
