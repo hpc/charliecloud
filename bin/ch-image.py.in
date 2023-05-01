@@ -16,6 +16,7 @@ import pull
 import push
 
 
+## Constants ##
 
 # FIXME: It’s currently easy to get the ch-run path from another script, but
 # hard from something in lib. So, we set it here for now.
@@ -126,14 +127,14 @@ def main():
               "help": "re-prompt each time a registry password is needed" }],
            [["--profile"],
             { "action": "store_true",
-              "help": "dump profile to \"./profile.{p,txt}\"" }],
+              "help": "dump profile to “./profile.{p,txt}”" }],
            [["-s", "--storage"],
             { "metavar": "DIR",
               "type": fs.Path,
               "help": "set builder internal storage directory to DIR" }],
            [["--tls-no-verify"],
             { "action": "store_true",
-              "help": "don't verify registry certificates (dangerous!)" }],
+              "help": "don’t verify registry certificates (dangerous!)" }],
            [["-v", "--verbose"],
             { "action": "count",
               "default": 0,
@@ -192,7 +193,7 @@ def main():
                    action="append", default=[],
                    help="command arg(s) to add under --force=seccomp")
    sp.add_argument("-n", "--dry-run", action="store_true",
-                   help="don't execute instructions")
+                   help="don’t execute instructions")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",
@@ -283,6 +284,9 @@ def main():
    sp = ap.add_parser("undelete", "recover image from build cache")
    add_opts(sp, misc.undelete, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to recover")
+
+   # Monkey patch problematic characters out of stdout and stderr.
+   ch.monkey_write_streams()
 
    # Parse it up!
    if (len(sys.argv) < 2):

@@ -701,6 +701,19 @@ def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
       color_reset(log_fp)
 
+def monkey_write_streams():
+   """Replace problematic characters in stdout and stderr streams when running
+      Python 3.6. (see #1629)."""
+   def monkey_write_insert(f):
+      write_orig = f.write
+      def write_monkey(text):
+         text = text.replace("“", "\"").replace("”", "\"").replace("’", "'")
+         write_orig(text)
+      f.write = write_monkey
+   if (sys.version_info[:2] <= (3, 6)):
+      monkey_write_insert(sys.stdout)
+      monkey_write_insert(sys.stderr)
+
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
