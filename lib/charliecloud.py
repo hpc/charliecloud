@@ -702,8 +702,8 @@ def log(msg, hint, trace, color, prefix, end="\n"):
       color_reset(log_fp)
 
 def monkey_write_streams():
-   """Replace problematic characters in stdout and stderr streams when running
-      Python 3.6. (see #1629)."""
+   """Monkey patch to replace problematic characters in stdout and stderr
+      streams when running Python 3.6. (see #1629)."""
    def monkey_write_insert(f):
       write_orig = f.write
       def write_monkey(text):
