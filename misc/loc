@@ -81,7 +81,7 @@ Dockerfile
     filename Dockerfile.argenv
     filename Dockerfile.centos_7ch
     filename Dockerfile.almalinux_8ch
-    filename Dockerfile.debian_9ch
+    filename Dockerfile.debian_11ch
     filename Dockerfile.file-quirks
     filename Dockerfile.libfabric
     filename Dockerfile.metadata

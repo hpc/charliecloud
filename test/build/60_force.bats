@@ -1,6 +1,4 @@
 load ../common
-
-# shellcheck disable=SC2034
 tag='ch-image --force'
 
 setup () {
