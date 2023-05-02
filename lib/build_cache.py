@@ -1029,6 +1029,9 @@ class Enabled_Cache:
                cwd=image.unpack_path)
       self.branch_delete(self.branch_name_unready(image.ref))
 
+   def ready_p(self, branch):
+      return (not branch.endswith("#"))
+
    def reset(self):
       if (self.bootstrap_ct >= 1):
          ch.WARNING("not resetting brand-new cache")
@@ -1173,6 +1176,12 @@ class Enabled_Cache:
          # Off with her head!
          self.git(["checkout", "%s" % commit], cwd=image.unpack_path)
       image.unpack_delete()
+
+   def unready_of(self, branch):
+      if (self.ready_p(branch)):
+         return branch + "#"
+      else:
+         return branch
 
    def worktree_add(self, image, base):
       if (image.unpack_cache_linked):
