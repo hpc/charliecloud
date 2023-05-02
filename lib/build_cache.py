@@ -689,8 +689,8 @@ class Enabled_Cache:
       # shenanigan logs the branch tip in the bare repo’s HEAD reflog, keeping
       # the commits accessible. The second puts HEAD back where it was.
       branches = [branch]
-      if ((not branch.endswith("#")) and (self.cached_p(branch))):
-         branches.append(branch + "#")
+      if (self.ready_p(branch) and (self.cached_p(branch))):
+         branches.append(self.unready_of(branch))
          # Tag deleted branch. This is allows images to be recovered with
          # “undelete.” Note that the “-f” flag overwrites existing tags with the
          # same name, meaning we only track the most recently deleted branch.
@@ -717,8 +717,7 @@ class Enabled_Cache:
       self.git(["branch", "-f", self.branch_name_ready(src_ref), dest])
 
    def cached_p(self, git_id):
-      """True if image corresponding to “git_id” is in the cache, False
-         otherwise."""
+      """True iff image corresponding to “git_id” is in the cache."""
       return self.find_commit(git_id)[1] != None
 
    def checkout(self, image, git_hash, base_image):
@@ -760,6 +759,18 @@ class Enabled_Cache:
       git_hash = cp.stdout.strip()
       self.git_restore(path, files, True)
       return git_hash
+
+   def commit_find_deleted(self, git_id):
+         deleted = self.git(["log", "--format=%h%n%B", "-n", "1",
+                           "&%s" % git_id],fail_ok=True)
+         if (deleted.returncode == 0):
+            # Commit was previously deleted but is still cached. Get info.
+            sid = State_ID.from_text(deleted.stdout)
+            commit = deleted.stdout.split("\n", maxsplit=1)[0]
+         else:
+            sid = None
+            commit = None
+         return (sid, commit)
 
    def configure(self):
       # Configuration.
@@ -854,20 +865,8 @@ class Enabled_Cache:
       ch.VERBOSE("commit-ish %s: %s %s" % (git_id, commit, sid))
       return (sid, commit)
 
-   def find_deleted_commit(self, git_id):
-      deleted = self.git(["log", "--format=%h%n%B", "-n", "1",
-                          "&%s" % git_id],fail_ok=True)
-      if (deleted.returncode == 0):
-         # Commit was previously deleted but is still cached. Get info.
-         sid = State_ID.from_text(deleted.stdout)
-         commit = deleted.stdout.split("\n", maxsplit=1)[0]
-      else:
-         sid = None
-         commit = None
-      return (sid, commit)
-
    def find_deleted_image(self, image):
-      return self.find_deleted_commit(image.ref.for_path)
+      return self.commit_find_deleted(image.ref.for_path)
 
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
@@ -1025,8 +1024,7 @@ class Enabled_Cache:
    def ready(self, image):
       (_, git_hash) = self.find_deleted_image(image)
       if (not (git_hash is None)):
-         # Branch was deleted.
-         self.tag_delete(image.ref.for_path)
+         self.tag_delete(image.ref.for_path) # Branch was deleted.
       self.git(["checkout", "-B", self.branch_name_ready(image.ref)],
                cwd=image.unpack_path)
       self.branch_delete(self.branch_name_unready(image.ref))
@@ -1122,8 +1120,7 @@ class Enabled_Cache:
          print(textwrap.indent(out, "  "), end="")
 
    def tag_delete(self, tag, *args, **kwargs):
-      """Delete specified git tag in bucache. Used for recovering deleted
-         branches."""
+      """Delete specified git tag. Used for recovering deleted branches."""
       return self.git(["tag", "-d", "&%s" % tag], *args, **kwargs)
 
    def tree_print(self):
@@ -1167,8 +1164,10 @@ class Enabled_Cache:
 
    def unpack_delete(self, image):
       """Wrapper for Image.unpack_delete() that first detaches the work tree's
-         head. Useful for deleting multiple images and their cache branches
-         without additional calls to worktrees_fix()."""
+         head. If we delete an image's unpack path without first detaching HEAD,
+         the corresponding work tree must also be deleted before the bucache
+         branch. This involves multiple calls to worktrees_fix(), which is
+         clunky, so we use this method instead."""
       (_, commit) = self.find_commit(image.ref.for_path)
       if (commit is not None):
          # Off with her head!
