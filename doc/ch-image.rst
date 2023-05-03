@@ -476,7 +476,7 @@ We can also inspect the cache::
   |/
   *  RUN echo foo
   *  (alpine+3.9) PULL alpine:3.17
-  *  (HEAD -> root) ROOT
+  *  (root) ROOT
 
   named images:     4
   state IDs:        5

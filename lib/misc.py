@@ -2,6 +2,7 @@
 
 import argparse
 import inspect
+import itertools
 import os
 import os.path
 import sys
@@ -59,11 +60,11 @@ def delete(cli):
    fail_ct = 0
    for ref in cli.image_ref:
       delete_ct = 0
-      for img in im.Image.glob(ref):
-         img.unpack_delete()
-         delete_ct += 1
-      for img in im.Image.glob(ref + "_stage[0-9]*"):
-         img.unpack_delete()
+      for img in itertools.chain(im.Image.glob(ref),
+                                 im.Image.glob(ref + "_stage[0-9]*")):
+         bu.cache.unpack_delete(img)
+         to_delete = im.Reference.ref_to_pathstr(str(img))
+         bu.cache.branch_delete(to_delete)
          delete_ct += 1
       if (delete_ct == 0):
          fail_ct += 1
@@ -88,6 +89,10 @@ def gestalt_storage_path(cli):
 def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can’t copy: not found: %s" % cli.path)
+   pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
+   if (cli.bucache == ch.Build_Mode.ENABLED):
+      # Un-tag previously deleted branch, if it exists.
+      bu.cache.tag_delete(pathstr, fail_ok=True)
    dst = im.Image(im.Reference(cli.image_ref))
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
@@ -100,7 +105,12 @@ def import_(cli):
    ch.done_notify()
 
 def list_(cli):
-   imgdir = ch.storage.unpack_base
+   if (cli.undeleteable):
+      # list undeleteable images
+      imgdir = ch.storage.build_cache // "refs/tags"
+   else:
+      # list images
+      imgdir = ch.storage.unpack_base
    if (cli.image_ref is None):
       # list all images
       if (not os.path.isdir(ch.storage.root)):
@@ -184,7 +194,7 @@ def undelete(cli):
    img = im.Image(im.Reference(cli.image_ref))
    if (img.unpack_exist_p):
       ch.FATAL("image exists; will not overwrite")
-   (_, git_hash) = bu.cache.find_image(img)
+   (_, git_hash) = bu.cache.find_deleted_image(img)
    if (git_hash is None):
       ch.FATAL("image not in cache")
-   bu.cache.checkout(img, git_hash, None)
+   bu.cache.checkout_ready(img, git_hash)
