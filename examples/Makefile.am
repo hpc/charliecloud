@@ -14,7 +14,7 @@ obspy/hello.py
 noexecs = \
 Dockerfile.centos_7ch \
 Dockerfile.almalinux_8ch \
-Dockerfile.debian_9ch \
+Dockerfile.debian_11ch \
 Dockerfile.libfabric \
 Dockerfile.mpich \
 Dockerfile.nvidia \

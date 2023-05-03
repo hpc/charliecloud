@@ -15,7 +15,7 @@ Synopsis
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] build-cache [...]
-   $ ch-image [...] delete IMAGE_REF
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ...]
    $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [-l] [IMAGE_REF]
@@ -999,14 +999,15 @@ this order.
 
 ::
 
-   $ ch-image [...] delete IMAGE_GLOB
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ... ]
 
-Delete the image(s) described by :code:`IMAGE_GLOB` from the storage directory
-(including all build stages).
+Delete the image(s) described by each :code:`IMAGE_GLOB` from the storage
+directory (including all build stages).
 
 :code:`IMAGE_GLOB` can be either a plain image reference or an image reference
 with glob characters to match multiple images. For example, :code:`ch-image
 delete 'foo*'` will delete all images whose names start with :code:`foo`.
+Multiple images and/or globs can also be given in a single command line.
 
 Importantly, this sub-command *does not* also remove the image from the build
 cache. Therefore, it can be used to reduce the size of the storage directory,
