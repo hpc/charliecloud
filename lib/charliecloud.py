@@ -710,7 +710,11 @@ def monkey_write_streams():
          text = text.replace("“", "\"").replace("”", "\"").replace("’", "'")
          write_orig(text)
       f.write = write_monkey
-   if (sys.version_info[:2] <= (3, 6)):
+   # Try to encode test string of problematic characters. If unsuccessful,
+   # monkey patch them out.
+   try:
+      "“”’".encode(encoding="ascii")
+   except UnicodeEncodeError:
       monkey_write_insert(sys.stdout)
       monkey_write_insert(sys.stderr)
 
