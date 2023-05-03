@@ -1111,7 +1111,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: can’t parse: -:2,7"* ]]
+        [[ $output = *"error: can"?"t parse: -:2,7"* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
