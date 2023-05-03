@@ -127,6 +127,8 @@ RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
                 --disable-rxm \
                 --disable-sockets \
                 "--${PSM_CONFIG}-psm3" \
+                --enable-rxm \
+                --enable-shm \
                 --enable-tcp \
                 --enable-verbs \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
