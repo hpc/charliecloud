@@ -91,7 +91,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output == *"deleting image: tmpimg1"* ]]
-    [[ $output == *"error: no matching image, can’t delete: doesnotexist"* ]]
+    [[ $output == *"error: no matching image, can"?"t delete: doesnotexist"* ]]
     [[ $output == *"deleting image: tmpimg2"* ]]
     [[ $output == *"error: unable to delete 1 invalid image(s)"* ]]
 
@@ -101,9 +101,9 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output == *"deleting image: tmpimg1"* ]]
-    [[ $output == *"error: no matching image, can’t delete: doesnotexist"* ]]
+    [[ $output == *"error: no matching image, can"?"t delete: doesnotexist"* ]]
     [[ $output == *"deleting image: tmpimg2"* ]]
-    [[ $output == *"error: no matching image, can’t delete: doesnotexist2"* ]]
+    [[ $output == *"error: no matching image, can"?"t delete: doesnotexist2"* ]]
     [[ $output == *"error: unable to delete 2 invalid image(s)"* ]]
 }
 
