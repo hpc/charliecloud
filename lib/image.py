@@ -748,8 +748,7 @@ class Reference:
       if (class_.parser is None):
          class_.parser = lark.Lark(GRAMMAR_IMAGE_REF, parser="earley",
                                    propagate_positions=True, tree_class=Tree)
-      #s = s.translate(s.maketrans("%+", "/:", "&"))
-      s = s.replace("%", "/").replace("+", ":").replace("&", "")
+      s = s.translate(str.maketrans("%+", "/:", "&"))
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       s = ch.variables_sub(s, variables)
       if "$" in s:

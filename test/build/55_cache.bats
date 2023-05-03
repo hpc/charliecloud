@@ -1263,13 +1263,7 @@ EOF
     # deleted.
     blessed_tree=$(  ch-image build-cache --tree \
                    | treeonly \
-                   | sed -e 's/(2a) RUN echo 2a/RUN echo 2a/g' \
-                         -e 's/(1a) RUN echo 1a/RUN echo 1a/g' \
-                         -e 's/(1b) RUN echo 1b/RUN echo 1b/g' \
-                         -e 's/(alpine+3.17) PULL alpine:3.17/PULL alpine:3.17/g')
-    #blessed_tree=$(  ch-image build-cache --tree \
-    #               | treeonly \
-    #               | sed -E 's/\(..\) //')
+                   | sed -E 's/\((..|alpine\+3\.17)\) //')
     echo "$blessed_tree"
 
     # starting point
