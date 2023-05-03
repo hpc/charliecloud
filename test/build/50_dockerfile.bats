@@ -178,7 +178,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     # error message
-    [[ $output = *"can’t parse: -:2,1"* ]]
+    [[ $output = *"can"?"t parse: -:2,1"* ]]
     # internal blabber (varies by version)
     [[ $output = *'No terminal'*"'W'"*'at line 2 col 1'* ]]
 
@@ -189,7 +189,7 @@ COPY --chown= foo bar
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can’t parse: -:2,14"* ]]
+    [[ $output = *"can"?"t parse: -:2,14"* ]]
 
     # Empty input.
     run ch-image build -t tmpimg -f /dev/null .
