@@ -2,6 +2,7 @@
 
 import argparse
 import inspect
+import itertools
 import os
 import os.path
 import sys
@@ -59,12 +60,8 @@ def delete(cli):
    fail_ct = 0
    for ref in cli.image_ref:
       delete_ct = 0
-      for img in (im.Image.glob(ref)):
-         bu.cache.unpack_delete(img)
-         to_delete = im.Reference.ref_to_pathstr(str(img))
-         bu.cache.branch_delete(to_delete)
-         delete_ct += 1
-      for img in im.Image.glob(ref + "_stage[0-9]*"):
+      for img in itertools.chain(im.Image.glob(ref),
+                                 im.Image.glob(ref + "_stage[0-9]*")):
          bu.cache.unpack_delete(img)
          to_delete = im.Reference.ref_to_pathstr(str(img))
          bu.cache.branch_delete(to_delete)
