@@ -1153,7 +1153,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *'error: no context because “-” given'* ]]
+        [[ $output = *'error: no context because '?'-'?' given'* ]]
     else
         [[ $output = *'COPY failed: file not found in build context or'* ]]
     fi
