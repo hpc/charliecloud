@@ -94,7 +94,6 @@ jobs:
           printf 'umask under sudo: ' && sudo sh -c umask
           [[ $(umask) = 0022 ]]
           [[ $(sudo sh -c umask) = 0077 ]]
-          srun --mpi=list || /bin/true
 
       - name: lines of code
         if: ${{ matrix.builder == 'none' }}
