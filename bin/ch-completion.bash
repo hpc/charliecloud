@@ -232,7 +232,7 @@ _ch_image_complete () {
             # Janky parameter expansion to also complete “--undeleteable,” the
             # ugly, less correct version of “--undeletable”. This expansion essentially
             # tells you whether “cur” starts with “--undelete”.
-            if [[ ${cur%%${cur##--undelete}} == "--undelete" ]]; then
+            if [[ ${cur%%"${cur##--undelete}"} == "--undelete" ]]; then
                 extras="$extras --undeleteable"
             fi
         fi
