@@ -224,7 +224,17 @@ _ch_image_complete () {
         ;;
     delete|list)
         if [[ "$sub_cmd" == "list" ]]; then
-            extras+="$extras -l --long"
+            if [[ "$prev" == "--undeletable" || "$prev" == "--undeleteable" || "$prev" == "-u" ]]; then
+                COMPREPLY=( $(compgen -W "$(_ch_undelete_list "$strg_dir")" -- "$cur") )
+                return 0
+            fi
+            extras+="$extras -l --long -u --undeletable"
+            # Janky parameter expansion to also complete “--undeleteable,” the
+            # ugly, less correct version of “--undeletable”. This expansion essentially
+            # tells you whether “cur” starts with “--undelete”.
+            if [[ ${cur%%${cur##--undelete}} == "--undelete" ]]; then
+                extras="$extras --undeleteable"
+            fi
         fi
         COMPREPLY=( $(compgen -W "$(_ch_list_images "$strg_dir") $extras" -- "$cur") )
         __ltrim_colon_completions "$cur"
@@ -251,7 +261,7 @@ _ch_image_complete () {
         ;;
     undelete)
         # FIXME: Update with “ch-image undelete --list” once #1551 drops
-        COMPREPLY=()
+        COMPREPLY=( $(compgen -W "$(_ch_undelete_list "$strg_dir")" -- "$cur") )
         ;;
     '')
         # Only autocomplete subcommands if there's no subcommand present.
@@ -331,6 +341,15 @@ _ch_image_subcmd_get () {
         done
     done
     echo "$subcmd"
+}
+
+# List undeletable images in the build cache, if it exists.
+_ch_undelete_list () {
+    if [[ -d "$1/bucache/" ]]; then
+        git -C "$strg_dir/bucache/" tag -l | sed -e "s/&//g" \
+                                                 -e "s/%/\//g" \
+                                                 -e "s/+/:/g"
+    fi
 }
 
 # Returns filenames and directories, appending a slash to directory names.
