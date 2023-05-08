@@ -130,10 +130,6 @@ class Test(abc.ABC):
       # architecture excludes
       arch_excludes = "\n".join("arch_exclude %s" % i
                                 for i in self.arch_excludes)
-      if ((str(self.base) == "alpine:latest") and (str(self.run.value) == "needed") and (str(self.force) == "fakeroot") and (not preprep)):
-         rebuild = "--rebuild"
-      else:
-         rebuild = ""
       # build 1 to make prep-prepped image (e.g. install EPEL) if needed
       if (not self.preprep):
          build1 = "# skipped: no separate prep"
@@ -179,7 +175,7 @@ scope {scope}
 {build1}
 
 # build 2: image we're testing
-run ch-image -v build {rebuild} {force} -t tmpimg2 -f - . << 'EOF'
+run ch-image -v build {force} -t tmpimg2 -f - . << 'EOF'
 FROM {build2_base}
 RUN {run}
 EOF
@@ -250,6 +246,10 @@ class T_Alma_8(CentOS_8):
 class T_Rocky_8(CentOS_8):
    base = "rockylinux:8"  # :latest same as :8 as of 2022-03-01
 
+# With many of the following images, we test two versions of each image, the
+# latest version and the minimum supported version. “Minimum supported” here
+# meaning the minimum of (a) what’s available on Docker hub and we think won’t
+# vanish too quickly and (b) what we support with fakeroot.
 
 class Fedora(RHEL8):
    config = "fedora"
@@ -315,8 +315,8 @@ class Alpine(Test):
    # openssh does not need --force on Alpine
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "apk add ed",
                              Run.NEEDED:      "apk add dbus" } }
-class T_Alpine_317(Alpine):
-   base = "alpine:3.17"
+class T_Alpine_39(Alpine):
+   base = "alpine:3.9"
 class T_Alpine_Latest(Alpine):
    base = "alpine:latest"
 
