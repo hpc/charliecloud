@@ -251,6 +251,10 @@ def main():
    add_opts(sp, misc.list_, deps_check=True, stog_init=True)
    sp.add_argument("-l", "--long", action="store_true",
                    help="use long listing format")
+   sp.add_argument("-u", "--undeleteable", action="store_true",
+                   help="list images that can be restored with “undelete”")
+   sp.add_argument("--undeletable", action="store_true", dest="undeleteable",
+                   help=argparse.SUPPRESS)
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
 

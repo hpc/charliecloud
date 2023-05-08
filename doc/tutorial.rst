@@ -631,7 +631,7 @@ Finally, inspect the cache::
   |/
   *  RUN sleep 2 && echo foo
   *  (almalinux:8) PULL almalinux:8
-  *  (HEAD -> root) ROOT
+  *  (root) ROOT
 
   named images:    4
   state IDs:       5
