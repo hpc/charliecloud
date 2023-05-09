@@ -1,3 +1,5 @@
+source common.bash  # for ShellCheck; removed by ch-test
+
 @test 'builder to archive %(tag)s' {
     scope %(scope)s
     case $CH_TEST_PACK_FMT in

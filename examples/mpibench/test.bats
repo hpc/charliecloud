@@ -1,13 +1,10 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
-
+    pmix_or_skip
     # One iteration on most of these tests because we just care about
     # correctness, not performance. (If we let the benchmark choose, there is
     # an overwhelming number of errors when MPI calls start failing, e.g. if
@@ -88,7 +85,7 @@ check_process_ct () {
     echo "$output"
     [[ $output == *"provider: $cray_prov"* ]]
     [[ $output == *"fabric: $cray_prov"* ]]
-    [[ $stauts -eq 0 ]]
+    [[ $status -eq 0 ]]
 }
 
 # This test compares OpenMPI’s point to point bandwidth with all high speed

@@ -258,7 +258,7 @@ EOF
 
     storage="${BATS_TMPDIR}/tmp"
     cache=$storage/dlcache
-    export CH_IMAGE_STORAGE=$storage
+    CH_IMAGE_STORAGE=$storage
 
     # OCI manifest; see issue #1184.
     img=charliecloud/ocimanifest:2021-10-12
@@ -311,7 +311,7 @@ EOF
 
     # Red Hat registry: https://catalog.redhat.com/software/containers/explore
     # FIXME: 77 MiB unpacked, should find a smaller public image
-    ch-image pull registry.access.redhat.com/ubi7-minimal:latest
+    ch-image pull registry.access.redhat.com/ubi7/ubi-minimal:latest
 
     # Microsoft Container Registry:
     # https://github.com/microsoft/containerregistry

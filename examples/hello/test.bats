@@ -1,12 +1,10 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
     scope standard
     prerequisites_ok hello
+    pmix_or_skip
     LC_ALL=C  # no other locales installed in container
 }
 

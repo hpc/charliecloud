@@ -195,6 +195,8 @@ class Image:
                 "unpack_path")
 
    def __init__(self, ref, unpack_path=None):
+      if (isinstance(ref, str)):
+         ref = Reference(ref)
       assert isinstance(ref, Reference)
       self.ref = ref
       if (unpack_path is not None):
@@ -746,7 +748,7 @@ class Reference:
       if (class_.parser is None):
          class_.parser = lark.Lark(GRAMMAR_IMAGE_REF, parser="earley",
                                    propagate_positions=True, tree_class=Tree)
-      s = s.replace("%", "/").replace("+", ":")
+      s = s.translate(str.maketrans("%+", "/:", "&"))
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       s = ch.variables_sub(s, variables)
       if "$" in s:

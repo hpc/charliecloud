@@ -194,6 +194,7 @@ The main use case for these options is to support package maintainers. If this
 is you and does not meet your needs, please get in touch with us and we will
 help.
 
+
 Install with package manager
 ============================
 
@@ -482,6 +483,26 @@ Wget
 
 Wget is used to demonstrate building an image without a builder (the main test
 image used to exercise Charliecloud itself).
+
+
+Command line completion
+=======================
+
+Charliecloud offers experimental Bash command line completion for
+:code:`ch-image`. This feature lets users have incomplete command line
+arguments auto-filled by pressing Tab. We expect that in the future, this will
+become more robust and available for more shells and more Charliecloud
+commands.
+
+To enable it, once :code:`ch-completion.bash` is in your path, source it::
+
+  $ source ch-completion.bash
+
+If it doesn’t work or you just don’t like it, it can be disabled with::
+
+  $ ch-completion-disable
+
+In this case, please do submit a bug report so we can make it better.
 
 
 ..  LocalWords:  Werror Flameeyes plougher deps libc’s ericonr

@@ -12,7 +12,7 @@ load ../common
 @test 'userns id differs' {
     scope full
     host_ns=$(stat -Lc '%i' /proc/self/ns/user)
-    echo "host:  ${host_userns}"
+    echo "host:  ${host_ns}"
     guest_ns=$(ch-run "$ch_timg" -- stat -Lc %i /proc/self/ns/user)
     echo "guest: ${guest_ns}"
     [[ -n $host_ns && -n $guest_ns && $host_ns -ne $guest_ns ]]

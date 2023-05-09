@@ -1,6 +1,4 @@
 load ../common
-
-# shellcheck disable=SC2034
 tag='ch-image --force'
 
 setup () {
@@ -65,7 +63,7 @@ EOF
 @test "${tag}: rpm(8)" {
     # Typically folks will use yum(8) or dnf(8), but bare rpm(8) also happens.
     scope standard
-    [[ $(uname -m) = x86_64 ]] || skil 'amd64 only'
+    [[ $(uname -m) = x86_64 ]] || skip 'amd64 only'
 
     ch-image -v build --force -t tmpimg -f - . <<'EOF'
 FROM almalinux:8
