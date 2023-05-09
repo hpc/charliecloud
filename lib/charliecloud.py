@@ -713,7 +713,7 @@ def monkey_write_streams():
    # Try to encode test string of problematic characters. If unsuccessful,
    # monkey patch them out.
    try:
-      "“”’".encode(encoding="ascii")
+      "“”’".encode(encoding=sys.stdout.encoding)
    except UnicodeEncodeError:
       monkey_write_insert(sys.stdout)
       monkey_write_insert(sys.stderr)
