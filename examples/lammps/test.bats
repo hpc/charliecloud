@@ -39,6 +39,7 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
     multiprocess_ok
+    pmix_or_skip
     [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
 }
 
