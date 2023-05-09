@@ -1067,6 +1067,9 @@ Optional argument:
   :code:`-l`, :code:`--long`
     Use long format (name, last change timestamp) when listing images.
 
+  :code:`-u`, :code:`--undeletable`
+    List images that can be undeleted. Can also be spelled :code:`--undeleteable`.
+
   :code:`IMAGE_REF`
     Print details of what’s known about :code:`IMAGE_REF`, both locally and in
     the remote registry, if any.
