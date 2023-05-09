@@ -9,17 +9,13 @@ WORKDIR /usr/local/src
 # both PMI2 and PMIx, as we do with OpenMPI, but the examples only pass testing
 # when pmix is specified.
 #
-#   2) --with-pmix=/usr/local
-#   3) --with-pm=no
-#
-# --with-pm=no disables the hydra and gforker process manager, this allows us
+# Note --with-pm=no disables the hydra and gforker process manager, this allows us
 # to launch parallel jobs with slurm using PMIx or PMI2. As a consequence, the
 # mpiexec exectuable is no longer compiled or installed; thus, single-node guest
 # launch using mpiexec inside container is not poassible.
 #
-# We use 4.1, the only version with Slingshot CXI support at the time of this
-# comment.
-ARG MPI_VERSION=4.1
+# Slingshot cxi requires MPICH version 4.1 or greater.
+ARG MPI_VERSION=4.1.1
 ARG MPI_URL=http://www.mpich.org/static/downloads/${MPI_VERSION}
 RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
  && tar xf mpich-${MPI_VERSION}.tar.gz \
@@ -27,8 +23,14 @@ RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \
-                --with-pmix=/usr/local/lib \
+                --enable-ofi-domain \
+                --enable-fast=O3 \
+                --enable-g=none \
+                --with-device=ch4:ofi \
+                --enable-threads=multiple \
+                --with-ch4-shmmods=posix \
                 --with-pm=no \
+                --with-pmix=/usr/local/lib \
                 --with-libfabric=/usr/local
 RUN cd mpich-${MPI_VERSION} \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
