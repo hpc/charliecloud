@@ -23,15 +23,15 @@ RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
  && CFLAGS=-O3 \
     CXXFLAGS=-O3 \
     ./configure --prefix=/usr/local \
-                --enable-ofi-domain \
                 --enable-fast=O3 \
                 --enable-g=none \
-                --with-device=ch4:ofi \
+                --enable-ofi-domain \
                 --enable-threads=multiple \
                 --with-ch4-shmmods=posix \
+                --with-device=ch4:ofi \
+                --with-libfabric=/usr/local
                 --with-pm=no \
                 --with-pmix=/usr/local/lib \
-                --with-libfabric=/usr/local
 RUN cd mpich-${MPI_VERSION} \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
  && rm -Rf ../mpich-${MPI_VERSION}* \
