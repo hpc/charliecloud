@@ -714,6 +714,7 @@ def monkey_write_streams():
    # monkey patch them out.
    try:
       "“”’".encode(encoding=sys.stdout.encoding)
+      "“”’".encode(encoding=sys.stderr.encoding)
    except UnicodeEncodeError:
       monkey_write_insert(sys.stdout)
       monkey_write_insert(sys.stderr)
