@@ -114,6 +114,12 @@ _image_common_opts="-a --arch --always-download --auth --cache
 _image_subcommands="build build-cache delete gestalt
                     import list pull push reset undelete"
 
+_run_common_opts="-b --bind -c --cd --ch-ssh --env-no-expand -g --gid
+                  --home, -j --join --join-pid --join-ct --join-tag -m
+                  --mount --no-passwd -s --storage --seccomp -t
+                  --private-tmp --set-env -u --uid --unsafe --unset-env
+                  -v --verbose -w --write -? --help --usage -V --version"
+
 # archs taken from ARCH_MAP in charliecloud.py
 _archs="amd64 arm/v5 arm/v6 arm/v7 arm64/v8 386 mips64le ppc64le s390x"
 
@@ -142,14 +148,6 @@ _ch_image_complete () {
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
 
     # Populate debug log
-    #if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
-    #    # shellcheck disable=SC2129
-    #    echo "\$ ${words[*]}" >> /tmp/ch-completion.log
-    #    echo "  storage dir: $strg_dir" >> /tmp/ch-completion.log
-    #    echo "  current: $cur" >> /tmp/ch-completion.log
-    #    echo "  previous: $prev" >> /tmp/ch-completion.log
-    #    echo "  sub command: $sub_cmd" >> /tmp/ch-completion.log
-    #fi
     DEBUG "\$ ${words[*]}"
     DEBUG " storage: dir: $strg_dir"
     DEBUG " current: $cur"
@@ -279,8 +277,91 @@ _ch_image_complete () {
 
 # Completion function for ch-run
 #
-_ch_run_completion () {
-    echo "does nothing... yet"
+_ch_run_complete () {
+    local prev
+    local cur
+    local words
+    local strg_dir
+    local extras=
+    local image
+    _get_comp_words_by_ref -n : cur prev words
+
+    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
+    image=$(_ch_run_image_finder "$strg_dir" ${words[@]})
+
+    # Populate debug log
+    DEBUG "\$ ${words[*]}"
+    DEBUG " storage: dir: $strg_dir"
+    DEBUG " current: $cur"
+    DEBUG " previous: $prev"
+    DEBUG " image: $image"
+
+    # Common opts that take args
+    #
+    case "$prev" in
+    -b|--bind)
+        COMPREPLY=()
+        return 0
+        ;;
+    -c|--cd)
+        COMPREPLY=()
+        return 0
+        ;;
+    -g|--gid)
+        COMPREPLY=()
+        return 0
+        ;;
+    --join-pid)
+        COMPREPLY=()
+        return 0
+        ;;
+    --join-ct)
+        COMPREPLY=()
+        return 0
+        ;;
+    --join-tag)
+        COMPREPLY=()
+        return 0
+        ;;
+    -m|--mount)
+        compopt -o nospace
+        COMPREPLY=( $(compgen -d -- "$cur") )
+        return 0
+        ;;
+    -s|--storage)
+        COMPREPLY=()
+        return 0
+        ;;
+    #--set-env)
+    #    COMPREPLY=()
+    #    return 0
+    #    ;;
+    -u|--uid)
+        COMPREPLY=()
+        return 0
+        ;;
+    --unset-env)
+        COMPREPLY=()
+        return 0
+        ;;
+    esac
+
+    if [[ -z $image ]]; then
+        # No image found in command line, complete dirs, tarfiles, and sqfs
+        # archives
+        COMPREPLY=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
+        # Complete images in storage
+        COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
+        __ltrim_colon_completions "$cur"
+    fi
+
+    # Only use the “nospace” option when a valid path completion exists.
+    if [[ -n "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")" ]]; then
+        compopt -o nospace
+    fi
+
+    COMPREPLY+=( $(compgen -W "$_run_common_opts" -- "$cur") )
+    return 0
 }
 
 ## Helper functions ##
@@ -343,6 +424,47 @@ _ch_image_subcmd_get () {
     echo "$subcmd"
 }
 
+# Horrible, disgusting function to find an image or image ref in the ch-run
+# command line.
+#
+# NOT FINISHED, DON'T USE!!!
+_ch_run_image_finder () {
+    # Takes array of words. Tries to find an image in there.
+    local images=$(_ch_list_images "$1")
+    shift 1
+    local wrds=("$@")
+    local ct=1
+
+    # Check for tarballs and squashfs archives.
+    while ((ct < ${#wrds[@]})); do
+        # In bash, expansion of the “~” character to the value of $HOME doesn't
+        # happen if a value is quoted (see
+        # https://stackoverflow.com/a/52519780). To work around this, we add
+        # “eval echo” (https://stackoverflow.com/a/6988394) to this test.
+        if [[    (    -f $(eval echo ${wrds[$ct]}) \
+                   && (    ${wrds[$ct]} == *.sqfs \
+                        || ${wrds[$ct]} == *.tar.? \
+                        || ${wrds[$ct]} == *.tar.?? \
+                        || ${wrds[$ct]} == *.tgz ) ) \
+              || (    -d ${wrds[$ct]} \
+                   && ${wrds[$ct-1]} != --mount \
+                   && ${wrds[$ct-1]} != -m \
+                   && ${wrds[$ct-1]} != --bind \
+                   && ${wrds[$ct-1]} != -b ) ]]; then
+            echo "${wrds[$ct]}"
+            break
+        fi
+        # Check for refs to images in storage.
+        for img in $images; do
+            if [[ "${wrds[$ct]}" == "$img" ]]; then
+            echo "${wrds[$ct]}"
+            break 2
+            fi
+        done
+        ((ct++))
+    done
+}
+
 # List undeletable images in the build cache, if it exists.
 _ch_undelete_list () {
     if [[ -d "$1/bucache/" ]]; then
@@ -393,3 +515,4 @@ _compgen_filepaths() {
 }
 
 complete -F _ch_image_complete ch-image
+complete -F _ch_run_complete ch-run
