@@ -101,6 +101,12 @@ fi
 
 # Subcommands and options for ch-image
 #
+
+_convert_fmts="ch-image dir docker podman squash tar"
+
+_convert_opts="-h --help -i --in-fmt -n --dry-run --no-clobber
+               -o --out-fmt --tmp -v --verbose"
+
 _image_build_opts="-b --bind --build-arg -f --file --force
                    --force-cmd -n --dry-run --parse-only -t --tag"
 
@@ -113,7 +119,7 @@ _image_common_opts="-a --arch --always-download --auth --cache
 _image_subcommands="build build-cache delete gestalt
                     import list pull push reset undelete"
 
-_run_common_opts="-b --bind -c --cd --ch-ssh --env-no-expand -g --gid
+_run_common_opts="-b --bind -c --cd --env-no-expand -g --gid
                   --home -j --join --join-pid --join-ct --join-tag -m
                   --mount --no-passwd -s --storage --seccomp -t
                   --private-tmp --set-env -u --uid --unsafe --unset-env
@@ -122,6 +128,29 @@ _run_common_opts="-b --bind -c --cd --ch-ssh --env-no-expand -g --gid
 # archs taken from ARCH_MAP in charliecloud.py
 _archs="amd64 arm/v5 arm/v6 arm/v7 arm64/v8 386 mips64le ppc64le s390x"
 
+
+## ch-convert ##
+
+_ch_convert_complete () {
+    local prev
+    local cur
+    local fmt_in
+    local fmt_out
+    local words
+    local sub_cmd
+    local strg_dir
+    local extras
+    _get_comp_words_by_ref -n : cur prev words
+
+    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
+
+    # Populate debug log
+    DEBUG "\$ ${words[*]}"
+    DEBUG " storage: dir: $strg_dir"
+    DEBUG " current: $cur"
+    DEBUG " previous: $prev"
+    DEBUG " sub command: $sub_cmd"
+}
 
 ## ch-image ##
 
