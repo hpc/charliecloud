@@ -69,10 +69,9 @@
 # like the suggested alternatives, so we disable it here.
 # shellcheck disable=SC2207
 
-# Minimum supported Bash version. Per http://mywiki.wooledge.org/BashFAQ/061
-# and my own testing, negative array indexing was introduced in this version;
-# we require it to simplify confusing syntax.
-bash_vmin=4.2.0
+# According to this (https://stackoverflow.com/a/50281697) post, bash 4.3 alpha
+# added the feature used in this script to pass a variable by ref.
+bash_vmin=4.3.0
 
 # Check Bash version
 bash_v=$(bash --version | head -1 | grep -Eo "[0-9\.]{2,}[0-9]")
@@ -115,13 +114,14 @@ _image_subcommands="build build-cache delete gestalt
                     import list pull push reset undelete"
 
 _run_common_opts="-b --bind -c --cd --ch-ssh --env-no-expand -g --gid
-                  --home, -j --join --join-pid --join-ct --join-tag -m
+                  --home -j --join --join-pid --join-ct --join-tag -m
                   --mount --no-passwd -s --storage --seccomp -t
                   --private-tmp --set-env -u --uid --unsafe --unset-env
                   -v --verbose -w --write -? --help --usage -V --version"
 
 # archs taken from ARCH_MAP in charliecloud.py
 _archs="amd64 arm/v5 arm/v6 arm/v7 arm64/v8 386 mips64le ppc64le s390x"
+
 
 ## ch-image ##
 
@@ -280,21 +280,33 @@ _ch_image_complete () {
 _ch_run_complete () {
     local prev
     local cur
+    local cword
     local words
     local strg_dir
     local extras=
-    local image
-    _get_comp_words_by_ref -n : cur prev words
+    #local image
+    _get_comp_words_by_ref -n : cur prev words cword
 
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
-    image=$(_ch_run_image_finder "$strg_dir" ${words[@]})
+    local cli_image
+    local cmd_index=-1
+    _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index ${words[@]}
 
     # Populate debug log
     DEBUG "\$ ${words[*]}"
     DEBUG " storage: dir: $strg_dir"
     DEBUG " current: $cur"
     DEBUG " previous: $prev"
-    DEBUG " image: $image"
+    DEBUG " cli image: $cli_image"
+
+    # Currently, we don’t try to suggest completions if you’re in the “command”
+    # part of the ch-run CLI (i.e. entering commands to be run inside the
+    # container). Implementing this *may* be possible, but that's a complication
+    # I’d prefer to save for a future date.
+    if [[ $cmd_index != -1 && $cmd_index < $cword ]]; then
+        COMPREPLY=()
+        return 0
+    fi
 
     # Common opts that take args
     #
@@ -329,7 +341,10 @@ _ch_run_complete () {
         return 0
         ;;
     -s|--storage)
-        COMPREPLY=()
+        if [[ -n "$cur" ]]; then
+            compopt -o nospace
+            COMPREPLY=( $(compgen -d -S / -- "$cur") )
+        fi
         return 0
         ;;
     #--set-env)
@@ -346,7 +361,7 @@ _ch_run_complete () {
         ;;
     esac
 
-    if [[ -z $image ]]; then
+    if [[ -z $cli_image ]]; then
         # No image found in command line, complete dirs, tarfiles, and sqfs
         # archives
         COMPREPLY=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
@@ -432,6 +447,11 @@ _ch_run_image_finder () {
     # Takes array of words. Tries to find an image in there.
     local images=$(_ch_list_images "$1")
     shift 1
+    local cword="$1"
+    shift 1
+    local -n cli_img=$1
+    local -n cmd_pt=$2
+    shift 2
     local wrds=("$@")
     local ct=1
 
@@ -451,16 +471,19 @@ _ch_run_image_finder () {
                    && ${wrds[$ct-1]} != -m \
                    && ${wrds[$ct-1]} != --bind \
                    && ${wrds[$ct-1]} != -b ) ]]; then
-            echo "${wrds[$ct]}"
-            break
+            cli_img="${wrds[$ct]}"
+        fi
+        if [[ $ct != $cword && ${wrds[$ct]} == "--" ]]; then
+            cmd_pt=$ct
         fi
         # Check for refs to images in storage.
-        for img in $images; do
-            if [[ "${wrds[$ct]}" == "$img" ]]; then
-            echo "${wrds[$ct]}"
-            break 2
-            fi
-        done
+        if [[ -z $cli_img ]]; then
+            for img in $images; do
+                if [[ ${wrds[$ct]} == $img ]]; then
+                    cli_img="${wrds[$ct]}"
+                fi
+            done
+        fi
         ((ct++))
     done
 }
