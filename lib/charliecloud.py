@@ -714,13 +714,13 @@ def monkey_write_streams():
    # Try to encode test string of problematic characters. If unsuccessful,
    # monkey patch them out.
    for stream in sys.stdout, sys.stderr:
-      for encoding in stream.encoding, locale.getpreferredencoding().lower(), "ASCII":
-         try:
+      for encoding in stream.encoding, locale.getpreferredencoding(), "ASCII":
+         if (encoding is not None):
+            try:
                "“”’".encode(encoding=encoding)
-         except UnicodeEncodeError:
-            monkey_write_insert(sys.stdout)
-            monkey_write_insert(sys.stderr)
-            break
+            except UnicodeEncodeError:
+               monkey_write_insert(stream)
+               break
 
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
