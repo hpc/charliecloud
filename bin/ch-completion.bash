@@ -443,9 +443,29 @@ _ch_image_subcmd_get () {
 }
 
 # Horrible, disgusting function to find an image or image ref in the ch-run
-# command line.
+# command line. This function takes five arguments:
 #
-# NOT FINISHED, DON'T USE!!!
+#   1.) A string representing the path to the storage directory.
+#   2.) The current position of the cursor in the array representing the command
+#       line (index starting at 0).
+#   3.) A “reference” to a variable. If “_ch_run_image_finder” finds the name of
+#       an image in storage (e.g. “alpine:latest”) or something that looks like an
+#       image path (i.e. a directory, tarball or file named like a squash archive)
+#       in the command line, the value of the variable will be updated to the image
+#       name or path. If neither are found, the function will not modify the value
+#       of this variable.
+#   4.) Another “reference” to a variable. If this function finds “--” in the
+#       current command line and it doesn't seem like the user is trying to
+#       complete that “--” to an option, “_ch_run_image_finder” will assume that
+#       this is the point beyond which the user specifies commands to be run inside
+#       the container and will give the variable the index value of the “--”.
+#   5.) A string representing the expanded command line array (i.e. "${array[@]}").
+#
+# Note that when I say variable “reference” here I mean the unquoted name of the
+# variable in question (i.e. “var” instead of “$var” or “"$var"”). Passing the
+# variables to the function in this way allows it to change their values, and for
+# those changes to persist in the scope that called the function.
+#
 _ch_run_image_finder () {
     # Takes array of words. Tries to find an image in there.
     local images                   # these two lines are separate b/c SC2155
