@@ -7,6 +7,7 @@ import datetime
 import enum
 import hashlib
 import io
+import locale
 import os
 import platform
 import pstats
@@ -700,6 +701,26 @@ def log(msg, hint, trace, color, prefix, end="\n"):
       print(festoon, "trace: ", trace, sep="", file=log_fp, flush=True)
    if (color is not None):
       color_reset(log_fp)
+
+def monkey_write_streams():
+   """Monkey patch to replace problematic characters in stdout and stderr
+      streams when running Python 3.6. (see #1629)."""
+   def monkey_write_insert(f):
+      write_orig = f.write
+      def write_monkey(text):
+         text = text.replace("“", "\"").replace("”", "\"").replace("’", "'")
+         write_orig(text)
+      f.write = write_monkey
+   # Try to encode test string of problematic characters. If unsuccessful,
+   # monkey patch them out.
+   for stream in sys.stdout, sys.stderr:
+      for encoding in stream.encoding, locale.getpreferredencoding(), "ASCII":
+         if (encoding is not None):
+            try:
+               "“”’".encode(encoding=encoding)
+            except UnicodeEncodeError:
+               monkey_write_insert(stream)
+               break
 
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"

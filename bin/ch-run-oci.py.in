@@ -30,6 +30,7 @@ state = None  # state object
 
 def main():
    global args, state
+   ch.monkey_write_streams()
    args = args_parse()
    ch.VERBOSE("--- starting ------------------------------------")
    ch.VERBOSE("args: %s" % sys.argv)

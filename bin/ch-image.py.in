@@ -289,6 +289,9 @@ def main():
    add_opts(sp, misc.undelete, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to recover")
 
+   # Monkey patch problematic characters out of stdout and stderr.
+   ch.monkey_write_streams()
+
    # Parse it up!
    if (len(sys.argv) < 2):
        ap.print_help(file=sys.stderr)

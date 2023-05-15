@@ -178,7 +178,7 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     # error message
-    [[ $output = *"can’t parse: -:2,1"* ]]
+    [[ $output = *"can"?"t parse: -:2,1"* ]]
     # internal blabber (varies by version)
     [[ $output = *'No terminal'*"'W'"*'at line 2 col 1'* ]]
 
@@ -189,7 +189,7 @@ COPY --chown= foo bar
 EOF
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can’t parse: -:2,14"* ]]
+    [[ $output = *"can"?"t parse: -:2,14"* ]]
 
     # Empty input.
     run ch-image build -t tmpimg -f /dev/null .
@@ -1111,7 +1111,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: can’t parse: -:2,7"* ]]
+        [[ $output = *"error: can"?"t parse: -:2,7"* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
@@ -1153,7 +1153,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *'error: no context because “-” given'* ]]
+        [[ $output = *'error: no context because '?'-'?' given'* ]]
     else
         [[ $output = *'COPY failed: file not found in build context or'* ]]
     fi
