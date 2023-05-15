@@ -69,6 +69,10 @@
 # like the suggested alternatives, so we disable it here.
 # shellcheck disable=SC2207
 
+# SC2034 yells complains about modifying variables by reference in _ch_run_image_finder.
+# Disable it.
+# shellcheck disable=SC2034
+
 # According to this (https://stackoverflow.com/a/50281697) post, bash 4.3 alpha
 # added the feature used in this script to pass a variable by ref.
 bash_vmin=4.3.0
@@ -290,7 +294,7 @@ _ch_run_complete () {
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
     local cli_image
     local cmd_index=-1
-    _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index ${words[@]}
+    _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
 
     # Populate debug log
     DEBUG "\$ ${words[*]}"
@@ -303,7 +307,7 @@ _ch_run_complete () {
     # part of the ch-run CLI (i.e. entering commands to be run inside the
     # container). Implementing this *may* be possible, but that's a complication
     # I’d prefer to save for a future date.
-    if [[ $cmd_index != -1 && $cmd_index < $cword ]]; then
+    if [[ $cmd_index != -1 && $cmd_index -lt $cword ]]; then
         COMPREPLY=()
         return 0
     fi
@@ -444,7 +448,8 @@ _ch_image_subcmd_get () {
 # NOT FINISHED, DON'T USE!!!
 _ch_run_image_finder () {
     # Takes array of words. Tries to find an image in there.
-    local images=$(_ch_list_images "$1")
+    local images                   # these two lines are separate b/c SC2155
+    images=$(_ch_list_images "$1") #
     shift 1
     local cword="$1"
     shift 1
@@ -460,7 +465,7 @@ _ch_run_image_finder () {
         # happen if a value is quoted (see
         # https://stackoverflow.com/a/52519780). To work around this, we add
         # “eval echo” (https://stackoverflow.com/a/6988394) to this test.
-        if [[    (    -f $(eval echo ${wrds[$ct]}) \
+        if [[    (    -f $(eval echo "${wrds[$ct]}") \
                    && (    ${wrds[$ct]} == *.sqfs \
                         || ${wrds[$ct]} == *.tar.? \
                         || ${wrds[$ct]} == *.tar.?? \
@@ -472,13 +477,13 @@ _ch_run_image_finder () {
                    && ${wrds[$ct-1]} != -b ) ]]; then
             cli_img="${wrds[$ct]}"
         fi
-        if [[ $ct != $cword && ${wrds[$ct]} == "--" ]]; then
+        if [[ $ct != "$cword" && ${wrds[$ct]} == "--" ]]; then
             cmd_pt=$ct
         fi
         # Check for refs to images in storage.
         if [[ -z $cli_img ]]; then
             for img in $images; do
-                if [[ ${wrds[$ct]} == $img ]]; then
+                if [[ ${wrds[$ct]} == "$img" ]]; then
                     cli_img="${wrds[$ct]}"
                 fi
             done
