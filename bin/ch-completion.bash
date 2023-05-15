@@ -69,8 +69,8 @@
 # like the suggested alternatives, so we disable it here.
 # shellcheck disable=SC2207
 
-# SC2034 yells complains about modifying variables by reference in _ch_run_image_finder.
-# Disable it.
+# SC2034 complains about modifying variables by reference in
+# _ch_run_image_finder. Disable it.
 # shellcheck disable=SC2034
 
 # According to this (https://stackoverflow.com/a/50281697) post, bash 4.3 alpha
