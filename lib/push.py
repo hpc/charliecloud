@@ -106,7 +106,7 @@ class Image_Pusher:
                "weirdal": "yankovic" }
 
    def cleanup(self):
-      if (isinstance(bu.cache, bu.Disabled_Cache)):
+      if (upload_cache is None)):
          ch.INFO("cleaning up")
          # Delete the tarballs since we can’t yet cache them.
          for (_, tar_c) in self.layers:
