@@ -1259,9 +1259,9 @@ Options:
     storage directory named :code:`IMAGE_REF`.
 
   :code:`--ulcache`
-    Store prepared image push files. Previously prepared files are used in
-    subsequent pushes, useful for debugging and pushing large image(s)
-    to different repositories.
+    Store prepared image push files. Previously prepared files are reused for
+    subsequent pushes with code:`--ulcache`. This may be useful for debugging
+    or,  pushing large image(s) to different repositories.
 
     This feature is experimental and requires the build cache to be enabled.
 

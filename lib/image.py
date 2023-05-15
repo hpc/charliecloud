@@ -1,6 +1,7 @@
 import collections
 import copy
 import datetime
+import io
 import json
 import os
 import re
@@ -435,18 +436,25 @@ class Image:
       # it when (if) we have multiple layers. But, I wanted the interface to
       # support multiple layers.
       base = "%s.tar" % self.ref.for_path
+      base_hash = None
       path = tarball_dir // base
       try:
          ch.INFO("layer 1/1: gathering")
          ch.VERBOSE("writing tarball: %s" % path)
-         fp = fs.TarFile.open(path, "w", format=tarfile.PAX_FORMAT)
-         unpack_path = self.unpack_path.resolve()  # aliases use symlinks
-         ch.VERBOSE("canonicalized unpack path: %s" % unpack_path)
-         fp.add_(unpack_path, arcname=".")
-         fp.close()
+         bytes_ = None
+         with io.BytesIO() as buf:
+            fp = fs.TarFile.open(path, "w", fileobj=buf, format=tarfile.PAX_FORMAT)
+            unpack_path = self.unpack_path.resolve()  # aliases use symlinks
+            ch.VERBOSE("canonicalized unpack path: %s" % unpack_path)
+            fp.add_(unpack_path, arcname=".")
+            fp.close()
+            bytes_ = buf.getvalue()
+            base_hash = ch.bytes_hash(bytes_) + '.tar'
+            with open(tarball_dir // str(base_hash), "wb") as tf:
+               tf.write(bytes_)
       except OSError as x:
          ch.FATAL("can’t write tarball: %s" % x.strerror)
-      return [base]
+      return [base_hash]
 
    def unpack(self, layer_tars, last_layer=None):
       """Unpack config_json (path to JSON config file) and layer_tars
