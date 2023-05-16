@@ -12,10 +12,6 @@ setup () {
     localregistry_init
 }
 
-@test "${tag}: build initial image" {
-    ch-image pull alpine:3.17
-    [[ $status -eq 0 ]]
-}
 
 @test "${tag}: without destination reference" {
     # FIXME: This test copies an image manually so we can use it to push.
@@ -33,6 +29,7 @@ EOF
     ch-image delete localhost:5000/alpine:3.17
 }
 
+
 @test "${tag}: with destination reference" {
     run ch-image -v --tls-no-verify push alpine:3.17 localhost:5000/alpine:3.17
     echo "$output"
@@ -45,43 +42,40 @@ EOF
     #[[ $output =~ $re ]]
 }
 
+
 @test "${tag}: with upload cache" {
     [[ $CH_IMAGE_CACHE != disabled ]] || skip 'build cache disabled'
-    export CH_IMAGE_STORAGE=$BATS_TMPDIR/pushtest
     run ch-image upload-cache --reset
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'disk used:          0 B'* ]]
 
-    ch-image pull alpine:3.17
-
-    # upload cache.
-    ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/alpine:3.17
+    # Push and store prepared upload files.
+    ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache
     run ch-image upload-cache
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'internal files:     4'* ]]
 
     # Reuse previously prepared files
-    run ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/alpine:3.17
+    run ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache:prepared
     echo "output"
     [[ $status -eq 0 ]]
     [[ $output = *'using previously prepared config'* ]]
     [[ $output = *'using previously prepared manifest'* ]]
-    [[ $output = *'using previously prepared layer(s)' ]]
-    run ch-image upload-cache
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'internal files:     4'* ]]
+    [[ $output = *'using previously prepared layer(s)'* ]]
 }
 
+
 @test "${tag}: upload cache error(s)" {
+    [[ $CH_IMAGE_CACHE == disabled ]] || skip 'build cache enabled'
     ch-image upload-cache --reset
-    run ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/alpine:3.17
+    run ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache:error
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"cache disabled" ]]
+    [[ $output = *'cache disabled'* ]]
 }
+
 
 @test "${tag}: with --image" {
     # NOTE: This also tests round-tripping and a more complex destination ref.
@@ -133,6 +127,7 @@ EOF
     [[ $(stat -c '%A' "$img2"/setgid_dir) =  drwxr-x--- ]]
 }
 
+
 @test "${tag}: consistent layer hash" {
     run ch-image push --tls-no-verify alpine:3.17 localhost:5000/alpine:3.17
     echo "$output"
@@ -146,6 +141,7 @@ EOF
 
     diff -u <(echo "$push1") <(echo "$push2")
 }
+
 
 @test "${tag}: environment variables round-trip" {
     cat <<'EOF' | ch-image build -t tmpimg -

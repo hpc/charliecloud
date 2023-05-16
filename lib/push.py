@@ -172,7 +172,10 @@ class Image_Pusher:
       self.registry = rg.HTTP(self.dst_ref)
       self.registry.request("GET", self.registry._url_base)
 
-      ch.VERBOSE('preparing upload files')
+      ch.VERBOSE('preparing push upload files')
+      config = None
+      manifest = None
+      layers = None
 
       if (upload_cache is not None):
          # Check for previously prepared; if they exist, use them.
@@ -185,10 +188,15 @@ class Image_Pusher:
          layers = self.layers_from_json(manifest)
          if (layers is not None):
             ch.VERBOSE('using previously prepared layer(s)')
-         if (config is None or manifest is None or layers is None):
-            (config, manifest, layers) = self.prepare_new()
 
-         # Store prepared files.
+      # If cache is disabled, or one or more previously prepared files is
+      # missing; create new ones.
+      if (config is None or manifest is None or layers is None):
+         (config, manifest, layers) = self.prepare_new()
+
+      # Upload cache enabled; store prepared config and manifest. (layers are
+      # already stored, see prepare_new()).
+      if (upload_cache is not None):
          self.json_write(self.path_manifest, manifest)
          self.json_write(self.path_config, config)
 
