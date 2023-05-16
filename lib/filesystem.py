@@ -173,10 +173,10 @@ class Path(pathlib.PosixPath):
          probably different from the file size."""
       return self.stat().st_blocks * 512
 
-   def du(self):
+   def du(self, index=1):
       """Return a tuple (number of files, total bytes on disk) for everything
          under path. Warning: double-counts files with multiple hard links."""
-      file_ct = 1
+      file_ct = index
       byte_ct = self.disk_bytes()
       for (dir_, subdirs, files) in os.walk(self):
          file_ct += len(subdirs) + len(files)

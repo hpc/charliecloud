@@ -206,8 +206,8 @@ def upload_cache(cli):
       ch.INFO("initializing empty upload cache")
       ch.storage.upload_cache.mkdir()
    cwd = ch.storage.upload_cache
-   (file_ct, byte_ct) = cwd.du()
+   (file_ct, byte_ct) = cwd.du(index=0)
    (file_ct, file_suffix) = ch.si_decimal(file_ct)
    (byte_ct, byte_suffix) = ch.si_binary_bytes(byte_ct)
-   print("internal files: %5d %s" % (file_ct, file_suffix))
+   print("upload files:   %5d %s" % (file_ct, file_suffix))
    print("disk used:      %5d %s" % (byte_ct, byte_suffix))

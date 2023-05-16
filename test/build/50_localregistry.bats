@@ -48,14 +48,14 @@ EOF
     run ch-image upload-cache --reset
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'disk used:          0 B'* ]]
+    [[ $output = *'upload files:       0'* ]]
 
     # Push and store prepared upload files.
     ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache
     run ch-image upload-cache
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'internal files:     4'* ]]
+    [[ $output = *'upload files:       3'* ]]
 
     # Reuse previously prepared files
     run ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache:prepared
