@@ -485,28 +485,30 @@ _ch_run_image_finder () {
         # happen if a value is quoted (see
         # https://stackoverflow.com/a/52519780). To work around this, we add
         # “eval echo” (https://stackoverflow.com/a/6988394) to this test.
-        if [[    (    -f $(eval echo "${wrds[$ct]}") \
-                   && (    ${wrds[$ct]} == *.sqfs \
-                        || ${wrds[$ct]} == *.tar.? \
-                        || ${wrds[$ct]} == *.tar.?? \
-                        || ${wrds[$ct]} == *.tgz ) ) \
-              || (    -d ${wrds[$ct]} \
-                   && ${wrds[$ct-1]} != --mount \
-                   && ${wrds[$ct-1]} != -m \
-                   && ${wrds[$ct-1]} != --bind \
-                   && ${wrds[$ct-1]} != -b ) ]]; then
-            cli_img="${wrds[$ct]}"
-        fi
-        if [[ $ct != "$cword" && ${wrds[$ct]} == "--" ]]; then
-            cmd_pt=$ct
-        fi
-        # Check for refs to images in storage.
-        if [[ -z $cli_img ]]; then
-            for img in $images; do
-                if [[ ${wrds[$ct]} == "$img" ]]; then
-                    cli_img="${wrds[$ct]}"
-                fi
-            done
+        if [[ $ct != "$cword" ]]; then
+            if [[    (    -f $(eval echo "${wrds[$ct]}") \
+                    && (    ${wrds[$ct]} == *.sqfs \
+                            || ${wrds[$ct]} == *.tar.? \
+                            || ${wrds[$ct]} == *.tar.?? \
+                            || ${wrds[$ct]} == *.tgz ) ) \
+                || (    -d ${wrds[$ct]} \
+                    && ${wrds[$ct-1]} != --mount \
+                    && ${wrds[$ct-1]} != -m \
+                    && ${wrds[$ct-1]} != --bind \
+                    && ${wrds[$ct-1]} != -b ) ]]; then
+                cli_img="${wrds[$ct]}"
+            fi
+            if [[ ${wrds[$ct]} == "--" ]]; then
+                cmd_pt=$ct
+            fi
+            # Check for refs to images in storage.
+            if [[ -z $cli_img ]]; then
+                for img in $images; do
+                    if [[ ${wrds[$ct]} == "$img" ]]; then
+                        cli_img="${wrds[$ct]}"
+                    fi
+                done
+            fi
         fi
         ((ct++))
     done
