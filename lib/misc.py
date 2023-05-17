@@ -94,6 +94,8 @@ def import_(cli):
       # Un-tag previously deleted branch, if it exists.
       bu.cache.tag_delete(pathstr, fail_ok=True)
    dst = im.Image(im.Reference(cli.image_ref))
+   dst.metadata["history"] = [{ "empty_layer": False,
+                                "command":     "ch-image import"}]
    ch.INFO("importing:    %s" % cli.path)
    ch.INFO("destination:  %s" % dst)
    dst.unpack_clear()
