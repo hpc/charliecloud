@@ -407,14 +407,14 @@ class Timer:
 ## Supporting functions ##
 
 def DEBUG(msg, hint=None, **kwargs):
-   #if (verbose >= 2):
-   #   log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
-   log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
+   if (verbose >= 2):
+      log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
+   #log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
-   #if (log_quiet < 2):
-   #   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
-   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
+   if (log_quiet < 2):
+      log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
+   #log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
 
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
@@ -429,23 +429,23 @@ def FATAL(msg, hint=None, **kwargs):
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   #if (log_quiet == 0):
-   #   log(msg, hint, None, "33m", "", **kwargs)  # yellow
-   log(msg, hint, None, "33m", "", **kwargs)  # yellow
+   if (log_quiet == 0):
+      log(msg, hint, None, "33m", "", **kwargs)  # yellow
+   #log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
    if (verbose >= 3):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def VERBOSE(msg, hint=None, **kwargs):
-   #if ((verbose >= 1) and (log_quiet == 0)):
-   if (verbose >= 1):
+   if ((verbose >= 1) and (log_quiet == 0)):
+   #if (verbose >= 1):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
 def WARNING(msg, hint=None, **kwargs):
-   #if (log_quiet < 2):
-   #   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
-   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
+   if (log_quiet < 2):
+      log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
+   #log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
