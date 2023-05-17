@@ -409,12 +409,9 @@ class Timer:
 def DEBUG(msg, hint=None, **kwargs):
    if (verbose >= 2):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
-   #log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
-   if (log_quiet < 2):
-      log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
-   #log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
+   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
 
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
@@ -429,23 +426,18 @@ def FATAL(msg, hint=None, **kwargs):
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   if (log_quiet == 0):
-      log(msg, hint, None, "33m", "", **kwargs)  # yellow
-   #log(msg, hint, None, "33m", "", **kwargs)  # yellow
+   log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
    if (verbose >= 3):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def VERBOSE(msg, hint=None, **kwargs):
-   if ((verbose >= 1) and (log_quiet == 0)):
-   #if (verbose >= 1):
+   if (verbose >= 1):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
 def WARNING(msg, hint=None, **kwargs):
-   if (log_quiet < 2):
-      log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
-   #log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
+   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -538,7 +530,11 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
       CompletedProcess object (its stdout is available in the “stdout”
       attribute). If logging is debug or higher, print stdout."""
-   cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
+   kwargs["stdout"] = subprocess.STDOUT
+   kwargs["stderr"] = subprocess.PIPE
+   cp = cmd_base(argv, encoding=encoding, **kwargs)
+   #cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
+   # FIXME: Add a “log_quiet” check here!
    if (verbose >= 2):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
       sys.stdout.write(cp.stdout)
@@ -800,6 +796,7 @@ def variables_sub(s, variables):
    # substitutes the empty string).
    for (k, v) in variables.items():
       # FIXME: remove when issue #774 is fixed
+      INFO("TYPE S: %s" % type(s))
       m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
       if (m is not None):
          FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
@@ -823,6 +820,7 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
       too_old("%s failed with exit code %d, assuming not present"
               % (prog, cp.returncode))
       return False
+   INFO("TYPE S: %s" % type(cp.stdout))
    m = re.search(regex, cp.stdout)
    if (m is None):
       bad_parse("can’t parse %s version, assuming not present: %s"
