@@ -514,9 +514,6 @@ class Storage:
 
    @staticmethod
    def root_env():
-      if ("CH_GROW_STORAGE" in os.environ):
-         # Avoid surprises if user still has $CH_GROW_STORAGE set (see #906).
-         ch.FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
       if (not "CH_IMAGE_STORAGE" in os.environ):
          return None
       path = Path(os.environ["CH_IMAGE_STORAGE"])
