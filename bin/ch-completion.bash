@@ -487,7 +487,7 @@ _ch_run_image_finder () {
         # “eval echo” (https://stackoverflow.com/a/6988394) to this test.
         if [[ $ct != "$cword" ]]; then
             if [[    (    -f $(eval echo "${wrds[$ct]}") \
-                    && (    ${wrds[$ct]} == *.sqfs \
+                    && (       ${wrds[$ct]} == *.sqfs \
                             || ${wrds[$ct]} == *.tar.? \
                             || ${wrds[$ct]} == *.tar.?? \
                             || ${wrds[$ct]} == *.tgz ) ) \
