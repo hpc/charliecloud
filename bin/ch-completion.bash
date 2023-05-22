@@ -1,5 +1,14 @@
 # Completion script for Charliecloud
-#
+
+# This ShellCheck error pops up whenever we do “COMPREPLY=( $(compgen [...]) )”.
+# This seems to be standard for implementations of bash completion, and we didn't
+# like the suggested alternatives, so we disable it here.
+# shellcheck disable=SC2207
+
+# SC2034 complains about modifying variables by reference in
+# _ch_run_image_finder. Disable it.
+# shellcheck disable=SC2034
+
 # Resources for understanding this script:
 #
 #   * Everything bash:
@@ -64,15 +73,6 @@
 #     $ echo ${foo[@]:1:3}
 #     b c d
 
-# This ShellCheck error pops up whenever we do “COMPREPLY=( $(compgen [...]) )”.
-# This seems to be standard for implementations of bash completion, and we didn't
-# like the suggested alternatives, so we disable it here.
-# shellcheck disable=SC2207
-
-# SC2034 complains about modifying variables by reference in
-# _ch_run_image_finder. Disable it.
-# shellcheck disable=SC2034
-
 # According to this (https://stackoverflow.com/a/50281697) post, bash 4.3 alpha
 # added the feature used in this script to pass a variable by ref.
 bash_vmin=4.3.0
@@ -101,6 +101,7 @@ if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
     printf "completion log\n\n" >> /tmp/ch-completion.log
 fi
 
+
 ## ch-image ##
 
 # Subcommands and options for ch-image
@@ -118,16 +119,8 @@ _image_common_opts="-a --arch --always-download --auth --cache
 _image_subcommands="build build-cache delete gestalt
                     import list pull push reset undelete"
 
-_run_common_opts="-b --bind -c --cd --env-no-expand -g --gid
-                  --home -j --join --join-pid --join-ct --join-tag -m
-                  --mount --no-passwd -s --storage --seccomp -t
-                  --private-tmp --set-env -u --uid --unsafe --unset-env
-                  -v --verbose -w --write -? --help --usage -V --version"
-
 # archs taken from ARCH_MAP in charliecloud.py
 _archs="amd64 arm/v5 arm/v6 arm/v7 arm64/v8 386 mips64le ppc64le s390x"
-
-## ch-image ##
 
 # Completion function for ch-image
 #
@@ -277,7 +270,17 @@ _ch_image_complete () {
     return 0
 }
 
+
 ## ch-run ##
+
+# Options for ch-run
+#
+
+_run_opts="-b --bind -c --cd --env-no-expand -g --gid
+           --home -j --join --join-pid --join-ct --join-tag -m
+           --mount --no-passwd -s --storage --seccomp -t
+           --private-tmp --set-env -u --uid --unsafe --unset-env
+           -v --verbose -w --write -? --help --usage -V --version"
 
 # Completion function for ch-run
 #
@@ -305,8 +308,8 @@ _ch_run_complete () {
 
     # Currently, we don’t try to suggest completions if you’re in the “command”
     # part of the ch-run CLI (i.e. entering commands to be run inside the
-    # container). Implementing this *may* be possible, but that's a complication
-    # I’d prefer to save for a future date.
+    # container). Implementing this *may* be possible, but doing so would likely
+    # be absurdly complicated, so we don’t plan on it.
     if [[ $cmd_index != -1 && $cmd_index -lt $cword ]]; then
         COMPREPLY=()
         return 0
@@ -368,19 +371,24 @@ _ch_run_complete () {
         # No image found in command line, complete dirs, tarfiles, and sqfs
         # archives
         COMPREPLY=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
-        # Complete images in storage
+        # Complete images in storage. Note we don't use “ch-image list” here
+        # because it can initialize an empty storage directory and we don't want
+        # this script to have any such side effects.
         COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
         __ltrim_colon_completions "$cur"
     fi
 
-    # Only use the “nospace” option when a valid path completion exists.
+    # Only use the “nospace” option when a valid path completion exists to avoid
+    # the inconvenience of unnecessarily making users type in their own spaces
+    # all the time.
     if [[ -n "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")" ]]; then
         compopt -o nospace
     fi
 
-    COMPREPLY+=( $(compgen -W "$_run_common_opts $extras" -- "$cur") )
+    COMPREPLY+=( $(compgen -W "$_run_opts $extras" -- "$cur") )
     return 0
 }
+
 
 ## Helper functions ##
 
@@ -446,28 +454,42 @@ _ch_image_subcmd_get () {
 # command line. This function takes five arguments:
 #
 #   1.) A string representing the path to the storage directory.
-#   2.) The current position of the cursor in the array representing the command
-#       line (index starting at 0).
-#   3.) A “reference” to a variable. If “_ch_run_image_finder” finds the name of
-#       an image in storage (e.g. “alpine:latest”) or something that looks like an
-#       image path (i.e. a directory, tarball or file named like a squash archive)
-#       in the command line, the value of the variable will be updated to the image
-#       name or path. If neither are found, the function will not modify the value
-#       of this variable.
-#   4.) Another “reference” to a variable. If this function finds “--” in the
-#       current command line and it doesn't seem like the user is trying to
-#       complete that “--” to an option, “_ch_run_image_finder” will assume that
-#       this is the point beyond which the user specifies commands to be run inside
-#       the container and will give the variable the index value of the “--”.
-#   5.) A string representing the expanded command line array (i.e. "${array[@]}").
+
+#   2.) The current position (measured in words) of the cursor in the array
+#       representing the command line (index starting at 0).
+#   3.) An out parameter (explanation below). If “_ch_run_image_finder” finds
+#       the name of an image in storage (e.g. “alpine:latest”) or something that
+#       looks like an image path (i.e. a directory, tarball or file named like a
+#       squash archive) in the command line, the value of the variable will be
+#       updated to the image name or path. If neither are found, the function
+#       will not modify the value of this variable.
+#   4.) Another out parameter. If this function finds “--” in the current
+#       command line and it doesn't seem like the user is trying to complete
+#       that “--” to an option, “_ch_run_image_finder” will assume that this is
+#       the point beyond which the user specifies commands to be run inside the
+#       container and will give the variable the index value of the “--”. Our
+#       criterion for deciding that the user isn't trying to complete “--” to an
+#       option is that the current index of the cursor in the word array
+#       (argument 2, see above) is not equal to the position of the “--” in said
+#       array.
+#   5.) A string representing the expanded command line array (i.e.
+#       "${array[@]}").
 #
-# Note that when I say variable “reference” here I mean the unquoted name of the
-# variable in question (i.e. “var” instead of “$var” or “"$var"”). Passing the
-# variables to the function in this way allows it to change their values, and for
-# those changes to persist in the scope that called the function.
+# “Out parameter” here means a variable that is meant to pass information from
+# this function to its caller (the “_ch_run_complete” function). Out parameters
+# should be passed to “_ch_run_image_finder” as the unquoted names of variables
+# (e.g. “var” instead of “$var” or “"$var"”). Passing the variables to
+# “_ch_run_image_finder” in this way allows it to change their values, and for
+# those changes to persist in the scope that called the function (this is what
+# makes them “out parameters”).
 #
 _ch_run_image_finder () {
-    # Takes array of words. Tries to find an image in there.
+    # The essential purpose of this function is to try to find an image in the
+    # current command line. If it finds one, it passes the “name” of the image
+    # back to the caller in the form of an out parameter (see above). If it
+    # doesn't find one, the out parameter remains unmodified. This function
+    # assumes that the out parameter in question is the empty string before it
+    # gets called.
     local images                   # these two lines are separate b/c SC2155
     images=$(_ch_list_images "$1") #
     shift 1
@@ -486,7 +508,7 @@ _ch_run_image_finder () {
         # https://stackoverflow.com/a/52519780). To work around this, we add
         # “eval echo” (https://stackoverflow.com/a/6988394) to this test.
         if [[ $ct != "$cword" ]]; then
-            if [[    (    -f $(eval echo "${wrds[$ct]}") \
+            if [[    (    -f "$(_sanitized_tilde_expand "${wrds[$ct]}")" \
                     && (       ${wrds[$ct]} == *.sqfs \
                             || ${wrds[$ct]} == *.tar.? \
                             || ${wrds[$ct]} == *.tar.?? \
@@ -561,6 +583,31 @@ _compgen_filepaths() {
 
     # Directories with trailing slashes:
     compgen -d -S / -- "$cur"
+}
+
+# Expand tilde in quoted strings to the correct home path, if applicable, while
+# sanitizing to prevent code injection (see https://stackoverflow.com/a/38037679).
+#
+_sanitized_tilde_expand () {
+    if [[ $1 == ~* ]]; then
+        # Adding the “/” at the end here is important for ensuring that the “~”
+        # always gets expanded, e.g. in the case where "$1" is “~” instead of
+        # “~/”.
+        user="$(echo "$1/" | sed -E 's|^~([^~/]*/).*|\1|g')"
+        path="$(echo "$1" | sed -E 's|^~[^~/]*(.*)|\1|g')"
+        eval "$(printf "home=~%q" "$user")"
+        # Check if “home” is a vaild directory.
+        # shellcheck disable=SC2154
+        if [[ -d "$home" ]]; then
+            # The first character of “path” is “/”. Since we've added a “/” to
+            # the end of “home” for proper “~” expansion, we now avoid the first
+            # character of “path” in the concatenation of the two to avoid a
+            # “//”.
+            echo "$home${path:1:${#path}-1}"
+            return 0
+        fi
+    fi
+    echo "$1"
 }
 
 complete -F _ch_image_complete ch-image
