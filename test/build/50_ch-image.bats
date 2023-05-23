@@ -684,16 +684,16 @@ EOF
     test -f "${img}/stage0"
     test ! -f "${img}/stage1"
 
-    # Bogus argument.
-    run ch-image build --target=alfredo -t multisauce -f - . <<EOF
+    # Base as argument; last stage
+    run ch-image build --target=scratch -t multisauce -f - . <<EOF
 ${df}
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output == *'FROM alpine:3.17 AS aioli'* ]]
+    [[ $output == *'warning'*'redundant'*'last stage'* ]]
+    [[ $output == *'alpine:3.17 AS aioli'* ]]
     [[ $output == *'FROM alpine:3.16 AS marinara'* ]]
     [[ $output == *'FROM scratch'* ]]
-    [[ $output == *'warning: --target: alfredo: not found; ignored'* ]]
     [[ $output == *'grown in 6 instructions: multisauce'* ]]
     test -f "${img}/stage0"
     test ! -f "${img}/stage1"

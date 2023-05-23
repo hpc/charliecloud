@@ -250,7 +250,7 @@ class Prune_Loop(lark.visitors.Transformer_InPlace):
          ch.VERBOSE("  pruning %s" % data)
          return lark.visitors.Discard
       if (data == "from_"):
-         if (self.target_visited):
+         if (self.target_visited and self.stage_ct is not None):
             ch.VERBOSE("  pruning %s" % data)
             self.prune = True
             return lark.visitors.Discard
@@ -258,7 +258,10 @@ class Prune_Loop(lark.visitors.Transformer_InPlace):
             self.stage_ct = 0
          else:
             self.stage_ct += 1
-      if (str(self.stage_ct) == target_stage or data == target_stage):
+      if (str(self.stage_ct) == target_stage):
+         self.target_visited = True
+      if (   (data == 'image_ref' or data == 'from_alias')
+          and children[0] == target_stage):
          self.target_visited = True
       return im.Tree(data, children, meta)
 
