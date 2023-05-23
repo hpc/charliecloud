@@ -17,7 +17,7 @@ import filesystem as fs
 import force
 import image as im
 import pull
-
+import lark.visitors as lv
 
 ## Globals ##
 
@@ -39,11 +39,9 @@ images = dict()
 # parse tree, so we can use it for error checking.
 image_ct = None
 
-# Build stage modifiers. Each stage of a multistage build may be designated as
-# the _last_ stage. These variables are used with I_from objects in conjunction
-# the with Main loop to ignore subsequent stages when set.
-last_image = None
-stop_build = None
+# Build stage modifiers. Each stage of a multistage build may be targeted as
+# the _last_ stage to execute.
+target_stage = None
 
 ## Imports not in standard library ##
 
@@ -172,9 +170,23 @@ def main(cli_):
    global image_ct
    image_ct = sum(1 for i in tree.children_("from_"))
 
-   # Exit if multistage target is specified for single stage Dockerfile.
-   if (cli.target is not None and image_ct < 2):
-      ch.FATAL("target: %s: requires a multistage image" % cli.target)
+   ch.INFO(image_ct)
+   # Multistage target.
+   if (cli.target is not None):
+      ch.WARNING(tree.pretty())
+      global target_stage
+      target_stage = cli.target
+      if (image_ct < 2):
+         ch.FATAL("target: %s: requires a multistage image" % target_stage)
+      if (int(target_stage) == image_ct - 1):
+         ch.WARNING("target: %s: redundant; is last stage" % target_stage)
+      ch.WARNING(tree)
+      # Transform the tree, pruning nodes outside beyond the target stage.
+      ch.WARNING(Prune_Loop().transform(tree))
+      # Set new stage count based on transformed tree.
+      image_ct = sum(1 for i in tree.children_("from_"))
+      ch.INFO(image_ct)
+      ch.WARNING(tree.pretty())
 
    # Traverse the tree and do what it says.
    #
@@ -208,32 +220,59 @@ def main(cli_):
    # Print summary & we’re done.
    if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
-   if (cli.target is None):
-      assert ml.inst_prev.image_i + 1 == image_ct # should’ve errored already
-   elif (last_image is None):
-      ch.WARNING("--target: %s: not found; ignored" % cli.target)
+   assert ml.inst_prev.image_i + 1 == image_ct # should’ve errored already
    if (cli.force and ml.miss_ct != 0):
       ch.INFO("--force=%s: modified %d RUN instructions"
               % (cli.force, forcer.run_modified_ct))
    ch.INFO("grown in %d instructions: %s"
-           % (ml.instruction_total_ct - 1 if stop_build else ml.instruction_total_ct,
-              cli.tag if stop_build else ml.inst_prev.image))
+           % (ml.instruction_total_ct, ml.inst_prev.image))
    # FIXME: remove when we’re done encouraging people to use the build cache.
    if (isinstance(bu.cache, bu.Disabled_Cache)):
       ch.INFO("build slow? consider enabling the new build cache",
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
 
+class Prune_Loop(lark.visitors.Transformer_InPlace):
+   __slots__ = ("prune",          # boolean, prune node?
+                "stage_ct",       # int, current stage number
+                "target_visited")  # boolean, target visited?
+
+   def __init__(self, *args, **kwargs):
+      self.prune = False
+      self.stage_ct = None
+      self.target_visited = False
+      super().__init__(*args, **kwargs)
+
+   def __default__(self, data, children, meta, *args, **kwargs):
+      if (data != 'dockerfile' and data != 'start'):
+         ch.WARNING("prune loop: visiting: %s" % data)
+         if (self.prune):
+            ch.WARNING("  pruning ...")
+            return lark.visitors.Discard
+         if (data == "from_"):
+            if (self.target_visited):
+               ch.WARNING("  pruning ...")
+               self.prune = True
+               return lark.visitors.Discard
+            if (self.stage_ct is None):
+               self.stage_ct = 0
+            else:
+               self.stage_ct += 1
+         if (self.stage_ct == int(target_stage) or data == target_stage):
+            self.target_visited = True
+      return im.Tree(data, children, meta)
 
 class Main_Loop(lark.Visitor):
 
    __slots__ = ("instruction_total_ct",
-                "miss_ct",    # number of misses during this stage
-                "inst_prev")  # last instruction executed
+                "miss_ct",     # number of misses during this stage
+                "inst_prev",   # last instruction executed
+                "skip")
 
    def __init__(self, *args, **kwargs):
       self.miss_ct = 0
       self.inst_prev = None
       self.instruction_total_ct = 0
+      self.skip = False
       super().__init__(*args, **kwargs)
 
    def __default__(self, tree):
@@ -248,30 +287,31 @@ class Main_Loop(lark.Visitor):
          inst.init(self.inst_prev)
          # The three announce_maybe() calls are clunky but I couldn’t figure
          # out how to avoid the repeats.
-         if (stop_build is None):
-           try:
-              self.miss_ct = inst.prepare(self.miss_ct)
-              inst.announce_maybe()
-           except Instruction_Ignored:
-              inst.announce_maybe()
-              return
-           except ch.Fatal_Error:
-              inst.announce_maybe()
-              raise
-           if (inst.miss):
-              if (self.miss_ct == 1):
-                 inst.checkout_for_build()
-              try:
-                 inst.execute()
-              except ch.Fatal_Error:
-                 inst.rollback()
-                 raise
-              if (inst.image_i >= 0):
-                 inst.metadata_update()
-              inst.commit()
-           self.inst_prev = inst
-           self.instruction_total_ct += 1
-
+         try:
+            self.miss_ct = inst.prepare(self.miss_ct)
+            if (isinstance(self.miss_ct, str)):
+               self.skip = True
+               return
+            inst.announce_maybe()
+         except Instruction_Ignored:
+            inst.announce_maybe()
+            return
+         except ch.Fatal_Error:
+            inst.announce_maybe()
+            raise
+         if (inst.miss):
+            if (self.miss_ct == 1):
+               inst.checkout_for_build()
+            try:
+               inst.execute()
+            except ch.Fatal_Error:
+               inst.rollback()
+               raise
+            if (inst.image_i >= 0):
+               inst.metadata_update()
+            inst.commit()
+         self.inst_prev = inst
+         self.instruction_total_ct += 1
 
 ## Instruction classes ##
 
@@ -405,8 +445,6 @@ class Instruction(abc.ABC):
 
    def announce_maybe(self):
       "Announce myself if I haven’t already been announced."
-      if (stop_build):
-         return
       if (not self.announced_p):
          ch.INFO("%3s%s %s" % (self.lineno, self.status_char, self))
          self.announced_p = True
@@ -1073,14 +1111,6 @@ class I_from_(Instruction):
          base_text = self.base_text
       return base_text + ((" AS " + self.alias) if self.alias else "")
 
-   @property
-   def is_target(self):
-      if (   cli.target == str(self.image_i)
-          or cli.target == str(self.alias)
-          or cli.target == str(self.base_text)):
-         return True
-      return False
-
    def checkout_for_build(self):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
       super().checkout_for_build(self.base_image)
@@ -1108,17 +1138,8 @@ class I_from_(Instruction):
       self.options_assert_empty()
       self.image_i += 1
       self.image_alias = self.alias
-      global stop_build
-      global last_image
-      # If the previous stage was the specified multistage target; set
-      # 'stop_build' to exit after checking out the previous stage.
-      if (last_image is not None):
-         stop_build = True
-      # Determine if this stage is the specified multistage target.
-      if (self.is_target):
-         last_image = True
       # Update context.
-      if (self.image_i == image_ct - 1 or self.is_target):
+      if (   self.image_i == image_ct - 1):
          # Last image; use tag unchanged.
          tag = cli.tag
       elif (self.image_i > image_ct - 1):
@@ -1143,7 +1164,7 @@ class I_from_(Instruction):
       # already have the image directory and there is no notion of branch
       # “ready”, so do nothing in that case.
       if (self.image_i > 0 and not isinstance(bu.cache, bu.Disabled_Cache)):
-         if (miss_ct == 0 or stop_build is not None):
+         if (miss_ct == 0):
             # No previous miss already checked out the image. This will still
             # be fast most of the time since the correct branch is likely
             # checked out already.
@@ -1152,8 +1173,6 @@ class I_from_(Instruction):
       # At this point any meaningful parent of FROM, e.g., previous stage, has
       # been closed; thus, act as own parent.
       self.parent = self
-      if (stop_build is not None):
-         return
       # Pull base image if needed. This tells us hit/miss.
       (self.sid, self.git_hash) = bu.cache.find_image(self.base_image)
       unpack_no_git = (    self.base_image.unpack_exist_p
