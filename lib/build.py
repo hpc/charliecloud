@@ -175,7 +175,7 @@ def main(cli_):
       target_stage = cli.target
       if (image_ct < 2):
          ch.FATAL("target: %s: requires a multistage image" % target_stage)
-      if (int(target_stage) == image_ct - 1):
+      if (target_stage == str(image_ct - 1)):
          ch.WARNING("target: %s: redundant; is last stage" % target_stage)
       # Prune instructions beyond the target stage.
       Prune_Loop().transform(tree)
@@ -258,7 +258,7 @@ class Prune_Loop(lark.visitors.Transformer_InPlace):
             self.stage_ct = 0
          else:
             self.stage_ct += 1
-      if (self.stage_ct == int(target_stage) or data == target_stage):
+      if (str(self.stage_ct) == target_stage or data == target_stage):
          self.target_visited = True
       return im.Tree(data, children, meta)
 
