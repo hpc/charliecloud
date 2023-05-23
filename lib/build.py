@@ -245,13 +245,13 @@ class Prune_Loop(lark.visitors.Transformer_InPlace):
       return im.Tree('start', children)
 
    def __default__(self, data, children, meta, *args, **kwargs):
-      ch.VERBOSE("prune loop: visiting: %s" % data)
+      ch.VERBOSE("prune loop: visiting node: %s" % data)
       if (self.prune):
-         ch.VERBOSE("  pruning ...")
+         ch.VERBOSE("  pruning %s" % data)
          return lark.visitors.Discard
       if (data == "from_"):
          if (self.target_visited):
-            ch.VERBOSE("  pruning ...")
+            ch.VERBOSE("  pruning %s" % data)
             self.prune = True
             return lark.visitors.Discard
          if (self.stage_ct is None):
@@ -266,8 +266,8 @@ class Prune_Loop(lark.visitors.Transformer_InPlace):
 class Main_Loop(lark.Visitor):
 
    __slots__ = ("instruction_total_ct",
-                "miss_ct",     # number of misses during this stage
-                "inst_prev")   # last instruction executed
+                "miss_ct",    # number of misses during this stage
+                "inst_prev")  # last instruction executed
 
    def __init__(self, *args, **kwargs):
       self.miss_ct = 0
