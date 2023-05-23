@@ -170,23 +170,19 @@ def main(cli_):
    global image_ct
    image_ct = sum(1 for i in tree.children_("from_"))
 
-   ch.INFO(image_ct)
-   # Multistage target.
+   # Transform tree with the multistage target.
    if (cli.target is not None):
-      ch.WARNING(tree.pretty())
       global target_stage
       target_stage = cli.target
       if (image_ct < 2):
          ch.FATAL("target: %s: requires a multistage image" % target_stage)
       if (int(target_stage) == image_ct - 1):
          ch.WARNING("target: %s: redundant; is last stage" % target_stage)
-      ch.WARNING(tree)
-      # Transform the tree, pruning nodes outside beyond the target stage.
-      ch.WARNING(Prune_Loop().transform(tree))
+      # Prune instructions beyond the target stage.
+      Prune_Loop().transform(tree)
       # Set new stage count based on transformed tree.
       image_ct = sum(1 for i in tree.children_("from_"))
-      ch.INFO(image_ct)
-      ch.WARNING(tree.pretty())
+      ch.VERBOSE("pruned tree:\n%s" % tree.pretty())
 
    # Traverse the tree and do what it says.
    #
@@ -231,9 +227,10 @@ def main(cli_):
       ch.INFO("build slow? consider enabling the new build cache",
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
 
+
 class Prune_Loop(lark.visitors.Transformer_InPlace):
-   __slots__ = ("prune",          # boolean, prune node?
-                "stage_ct",       # int, current stage number
+   __slots__ = ("prune",           # boolean, prune node?
+                "stage_ct",        # int, current stage number
                 "target_visited")  # boolean, target visited?
 
    def __init__(self, *args, **kwargs):
@@ -242,24 +239,30 @@ class Prune_Loop(lark.visitors.Transformer_InPlace):
       self.target_visited = False
       super().__init__(*args, **kwargs)
 
+   def dockerfile(self, children):
+      return im.Tree('dockerfile', children)
+
+   def start(self, children):
+      return im.Tree('start', children)
+
    def __default__(self, data, children, meta, *args, **kwargs):
-      if (data != 'dockerfile' and data != 'start'):
-         ch.WARNING("prune loop: visiting: %s" % data)
-         if (self.prune):
-            ch.WARNING("  pruning ...")
+      ch.VERBOSE("prune loop: visiting: %s" % data)
+      if (self.prune):
+         ch.VERBOSE("  pruning ...")
+         return lark.visitors.Discard
+      if (data == "from_"):
+         if (self.target_visited):
+            ch.VERBOSE("  pruning ...")
+            self.prune = True
             return lark.visitors.Discard
-         if (data == "from_"):
-            if (self.target_visited):
-               ch.WARNING("  pruning ...")
-               self.prune = True
-               return lark.visitors.Discard
-            if (self.stage_ct is None):
-               self.stage_ct = 0
-            else:
-               self.stage_ct += 1
-         if (self.stage_ct == int(target_stage) or data == target_stage):
-            self.target_visited = True
+         if (self.stage_ct is None):
+            self.stage_ct = 0
+         else:
+            self.stage_ct += 1
+      if (self.stage_ct == int(target_stage) or data == target_stage):
+         self.target_visited = True
       return im.Tree(data, children, meta)
+
 
 class Main_Loop(lark.Visitor):
 
