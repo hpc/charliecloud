@@ -426,7 +426,8 @@ def FATAL(msg, hint=None, **kwargs):
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(msg, hint, None, "33m", "", **kwargs)  # yellow
+   if (log_quiet == 0):
+      log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
    if (verbose >= 3):
@@ -480,6 +481,9 @@ def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
       or not the process succeeded; otherwise, return (zero) only if the
       process succeeded and exit with fatal error if it failed."""
+   if (log_quiet != 0):
+      kwargs["stdout"] = subprocess.DEVNULL
+      kwargs["stderr"] = subprocess.DEVNULL
    cp = cmd_base(argv, fail_ok=fail_ok, **kwargs)
    return cp.returncode
 
@@ -499,9 +503,9 @@ def cmd_base(argv, fail_ok=False, **kwargs):
          kwargs["stderr"] = subprocess.PIPE
    if ("input" not in kwargs):
       kwargs["stdin"] = subprocess.DEVNULL
-   if (log_quiet > 0):
-      kwargs["stdout"] = subprocess.DEVNULL
-      kwargs["stderr"] = subprocess.DEVNULL
+   #if (log_quiet > 0):
+   #   kwargs["stdout"] = subprocess.DEVNULL
+   #   kwargs["stderr"] = subprocess.DEVNULL
    try:
       profile_stop()
       cp = subprocess.run(argv, **kwargs)
@@ -530,6 +534,12 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
       CompletedProcess object (its stdout is available in the “stdout”
       attribute). If logging is debug or higher, print stdout."""
+   #if (not log_quiet):
+   #   kwargs["stdout"] = subprocess.STDOUT
+   #   kwargs["stderr"] = subprocess.PIPE
+   #else:
+   #   kwargs["stdout"] = subprocess.PIPE
+   #   kwargs["stderr"] = subprocess.PIPE
    kwargs["stdout"] = subprocess.STDOUT
    kwargs["stderr"] = subprocess.PIPE
    cp = cmd_base(argv, encoding=encoding, **kwargs)
@@ -796,7 +806,6 @@ def variables_sub(s, variables):
    # substitutes the empty string).
    for (k, v) in variables.items():
       # FIXME: remove when issue #774 is fixed
-      INFO("TYPE S: %s" % type(s))
       m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
       if (m is not None):
          FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
@@ -820,7 +829,6 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
       too_old("%s failed with exit code %d, assuming not present"
               % (prog, cp.returncode))
       return False
-   INFO("TYPE S: %s" % type(cp.stdout))
    m = re.search(regex, cp.stdout)
    if (m is None):
       bad_parse("can’t parse %s version, assuming not present: %s"
