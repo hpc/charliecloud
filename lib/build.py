@@ -17,7 +17,6 @@ import filesystem as fs
 import force
 import image as im
 import pull
-import lark.visitors as lv
 
 ## Globals ##
 
@@ -216,7 +215,7 @@ def main(cli_):
    # Print summary & we’re done.
    if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
-   assert ml.inst_prev.image_i + 1 == image_ct # should’ve errored already
+   assert(ml.inst_prev.image_i + 1 == image_ct) # should’ve errored already
    if (cli.force and ml.miss_ct != 0):
       ch.INFO("--force=%s: modified %d RUN instructions"
               % (cli.force, forcer.run_modified_ct))
@@ -268,14 +267,12 @@ class Main_Loop(lark.Visitor):
 
    __slots__ = ("instruction_total_ct",
                 "miss_ct",     # number of misses during this stage
-                "inst_prev",   # last instruction executed
-                "skip")
+                "inst_prev")   # last instruction executed
 
    def __init__(self, *args, **kwargs):
       self.miss_ct = 0
       self.inst_prev = None
       self.instruction_total_ct = 0
-      self.skip = False
       super().__init__(*args, **kwargs)
 
    def __default__(self, tree):
@@ -292,9 +289,6 @@ class Main_Loop(lark.Visitor):
          # out how to avoid the repeats.
          try:
             self.miss_ct = inst.prepare(self.miss_ct)
-            if (isinstance(self.miss_ct, str)):
-               self.skip = True
-               return
             inst.announce_maybe()
          except Instruction_Ignored:
             inst.announce_maybe()
@@ -1142,7 +1136,7 @@ class I_from_(Instruction):
       self.image_i += 1
       self.image_alias = self.alias
       # Update context.
-      if (   self.image_i == image_ct - 1):
+      if (self.image_i == image_ct - 1):
          # Last image; use tag unchanged.
          tag = cli.tag
       elif (self.image_i > image_ct - 1):
