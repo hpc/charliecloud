@@ -1,0 +1,3 @@
+ARG base=alpine:3.17
+FROM $base
+RUN true

@@ -11,6 +11,7 @@ bucache/a-fail.df \
 bucache/argenv.df \
 bucache/argenv-special.df \
 bucache/argenv2.df \
+bucache/argfrom.df \
 bucache/b.df \
 bucache/c.df \
 bucache/copy.df \
