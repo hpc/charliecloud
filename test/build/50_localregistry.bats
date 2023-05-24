@@ -44,7 +44,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'pushing image:   tmpimg'* ]]
     [[ $output = *'destination:     localhost:5000/tmpimg'* ]]
-    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%tmpimg"* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/tmpimg"* ]]
 }
 
 @test "${tag}: with destination reference" {
