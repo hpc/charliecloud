@@ -124,6 +124,9 @@ EOF
 }
 
 @test "${tag}: environment variables round-trip" {
+    # Delete “tmpimg” from previous test to avoid issues
+    ch-image delete tmpimg
+
     cat <<'EOF' | ch-image build -t tmpimg -
 FROM alpine:3.17
 ENV weird="al yankovic"
