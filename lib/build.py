@@ -479,7 +479,6 @@ class Instruction(abc.ABC):
               LABEL, SHELL, and WORKDIR must modify metadata here, not in
               execute(), so it’s available to later instructions even on
               cache hit."""
-
       self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       return miss_ct + int(self.miss)
