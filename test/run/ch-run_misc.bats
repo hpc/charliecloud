@@ -972,12 +972,6 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
-    # --ch-ssh but no /usr/bin/ch-ssh
-    run ch-run --ch-ssh "$img" -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"--ch-ssh: /usr/bin/ch-ssh not in image"* ]]
-
     # Everything should be restored and back to the original error.
     run ch-run "$img" -- /bin/true
     echo "$output"

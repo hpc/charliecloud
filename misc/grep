@@ -22,7 +22,6 @@ find . \(    -path ./.git \
           -o -path ./bin/ch-image \
           -o -path ./bin/ch-run \
           -o -path ./bin/ch-run-oci \
-          -o -path ./bin/ch-ssh \
           -o -path ./doc/html \
           -o -path ./doc/man \
           -o -path ./test/approved-trailing-whitespace \
