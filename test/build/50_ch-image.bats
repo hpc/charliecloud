@@ -853,13 +853,13 @@ EOF
 @test "IMPORT cache miss" {  # issue #1638
     [[ $CH_IMAGE_CACHE = enabled ]] || skip 'build cache enabled only'
 
-    ch-convert alpine:3.17 $BATS_TMPDIR/alpine317.tar.gz
-    ch-convert alpine:3.16 $BATS_TMPDIR/alpine316.tar.gz
+    ch-convert alpine:3.17 "$BATS_TMPDIR"/alpine317.tar.gz
+    ch-convert alpine:3.16 "$BATS_TMPDIR"/alpine316.tar.gz
 
     export CH_IMAGE_STORAGE=$BATS_TMPDIR/import_1638
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
-    ch-image import $BATS_TMPDIR/alpine317.tar.gz alpine:3.17
-    ch-image import $BATS_TMPDIR/alpine316.tar.gz alpine:3.16
+    ch-image import "$BATS_TMPDIR"/alpine317.tar.gz alpine:3.17
+    ch-image import "$BATS_TMPDIR"/alpine316.tar.gz alpine:3.16
 
     df1=$BATS_TMPDIR/import_1638.1.df
     cat > "$df1" <<'EOF'
@@ -874,7 +874,7 @@ EOF
 
     echo
     echo '*** Build once: miss'
-    run ch-image build -t tmpimg -f "$df1" $BATS_TMPDIR
+    run ch-image build -t tmpimg -f "$df1" "$BATS_TMPDIR"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'1* FROM alpine:3.17'* ]]
@@ -882,7 +882,7 @@ EOF
 
     echo
     echo '*** Build again: hit'
-    run ch-image build -t tmpimg -f "$df1" $BATS_TMPDIR
+    run ch-image build -t tmpimg -f "$df1" "$BATS_TMPDIR"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'1* FROM alpine:3.17'* ]]
@@ -890,7 +890,7 @@ EOF
 
     echo
     echo '*** Build a 3rd time with the second base image: should now miss'
-    run ch-image build -t tmpimg -f "$df2" $BATS_TMPDIR
+    run ch-image build -t tmpimg -f "$df2" "$BATS_TMPDIR"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'1* FROM alpine:3.16'* ]]
