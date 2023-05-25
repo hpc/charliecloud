@@ -42,6 +42,8 @@ You cannot use this program to actually change your UID.\n";
 
 const char args_doc[] = "IMAGE -- CMD [ARG...]";
 
+/* Note: Long option numbers, once issued, are permanent; i.e., if you remove
+   one, don’t re-number the others. */
 const struct argp_option options[] = {
    { "bind",          'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default: same as SRC)"},
@@ -414,13 +416,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       ed.arg.glob = arg;
       list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
       break;;
-   case -8: // --no-passwd
+   case -9: // --no-passwd
       args->c.private_passwd = true;
       break;
-   case -9: // --env-no-expand
+   case -10: // --env-no-expand
       args->c.env_expand = false;
       break;
-   case -10: // --feature
+   case -11: // --feature
       if (!strcmp(arg, "extglob")) {
 #ifdef HAVE_FNM_EXTMATCH
          exit(0);
@@ -437,10 +439,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       else
          FATAL("unknown feature: %s", arg);
       break;
-   case -11: // --home
+   case -12: // --home
       Tf (args->c.host_home = getenv("HOME"), "--home failed: $HOME not set");
       break;
-   case -12: // --unsafe
+   case -13: // --unsafe
       args->unsafe = true;
       break;
 #ifdef HAVE_SECCOMP
