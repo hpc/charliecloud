@@ -33,6 +33,10 @@ GIT_CONFIG = {
    # Prioritize write speed over data safety; i.e., increase the risk of cache
    # corruption on system crash while (hopefully) decreasing write speed.
    "core.fsync":             "none",
+   # We want to keep access to commits on deleted branches so they are still
+   # available for cache hits. This setting is necessary but not sufficient;
+   # see branch_delete() below.
+   "core.logAllRefUpdates":  "true",
    # Try to maximize “git add” speed.
    "core.looseCompression":  "0",
    # Enable incremental indexes [1]; it should speed things like “git add”.
@@ -64,6 +68,9 @@ GIT_CONFIG = {
    # that reduces index size by 30%-50% on large repositories” [1].
    # [1]: https://git-scm.com/docs/git-update-index
    "index.version":          "4",
+   # Print logs in short format by default. This helps ensure consistency
+   # across different systems and git versions.
+   "log.decorate":           "short",
    # States on the reflog are available to the build cache, but the default
    # prune time is 90 and 30 days respectively, which seems too long.
    #"gc.reflogExpire":        "14.days.ago",  # changed my mind
@@ -669,10 +676,33 @@ class Enabled_Cache:
                   % (x.filename, x.strerror))
 
    def branch_delete(self, branch):
-      "Delete branch branch if it exists; otherwise, do nothing."
-      if (self.git(["show-ref", "--quiet", "--heads", branch],
-                   fail_ok=True).returncode == 0):
-         self.git(["branch", "-D", branch])
+      """Delete branch branch if it exists; otherwise, do nothing. This
+         removes only the branch ref; its commits remain until garbage
+         collected."""
+      # Note: in a typical Git working directory, HEAD has followed the branch
+      # around, so when we delete a branch ref *and necessarily its reflog
+      # too*, that branch’s commits remain accessible via HEAD’s reflog until
+      # the reflog entries expire. However, in our case, it’s the worktree
+      # HEAD that did the following, and that reflog goes away when the
+      # worktree is deleted, so the branch’s commits become inaccessible
+      # immediately upon branch deletion. Here, the first “update-ref”
+      # shenanigan logs the branch tip in the bare repo’s HEAD reflog, keeping
+      # the commits accessible. The second puts HEAD back where it was.
+      branches = [branch]
+      if (self.ready_p(branch) and (self.cached_p(branch))):
+         branches.append(self.unready_of(branch))
+         # Tag deleted branch. This is allows images to be recovered with
+         # “undelete.” Note that the “-f” flag overwrites existing tags with the
+         # same name, meaning we only track the most recently deleted branch.
+         self.git(["tag", "-a", "-f", "&%s" % branch, branch, "-m", "''"])
+      for brnch in branches:
+         if (self.git(["show-ref", "--quiet", "--heads", brnch],
+                     fail_ok=True).returncode == 0): # branch found
+            head_old = self.git(["rev-parse", "HEAD"]).stdout.strip()
+            self.git(["update-ref", "HEAD", brnch])
+            self.git(["update-ref", "HEAD", head_old])
+            self.git(["branch", "-D", brnch])
+
 
    def branch_nocheckout(self, src_ref, dest):
       """Create ready branch for Ref src_ref pointing to dest, which can
@@ -686,10 +716,20 @@ class Enabled_Cache:
          self.git(["checkout", "--detach"], cwd=src_img.unpack_path)
       self.git(["branch", "-f", self.branch_name_ready(src_ref), dest])
 
+   def cached_p(self, git_id):
+      """True iff image corresponding to “git_id” is in the cache."""
+      return self.find_commit(git_id)[1] != None
+
    def checkout(self, image, git_hash, base_image):
       # base_image used in other subclasses
       self.worktree_add(image, git_hash)
       self.git_restore(image.unpack_path, [], False)
+
+   def checkout_ready(self, image, git_hash, base_image=None):
+      """“checkout()” followed by “ready()” is an operation that appears several
+         times throughout the code, so we wrap it here."""
+      self.checkout(image, git_hash, base_image)
+      self.ready(image)
 
    def commit(self, path, sid, msg, files):
       # Commit image at path into the build cache. If set files is empty, any
@@ -719,6 +759,18 @@ class Enabled_Cache:
       git_hash = cp.stdout.strip()
       self.git_restore(path, files, True)
       return git_hash
+
+   def commit_find_deleted(self, git_id):
+         deleted = self.git(["log", "--format=%h%n%B", "-n", "1",
+                           "&%s" % git_id],fail_ok=True)
+         if (deleted.returncode == 0):
+            # Commit was previously deleted but is still cached. Get info.
+            sid = State_ID.from_text(deleted.stdout)
+            commit = deleted.stdout.split("\n", maxsplit=1)[0]
+         else:
+            sid = None
+            commit = None
+         return (sid, commit)
 
    def configure(self):
       # Configuration.
@@ -812,6 +864,9 @@ class Enabled_Cache:
          commit = None
       ch.VERBOSE("commit-ish %s: %s %s" % (git_id, commit, sid))
       return (sid, commit)
+
+   def find_deleted_image(self, image):
+      return self.commit_find_deleted(image.ref.for_path)
 
    def find_image(self, image):
       """Return (state ID, commit) of branch tip for image, or (None, None) if
@@ -938,8 +993,9 @@ class Enabled_Cache:
       if (dl_git_hash is not None):
          # Downloaded image is in cache, check it out.
          ch.INFO("pulled image: found in build cache")
-         self.checkout(img, dl_git_hash, None)
-         self.ready(img)
+         # Remove tag for previously deleted branch, if it exists.
+         self.tag_delete(img.ref.for_path, fail_ok=True)
+         self.checkout_ready(img, dl_git_hash)
       else:
          # Unpack and commit downloaded image. This also creates the worktree.
          ch.INFO("pulled image: adding to build cache")
@@ -966,9 +1022,15 @@ class Enabled_Cache:
       return (sid, commit)
 
    def ready(self, image):
+      (_, git_hash) = self.find_deleted_image(image)
+      if (not (git_hash is None)):
+         self.tag_delete(image.ref.for_path) # Branch was deleted.
       self.git(["checkout", "-B", self.branch_name_ready(image.ref)],
                cwd=image.unpack_path)
       self.branch_delete(self.branch_name_unready(image.ref))
+
+   def ready_p(self, branch):
+      return (not branch.endswith("#"))
 
    def reset(self):
       if (self.bootstrap_ct >= 1):
@@ -1060,19 +1122,24 @@ class Enabled_Cache:
          print("Git config:")
          print(textwrap.indent(out, "  "), end="")
 
+   def tag_delete(self, tag, *args, **kwargs):
+      """Delete specified git tag. Used for recovering deleted branches."""
+      return self.git(["tag", "-d", "&%s" % tag], *args, **kwargs)
+
    def tree_print(self):
       # Note the percent codes are interpreted by Git.
       # See: https://git-scm.com/docs/git-log#_pretty_formats
+      args = ["log", "--graph", "--all", "--reflog", "--topo-order"]
       if (ch.verbose == 0):
-         # ref names, subject (instruction)
+         # ref names, subject (instruction), branch heads.
          fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
+         args.append("--decorate-refs=refs/heads")
       else:
          # ref names, short commit hash, subject (instruction), body (state ID)
          # FIXME: The body contains a trailing newline I can’t figure out how
          # to remove.
          fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
-      self.git(["log", "--graph", "--all", "--reflog",
-                       "--topo-order", "--format=%s" % fmt], quiet=False)
+      self.git(args + ["--format=%s" % fmt], quiet=False)
       print()  # blank line to separate from summary
 
    def tree_dot(self):
@@ -1097,6 +1164,24 @@ class Enabled_Cache:
  "-l", "@SID@|%s", str(path_gv)], cwd=self.root)
       ch.VERBOSE("writing %s" % path_pdf)
       ch.cmd_quiet(["dot", "-Tpdf", "-o%s" % path_pdf, str(path_gv)])
+
+   def unpack_delete(self, image):
+      """Wrapper for Image.unpack_delete() that first detaches the work tree's
+         head. If we delete an image's unpack path without first detaching HEAD,
+         the corresponding work tree must also be deleted before the bucache
+         branch. This involves multiple calls to worktrees_fix(), which is
+         clunky, so we use this method instead."""
+      (_, commit) = self.find_commit(image.ref.for_path)
+      if (commit is not None):
+         # Off with her head!
+         self.git(["checkout", "%s" % commit], cwd=image.unpack_path)
+      image.unpack_delete()
+
+   def unready_of(self, branch):
+      if (self.ready_p(branch)):
+         return branch + "#"
+      else:
+         return branch
 
    def worktree_add(self, image, base):
       if (image.unpack_cache_linked):

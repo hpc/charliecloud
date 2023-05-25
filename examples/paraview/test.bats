@@ -4,6 +4,7 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok paraview
+    pmix_or_skip
     indir=${CHTEST_EXAMPLES_DIR}/paraview
     outdir=$BATS_TMPDIR/paraview
     inbind=${indir}:/mnt/0

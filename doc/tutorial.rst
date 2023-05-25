@@ -418,7 +418,7 @@ Let’s pull that image and see how it looks::
   almalinux:8
   hello
   hello.2
-  $ ch-image convert hello.2 ./hello.2
+  $ ch-convert hello.2 ./hello.2
   $ ls ./hello.2
   bin    etc    lib    mnt    proc   run    srv    tmp    var
   dev    home   media  opt    root   sbin   sys    usr
@@ -631,7 +631,7 @@ Finally, inspect the cache::
   |/
   *  RUN sleep 2 && echo foo
   *  (almalinux:8) PULL almalinux:8
-  *  (HEAD -> root) ROOT
+  *  (root) ROOT
 
   named images:    4
   state IDs:       5

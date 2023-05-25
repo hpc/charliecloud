@@ -19,6 +19,7 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope standard
     prerequisites_ok spark
+    pmix_or_skip
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'issue #1161'
     umask 0077
 

@@ -228,6 +228,12 @@ pict_ok () {
     fi
 }
 
+pmix_or_skip () {
+    if [[ $srun_mpi != pmix* ]]; then
+        skip 'pmix required'
+    fi
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
