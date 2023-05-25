@@ -517,7 +517,9 @@ _ch_run_image_finder () {
                     && ${wrds[$ct-1]} != --mount \
                     && ${wrds[$ct-1]} != -m \
                     && ${wrds[$ct-1]} != --bind \
-                    && ${wrds[$ct-1]} != -b ) ]]; then
+                    && ${wrds[$ct-1]} != -b \
+                    && ${wrds[$ct-1]} != -c \
+                    && ${wrds[$ct-1]} != --cd ) ]]; then
                 cli_img="${wrds[$ct]}"
             fi
             if [[ ${wrds[$ct]} == "--" ]]; then
