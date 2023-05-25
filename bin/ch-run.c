@@ -58,7 +58,6 @@ const struct argp_option options[] = {
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
-   { "quiet",         'q', 0,      0, "change log level from INFO to WARNING"},
 #ifdef HAVE_SECCOMP
    { "seccomp",       -14, 0,      0,
                            "fake success for some syscalls with seccomp(2)"},
@@ -129,7 +128,6 @@ int main(int argc, char *argv[])
    Te (username != NULL, "$USER not set");
 
    verbose = LL_INFO;  // in ch_misc.c
-   log_quiet = false;
    args = (struct args){
       .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
                                .ch_ssh = false,
@@ -490,9 +488,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'm':  // --mount
       Ze ((arg[0] == '\0'), "mount point can't be empty string");
       args->c.newroot = arg;
-      break;
-   case 'q':  // --quiet
-      log_quiet = true;
       break;
    case 's':  // --storage
       args->storage_dir = arg;

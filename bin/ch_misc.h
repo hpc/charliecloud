@@ -102,7 +102,6 @@ enum log_level { LL_FATAL =   -2,  // minimum number of -v to print the msg
 extern enum log_level verbose;
 extern char *host_tmp;
 extern char *username;
-extern bool log_quiet;
 
 
 /** Function prototypes **/
