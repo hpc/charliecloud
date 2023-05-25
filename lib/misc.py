@@ -102,6 +102,10 @@ def import_(cli):
    else:  # tarball, hopefully
       dst.unpack([cli.path])
    bu.cache.adopt(dst)
+   if (dst.metadata["history"] == []):
+      dst.metadata["history"].append({ "empty_layer": False,
+                                       "command":     "ch-image import"})
+   dst.metadata_save()
    ch.done_notify()
 
 def list_(cli):
