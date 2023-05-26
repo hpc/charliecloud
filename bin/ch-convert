@@ -49,7 +49,9 @@ cv_chimage_dir () {
     # Use tar(1) instead of cp(1) because (1) it supports file exclusions and
     # (2) it allows a progress meter (issue #1332). A very quick, very dirty,
     # completely half-assed performance test suggests that's about the same.
-    mkdir "$2"
+    if [ ! -d "$2" ]; then
+        mkdir "$2"
+    fi
     tar_ "$img" | tar xf - -pC "$2"
     dir_fixup "$2"
 }
@@ -218,7 +220,7 @@ cv_squash_dir () {
     #    for files but not directories.)
     umask_=$(umask)
     umask 0000
-    unsquashfs -d "$2" -user-xattrs "$1"
+    unsquashfs -f -d "$2" -user-xattrs "$1"
     umask "$umask_"
     dir_fixup "$2"
 }
@@ -257,7 +259,10 @@ cv_tar_dir () {
     INFO 'analyzing ...'
     root=$(tar_root "$1")
     INFO 'unpacking ...'
-    mkdir "$2"
+    #mkdir "$2"
+    if [ ! -d "$2" ]; then
+        mkdir "$2"
+    fi
     # Unpack the tarball. There's a lot going on here.
     #
     #   1. Use a pipe b/c PV ignores arguments if it’s cat rather than PV.
@@ -461,8 +466,10 @@ dir_out_validate () {
                 INFO "deleting existing image: ${1}"
                 rm -Rf --one-file-system "$1"
             fi
+        elif [ -n "$(find "$1" -maxdepth 0 -type d -empty)" ]; then
+            INFO "using empty directory: ${1}"
         else
-            FATAL "exists but does not appear to be an image: ${1}"
+            FATAL "exists but does not appear to be an image and is not empty: ${1}"
         fi
     fi
 }
