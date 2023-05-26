@@ -534,9 +534,7 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
       CompletedProcess object (its stdout is available in the “stdout”
       attribute). If logging is debug or higher, print stdout."""
-   kwargs["stdout"] = subprocess.STDOUT
-   kwargs["stderr"] = subprocess.PIPE
-   cp = cmd_base(argv, encoding=encoding, **kwargs)
+   cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
    # FIXME: Add a “log_quiet” check here!
    if (verbose >= 2):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
@@ -613,10 +611,6 @@ def init(cli):
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
-   #if ((trace_fatal or (verbose != 0)) and (log_quiet > 0)):
-   #   log_quiet = 0
-   #   trace_fatal = False
-   #   FATAL("“quiet” incompatible with: %s" % ", ".join())
    if (log_quiet > 0):
       fail_ct = 0
       if (trace_fatal):
