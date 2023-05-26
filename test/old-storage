@@ -98,6 +98,13 @@ for oldtar in $oldtars; do
     export CH_IMAGE_STORAGE=$storage
     INFO "unpacked: $(du -sh "$storage" | cut -f1) bytes in $(du --inodes -sh "$storage" | cut -f1) inodes"
 
+    case ${storage#*-} in
+        0.29|0.30|0.31)
+            INFO "working around issue #1662"
+            (cd "$storage"/bucache && git branch -D alpine+latest)
+            ;;
+    esac
+
     INFO "upgrading"
     ch-image list
 
