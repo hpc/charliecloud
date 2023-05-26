@@ -411,7 +411,8 @@ def DEBUG(msg, hint=None, **kwargs):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
-   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
+   if (log_quiet < 3):
+      log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
 
 def FATAL(msg, hint=None, **kwargs):
    if (trace_fatal):
@@ -438,7 +439,8 @@ def VERBOSE(msg, hint=None, **kwargs):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
 def WARNING(msg, hint=None, **kwargs):
-   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
+   if (log_quiet < 3):
+      log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -481,8 +483,9 @@ def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
       or not the process succeeded; otherwise, return (zero) only if the
       process succeeded and exit with fatal error if it failed."""
-   if (log_quiet != 0):
+   if (log_quiet > 1):
       kwargs["stdout"] = subprocess.DEVNULL
+   if (log_quiet == 3):
       kwargs["stderr"] = subprocess.DEVNULL
    cp = cmd_base(argv, fail_ok=fail_ok, **kwargs)
    return cp.returncode
@@ -503,9 +506,6 @@ def cmd_base(argv, fail_ok=False, **kwargs):
          kwargs["stderr"] = subprocess.PIPE
    if ("input" not in kwargs):
       kwargs["stdin"] = subprocess.DEVNULL
-   #if (log_quiet > 0):
-   #   kwargs["stdout"] = subprocess.DEVNULL
-   #   kwargs["stderr"] = subprocess.DEVNULL
    try:
       profile_stop()
       cp = subprocess.run(argv, **kwargs)
@@ -534,16 +534,9 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
       CompletedProcess object (its stdout is available in the “stdout”
       attribute). If logging is debug or higher, print stdout."""
-   #if (not log_quiet):
-   #   kwargs["stdout"] = subprocess.STDOUT
-   #   kwargs["stderr"] = subprocess.PIPE
-   #else:
-   #   kwargs["stdout"] = subprocess.PIPE
-   #   kwargs["stderr"] = subprocess.PIPE
    kwargs["stdout"] = subprocess.STDOUT
    kwargs["stderr"] = subprocess.PIPE
    cp = cmd_base(argv, encoding=encoding, **kwargs)
-   #cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
    # FIXME: Add a “log_quiet” check here!
    if (verbose >= 2):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
@@ -620,10 +613,20 @@ def init(cli):
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
-   if ((trace_fatal) and (log_quiet > 0)):
-      log_quiet = 0
-      trace_fatal = False
-      FATAL("“debug” and “quiet” incompatible.")
+   #if ((trace_fatal or (verbose != 0)) and (log_quiet > 0)):
+   #   log_quiet = 0
+   #   trace_fatal = False
+   #   FATAL("“quiet” incompatible with: %s" % ", ".join())
+   if (log_quiet > 0):
+      fail_ct = 0
+      if (trace_fatal):
+         ERROR("“quiet” incompatible with “debug”")
+         fail_ct += 1
+      if (verbose > 0):
+         ERROR("“quiet” incompatible with “verbose”")
+         fail_ct += 1
+      if (fail_ct != 0):
+         FATAL(("%d incompatible option" % fail_ct) + ((fail_ct > 1) * "s"))
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
