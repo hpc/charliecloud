@@ -409,8 +409,9 @@ class File_Metadata:
 
    def git_restore(self, quick):
       #ch.TRACE(self.str_for_log())  # output is extreme even for TRACE?
-      # Do-nothing case.
-      if (self.dont_restore):
+      # Do-nothing case. Exclude RPM databases explicitly because old caches
+      # can have them left over without being tagged don’t restore.
+      if (self.dont_restore or self.path.match("var/lib/rpm/__db.*")):
          if (not quick and self.path != im.GIT_DIR):
             ch.WARNING("ignoring un-restorable file: /%s" % self.path)
          return
