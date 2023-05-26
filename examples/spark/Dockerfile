@@ -20,9 +20,6 @@ RUN apt-get update \
                     wget \
  && rm -rf /var/lib/apt/lists/*
 
-# We want ch-ssh
-RUN touch /usr/bin/ch-ssh
-
 # Download and install Spark. Notes:
 #
 # 1. We aren’t using SPARK_NO_DAEMONIZE to make sure can deal with daemonized

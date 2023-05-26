@@ -34,21 +34,6 @@ EOF
 }
 
 
-@test '/usr/bin/ch-ssh' {
-    # Note: --ch-ssh without /usr/bin/ch-ssh is in test “broken image errors”.
-    scope standard
-    ls -l "$ch_bin/ch-ssh"
-    ch-run --ch-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
-    ch-run --ch-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
-    # Test bind-mount by comparing size rather than e.g. “ch-ssh --version”
-    # because ch-ssh won’t run on Alpine (issue #4).
-    host_size=$(stat -c %s "${ch_bin}/ch-ssh")
-    guest_size=$(ch-run --ch-ssh "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
-    echo "host: ${host_size}, guest: ${guest_size}"
-    [[ $host_size -eq "$guest_size" ]]
-}
-
-
 @test 'optional default bind mounts silently skipped' {
     scope standard
 
@@ -986,12 +971,6 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
-
-    # --ch-ssh but no /usr/bin/ch-ssh
-    run ch-run --ch-ssh "$img" -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"--ch-ssh: /usr/bin/ch-ssh not in image"* ]]
 
     # Everything should be restored and back to the original error.
     run ch-run "$img" -- /bin/true
