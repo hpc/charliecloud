@@ -38,9 +38,10 @@ images = dict()
 # parse tree, so we can use it for error checking.
 image_ct = None
 
-# Build stage modifiers. Each stage of a multistage build may be targeted as
-# the _last_ stage to execute.
+# Build stage modifiers. String or integer, each stage of a multistage build may
+# be targeted as the _last_ stage to execute.
 target_stage = None
+target_found = None
 
 ## Imports not in standard library ##
 
@@ -159,29 +160,30 @@ def main(cli_):
       ch.VERBOSE(x)  # noise about what was expected in the grammar
       ch.FATAL("can’t parse: %s:%d,%d\n\n%s"
                % (cli.file, x.line, x.column, x.get_context(text, 39)))
-   ch.VERBOSE(tree.pretty())
-
-   # Sometimes we exit after parsing.
-   if (cli.parse_only):
-      ch.exit(0)
 
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
    image_ct = sum(1 for i in tree.children_("from_"))
 
-   # Transform tree with the multistage target.
+   # Transform tree in-place; remove instructions beyond the target stage.
    if (cli.target is not None):
       global target_stage
       target_stage = cli.target
       if (image_ct < 2):
          ch.FATAL("target: %s: requires a multistage image" % target_stage)
-      if (target_stage == str(image_ct - 1)):
-         ch.WARNING("target: %s: redundant; is last stage" % target_stage)
-      # Prune instructions beyond the target stage.
+      if (target_stage.isdigit()):
+          if (int(target_stage) > image_ct - 1 or int(target_stage) < 0):
+             ch.FATAL("invalid target: %s" % target_stage)
       Prune_Loop().transform(tree)
-      # Set new stage count based on transformed tree.
-      image_ct = sum(1 for i in tree.children_("from_"))
+      if (not target_found):
+         ch.FATAL("invalid target: %s: not found" % target_stage)
       ch.VERBOSE("pruned tree:\n%s" % tree.pretty())
+
+   ch.VERBOSE(tree.pretty())
+
+   # Sometimes we exit after parsing.
+   if (cli.parse_only):
+      ch.exit(0)
 
    # Traverse the tree and do what it says.
    #
@@ -228,42 +230,56 @@ def main(cli_):
 
 
 class Prune_Loop(lark.visitors.Transformer_InPlace):
-   __slots__ = ("prune",           # boolean, prune node?
-                "stage_ct",        # int, current stage number
+   __slots__ = ("image_ct",        # image_count
+                "prune",           # boolean, prune node?
+                "stage_ct",        # stage count
                 "target_visited")  # boolean, target visited?
 
    def __init__(self, *args, **kwargs):
+      self.image_ct = None
       self.prune = False
       self.stage_ct = None
-      self.target_visited = False
+      self.target = None
       super().__init__(*args, **kwargs)
 
-   def dockerfile(self, children):
-      return im.Tree('dockerfile', children)
-
-   def start(self, children):
-      return im.Tree('start', children)
-
    def __default__(self, data, children, meta, *args, **kwargs):
+
       ch.VERBOSE("prune loop: visiting node: %s" % data)
       if (self.prune):
          ch.VERBOSE("  pruning %s" % data)
          return lark.visitors.Discard
-      if (data == "from_"):
-         if (self.target_visited and self.stage_ct is not None):
-            ch.VERBOSE("  pruning %s" % data)
+      # To avoid more complexity, simple check if data is one of three
+      # of the three instructions that impact multistage pruning.
+      if (data == 'from_'):
+         if (self.image_ct is None):
+            self.image_ct = 1
+         else:
+            self.image_ct += 1
+         if (target_stage.isdigit() and target_stage == str(self.image_ct - 1)):
+            self.target = self.image_ct
+         if (self.target == self.image_ct - 1):
             self.prune = True
+            global image_ct
+            ch.VERBOSE("updating image_ct %s: %s" %(image_ct, self.image_ct - 1))
+            image_ct = self.image_ct - 1
+            global target_found
+            target_found = True
             return lark.visitors.Discard
+      if (data == 'image_ref'):
          if (self.stage_ct is None):
             self.stage_ct = 0
          else:
             self.stage_ct += 1
-      if (str(self.stage_ct) == target_stage):
-         self.target_visited = True
-      if (   (data == 'image_ref' or data == 'from_alias')
-          and children[0] == target_stage):
-         self.target_visited = True
+      if (data == 'image_ref' or data == 'from_alias'):
+         if (children[0] == target_stage):
+            self.target = self.stage_ct + 1 # stage and FROM differ by 1
       return im.Tree(data, children, meta)
+
+   def dockerfile(self, child):
+      return im.Tree('dockerfile', child)
+
+   def start(self, child):
+      return im.Tree('start', child)
 
 
 class Main_Loop(lark.Visitor):

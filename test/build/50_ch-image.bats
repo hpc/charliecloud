@@ -662,7 +662,7 @@ EOF
     test ! -f "${img}/stage1"
 
     # Digit as argument.
-    run ch-image build --target=1 -t multisauce -f - . <<EOF
+    run ch-image build --target=0 -t multisauce -f - . <<EOF
 ${df}
 EOF
     echo "$output"
@@ -690,13 +690,32 @@ ${df}
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output == *'warning'*'redundant'*'last stage'* ]]
     [[ $output == *'alpine:3.17 AS aioli'* ]]
     [[ $output == *'FROM alpine:3.16 AS marinara'* ]]
     [[ $output == *'FROM scratch'* ]]
     [[ $output == *'grown in 6 instructions: multisauce'* ]]
     test -f "${img}/stage0"
     test ! -f "${img}/stage1"
+
+    # Invalid args.
+    run ch-image build --target=4 -t multisauce -f - . <<EOF
+${df}
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output == *'invalid target: 4'* ]]
+    run ch-image build --target=-1 -t multisauce -f - . <<EOF
+${df}
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output == *'invalid target: -1'* ]]
+    run ch-image build --target=CagnusMarlson -t multisauce -f - . <<EOF
+${df}
+EOF
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output == *'invalid target:'*'not found'* ]]
 }
 
 
