@@ -165,7 +165,8 @@ def main(cli_):
    global image_ct
    image_ct = sum(1 for i in tree.children_("from_"))
 
-   # Transform tree in-place; remove instructions beyond the target stage.
+   # Transform tree in-place; remove instructions starting with the FROM after
+   # the target stage.
    if (cli.target is not None):
       global target_stage
       target_stage = cli.target
@@ -176,8 +177,7 @@ def main(cli_):
              ch.FATAL("invalid target: %s" % target_stage)
       Prune_Loop().transform(tree)
       if (not target_found):
-         ch.FATAL("invalid target: %s: not found" % target_stage)
-      ch.VERBOSE("pruned tree:\n%s" % tree.pretty())
+         ch.FATAL("invalid target: %s: not found or is last stage" % target_stage)
 
    ch.VERBOSE(tree.pretty())
 
