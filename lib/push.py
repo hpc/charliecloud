@@ -117,12 +117,13 @@ class Image_Pusher:
             ch.VERBOSE("deleting tarball: %s" % tar_c)
             tar_c.unlink_()
 
-   def layers_from_json(self, manifest, error_fatal=True):
-      """Return a list of (digest, tar_c) layer tuples read from manifest. If
-         error_fatal exit with error for problems; otherwise, return None."""
-      version = self.image.schema_ver_from_json(manifest, error_fatal)
-      layer_hashes = self.image.layer_hash_from_json(manifest, version,
-                                                     error_fatal)
+   def layers_from_manifest(self, manifest):
+      """Return a list of (digest, tar_c) layer tuples read from manifest;
+         otherwise, return None."""
+      version = self.image.schemaversion_from_manifest(manifest,
+                                                       error_fatal=False)
+      layer_hashes = self.image.layer_hash_from_manifest(manifest, version,
+                                                         error_fatal=False)
       if (version is None or manifest is None or layer_hashes is None):
          return None
       tars_c = list()
@@ -149,14 +150,16 @@ class Image_Pusher:
       if (upload_cache is not None):
          # Check for previously prepared; if they exist, use them.
          ch.VERBOSE("--ulcache: checking for previously prepared files")
-         config = self.path_config.read_to_json('config', error_fatal=False)
-         manifest = self.path_manifest.read_to_json('manifest',
+         config = self.path_config.json_from_file('config',
+                                                   announce=False,
+                                                   error_fatal=False)
+         manifest = self.path_manifest.json_from_file('manifest',
+                                                      announce=False,
                                                       error_fatal=False)
-         layers = self.layers_from_json(manifest, error_fatal=False)
-         layers = self.layers_from_json(manifest, error_fatal=False)
+         layers = self.layers_from_manifest(manifest)
 
       # If cache is disabled, or one or more previously prepared files is
-      # missing; create new ones.
+      # missing (None); thus, create new ones.
       if (config is None or manifest is None or layers is None):
          (config, manifest, layers) = self.prepare_new()
 
@@ -169,8 +172,8 @@ class Image_Pusher:
       manifest_bytes = json.dumps(manifest, indent=2).encode("UTF-8")
       ch.DEBUG("manifest:\n%s" % manifest_bytes.decode("UTF-8"))
 
-      # Upload cache enabled; store prepared config and manifest. (layers are
-      # already stored, see prepare_new()).
+      # Store prepared config and manifest; layer tarballs are written in
+      # prepare_new.
       if (upload_cache is not None):
          self.path_manifest.file_write(manifest_bytes)
          self.path_config.file_write(config_bytes)
@@ -249,7 +252,6 @@ class Image_Pusher:
 
    def upload(self):
       ch.INFO("starting upload")
-      for i in self.layers:
       for (i, (digest, tarball)) in enumerate(self.layers, start=1):
          self.registry.layer_from_file(digest, tarball,
                                  "layer %d/%d: " % (i, len(self.layers)))

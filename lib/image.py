@@ -250,9 +250,11 @@ class Image:
       for ref in Reference.glob(image_glob):
          yield class_(ref)
 
-   def layer_hash_from_json(self, manifest, version, error_fatal=True):
+   def layer_hash_from_manifest(self, manifest, version, error_fatal=True):
       """Return list of layer hashes from manifest json data. If error_fatal
          exit with error; otherwise, return None."""
+      if (manifest is None or version is None):
+         return None
       try:
          if (version == 1):
             key1 = "fsLayers"
@@ -261,34 +263,41 @@ class Image:
             key1 = "layers"
             key2 = "digest"
          if (key1 not in manifest):
-            raise KeyError("%s: not in manifest" % key1)
+            raise KeyError()
          layer_hashes = list()
          for i in manifest[key1]:
             if (key2 not in i):
-               raise KeyError("%s/%s: not in manifest" % (key1, key2))
+               raise KeyError()
             layer_hashes.append(ch.digest_trim(i[key2]))
-      except KeyError:
+      except KeyError as x:
+         msg = "%s/%s: not in manifest" % (key1, key2)
          if (error_fatal):
-            ch.FATAL("%s/%s: not in manifest" % (key1, key2))
+            ch.FATAL(msg)
          else:
+            ch.VERBOSE("non-fatal error: %s" % msg)
             return None
       if (version == 1):
          layer_hashes.reverse()
       return layer_hashes
 
-   def schema_ver_from_json(self, manifest, error_fatal=True):
-      """Return schema version from manifest json data."""
+   def schemaversion_from_manifest(self, manifest, error_fatal=True):
+      """Return schema version from manifest json data. If error fatal exit
+         with error; otherwise, return None."""
       try:
          version = manifest['schemaVersion']
          if (version not in {1,2}):
-            if (error_fatal):
-               ch.FATAL("unsupported manifest schema version: %s" % repr(version))
-            else:
-               raise ValueError('version unsupported')
-      except (KeyError, ValueError) as x:
+            raise ValueError
+      except (TypeError, KeyError, ValueError) as x:
+         if (isinstance(x,TypeError)):
+            msg = 'manifest is None'
+         elif (isinstance(x, KeyError)):
+            msg = "key: 'schemaVersion': %s" % x.strerror
+         elif (isintance(x, ValueError)):
+            msg = "unsupported schema version %s" % version
          if (error_fatal):
-            ch.FATAL("key: 'schemaVersion': %s", x.stderror)
+            ch.FATAL(msg)
          else:
+            ch.VERBOSE("non-fatal error: %s" % msg)
             return None
       return version
 
@@ -379,7 +388,7 @@ class Image:
          ch.WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
-      self.metadata = path.read_to_json("metadata")
+      self.metadata = path.json_from_file("metadata")
       # upgrade old metadata
       self.metadata.setdefault("arg", dict())
       self.metadata.setdefault("history", list())
@@ -442,7 +451,7 @@ class Image:
          path = self.metadata_path // "config.pulled.json"
          ch.copy2(config_json, path)
          ch.VERBOSE("pulled config path: %s" % path)
-         self.metadata_merge_from_config(path.read_to_json("config"))
+         self.metadata_merge_from_config(path.json_from_file("config"))
       self.metadata_save()
 
    def metadata_save(self):

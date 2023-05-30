@@ -242,41 +242,43 @@ class Path(pathlib.PosixPath):
       return h.hexdigest()
 
    def file_read_all(self, text=True, error_fatal=True):
-      """Return the contents of file at path. If error_fatal, exit with error;
-         otherwise, return exception. If text, read in “rt” mode with UTF-8
-         encoding; otherwise, read in mode “rb”."""
+      """Return the contents of file at path. If error_fatal, exit on error;
+         otherwise, return None. If text, read in “rt” mode with UTF-8 encoding;
+         otherwise, read in mode “rb”."""
       if (text):
          mode = "rt"
          encoding = "UTF-8"
       else:
          mode = "rb"
          encoding = None
-      if (error_fatal):
-        fp = self.open_(mode, encoding=encoding)
-      else:
-        fp = self.open_unsafe(mode, encoding=encoding)
-        if (isinstance(fp, Exception)):
-           return fp
+      fp = self.open_(mode, error_fatal=error_fatal, encoding=encoding)
+      if (fp is None):
+         return None
       data = ch.ossafe(fp.read, "can’t read: %s" % self.name)
       ch.close_(fp)
       return data
 
-   def read_to_json(self, msg, error_fatal=True):
+   def json_from_file(self, msg, announce=True, error_fatal=True):
       """Return the json contents of file path. If errors_fatal, exit with
          error; otherwise, return None"""
-      ch.INFO("loading JSON: %s: %s" % (msg, self))
+      info = "loading JSON: %s: %s" % (msg, self)
+      if (announce):
+         ch.INFO(info)
+      else:
+         ch.VERBOSE(info)
+      text = self.file_read_all(text=True, error_fatal=error_fatal)
+      if (not error_fatal and text is None):
+         return None
+      ch.VERBOSE("text:\n%s" % text)
       try:
-         text = self.file_read_all(text=True, error_fatal=error_fatal)
-         if (isinstance(text, Exception)):
-            return None
-         ch.VERBOSE("text:\n%s" % text)
          data = json.loads(text)
          ch.DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
       except (json.JSONDecodeError, FileNotFoundError) as x:
+         stderr = "can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg)
          if (error_fatal):
-            ch.FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
-            # Exception not fatal; raise and let caller handle.
+            ch.FATAL(stderr)
          else:
+            ch.VERBOSE('non-fatal error: %s' % stderr)
             return None
       return data
 
@@ -292,13 +294,6 @@ class Path(pathlib.PosixPath):
       fp = self.open_("wb")
       ch.ossafe(fp.write, "can’t write: %s" % self.name, content)
       ch.close_(fp)
-
-   def file_write_json(self, data):
-      ch.INFO("writing JSON to %s" % self.name)
-      ch.INFO("JSON: %s\n" % data)
-      d = json.loads(data)
-      fp = self.open_("wb")
-      json.dump(d, fp)
 
    def grep_p(self, rx):
       """Return True if file at path contains a line matching regular
@@ -396,13 +391,10 @@ class Path(pathlib.PosixPath):
          ch.FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename,
                                                x.strerror))
 
-   def open_(self, mode, *args, **kwargs):
+   def open_(self, mode, error_fatal=True, *args, **kwargs):
       return ch.ossafe(super().open,
                        "can’t open for %s: %s" % (mode, self.name),
-                        mode, *args, **kwargs)
-
-   def open_unsafe(self, mode, *args, **kwargs):
-      return ch.osunsafe(super().open, mode, *args, **kwargs)
+                        mode, *args, error_fatal=error_fatal, **kwargs)
 
    def rename_(self, name_new):
       if (Path(name_new).exists()):
@@ -658,6 +650,7 @@ class Storage:
       return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def reset(self):
+      print(self.valid_p)
       if (self.valid_p):
          self.root.rmtree()
          self.init()  # largely for debugging

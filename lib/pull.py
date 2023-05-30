@@ -245,7 +245,7 @@ class Image_Puller:
                                           digest=digest)
          manifest = self.manifest_path.json_from_file("manifest")
       # validate schema version
-      version = self.image.schema_ver_from_json(manifest)
+      version = self.image.schemaversion_from_manifest(manifest)
       # load config hash
       #
       # FIXME: Manifest version 1 does not list a config blob. It does have
@@ -262,7 +262,7 @@ class Image_Puller:
          except KeyError:
             bad_key("config/digest")
       # load layer hashes
-      self.layer_hashes = self.image.layer_hash_from_json(manifest, version)
+      self.layer_hashes = self.image.layer_hash_from_manifest(manifest, version)
       # Remember State_ID input. We can’t rely on the manifest existing in
       # serialized form (e.g. for internal manifests), so re-serialize.
       self.sid_input = json.dumps(manifest, sort_keys=True)
