@@ -107,9 +107,6 @@ for oldtar in $oldtars; do
 
     INFO "upgrading"
     ch-image list
-    # These are images that contain references to things on the internet that
-    # go out of date. Re-pull them to get a current base image.
-    ch-image pull centos:7
 
     INFO "testing"
     ch-test -b ch-image --pedantic=no -s "$scope" all
