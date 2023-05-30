@@ -232,7 +232,7 @@ class Image_Pusher:
       for i in range(len(hist) - 1, -1, -1):
          if (   "empty_layer" not in hist[i].keys()
              or (    "empty_layer" in hist[i].keys()
-                 and not hist[i]["empty_layer"] == True)):
+                 and not hist[i]["empty_layer"])):
             non_empty_winner = i
             break
       assert(non_empty_winner is not None)

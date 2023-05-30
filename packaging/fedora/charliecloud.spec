@@ -130,13 +130,11 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-fromhost
 %{_bindir}/ch-run
 %{_bindir}/ch-run-oci
-%{_bindir}/ch-ssh
 %{_mandir}/man1/ch-checkns.1*
 %{_mandir}/man1/ch-convert.1*
 %{_mandir}/man1/ch-fromhost.1*
 %{_mandir}/man1/ch-run.1*
 %{_mandir}/man1/ch-run-oci.1*
-%{_mandir}/man1/ch-ssh.1*
 %{_mandir}/man7/charliecloud.7*
 %{_prefix}/lib/%{name}/base.sh
 %{_prefix}/lib/%{name}/contributors.bash

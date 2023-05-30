@@ -304,18 +304,6 @@ void enter_udss(struct container *c)
       Z_ (mkdir(cat(c->newroot, newhome), 0755));
       bind_mount(c->host_home, newhome, BD_REQUIRED, c->newroot, 0);
    }
-   // Container /usr/bin/ch-ssh.
-   if (c->ch_ssh) {
-      char chrun_file[PATH_CHARS];
-      int len = readlink("/proc/self/exe", chrun_file, PATH_CHARS);
-      T_ (len >= 0);
-      Te (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"), NULL, true),
-          "--ch-ssh: /usr/bin/ch-ssh not in image");
-      chrun_file[ len<PATH_CHARS ? len : PATH_CHARS-1 ] = 0; // terminate; #315
-      bind_mount(cat(dirname(chrun_file), "/ch-ssh"), "/usr/bin/ch-ssh",
-                 BD_REQUIRED, c->newroot, 0);
-   }
-
    // Re-mount new root read-only unless --write or already read-only.
    if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
       unsigned long flags =   path_mount_flags(c->newroot)

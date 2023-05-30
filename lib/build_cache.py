@@ -596,7 +596,6 @@ class State_ID:
 class Enabled_Cache:
 
    root_id =   State_ID.from_text("4A6F:73C3:A9204361:7061626C:616E6361")
-   import_id = State_ID.from_text("5061:756C:204D6F72:70687900:00000000")
 
    __slots__ = ("bootstrap_ct",
                 "file_metadata",
@@ -645,10 +644,11 @@ class Enabled_Cache:
       self.worktree_adopt(img, "root")
       img.metadata_load()
       img.metadata_save()
-      gh = self.commit(img.unpack_path, self.import_id,
-                       "IMPORT %s" % img.ref, [])
+      log = "IMPORT %s" % img.ref
+      sid = self.sid_from_parent(self.root_id, log)
+      gh = self.commit(img.unpack_path, sid, log, [])
       self.ready(img)
-      return (self.import_id, gh)
+      return (sid, gh)
 
    def bootstrap(self):
       ch.INFO("initializing empty build cache")

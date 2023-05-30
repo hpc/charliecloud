@@ -102,8 +102,8 @@ class Image_Puller:
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
             except ch.No_Fatman_Error:
-               # currently, this error is only raised if we’ve downloaded the skinny
-               # manifest.
+               # currently, this error is only raised if we’ve downloaded the
+               # skinny manifest.
                have_skinny = True
                if (ch.arch == "amd64"):
                   # We’re guessing that enough arch-unaware images are amd64 to
@@ -180,10 +180,12 @@ class Image_Puller:
       if ("layers" in fm or "fsLayers" in fm):
          # Check for skinny manifest. If not present, create a symlink to the
          # “fat manifest” with the conventional name for a skinny manifest.
-         # Note that this works because the file we just saved as the “fat
-         # manifest” is actually a misleadingly named skinny manifest.
-         if (not fs.Path(str(self.manifest_path)).exists_()):
-            fs.Path(str(self.manifest_path)).symlink_to(str(self.fatman_path))
+         # This works because the file we just saved as the “fat manifest” is
+         # actually a misleadingly named skinny manifest. Link is relative to
+         # avoid embedding the storage directory path within the storage
+         # directory (see PR #1657).
+         if (not self.manifest_path.exists_()):
+            self.manifest_path.symlink_to(self.fatman_path.name)
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
