@@ -80,6 +80,34 @@ def gestalt_python_path(cli):
 def gestalt_storage_path(cli):
    print(ch.storage.root)
 
+def gestalt_logging(cli):
+   ch.INFO("info")
+   ch.VERBOSE("verbose")
+   ch.DEBUG("debug")
+   ch.TRACE("trace")
+   ch.WARNING("warning")
+   ch.ERROR("error")
+
+"""
+def gestalt_info(cli):
+   ch.INFO("info message!")
+
+def gestalt_verbose(cli):
+   ch.VERBOSE("verbose message!")
+
+def gestalt_warning(cli):
+   ch.WARNING("warning message!")
+
+def gestalt_error(cli):
+   ch.ERROR("error message!")
+
+def gestalt_debug(cli):
+   ch.DEBUG("debug message!")
+
+def gestalt_trace(cli):
+   ch.TRACE("trace message...?")
+"""
+
 def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can’t copy: not found: %s" % cli.path)

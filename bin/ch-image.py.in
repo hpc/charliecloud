@@ -241,6 +241,9 @@ def main():
    # python-path
    tp = sp.add_parser("python-path", "print path to python interpreter in use")
    add_opts(tp, misc.gestalt_python_path, deps_check=False, stog_init=False)
+   # info
+   tp = sp.add_parser("logging", "foo")
+   add_opts(tp, misc.gestalt_logging, deps_check=False, stog_init=False)
 
    # import
    sp = ap.add_parser("import", "copy external image into storage")
