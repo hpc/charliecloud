@@ -197,16 +197,15 @@ def undelete(cli):
    (_, git_hash) = bu.cache.find_deleted_image(img)
    if (git_hash is None):
       ch.FATAL("image not in cache")
-   bu.cache.checkout(img, git_hash, None)
+   bu.cache.checkout_ready(img, git_hash)
 
 def upload_cache(cli):
    if (cli.reset):
       ch.INFO("deleting upload cache")
       ch.storage.upload_cache.rmtree()
-      ch.INFO("initializing empty upload cache")
       ch.storage.upload_cache.mkdir()
    cwd = ch.storage.upload_cache
-   (file_ct, byte_ct) = cwd.du(index=0)
+   (file_ct, byte_ct) = cwd.du()
    (file_ct, file_suffix) = ch.si_decimal(file_ct)
    (byte_ct, byte_suffix) = ch.si_binary_bytes(byte_ct)
    print("upload files:   %5d %s" % (file_ct, file_suffix))

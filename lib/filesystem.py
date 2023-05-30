@@ -173,10 +173,10 @@ class Path(pathlib.PosixPath):
          probably different from the file size."""
       return self.stat().st_blocks * 512
 
-   def du(self, index=1):
+   def du(self):
       """Return a tuple (number of files, total bytes on disk) for everything
          under path. Warning: double-counts files with multiple hard links."""
-      file_ct = index
+      file_ct = 0
       byte_ct = self.disk_bytes()
       for (dir_, subdirs, files) in os.walk(self):
          file_ct += len(subdirs) + len(files)
@@ -241,18 +241,43 @@ class Path(pathlib.PosixPath):
       ch.close_(fp)
       return h.hexdigest()
 
-   def file_read_all(self, text=True):
-      """Return the contents of file at path, or exit with error. If text, read
-         in “rt” mode with UTF-8 encoding; otherwise, read in mode “rb”."""
+   def file_read_all(self, text=True, error_fatal=True):
+      """Return the contents of file at path. If error_fatal, exit with error;
+         otherwise, return exception. If text, read in “rt” mode with UTF-8
+         encoding; otherwise, read in mode “rb”."""
       if (text):
          mode = "rt"
          encoding = "UTF-8"
       else:
          mode = "rb"
          encoding = None
-      fp = self.open_(mode, encoding=encoding)
+      if (error_fatal):
+        fp = self.open_(mode, encoding=encoding)
+      else:
+        fp = self.open_unsafe(mode, encoding=encoding)
+        if (isinstance(fp, Exception)):
+           return fp
       data = ch.ossafe(fp.read, "can’t read: %s" % self.name)
       ch.close_(fp)
+      return data
+
+   def read_to_json(self, msg, error_fatal=True):
+      """Return the json contents of file path. If errors_fatal, exit with
+         error; otherwise, return None"""
+      ch.INFO("loading JSON: %s: %s" % (msg, self))
+      try:
+         text = self.file_read_all(text=True, error_fatal=error_fatal)
+         if (isinstance(text, Exception)):
+            return None
+         ch.VERBOSE("text:\n%s" % text)
+         data = json.loads(text)
+         ch.DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
+      except (json.JSONDecodeError, FileNotFoundError) as x:
+         if (error_fatal):
+            ch.FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
+            # Exception not fatal; raise and let caller handle.
+         else:
+            return None
       return data
 
    def file_size(self, follow_symlinks=False):
@@ -267,6 +292,13 @@ class Path(pathlib.PosixPath):
       fp = self.open_("wb")
       ch.ossafe(fp.write, "can’t write: %s" % self.name, content)
       ch.close_(fp)
+
+   def file_write_json(self, data):
+      ch.INFO("writing JSON to %s" % self.name)
+      ch.INFO("JSON: %s\n" % data)
+      d = json.loads(data)
+      fp = self.open_("wb")
+      json.dump(d, fp)
 
    def grep_p(self, rx):
       """Return True if file at path contains a line matching regular
@@ -323,20 +355,6 @@ class Path(pathlib.PosixPath):
       #   assert (not other.is_absolute())
       #return self.joinpath(other)
 
-   def json_from_file(self, msg, raise_ok=False):
-      ch.DEBUG("loading JSON: %s: %s" % (msg, self))
-      text = self.file_read_all()
-      ch.TRACE("text:\n%s" % text)
-      try:
-         data = json.loads(text)
-         ch.DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
-      except json.JSONDecodeError as x:
-         if (raise_ok):
-            raise json.JSONDecodeError
-         else:
-            ch.FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
-      return data
-
    def listdir(self):
       """Return set of entries in directory path, as strings, without self (.)
          and parent (..). We considered changing this to use os.scandir() for
@@ -381,7 +399,10 @@ class Path(pathlib.PosixPath):
    def open_(self, mode, *args, **kwargs):
       return ch.ossafe(super().open,
                        "can’t open for %s: %s" % (mode, self.name),
-                       mode, *args, **kwargs)
+                        mode, *args, **kwargs)
+
+   def open_unsafe(self, mode, *args, **kwargs):
+      return ch.osunsafe(super().open, mode, *args, **kwargs)
 
    def rename_(self, name_new):
       if (Path(name_new).exists()):

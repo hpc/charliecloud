@@ -1259,11 +1259,12 @@ Options:
     storage directory named :code:`IMAGE_REF`.
 
   :code:`--ulcache`
-    Store prepared image push files. Previously prepared files are reused for
-    subsequent pushes with code:`--ulcache`. This may be useful for debugging
-    or,  pushing large image(s) to different repositories.
+    Store prepared image push files. Previously prepared files are reused in
+    subsequent :code:`--ulcache` pushes. This may be useful for debugging
+    or pushing large image(s) to different repositories.
 
-    This feature is experimental and requires the build cache to be enabled.
+    This feature is opt-in. The increase in storage cost is not justified for
+    most use cases.
 
 Because Charliecloud is fully unprivileged, the owner and group of files in
 its images are not meaningful in the broader ecosystem. Thus, when pushed,

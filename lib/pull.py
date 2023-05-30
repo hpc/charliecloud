@@ -243,12 +243,7 @@ class Image_Puller:
                                           digest=digest)
          manifest = self.manifest_path.json_from_file("manifest")
       # validate schema version
-      try:
-         version = manifest['schemaVersion']
-      except KeyError:
-         bad_key("schemaVersion")
-      if (version not in {1,2}):
-         ch.FATAL("unsupported manifest schema version: %s" % repr(version))
+      version = self.image.schema_ver_from_json(manifest)
       # load config hash
       #
       # FIXME: Manifest version 1 does not list a config blob. It does have
@@ -265,21 +260,7 @@ class Image_Puller:
          except KeyError:
             bad_key("config/digest")
       # load layer hashes
-      if (version == 1):
-         key1 = "fsLayers"
-         key2 = "blobSum"
-      else:  # version == 2
-         key1 = "layers"
-         key2 = "digest"
-      if (key1 not in manifest):
-         bad_key(key1)
-      self.layer_hashes = list()
-      for i in manifest[key1]:
-         if (key2 not in i):
-            bad_key("%s/%s" % (key1, key2))
-         self.layer_hashes.append(ch.digest_trim(i[key2]))
-      if (version == 1):
-         self.layer_hashes.reverse()
+      self.layer_hashes = self.image.layer_hash_from_json(manifest, version)
       # Remember State_ID input. We can’t rely on the manifest existing in
       # serialized form (e.g. for internal manifests), so re-serialize.
       self.sid_input = json.dumps(manifest, sort_keys=True)

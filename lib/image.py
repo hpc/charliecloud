@@ -250,6 +250,48 @@ class Image:
       for ref in Reference.glob(image_glob):
          yield class_(ref)
 
+   def layer_hash_from_json(self, manifest, version, error_fatal=True):
+      """Return list of layer hashes from manifest json data. If error_fatal
+         exit with error; otherwise, return None."""
+      try:
+         if (version == 1):
+            key1 = "fsLayers"
+            key2 = "blobSum"
+         else:  # version == 2
+            key1 = "layers"
+            key2 = "digest"
+         if (key1 not in manifest):
+            raise KeyError("%s: not in manifest" % key1)
+         layer_hashes = list()
+         for i in manifest[key1]:
+            if (key2 not in i):
+               raise KeyError("%s/%s: not in manifest" % (key1, key2))
+            layer_hashes.append(ch.digest_trim(i[key2]))
+      except KeyError:
+         if (error_fatal):
+            ch.FATAL("%s/%s: not in manifest" % (key1, key2))
+         else:
+            return None
+      if (version == 1):
+         layer_hashes.reverse()
+      return layer_hashes
+
+   def schema_ver_from_json(self, manifest, error_fatal=True):
+      """Return schema version from manifest json data."""
+      try:
+         version = manifest['schemaVersion']
+         if (version not in {1,2}):
+            if (error_fatal):
+               ch.FATAL("unsupported manifest schema version: %s" % repr(version))
+            else:
+               raise ValueError('version unsupported')
+      except (KeyError, ValueError) as x:
+         if (error_fatal):
+            ch.FATAL("key: 'schemaVersion': %s", x.stderror)
+         else:
+            return None
+      return version
+
    def commit(self):
       "Commit the current unpack directory into the layer cache."
       assert False, "unimplemented"
@@ -337,7 +379,7 @@ class Image:
          ch.WARNING("no metadata to load; using defaults")
          self.metadata_init()
          return
-      self.metadata = path.json_from_file("metadata")
+      self.metadata = path.read_to_json("metadata")
       # upgrade old metadata
       self.metadata.setdefault("arg", dict())
       self.metadata.setdefault("history", list())
@@ -400,7 +442,7 @@ class Image:
          path = self.metadata_path // "config.pulled.json"
          ch.copy2(config_json, path)
          ch.VERBOSE("pulled config path: %s" % path)
-         self.metadata_merge_from_config(path.json_from_file("config"))
+         self.metadata_merge_from_config(path.read_to_json("config"))
       self.metadata_save()
 
    def metadata_save(self):

@@ -725,9 +725,17 @@ def monkey_write_streams():
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
+def osunsafe(f, *args, **kwargs):
+   """Call f with args and kwargs. Should problems occur, caller
+      should handle them."""
+   try:
+      return f(*args, **kwargs)
+   except OSError as x:
+      return x
+
 def ossafe(f, msg, *args, **kwargs):
-   """Call f with args and kwargs. Catch OSError and other problems and fail
-      with a nice error message."""
+   """Call f with args and kwargs. If error_fatal, catch OSError and other
+      problems and fail with a nice error message; otherwise, raise exception."""
    try:
       return f(*args, **kwargs)
    except OSError as x:
