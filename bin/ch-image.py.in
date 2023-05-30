@@ -244,6 +244,7 @@ def main():
    # info
    tp = sp.add_parser("logging", "foo")
    add_opts(tp, misc.gestalt_logging, deps_check=False, stog_init=False)
+   tp.add_argument("--fail", action="store_true", help="makes the program exit with a failure")
 
    # import
    sp = ap.add_parser("import", "copy external image into storage")
@@ -318,5 +319,6 @@ if (__name__ == "__main__"):
    try:
       main()
    except ch.Fatal_Error as x:
+      x.kwargs["fatal"] = True
       ch.ERROR(*x.args, **x.kwargs)
       ch.exit(1)

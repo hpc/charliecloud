@@ -87,26 +87,8 @@ def gestalt_logging(cli):
    ch.TRACE("trace")
    ch.WARNING("warning")
    ch.ERROR("error")
-
-"""
-def gestalt_info(cli):
-   ch.INFO("info message!")
-
-def gestalt_verbose(cli):
-   ch.VERBOSE("verbose message!")
-
-def gestalt_warning(cli):
-   ch.WARNING("warning message!")
-
-def gestalt_error(cli):
-   ch.ERROR("error message!")
-
-def gestalt_debug(cli):
-   ch.DEBUG("debug message!")
-
-def gestalt_trace(cli):
-   ch.TRACE("trace message...?")
-"""
+   if (cli.fail):
+      ch.FATAL("the program failed inexplicably")
 
 def import_(cli):
    if (not os.path.exists(cli.path)):

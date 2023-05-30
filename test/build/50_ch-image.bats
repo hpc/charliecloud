@@ -30,6 +30,47 @@ setup () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 1'* ]]
+
+    # test gestalt logging
+    run ch-image gestalt logging
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"info"* ]]
+
+    # quiet level 1
+    debug="$CH_IMAGE_DEBUG"
+    unset CH_IMAGE_DEBUG
+    run ch-image gestalt -q logging
+    CH_IMAGE_DEBUG="$debug"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"info"* ]]
+    [[ $output = *'warning: warning'* ]]
+    [[ $output = *'error: error'* ]]
+
+    # quiet level 2
+    run ch-image build -t tmpimg --force seccomp -qq ../examples/hello
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"Dependencies resolved."* ]]
+    [[ $output != *"grown in 4 instructions: tmpimg"* ]]
+
+    # quiet level 3
+    run ch-image gestalt logging -qqq
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *'warning: warning'* ]]
+    [[ $output != *'error: error'* ]]
+
+    # failure at quiet level 3
+    run ch-image gestalt logging -qqq --fail
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *'warning: warning'* ]]
+    [[ $output != *'error: error'* ]]
+    [[ $output = *'error: the program failed inexplicably'* ]]
 }
 
 

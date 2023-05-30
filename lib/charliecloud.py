@@ -410,8 +410,8 @@ def DEBUG(msg, hint=None, **kwargs):
    if (verbose >= 2):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
-def ERROR(msg, hint=None, trace=None, **kwargs):
-   if (log_quiet < 3):
+def ERROR(msg, hint=None, trace=None, fatal=False, **kwargs):
+   if (log_quiet < 3 or fatal):
       log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
 
 def FATAL(msg, hint=None, **kwargs):
