@@ -220,6 +220,32 @@ cv_squash_dir () {
     #    for files but not directories.)
     umask_=$(umask)
     umask 0000
+    # To support conversion with an empty dir as output (#1612), we add the “-f”
+    # option to our unsquashfs(1) call below. Without “-f”, if you try to use
+    # unsquashfs(1) with an empty dir as the target, you get the error “failed
+    # to make directory path/to/dir, because File exists”. The documentation for
+    # “-f” says “if file already exists then overwrite”, but I’ve concluded that
+    # the option actually doesn’t “overwrite” directories through the following
+    # test:
+    #
+    # 1. Create an empty directory, let’s call it “parent”.
+    #
+    # 2. Create another empty directory (“child”) that is a subdirectory of
+    #    “parent”.
+    #
+    # 3. Change the owner and group of “parent” to root, ensure that the owner
+    #    and group of “child” are a user (rather than root).
+    #
+    # 4. Check that both “parent” and “child” have the following permissions:
+    #    “drwxr-xr-x”.
+    #
+    # 5. As the owner of “child”, try to remove “child” and confirm that linux
+    #    won’t allow it.
+    #
+    # 6. Use unsquashfs(1) with the “-f” option to unpack an archive to “child”
+    #    and confirm that it’s successful.
+    #
+    # (https://unix.stackexchange.com/a/583819)
     unsquashfs -f -d "$2" -user-xattrs "$1"
     umask "$umask_"
     dir_fixup "$2"
@@ -259,7 +285,6 @@ cv_tar_dir () {
     INFO 'analyzing ...'
     root=$(tar_root "$1")
     INFO 'unpacking ...'
-    #mkdir "$2"
     if [ ! -d "$2" ]; then
         mkdir "$2"
     fi
