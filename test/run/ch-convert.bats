@@ -324,7 +324,7 @@ test_from () {
     run ch-convert "${BATS_TMPDIR}/foo.tar" "$BATS_TMPDIR"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists but does not appear to be an image: ${BATS_TMPDIR}"* ]]
+    [[ $output = *"error: exists but does not appear to be an image and is not empty: ${BATS_TMPDIR}"* ]]
     rm "${BATS_TMPDIR}/foo.tar"
 }
 
@@ -412,14 +412,6 @@ test_from () {
 
     ## run test ##
 
-
-    # tar
-    empty_dir_init "$empty"
-    run ch-convert -i tar -o dir "$BATS_TMPDIR/tmpimg.tar.gz" "$empty"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *"using empty directory: $empty"* ]]
-
     # ch-image
     empty_dir_init "$empty"
     run ch-convert -i ch-image -o dir tmpimg "$empty"
@@ -454,7 +446,6 @@ test_from () {
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"using empty directory: $empty"* ]]
-
 }
 
 
