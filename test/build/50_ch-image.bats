@@ -31,17 +31,19 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 1'* ]]
 
+    # unset debug in preparation for “--quiet” tests
+    unset CH_IMAGE_DEBUG
+
     # test gestalt logging
     run ch-image gestalt logging
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"info"* ]]
+    [[ $output = *'warning: warning'* ]]
+    [[ $output = *'error: error'* ]]
 
     # quiet level 1
-    debug="$CH_IMAGE_DEBUG"
-    unset CH_IMAGE_DEBUG
     run ch-image gestalt -q logging
-    CH_IMAGE_DEBUG="$debug"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"info"* ]]
@@ -49,7 +51,11 @@ setup () {
     [[ $output = *'error: error'* ]]
 
     # quiet level 2
-    run ch-image build -t tmpimg --force seccomp -qq ../examples/hello
+    run ch-image build --force seccomp -t tmpimg -qq -f - . << 'EOF'
+FROM almalinux:8
+RUN dnf install -y --setopt=install_weak_deps=false openssh-clients \
+ && dnf clean all
+EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"Dependencies resolved."* ]]

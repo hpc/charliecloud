@@ -319,6 +319,5 @@ if (__name__ == "__main__"):
    try:
       main()
    except ch.Fatal_Error as x:
-      x.kwargs["fatal"] = True
       ch.ERROR(*x.args, **x.kwargs)
       ch.exit(1)

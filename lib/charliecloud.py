@@ -415,6 +415,7 @@ def ERROR(msg, hint=None, trace=None, fatal=False, **kwargs):
       log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
 
 def FATAL(msg, hint=None, **kwargs):
+   kwargs["fatal"] = True
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
       # calling ch-image.main()) and last entry (this function).
