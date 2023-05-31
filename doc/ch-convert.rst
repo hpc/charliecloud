@@ -52,6 +52,10 @@ producing the final format actually needed.
   :code:`-o`, :code:`--out-fmt FMT`
     Output image format is :code:`FMT`; inferred if omitted.
 
+  :code:`-s`, :code:`--storage DIR`
+    Set the storage directory. Equivalent to the same option for :code:`ch-image(1)`
+    and :code:`ch-run(1)`.
+
   :code:`--tmp DIR`
     A sub-directory for temporary storage is created in :code:`DIR` and
     removed at the end of a successful conversion. **If this script crashes or

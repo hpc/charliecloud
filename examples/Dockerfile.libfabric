@@ -109,18 +109,26 @@ RUN dnf install -y --setopt=install_weak_deps=false \
 WORKDIR /usr/local/src
 
 # Libfabric (OFI)
+#
+# PSM3 is our preferred provider for OPA, however, it requires libpsm2, which
+# is x86_64 only. Thus, the 'PSM_CONFIG' variable is used to avoid building PSM3
+# on aarch64 machines.
 ARG LIBFABRIC_VERSION=1.15.1
 RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
               https://github.com/ofiwg/libfabric/ \
  && cd libfabric \
  && ./autogen.sh \
+ && if [[ $(uname -m) == x86_64 ]]; then PSM_CONFIG=enable; \
+    else PSM_CONFIG=disable; fi \
  && ./configure --prefix=/usr/local \
                 --disable-opx \
                 --disable-psm2 \
                 --disable-efa \
                 --disable-rxm \
                 --disable-sockets \
-                --enable-psm3 \
+                "--${PSM_CONFIG}-psm3" \
+                --enable-rxm \
+                --enable-shm \
                 --enable-tcp \
                 --enable-verbs \
  && make -j$(getconf _NPROCESSORS_ONLN) install \

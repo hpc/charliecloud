@@ -42,11 +42,12 @@ You cannot use this program to actually change your UID.\n";
 
 const char args_doc[] = "IMAGE -- CMD [ARG...]";
 
+/* Note: Long option numbers, once issued, are permanent; i.e., if you remove
+   one, don’t re-number the others. */
 const struct argp_option options[] = {
    { "bind",          'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default: same as SRC)"},
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
-   { "ch-ssh",         -8, 0,      0, "bind ch-ssh into image"},
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },
@@ -130,7 +131,6 @@ int main(int argc, char *argv[])
    verbose = LL_INFO;  // in ch_misc.c
    args = (struct args){
       .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
-                               .ch_ssh = false,
                                .container_gid = getegid(),
                                .container_uid = geteuid(),
                                .env_expand = true,
@@ -416,9 +416,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       ed.arg.glob = arg;
       list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
       break;;
-   case -8: // --ch-ssh
-      args->c.ch_ssh = true;
-      break;
    case -9: // --no-passwd
       args->c.private_passwd = true;
       break;

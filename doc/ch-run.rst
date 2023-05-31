@@ -53,9 +53,6 @@ mounting SquashFS images with FUSE.
   :code:`-c`, :code:`--cd=DIR`
     Initial working directory in container.
 
-  :code:`--ch-ssh`
-    Bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`.
-
   :code:`--env-no-expand`
     Don’t expand variables when using :code:`--set-env`.
 
@@ -241,9 +238,6 @@ without error or warning if not.
 
   * :code:`/var/lib/hugetlbfs` at guest :code:`/var/opt/cray/hugetlbfs`, and
     :code:`/var/opt/cray/alps/spool`. These support Cray MPI.
-
-  * :code:`$PREFIX/bin/ch-ssh` at guest :code:`/usr/bin/ch-ssh`. SSH wrapper
-    that automatically containerizes after connecting.
 
 Additional bind mounts done by default but can be disabled; see the options
 above.

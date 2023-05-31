@@ -517,7 +517,11 @@ tar_out_validate () {
 
 # Return the path to image $1 in ch-image storage.
 chimage_path () {
-    echo "$(ch-image gestalt storage-path)/img/$(tag_to_path "$1")"
+    if [ -z "$cli_storage" ]; then
+        echo "$(ch-image gestalt storage-path)/img/$(tag_to_path "$1")"
+    else
+        echo "$cli_storage/img/$(tag_to_path "$1")"
+    fi
 }
 
 # Return basename of $2 (format $1) with no extension and filesystem-invalid
@@ -797,6 +801,10 @@ while true; do
                 ;;
             -o=*|--out-fmt=*)
                 out_fmt=${1#*=}
+                ;;
+            -s|--storage)
+                shift
+                cli_storage=$1
                 ;;
             --tmp)
                 shift

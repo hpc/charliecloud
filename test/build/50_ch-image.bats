@@ -5,6 +5,17 @@ setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
 }
 
+tmpimg_build () {
+  for img in "$@"; do
+    ch-image build -t "$img" -f - . << 'EOF'
+FROM alpine:3.17
+EOF
+    run ch-image list
+    [[ $status -eq 0 ]]
+    [[ $output == *"$img"* ]]
+  done
+}
+
 
 @test 'ch-image common options' {
     # no common options
@@ -112,6 +123,35 @@ EOF
     [[ $output != *"delete/test_stage0"* ]]
     [[ $output != *"delete/test_stage1"* ]]
     [[ $output != *"delete/test_stage2"* ]]
+
+    tmpimg_build tmpimg1 tmpimg2
+    ch-image delete tmpimg1 tmpimg2
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"tmpimg1"* ]]
+    [[ $output != *"tmpimg2"* ]]
+
+    # Delete list of images with invalid image
+    tmpimg_build tmpimg1 tmpimg2
+    run ch-image delete tmpimg1 doesnotexist tmpimg2
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output == *"deleting image: tmpimg1"* ]]
+    [[ $output == *"error: no matching image, can"?"t delete: doesnotexist"* ]]
+    [[ $output == *"deleting image: tmpimg2"* ]]
+    [[ $output == *"error: unable to delete 1 invalid image(s)"* ]]
+
+    # Delete list of images with multiple invalid images
+    tmpimg_build tmpimg1 tmpimg2
+    run ch-image delete tmpimg1 doesnotexist tmpimg2 doesnotexist2
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output == *"deleting image: tmpimg1"* ]]
+    [[ $output == *"error: no matching image, can"?"t delete: doesnotexist"* ]]
+    [[ $output == *"deleting image: tmpimg2"* ]]
+    [[ $output == *"error: no matching image, can"?"t delete: doesnotexist2"* ]]
+    [[ $output == *"error: unable to delete 2 invalid image(s)"* ]]
 }
 
 
@@ -272,7 +312,7 @@ EOF
     run ch-image import -v /doesnotexist imptest
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: can’t copy: not found: /doesnotexist"* ]]
+    [[ $output = *"error: can"?"t copy: not found: /doesnotexist"* ]]
 
     # invalid destination reference
     run ch-image import -v "${fixtures}/empty" 'badchar*'
@@ -854,4 +894,52 @@ EOF
 
     # With --unsafe.
     ch-run --unsafe alpine:3.17 -- /bin/true
+}
+
+
+@test "IMPORT cache miss" {  # issue #1638
+    [[ $CH_IMAGE_CACHE = enabled ]] || skip 'build cache enabled only'
+
+    ch-convert alpine:3.17 "$BATS_TMPDIR"/alpine317.tar.gz
+    ch-convert alpine:3.16 "$BATS_TMPDIR"/alpine316.tar.gz
+
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/import_1638
+    rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
+    ch-image import "$BATS_TMPDIR"/alpine317.tar.gz alpine:3.17
+    ch-image import "$BATS_TMPDIR"/alpine316.tar.gz alpine:3.16
+
+    df1=$BATS_TMPDIR/import_1638.1.df
+    cat > "$df1" <<'EOF'
+FROM alpine:3.17
+RUN true
+EOF
+    df2=$BATS_TMPDIR/import_1638.2.df
+    cat > "$df2" <<'EOF'
+FROM alpine:3.16
+RUN true
+EOF
+
+    echo
+    echo '*** Build once: miss'
+    run ch-image build -t tmpimg -f "$df1" "$BATS_TMPDIR"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'1* FROM alpine:3.17'* ]]
+    [[ $output = *'2. RUN true'* ]]
+
+    echo
+    echo '*** Build again: hit'
+    run ch-image build -t tmpimg -f "$df1" "$BATS_TMPDIR"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'1* FROM alpine:3.17'* ]]
+    [[ $output = *'2* RUN true'* ]]
+
+    echo
+    echo '*** Build a 3rd time with the second base image: should now miss'
+    run ch-image build -t tmpimg -f "$df2" "$BATS_TMPDIR"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'1* FROM alpine:3.16'* ]]
+    [[ $output = *'2. RUN true'* ]]
 }

@@ -15,7 +15,7 @@ Synopsis
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] build-cache [...]
-   $ ch-image [...] delete IMAGE_REF
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ...]
    $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [-l] [IMAGE_REF]
@@ -518,7 +518,7 @@ We can also inspect the cache::
   |/
   *  RUN echo foo
   *  (alpine+3.9) PULL alpine:3.17
-  *  (HEAD -> root) ROOT
+  *  (root) ROOT
 
   named images:     4
   state IDs:        5
@@ -1041,14 +1041,15 @@ this order.
 
 ::
 
-   $ ch-image [...] delete IMAGE_GLOB
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ... ]
 
-Delete the image(s) described by :code:`IMAGE_GLOB` from the storage directory
-(including all build stages).
+Delete the image(s) described by each :code:`IMAGE_GLOB` from the storage
+directory (including all build stages).
 
 :code:`IMAGE_GLOB` can be either a plain image reference or an image reference
 with glob characters to match multiple images. For example, :code:`ch-image
 delete 'foo*'` will delete all images whose names start with :code:`foo`.
+Multiple images and/or globs can also be given in a single command line.
 
 Importantly, this sub-command *does not* also remove the image from the build
 cache. Therefore, it can be used to reduce the size of the storage directory,
@@ -1108,6 +1109,9 @@ Optional argument:
   :code:`-l`, :code:`--long`
     Use long format (name, last change timestamp) when listing images.
 
+  :code:`-u`, :code:`--undeletable`
+    List images that can be undeleted. Can also be spelled :code:`--undeleteable`.
+
   :code:`IMAGE_REF`
     Print details of what’s known about :code:`IMAGE_REF`, both locally and in
     the remote registry, if any.
@@ -1159,10 +1163,12 @@ If the imported image contains Charliecloud metadata, that will be imported
 unchanged, i.e., images exported from :code:`ch-image` builder storage will be
 functionally identical when re-imported.
 
-.. note::
+.. warning::
 
-   Every import creates a new cache entry, even if the file or directory has
-   already been imported.
+   Descendant images (i.e., :code:`FROM` the imported :code:`IMAGE_REF`) are
+   linked using :code:`IMAGE_REF` only. If a new image is imported under a new
+   :code:`IMAGE_REF`, all instructions descending from that :code:`IMAGE_REF`
+   will still hit, even if the new image is different.
 
 
 :code:`pull`

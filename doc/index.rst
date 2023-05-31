@@ -26,7 +26,6 @@ Overview
    ch-image
    ch-run
    ch-run-oci
-   ch-ssh
    ch-test
    faq
    best_practices

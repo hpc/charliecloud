@@ -4,6 +4,10 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope full
     prerequisites_ok "$ch_tag"
+    pmix_or_skip
+    if [[ $srun_mpi != pmix* ]]; then
+        skip 'pmix required'
+    fi
 }
 
 count_ranks () {

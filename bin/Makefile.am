@@ -4,7 +4,7 @@
 
 ## C programs
 
-bin_PROGRAMS = ch-checkns ch-run ch-ssh
+bin_PROGRAMS = ch-checkns ch-run
 
 ch_checkns_SOURCES = ch-checkns.c ch_misc.h ch_misc.c
 
@@ -15,8 +15,6 @@ endif
 
 ch_run_CFLAGS = $(CFLAGS) $(PTHREAD_CFLAGS)
 ch_run_LDADD = $(CH_RUN_LIBS)
-
-ch_ssh_SOURCES = ch-ssh.c ch_misc.h ch_misc.c
 
 
 ## Shell scripts - distributed as-is

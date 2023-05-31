@@ -246,6 +246,10 @@ class T_Alma_8(CentOS_8):
 class T_Rocky_8(CentOS_8):
    base = "rockylinux:8"  # :latest same as :8 as of 2022-03-01
 
+# With many of the following images, we test two versions of each image, the
+# latest version and the minimum supported version. “Minimum supported” here
+# meaning the minimum of (a) what’s available on Docker hub and we think won’t
+# vanish too quickly and (b) what we support with fakeroot.
 
 class Fedora(RHEL8):
    config = "fedora"
@@ -266,8 +270,8 @@ class Debian(Test):
    runs = { **Test.runs,
             **{ Run.NEEDED: "    apt-get update"
                             " && apt-get install -y openssh-client" } }
-class T_Debian_9(Debian):
-   base = "debian:9"
+class T_Debian_10(Debian):
+   base = "debian:10"
    arch_excludes = ["ppc64le"]  # base image unavailable
 class T_Debian_Latest(Debian):
    scope = Scope.STANDARD
@@ -311,8 +315,8 @@ class Alpine(Test):
    # openssh does not need --force on Alpine
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "apk add ed",
                              Run.NEEDED:      "apk add dbus" } }
-class T_Alpine_317(Alpine):
-   base = "alpine:3.17"
+class T_Alpine_39(Alpine):
+   base = "alpine:3.9"
 class T_Alpine_Latest(Alpine):
    base = "alpine:latest"
 
@@ -326,9 +330,7 @@ load ../common
 
 setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
-    # FIXME: Would be good to test with build cache enabled, but there are
-    # lots of assumptions about output that are not valid in that case.
-    [[ $CH_IMAGE_CACHE = disabled ]] || skip 'bucache disabled only'
+    [[ $CH_IMAGE_CACHE = enabled ]] || skip 'bucache enabled only'
 }
 """)
 
