@@ -72,7 +72,7 @@ PATH=$(cd "$(dirname "$0")" && pwd)/../bin:$PATH
 export PATH
 
 if [[ -d $1 ]]; then
-    oldtars=$(find "$1" -mindepth 1 -mtime -365 -print)
+    oldtars=$(find "$1" -mindepth 1 -mtime -365 -print | sort)
 else
     oldtars=$(printf '%s ' "$@")  # https://www.shellcheck.net/wiki/SC2124
 fi
@@ -107,6 +107,10 @@ for oldtar in $oldtars; do
 
     INFO "upgrading"
     ch-image list
+    # These are images that contain references to things on the internet that
+    # go out of date, so builds based on them fail. Re-pull them to get a
+    # current base image.
+    ch-image pull archlinux:latest
 
     INFO "testing"
     ch-test -b ch-image --pedantic=no -s "$scope" all
