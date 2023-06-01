@@ -942,7 +942,7 @@ class Enabled_Cache:
          cwd = self.root
       else:
          if ("env" not in kwargs):
-            kwargs["env"] = dict()
+            kwargs["env"] = os.environ.copy()
          kwargs["env"].update({ "GIT_DIR": str(cwd // im.GIT_DIR),
                                 "GIT_WORK_TREE": str(cwd) })
       return (ch.cmd_stdout if quiet else ch.cmd)(["git"] + argv, cwd=cwd,
