@@ -12,8 +12,14 @@
 # will do the same and look up “git” again [3]. If somehow you use different
 # paths to find the outer and inner Git — which is easy to do accidentally
 # with subprocess — you can run a mixed-version Git, which is bad (see #1606).
-# We work around this by looking up git(1) once and then calling it with the
-# absolute path.
+# We work around this by looking up git(1) once and then calling it by its
+# absolute path, with an empty environment including unset $PATH.
+#
+# Alternately, we could have sanitized the environment more carefully, passing
+# through $PATH and perhaps other variables. This seemed difficult to do
+# correctly (e.g., should we keep $LD_LIBRARY_PATH?), and it seemed unlikely
+# that Git would be executing programs other than Git that weren’t readily
+# available in the standard paths or using any non-standard features.
 #
 # [1]: https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration
 # [2]: https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables
