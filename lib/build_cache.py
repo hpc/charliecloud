@@ -1,3 +1,24 @@
+# Note on how we use Git:
+#
+# Git is extremely flexible and can be configured in many ways, including
+# various configuration files [1] as well as environment variables [2]. We do
+# our best to use a fully-isolated Git that brings along no external
+# configuration the user or system may have, by excluding configuration files
+# other than Charliecloud’s and clearing the environment.
+#
+# Another gotcha that is not (yet?) documented is $PATH. git(1) re-executes
+# itself in the same way that it was invoked; e.g., if you invoke it with
+# plain “git”, which looks up the binary in the path, then sub-invocations
+# will do the same and look up “git” again [3]. If somehow you use different
+# paths to find the outer and inner Git — which is easy to do accidentally
+# with subprocess — you can run a mixed-version Git, which is bad (see #1606).
+# We work around this by looking up git(1) once and then calling it with the
+# absolute path.
+#
+# [1]: https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration
+# [2]: https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables
+# [3]: https://lore.kernel.org/git/E7D87B07-C416-4A58-8726-CCDA0907AC66@lanl.gov/t/#u
+
 import configparser
 import datetime
 import enum
@@ -7,6 +28,7 @@ import itertools
 import os
 import pickle
 import re
+import shutil
 import stat
 import tempfile
 import textwrap
@@ -111,6 +133,9 @@ cache = None
 # Path to DOT output (.gv and .pdf will be appended)
 dot_base = None
 
+# Absolute path of Git binary we’re using.
+git = None
+
 # Default path within image to metadata pickle.
 PICKLE_PATH = fs.Path("ch/git.pickle")
 
@@ -120,9 +145,17 @@ PICKLE_PATH = fs.Path("ch/git.pickle")
 def have_deps(required=True):
    """Return True if dependencies for the build cache are present, False
       otherwise. Note this does not include the --dot debugging option; that
-      checks its own dependencies when invoked."""
+      checks its own dependencies when invoked.
+
+      This function also figures out which Git to use and sets the appropriate
+      variables."""
+   global git
+   git = shutil.which("git")
+   if (git is None):
+      (FATAL if required else VERBOSE)("no git(1) found")
+      return False
    # As of 2.34.1, we get: "git version 2.34.1\n".
-   return ch.version_check(["git", "--version"], GIT_MIN, required=required)
+   return ch.version_check([git, "--version"], GIT_MIN, required=required)
 
 def have_dot():
    ch.version_check(["git2dot.py", "--version"], GIT2DOT_MIN)
@@ -655,7 +688,7 @@ class Enabled_Cache:
       self.bootstrap_ct += 1
       # Initialize bare repo. Don’t use wrapper because the build cache
       # doesn’t exist yet.
-      ch.cmd_quiet(["git", "init", "--bare", "-b", "root", self.root])
+      ch.cmd_quiet([git, "init", "--bare", "-b", "root", self.root], env={})
       self.configure()
       # Create empty root commit. This is done in a strange way with no real
       # working directory at all, because (1) cloning the bucache doesn’t
@@ -942,10 +975,10 @@ class Enabled_Cache:
          cwd = self.root
       else:
          if ("env" not in kwargs):
-            kwargs["env"] = os.environ.copy()
+            kwargs["env"] = dict()
          kwargs["env"].update({ "GIT_DIR": str(cwd // im.GIT_DIR),
                                 "GIT_WORK_TREE": str(cwd) })
-      return (ch.cmd_stdout if quiet else ch.cmd)(["git"] + argv, cwd=cwd,
+      return (ch.cmd_stdout if quiet else ch.cmd)([git] + argv, cwd=cwd,
                                                   *args, **kwargs)
 
    def git_prepare(self, unpack_path, files, write=True):
