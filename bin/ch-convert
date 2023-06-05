@@ -586,7 +586,9 @@ dir_fixup () {
     mount_points_ensure "$1"
 }
 
-# Make directory $1, if it doesn’t already exist.
+# Make directory $1, if it doesn’t already exist. Note that by the time we
+# call this function, we’ve already confirmed (via “dir_out_validate”) that
+# $1 is either a directory or doesn’t exist.
 dir_make () {
     if [ ! -e "$1" ]; then
        mkdir "$1"
