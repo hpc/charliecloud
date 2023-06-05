@@ -235,7 +235,7 @@ delete () {
 }
 
 empty_dir_init () {
-    rm -rf "$1"
+    rm -rf --one-file-system "$1"
     mkdir "$1"
 }
 

@@ -49,9 +49,7 @@ cv_chimage_dir () {
     # Use tar(1) instead of cp(1) because (1) it supports file exclusions and
     # (2) it allows a progress meter (issue #1332). A very quick, very dirty,
     # completely half-assed performance test suggests that's about the same.
-    if [ ! -d "$2" ]; then
-        mkdir "$2"
-    fi
+    dir_make "$2"
     tar_ "$img" | tar xf - -pC "$2"
     dir_fixup "$2"
 }
@@ -285,9 +283,7 @@ cv_tar_dir () {
     INFO 'analyzing ...'
     root=$(tar_root "$1")
     INFO 'unpacking ...'
-    if [ ! -d "$2" ]; then
-        mkdir "$2"
-    fi
+    dir_make "$2"
     # Unpack the tarball. There's a lot going on here.
     #
     #   1. Use a pipe b/c PV ignores arguments if it’s cat rather than PV.
@@ -588,6 +584,13 @@ dir_fixup () {
     find "$1" -type d -a ! -perm -u+rwx -exec chmod u+w {} +
     # Ensure mount points are present.
     mount_points_ensure "$1"
+}
+
+# Make directory $1, if it doesn’t already exist.
+dir_make () {
+    if [ ! -e "$1" ]; then
+       mkdir "$1"
+    fi
 }
 
 # Return validated format $1: if non-empty and valid, return it; if empty,
