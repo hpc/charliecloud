@@ -975,8 +975,10 @@ If any of the following options are given, do the corresponding operation
 before printing. Multiple options can be given, in which case they happen in
 this order.
 
-  :code:`--reset`
-    Clear and re-initialize the build cache.
+  :code:`--dot`
+    Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
+    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` and
+    :code:`git2dot`.
 
   :code:`--gc`
     Run Git garbage collection on the cache, including full de-duplication of
@@ -985,14 +987,12 @@ this order.
     corruption if the build cache is being accessed concurrently by another
     process). The operation can take a long time on large caches.
 
-  :code:`--text`
+  :code:`--reset`
+    Clear and re-initialize the build cache.
+
+  :code:`--tree`
     Print a text tree of the cache using Git’s :code:`git log --graph`
     feature. If :code:`-v` is also given, the tree has more detail.
-
-  :code:`--dot`
-    Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
-    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` and
-    :code:`git2dot`.
 
 :code:`delete`
 ==============
