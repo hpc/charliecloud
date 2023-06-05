@@ -63,9 +63,9 @@ EOF
 
     # quiet level 2
     run ch-image build --force seccomp -t tmpimg -qq -f - . << 'EOF'
-FROM almalinux:8
-RUN dnf install -y --setopt=install_weak_deps=false openssh-clients \
- && dnf clean all
+FROM alpine:3.17
+RUN echo 'this is stdout'
+RUN echo 'this is stderr' 1>&2
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
