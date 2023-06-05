@@ -100,7 +100,7 @@ for oldtar in $oldtars; do
 
     case ${storage#*-} in
         0.29|0.30|0.31)
-            INFO "working around issue #1662"
+            INFO "working around bug fixed by PR #1662"
             (cd "$storage"/bucache && git branch -D alpine+latest)
             ;;
     esac
