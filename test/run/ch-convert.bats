@@ -409,7 +409,6 @@ test_from () {
     # tar
     ch-convert -i ch-image -o tar tmpimg "$BATS_TMPDIR/tmpimg.tar.gz"
 
-
     ## run test ##
 
     # ch-image
