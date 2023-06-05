@@ -131,7 +131,7 @@ def main():
            [["-q", "--quiet"],
             { "action": "count",
               "default": 0,
-              "help": "suppress logging, can be repeated"}],
+              "help": "print less output (can be repeated)"}],
            [["-s", "--storage"],
             { "metavar": "DIR",
               "type": fs.Path,
