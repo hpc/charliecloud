@@ -244,7 +244,8 @@ def main():
    # info
    tp = sp.add_parser("logging", "foo")
    add_opts(tp, misc.gestalt_logging, deps_check=False, stog_init=False)
-   tp.add_argument("--fail", action="store_true", help="makes the program exit with a failure")
+   tp.add_argument("--fail", action="store_true",
+                   help="also generate a fatal error")
 
    # import
    sp = ap.add_parser("import", "copy external image into storage")
