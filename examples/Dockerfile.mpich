@@ -29,7 +29,7 @@ RUN wget -nv ${MPI_URL}/mpich-${MPI_VERSION}.tar.gz \
                 --enable-threads=multiple \
                 --with-ch4-shmmods=posix \
                 --with-device=ch4:ofi \
-                --with-libfabric=/usr/local
+                --with-libfabric=/usr/local \
                 --with-pm=no \
                 --with-pmix=/usr/local/lib \
  && make -j$(getconf _NPROCESSORS_ONLN) install \
