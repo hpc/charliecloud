@@ -97,14 +97,15 @@ Common options placed before or after the sub-command:
     not if the program crashes.
 
   :code:`-q, --quiet`
-    Suppress logging info, can be repeated up to three times. Incompatible with
-    :code:`--verbose` and :code:`--debug`. You might use :code:`-q` if you want
-    to run a :code:`ch-image` command without seeing logging info, but you still
-    want to see output from subprocesses (e.g. results of the Dockerfile
-    :code:`RUN` instruction). You might use :code:`-qq` if you don’t want to see
-    any info chatter from :code:`ch-image` or its subprocesses. You might use
-    :code:`-qqq` if you want to suppress writing to stderr. A full breakdown of
-    the three levels can be seen in the table below.
+    Suppress logging info.
+    Incompatible with :code:`--verbose` and overrides :code:`--debug` regardless of option order.
+    Can be repeated:
+    
+      * :code:`-q` quiets logging from :code:`ch-image` itself but leaves output from programs executed by :code:`RUN` instructions unchanged.
+      * :code:`-qq` logs even less and also quiets :code:`RUN` programs by suppressing their standard output.
+      * :code:`-qqq` further quiets :code:`RUN` by suppressing their standard error. (This means these subprocesses are completely silenced no matter what goes wrong with them.)
+      
+    See the summary table FIXME for details.
 
     .. list-table::
       :header-rows: 1
