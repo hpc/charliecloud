@@ -1399,3 +1399,25 @@ EOF
     [[ $output = *'deleting, see issue #1351: var/lib/rpm/__db.001'* ]]
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg/var/lib/rpm/__db.001 ]]
 }
+
+@test "${tag}: restore xattrs" { # issue #1287
+    ch-image build-cache --reset
+    ch-image build -t tmpimg - <<'EOF'
+FROM almalinux:8
+RUN dnf install -y --setopt=install_weak_deps=false attr
+RUN touch /home/foo
+RUN setfattr -n user.foo -v bar /home/foo
+EOF
+    ch-image delete tmpimg
+    ch-image build -t tmpimg - <<'EOF'
+FROM almalinux:8
+RUN dnf install -y --setopt=install_weak_deps=false attr
+RUN touch /home/foo
+RUN setfattr -n user.foo -v bar /home/foo
+EOF
+    run ch-run tmpimg -- getfattr home/foo
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'# file: home/foo'* ]]
+    [[ $output = *'user.foo'* ]]
+}
