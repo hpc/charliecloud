@@ -720,7 +720,7 @@ def monkey_write_streams():
                "“”’".encode(encoding=encoding)
             except UnicodeEncodeError:
                monkey_write_insert(stream)
-               break
+            break
 
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
