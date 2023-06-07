@@ -50,7 +50,7 @@ cv_chimage_dir () {
     # (2) it allows a progress meter (issue #1332). A very quick, very dirty,
     # completely half-assed performance test suggests that's about the same.
     mkdir "$2"
-    tar_ "$img" | tar xf - --xattrs -pC "$2"
+    tar_ "$img" | tar xf - --xattrs-include='user.*' -pC "$2"
     dir_fixup "$2"
 }
 
@@ -218,7 +218,7 @@ cv_squash_dir () {
     #    for files but not directories.)
     umask_=$(umask)
     umask 0000
-    unsquashfs -xattrs -d "$2" -user-xattrs "$1"
+    unsquashfs -d "$2" -user-xattrs "$1"
     umask "$umask_"
     dir_fixup "$2"
 }
@@ -291,7 +291,7 @@ cv_tar_dir () {
       pv_ -s "$(stat -c%s "$1")" < "$1" \
     | tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
           --xform 's|^\./||x' --strip-components=$strip_ct \
-          --anchored --no-wildcards-match-slash --xattrs \
+          --anchored --no-wildcards-match-slash --xattrs-include='user.*' \
           --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"
     dir_fixup "$2"
 }
@@ -396,7 +396,7 @@ dockman_to_tar () {
             --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
     # The tar flavor Docker gives us does not support UIDs or GIDs greater
     # than 2**21, so use 0/0 rather than what’s on the filesystem. See #1573.
-    tar rf "$tmptar" -b1 -P --owner=0 --group=0 --xattrs \
+    tar rf "$tmptar" -b1 -P --owner=0 --group=0 --xattrs-include='user.*' \
         --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
     INFO 'compressing ...'
     pv_ < "$tmptar" | gzip_ -6 > "$3"
@@ -670,7 +670,7 @@ path_noclobber () {
 # Tar $1 and emit the result on stdout, excluding build cache metadata.
 # Produce a tarbomb because Docker requires tarbombs.
 tar_ () {
-    ( cd "$1" && tar cf - --xattrs \
+    ( cd "$1" && tar cf - --xattrs-include='user.*' \
                           --exclude=./.git \
                           --exclude=./.gitignore \
                           --exclude=./ch/git.pickle . ) | pv_
