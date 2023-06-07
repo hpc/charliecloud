@@ -44,6 +44,15 @@ class Download_Mode(enum.Enum):
    ENABLED = "enabled"
    WRITE_ONLY = "write-only"
 
+class Log_Level(enum.Enum):
+   TRACE = 3
+   DEBUG = 2
+   VERBOSE = 1
+   INFO = 0
+   QUIET_INFO = -1
+   QUIET_SUBPROC = -2
+   QUIET_ERR = -3
+
 
 ## Constants ##
 

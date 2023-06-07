@@ -241,8 +241,8 @@ def main():
    # python-path
    tp = sp.add_parser("python-path", "print path to python interpreter in use")
    add_opts(tp, misc.gestalt_python_path, deps_check=False, stog_init=False)
-   # info
-   tp = sp.add_parser("logging", "foo")
+   # logging
+   tp = sp.add_parser("logging", "print logging messages at all levels")
    add_opts(tp, misc.gestalt_logging, deps_check=False, stog_init=False)
    tp.add_argument("--fail", action="store_true",
                    help="also generate a fatal error")
