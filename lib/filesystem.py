@@ -258,14 +258,10 @@ class Path(pathlib.PosixPath):
       ch.close_(fp)
       return data
 
-   def json_from_file(self, msg, announce=True, error_fatal=True):
+   def json_from_file(self, msg, error_fatal=True):
       """Return the json contents of file path. If errors_fatal, exit with
          error; otherwise, return None"""
-      info = "loading JSON: %s: %s" % (msg, self)
-      if (announce):
-         ch.INFO(info)
-      else:
-         ch.VERBOSE(info)
+      ch.VERBOSE("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all(text=True, error_fatal=error_fatal)
       if (not error_fatal and text is None):
          return None

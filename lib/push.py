@@ -151,10 +151,8 @@ class Image_Pusher:
          # Check for previously prepared; if they exist, use them.
          ch.VERBOSE("--ulcache: checking for previously prepared files")
          config = self.path_config.json_from_file('config',
-                                                   announce=False,
                                                    error_fatal=False)
          manifest = self.path_manifest.json_from_file('manifest',
-                                                      announce=False,
                                                       error_fatal=False)
          layers = self.layers_from_manifest(manifest)
 
@@ -162,6 +160,9 @@ class Image_Pusher:
       # missing (None); thus, create new ones.
       if (config is None or manifest is None or layers is None):
          (config, manifest, layers) = self.prepare_new()
+      else:
+         # Announce for CI test output parsing.
+         ch.VERBOSE("using previously prepared files")
 
       # Pack it all up and store for upload().
       config_bytes = json.dumps(config, indent=2).encode("UTF-8")

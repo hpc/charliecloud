@@ -63,25 +63,25 @@ EOF
 
 @test "${tag}: with upload cache" {
     [[ $CH_IMAGE_CACHE != disabled ]] || skip 'build cache disabled'
-    run ch-image upload-cache --reset
+    run ch-image upload-cache
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'upload files:       0'* ]]
 
+    ch-image pull alpine:3.16
+
     # Push and store prepared upload files.
-    ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache
+    ch-image -v --tls-no-verify push --ulcache alpine:3.16 localhost:5000/ulcache
     run ch-image upload-cache
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'upload files:       3'* ]]
 
     # Reuse previously prepared files
-    run ch-image -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache:prepared
+    run ch-image -v --tls-no-verify push --ulcache alpine:3.16 localhost:5000/ulcache:prepared
     echo "output"
     [[ $status -eq 0 ]]
-    [[ $output = *'using previously prepared config'* ]]
-    [[ $output = *'using previously prepared manifest'* ]]
-    [[ $output = *'using previously prepared layer(s)'* ]]
+    [[ $output = *'using previously prepared files'* ]]
 }
 
 
