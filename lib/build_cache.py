@@ -452,7 +452,7 @@ class File_Metadata:
       # can have them left over without being tagged don’t restore.
       if (self.dont_restore or self.path.match("var/lib/rpm/__db.*")):
          if (not quick and self.path != im.GIT_DIR):
-            ch.WARNING("ignoring un-restorable file: /%s" % self.path)
+            ch.INFO("ignoring un-restorable file: /%s" % self.path)
          return
       # Make sure I exist, and with the correct name.
       if (self.hardlink_to is not None):
