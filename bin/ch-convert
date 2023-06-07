@@ -49,7 +49,7 @@ cv_chimage_dir () {
     # Use tar(1) instead of cp(1) because (1) it supports file exclusions and
     # (2) it allows a progress meter (issue #1332). A very quick, very dirty,
     # completely half-assed performance test suggests that's about the same.
-    mkdir "$2"
+    dir_make "$2"
     tar_ "$img" | tar xf - --xattrs -pC "$2"
     dir_fixup "$2"
 }
@@ -218,7 +218,33 @@ cv_squash_dir () {
     #    for files but not directories.)
     umask_=$(umask)
     umask 0000
-    unsquashfs -xattrs -d "$2" -user-xattrs "$1"
+    # To support conversion with an empty dir as output (#1612), we add the “-f”
+    # option to our unsquashfs(1) call below. Without “-f”, if you try to use
+    # unsquashfs(1) with an empty dir as the target, you get the error “failed
+    # to make directory path/to/dir, because File exists”. The documentation for
+    # “-f” says “if file already exists then overwrite”, but I’ve concluded that
+    # the option actually doesn’t “overwrite” directories through the following
+    # test:
+    #
+    # 1. Create an empty directory, let’s call it “parent”.
+    #
+    # 2. Create another empty directory (“child”) that is a subdirectory of
+    #    “parent”.
+    #
+    # 3. Change the owner and group of “parent” to root, ensure that the owner
+    #    and group of “child” are a user (rather than root).
+    #
+    # 4. Check that both “parent” and “child” have the following permissions:
+    #    “drwxr-xr-x”.
+    #
+    # 5. As the owner of “child”, try to remove “child” and confirm that linux
+    #    won’t allow it.
+    #
+    # 6. Use unsquashfs(1) with the “-f” option to unpack an archive to “child”
+    #    and confirm that it’s successful.
+    #
+    # (https://unix.stackexchange.com/a/583819)
+    unsquashfs -f -d "$2" -xattrs "$1"
     umask "$umask_"
     dir_fixup "$2"
 }
@@ -257,7 +283,7 @@ cv_tar_dir () {
     INFO 'analyzing ...'
     root=$(tar_root "$1")
     INFO 'unpacking ...'
-    mkdir "$2"
+    dir_make "$2"
     # Unpack the tarball. There's a lot going on here.
     #
     #   1. Use a pipe b/c PV ignores arguments if it’s cat rather than PV.
@@ -461,8 +487,10 @@ dir_out_validate () {
                 INFO "deleting existing image: ${1}"
                 rm -Rf --one-file-system "$1"
             fi
+        elif [ -n "$(find "$1" -maxdepth 0 -type d -empty)" ]; then
+            INFO "using empty directory: ${1}"
         else
-            FATAL "exists but does not appear to be an image: ${1}"
+            FATAL "exists but does not appear to be an image and is not empty: ${1}"
         fi
     fi
 }
@@ -556,6 +584,15 @@ dir_fixup () {
     find "$1" -type d -a ! -perm -u+rwx -exec chmod u+w {} +
     # Ensure mount points are present.
     mount_points_ensure "$1"
+}
+
+# Make directory $1, if it doesn’t already exist. Note that by the time we
+# call this function, we’ve already confirmed (via “dir_out_validate”) that
+# $1 is either a directory or doesn’t exist.
+dir_make () {
+    if [ ! -e "$1" ]; then
+       mkdir "$1"
+    fi
 }
 
 # Return validated format $1: if non-empty and valid, return it; if empty,
