@@ -234,6 +234,11 @@ delete () {
     esac
 }
 
+empty_dir_init () {
+    rm -rf --one-file-system "$1"
+    mkdir "$1"
+}
+
 # Test conversions dir -> $1 -> (all) -> dir.
 test_from () {
     end=${BATS_TMPDIR}/convert.dir
@@ -319,7 +324,7 @@ test_from () {
     run ch-convert "${BATS_TMPDIR}/foo.tar" "$BATS_TMPDIR"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists but does not appear to be an image: ${BATS_TMPDIR}"* ]]
+    [[ $output = *"error: exists but does not appear to be an image and is not empty: ${BATS_TMPDIR}"* ]]
     rm "${BATS_TMPDIR}/foo.tar"
 }
 
@@ -380,6 +385,66 @@ test_from () {
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/timg.tar.gz" ]]
     rm "${BATS_TMPDIR}/timg.tar.gz"
+}
+
+
+@test 'ch-convert: empty target dir' {
+    empty=${BATS_TMPDIR}/test-empty
+
+    ## setup source images ##
+
+    # ch-image
+    printf 'FROM alpine:3.17\n' | ch-image build -t tmpimg -f - "$BATS_TMPDIR"
+
+    # docker
+    printf 'FROM alpine:3.17\n' | docker_ build -t tmpimg -
+
+    # podman
+    printf 'FROM alpine:3.17\n' | podman_ build -t tmpimg -
+
+    # squash
+    touch "${BATS_TMPDIR}/tmpimg.sqfs"
+    ch-convert -i ch-image -o squash tmpimg "$BATS_TMPDIR/tmpimg.sqfs"
+
+    # tar
+    ch-convert -i ch-image -o tar tmpimg "$BATS_TMPDIR/tmpimg.tar.gz"
+
+    ## run test ##
+
+    # ch-image
+    empty_dir_init "$empty"
+    run ch-convert -i ch-image -o dir tmpimg "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
+
+    # docker
+    empty_dir_init "$empty"
+    run ch-convert -i docker -o dir tmpimg "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
+
+    # podman
+    empty_dir_init "$empty"
+    run ch-convert -i podman -o dir tmpimg "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
+
+    # squash
+    empty_dir_init "$empty"
+    run ch-convert -i squash -o dir "$BATS_TMPDIR/tmpimg.sqfs" "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
+
+    # tar
+    empty_dir_init "$empty"
+    run ch-convert -i tar -o dir "$BATS_TMPDIR/tmpimg.tar.gz" "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
 }
 
 
