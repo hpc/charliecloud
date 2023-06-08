@@ -56,6 +56,11 @@ mounting SquashFS images with FUSE.
   :code:`--env-no-expand`
     Don’t expand variables when using :code:`--set-env`.
 
+  :code:`--feature=FEAT`
+    If feature :code:`FEAT` is enabled, exit with success. Valid values of
+    :code:`FEAT` are :code:`extglob` for extended globs, :code:`seccomp` for
+    :code:`seccomp(2)`, and :code:`squash` for squashfs archives.
+
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.
 
