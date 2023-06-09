@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>6. ch-image &mdash; Charliecloud 0.32 documentation</title>
+  <title>6. ch-image &mdash; Charliecloud 0.33 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.32
+                0.33
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -112,11 +112,10 @@
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -149,7 +148,7 @@
 <h2><span class="section-number">6.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build <span class="o">[</span>-t TAG<span class="o">]</span> <span class="o">[</span>-f DOCKERFILE<span class="o">]</span> <span class="o">[</span>...<span class="o">]</span> CONTEXT
 <span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build-cache <span class="o">[</span>...<span class="o">]</span>
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> delete IMAGE_REF
+<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> delete IMAGE_GLOB <span class="o">[</span>IMAGE_GLOB ...<span class="o">]</span>
 <span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> gestalt <span class="o">[</span>SELECTOR<span class="o">]</span>
 <span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> import PATH IMAGE_REF
 <span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> list <span class="o">[</span>-l<span class="o">]</span> <span class="o">[</span>IMAGE_REF<span class="o">]</span>
@@ -552,7 +551,7 @@ third is a miss, so Charliecloud retrieves that state and continues building.</p
 <span class="go">|/</span>
 <span class="go">*  RUN echo foo</span>
 <span class="go">*  (alpine+3.9) PULL alpine:3.17</span>
-<span class="go">*  (HEAD -&gt; root) ROOT</span>
+<span class="go">*  (root) ROOT</span>
 
 <span class="go">named images:     4</span>
 <span class="go">state IDs:        5</span>
@@ -990,7 +989,9 @@ before printing. Multiple options can be given, in which case they happen in
 this order.</p>
 <blockquote>
 <div><dl class="simple">
-<dt><code class="code docutils literal notranslate"><span class="pre">--reset</span></code></dt><dd><p>Clear and re-initialize the build cache.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--dot</span></code></dt><dd><p>Create a DOT export of the tree named <code class="code docutils literal notranslate"><span class="pre">./build-cache.dot</span></code> and a PDF
+rendering <code class="code docutils literal notranslate"><span class="pre">./build-cache.pdf</span></code>. Requires <code class="code docutils literal notranslate"><span class="pre">graphviz</span></code> and
+<code class="code docutils literal notranslate"><span class="pre">git2dot</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--gc</span></code></dt><dd><p>Run Git garbage collection on the cache, including full de-duplication of
 similar files. This will immediately remove all cache entries not
@@ -998,26 +999,25 @@ currently reachable from a named branch (which is likely to cause
 corruption if the build cache is being accessed concurrently by another
 process). The operation can take a long time on large caches.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--text</span></code></dt><dd><p>Print a text tree of the cache using Git’s <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">log</span> <span class="pre">--graph</span></code>
-feature. If <code class="code docutils literal notranslate"><span class="pre">-v</span></code> is also given, the tree has more detail.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--reset</span></code></dt><dd><p>Clear and re-initialize the build cache.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--dot</span></code></dt><dd><p>Create a DOT export of the tree named <code class="code docutils literal notranslate"><span class="pre">./build-cache.dot</span></code> and a PDF
-rendering <code class="code docutils literal notranslate"><span class="pre">./build-cache.pdf</span></code>. Requires <code class="code docutils literal notranslate"><span class="pre">graphviz</span></code> and
-<code class="code docutils literal notranslate"><span class="pre">git2dot</span></code>.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--tree</span></code></dt><dd><p>Print a text tree of the cache using Git’s <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">log</span> <span class="pre">--graph</span></code>
+feature. If <code class="code docutils literal notranslate"><span class="pre">-v</span></code> is also given, the tree has more detail.</p>
 </dd>
 </dl>
 </div></blockquote>
 </section>
 <section id="delete">
 <h2><span class="section-number">6.9. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> delete IMAGE_GLOB
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> delete IMAGE_GLOB <span class="o">[</span>IMAGE_GLOB ... <span class="o">]</span>
 </pre></div>
 </div>
-<p>Delete the image(s) described by <code class="code docutils literal notranslate"><span class="pre">IMAGE_GLOB</span></code> from the storage directory
-(including all build stages).</p>
+<p>Delete the image(s) described by each <code class="code docutils literal notranslate"><span class="pre">IMAGE_GLOB</span></code> from the storage
+directory (including all build stages).</p>
 <p><code class="code docutils literal notranslate"><span class="pre">IMAGE_GLOB</span></code> can be either a plain image reference or an image reference
 with glob characters to match multiple images. For example, <code class="code docutils literal notranslate"><span class="pre">ch-image</span>
-<span class="pre">delete</span> <span class="pre">'foo*'</span></code> will delete all images whose names start with <code class="code docutils literal notranslate"><span class="pre">foo</span></code>.</p>
+<span class="pre">delete</span> <span class="pre">'foo*'</span></code> will delete all images whose names start with <code class="code docutils literal notranslate"><span class="pre">foo</span></code>.
+Multiple images and/or globs can also be given in a single command line.</p>
 <p>Importantly, this sub-command <em>does not</em> also remove the image from the build
 cache. Therefore, it can be used to reduce the size of the storage directory,
 trading off the time needed to retrieve an image from cache.</p>
@@ -1066,6 +1066,8 @@ builder storage.</p>
 <blockquote>
 <div><dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">-l</span></code>, <code class="code docutils literal notranslate"><span class="pre">--long</span></code></dt><dd><p>Use long format (name, last change timestamp) when listing images.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-u</span></code>, <code class="code docutils literal notranslate"><span class="pre">--undeletable</span></code></dt><dd><p>List images that can be undeleted. Can also be spelled <code class="code docutils literal notranslate"><span class="pre">--undeleteable</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code></dt><dd><p>Print details of what’s known about <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>, both locally and in
 the remote registry, if any.</p>
@@ -1116,10 +1118,12 @@ listed beside each available architecture. Importantly, this feature does
 <p>If the imported image contains Charliecloud metadata, that will be imported
 unchanged, i.e., images exported from <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> builder storage will be
 functionally identical when re-imported.</p>
-<div class="admonition note">
-<p class="admonition-title">Note</p>
-<p>Every import creates a new cache entry, even if the file or directory has
-already been imported.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>Descendant images (i.e., <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> the imported <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>) are
+linked using <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> only. If a new image is imported under a new
+<code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>, all instructions descending from that <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code>
+will still hit, even if the new image is different.</p>
 </div>
 </section>
 <section id="pull">

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Tutorial &mdash; Charliecloud 0.32 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.33 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.32
+                0.33
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -96,11 +96,10 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -537,7 +536,7 @@ called “containers”, the image reference would be
 <span class="go">almalinux:8</span>
 <span class="go">hello</span>
 <span class="go">hello.2</span>
-<span class="gp">$</span> ch-image convert hello.2 ./hello.2
+<span class="gp">$</span> ch-convert hello.2 ./hello.2
 <span class="gp">$</span> ls ./hello.2
 <span class="go">bin    etc    lib    mnt    proc   run    srv    tmp    var</span>
 <span class="go">dev    home   media  opt    root   sbin   sys    usr</span>
@@ -728,7 +727,7 @@ third is a miss, so Charliecloud retrieves that state and continues building.</p
 <span class="go">|/</span>
 <span class="go">*  RUN sleep 2 &amp;&amp; echo foo</span>
 <span class="go">*  (almalinux:8) PULL almalinux:8</span>
-<span class="go">*  (HEAD -&gt; root) ROOT</span>
+<span class="go">*  (root) ROOT</span>
 
 <span class="go">named images:    4</span>
 <span class="go">state IDs:       5</span>
@@ -1025,8 +1024,8 @@ resources, with a few quirks. This section demonstrates how that works.</p>
 mounts, which is somewhat like a hard link in that it causes a file or
 directory to appear in multiple places in the filesystem tree, but it is a
 property of the running kernel rather than the filesystem.</p>
-<p>Several host directories are always bind-mounted into the container. These
-include system directories such as <code class="code docutils literal notranslate"><span class="pre">/dev</span></code>, <code class="code docutils literal notranslate"><span class="pre">/proc</span></code>, <code class="code docutils literal notranslate"><span class="pre">/sys</span></code>,
+<p>Several host directories are always bind-mounted into the container. These</p>
+<p>include system directories such as <code class="code docutils literal notranslate"><span class="pre">/dev</span></code>, <code class="code docutils literal notranslate"><span class="pre">/proc</span></code>, <code class="code docutils literal notranslate"><span class="pre">/sys</span></code>,
 and <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>. Others can be requested with a command line option, e.g.
 <code class="code docutils literal notranslate"><span class="pre">--home</span></code> bind-mounts the invoking user’s home directory.</p>
 <p>Charliecloud uses recursive bind mounts, so for example if the host has a
@@ -1084,7 +1083,7 @@ container, even if <code class="code docutils literal notranslate"><span class="
 <span class="go">4026531837</span>
 </pre></div>
 </div>
-<p>There are several ways to SSH to a remote node and run commands inside a
+<p>There are a couple ways to SSH to a remote node and run commands inside a
 container. The simplest is to manually invoke <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> in the
 <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> command:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ssh localhost ch-run /var/tmp/hello.sqfs -- stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
@@ -1098,45 +1097,9 @@ container. That is, the <code class="code docutils literal notranslate"><span cl
 existing user namespace <code class="code docutils literal notranslate"><span class="pre">’2256</span></code>; rather, it has re-used the namespace
 ID <code class="code docutils literal notranslate"><span class="pre">’2256</span></code>.</p>
 </div>
-<p>Another is to use the <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code> wrapper program, which adds
-<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> to the <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> command implicitly. It takes the
-<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> arguments from the environment variable <code class="code docutils literal notranslate"><span class="pre">CH_RUN_ARGS</span></code>,
-making it mostly a drop-in replacement for <code class="code docutils literal notranslate"><span class="pre">ssh</span></code>. For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/var/tmp/hello.sqfs --&quot;</span>
-<span class="gp">$</span> ch-ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
-<span class="go">4026532256</span>
-<span class="gp">$</span> ch-ssh -t localhost /bin/bash
-<span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
-<span class="go">4026532256</span>
-</pre></div>
-</div>
-<p><code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code> is available inside containers as well, in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code> via
-bind-mount, if the image has a dummy file at <code class="code docutils literal notranslate"><span class="pre">/usr/bin/ch-ssh</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">CH_RUN_ARGS</span><span class="o">=</span><span class="s2">&quot;/var/tmp/hello.sqfs --&quot;</span>
-<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- /bin/bash
-<span class="gp">&gt;</span> stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
-<span class="go">4026532256</span>
-<span class="gp">&gt;</span> ch-ssh localhost stat -L --format<span class="o">=</span><span class="s1">&#39;%i&#39;</span> /proc/self/ns/user
-<span class="go">4026532258</span>
-</pre></div>
-</div>
-<p>This also demonstrates that <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> does not alter most environment
-variables.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<ol class="arabic simple">
-<li><p><code class="code docutils literal notranslate"><span class="pre">CH_RUN_ARGS</span></code> is interpreted very simply; the sole delimiter is
-spaces. It is not shell syntax. In particular, quotes and backslashes
-are not interpreted.</p></li>
-<li><p>Argument <code class="code docutils literal notranslate"><span class="pre">-t</span></code> is required for SSH to allocate a pseudo-TTY and
-thus convince your shell to be interactive. In the case of Bash,
-otherwise you’ll get a shell that accepts commands but doesn’t print
-prompts, among other other issues. (<a class="reference external" href="https://github.com/hpc/charliecloud/issues/2">Issue #2</a>.)</p></li>
-</ol>
-</div>
-<p>A third approach may be to edit one’s shell initialization scripts to check
-the command line and <code class="code docutils literal notranslate"><span class="pre">exec(1)</span></code> <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> if appropriate. This is
-brittle but avoids wrapping <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> or altering its command line.</p>
+<p>Another may be to edit one’s shell initialization scripts to check the command
+line and <code class="code docutils literal notranslate"><span class="pre">exec(1)</span></code> <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> if appropriate. This is brittle but
+avoids wrapping <code class="code docutils literal notranslate"><span class="pre">ssh</span></code> or altering its command line.</p>
 </section>
 <section id="user-and-group-ids">
 <h4><span class="section-number">2.9.4.3. </span>User and group IDs<a class="headerlink" href="#user-and-group-ids" title="Permalink to this headline">¶</a></h4>

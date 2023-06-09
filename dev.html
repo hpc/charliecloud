@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>13. Contributor’s guide &mdash; Charliecloud 0.32 documentation</title>
+  <title>12. Contributor’s guide &mdash; Charliecloud 0.33 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -18,7 +18,7 @@
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
-    <link rel="prev" title="12. Best practices" href="best_practices.html" /> 
+    <link rel="prev" title="11. Best practices" href="best_practices.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -30,7 +30,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.32
+                0.33
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -49,87 +49,86 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">13. Contributor’s guide</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#workflow">13.1. Workflow</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#milestones">13.1.1. Milestones</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#peer-review">13.1.2. Peer review</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#branching-and-merging">13.1.3. Branching and merging</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#miscellaneous-issue-and-pull-request-notes">13.1.4. Miscellaneous issue and pull request notes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#continuous-integration-testing">13.1.5. Continuous integration testing</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#issue-labeling">13.1.6. Issue labeling</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#what-kind-of-change-is-it">13.1.6.1. What kind of change is it?</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#how-important-urgent-is-it">13.1.6.2. How important/urgent is it?</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#what-part-of-charliecloud-is-affected">13.1.6.3. What part of Charliecloud is affected?</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#special-considerations">13.1.6.4. Special considerations</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#why-was-it-closed">13.1.6.5. Why was it closed?</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#deprecated-labels">13.1.6.6. Deprecated labels</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">12. Contributor’s guide</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#workflow">12.1. Workflow</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#milestones">12.1.1. Milestones</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#peer-review">12.1.2. Peer review</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#branching-and-merging">12.1.3. Branching and merging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#miscellaneous-issue-and-pull-request-notes">12.1.4. Miscellaneous issue and pull request notes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#continuous-integration-testing">12.1.5. Continuous integration testing</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#issue-labeling">12.1.6. Issue labeling</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#what-kind-of-change-is-it">12.1.6.1. What kind of change is it?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-important-urgent-is-it">12.1.6.2. How important/urgent is it?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#what-part-of-charliecloud-is-affected">12.1.6.3. What part of Charliecloud is affected?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#special-considerations">12.1.6.4. Special considerations</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#why-was-it-closed">12.1.6.5. Why was it closed?</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#deprecated-labels">12.1.6.6. Deprecated labels</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#test-suite">13.2. Test suite</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#timing-the-tests">13.2.1. Timing the tests</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#ch-test-complains-about-inconsistent-versions">13.2.2. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#special-images">13.2.3. Special images</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#writing-a-test-image-using-the-standard-workflow">13.2.4. Writing a test image using the standard workflow</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#summary">13.2.4.1. Summary</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#how-to-specify-when-to-include-and-exclude-a-test-image">13.2.4.2. How to specify when to include and exclude a test image</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#how-to-write-a-dockerfile-recipe">13.2.4.3. How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#how-to-write-a-build-recipe">13.2.4.4. How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#test-suite">12.2. Test suite</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#timing-the-tests">12.2.1. Timing the tests</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ch-test-complains-about-inconsistent-versions">12.2.2. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#special-images">12.2.3. Special images</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#writing-a-test-image-using-the-standard-workflow">12.2.4. Writing a test image using the standard workflow</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#summary">12.2.4.1. Summary</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-specify-when-to-include-and-exclude-a-test-image">12.2.4.2. How to specify when to include and exclude a test image</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-write-a-dockerfile-recipe">12.2.4.3. How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#how-to-write-a-build-recipe">12.2.4.4. How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#building-rpms">13.3. Building RPMs</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#dependencies">13.3.1. Dependencies</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#rpmbuild-wrapper-script">13.3.2. <code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#gotchas-and-quirks">13.3.3. Gotchas and quirks</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#rpm-versions-and-releases">13.3.3.1. RPM versions and releases</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#packaged-source-code-and-rpm-build-config-come-from-different-commits">13.3.3.2. Packaged source code and RPM build config come from different commits</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#changelog-maintenance">13.3.3.3. Changelog maintenance</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#building-rpms">12.3. Building RPMs</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#dependencies">12.3.1. Dependencies</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rpmbuild-wrapper-script">12.3.2. <code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#gotchas-and-quirks">12.3.3. Gotchas and quirks</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#rpm-versions-and-releases">12.3.3.1. RPM versions and releases</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#packaged-source-code-and-rpm-build-config-come-from-different-commits">12.3.3.2. Packaged source code and RPM build config come from different commits</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#changelog-maintenance">12.3.3.3. Changelog maintenance</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#style-hints">13.4. Style hints</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#writing-english">13.4.1. Writing English</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#documentation">13.4.2. Documentation</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#dependency-policy">13.4.3. Dependency policy</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#generally">13.4.3.1. Generally</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#curl-vs-wget">13.4.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#style-hints">12.4. Style hints</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#writing-english">12.4.1. Writing English</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#documentation">12.4.2. Documentation</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#dependency-policy">12.4.3. Dependency policy</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#generally">12.4.3.1. Generally</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#curl-vs-wget">12.4.3.2. <code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">13.4.4. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#c-code">13.4.5. C code</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#const">13.4.5.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#lists">13.4.5.2. Lists</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">12.4.4. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#c-code">12.4.5. C code</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#const">12.4.5.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lists">12.4.5.2. Lists</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#logging">13.4.6. Logging</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#logging">12.4.6. Logging</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#oci-technical-notes">13.5. OCI technical notes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#ch-run-oci">13.5.1. ch-run-oci</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#gotchas">13.5.1.1. Gotchas</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#bundle-directory">13.5.1.2. Bundle directory</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#config-json">13.5.1.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#state">13.5.1.4. State</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#additional-sources">13.5.1.5. Additional sources</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#oci-technical-notes">12.5. OCI technical notes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#ch-run-oci">12.5.1. ch-run-oci</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#gotchas">12.5.1.1. Gotchas</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#bundle-directory">12.5.1.2. Bundle directory</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#config-json">12.5.1.3. <code class="code docutils literal notranslate"><span class="pre">config.json</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#state">12.5.1.4. State</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#additional-sources">12.5.1.5. Additional sources</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#ch-image">13.5.2. ch-image</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#pull">13.5.2.1. pull</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#push">13.5.2.2. push</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ch-image">12.5.2. ch-image</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pull">12.5.2.1. pull</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#push">12.5.2.2. push</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#miscellaneous-notes">13.6. Miscellaneous notes</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#updating-bundled-lark-parser">13.6.1. Updating bundled Lark parser</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#miscellaneous-notes">12.6. Miscellaneous notes</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#updating-bundled-lark-parser">12.6.1. Updating bundled Lark parser</a></li>
 </ul>
 </li>
 </ul>
@@ -150,7 +149,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">13. </span>Contributor’s guide</li>
+      <li><span class="section-number">12. </span>Contributor’s guide</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -160,7 +159,7 @@
            <div itemprop="articleBody">
              
   <section id="contributors-guide">
-<h1><span class="section-number">13. </span>Contributor’s guide<a class="headerlink" href="#contributors-guide" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">12. </span>Contributor’s guide<a class="headerlink" href="#contributors-guide" title="Permalink to this headline">¶</a></h1>
 <p>This section is notes on contributing to Charliecloud development. Currently,
 it is messy and incomplete. Patches welcome!</p>
 <p>It documents public stuff only. If you are on the core team at LANL, also
@@ -223,7 +222,7 @@ they are not required. We’ll either clean it up for you or walk you through
 any necessary changes.</p>
 </div>
 <section id="workflow">
-<h2><a class="toc-backref" href="#id2"><span class="section-number">13.1. </span>Workflow</a><a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2"><span class="section-number">12.1. </span>Workflow</a><a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
 <p>We try to keep procedures and the Git branching model simple. Right now, we’re
 pretty similar to Scott Chacon’s “<a class="reference external" href="http://scottchacon.com/2011/08/31/github-flow.html">GitHub Flow</a>”: Master is stable;
 work on short-lived topic branches; use pull requests to ask for merging; keep issues organized with tags and milestones.</p>
@@ -244,7 +243,7 @@ recorded in the issue.</p></li>
 they are comfortable with, making sure to follow LANL policy and taking into
 account the probable desires of the recipient as well.</p>
 <section id="milestones">
-<h3><a class="toc-backref" href="#id3"><span class="section-number">13.1.1. </span>Milestones</a><a class="headerlink" href="#milestones" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id3"><span class="section-number">12.1.1. </span>Milestones</a><a class="headerlink" href="#milestones" title="Permalink to this headline">¶</a></h3>
 <p>We use milestones to organize what we plan to do next and what happened in a
 given release. There are two groups of milestones:</p>
 <ul class="simple">
@@ -262,7 +261,7 @@ issue ends up in <code class="code docutils literal notranslate"><span class="pr
 should not be assigned to a person.</p>
 </section>
 <section id="peer-review">
-<h3><a class="toc-backref" href="#id4"><span class="section-number">13.1.2. </span>Peer review</a><a class="headerlink" href="#peer-review" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id4"><span class="section-number">12.1.2. </span>Peer review</a><a class="headerlink" href="#peer-review" title="Permalink to this headline">¶</a></h3>
 <p><strong>Issues and pull requests.</strong> The standard workflow is to introduce a change
 in an issue, get consensus on what to do, and then create a <em>draft</em> <a class="reference external" href="https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project">pull
 request</a>
@@ -320,7 +319,7 @@ the PR author gets only a single notification instead of one for every comment
 you make, and it’s clear when they branch is theirs again.</p>
 </section>
 <section id="branching-and-merging">
-<h3><a class="toc-backref" href="#id5"><span class="section-number">13.1.3. </span>Branching and merging</a><a class="headerlink" href="#branching-and-merging" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5"><span class="section-number">12.1.3. </span>Branching and merging</a><a class="headerlink" href="#branching-and-merging" title="Permalink to this headline">¶</a></h3>
 <p><strong>Don’t commit directly to master.</strong> Even the project lead doesn’t do this.
 While it may appear that some trivial fixes are being committed to the master
 directly, what’s really happening is that these are prototyped on a branch and
@@ -364,7 +363,7 @@ conflicts before asking for merge.</p>
 <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">branch</span> <span class="pre">-d</span></code> (or <code class="code docutils literal notranslate"><span class="pre">-D</span></code>) and <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">fetch</span> <span class="pre">--prune</span> <span class="pre">--all</span></code>.</p>
 </section>
 <section id="miscellaneous-issue-and-pull-request-notes">
-<h3><a class="toc-backref" href="#id6"><span class="section-number">13.1.4. </span>Miscellaneous issue and pull request notes</a><a class="headerlink" href="#miscellaneous-issue-and-pull-request-notes" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6"><span class="section-number">12.1.4. </span>Miscellaneous issue and pull request notes</a><a class="headerlink" href="#miscellaneous-issue-and-pull-request-notes" title="Permalink to this headline">¶</a></h3>
 <p><strong>Acknowledging issues.</strong> Issues and PRs submitted from outside should be
 acknowledged promptly, including adding or correcting tags.</p>
 <p><strong>Closing issues.</strong> We close issues when we’ve taken the requested action,
@@ -378,7 +377,7 @@ rot. We try to either merge or reject PRs in a timely manner.</p>
 arises, for example a <code class="code docutils literal notranslate"><span class="pre">worksforme</span></code> issue with new reproduction steps.</p>
 </section>
 <section id="continuous-integration-testing">
-<h3><a class="toc-backref" href="#id7"><span class="section-number">13.1.5. </span>Continuous integration testing</a><a class="headerlink" href="#continuous-integration-testing" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id7"><span class="section-number">12.1.5. </span>Continuous integration testing</a><a class="headerlink" href="#continuous-integration-testing" title="Permalink to this headline">¶</a></h3>
 <p><strong>Quality of testing.</strong> Tagged versions currently get more testing for various
 reasons. We are working to improve testing for normal commits on master, but
 full parity is probably unlikely.</p>
@@ -396,7 +395,7 @@ base images that have actually changed (the ones that haven’t will be
 re-tagged).</p>
 </section>
 <section id="issue-labeling">
-<h3><a class="toc-backref" href="#id8"><span class="section-number">13.1.6. </span>Issue labeling</a><a class="headerlink" href="#issue-labeling" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8"><span class="section-number">12.1.6. </span>Issue labeling</a><a class="headerlink" href="#issue-labeling" title="Permalink to this headline">¶</a></h3>
 <p>We use the following labels (a.k.a. tags) to organize issues. Each issue (or
 stand-alone PR) should have label(s) from every category, with the exception
 of disposition which only applies to closed issues.</p>
@@ -410,7 +409,7 @@ should add or adjust labels as needed.</p>
 previous schemes, and we have not re-labeled closed issues.</p>
 </div>
 <section id="what-kind-of-change-is-it">
-<h4><span class="section-number">13.1.6.1. </span>What kind of change is it?<a class="headerlink" href="#what-kind-of-change-is-it" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.1. </span>What kind of change is it?<a class="headerlink" href="#what-kind-of-change-is-it" title="Permalink to this headline">¶</a></h4>
 <p>Choose <em>one type</em> from:</p>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">bug</span></code></dt><dd><p>Something doesn’t work; e.g., it doesn’t work as intended or it was
@@ -430,7 +429,7 @@ are more cleanup-oriented.</p>
 </dl>
 </section>
 <section id="how-important-urgent-is-it">
-<h4><span class="section-number">13.1.6.2. </span>How important/urgent is it?<a class="headerlink" href="#how-important-urgent-is-it" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.2. </span>How important/urgent is it?<a class="headerlink" href="#how-important-urgent-is-it" title="Permalink to this headline">¶</a></h4>
 <p>Choose <em>one priority</em> from:</p>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">high</span></code></dt><dd><p>High priority.</p>
@@ -464,7 +463,7 @@ open. Related to this, issues do often move between priority levels. In
 particular, if you think we picked the wrong priority level, please say so.</p>
 </section>
 <section id="what-part-of-charliecloud-is-affected">
-<h4><span class="section-number">13.1.6.3. </span>What part of Charliecloud is affected?<a class="headerlink" href="#what-part-of-charliecloud-is-affected" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.3. </span>What part of Charliecloud is affected?<a class="headerlink" href="#what-part-of-charliecloud-is-affected" title="Permalink to this headline">¶</a></h4>
 <p>Choose <em>one or more components</em> from:</p>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">runtime</span></code></dt><dd><p>The container runtime itself; largely <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
@@ -488,7 +487,7 @@ with image building.)</p>
 </dl>
 </section>
 <section id="special-considerations">
-<h4><span class="section-number">13.1.6.4. </span>Special considerations<a class="headerlink" href="#special-considerations" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.4. </span>Special considerations<a class="headerlink" href="#special-considerations" title="Permalink to this headline">¶</a></h4>
 <p>Choose <em>one or more extras</em> from:</p>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">blocked</span></code></dt><dd><p>We can’t do this yet because something else needs to happen first. If that
@@ -507,7 +506,7 @@ project organization.</p>
 </dl>
 </section>
 <section id="why-was-it-closed">
-<h4><span class="section-number">13.1.6.5. </span>Why was it closed?<a class="headerlink" href="#why-was-it-closed" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.5. </span>Why was it closed?<a class="headerlink" href="#why-was-it-closed" title="Permalink to this headline">¶</a></h4>
 <p>If the issue was resolved (i.e., bug fixed or enhancement/refactoring
 implemented), there is no disposition tag. Otherwise, to explain why not,
 choose <em>one disposition</em> from:</p>
@@ -544,7 +543,7 @@ bugs should be left open in hopes of new insight arising.</p>
 </dl>
 </section>
 <section id="deprecated-labels">
-<h4><span class="section-number">13.1.6.6. </span>Deprecated labels<a class="headerlink" href="#deprecated-labels" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.6. </span>Deprecated labels<a class="headerlink" href="#deprecated-labels" title="Permalink to this headline">¶</a></h4>
 <p>You might see these on old issues, but they are no longer in use.</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">help</span> <span class="pre">wanted</span></code>: This tended to get stale and wasn’t generating any
@@ -557,9 +556,9 @@ to be a discussion, we’ll be happy to convert it to you.)</p></li>
 </section>
 </section>
 <section id="test-suite">
-<h2><a class="toc-backref" href="#id9"><span class="section-number">13.2. </span>Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id9"><span class="section-number">12.2. </span>Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h2>
 <section id="timing-the-tests">
-<h3><a class="toc-backref" href="#id10"><span class="section-number">13.2.1. </span>Timing the tests</a><a class="headerlink" href="#timing-the-tests" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10"><span class="section-number">12.2.1. </span>Timing the tests</a><a class="headerlink" href="#timing-the-tests" title="Permalink to this headline">¶</a></h3>
 <p>The <code class="code docutils literal notranslate"><span class="pre">ts</span></code> utility from <code class="code docutils literal notranslate"><span class="pre">moreutils</span></code> is quite handy. The following
 prepends each line with the elapsed time since the previous line:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-test -s quick <span class="p">|</span> ts -i <span class="s1">&#39;%M:%.S&#39;</span>
@@ -568,7 +567,7 @@ prepends each line with the elapsed time since the previous line:</p>
 <p>Note: a skipped test isn’t free; I see ~0.15 seconds to do a skip.</p>
 </section>
 <section id="ch-test-complains-about-inconsistent-versions">
-<h3><a class="toc-backref" href="#id11"><span class="section-number">13.2.2. </span><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a><a class="headerlink" href="#ch-test-complains-about-inconsistent-versions" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id11"><span class="section-number">12.2.2. </span><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a><a class="headerlink" href="#ch-test-complains-about-inconsistent-versions" title="Permalink to this headline">¶</a></h3>
 <p>There are multiple ways to ask Charliecloud for its version number. These
 should all give the same result. If they don’t, <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> will fail.
 Typically, something needs to be rebuilt. Recall that <code class="code docutils literal notranslate"><span class="pre">configure</span></code>
@@ -580,14 +579,14 @@ situation is to change Git branches without rebuilding it.</p>
 </div>
 </section>
 <section id="special-images">
-<h3><a class="toc-backref" href="#id12"><span class="section-number">13.2.3. </span>Special images</a><a class="headerlink" href="#special-images" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12"><span class="section-number">12.2.3. </span>Special images</a><a class="headerlink" href="#special-images" title="Permalink to this headline">¶</a></h3>
 <p>For images not needed after completion of a test, tag them <code class="code docutils literal notranslate"><span class="pre">tmpimg</span></code>.
 This leaves only one extra image at the end of the test suite.</p>
 </section>
 <section id="writing-a-test-image-using-the-standard-workflow">
-<h3><a class="toc-backref" href="#id13"><span class="section-number">13.2.4. </span>Writing a test image using the standard workflow</a><a class="headerlink" href="#writing-a-test-image-using-the-standard-workflow" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13"><span class="section-number">12.2.4. </span>Writing a test image using the standard workflow</a><a class="headerlink" href="#writing-a-test-image-using-the-standard-workflow" title="Permalink to this headline">¶</a></h3>
 <section id="summary">
-<h4><span class="section-number">13.2.4.1. </span>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.2.4.1. </span>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h4>
 <p>The Charliecloud test suite has a workflow that can build images by two
 methods:</p>
 <ol class="arabic simple">
@@ -623,7 +622,7 @@ suite. <code class="code docutils literal notranslate"><span class="pre">ch-test
 already been built by a Dockerfile, which is often more straightforward.</p>
 </section>
 <section id="how-to-specify-when-to-include-and-exclude-a-test-image">
-<h4><span class="section-number">13.2.4.2. </span>How to specify when to include and exclude a test image<a class="headerlink" href="#how-to-specify-when-to-include-and-exclude-a-test-image" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.2.4.2. </span>How to specify when to include and exclude a test image<a class="headerlink" href="#how-to-specify-when-to-include-and-exclude-a-test-image" title="Permalink to this headline">¶</a></h4>
 <p>Each of these image build files must specify its scope for building and
 running, which must be greater than or equal than the scope of all tests in
 any corresponding <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files. Exactly one of the following strings
@@ -652,11 +651,11 @@ included.</p>
 </div></blockquote>
 </section>
 <section id="how-to-write-a-dockerfile-recipe">
-<h4><span class="section-number">13.2.4.3. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe<a class="headerlink" href="#how-to-write-a-dockerfile-recipe" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.2.4.3. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe<a class="headerlink" href="#how-to-write-a-dockerfile-recipe" title="Permalink to this headline">¶</a></h4>
 <p>It’s a standard Dockerfile.</p>
 </section>
 <section id="how-to-write-a-build-recipe">
-<h4><span class="section-number">13.2.4.4. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe<a class="headerlink" href="#how-to-write-a-build-recipe" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.2.4.4. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe<a class="headerlink" href="#how-to-write-a-build-recipe" title="Permalink to this headline">¶</a></h4>
 <p>This is an arbitrary script or program that builds the image. It gets three
 command line arguments:</p>
 <blockquote>
@@ -712,7 +711,7 @@ takes care of this).</p></li>
 </section>
 </section>
 <section id="building-rpms">
-<h2><a class="toc-backref" href="#id14"><span class="section-number">13.3. </span>Building RPMs</a><a class="headerlink" href="#building-rpms" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id14"><span class="section-number">12.3. </span>Building RPMs</a><a class="headerlink" href="#building-rpms" title="Permalink to this headline">¶</a></h2>
 <p>We maintain <code class="code docutils literal notranslate"><span class="pre">.spec</span></code> files and infrastructure for building RPMs in the
 Charliecloud source code. This is for two purposes:</p>
 <blockquote>
@@ -725,7 +724,7 @@ Charliecloud source code. This is for two purposes:</p>
 <p>This section describes how to build the RPMs and the pain we’ve hopefully
 abstracted away.</p>
 <section id="dependencies">
-<h3><a class="toc-backref" href="#id15"><span class="section-number">13.3.1. </span>Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15"><span class="section-number">12.3.1. </span>Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
 <li><p>charliecloud</p></li>
@@ -751,7 +750,7 @@ python version names for the listed packages in RHEL 8 and derivatives):
 </div></blockquote>
 </section>
 <section id="rpmbuild-wrapper-script">
-<h3><a class="toc-backref" href="#id16"><span class="section-number">13.3.2. </span><code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a><a class="headerlink" href="#rpmbuild-wrapper-script" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16"><span class="section-number">12.3.2. </span><code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a><a class="headerlink" href="#rpmbuild-wrapper-script" title="Permalink to this headline">¶</a></h3>
 <p>While building the Charliecloud RPMs is not too weird, we provide a script to
 streamline it. The purpose is to (a) make it easy to build versions not
 matching the working directory, (b) use an arbitrary <code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code>
@@ -788,9 +787,9 @@ necessary image directory):</p>
 </div>
 </section>
 <section id="gotchas-and-quirks">
-<h3><a class="toc-backref" href="#id17"><span class="section-number">13.3.3. </span>Gotchas and quirks</a><a class="headerlink" href="#gotchas-and-quirks" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17"><span class="section-number">12.3.3. </span>Gotchas and quirks</a><a class="headerlink" href="#gotchas-and-quirks" title="Permalink to this headline">¶</a></h3>
 <section id="rpm-versions-and-releases">
-<h4><span class="section-number">13.3.3.1. </span>RPM versions and releases<a class="headerlink" href="#rpm-versions-and-releases" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.3.3.1. </span>RPM versions and releases<a class="headerlink" href="#rpm-versions-and-releases" title="Permalink to this headline">¶</a></h4>
 <p>If <code class="code docutils literal notranslate"><span class="pre">VERSION</span></code> is <code class="code docutils literal notranslate"><span class="pre">HEAD</span></code>, then the RPM version will be the content
 of <code class="code docutils literal notranslate"><span class="pre">VERSION.full</span></code> for that commit, including Git gobbledygook, and the
 RPM release will be <code class="code docutils literal notranslate"><span class="pre">0</span></code>. Note that such RPMs cannot be reliably upgraded
@@ -801,7 +800,7 @@ by a hyphen and the desired RPM release, e.g. <code class="code docutils literal
 supported.</p>
 </section>
 <section id="packaged-source-code-and-rpm-build-config-come-from-different-commits">
-<h4><span class="section-number">13.3.3.2. </span>Packaged source code and RPM build config come from different commits<a class="headerlink" href="#packaged-source-code-and-rpm-build-config-come-from-different-commits" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.3.3.2. </span>Packaged source code and RPM build config come from different commits<a class="headerlink" href="#packaged-source-code-and-rpm-build-config-come-from-different-commits" title="Permalink to this headline">¶</a></h4>
 <p>The spec file, <code class="code docutils literal notranslate"><span class="pre">build</span></code> script, <code class="code docutils literal notranslate"><span class="pre">.rpmlintrc</span></code>, etc. come from the
 working directory, but the package source is from the specified commit. This
 is what enables us to make additional RPM releases for a given Charliecloud
@@ -810,7 +809,7 @@ release (e.g. 0.9.7-2).</p>
 commit, and it’s not possible to create an RPM of uncommitted source code.</p>
 </section>
 <section id="changelog-maintenance">
-<h4><span class="section-number">13.3.3.3. </span>Changelog maintenance<a class="headerlink" href="#changelog-maintenance" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.3.3.3. </span>Changelog maintenance<a class="headerlink" href="#changelog-maintenance" title="Permalink to this headline">¶</a></h4>
 <p>The spec file contains a manually maintained changelog. Add a new entry for
 each new RPM release; do not include the Charliecloud release notes.</p>
 <p>For released versions, <code class="code docutils literal notranslate"><span class="pre">build</span></code> verifies that the most recent changelog
@@ -822,7 +821,7 @@ with the appropriate version stating that it’s a pre-release RPM.</p>
 </section>
 </section>
 <section id="style-hints">
-<span id="build-ova"></span><h2><a class="toc-backref" href="#id18"><span class="section-number">13.4. </span>Style hints</a><a class="headerlink" href="#style-hints" title="Permalink to this headline">¶</a></h2>
+<span id="build-ova"></span><h2><a class="toc-backref" href="#id18"><span class="section-number">12.4. </span>Style hints</a><a class="headerlink" href="#style-hints" title="Permalink to this headline">¶</a></h2>
 <p>We haven’t written down a comprehensive style guide. Generally, follow the
 style of the surrounding code, think in rectangles rather than lines of code
 or text, and avoid CamelCase.</p>
@@ -830,7 +829,7 @@ or text, and avoid CamelCase.</p>
 complains (or even updates this section based on your patch!). He tries to be
 nice about it.</p>
 <section id="writing-english">
-<h3><a class="toc-backref" href="#id19"><span class="section-number">13.4.1. </span>Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19"><span class="section-number">12.4.1. </span>Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p>When describing what something does (e.g., your PR or a command), use the
 <a class="reference external" href="https://chris.beams.io/posts/git-commit/#imperative">imperative mood</a>,
@@ -857,7 +856,7 @@ filled with false positives.</p></li>
 </ul>
 </section>
 <section id="documentation">
-<h3><a class="toc-backref" href="#id20"><span class="section-number">13.4.2. </span>Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20"><span class="section-number">12.4.2. </span>Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
 <p>Heading underline characters:</p>
 <blockquote>
 <div><ol class="arabic simple">
@@ -869,12 +868,12 @@ filled with false positives.</p></li>
 </div></blockquote>
 </section>
 <section id="dependency-policy">
-<span id="id1"></span><h3><a class="toc-backref" href="#id21"><span class="section-number">13.4.3. </span>Dependency policy</a><a class="headerlink" href="#dependency-policy" title="Permalink to this headline">¶</a></h3>
+<span id="id1"></span><h3><a class="toc-backref" href="#id21"><span class="section-number">12.4.3. </span>Dependency policy</a><a class="headerlink" href="#dependency-policy" title="Permalink to this headline">¶</a></h3>
 <p>Specific dependencies (prerequisites) are stated elsewhere in the
 documentation. This section describes our policy on which dependencies are
 acceptable.</p>
 <section id="generally">
-<h4><span class="section-number">13.4.3.1. </span>Generally<a class="headerlink" href="#generally" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.4.3.1. </span>Generally<a class="headerlink" href="#generally" title="Permalink to this headline">¶</a></h4>
 <p>All dependencies must be stated and justified in the documentation.</p>
 <p>We want Charliecloud to run on as many systems as practical, so we work hard
 to keep dependencies minimal. However, because Charliecloud depends on new-ish
@@ -903,7 +902,7 @@ enough to support Charliecloud. You might need to install additional packages
 (but not from third-party repositories).</p>
 </section>
 <section id="curl-vs-wget">
-<h4><span class="section-number">13.4.3.2. </span><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.4.3.2. </span><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h4>
 <p>For URL downloading in shell code, including Dockerfiles, use <code class="code docutils literal notranslate"><span class="pre">wget</span> <span class="pre">-nv</span></code>.</p>
 <p>Both work fine for our purposes, and we need to use one or the other
 consistently. According to Debian’s popularity contest, 99.88% of reporting
@@ -914,7 +913,7 @@ other hand, <code class="code docutils literal notranslate"><span class="pre">cu
 </section>
 </section>
 <section id="variable-conventions-in-shell-scripts-and-bats-files">
-<h3><a class="toc-backref" href="#id22"><span class="section-number">13.4.4. </span>Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22"><span class="section-number">12.4.4. </span>Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
 <ul>
 <li><p>Separate words with underscores.</p></li>
 <li><p>User-configured environment variables: all uppercase, <code class="code docutils literal notranslate"><span class="pre">CH_TEST_</span></code>
@@ -949,9 +948,9 @@ foo=&quot;${bar}/baz&quot;  # no
 </ul>
 </section>
 <section id="c-code">
-<h3><a class="toc-backref" href="#id23"><span class="section-number">13.4.5. </span>C code</a><a class="headerlink" href="#c-code" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id23"><span class="section-number">12.4.5. </span>C code</a><a class="headerlink" href="#c-code" title="Permalink to this headline">¶</a></h3>
 <section id="const">
-<h4><span class="section-number">13.4.5.1. </span><code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.4.5.1. </span><code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h4>
 <p>The <code class="code docutils literal notranslate"><span class="pre">const</span></code> keyword is used to indicate that variables are read-only. It
 has a variety of uses; in Charliecloud, we use it for <a class="reference external" href="https://softwareengineering.stackexchange.com/a/204720">function pointer
 arguments</a> to state
@@ -974,7 +973,7 @@ to point to it), because so far those are all out-arguments and C has
 pointers and <code class="code docutils literal notranslate"><span class="pre">const</span></code>.</p>
 </section>
 <section id="lists">
-<h4><span class="section-number">13.4.5.2. </span>Lists<a class="headerlink" href="#lists" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.4.5.2. </span>Lists<a class="headerlink" href="#lists" title="Permalink to this headline">¶</a></h4>
 <p>The general convention is to use an array of elements terminated by an element
 containing all zeros (i.e., every byte is zero). While this precludes zero
 elements within the list, it makes it easy to iterate:</p>
@@ -1028,7 +1027,7 @@ pointers to <code class="code docutils literal notranslate"><span class="pre">ch
 </section>
 </section>
 <section id="logging">
-<h3><a class="toc-backref" href="#id24"><span class="section-number">13.4.6. </span>Logging</a><a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id24"><span class="section-number">12.4.6. </span>Logging</a><a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h3>
 <p>Charliecloud uses reasonably standard log levels for its stderr logging. The
 verbosity can be increased by up to three <code class="code docutils literal notranslate"><span class="pre">-v</span></code> command line arguments.
 Both the Python and C code use the same levels by calling logging functions
@@ -1072,20 +1071,20 @@ WARNING if we can safely proceed or FATAL if not.</p>
 </section>
 </section>
 <section id="oci-technical-notes">
-<h2><a class="toc-backref" href="#id25"><span class="section-number">13.5. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id25"><span class="section-number">12.5. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
 <p>This section describes our analysis of the Open Container Initiative (OCI)
 specification and implications for our implementations of <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>, and
 <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code>. Anything relevant for users goes in the respective man
 page; here is for technical details. The main goals are to guide Charliecloud
 development and provide and opportunity for peer-review of our work.</p>
 <section id="ch-run-oci">
-<h3><a class="toc-backref" href="#id26"><span class="section-number">13.5.1. </span>ch-run-oci</a><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26"><span class="section-number">12.5.1. </span>ch-run-oci</a><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h3>
 <p>Currently, <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> is only tested with Buildah. These notes
 describe what we are seeing from Buildah’s runtime expectations.</p>
 <section id="gotchas">
-<h4><span class="section-number">13.5.1.1. </span>Gotchas<a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.1. </span>Gotchas<a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h4>
 <section id="namespaces">
-<h5><span class="section-number">13.5.1.1.1. </span>Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h5>
+<h5><span class="section-number">12.5.1.1.1. </span>Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h5>
 <p>Buildah sets up its own user and mount namespaces before invoking the runtime,
 though it does not change the root directory. We do not understand why. In
 particular, this means that you cannot see the container root filesystem it
@@ -1100,13 +1099,13 @@ provides without joining those namespaces. To do so:</p>
 </ol>
 </section>
 <section id="supervisor-process-and-maintaining-state">
-<h5><span class="section-number">13.5.1.1.2. </span>Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this headline">¶</a></h5>
+<h5><span class="section-number">12.5.1.1.2. </span>Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this headline">¶</a></h5>
 <p>OCI (and thus Buildah) expects a process that exists throughout the life of
 the container. This conflicts with Charliecloud’s lack of a supervisor process.</p>
 </section>
 </section>
 <section id="bundle-directory">
-<h4><span class="section-number">13.5.1.2. </span>Bundle directory<a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.2. </span>Bundle directory<a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h4>
 <ul class="simple">
 <li><p>OCI documentation (very incomplete): <a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">https://github.com/opencontainers/runtime-spec/blob/master/bundle.md</a></p></li>
 </ul>
@@ -1156,7 +1155,7 @@ No other new filesystems are mounted within the namespaces.</p></li>
 </ol>
 </section>
 <section id="config-json">
-<h4><span class="section-number">13.5.1.3. </span><code class="code docutils literal notranslate"><span class="pre">config.json</span></code><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.3. </span><code class="code docutils literal notranslate"><span class="pre">config.json</span></code><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h4>
 <ul class="simple">
 <li><p>OCI documentation:</p>
 <ul>
@@ -1418,7 +1417,7 @@ protects us.)</p>
 <p>End of example.</p>
 </section>
 <section id="state">
-<h4><span class="section-number">13.5.1.4. </span>State<a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.4. </span>State<a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h4>
 <p>The OCI spec does not say how the JSON document describing state should be
 given to the caller. Buildah is happy to get it on the runtime’s standard
 output.</p>
@@ -1428,7 +1427,7 @@ essentially a no-op, and annotations are not supported, so the
 <code class="code docutils literal notranslate"><span class="pre">annotations</span></code> key will never be given.</p>
 </section>
 <section id="additional-sources">
-<h4><span class="section-number">13.5.1.5. </span>Additional sources<a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.5. </span>Additional sources<a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h4>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah.md">https://github.com/containers/buildah/blob/master/docs/buildah.md</a></p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span> <span class="pre">bud</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah-bud.md">https://github.com/containers/buildah/blob/master/docs/buildah-bud.md</a></p></li>
@@ -1438,16 +1437,16 @@ essentially a no-op, and annotations are not supported, so the
 </section>
 </section>
 <section id="ch-image">
-<h3><a class="toc-backref" href="#id27"><span class="section-number">13.5.2. </span>ch-image</a><a class="headerlink" href="#ch-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27"><span class="section-number">12.5.2. </span>ch-image</a><a class="headerlink" href="#ch-image" title="Permalink to this headline">¶</a></h3>
 <section id="pull">
-<h4><span class="section-number">13.5.2.1. </span>pull<a class="headerlink" href="#pull" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.2.1. </span>pull<a class="headerlink" href="#pull" title="Permalink to this headline">¶</a></h4>
 <p>Images pulled from registries come with OCI metadata, i.e. a “config blob”.
 This is stored verbatim in <code class="code docutils literal notranslate"><span class="pre">/ch/config.pulled.json</span></code> for debugging.
 Charliecloud metadata, which includes a translated subset of the OCI config,
 is kept up to date in <code class="code docutils literal notranslate"><span class="pre">/ch/metadata.json</span></code>.</p>
 </section>
 <section id="push">
-<h4><span class="section-number">13.5.2.2. </span>push<a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.2.2. </span>push<a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h4>
 <p>Image registries expect a config blob at push time. This blob consists of both
 OCI runtime and image specification information.</p>
 <ul class="simple">
@@ -1584,9 +1583,9 @@ non-empty history entries match the number of pushed layers.</p>
 </section>
 </section>
 <section id="miscellaneous-notes">
-<h2><a class="toc-backref" href="#id28"><span class="section-number">13.6. </span>Miscellaneous notes</a><a class="headerlink" href="#miscellaneous-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id28"><span class="section-number">12.6. </span>Miscellaneous notes</a><a class="headerlink" href="#miscellaneous-notes" title="Permalink to this headline">¶</a></h2>
 <section id="updating-bundled-lark-parser">
-<h3><a class="toc-backref" href="#id29"><span class="section-number">13.6.1. </span>Updating bundled Lark parser</a><a class="headerlink" href="#updating-bundled-lark-parser" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id29"><span class="section-number">12.6.1. </span>Updating bundled Lark parser</a><a class="headerlink" href="#updating-bundled-lark-parser" title="Permalink to this headline">¶</a></h3>
 <p>In order to change the version of the bundled lark parser you must modify
 multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
 catch both dot notation and tuples, but not the list of filenames in
@@ -1603,7 +1602,7 @@ catch both dot notation and tuples, but not the list of filenames in
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="best_practices.html" class="btn btn-neutral float-left" title="12. Best practices" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="best_practices.html" class="btn btn-neutral float-left" title="11. Best practices" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
     </div>
 
   <hr/>

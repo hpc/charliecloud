@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>4. ch-convert &mdash; Charliecloud 0.32 documentation</title>
+  <title>4. ch-convert &mdash; Charliecloud 0.33 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.32
+                0.33
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -57,11 +57,10 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -126,6 +125,9 @@ inference.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-o</span></code>, <code class="code docutils literal notranslate"><span class="pre">--out-fmt</span> <span class="pre">FMT</span></code></dt><dd><p>Output image format is <code class="code docutils literal notranslate"><span class="pre">FMT</span></code>; inferred if omitted.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-s</span></code>, <code class="code docutils literal notranslate"><span class="pre">--storage</span> <span class="pre">DIR</span></code></dt><dd><p>Set the storage directory. Equivalent to the same option for <code class="code docutils literal notranslate"><span class="pre">ch-image(1)</span></code>
+and <code class="code docutils literal notranslate"><span class="pre">ch-run(1)</span></code>.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--tmp</span> <span class="pre">DIR</span></code></dt><dd><p>A sub-directory for temporary storage is created in <code class="code docutils literal notranslate"><span class="pre">DIR</span></code> and
 removed at the end of a successful conversion. <strong>If this script crashes or
 errors out, the temporary directory is left behind to assist in
@@ -148,7 +150,9 @@ interpreter) <code class="code docutils literal notranslate"><span class="pre">c
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">dir</span></code></dt><dd><p>Ordinary filesystem directory (i.e., not a mount point) containing an
 unpacked image. Output directories that already exist are replaced if they
-look like an image; otherwise, exit with an error.</p>
+look like an image. If the output directory is empty, the conversion should
+use the directory without overwriting it. If the directory doesn’t look like
+an image and isn’t empty, exit with an error.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">docker</span></code></dt><dd><p>Internal storage for Docker.</p>
 </dd>

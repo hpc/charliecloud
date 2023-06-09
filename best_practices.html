@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>12. Best practices &mdash; Charliecloud 0.32 documentation</title>
+  <title>11. Best practices &mdash; Charliecloud 0.33 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -18,8 +18,8 @@
         <script src="_static/doctools.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="13. Contributor’s guide" href="dev.html" />
-    <link rel="prev" title="11. Frequently asked questions (FAQ)" href="faq.html" /> 
+    <link rel="next" title="12. Contributor’s guide" href="dev.html" />
+    <link rel="prev" title="10. Frequently asked questions (FAQ)" href="faq.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.32
+                0.33
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -50,21 +50,20 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">12. Best practices</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#other-best-practices-information">12.1. Other best practices information</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">12.2. Installing your own software</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#third-party-software-via-package-manager">12.2.1. Third-party software via package manager</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#third-party-software-compiled-from-source">12.2.2. Third-party software compiled from source</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-in-the-image">12.2.3. Your software stored in the image</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">12.2.4. Your software stored on the host</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">11. Best practices</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#other-best-practices-information">11.1. Other best practices information</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">11.2. Installing your own software</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#third-party-software-via-package-manager">11.2.1. Third-party software via package manager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#third-party-software-compiled-from-source">11.2.2. Third-party software compiled from source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-in-the-image">11.2.3. Your software stored in the image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">11.2.4. Your software stored on the host</a></li>
 </ul>
 </li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -81,7 +80,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">12. </span>Best practices</li>
+      <li><span class="section-number">11. </span>Best practices</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -91,9 +90,9 @@
            <div itemprop="articleBody">
              
   <section id="best-practices">
-<h1><span class="section-number">12. </span>Best practices<a class="headerlink" href="#best-practices" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">11. </span>Best practices<a class="headerlink" href="#best-practices" title="Permalink to this headline">¶</a></h1>
 <section id="other-best-practices-information">
-<h2><span class="section-number">12.1. </span>Other best practices information<a class="headerlink" href="#other-best-practices-information" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">11.1. </span>Other best practices information<a class="headerlink" href="#other-best-practices-information" title="Permalink to this headline">¶</a></h2>
 <p>This isn’t the last word. Also consider:</p>
 <ul class="simple">
 <li><p>Many of Docker’s <a class="reference external" href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices">Best practices for writing Dockerfiles</a>
@@ -107,7 +106,7 @@ NIST Special Publication 800-190; Souppaya, Morello, and Scarfone 2017.</p></li>
 </ul>
 </section>
 <section id="installing-your-own-software">
-<h2><span class="section-number">12.2. </span>Installing your own software<a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">11.2. </span>Installing your own software<a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
 <p>This section covers four situations for making software available inside a
 Charliecloud container:</p>
 <blockquote>
@@ -124,7 +123,7 @@ Charliecloud container:</p>
 trustworthy image on Docker Hub you can use as a base?</p>
 </div>
 <section id="third-party-software-via-package-manager">
-<h3><span class="section-number">12.2.1. </span>Third-party software via package manager<a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.2.1. </span>Third-party software via package manager<a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
 <p>This approach is the simplest and fastest way to install stuff in your image.
 The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile does this to install the package
 <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
@@ -146,7 +145,7 @@ ironed out yet. If you encounter problems, please do file a bug!</p>
 </div>
 </section>
 <section id="third-party-software-compiled-from-source">
-<h3><span class="section-number">12.2.2. </span>Third-party software compiled from source<a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.2.2. </span>Third-party software compiled from source<a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
 <p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic AlmaLinux image
@@ -293,7 +292,7 @@ resulting Charliecloud image (<code class="code docutils literal notranslate"><s
 </ol>
 </section>
 <section id="your-software-stored-in-the-image">
-<h3><span class="section-number">12.2.3. </span>Your software stored in the image<a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.2.3. </span>Your software stored in the image<a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
 <p>This method covers software provided by you that is included in the image.
 This is recommended when your software is relatively stable or is not easily
 available to users of your image, for example a library rather than simulation
@@ -342,7 +341,7 @@ build files, since they would be inappropriate inside the container.</p></li>
 </div>
 </section>
 <section id="your-software-stored-on-the-host">
-<h3><span class="section-number">12.2.4. </span>Your software stored on the host<a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.2.4. </span>Your software stored on the host<a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
 <p>This method leaves your software on the host but compiles it in the image.
 This is recommended when your software is volatile or each image user needs a
 different version, for example a simulation code under active development.</p>
@@ -378,8 +377,8 @@ terminal.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="faq.html" class="btn btn-neutral float-left" title="11. Frequently asked questions (FAQ)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="dev.html" class="btn btn-neutral float-right" title="13. Contributor’s guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="faq.html" class="btn btn-neutral float-left" title="10. Frequently asked questions (FAQ)" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="dev.html" class="btn btn-neutral float-right" title="12. Contributor’s guide" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

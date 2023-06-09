@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1. Installing &mdash; Charliecloud 0.32 documentation</title>
+  <title>1. Installing &mdash; Charliecloud 0.33 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.32
+                0.33
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -83,6 +83,7 @@
 </li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-completion">1.4. Command line completion</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
@@ -92,11 +93,10 @@
 <li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-ssh.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-ssh</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -146,6 +146,7 @@ no elevated privileges, provided that user namespaces have been enabled.</p>
 <li><p><a class="reference internal" href="#notes-on-specific-dependencies" id="id16">Notes on specific dependencies</a></p></li>
 </ul>
 </li>
+<li><p><a class="reference internal" href="#command-line-completion" id="id17">Command line completion</a></p></li>
 </ul>
 </div>
 <section id="build-and-install-from-source">
@@ -562,7 +563,7 @@ the builder directly.</p>
 <div><ul class="simple">
 <li><p>basic tests</p></li>
 <li><p>documentation built</p></li>
-<li><p>ShellCheck ≥ 0.6.0</p></li>
+<li><p>ShellCheck ≥ 0.9.0</p></li>
 <li><p>generic sudo</p></li>
 </ul>
 </div></blockquote>
@@ -735,6 +736,23 @@ proper components will not be available, so Charliecloud’s
 image used to exercise Charliecloud itself).</p>
 </section>
 </section>
+</section>
+<section id="command-line-completion">
+<h2><a class="toc-backref" href="#id17"><span class="section-number">1.4. </span>Command line completion</a><a class="headerlink" href="#command-line-completion" title="Permalink to this headline">¶</a></h2>
+<p>Charliecloud offers experimental Bash command line completion for
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>. This feature lets users have incomplete command line
+arguments auto-filled by pressing Tab. We expect that in the future, this will
+become more robust and available for more shells and more Charliecloud
+commands.</p>
+<p>To enable it, once <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code> is in your path, source it:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">source</span> ch-completion.bash
+</pre></div>
+</div>
+<p>If it doesn’t work or you just don’t like it, it can be disabled with:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-completion-disable
+</pre></div>
+</div>
+<p>In this case, please do submit a bug report so we can make it better.</p>
 </section>
 </section>
 
