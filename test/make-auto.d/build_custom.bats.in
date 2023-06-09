@@ -18,7 +18,12 @@ source common.bash  # for ShellCheck; removed by ch-test
             tarball=${tarballs[0]}
             # Convert to SquashFS if needed.
             if [[ $CH_TEST_PACK_FMT = squash* ]]; then
-                ch-convert "$tarball" "${tarball/tar.?z/sqfs}"
+                # janky fix for centos7xz tar permission errors
+                if [[ $tarball = *centos7xz* ]]; then
+                    ch-convert --no-xattrs "$tarball" "${tarball/tar.?z/sqfs}"
+                else
+                    ch-convert "$tarball" "${tarball/tar.?z/sqfs}"
+                fi
                 rm "$tarball"
             fi
         elif [[ -d $out ]]; then                             # directory
