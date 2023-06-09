@@ -435,6 +435,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #else
          exit(1);
 #endif
+      } else if (!strcmp(arg, "squash")) {
+#ifdef HAVE_LIBSQUASHFUSE
+         exit(0);
+#else
+         exit(1);
+#endif
       }
       else
          FATAL("unknown feature: %s", arg);
