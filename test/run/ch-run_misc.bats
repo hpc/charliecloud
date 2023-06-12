@@ -527,11 +527,13 @@ EOF
 
     export SET=foo
     f_in=${BATS_TMPDIR}/env.bin
-    rm -f "$f_in"
-    printf "chse_a1=bar\0"      >> "$f_in"
-    printf "chse_a4='bar'\0"    >> "$f_in"
-    printf "chse_d7=bar:$SET\0" >> "$f_in"
-    printf "chse_g1=foo\nbar\0" >> "$f_in"
+    {
+        printf 'chse_a1=bar\0'
+        printf "chse_a4='bar'\0"
+        #shellcheck disable=SC2016
+        printf 'chse_d7=bar:$SET\0'
+        printf 'chse_g1=foo\nbar\0'
+    } > "$f_in"
     hd "$f_in" | sed -E 's/^0000//'  # trim a few zeros to make it fit
 
     output_expected=$(cat <<'EOF'
@@ -545,7 +547,6 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$output_expected") <(echo "$output")
-    false
 }
 
 
