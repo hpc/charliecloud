@@ -253,8 +253,6 @@ class Image:
    def layer_hash_from_manifest(self, manifest, version, error_fatal=True):
       """Return list of layer hashes from manifest json data. If error_fatal
          exit with error; otherwise, return None."""
-      if (manifest is None or version is None):
-         return None
       try:
          if (version == 1):
             key1 = "fsLayers"

@@ -646,7 +646,6 @@ class Storage:
       return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def reset(self):
-      print(self.valid_p)
       if (self.valid_p):
          self.root.rmtree()
          self.init()  # largely for debugging

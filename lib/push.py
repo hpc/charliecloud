@@ -120,11 +120,15 @@ class Image_Pusher:
    def layers_from_manifest(self, manifest):
       """Return a list of (digest, tar_c) layer tuples read from manifest;
          otherwise, return None."""
+      if (manifest is None):
+         return None
       version = self.image.schemaversion_from_manifest(manifest,
                                                        error_fatal=False)
+      if (version is None):
+         return None
       layer_hashes = self.image.layer_hash_from_manifest(manifest, version,
                                                          error_fatal=False)
-      if (version is None or manifest is None or layer_hashes is None):
+      if (layer_hashes is None):
          return None
       tars_c = list()
       for digest in layer_hashes:

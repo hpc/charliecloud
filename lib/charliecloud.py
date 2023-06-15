@@ -727,7 +727,7 @@ def now_utc_iso8601():
 
 def ossafe(f, msg, *args, error_fatal=True, **kwargs):
    """Call f with args and kwargs. If error_fatal, catch OSError and other
-      problems and fail with a nice error message; otherwise, raise exception."""
+      problems and fail with a nice error message; otherwise, return None."""
    try:
       return f(*args, **kwargs)
    except OSError as x:
