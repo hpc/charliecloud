@@ -67,18 +67,19 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'upload files:       0'* ]]
-
-    ch-image pull alpine:3.16
+    ch-image build -t ulcache - <<'EOF'
+FROM alpine:3.16
+EOF
 
     # Push and store prepared upload files.
-    ch-image -v --tls-no-verify push --ulcache alpine:3.16 localhost:5000/ulcache
+    ch-image -v --tls-no-verify push --ulcache ulcache localhost:5000/ulcache
     run ch-image upload-cache
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'upload files:       3'* ]]
 
     # Reuse previously prepared files
-    run ch-image -v --tls-no-verify push --ulcache alpine:3.16 localhost:5000/ulcache:prepared
+    run ch-image -v --tls-no-verify push --ulcache ulcache localhost:5000/ulcache:prepared
     echo "output"
     [[ $status -eq 0 ]]
     [[ $output = *'using previously prepared files'* ]]
@@ -87,7 +88,6 @@ EOF
 
 @test "${tag}: upload cache error(s)" {
     [[ $CH_IMAGE_CACHE == enabled ]] || skip 'enabled build cache mode only'
-    ch-image upload-cache --reset
     run ch-image --no-cache -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache:error
     echo "$output"
     [[ $status -eq 1 ]]
