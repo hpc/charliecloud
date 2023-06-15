@@ -479,12 +479,8 @@ class File_Metadata:
          self.path_abs.git_escaped.rename_(self.path_abs)
       # Restore extended attributes
       for xattr, val in self.xattrs.items():
-         try:
-            os.setxattr(self.path_abs, xattr, val, follow_symlinks=False)
-         except PermissionError:
-            ch.INFO("ignoring un-restorable xattr: %s" % xattr)
-         except OSError:
-            ch.INFO("FOO!")
+         ch.ossafe(os.setxattr, "unable to restore xattr: %s" % xattr,
+                   self.path_abs, xattr, val, follow_symlinks=False)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
