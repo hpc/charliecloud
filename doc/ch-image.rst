@@ -85,6 +85,9 @@ Common options placed before or after the sub-command:
     :code:`ch-image` instances as you want against the same storage directory,
     which risks corruption but may be OK for some workloads.
 
+  :code:`--no-xattrs`
+    Disable xattrs and ALCs from being saved or restored by the build cache.
+
   :code:`--profile`
     Dump profile to files :code:`/tmp/chofile.p` (:code:`cProfile` dump
     format) and :code:`/tmp/chofile.txt` (text summary). You can convert the

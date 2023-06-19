@@ -272,8 +272,9 @@ class File_Metadata:
       self.hardlink_to = None
       self.large_name = None
       self.xattrs = dict()
-      for xattr in os.listxattr(self.path_abs, follow_symlinks=False):
-         self.xattrs[xattr] = os.getxattr(self.path_abs, xattr, follow_symlinks=False)
+      if ch.xattrs:
+         for xattr in os.listxattr(self.path_abs, follow_symlinks=False):
+            self.xattrs[xattr] = os.getxattr(self.path_abs, xattr, follow_symlinks=False)
 
    def __getstate__(self):
       return { a:v for (a,v) in self.__dict__.items()
@@ -478,9 +479,10 @@ class File_Metadata:
       elif (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
       # Restore extended attributes
-      for xattr, val in self.xattrs.items():
-         ch.ossafe(os.setxattr, "unable to restore xattr: %s" % xattr,
-                   self.path_abs, xattr, val, follow_symlinks=False)
+      if ch.xattrs:
+         for xattr, val in self.xattrs.items():
+            ch.ossafe(os.setxattr, "unable to restore xattr: %s" % xattr,
+                     self.path_abs, xattr, val, follow_symlinks=False)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
