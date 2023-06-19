@@ -62,7 +62,8 @@ EOF
 
 
 @test "${tag}: with upload cache" {
-    [[ $CH_IMAGE_CACHE != disabled ]] || skip 'build cache disabled'
+    [[ $CH_IMAGE_CACHE == enabled ]] || skip 'build cache not enabled'
+    ch-image upload-cache --reset
     run ch-image upload-cache
     echo "$output"
     [[ $status -eq 0 ]]
@@ -87,7 +88,7 @@ EOF
 
 
 @test "${tag}: upload cache error(s)" {
-    [[ $CH_IMAGE_CACHE == enabled ]] || skip 'enabled build cache mode only'
+    [[ $CH_IMAGE_CACHE == enabled ]] || skip 'build cache not enabled'
     run ch-image --no-cache -v --tls-no-verify push --ulcache alpine:3.17 localhost:5000/ulcache:error
     echo "$output"
     [[ $status -eq 1 ]]
