@@ -301,8 +301,8 @@ the image’s root directory.
 `Extended attributes <https://man7.org/linux/man-pages/man7/xattr.7.html>`_
 belonging to unprivileged namespaces (e.g. :code:`user`) are also saved and
 restored by the cache by default. Notably, extended attributes in privileged
-namespaces (e.g. :code:`trusted`) cannot be read by :code:`ch-image` and are
-not saved in the cache.
+namespaces (e.g. :code:`trusted`) cannot be read by :code:`ch-image` and will be
+lost without warning.
 
 The cache has three modes, *enabled*, *disabled*, and a hybrid mode called
 *rebuild* where the cache is fully enabled for :code:`FROM` instructions, but
