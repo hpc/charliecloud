@@ -64,7 +64,9 @@ const struct argp_option options[] = {
                            "fake success for some syscalls with seccomp(2)"},
 #endif
    { "set-env",        -6, "ARG",  OPTION_ARG_OPTIONAL,
-                           "set environment variables per ARG"},
+                           "set env. variables per ARG (newline-delimited)"},
+   { "set-env0",      -15, "ARG",  OPTION_ARG_OPTIONAL,
+                           "set env. variables per ARG (null-delimited)"},
    { "storage",       's', "DIR",  0, "set DIR as storage directory"},
    { "uid",           'u', "UID",  0, "run as UID within container" },
    { "unsafe",        -13, 0,      0, "do unsafe things (internal use only)" },
@@ -99,6 +101,7 @@ int join_ct(int cli_ct);
 char *join_tag(char *cli_tag);
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
+void parse_set_env(struct args *args, char *arg, int delim);
 void privs_verify_invoking();
 char *storage_default(void);
 
@@ -266,12 +269,12 @@ void fix_environment(struct args *args)
          Te (false, "unreachable code reached");
          break;
       case ENV_SET_DEFAULT:
-         ed.arg.vars = env_file_read("/ch/environment");
+         ed.arg.vars = env_file_read("/ch/environment", ed.arg.delim);
          // fall through
       case ENV_SET_VARS:
          for (size_t j = 0; ed.arg.vars[j].name != NULL; j++)
             env_set(ed.arg.vars[j].name, ed.arg.vars[j].value,
-                    args->c.env_expand );
+                    args->c.env_expand);
          break;
       case ENV_UNSET_GLOB:
          env_unset(ed.arg.glob);
@@ -381,7 +384,6 @@ int parse_int(char *s, bool extra_ok, char *error_tag)
 static error_t parse_opt(int key, char *arg, struct argp_state *state)
 {
    struct args *args = state->input;
-   struct env_delta ed;
    int i;
 
    switch (key) {
@@ -397,25 +399,15 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join_pid = parse_int(arg, false, "--join-pid");
       break;
    case -6: // --set-env
-      if (arg == NULL)
-         ed.action = ENV_SET_DEFAULT;
-      else {
-         ed.action = ENV_SET_VARS;
-         if (strchr(arg, '=') == NULL)
-            ed.arg.vars = env_file_read(arg);
-         else {
-            ed.arg.vars = list_new(sizeof(struct env_var), 1);
-            ed.arg.vars[0] = env_var_parse(arg, NULL, 0);
-         }
-      }
-      list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
+      parse_set_env(args, arg, '\n');
       break;
-   case -7: // --unset-env
-      Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
-      ed.action = ENV_UNSET_GLOB;
-      ed.arg.glob = arg;
-      list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
-      break;;
+   case -7: { // --unset-env
+        struct env_delta ed;
+        Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
+        ed.action = ENV_UNSET_GLOB;
+        ed.arg.glob = arg;
+        list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
+      } break;
    case -9: // --no-passwd
       args->c.private_passwd = true;
       break;
@@ -456,6 +448,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->seccomp_p = true;
       break;
 #endif
+   case -15: // --set-env0
+      parse_set_env(args, arg, '\0');
+      break;
    case 'b': {  // --bind
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
@@ -528,6 +523,26 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 
    return 0;
 }
+
+void parse_set_env(struct args *args, char *arg, int delim)
+{
+   struct env_delta ed;
+
+   if (arg == NULL) {
+      ed.action = ENV_SET_DEFAULT;
+      ed.arg.delim = delim;
+   } else {
+      ed.action = ENV_SET_VARS;
+      if (strchr(arg, '=') == NULL)
+         ed.arg.vars = env_file_read(arg, delim);
+      else {
+         ed.arg.vars = list_new(sizeof(struct env_var), 1);
+         ed.arg.vars[0] = env_var_parse(arg, NULL, 0);
+      }
+   }
+   list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
+}
+
 
 /* Validate that the UIDs and GIDs are appropriate for program start, and
    abort if not.
