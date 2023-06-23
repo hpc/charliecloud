@@ -41,6 +41,9 @@ char *host_tmp = NULL;
 /* Username of invoking users. Set during command line processing. */
 char *username = NULL;
 
+/* List of warnings to be re-printed on exit. */
+char **warnings = NULL;
+
 
 /** Function prototypes (private) **/
 
@@ -441,18 +444,19 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
+   char *message = "";
    if (level > verbose)
       return;
 
-   fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
+   T_ (1 <= asprintf(&message, "%s[%d]: ", program_invocation_short_name, getpid()));
 
    // Prefix for the more urgent levels.
    switch (level) {
    case LL_FATAL:
-      fprintf(stderr, "error: ");  // "fatal" too morbid for users
+      T_ (1 <= asprintf(&message, "%s%s", message, "error: ")); // "fatal" too morbid for users
       break;
    case LL_WARNING:
-      fprintf(stderr, "warning: ");
+      T_ (1 <= asprintf(&message, "%s%s", message, "warning: "));
       break;
    default:
       break;
@@ -462,12 +466,22 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    if (fmt == NULL)
       fmt = "please report this bug";
 
-   vfprintf(stderr, fmt, ap);
-   if (errno_)
-      fprintf(stderr, ": %s (%s:%d %d)\n",
-              strerror(errno_), file, line, errno_);
-   else
-      fprintf(stderr, " (%s:%d)\n", file, line);
+   char *ap_msg = "";
+   T_ (1 <= vasprintf(&ap_msg, fmt, ap));
+   T_ (1 <= asprintf(&message, "%s%s", message, ap_msg));
+
+   if (errno_) {
+      T_ (1 <= asprintf(&message, "%s: %s (%s:%d %d)", message,
+                        strerror(errno_), file, line, errno_));
+   } else {
+      T_ (1 <= asprintf(&message, "%s (%s:%d)", message, file, line));
+   }
+
+   if (level == LL_WARNING) {
+      list_append((void **)&warnings, &message, sizeof(message));
+   }
+   fprintf(stderr, "%s\n", message);
+
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
 }
@@ -630,4 +644,16 @@ void split(char **a, char **b, const char *str, char del)
 void version(void)
 {
    fprintf(stderr, "%s\n", VERSION);
+}
+
+/* Reprint warning messages. */
+void warnings_reprint(void)
+{
+   if (warnings != NULL) {
+      for (int i = 0; !buf_zero_p((char *)warnings + i*sizeof(char*), sizeof(char*)); i++) {
+         fprintf(stderr, "%s\n", warnings[i]);
+      }
+   }
+   if (fflush(stderr))
+         abort();  // can't print an error b/c already trying to do that
 }

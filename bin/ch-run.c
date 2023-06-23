@@ -101,6 +101,7 @@ int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
 char *storage_default(void);
+extern void warnings_reprint(void);
 
 
 /** Global variables **/
@@ -119,6 +120,8 @@ int main(int argc, char *argv[])
    char ** c_argv;
 
    privs_verify_invoking();
+
+   Z_ (atexit(warnings_reprint));
 
 #ifdef ENABLE_SYSLOG
    syslog(LOG_USER|LOG_INFO, "uid=%u args=%d: %s", getuid(), argc,
