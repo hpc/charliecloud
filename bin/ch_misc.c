@@ -41,8 +41,20 @@ char *host_tmp = NULL;
 /* Username of invoking users. Set during command line processing. */
 char *username = NULL;
 
-/* List of warnings to be re-printed on exit. */
-char **warnings = NULL;
+/* List of warnings to be re-printed on exit. This is a buffer of shared memory
+   allocated by mmap(2), structured as a sequence of
+   null-terminated character strings. Warnings that do not fit in this buffer
+   will be lost, though we allocate enough memory that this is unlikely. See
+   “warnings_append()” for more details. */
+char *warnings;
+
+/* Current byte offset from start of “warnings” buffer. This gives the address
+   where the next appended string will start. */
+size_t warnings_offset = 0;
+
+/* Size of “warnings” buffer, in bytes. We want this to be big enough that we
+   don’t need to worry about running out of room. */
+const size_t warnings_size = 4096;
 
 
 /** Function prototypes (private) **/
@@ -478,10 +490,10 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    }
 
    if (level == LL_WARNING) {
-      list_append((void **)&warnings, &message, sizeof(message));
+      warnings_offset += warnings_append(warnings, message,
+                                         warnings_size, warnings_offset);
    }
    fprintf(stderr, "%s\n", message);
-
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
 }
@@ -646,14 +658,36 @@ void version(void)
    fprintf(stderr, "%s\n", VERSION);
 }
 
-/* Reprint warning messages. */
-void warnings_reprint(void)
+/* Append null-terminated string “str” to the memory buffer “offset” bytes away
+   from the address pointed to by “addr”. Buffer should be “size” bytes long.
+   Return the number of bytes written. If there isn’t enough room for the
+   string, do nothing and return zero. */
+size_t warnings_append(char *addr, char *str, size_t size, size_t offset)
 {
-   if (warnings != NULL) {
-      for (int i = 0; !buf_zero_p((char *)warnings + i*sizeof(char*), sizeof(char*)); i++) {
-         fprintf(stderr, "%s\n", warnings[i]);
+   size_t written = 0;
+   if (size > (offset + strlen(str))) { // check if there’s space
+      // FIXME: better solution than writing byte-by-byte?
+      for (written = 0; written <= strlen(str); written++) {
+         addr[offset + written] = str[written];
       }
    }
+   return written;
+}
+
+/* Reprint messages stored in “warnings” memory buffer. */
+void warnings_reprint(void)
+{
+   size_t offset = 0;
+   while ((warnings[offset] != 0) ||
+            ((offset < (warnings_size - 1) &&
+            (warnings[offset+1] != 0)))) {
+        fputs(warnings + offset, stderr);
+        fputc('\n', stderr);
+        while ((offset < warnings_size - 2) && (warnings[offset] != 0)) {
+            offset++;
+        }
+        offset++;
+    }
    if (fflush(stderr))
          abort();  // can't print an error b/c already trying to do that
 }

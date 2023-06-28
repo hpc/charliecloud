@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #include "config.h"
@@ -108,6 +109,8 @@ extern void warnings_reprint(void);
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
+extern char *warnings;
+extern const size_t warnings_size;
 
 
 /** Main **/
@@ -118,6 +121,10 @@ int main(int argc, char *argv[])
    struct args args;
    int arg_next;
    char ** c_argv;
+
+   // initialze “warnings” buffer
+   warnings = mmap(NULL, warnings_size, PROT_READ | PROT_WRITE,
+                   MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
    privs_verify_invoking();
 

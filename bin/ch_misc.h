@@ -102,7 +102,9 @@ enum log_level { LL_FATAL =   -2,  // minimum number of -v to print the msg
 extern enum log_level verbose;
 extern char *host_tmp;
 extern char *username;
-extern char **warnings;
+extern char *warnings;
+extern size_t warnings_offset;
+extern const size_t warnings_size;
 
 
 /** Function prototypes **/
@@ -130,4 +132,5 @@ char *realpath_(const char *path, bool fail_ok);
 void replace_char(char *str, char old, char new);
 void split(char **a, char **b, const char *str, char del);
 void version(void);
+size_t warnings_append(char *addr, char *str, size_t size, size_t offset);
 void warnings_reprint(void);
