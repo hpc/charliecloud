@@ -1,9 +1,6 @@
 Installing
 **********
 
-.. note:: This section is intended for users who have experience installing
-  UNIX software.
-
 This section describes what you need to install Charliecloud and how to do so.
 
 Note that installing and using Charliecloud can be done as a normal user with
@@ -12,6 +9,11 @@ no elevated privileges, provided that user namespaces have been enabled.
 .. contents::
    :depth: 2
    :local:
+
+.. admonition:: Audience
+
+   This section assumes a moderate level of experience installing UNIX
+   software.
 
 
 Build and install from source
