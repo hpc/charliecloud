@@ -10,7 +10,6 @@ import pprint
 import shutil
 import stat
 import tarfile
-import version
 
 import charliecloud as ch
 

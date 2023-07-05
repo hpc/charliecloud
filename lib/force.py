@@ -1,4 +1,3 @@
-import os.path
 import re
 
 import charliecloud as ch
