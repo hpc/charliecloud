@@ -546,7 +546,7 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 2, 3, 4, 5, 6}):  # initialize/upgrade
+      elif (v_found in {None, 3, 4, 5, 6}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
@@ -560,14 +560,6 @@ class Storage:
          self.unpack_base.mkdir_()
          self.upload_cache.mkdir_()
          if (v_found is not None):  # upgrade
-            if (v_found < 3):
-               # Escape colon in image names as plus starting in v3.
-               for old in self.unpack_base.iterdir():
-                  new = old.parent // str(old.name).replace(":", "+")
-                  if (old != new):
-                     if (new.exists()):
-                        ch.FATAL("can’t upgrade: already exists: %s" % new)
-                     old.rename(new)
             if (v_found < 6):
                # Git metadata moved from /.git to /ch/.git, and /.gitignore
                # went out-of-band (to info/exclude in the repository).

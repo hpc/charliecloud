@@ -163,10 +163,19 @@ char *cat(const char *a, const char *b)
    return ret;
 }
 
-/* Read the file listing environment variables at path, and return a
-   corresponding list of struct env_var. If there is a problem reading the
-   file, or with any individual variable, exit with error. */
-struct env_var *env_file_read(const char *path)
+/* Read the file listing environment variables at path, with records separated
+   by delim, and return a corresponding list of struct env_var. Reads the
+   entire file one time without seeking. If there is a problem reading the
+   file, or with any individual variable, exit with error.
+
+   The purpose of delim is to allow both newline- and zero-delimited files. We
+   did consider using a heuristic to choose the file’s delimiter, but there
+   seemed to be two problems. First, every heuristic we considered had flaws.
+   Second, use of a heuristic would require reading the file twice or seeking.
+   We don’t want to demand non-seekable files (e.g., pipes), and if we read
+   the file into a buffer before parsing, we’d need our own getdelim(3). See
+   issue #1124 for further discussion. */
+struct env_var *env_file_read(const char *path, int delim)
 {
    struct env_var *vars;
    FILE *fp;
@@ -179,7 +188,7 @@ struct env_var *env_file_read(const char *path)
       char *line = NULL;
       size_t line_len = 0;  // don't care but required by getline(3)
       errno = 0;
-      if (-1 == getline(&line, &line_len, fp)) {
+      if (-1 == getdelim(&line, &line_len, delim, fp)) {
          if (errno == 0)    // EOF
             break;
          else

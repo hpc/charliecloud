@@ -84,6 +84,7 @@ struct env_var {
 struct env_delta {
    enum env_action action;
    union {
+      int delim;             // ENV_SET_DEFAULT
       struct env_var *vars;  // ENV_SET_VARS
       char *glob;            // ENV_UNSET_GLOB
    } arg;
@@ -112,7 +113,7 @@ extern const size_t warnings_size;
 char *argv_to_string(char **argv);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
-struct env_var *env_file_read(const char *path);
+struct env_var *env_file_read(const char *path, int delim);
 void env_set(const char *name, const char *value, const bool expand);
 void env_unset(const char *glob);
 struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
