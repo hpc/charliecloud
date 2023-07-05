@@ -601,6 +601,8 @@ def exit(code):
 def init(cli):
    # logging
    global log_festoon, log_fp, trace_fatal, verbose
+   if (not hasattr(cli, "func")):
+      FATAL("CMD not specified, try “ch-image --help”")
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
