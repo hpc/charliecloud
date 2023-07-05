@@ -34,21 +34,6 @@ EOF
 }
 
 
-@test '/usr/bin/ch-ssh' {
-    # Note: --ch-ssh without /usr/bin/ch-ssh is in test “broken image errors”.
-    scope standard
-    ls -l "$ch_bin/ch-ssh"
-    ch-run --ch-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
-    ch-run --ch-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
-    # Test bind-mount by comparing size rather than e.g. “ch-ssh --version”
-    # because ch-ssh won’t run on Alpine (issue #4).
-    host_size=$(stat -c %s "${ch_bin}/ch-ssh")
-    guest_size=$(ch-run --ch-ssh "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
-    echo "host: ${host_size}, guest: ${guest_size}"
-    [[ $host_size -eq "$guest_size" ]]
-}
-
-
 @test 'optional default bind mounts silently skipped' {
     scope standard
 
@@ -60,8 +45,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$CH_RUNNING' {
+@test "\$CH_RUNNING" {
     scope standard
 
     if [[ -v CH_RUNNING ]]; then
@@ -75,8 +59,7 @@ EOF
     [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
 }
 
-# shellcheck disable=SC2016
-@test '$HOME' {
+@test "\$HOME" {
     scope quick
     echo "host: $HOME"
     [[ $HOME ]]
@@ -120,8 +103,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: add /bin' {
+@test "\$PATH: add /bin" {
     scope quick
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
@@ -150,8 +132,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: unset' {
+@test "\$PATH: unset" {
     scope standard
     old_path=$PATH
     unset PATH
@@ -166,8 +147,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$TMPDIR' {
+@test "\$TMPDIR" {
     scope standard
     mkdir -p "${BATS_TMPDIR}/tmpdir"
     touch "${BATS_TMPDIR}/tmpdir/file-in-tmpdir"
@@ -542,6 +522,34 @@ EOF
 }
 
 
+@test 'ch-run --set-env0' {
+    scope standard
+
+    export SET=foo
+    f_in=${BATS_TMPDIR}/env.bin
+    {
+        printf 'chse_a1=bar\0'
+        printf "chse_a4='bar'\0"
+        #shellcheck disable=SC2016
+        printf 'chse_d7=bar:$SET\0'
+        printf 'chse_g1=foo\nbar\0'
+    } > "$f_in"
+    hd "$f_in" | sed -E 's/^0000//'  # trim a few zeros to make it fit
+
+    output_expected=$(cat <<'EOF'
+('chse_a1', 'bar')
+('chse_a4', 'bar')
+('chse_d7', 'bar:foo')
+('chse_g1', 'foo\nbar')
+EOF
+)
+    run ch-run --set-env0="$f_in" "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+}
+
+
 @test 'ch-run --set-env from Dockerfile' {
     scope standard
     prerequisites_ok argenv
@@ -594,6 +602,7 @@ EOF
     [[ $output = *"can't parse variable: empty name: ${f_in}:1"* ]]
 }
 
+
 # shellcheck disable=SC2016
 @test 'ch-run --set-env command line' {
     scope standard
@@ -611,6 +620,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
+
 
 @test 'ch-run --unset-env' {
     scope standard
@@ -881,7 +891,6 @@ EOF
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
     files=$(echo etc/{group,passwd})
-    # shellcheck disable=SC2116
     files_optional=$(echo etc/{hosts,resolv.conf})
     mkdir -p "$img"
     for d in $dirs; do mkdir -p "${img}/$d"; done
@@ -990,12 +999,6 @@ EOF
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
-
-    # --ch-ssh but no /usr/bin/ch-ssh
-    run ch-run --ch-ssh "$img" -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"--ch-ssh: /usr/bin/ch-ssh not in image"* ]]
 
     # Everything should be restored and back to the original error.
     run ch-run "$img" -- /bin/true

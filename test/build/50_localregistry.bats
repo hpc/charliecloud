@@ -1,6 +1,4 @@
 load ../common
-
-# shellcheck disable=SC2034
 tag='ch-image push'
 
 # Note: These tests use a local registry listening on localhost:5000 but do
@@ -28,6 +26,25 @@ EOF
     [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/localhost+5000%alpine+3.17"* ]]
 
     ch-image delete localhost:5000/alpine:3.17
+}
+
+@test "${tag}: without metadata history" {
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.17
+EOF
+
+    ch-convert tmpimg "$BATS_TMPDIR/tmpimg"
+    rm -rf "$BATS_TMPDIR/tmpimg/ch"
+
+    ch-image delete tmpimg
+    ch-image import "$BATS_TMPDIR/tmpimg" tmpimg
+
+    run ch-image -v --tls-no-verify push tmpimg localhost:5000/tmpimg
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'pushing image:   tmpimg'* ]]
+    [[ $output = *'destination:     localhost:5000/tmpimg'* ]]
+    [[ $output = *"image path:      ${CH_IMAGE_STORAGE}/img/tmpimg"* ]]
 }
 
 @test "${tag}: with destination reference" {
@@ -107,6 +124,9 @@ EOF
 }
 
 @test "${tag}: environment variables round-trip" {
+    # Delete “tmpimg” from previous test to avoid issues
+    ch-image delete tmpimg
+
     cat <<'EOF' | ch-image build -t tmpimg -
 FROM alpine:3.17
 ENV weird="al yankovic"

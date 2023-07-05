@@ -23,8 +23,8 @@ import charliecloud as ch
 #
 # To see the directory formats in released versions:
 #
-#   $ git grep -F 'STORAGE_VERSION =' $(git tag | sort -V)
-STORAGE_VERSION = 6
+#   $ git grep -E '^STORAGE_VERSION =' $(git tag | sort -V)
+STORAGE_VERSION = 7
 
 
 ## Globals ##
@@ -514,9 +514,6 @@ class Storage:
 
    @staticmethod
    def root_env():
-      if ("CH_GROW_STORAGE" in os.environ):
-         # Avoid surprises if user still has $CH_GROW_STORAGE set (see #906).
-         ch.FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
       if (not "CH_IMAGE_STORAGE" in os.environ):
          return None
       path = Path(os.environ["CH_IMAGE_STORAGE"])
@@ -549,7 +546,7 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 2, 3, 4, 5}):  # initialize/upgrade
+      elif (v_found in {None, 3, 4, 5, 6}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
          self.root.mkdir_()
@@ -563,14 +560,6 @@ class Storage:
          self.unpack_base.mkdir_()
          self.upload_cache.mkdir_()
          if (v_found is not None):  # upgrade
-            if (v_found < 3):
-               # Escape colon in image names as plus starting in v3.
-               for old in self.unpack_base.iterdir():
-                  new = old.parent // str(old.name).replace(":", "+")
-                  if (old != new):
-                     if (new.exists()):
-                        ch.FATAL("can’t upgrade: already exists: %s" % new)
-                     old.rename(new)
             if (v_found < 6):
                # Git metadata moved from /.git to /ch/.git, and /.gitignore
                # went out-of-band (to info/exclude in the repository).
@@ -588,6 +577,15 @@ class Storage:
                # cache may be disabled. Do it in Enabled_Cache.configure().
                if (len(self.build_cache.listdir()) > 0):
                   self.bucache_needs_ignore_upgrade.file_ensure_exists()
+            if (v_found == 6):
+               # Charliecloud 0.32 had a bug where symlinks to fat manifests
+               # that were really skinny were erroneously absolute, making the
+               # storage directory immovable (PR #1657). Remove all symlinks
+               # in dlcache; they’ll be re-created later.
+               for entry in self.download_cache.iterdir():
+                  if (entry.is_symlink()):
+                     ch.DEBUG("deleting bad v6 symlink: %s" % entry)
+                     entry.unlink_()
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"

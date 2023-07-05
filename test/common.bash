@@ -1,5 +1,24 @@
 # shellcheck shell=bash
 
+# These variables are set, but in ways ShellCheck can’t figure out. Some may
+# be movable into this script but I haven’t looked in detail. We list them in
+# this unreachable code block to convince ShellCheck that they are assigned
+# (SC2154), and amusingly ShellCheck doesn’t know this code is unreachable. 😂
+#
+# shellcheck disable=SC2034
+if false; then
+    # from ch-test
+    ch_base=
+    ch_bin=
+    ch_lib=
+    ch_libc=
+    ch_test_tag=
+    # from Bats
+    lines=
+    output=
+    status=
+fi
+
 arch_exclude () {
     # Skip the test if architecture (from “uname -m”) matches $1.
     [[ $(uname -m) != "$1" ]] || skip "arch ${1}"
@@ -103,7 +122,6 @@ cray_ofi_or_skip () {
     if [[ $ch_cray ]]; then
         [[ -n "$CH_TEST_OFI_PATH" ]] || skip 'CH_TEST_OFI_PATH not set'
         [[ -z "$FI_PROVIDER_PATH" ]] || skip 'host FI_PROVIDER_PATH set'
-        # shellcheck disable=SC2086
         if [[ $cray_prov == 'gni' ]]; then
             export CH_FROMHOST_OFI_GNI=$CH_TEST_OFI_PATH
             $ch_mpirun_node ch-fromhost -v --cray-gni "$1"
@@ -210,6 +228,12 @@ pict_ok () {
     fi
 }
 
+pmix_or_skip () {
+    if [[ $srun_mpi != pmix* ]]; then
+        skip 'pmix required'
+    fi
+}
+
 prerequisites_ok () {
     if [[ -f $CH_TEST_TARDIR/${1}.pq_missing ]]; then
         skip 'build prerequisites not met'
@@ -307,21 +331,17 @@ fi
 
 # User-private temporary directory in case multiple users are running the
 # tests simultaneously.
-# shellcheck disable=SC2154
 btnew=$TMP_/bats.tmp
 mkdir -p "$btnew"
 chmod 700 "$btnew"
 export BATS_TMPDIR=$btnew
 [[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
 
-# shellcheck disable=SC2034
 ch_runfile=$(command -v ch-run)
 
 # Charliecloud version.
 ch_version=$(ch-run --version 2>&1)
-# shellcheck disable=SC2034
 ch_version_base=$(echo "$ch_version" | sed -E 's/~.+//')
-# shellcheck disable=SC2034
 ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 
 # Separate directories for tarballs and images.
@@ -340,19 +360,13 @@ ch_version_docker=$(echo "$ch_version" | tr '~+' '--')
 # [2]: http://man7.org/linux/man-pages/man1/readlink.1.html
 ch_imgdir=$(readlink -m "$CH_TEST_IMGDIR")
 ch_tardir=$(readlink -m "$CH_TEST_TARDIR")
-# shellcheck disable=SC2034
 ch_mounts="${ch_imgdir}/mounts"
 
 # Image information.
-# shellcheck disable=SC2034
 ch_tag=${CH_TEST_TAG:-NO_TAG_SET}  # set by Makefile; many tests don’t need it
-# shellcheck disable=SC2034
 ch_img=${ch_imgdir}/${ch_tag}
-# shellcheck disable=SC2034
 ch_tar=${ch_tardir}/${ch_tag}.tar.gz
-# shellcheck disable=SC2034
 ch_ttar=${ch_tardir}/chtest.tar.gz
-# shellcheck disable=SC2034
 ch_timg=${ch_imgdir}/chtest
 
 if [[ $ch_tag = *'-mpich' ]]; then
@@ -360,11 +374,9 @@ if [[ $ch_tag = *'-mpich' ]]; then
     # As of MPICH 4.0.2, using SLURM as the MPICH process manager requires two
     # configure options that disable the compilation of mpiexec. This may not
     # always be the case.
-    # shellcheck disable=SC2034
     ch_mpi_exe=mpiexec
 else
     ch_mpi=openmpi
-    # shellcheck disable=SC2034
     ch_mpi_exe=mpirun
 fi
 
@@ -406,11 +418,9 @@ fi
 # to do this with Slurm, but they need Slurm configuration that seems
 # unreliably present. This seems to be the most portable way to do this.
 ch_cores_node=$(lscpu -p | tail -n +5 | sort -u -t, -k 2 | wc -l)
-# shellcheck disable=SC2034
 ch_cores_total=$((ch_nodes * ch_cores_node))
 ch_mpirun_node=
 ch_mpirun_np="-np ${ch_cores_node}"
-# shellcheck disable=SC2034
 ch_unslurm=
 if [[ $SLURM_JOB_ID ]]; then
     [[ -z "$CH_TEST_SLURM_MPI" ]] || srun_mpi="--mpi=$CH_TEST_SLURM_MPI"
@@ -423,7 +433,6 @@ if [[ $SLURM_JOB_ID ]]; then
     # are present. Work around this by fooling OpenMPI into believing it’s not
     # in a Slurm allocation.
     if [[ $ch_mpi = openmpi ]]; then
-        # shellcheck disable=SC2034
         ch_unslurm='--unset-env=SLURM*'
     fi
     if [[ $ch_nodes -eq 1 ]]; then
@@ -434,9 +443,7 @@ if [[ $SLURM_JOB_ID ]]; then
         ch_mpirun_2_2node="srun $srun_mpi -N2 -n2"
     fi
 else
-    # shellcheck disable=SC2034
     ch_multinode=
-    # shellcheck disable=SC2034
     ch_mpirun_2_2node=false
     if command -v mpirun > /dev/null 2>&1; then
         ch_multiprocess=yes
@@ -447,11 +454,8 @@ else
     else
         ch_multiprocess=
         ch_mpirun_node=''
-        # shellcheck disable=SC2034
         ch_mpirun_core=false
-        # shellcheck disable=SC2034
         ch_mpirun_2=false
-        # shellcheck disable=SC2034
         ch_mpirun_2_1node=false
     fi
 fi
@@ -462,6 +466,5 @@ if    [[ $CH_TEST_SUDO ]] \
    && sudo -v > /dev/null 2>&1; then
     # This isn’t super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
-    # shellcheck disable=SC2034
     ch_have_sudo=yes
 fi

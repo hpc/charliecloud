@@ -605,7 +605,7 @@ AC_CHECK_PROG([BATS], [bats], [bats])
 CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
 
 # ShellCheck
-vmin_shellcheck=0.6.0
+vmin_shellcheck=0.9.0
 AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])
 # https://stackoverflow.com/questions/6022384
 CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],

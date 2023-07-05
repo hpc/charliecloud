@@ -15,7 +15,7 @@ Synopsis
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] build-cache [...]
-   $ ch-image [...] delete IMAGE_REF
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ...]
    $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [-l] [IMAGE_REF]
@@ -476,7 +476,7 @@ We can also inspect the cache::
   |/
   *  RUN echo foo
   *  (alpine+3.9) PULL alpine:3.17
-  *  (HEAD -> root) ROOT
+  *  (root) ROOT
 
   named images:     4
   state IDs:        5
@@ -987,8 +987,10 @@ If any of the following options are given, do the corresponding operation
 before printing. Multiple options can be given, in which case they happen in
 this order.
 
-  :code:`--reset`
-    Clear and re-initialize the build cache.
+  :code:`--dot`
+    Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
+    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` and
+    :code:`git2dot`.
 
   :code:`--gc`
     Run Git garbage collection on the cache, including full de-duplication of
@@ -997,28 +999,27 @@ this order.
     corruption if the build cache is being accessed concurrently by another
     process). The operation can take a long time on large caches.
 
-  :code:`--text`
+  :code:`--reset`
+    Clear and re-initialize the build cache.
+
+  :code:`--tree`
     Print a text tree of the cache using Git’s :code:`git log --graph`
     feature. If :code:`-v` is also given, the tree has more detail.
-
-  :code:`--dot`
-    Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
-    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` and
-    :code:`git2dot`.
 
 :code:`delete`
 ==============
 
 ::
 
-   $ ch-image [...] delete IMAGE_GLOB
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ... ]
 
-Delete the image(s) described by :code:`IMAGE_GLOB` from the storage directory
-(including all build stages).
+Delete the image(s) described by each :code:`IMAGE_GLOB` from the storage
+directory (including all build stages).
 
 :code:`IMAGE_GLOB` can be either a plain image reference or an image reference
 with glob characters to match multiple images. For example, :code:`ch-image
 delete 'foo*'` will delete all images whose names start with :code:`foo`.
+Multiple images and/or globs can also be given in a single command line.
 
 Importantly, this sub-command *does not* also remove the image from the build
 cache. Therefore, it can be used to reduce the size of the storage directory,
@@ -1078,6 +1079,9 @@ Optional argument:
   :code:`-l`, :code:`--long`
     Use long format (name, last change timestamp) when listing images.
 
+  :code:`-u`, :code:`--undeletable`
+    List images that can be undeleted. Can also be spelled :code:`--undeleteable`.
+
   :code:`IMAGE_REF`
     Print details of what’s known about :code:`IMAGE_REF`, both locally and in
     the remote registry, if any.
@@ -1129,10 +1133,12 @@ If the imported image contains Charliecloud metadata, that will be imported
 unchanged, i.e., images exported from :code:`ch-image` builder storage will be
 functionally identical when re-imported.
 
-.. note::
+.. warning::
 
-   Every import creates a new cache entry, even if the file or directory has
-   already been imported.
+   Descendant images (i.e., :code:`FROM` the imported :code:`IMAGE_REF`) are
+   linked using :code:`IMAGE_REF` only. If a new image is imported under a new
+   :code:`IMAGE_REF`, all instructions descending from that :code:`IMAGE_REF`
+   will still hit, even if the new image is different.
 
 
 :code:`pull`

@@ -418,7 +418,7 @@ Let’s pull that image and see how it looks::
   almalinux:8
   hello
   hello.2
-  $ ch-image convert hello.2 ./hello.2
+  $ ch-convert hello.2 ./hello.2
   $ ls ./hello.2
   bin    etc    lib    mnt    proc   run    srv    tmp    var
   dev    home   media  opt    root   sbin   sys    usr
@@ -631,7 +631,7 @@ Finally, inspect the cache::
   |/
   *  RUN sleep 2 && echo foo
   *  (almalinux:8) PULL almalinux:8
-  *  (HEAD -> root) ROOT
+  *  (root) ROOT
 
   named images:    4
   state IDs:       5
@@ -956,6 +956,7 @@ directory to appear in multiple places in the filesystem tree, but it is a
 property of the running kernel rather than the filesystem.
 
 Several host directories are always bind-mounted into the container. These
+
 include system directories such as :code:`/dev`, :code:`/proc`, :code:`/sys`,
 and :code:`/tmp`. Others can be requested with a command line option, e.g.
 :code:`--home` bind-mounts the invoking user’s home directory.
@@ -1017,7 +1018,7 @@ container, even if :code:`ssh` was initiated from a container::
   > ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026531837
 
-There are several ways to SSH to a remote node and run commands inside a
+There are a couple ways to SSH to a remote node and run commands inside a
 container. The simplest is to manually invoke :code:`ch-run` in the
 :code:`ssh` command::
 
@@ -1031,46 +1032,9 @@ container. The simplest is to manually invoke :code:`ch-run` in the
    existing user namespace :code:`’2256`; rather, it has re-used the namespace
    ID :code:`’2256`.
 
-Another is to use the :code:`ch-ssh` wrapper program, which adds
-:code:`ch-run` to the :code:`ssh` command implicitly. It takes the
-:code:`ch-run` arguments from the environment variable :code:`CH_RUN_ARGS`,
-making it mostly a drop-in replacement for :code:`ssh`. For example::
-
-  $ export CH_RUN_ARGS="/var/tmp/hello.sqfs --"
-  $ ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
-  4026532256
-  $ ch-ssh -t localhost /bin/bash
-  > stat -L --format='%i' /proc/self/ns/user
-  4026532256
-
-:code:`ch-ssh` is available inside containers as well, in :code:`/usr/bin` via
-bind-mount, if the image has a dummy file at :code:`/usr/bin/ch-ssh`::
-
-  $ export CH_RUN_ARGS="/var/tmp/hello.sqfs --"
-  $ ch-run /var/tmp/hello.sqfs -- /bin/bash
-  > stat -L --format='%i' /proc/self/ns/user
-  4026532256
-  > ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
-  4026532258
-
-This also demonstrates that :code:`ch-run` does not alter most environment
-variables.
-
-.. warning::
-
-   1. :code:`CH_RUN_ARGS` is interpreted very simply; the sole delimiter is
-      spaces. It is not shell syntax. In particular, quotes and backslashes
-      are not interpreted.
-
-   2. Argument :code:`-t` is required for SSH to allocate a pseudo-TTY and
-      thus convince your shell to be interactive. In the case of Bash,
-      otherwise you’ll get a shell that accepts commands but doesn’t print
-      prompts, among other other issues. (`Issue #2
-      <https://github.com/hpc/charliecloud/issues/2>`_.)
-
-A third approach may be to edit one’s shell initialization scripts to check
-the command line and :code:`exec(1)` :code:`ch-run` if appropriate. This is
-brittle but avoids wrapping :code:`ssh` or altering its command line.
+Another may be to edit one's shell initialization scripts to check the command
+line and :code:`exec(1)` :code:`ch-run` if appropriate. This is brittle but
+avoids wrapping :code:`ssh` or altering its command line.
 
 User and group IDs
 ~~~~~~~~~~~~~~~~~~
