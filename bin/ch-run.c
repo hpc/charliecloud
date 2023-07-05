@@ -72,6 +72,7 @@ const struct argp_option options[] = {
    { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
+   { "warnings",      -15, "NUM",  0, "log NUM warnings and exit" },
    { "write",         'w', 0,      0, "mount image read-write"},
    { 0 }
 };
@@ -460,6 +461,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->seccomp_p = true;
       break;
 #endif
+   case -15: // --warnings
+      int w_num = parse_int(arg, false, "--warnings");
+      for (int i = 0; i < w_num; i++) {
+         WARNING("this is a warning!");
+      }
+      exit(0);
+      break;
    case 'b': {  // --bind
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds

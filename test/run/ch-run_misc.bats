@@ -1026,3 +1026,23 @@ EOF
     echo "$text"
     echo "$text" | grep -F "$expected"
 }
+
+@test 'reprint warnings' {
+    run ch-run --warnings=0
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'this is a warning!') -eq 0 ]]
+
+    run ch-run --warnings=1
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'this is a warning!') -eq 2 ]]
+
+    run ch-run --warnings=68
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'this is a warning!') -eq 136 ]]
+
+    # 70 is exactly one more warning than can be stored for reprinting (based on
+    # size), so there should be (70 * 2) - 1 warnings in the output.
+    run ch-run --warnings=70
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'this is a warning!') -eq 139 ]]
+}
