@@ -591,16 +591,10 @@ Options:
     If no colon present in the name, append :code:`:latest`.
 
   :code:`--target STAGE`
-    Set the upper bound stage of a multistage build. Instructions up to the next
-    :code:`FROM` instruction after the target stage are executed. All subsequent
-    instructions are ignored. :code:`STAGE` can be specified as the stage:
-
-    1. number, e.g., :code:`0`, :code:`1`, ..., :code:`n`;
-
-    2. alias, e.g., :code:`alp` as declared by
-    :code:`FROM alpine:3.16 as alp`; or
-
-    3. base name, e.g., :code:`alpine:3.16`
+    Last stage to build, i.e., instructions starting with the first
+    :code:`FROM` after the one specified by :code:`STAGE` are ignored. This
+    can be either the stage’s alias (e.g. :code:`alp` in :code:`FROM
+    alpine:3.16 AS alp`) or number (starting from zero). .
 
 Privilege model
 ---------------

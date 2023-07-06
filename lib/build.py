@@ -18,6 +18,7 @@ import force
 import image as im
 import pull
 
+
 ## Globals ##
 
 # ARG values that are set before FROM.
@@ -34,14 +35,12 @@ forcer = None
 # an int key counting stages up from zero. Images with a name (e.g., “FROM ...
 # AS foo”) have a second string key of the name.
 images = dict()
-# Number of stages. This is obtained by counting FROM instructions in the
-# parse tree, so we can use it for error checking.
+
+# Number of stages to build. This is the number of FROM instructions in the
+# parse tree, which might be smaller than the number of FROM in the Dockerfile
+# due to --target pruning. We use it for error checking.
 image_ct = None
 
-# Build stage modifiers. String or integer, each stage of a multistage build may
-# be targeted as the _last_ stage to execute.
-target_stage = None
-target_found = None
 
 ## Imports not in standard library ##
 
@@ -161,23 +160,15 @@ def main(cli_):
       ch.FATAL("can’t parse: %s:%d,%d\n\n%s"
                % (cli.file, x.line, x.column, x.get_context(text, 39)))
 
-   # Count the number of stages (i.e., FROM instructions)
+   # Prune all instructions starting with the first FROM after the build
+   # target. Do this even if --target was not specified (in which case nothing
+   # is pruned) because it’s how we count the number of stages.
+   p = Target_Pruner(cli.target)
+   p.transform(tree)
+   if (cli.target is not None and not p.target_found):
+      ch.FATAL("target not found: %s" % cli.target)
    global image_ct
-   image_ct = sum(1 for i in tree.children_("from_"))
-
-   # Transform tree in-place; remove instructions starting with the FROM after
-   # the target stage.
-   if (cli.target is not None):
-      global target_stage
-      target_stage = cli.target
-      if (image_ct < 2):
-         ch.FATAL("target: %s: requires a multistage image" % target_stage)
-      if (target_stage.isdigit()):
-          if (int(target_stage) > image_ct - 1 or int(target_stage) < 0):
-             ch.FATAL("invalid target: %s" % target_stage)
-      Prune_Loop().transform(tree)
-      if (not target_found):
-         ch.FATAL("invalid target: %s: not found or is last stage" % target_stage)
+   image_ct = p.stage_ct
 
    ch.VERBOSE(tree.pretty())
 
@@ -228,60 +219,6 @@ def main(cli_):
       ch.INFO("build slow? consider enabling the new build cache",
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
 
-
-class Prune_Loop(lark.visitors.Transformer_InPlace):
-   __slots__ = ("image_ct",        # image_count
-                "prune",           # boolean, prune node?
-                "stage_ct",        # stage count
-                "target_visited")  # boolean, target visited?
-
-   def __init__(self, *args, **kwargs):
-      self.image_ct = None
-      self.prune = False
-      self.stage_ct = None
-      self.target = None
-      super().__init__(*args, **kwargs)
-
-   def __default__(self, data, children, meta, *args, **kwargs):
-
-      ch.VERBOSE("prune loop: visiting node: %s" % data)
-      if (self.prune):
-         ch.VERBOSE("  pruning %s" % data)
-         return lark.visitors.Discard
-      # To avoid more complexity, simple check if data is one of three
-      # of the three instructions that impact multistage pruning.
-      if (data == 'from_'):
-         if (self.image_ct is None):
-            self.image_ct = 1
-         else:
-            self.image_ct += 1
-         if (target_stage.isdigit() and target_stage == str(self.image_ct - 1)):
-            self.target = self.image_ct
-         if (self.target == self.image_ct - 1):
-            self.prune = True
-            global image_ct
-            ch.VERBOSE("updating image_ct %s: %s" %(image_ct, self.image_ct - 1))
-            image_ct = self.image_ct - 1
-            global target_found
-            target_found = True
-            return lark.visitors.Discard
-      if (data == 'image_ref'):
-         if (self.stage_ct is None):
-            self.stage_ct = 0
-         else:
-            self.stage_ct += 1
-      if (data == 'image_ref' or data == 'from_alias'):
-         if (children[0] == target_stage):
-            self.target = self.stage_ct + 1 # stage and FROM differ by 1
-      return im.Tree(data, children, meta)
-
-   def dockerfile(self, child):
-      return im.Tree('dockerfile', child)
-
-   def start(self, child):
-      return im.Tree('start', child)
-
-
 class Main_Loop(lark.Visitor):
 
    __slots__ = ("instruction_total_ct",
@@ -328,6 +265,56 @@ class Main_Loop(lark.Visitor):
             inst.commit()
          self.inst_prev = inst
          self.instruction_total_ct += 1
+
+
+class Target_Pruner(lark.visitors.Transformer_InPlace):
+
+   # NOTE: Lark ≥1.0 return lark.visitors.Discard instead of raising it as an
+   # exception [1]. This class will likely break when we upgrade (#1064).
+   #
+   # [1]: https://github.com/lark-parser/lark/releases/tag/1.0.0
+
+   __slots__ = ("stage_ct",
+                "target",
+                "target_found",
+                "target_next_found")
+
+   def __init__(self, target):
+      super().__init__(visit_tokens=False)
+      self.stage_ct = 0
+      self.target = target
+      self.target_found = False       # found the target FROM
+      self.target_next_found = False  # found the FROM *after* the target
+
+   def __default__(self, data, children, meta):
+      if (data not in ("start", "dockerfile") and self.target_next_found):
+         raise lark.visitors.Discard()
+      else:
+         return im.Tree(data, children, meta)
+
+   def from_(self, children):
+      alias = None
+      for child in children:
+         if (child.data == "image_ref"):
+            base = child.terminal("IMAGE_REF")
+         if (child.data == "from_alias"):
+            alias = child.terminal("IR_PATH_COMPONENT")
+      if (self.target_found):
+         # already found target FROM
+         self.target_next_found = True
+         ch.VERBOSE("discarding stage after target: FROM %s AS %s"
+                    % (base, alias))
+         raise lark.visitors.Discard()
+      else:
+         # target not yet found
+         if (self.target is not None and self.target in (self.stage_ct, alias)):
+            # this is the target
+            ch.VERBOSE("found build target: stage %d: FROM %s AS %s"
+                       % (self.stage_ct, base, alias))
+            self.target_found = True
+         self.stage_ct += 1
+         return im.Tree("from_", children)
+
 
 ## Instruction classes ##
 

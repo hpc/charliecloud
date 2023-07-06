@@ -199,7 +199,8 @@ def main():
    sp.add_argument("-t", "--tag", metavar="TAG",
                    help="name (tag) of image to create (default: inferred)")
    sp.add_argument("--target", metavar="STAGE",
-                   help="last stage to build (multi-stage only)")
+                   type=lambda x: int(x) if x.isdigit() else x,
+                   help="last stage to build")
    sp.add_argument("context", metavar="CONTEXT",
                    help="context directory")
 
