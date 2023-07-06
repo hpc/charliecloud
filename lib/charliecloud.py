@@ -211,6 +211,8 @@ class ArgumentParser(argparse.ArgumentParser):
 
    def parse_args(self, *args, **kwargs):
       cli = super().parse_args(*args, **kwargs)
+      if (not hasattr(cli, "func")):
+         self.error("CMD not specified")
       # Bring in environment variables that set options.
       if (cli.bucache is None and "CH_IMAGE_CACHE" in os.environ):
          try:
