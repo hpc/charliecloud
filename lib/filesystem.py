@@ -1,6 +1,5 @@
 import errno
 import fcntl
-import getpass
 import hashlib
 import json
 import os
