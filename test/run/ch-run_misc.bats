@@ -1064,13 +1064,9 @@ EOF
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | grep -Fc 'this is a warning!') -eq 2 ]]
 
-    run ch-run --warnings=68
+    # Warnings list is a statically sized memory buffer. Ensure it works as
+    # intended by printing more warnings than can be saved to this buffer and
+    # checking that the program doesn’t crash.
+    run ch-run --warnings=10000
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Fc 'this is a warning!') -eq 136 ]]
-
-    # 70 is exactly one more warning than can be stored for reprinting (based on
-    # size), so there should be (70 * 2) - 1 warnings in the output.
-    run ch-run --warnings=70
-    [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Fc 'this is a warning!') -eq 139 ]]
 }

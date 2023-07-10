@@ -459,12 +459,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->seccomp_p = true;
       break;
 #endif
-   case -16: // --warnings
+   case -16: { // --warnings
       int w_num = parse_int(arg, false, "--warnings");
       for (int i = 0; i < w_num; i++) {
          WARNING("this is a warning!");
       }
-      exit(0);
+      exit(0); }
    case -15: // --set-env0
       parse_set_env(args, arg, '\0');
       break;
