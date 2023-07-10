@@ -156,7 +156,7 @@ jobs:
           cd squashfuse
           # checkout the last commit that we support. FIXME: find a more
           # permanent solution (#1696).
-          git checkout 7590585
+          git checkout 4465c39
           ./autogen.sh
           ./configure --prefix=/usr/local
           make
