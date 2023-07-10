@@ -153,6 +153,9 @@ jobs:
           # Currently we need the master branch of SquashFUSE.
           cd /usr/local/src
           git clone https://github.com/vasi/squashfuse.git
+          # checkout the last commit that we support. FIXME: find a more
+          # permanent solution (#1696).
+          git checkout 7590585
           cd squashfuse
           ./autogen.sh
           ./configure --prefix=/usr/local
