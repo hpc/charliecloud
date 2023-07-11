@@ -1403,16 +1403,18 @@ EOF
 @test "${tag}: restore ACLs, xattrs" {  # issue #1287
     ch-image build-cache --reset
     ch-image build -t tmpimg - <<'EOF'
-FROM almalinux:8
-RUN dnf install -y --setopt=install_weak_deps=false attr
+FROM alpine:3.17
+RUN apk add attr
+RUN apk add acl
 RUN touch /home/foo
 RUN setfattr -n user.foo -v bar /home/foo
 RUN setfacl -m u:root:r /home/foo
 EOF
     ch-image delete tmpimg
     ch-image build -t tmpimg - <<'EOF'
-FROM almalinux:8
-RUN dnf install -y --setopt=install_weak_deps=false attr
+FROM alpine:3.17
+RUN apk add attr
+RUN apk add acl
 RUN touch /home/foo
 RUN setfattr -n user.foo -v bar /home/foo
 RUN setfacl -m u:root:r /home/foo

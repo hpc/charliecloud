@@ -51,7 +51,7 @@ cv_chimage_dir () {
     # completely half-assed performance test suggests that's about the same.
     dir_make "$2"
     # shellcheck disable=SC2086
-    tar_ "$img" | tar xf - $tar_xattrs -pC "$2"
+    tar_ "$img" | tar xf - $tar_xattr_arg -pC "$2"
     dir_fixup "$2"
 }
 
@@ -113,7 +113,7 @@ cv_dir_squash () {
     # Exclude build cache metadata. 64kiB block size based on Shane's
     # experiments.
     # shellcheck disable=SC2086
-    mksquashfs "$1" "$2" $squash_xattrs -b 65536 -noappend -all-root -pf "$pflist" \
+    mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root -pf "$pflist" \
                          -e "$1"/.git -e "$1"/.gitignore -e "$1"/ch/git.pickle
     # Zero the archive's internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
@@ -319,7 +319,7 @@ cv_tar_dir () {
       pv_ -s "$(stat -c%s "$1")" < "$1" \
     | tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
           --xform 's|^\./||x' --strip-components=$strip_ct \
-          --anchored --no-wildcards-match-slash $tar_xattrs \
+          --anchored --no-wildcards-match-slash $tar_xattr_arg \
           --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"
     dir_fixup "$2"
 }
@@ -425,7 +425,7 @@ dockman_to_tar () {
     # The tar flavor Docker gives us does not support UIDs or GIDs greater
     # than 2**21, so use 0/0 rather than what’s on the filesystem. See #1573.
     # shellcheck disable=SC2086
-    tar rf "$tmptar" -b1 -P --owner=0 --group=0 $tar_xattrs \
+    tar rf "$tmptar" -b1 -P --owner=0 --group=0 $tar_xattr_arg \
         --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
     INFO 'compressing ...'
     pv_ < "$tmptar" | gzip_ -6 > "$3"
@@ -711,7 +711,7 @@ path_noclobber () {
 # Produce a tarbomb because Docker requires tarbombs.
 tar_ () {
     # shellcheck disable=SC2086
-    ( cd "$1" && tar cf - $tar_xattrs \
+    ( cd "$1" && tar cf - $tar_xattr_arg \
                           --exclude=./.git \
                           --exclude=./.gitignore \
                           --exclude=./ch/git.pickle . ) | pv_
@@ -866,11 +866,11 @@ if [ "$#" -ne 2 ]; then
     usage
 fi
 if [ -n "$no_xattrs" ]; then
-    tar_xattrs=
-    squash_xattrs=
+    tar_xattr_arg=
+    squash_xattr_arg=
 else
-    tar_xattrs=--xattrs-include='user.*'
-    squash_xattrs=-xattrs
+    tar_xattr_arg=--xattrs
+    squash_xattr_arg=-xattrs
 fi
 in_desc=$1
 out_desc=$2

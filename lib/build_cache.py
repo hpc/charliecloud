@@ -272,7 +272,7 @@ class File_Metadata:
       self.hardlink_to = None
       self.large_name = None
       self.xattrs = dict()
-      if ch.xattrs:
+      if ch.save_xattrs:
          for xattr in os.listxattr(self.path_abs, follow_symlinks=False):
             self.xattrs[xattr] = os.getxattr(self.path_abs, xattr, follow_symlinks=False)
 
@@ -478,8 +478,7 @@ class File_Metadata:
          ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
       elif (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
-      # Restore extended attributes
-      if ch.xattrs:
+      if ch.save_xattrs:
          for xattr, val in self.xattrs.items():
             ch.ossafe(os.setxattr, "unable to restore xattr: %s" % xattr,
                      self.path_abs, xattr, val, follow_symlinks=False)

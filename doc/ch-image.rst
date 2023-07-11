@@ -293,10 +293,10 @@ it’s often cheaper to retrieve their results from cache instead.
 
 The build cache uses a relatively new Git under the hood; see the installation
 instructions for version requirements. Charliecloud implements workarounds for
-Git’s various storage limitations, so things like file metadata, access control
-lists, and Git repositories within the image should work. **Important
-exception**: No files named :code:`.git*` or other Git metadata are permitted in
-the image’s root directory.
+Git’s various storage limitations, so things like file metadata and Git
+repositories within the image should work. **Important exception**: No files
+named :code:`.git*` or other Git metadata are permitted in the image’s root
+directory.
 
 `Extended attributes <https://man7.org/linux/man-pages/man7/xattr.7.html>`_ (xattrs)
 belonging to unprivileged namespaces (e.g. :code:`user`) are also saved and

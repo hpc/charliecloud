@@ -599,10 +599,10 @@ def exit(code):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, trace_fatal, verbose, xattrs
+   global log_festoon, log_fp, trace_fatal, verbose, save_xattrs
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
-   xattrs = (not cli.no_xattrs)
+   save_xattrs = (not cli.no_xattrs)
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
