@@ -1400,7 +1400,7 @@ EOF
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg/var/lib/rpm/__db.001 ]]
 }
 
-@test "${tag}: restore ACLs, xattrs" { # issue #1287
+@test "${tag}: restore ACLs, xattrs" {  # issue #1287
     ch-image build-cache --reset
     ch-image build -t tmpimg - <<'EOF'
 FROM almalinux:8
