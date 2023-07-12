@@ -1,6 +1,5 @@
 import errno
 import fcntl
-import getpass
 import hashlib
 import json
 import os
@@ -10,7 +9,6 @@ import pprint
 import shutil
 import stat
 import tarfile
-import version
 
 import charliecloud as ch
 

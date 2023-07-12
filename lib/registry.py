@@ -2,7 +2,6 @@ import getpass
 import io
 import os
 import re
-import sys
 import urllib
 import types
 
@@ -338,7 +337,7 @@ class HTTP:
          h = hs["ratelimit-limit"]
          m = re.search(r"^(\d+);w=(\d+)$", h)
          if (m is None):
-            WARNING("can’t parse RateLimit-Limit: %s" % h)
+            ch.WARNING("can’t parse RateLimit-Limit: %s" % h)
          else:
             pull_ct = m[1]
             period = str(int(m[2]) / 3600)  # seconds to hours

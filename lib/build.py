@@ -16,7 +16,6 @@ import build_cache as bu
 import filesystem as fs
 import force
 import image as im
-import pull
 
 
 ## Globals ##
