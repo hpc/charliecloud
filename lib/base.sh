@@ -146,7 +146,10 @@ vset () {
 
 
 # Do we need sudo to run docker?
-if docker info > /dev/null 2>&1; then
+# Skip if docker is a wrapper for podman
+if [[ $(docker --help 2> /dev/null) == *"podman"* ]]; then
+    echo "Skipping docker command"
+elif docker info > /dev/null 2>&1; then
     docker_ () {
         docker "$@"
     }
