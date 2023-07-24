@@ -243,14 +243,12 @@ class File_Metadata:
    #   hardlink_to ... If non-None, file is a hard link to this other file,
    #                   stored as a Path object relative to the image root.
    #
-
    #   xattrs ........ Extended attributes of the file, stored as a dictionary.
    #                   The keys take the form “namespace.name”, where
    #                   “namespace” is the namespace the xattr belongs to (e.g.
    #                   “user” or “system”) and “name” is the actual name of the
    #                   xattr. The value in the dictionary is the value assigned
    #                   to the xattr.
-
    #
    # Attributes not stored (recomputed on unpickle):
    #
