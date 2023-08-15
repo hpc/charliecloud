@@ -433,21 +433,6 @@ AS_IF([   test -n "$SQUASHFUSE" \
       [have_any_squashfuse=no])
 
 
-### IDK What I'm doing #######################################################
-
-# COMMENT GOES HERE
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-    #define _GNU_SOURCE
-    #include <squashfuse/ll.h>
-    int main(void) {
-      void* foo = sqfs_ll_open("foo", 0);
-      printf("%p\n", foo);
-    }
-  ]])],
-  [AC_DEFINE([HAVE_NEW_SQUASHFUSE], [0], [blah])],
-  [AC_DEFINE([HAVE_NEW_SQUASHFUSE], [1], [blah])])
-
-
 ### ch-image #################################################################
 
 # Python
