@@ -284,6 +284,18 @@ AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
   [AC_MSG_RESULT([no])
    AC_MSG_ERROR([asprintf(3) not found; please report this bug])])
 
+# COMMENT GOES HERE
+AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+    #define _GNU_SOURCE
+    #include <squashfuse/ll.h>
+    int main(void) {
+      void* foo = sqfs_ll_open("foo", 0);
+      printf("%p\n", foo);
+    }
+  ]])],
+  [AC_DEFINE([HAVE_NEW_SQUASHFUSE], [0], [blah])],
+  [AC_DEFINE([HAVE_NEW_SQUASHFUSE], [1], [blah])])
+
 # argp_parse(3), which is included with glibc but not other libc’s, e.g. musl.
 AC_MSG_CHECKING([for argp_parse in libc])
 AC_LINK_IFELSE([AC_LANG_SOURCE([[

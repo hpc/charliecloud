@@ -226,7 +226,7 @@ void sq_mount(const char *img_path, char *mountpt)
    sq.mountpt = mountpt;
    T_ (sq.chan = malloc(sizeof(sqfs_ll_chan)));
 
-   sq.ll = sqfs_ll_open(img_path, 0);
+   sq.ll = sqfs_ll_open_(img_path, 0);
    Te (sq.ll != NULL, "can't open SquashFS: %s; try ch-run -vv?", img_path);
 
    // sqfs_ll_mount() is squirrely for a couple reasons:
@@ -254,4 +254,15 @@ void sq_mount(const char *img_path, char *mountpt)
          WARNING("FUSE error mounting SquashFS; will retry");
          sleep(1);
       }
+}
+
+/* Explain yourself here. */
+sqfs_ll *sqfs_ll_open_(const char *path, size_t offset)
+{
+   #if HAVE_NEW_SQUASHFUSE
+   return sqfs_ll_open(path, offset, NULL);
+   #else
+   return sqfs_ll_open(path, offset);
+   #endif
+
 }

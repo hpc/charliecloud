@@ -154,7 +154,7 @@ jobs:
           cd /usr/local/src
           git clone https://github.com/vasi/squashfuse.git
           cd squashfuse
-          git checkout eca5764
+          git checkout d7e660a
           ./autogen.sh
           ./configure --prefix=/usr/local
           make
