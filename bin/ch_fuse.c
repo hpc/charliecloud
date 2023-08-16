@@ -89,6 +89,7 @@ volatile bool loop_terminating = false;
 void sq_done_request(int signum);
 int sq_loop();
 void sq_mount(const char *img_path, char *mountpt);
+sqfs_ll *sqfs_ll_open_(const char *path, size_t offset);
 
 
 /** Functions **/
