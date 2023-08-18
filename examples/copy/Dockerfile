@@ -164,14 +164,16 @@ COPY dirA dir08a
 # Dest:    new directory, one level, trailing slash
 COPY dirA dir08b/
 
-# Source:  one directory
-# Dest:    existing file, 2nd level
+# NOTE: Not currently tested (see #1707).
 #
-# Note: While this fails if the existing file is at the top level (which we
-# verify in test/build/50_dockerfile.bats), if the existing file is at the 2nd
-# level, it's overwritten by the directory.
-RUN touch dir08a/dirCb
-COPY dirCa dir08a
+# # Source:  one directory
+# # Dest:    existing file, 2nd level
+# #
+# # Note: While this fails if the existing file is at the top level (which we
+# # verify in test/build/50_dockerfile.bats), if the existing file is at the 2nd
+# # level, it's overwritten by the directory.
+# RUN touch dir08a/dirCb
+# COPY dirCa dir08a
 
 # Source:  two directories, explicit
 # Dest:    existing directory
@@ -269,37 +271,39 @@ RUN test $(stat -c '%A' dir19/dir19a2 | cut -c8-) != 'rwx' \
 
 ## Destination: Symlink, 2nd level.
 
-# Note: This behavior is DIFFERENT from the symlink at 1st level tests above
-# (recall we are trying to be bug-compatible with Docker).
-
-# Set up destination.
-RUN mkdir dir20 \
- && echo new > dir20/filex \
- && mkdir dir20/dirx \
- && for i in $(seq 4); do \
-           echo file$i > dir20/file$i \
-        && ln -s file$i dir20/s_file$i \
-        && mkdir dir20/dir$i \
-        && echo dir$i/file_ > dir20/dir$i/file_ \
-        && ln -s dir$i dir20/s_dir$i; \
-    done \
- && ls -lR dir20
-
-# Copy in the new directory tree. In all of these cases, the source simply
-# overwrites the destination; symlinks are not followed.
+# NOTE: Not currently tested (see #1707).
 #
-#      name     source        destination
-#      -------  ------------  ------------
-#   1. s_file1  file          link to file
-#   2. s_dir1   file          link to dir
-#   3. s_file2  link to file  link to file
-#   4. s_dir2   link to file  link to dir
-#   5. s_file3  link to dir   link to file
-#   6. s_dir3   link to dir   link to dir
-#   7. s_file4  directory     link to file
-#   8. s_dir4   directory     link to dir
+# # Note: This behavior is DIFFERENT from the symlink at 1st level tests above
+# # (recall we are trying to be bug-compatible with Docker).
 #
-COPY dirG dir20/
+# # Set up destination.
+# RUN mkdir dir20 \
+#  && echo new > dir20/filex \
+#  && mkdir dir20/dirx \
+#  && for i in $(seq 4); do \
+#            echo file$i > dir20/file$i \
+#         && ln -s file$i dir20/s_file$i \
+#         && mkdir dir20/dir$i \
+#         && echo dir$i/file_ > dir20/dir$i/file_ \
+#         && ln -s dir$i dir20/s_dir$i; \
+#     done \
+#  && ls -lR dir20
+#
+# # Copy in the new directory tree. In all of these cases, the source simply
+# # overwrites the destination; symlinks are not followed.
+# #
+# #      name     source        destination
+# #      -------  ------------  ------------
+# #   1. s_file1  file          link to file
+# #   2. s_dir1   file          link to dir
+# #   3. s_file2  link to file  link to file
+# #   4. s_dir2   link to file  link to dir
+# #   5. s_file3  link to dir   link to file
+# #   6. s_dir3   link to dir   link to dir
+# #   7. s_file4  directory     link to file
+# #   8. s_dir4   directory     link to dir
+# #
+# COPY dirG dir20/
 
 
 ## Wrap up; this output helps to build the expectations in test.bats.

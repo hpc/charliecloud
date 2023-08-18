@@ -885,19 +885,19 @@ bug-compatible.
    at the 2nd level or deeper, the source directory’s metadata (e.g.,
    permissions) are copied to the destination directory. (Not documented.)
 
-5. If an object appears in both the source and destination, and is at the 2nd
-   level or deeper, and is of different types in the source and destination,
-   then the source object will overwrite the destination object. (Not
-   documented.) For example, if :code:`/tmp/foo/bar` is a regular file, and
-   :code:`/tmp` is the context directory, then the following Dockerfile
-   snippet will result in a *file* in the container at :code:`/foo/bar`
-   (copied from :code:`/tmp/foo/bar`); the directory and all its contents will
-   be lost.
+5. If an object (a) appears in both the source and destination, (b) is at the
+   2nd level or deeper, and (c) is different file types in source and
+   destination, there are multiple behaviors depending on Docker version. We
+   have not fully characterized this, but we have observed the following with
+   both file to directory and directory to file. (Not documented.)
 
-     .. code-block:: docker
+   * *Docker without BuildKit as of late 2020* (also Podman 4.4.3): Source
+     object will overwrite the destination object.
 
-       RUN mkdir -p /foo/bar && touch /foo/bar/baz
-       COPY foo /foo
+   * *Docker 24.0.5 with BuildKit*: Error.
+
+   That is, Docker’s behavior changed at some point. Charliecloud uses the
+   first behavior.
 
 We expect the following differences to be permanent:
 
