@@ -870,8 +870,6 @@ if [ -n "$no_xattrs" ]; then
     squash_xattr_arg=
 else
     tar_xattr_args='--xattrs-include=user.* --xattrs-include=system.*'
-    #tar_xattr_args='--xattrs --xattrs-exclude=security.* --xattrs-exclude=trusted.*'
-    #tar_xattr_args='--xattrs --xattrs-exclude=security.* --xattrs-exclude=trusted.*'
     squash_xattr_arg=-xattrs
 fi
 in_desc=$1

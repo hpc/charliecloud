@@ -493,13 +493,17 @@ test_from () {
     [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
 }
 
-@test 'ch-convert: borked xattrs' {
+@test 'ch-convert: b0rked xattrs' {
+    # b0rked: (adj) broken, messed up
+    #
+    # In this test, we create a tarball with “unusual” xattrs that we don’t want
+    # to restore (i.e. a borked tarball), and try to convert it into a ch-image.
     [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
 
     cd "$BATS_TMPDIR"
 
     borked_img="borked_image"
-    borked_file="$borked_img/home/foo"
+    borked_file="${borked_img}/home/foo"
     borked_tar="borked.tgz"
     borked_out="borked_dir"
 

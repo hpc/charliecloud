@@ -484,9 +484,9 @@ class File_Metadata:
       elif (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
       if ch.save_xattrs:
-         for xattr, val in self.xattrs.items():
+         for (xattr, val) in self.xattrs.items():
             ch.ossafe(os.setxattr, "unable to restore xattr: %s" % xattr,
-                     self.path_abs, xattr, val, follow_symlinks=False)
+                      self.path_abs, xattr, val, follow_symlinks=False)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
