@@ -119,7 +119,7 @@ log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 trace_fatal = False  # Add abbreviated traceback to fatal error hint.
 
-# Warnings to be re-printed when program exists
+# Warnings to be re-printed when program exits
 warnings = []
 
 # True if the download cache is enabled.

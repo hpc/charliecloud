@@ -19,6 +19,11 @@
    and hopefully others support the following extension. */
 #define noreturn __attribute__ ((noreturn))
 
+
+/* Size of “warnings” buffer, in bytes. We want this to be big enough that we
+   don’t need to worry about running out of room. */
+#define warnings_size 4096
+
 /* Test some value, and if it's not what we expect, exit with a fatal error.
    These are macros so we have access to the file and line number.
 
@@ -105,7 +110,6 @@ extern char *host_tmp;
 extern char *username;
 extern char *warnings;
 extern size_t warnings_offset;
-extern const size_t warnings_size;
 
 
 /** Function prototypes **/

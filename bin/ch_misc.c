@@ -42,19 +42,15 @@ char *host_tmp = NULL;
 char *username = NULL;
 
 /* List of warnings to be re-printed on exit. This is a buffer of shared memory
-   allocated by mmap(2), structured as a sequence of
-   null-terminated character strings. Warnings that do not fit in this buffer
-   will be lost, though we allocate enough memory that this is unlikely. See
-   “warnings_append()” for more details. */
+   allocated by mmap(2), structured as a sequence of null-terminated character
+   strings. Warnings that do not fit in this buffer will be lost, though we
+   allocate enough memory that this is unlikely. See “warnings_append()” for
+   more details. */
 char *warnings;
 
 /* Current byte offset from start of “warnings” buffer. This gives the address
    where the next appended string will start. */
 size_t warnings_offset = 0;
-
-/* Size of “warnings” buffer, in bytes. We want this to be big enough that we
-   don’t need to worry about running out of room. */
-const size_t warnings_size = 4096;
 
 
 /** Function prototypes (private) **/
@@ -465,7 +461,8 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
-   char *message = "";
+   char *message = NULL;
+   char *ap_msg = "";
    if (level > verbose)
       return;
 
@@ -487,7 +484,6 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    if (fmt == NULL)
       fmt = "please report this bug";
 
-   char *ap_msg = "";
    T_ (1 <= vasprintf(&ap_msg, fmt, ap));
    T_ (1 <= asprintf(&message, "%s%s", message, ap_msg));
 
@@ -667,10 +663,10 @@ void version(void)
    fprintf(stderr, "%s\n", VERSION);
 }
 
-/* Append null-terminated string “str” to the memory buffer “offset” bytes away
-   from the address pointed to by “addr”. Buffer should be “size” bytes long.
-   Return the number of bytes written. If there isn’t enough room for the
-   string, do nothing and return zero. */
+/* Append null-terminated string “str” to the memory buffer “offset” bytes after
+   from the address pointed to by “addr”. Buffer length is “size” bytes. Return
+   the number of bytes written. If there isn’t enough room for the string, do
+   nothing and return zero. */
 size_t warnings_append(char *addr, char *str, size_t size, size_t offset)
 {
    size_t written = 0;
