@@ -843,6 +843,12 @@ Can be repeated.
 :code:`COPY`
 ~~~~~~~~~~~~
 
+.. note:: The behavior described here matches Docker’s `now-deprecated legacy
+          builder
+          <https://docs.docker.com/engine/deprecated/#legacy-builder-for-linux-images>`_.
+          Docker’s new builder, BuildKit, has different behavior in some
+          cases, which we have not characterized.
+
 Especially for people used to UNIX :code:`cp(1)`, the semantics of the
 Dockerfile :code:`COPY` instruction can be confusing.
 
@@ -887,17 +893,8 @@ bug-compatible.
 
 5. If an object (a) appears in both the source and destination, (b) is at the
    2nd level or deeper, and (c) is different file types in source and
-   destination, there are multiple behaviors depending on Docker version. We
-   have not fully characterized this, but we have observed the following with
-   both file to directory and directory to file. (Not documented.)
-
-   * *Docker without BuildKit as of late 2020* (also Podman 4.4.3): Source
-     object will overwrite the destination object.
-
-   * *Docker 24.0.5 with BuildKit*: Error.
-
-   That is, Docker’s behavior changed at some point. Charliecloud uses the
-   first behavior.
+   destination, the source object will overwrite the destination object. (Not
+   documented.)
 
 We expect the following differences to be permanent:
 

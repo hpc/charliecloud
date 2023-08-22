@@ -468,8 +468,11 @@ ENV chse_6b "value\
 RUN python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
 EOF
   echo "$output"
+  env_actual=$(  echo "$output" \
+               | sed -En "s/^(#[0-9]+ [0-9.]+ )?(\('chse_.+\))$/\2/p")
+  echo "$env_actual"
   [[ $status -eq 0 ]]
-  diff -u <(echo "$env_expected") <(echo "$output" | grep -E "^\('chse_")
+  diff -u <(echo "$env_expected") <(echo "$env_actual")
 }
 
 
@@ -570,11 +573,9 @@ RUN print ("hello")
 EOF
    echo "$output"
    [[ $status -eq 0 ]]
-   if [[ $CH_TEST_BUILDER = ch-image ]]; then
-      [[ $output = *"grown in 3 instructions: tmpimg"* ]]
-   else
-      [[ $output = *"Successfully built"* ]]
-   fi
+   [[    $output = *"grown in 3 instructions: tmpimg"* \
+      || $output = *"Successfully built"* \
+      || $output = *"naming to"*"tmpimg done"* ]]
 }
 
 
@@ -589,6 +590,10 @@ EOF
         scope full
     fi
     prerequisites_ok argenv
+
+    sed_ () {
+        sed -En "s/^(#[0-9]+ [0-9.]+ )?(chse_.+)$/\2/p"
+    }
 
     # Note that this test illustrates a number of behavior differences between
     # the builders. For most of these, but not all, Docker and Buildah have
@@ -605,7 +610,8 @@ EOF
     run build_ --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
+    env_actual=$(echo "$output" | sed_)
+    echo "$env_actual"
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** one --build-arg, has no default'
@@ -621,9 +627,9 @@ EOF
                --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
+    env_actual=$(echo "$output" | sed_)
+    echo "$env_actual"
     diff -u <(echo "$env_expected") <(echo "$env_actual")
-
     echo '*** one --build-arg, has default'
     env_expected=$(cat <<'EOF'
 chse_arg2_df=foo2
@@ -636,7 +642,8 @@ EOF
                --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
+    env_actual=$(echo "$output" | sed_)
+    echo "$env_actual"
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** one --build-arg from environment'
@@ -667,7 +674,8 @@ EOF
                --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
+    env_actual=$(echo "$output" | sed_)
+    echo "$env_actual"
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** one --build-arg set to empty string'
@@ -684,7 +692,8 @@ EOF
                --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
+    env_actual=$(echo "$output" | sed_)
+    echo "$env_actual"
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** two --build-arg'
@@ -700,7 +709,8 @@ EOF
                  --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
+    env_actual=$(echo "$output" | sed_)
+    echo "$env_actual"
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** repeated --build-arg'
@@ -716,7 +726,8 @@ EOF
                  --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
+    env_actual=$(echo "$output" | sed_)
+    echo "$env_actual"
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** two --build-arg with substitution'
@@ -744,7 +755,8 @@ EOF
                  --no-cache -t tmpimg -f ./Dockerfile.argenv .
     echo "$output"
     [[ $status -eq 0 ]]
-    env_actual=$(echo "$output" | grep -E '^chse_')
+    env_actual=$(echo "$output" | sed_)
+    echo "$env_actual"
     diff -u <(echo "$env_expected") <(echo "$env_actual")
 
     echo '*** ARG not in Dockerfile'
@@ -755,11 +767,12 @@ EOF
     echo "$output"
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $status -eq 1 ]]
+        [[ $output = *'not consumed'* ]]
+        [[ $output = *'chse_doesnotexist'* ]]
     else
+        # Docker now (with BuildKit) just ignores the missing variable.
         [[ $status -eq 0 ]]
     fi
-    [[ $output = *'not consumed'* ]]
-    [[ $output = *'chse_doesnotexist'* ]]
 
     echo '*** ARG not in environment'
     run build_ --build-arg chse_arg1_df \
@@ -788,12 +801,7 @@ RUN echo alpine=$(cat /etc/alpine-release | cut -d. -f1-2)
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    if [[ $CH_TEST_BUILDER = docker ]]; then
-        # WTF, Docker?
-        # shellcheck disable=SC2016
-        [[ $output = *'FROM $os'* ]]
-        [[ $output = *'os= foo= baz=qux'* ]]
-    else
+    if [[ $CH_TEST_BUILDER != docker ]]; then  # Docker weird and inconsistent
         [[ $output = *'FROM alpine:3.17'* ]]
         [[ $output = *'os=alpine:3.17 foo=bar baz=qux'* ]]
     fi
@@ -812,22 +820,14 @@ RUN echo alpine2=$(cat /etc/alpine-release | cut -d. -f1-2)
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    if [[ $CH_TEST_BUILDER = docker ]]; then
-        # WTF, Docker?
-        # shellcheck disable=SC2016
-        [[ $output = *'FROM $os1'* ]]
-        # shellcheck disable=SC2016
-        [[ $output = *'FROM $os2'* ]]
-        [[ $output = *'1: os1= os2='* ]]
-        [[ $output = *'2: os1= os2='* ]]
-    else
+    if [[ $CH_TEST_BUILDER != docker ]]; then
         [[ $output = *'FROM alpine:3.16'* ]]
         [[ $output = *'FROM alpine:3.17'* ]]
         [[ $output = *'1: os1=alpine:3.16 os2=alpine:3.17'* ]]
         [[ $output = *'2: os1=alpine:3.16 os2=alpine:3.17'* ]]
+        [[ $output = *'alpine1=3.16'* ]]
+        [[ $output = *'alpine2=3.17'* ]]
     fi
-    [[ $output = *'alpine1=3.16'* ]]
-    [[ $output = *'alpine2=3.17'* ]]
 
     # no default value
     run build_ --no-cache -t tmpimg - <<'EOF'
@@ -853,12 +853,7 @@ RUN echo alpine=$(cat /etc/alpine-release | cut -d. -f1-2)
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    if [[ $CH_TEST_BUILDER = docker ]]; then
-        # WTF, Docker?
-        # shellcheck disable=SC2016
-        [[ $output = *'FROM $os'* ]]
-        [[ $output = *'os='* ]]
-    else
+    if [[ $CH_TEST_BUILDER != docker ]]; then
         [[ $output = *'FROM alpine:3.17'* ]]
         [[ $output = *'os=alpine:3.17'* ]]
     fi
@@ -1033,7 +1028,8 @@ EOF
     if [[ $CH_TEST_BUILDER = docker ]]; then
         # This error message seems wrong. I was expecting something about
         # no context, so COPY not allowed.
-        [[ $output = *'file does not exist'* ]]
+        [[    $output = *'file does not exist'* \
+           || $output = *'not found'* ]]
     else
         [[ $output = *'no context'* ]]
     fi
@@ -1047,7 +1043,8 @@ COPY ../common.bash .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'outside'*'context'* ]]
+    [[    $output = *'outside'*'context'* \
+       || $output = *'not found'* ]]
     # Case 2: “..” inside path.
     run build_ -t tmpimg -f - sotest <<'EOF'
 FROM alpine:3.17
@@ -1055,7 +1052,8 @@ COPY lib/../../common.bash .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'outside'*'context'* ]]
+    [[    $output = *'outside'*'context'* \
+       || $output = *'not found'* ]]
     # Case 3: symlink leading outside context directory.
     run build_ -t tmpimg -f - . <<'EOF'
 FROM alpine:3.17
@@ -1064,7 +1062,8 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = docker ]]; then
-        [[ $output = *'file does not exist'* ]]
+        [[    $output = *'file does not exist'* \
+           || $output = *'not found'* ]]
     else
         [[ $output = *'outside'*'context'* ]]
     fi
@@ -1077,15 +1076,16 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     [[ $output = *'not a directory'* ]]
-    run build_ -t foo -f - . <<'EOF'
+    # OK so with Docker now that BuildKit is the default (v24.0.5), this build
+    # *succeeds* and /etc/fstab is overwritten with the contents of
+    # common.bash (and Build.missing is ignored AFAICT). 👎
+    if [[ $CH_TEST_BUILDER != docker ]]; then
+        run build_ -t foo -f - . <<'EOF'
 FROM alpine:3.17
 COPY Build.missing common.bash /etc/fstab
 EOF
-    echo "$output"
-    [[ $status -ne 0 ]]
-    if [[ $CH_TEST_BUILDER = docker ]]; then
-        [[ $output = *'must be a directory'* ]]
-    else
+        echo "$output"
+        [[ $status -ne 0 ]]
         [[ $output = *'not a directory'* ]]
     fi
     run build_ -t tmpimg -f - . <<'EOF'
@@ -1101,7 +1101,8 @@ COPY run /etc/fstab
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'not a directory'* ]]
+    [[    $output = *'not a directory'* \
+       || $output = *'cannot copy to non-directory'* ]]
 
     # No sources given.
     run build_ -t tmpimg -f - . <<'EOF'
@@ -1152,11 +1153,9 @@ COPY fixtures/README .
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *'error: no context because '?'-'?' given'* ]]
-    else
-        [[ $output = *'COPY failed: file not found in build context or'* ]]
-    fi
+    [[    $output = *'error: no context because '?'-'?' given'* \
+       || $output = *'COPY failed: file not found in build context or'* \
+       || $output = *'no such file or directory'* ]]
 }
 
 
@@ -1175,7 +1174,8 @@ COPY --from=0 /etc/fstab /
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'current'*'stage'* ]]
+    [[    $output = *'current'*'stage'* \
+       || $output = *'circular dependency'* ]]
 
     # current name
     run build_ -t tmpimg -f - . <<'EOF'
@@ -1184,17 +1184,9 @@ COPY --from=uhigtsbjmfps /etc/fstab /
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_TEST_BUILDER in
-        ch-image)
-            [[ $output = *'current stage'* ]]
-            ;;
-        docker)
-            [[ $output = *'pull access denied'*'repository does not exist'* ]]
-            ;;
-        *)
-            false
-            ;;
-    esac
+    [[    $output = *'current stage'* \
+       || $output = *'access denied'*'repository does not exist'* \
+       || $output = *'circular dependency'* ]]
 
     # index does not exist
     run build_ -t tmpimg -f - . <<'EOF'
@@ -1203,17 +1195,9 @@ COPY --from=1 /etc/fstab /
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_TEST_BUILDER in
-        ch-image)
-            [[ $output = *'does not exist'* ]]
-            ;;
-        docker)
-            [[ $output = *'index out of bounds'* ]]
-            ;;
-        *)
-            false
-            ;;
-    esac
+    [[    $output = *'does not exist'* \
+       || $output = *'index out of bounds'* \
+       || $output = *'invalid stage index'* ]]
 
     # name does not exist
     run build_ -t tmpimg -f - . <<'EOF'
@@ -1222,58 +1206,33 @@ COPY --from=uhigtsbjmfps /etc/fstab /
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_TEST_BUILDER in
-        ch-image)
-            [[ $output = *'does not exist'* ]]
-            ;;
-        docker)
-            [[ $output = *'pull access denied'*'repository does not exist'* ]]
-            ;;
-        *)
-            false
-            ;;
-    esac
+    [[    $output = *'does not exist'* \
+       || $output = *'pull access denied'*'repository does not exist'* ]]
 
     # index exists, but is later
-    run build_ -t tmpimg -f - . <<'EOF'
+    if [[ $CH_TEST_BUILDER != docker ]]; then  # BuildKit can work out of order
+        run build_ -t tmpimg -f - . <<'EOF'
 FROM alpine:3.17
 COPY --from=1 /etc/fstab /
 FROM alpine:3.17
 EOF
-    echo "$output"
-    [[ $status -ne 0 ]]
-    case $CH_TEST_BUILDER in
-        ch-image)
-            [[ $output = *'does not exist yet'* ]]
-            ;;
-        docker)
-            [[ $output = *'index out of bounds'* ]]
-            ;;
-        *)
-            false
-            ;;
-    esac
+        echo "$output"
+        [[ $status -ne 0 ]]
+        [[ $output = *'does not exist yet'* ]]
+    fi
 
     # name is later
-    run build_ -t tmpimg -f - . <<'EOF'
+    if [[ $CH_TEST_BUILDER != docker ]]; then  # BuildKit can work out of order
+        run build_ -t tmpimg -f - . <<'EOF'
 FROM alpine:3.17
 COPY --from=uhigtsbjmfps /etc/fstab /
 FROM alpine:3.17 AS uhigtsbjmfps
 EOF
-    echo "$output"
-    [[ $status -ne 0 ]]
-    case $CH_TEST_BUILDER in
-        ch-image)
-            [[ $output = *'does not exist'* ]]
-            [[ $output != *'does not exist yet'* ]]  # so we review test
-            ;;
-        docker)
-            [[ $output = *'pull access denied'*'repository does not exist'* ]]
-            ;;
-        *)
-            false
-            ;;
-    esac
+        echo "$output"
+        [[ $status -ne 0 ]]
+        [[ $output = *'does not exist'* ]]
+        [[ $output != *'does not exist yet'* ]]  # so we review test
+    fi
 
     # negative index
     run build_ -t tmpimg -f - . <<'EOF'
@@ -1283,17 +1242,9 @@ FROM alpine:3.17
 EOF
     echo "$output"
     [[ $status -ne 0 ]]
-    case $CH_TEST_BUILDER in
-        ch-image)
-            [[ $output = *'invalid negative stage index'* ]]
-            ;;
-        docker)
-            [[ $output = *'index out of bounds'* ]]
-            ;;
-        *)
-            false
-            ;;
-    esac
+    [[    $output = *'invalid negative stage index'* \
+       || $output = *'index out of bounds'* \
+       || $output = *'invalid stage index'* ]]
 }
 
 
