@@ -44,7 +44,7 @@ char *username = NULL;
 /* List of warnings to be re-printed on exit. This is a buffer of shared memory
    allocated by mmap(2), structured as a sequence of null-terminated character
    strings. Warnings that do not fit in this buffer will be lost, though we
-   allocate enough memory that this is unlikely. See “warnings_append()” for
+   allocate enough memory that this is unlikely. See “string_append()” for
    more details. */
 char *warnings;
 
@@ -462,7 +462,7 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
    char *message = NULL;
-   char *ap_msg = "";
+   char *ap_msg = NULL;
    if (level > verbose)
       return;
 
@@ -471,10 +471,12 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    // Prefix for the more urgent levels.
    switch (level) {
    case LL_FATAL:
-      T_ (1 <= asprintf(&message, "%s%s", message, "error: ")); // "fatal" too morbid for users
+      //T_ (1 <= asprintf(&message, "%s%s", message, "error: ")); // "fatal" too morbid for users
+      message = cat(message, "error: ");
       break;
    case LL_WARNING:
-      T_ (1 <= asprintf(&message, "%s%s", message, "warning: "));
+      //T_ (1 <= asprintf(&message, "%s%s", message, "warning: "));
+      message = cat(message, "warning: ");
       break;
    default:
       break;
@@ -485,7 +487,8 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
       fmt = "please report this bug";
 
    T_ (1 <= vasprintf(&ap_msg, fmt, ap));
-   T_ (1 <= asprintf(&message, "%s%s", message, ap_msg));
+   //T_ (1 <= asprintf(&message, "%s%s", message, ap_msg));
+   message = cat(message, ap_msg);
 
    if (errno_) {
       T_ (1 <= asprintf(&message, "%s: %s (%s:%d %d)", message,
@@ -495,7 +498,7 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    }
 
    if (level == LL_WARNING) {
-      warnings_offset += warnings_append(warnings, message,
+      warnings_offset += string_append(warnings, message,
                                          warnings_size, warnings_offset);
    }
    fprintf(stderr, "%s\n", message);
@@ -667,14 +670,12 @@ void version(void)
    from the address pointed to by “addr”. Buffer length is “size” bytes. Return
    the number of bytes written. If there isn’t enough room for the string, do
    nothing and return zero. */
-size_t warnings_append(char *addr, char *str, size_t size, size_t offset)
+size_t string_append(char *addr, char *str, size_t size, size_t offset)
 {
    size_t written = 0;
    if (size > (offset + strlen(str))) { // check if there’s space
-      // FIXME: better solution than writing byte-by-byte?
-      for (written = 0; written <= strlen(str); written++) {
-         addr[offset + written] = str[written];
-      }
+      memcpy(addr + offset, str, strlen(str) + 1);
+      written = strlen(str) + 1;
    }
    return written;
 }
