@@ -115,6 +115,7 @@ extern size_t warnings_offset;
 /** Function prototypes **/
 
 char *argv_to_string(char **argv);
+int buf_strings_count(char *str, size_t s);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
 struct env_var *env_file_read(const char *path, int delim);

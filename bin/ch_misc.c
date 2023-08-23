@@ -49,7 +49,8 @@ char *username = NULL;
 char *warnings;
 
 /* Current byte offset from start of “warnings” buffer. This gives the address
-   where the next appended string will start. */
+   where the next appended string will start. This means that the null
+   terminator of the previous string is warnings_offset - 1. */
 size_t warnings_offset = 0;
 
 
@@ -136,6 +137,33 @@ char *argv_to_string(char **argv)
    }
 
    return s;
+}
+
+/* Iterate through buffer “buf” of size “s” consisting of null-terminated
+   strings and return the number of strings in it. Key assumtions:
+
+      1. The buffer has been initialized to zero, i.e. all bytes that have not
+         been explicitly set are null.
+      2. All strings have been appended to the buffer in full without
+         truncation, including their null terminator.
+   
+   These assumptions are consistent with the construction of the “warnings”
+   shared memory buffer, which is the main justification for this function. Note
+   that under these assumptions, the final byte in the buffer is guaranteed to
+   be null. */
+int buf_strings_count(char *buf, size_t s) {
+    int count = 0;
+    if (buf[0] != '\0') {
+        for (int i = 1; i < s; i++) {
+            if (buf[i] == '\0') {
+                if (buf[i -1 ] == '\0') {
+                    break;
+                }
+                count++;
+            }
+        }
+    }
+    return count;
 }
 
 /* Return true if buffer buf of length size is all zeros, false otherwise. */
@@ -684,6 +712,7 @@ size_t string_append(char *addr, char *str, size_t size, size_t offset)
 void warnings_reprint(void)
 {
    size_t offset = 0;
+   printf("reprinting %d warning(s)\n", buf_strings_count(warnings, warnings_size));
    while ((warnings[offset] != 0) ||
             ((offset < (warnings_size - 1) &&
             (warnings[offset+1] != 0)))) {

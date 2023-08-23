@@ -854,5 +854,6 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
    return True
 
 def warnings_dump():
+   INFO("reprinting %d warning(s)" % len(warnings))
    for msg in warnings:
       WARNING(msg, msg_save=False)
