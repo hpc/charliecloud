@@ -712,7 +712,10 @@ size_t string_append(char *addr, char *str, size_t size, size_t offset)
 void warnings_reprint(void)
 {
    size_t offset = 0;
-   printf("reprinting %d warning(s)\n", buf_strings_count(warnings, warnings_size));
+   int num_warnings = buf_strings_count(warnings, warnings_size);
+   if (num_warnings > 0) {
+      printf("reprinting %d warning(s)\n", num_warnings);
+   }
    while ((warnings[offset] != 0) ||
             ((offset < (warnings_size - 1) &&
             (warnings[offset+1] != 0)))) {
