@@ -146,7 +146,7 @@ char *argv_to_string(char **argv)
          been explicitly set are null.
       2. All strings have been appended to the buffer in full without
          truncation, including their null terminator.
-   
+
    These assumptions are consistent with the construction of the “warnings”
    shared memory buffer, which is the main justification for this function. Note
    that under these assumptions, the final byte in the buffer is guaranteed to
