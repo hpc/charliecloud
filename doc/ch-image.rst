@@ -506,10 +506,12 @@ Synopsis
 Description
 -----------
 
-Uses :code:`ch-run -w -u0 -g0 --no-passwd --unsafe` to execute :code:`RUN`
-instructions. Note that :code:`FROM` implicitly pulls the base image if
-needed, so you may want to read about the :code:`pull` subcommand below as
-well.
+See below for differences with other Dockerfile interpreters. Charliecloud
+supports an extended instruction (:code:`RSYNC`), a few other instructions
+behave slightly differently, and a few are ignored.
+
+Note that :code:`FROM` implicitly pulls the base image if needed, so you may
+want to read about the :code:`pull` subcommand below as well.
 
 Required argument:
 
@@ -589,6 +591,9 @@ Options:
     4. Otherwise (context directory is :code:`/`): use :code:`root`.
 
     If no colon present in the name, append :code:`:latest`.
+
+Uses :code:`ch-run -w -u0 -g0 --no-passwd --unsafe` to execute :code:`RUN`
+instructions.
 
 Privilege model
 ---------------
@@ -733,8 +738,8 @@ filter and has no knowledge of which instructions actually used the
 intercepted system calls. Therefore, the printed “instructions modified”
 number is only a count of instructions with a hook applied as described above.
 
-Compatibility with other Dockerfile interpreters
-------------------------------------------------
+Compatibility and behavior differences
+--------------------------------------
 
 :code:`ch-image` is an independent implementation and shares no code with
 other Dockerfile interpreters. It uses a formal Dockerfile parsing grammar
@@ -769,8 +774,9 @@ Context directory
 
 The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
-directly from storage like any other local process would. However, you still
-can’t access anything outside the context directory.
+directly from storage like any other local process would (i.e., it is
+reasonable use :code:`/` for the context). However, you still can’t
+access anything outside the context directory.
 
 Variable substitution
 ~~~~~~~~~~~~~~~~~~~~~
@@ -917,8 +923,8 @@ Features we do not plan to support
   unprivileged processes.
 
 * :code:`HEALTHCHECK`: This instruction’s main use case is monitoring server
-  processes rather than applications. Also, implementing it requires a
-  container supervisor daemon, which we have no plans to add.
+  processes rather than applications. Also, it requires a container supervisor
+  daemon, which we have no plans to add.
 
 * :code:`MAINTAINER` is deprecated.
 
@@ -927,10 +933,125 @@ Features we do not plan to support
 
 * :code:`USER` does not make sense for unprivileged builds.
 
-* :code:`VOLUME`: This instruction is not currently supported. Charliecloud
+* :code:`VOLUME`: Charliecloud
   has good support for bind mounts; we anticipate that it will continue to
   focus on that and will not introduce the volume management features that
   Docker has.
+
+New instructions
+----------------
+
+:code:`RSYNC`
+~~~~~~~~~~~~~
+
+Copying files is often simple but has numerous difficult corner cases, e.g.
+when dealing with symbolic or hard links. The standard instruction
+:code:`COPY` deals with many of these corner cases differently from other UNIX
+utilities, lacks documentation, and behaves inconsistently between different
+Dockerfile interpreters (e.g., Docker’s legacy builder vs. BuildKit), as
+detailed above. On the other hand, :code:`rsync(1)` is an extremely capable,
+widely used file copy tool, with detailed options to specify behavior and 25
+years of history dealing with copy weirdness.
+
+:code:`RSYNC` (also spelled :code:`NSYNC`) is a Charliecloud extension that
+gives copying behavior identical to :code:`rsync(1)`, including remote
+:code:`ssh:` and :code:`rsync:` transports. (In fact, Charliecloud’s current
+literally calls the host’s :code:`rsync(1)` to perform the copy, though this
+may change in the future.)
+
+:code:`RSYNC` takes the same arguments as :code:`rsync(1)`, so refer to its
+`man page <https://man7.org/linux/man-pages/man1/rsync.1.html>`_ for a
+detailed explanation of all the options. Source arguments that are remote
+(i.e., starting with :code:`ssh:` or :code:`rsync:`) are unchanged, while
+local sources must be relative paths and are relative to the context
+directory. Any globbed sources are processed by :code:`ch-image(1)` using
+Python rules, i.e., :code:`rsync(1)` sees no wildcard sources. Destinations
+must be local. Relative destinations are relative to the image’s current
+working directory, while absolute destinations refer to the image’s root. For
+example,
+
+.. code-block:: docker
+
+   WORKDIR /foo
+   RSYNC --foo ssh:src1 ./src2 ./dst1
+   RSYNC ./src3 /dst2
+
+behaves as the following under the hood::
+
+   $ rsync --foo ssh:src1 /context/src2 /storage/imgroot/foo/dst2
+   $ rsync /context/src3 /storage/imgroot/dst2
+
+Argument :code:`--daemon` is an error, because running :code:`rsync(1)` in
+daemon mode does not make sense for container build. For arguments that read
+input from a file (e.g. :code:`--exclude-from` or :code:`--files-from`),
+relative paths are relative to the context directory, absolute paths refer to
+the image root, and :code:`-` (standard input) is an error.
+
+:code:`RSYNC` allows specifying a single option beginning with :code:`+`
+(plus) that is shorthand for a group of :code:`rsync(1)` options. **These are
+preferred** to :code:`rsync(1)`’s own :code:`-a`/:code:`--archive` option
+because that may handle symlinks inappropriately for containers and omits some
+metadata. This single option is one of:
+
+  :code:`+` (bare plus)
+    Equivalent to all of:
+
+    * :code:`-@=-1`: use nanosecond precision when comparing timestamps.
+    * :code:`-A`: preserve ACLs.
+    * :code:`-H`: preserve hard link groups.
+    * :code:`-S`: preserve file sparseness when possible.
+    * :code:`-X`: preserve xattrs in :code:`user.*` namespace.
+    * :code:`-p`: preserve permissions.
+    * :code:`-r`: recurse into directories.
+
+  :code:`+L`
+    Equivalent to the options listed for :code:`+` and also:
+
+    * :code:`-l`: process symlinks in the sources.
+
+    * :code:`--copy-unsafe-links`: copy the target of symlinks that point
+      outside the top-of-transfer directory for each source. This is *not the
+      context directory*; see below for examples.
+
+Symlink handling is particularly fraught, so use care. In particular, you must
+state explicitly what to do with symlinks in the source: both plain
+:code:`RSYNC` and :code:`RSYNC +` ignore them with a warning. Your options are
+:code:`+L` (which is a pretty reasonable default) and any valid combination of
+:code:`rsync(1)`’s `normal symlink options
+<https://man7.org/linux/man-pages/man1/rsync.1.html#SYMBOLIC_LINKS>`_.
+(:code:`COPY` isn’t any less fraught, and you have no choice about what to do
+with symlinks.)
+
+The instruction is a cache hit if :code:`rsync(1)` would not change anything,
+i.e. if :code:`-ni` prepended to the given options lists no changes, and a
+miss otherwise.
+
+.. note::
+
+   :code:`rsync(1)` supports a configuration file :code:`~/.popt` that alters
+   its command line processing. Currently, this configuration is respected for
+   :code:`RSYNC` arguments, but that may change without notice.
+
+**FIXME**::
+
+  examples
+    context directory in full
+      to new directory
+      contents to /
+    something about no + vs + vs +L, trailing slash
+      absolute inside source dir
+        points to inside source dir
+      relative inside source dir
+        points to inside source dir directly
+        points to inside source dir with ../sourcedir
+        points to inside context dir but not source dir
+      source is symlink
+        relative
+          target in same directory
+          target in different directory
+        absolute
+          target in same directory
+          target in different directory
 
 Examples
 --------
@@ -1367,4 +1488,5 @@ Environment variables
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc bae
 ..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
-..  LocalWords:  pstats gprof chofile cffd cacdb ARGs
+..  LocalWords:  pstats gprof chofile cffd cacdb ARGs NSYNC dst imgroot popt
+..  LocalWords:  globbed ni
