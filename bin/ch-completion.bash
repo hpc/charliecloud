@@ -134,6 +134,7 @@ _ch_image_complete () {
     local extras=
     _get_comp_words_by_ref -n : cur prev words cword
 
+    # FIXME: update comment so it's accurate
     # To find the subcommand and storage directory, we pass the associated
     # functions the current command line without the last word (note that
     # “${words[@]::${#words[@]}-1}” in bash is analagous to “words[:-1]” in
@@ -142,9 +143,7 @@ _ch_image_complete () {
     # empty string, and an incomplete word in the command line can lead to
     # false positives from these functions and consequently unexpected
     # behavior, so we don’t consider it.
-    #sub_cmd=$(_ch_image_subcmd_get "$cword" "${words[@]}")
-    #sub_cmd=$(_ch_image_subcmd_get "${words[@]}")
-    sub_cmd=$(_ch_image_subcmd_get "${words[@]::$cword}${words[@]:$cword+1:${#array[@]}}")
+    sub_cmd=$(_ch_image_subcmd_get "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}}")
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
 
     # Populate debug log
@@ -302,8 +301,7 @@ _ch_run_complete () {
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
     local cli_image
     local cmd_index=-1
-    #_ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
-    _ch_run_image_finder "$strg_dir" cli_image cmd_index "${words[@]::$cword}${words[@]:$cword+1:${#array[@]}}"
+    _ch_run_image_finder "$strg_dir" cli_image cmd_index "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}}"
 
     # Populate debug log
     _DEBUG "\$ ${words[*]}"
