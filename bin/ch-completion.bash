@@ -127,11 +127,12 @@ _archs="amd64 arm/v5 arm/v6 arm/v7 arm64/v8 386 mips64le ppc64le s390x"
 _ch_image_complete () {
     local prev
     local cur
+    local cword
     local words
     local sub_cmd
     local strg_dir
     local extras=
-    _get_comp_words_by_ref -n : cur prev words
+    _get_comp_words_by_ref -n : cur prev words cword
 
     # To find the subcommand and storage directory, we pass the associated
     # functions the current command line without the last word (note that
@@ -141,15 +142,18 @@ _ch_image_complete () {
     # empty string, and an incomplete word in the command line can lead to
     # false positives from these functions and consequently unexpected
     # behavior, so we don’t consider it.
-    sub_cmd=$(_ch_image_subcmd_get "${words[@]::${#words[@]}-1}")
+    #sub_cmd=$(_ch_image_subcmd_get "$cword" "${words[@]}")
+    #sub_cmd=$(_ch_image_subcmd_get "${words[@]}")
+    sub_cmd=$(_ch_image_subcmd_get "${words[@]::$cword}${words[@]:$cword+1:${#array[@]}}")
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
 
     # Populate debug log
-    DEBUG "\$ ${words[*]}"
-    DEBUG " storage: dir: $strg_dir"
-    DEBUG " current: $cur"
-    DEBUG " previous: $prev"
-    DEBUG " sub command: $sub_cmd"
+    _DEBUG "\$ ${words[*]}"
+    _DEBUG " storage: dir: $strg_dir"
+    _DEBUG " word index: $cword"
+    _DEBUG " current: $cur"
+    _DEBUG " previous: $prev"
+    _DEBUG " sub command: $sub_cmd"
 
     # Common opts that take args
     #
@@ -293,20 +297,21 @@ _ch_run_complete () {
     local words
     local strg_dir
     local extras=
-    #local image
     _get_comp_words_by_ref -n : cur prev words cword
 
     strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
     local cli_image
     local cmd_index=-1
-    _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
+    #_ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
+    _ch_run_image_finder "$strg_dir" cli_image cmd_index "${words[@]::$cword}${words[@]:$cword+1:${#array[@]}}"
 
     # Populate debug log
-    DEBUG "\$ ${words[*]}"
-    DEBUG " storage: dir: $strg_dir"
-    DEBUG " current: $cur"
-    DEBUG " previous: $prev"
-    DEBUG " cli image: $cli_image"
+    _DEBUG "\$ ${words[*]}"
+    _DEBUG " storage: dir: $strg_dir"
+    _DEBUG " word index: $cword"
+    _DEBUG " current: $cur"
+    _DEBUG " previous: $prev"
+    _DEBUG " cli image: $cli_image"
 
     # Currently, we don’t try to suggest completions if you’re in the “command”
     # part of the ch-run CLI (i.e. entering commands to be run inside the
@@ -398,7 +403,11 @@ _ch_run_complete () {
 
 ## Helper functions ##
 
-DEBUG () {
+_array_rm_elem () {
+    echo "foo!"
+}
+
+_DEBUG () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         echo "$@" >> /tmp/ch-completion.log
     fi
@@ -443,6 +452,27 @@ _ch_list_images () {
 # Example:
 #   >> _ch_image_subcmd_get "ch-image [...] build [...]"
 #   build
+_ch_image_subcmd_get_old () {
+    local subcmd
+    local cword="$1"
+    shift 1
+    local wrds=("$@")
+    local ct=1
+
+    while ((ct < ${#wrds[@]})); do
+        if [[ $ct != "$cword" ]]; then
+            for subcmd_i in $_image_subcommands; do
+                if [[ ${wrds[$ct]} == "$subcmd_i" ]]; then
+                    subcmd="$subcmd_i"
+                    break 2
+                fi
+            done
+        fi
+        ((ct++))
+    done
+    echo "$subcmd"
+}
+
 _ch_image_subcmd_get () {
     local subcmd
     for word in "$@"; do
