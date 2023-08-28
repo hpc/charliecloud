@@ -401,10 +401,6 @@ _ch_run_complete () {
 
 ## Helper functions ##
 
-_array_rm_elem () {
-    echo "foo!"
-}
-
 _DEBUG () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         echo "$@" >> /tmp/ch-completion.log
@@ -450,27 +446,6 @@ _ch_list_images () {
 # Example:
 #   >> _ch_image_subcmd_get "ch-image [...] build [...]"
 #   build
-_ch_image_subcmd_get_old () {
-    local subcmd
-    local cword="$1"
-    shift 1
-    local wrds=("$@")
-    local ct=1
-
-    while ((ct < ${#wrds[@]})); do
-        if [[ $ct != "$cword" ]]; then
-            for subcmd_i in $_image_subcommands; do
-                if [[ ${wrds[$ct]} == "$subcmd_i" ]]; then
-                    subcmd="$subcmd_i"
-                    break 2
-                fi
-            done
-        fi
-        ((ct++))
-    done
-    echo "$subcmd"
-}
-
 _ch_image_subcmd_get () {
     local subcmd
     for word in "$@"; do
