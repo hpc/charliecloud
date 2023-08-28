@@ -102,6 +102,76 @@ if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
 fi
 
 
+## ch-convert ##
+
+# Options for ch-convert
+#
+
+_convert_opts="-h --help -i --in-fmt -n --dry-run --no-clobber -o
+               --out-fmt -s --storage --tmp -v --verbose"
+
+# valid image formats
+_convert_fmts="ch-image dir docker podman squash tar"
+
+# Completion function for ch-convert
+#
+# WARNING: Prototype. This doesn't work.
+_ch_convert_complete () {
+    local prev
+    local cur
+    local cword
+    local words
+    local sub_cmd
+    local strg_dir
+    local extras=
+    _get_comp_words_by_ref -n : cur prev words cword
+
+    strg_dir=$(_ch_find_storage "${words[@]}")
+
+    # Populate debug log
+    _DEBUG "\$ ${words[*]}"
+    _DEBUG " storage: dir: $strg_dir"
+    _DEBUG " word index: $cword"
+    _DEBUG " current: $cur"
+    _DEBUG " previous: $prev"
+    _DEBUG " sub command: $sub_cmd"
+
+    # Common opts that take args
+    #
+    case "$prev" in
+    -i|--in-fmt)
+        # FIXME: don’t complete out fmt if specified
+        COMPREPLY=( $(compgen -W "$_convert_fmts" -- "$cur") )
+        return 0
+        ;;
+    -o|--out-fmt)
+        # FIXME: don’t complete in fmt if specified
+        COMPREPLY=( $(compgen -W "$_convert_fmts" -- "$cur") )
+        return 0
+        ;;
+    -s|--storage)
+        # Avoid overzealous completion. E.g. if there’s only one subdir of the
+        # current dir, this command completes to that dir even if $cur is
+        # empty (i.e. the user hasn’t yet typed anything), which seems
+        # confusing for the user.
+        if [[ -n "$cur" ]]; then
+            compopt -o nospace
+            COMPREPLY=( $(compgen -d -S / -- "$cur") )
+        fi
+        return 0
+        ;;
+    --tmp)
+        # See previous comment about overzealous completion for the “--storage”
+        # option.
+        if [[ -n "$cur" ]]; then
+            compopt -o nospace
+            COMPREPLY=( $(compgen -d -S / -- "$cur") )
+        fi
+        ;;
+    esac
+}
+
+
 ## ch-image ##
 
 # Subcommands and options for ch-image
@@ -143,8 +213,8 @@ _ch_image_complete () {
     # empty string, and an incomplete word in the command line can lead to
     # false positives from these functions and consequently unexpected
     # behavior, so we don’t consider it.
-    sub_cmd=$(_ch_image_subcmd_get "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}}")
-    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
+    sub_cmd=$(_ch_image_subcmd_get "$cword" "${words[@]}")
+    strg_dir=$(_ch_find_storage "${words[@]}")
 
     # Populate debug log
     _DEBUG "\$ ${words[*]}"
@@ -167,10 +237,8 @@ _ch_image_complete () {
         return 0
         ;;
     -s|--storage)
-        # Avoid overzealous completion. E.g. if there’s only one subdir of the
-        # current dir, this command completes to that dir even if $cur is
-        # empty (i.e. the user hasn’t yet typed anything), which seems
-        # confusing for the user.
+        # See comment about overzealous completion for the “--storage” option
+        # under “_ch_convert_complete”.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -298,10 +366,10 @@ _ch_run_complete () {
     local extras=
     _get_comp_words_by_ref -n : cur prev words cword
 
-    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
+    strg_dir=$(_ch_find_storage "${words[@]}")
     local cli_image
     local cmd_index=-1
-    _ch_run_image_finder "$strg_dir" cli_image cmd_index "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}}"
+    _ch_run_image_finder "$strg_dir" cli_image cmd_index "${words[@]}"
 
     # Populate debug log
     _DEBUG "\$ ${words[*]}"
@@ -357,6 +425,8 @@ _ch_run_complete () {
         return 0
         ;;
     -s|--storage)
+        # See comment about overzealous completion for the “--storage” option
+        # under “_ch_convert_complete”.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -447,14 +517,22 @@ _ch_list_images () {
 #   >> _ch_image_subcmd_get "ch-image [...] build [...]"
 #   build
 _ch_image_subcmd_get () {
+    local cword="$1"
+    shift 1
     local subcmd
-    for word in "$@"; do
-        for subcmd_i in $_image_subcommands; do
-            if [[ "$word" == "$subcmd_i" ]]; then
-                subcmd="$subcmd_i"
-                break 2
-            fi
-        done
+    local wrds=("$@")
+    local ct=1
+
+    while ((ct < ${#wrds[@]})); do
+        if [[ $ct != "$cword" ]]; then
+            for subcmd_i in $_image_subcommands; do
+                if [[ "${wrds[$ct]}" == "$subcmd_i" ]]; then
+                    subcmd="$subcmd_i"
+                    break 2
+                fi
+            done
+        fi
+        ((ct++))
     done
     echo "$subcmd"
 }
