@@ -1,6 +1,11 @@
 Installing
 **********
 
+.. admonition:: Audience
+
+   This section assumes a moderate level of experience installing UNIX
+   software.
+
 This section describes what you need to install Charliecloud and how to do so.
 
 Note that installing and using Charliecloud can be done as a normal user with

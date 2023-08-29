@@ -211,6 +211,8 @@ class ArgumentParser(argparse.ArgumentParser):
 
    def parse_args(self, *args, **kwargs):
       cli = super().parse_args(*args, **kwargs)
+      if (not hasattr(cli, "func")):
+         self.error("CMD not specified")
       # Bring in environment variables that set options.
       if (cli.bucache is None and "CH_IMAGE_CACHE" in os.environ):
          try:
@@ -494,7 +496,8 @@ def cmd_base(argv, fail_ok=False, **kwargs):
    argv = [str(i) for i in argv]
    VERBOSE("executing: %s" % argv_to_string(argv))
    if ("env" in kwargs):
-      VERBOSE("environment: %s" % kwargs["env"])
+      for (k,v) in sorted(kwargs["env"].items()):
+         VERBOSE("env: %s=%s" % (k,v))
    if ("stderr" not in kwargs):
       if (verbose <= 1):  # VERBOSE or lower: capture for printing on fail only
          kwargs["stderr"] = subprocess.PIPE

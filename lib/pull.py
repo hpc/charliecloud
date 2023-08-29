@@ -1,10 +1,8 @@
 import json
 import os.path
-import sys
 
 import charliecloud as ch
 import build_cache as bu
-import filesystem as fs
 import image as im
 import registry as rg
 
