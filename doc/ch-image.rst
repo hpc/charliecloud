@@ -843,6 +843,12 @@ Can be repeated.
 :code:`COPY`
 ~~~~~~~~~~~~
 
+.. note:: The behavior described here matches Docker’s `now-deprecated legacy
+          builder
+          <https://docs.docker.com/engine/deprecated/#legacy-builder-for-linux-images>`_.
+          Docker’s new builder, BuildKit, has different behavior in some
+          cases, which we have not characterized.
+
 Especially for people used to UNIX :code:`cp(1)`, the semantics of the
 Dockerfile :code:`COPY` instruction can be confusing.
 
@@ -885,19 +891,10 @@ bug-compatible.
    at the 2nd level or deeper, the source directory’s metadata (e.g.,
    permissions) are copied to the destination directory. (Not documented.)
 
-5. If an object appears in both the source and destination, and is at the 2nd
-   level or deeper, and is of different types in the source and destination,
-   then the source object will overwrite the destination object. (Not
-   documented.) For example, if :code:`/tmp/foo/bar` is a regular file, and
-   :code:`/tmp` is the context directory, then the following Dockerfile
-   snippet will result in a *file* in the container at :code:`/foo/bar`
-   (copied from :code:`/tmp/foo/bar`); the directory and all its contents will
-   be lost.
-
-     .. code-block:: docker
-
-       RUN mkdir -p /foo/bar && touch /foo/bar/baz
-       COPY foo /foo
+5. If an object (a) appears in both the source and destination, (b) is at the
+   2nd level or deeper, and (c) is different file types in source and
+   destination, the source object will overwrite the destination object. (Not
+   documented.)
 
 We expect the following differences to be permanent:
 
