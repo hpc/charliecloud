@@ -369,7 +369,7 @@ _ch_run_complete () {
     strg_dir=$(_ch_find_storage "${words[@]}")
     local cli_image
     local cmd_index=-1
-    _ch_run_image_finder "$strg_dir" cli_image cmd_index "${words[@]}"
+   _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
 
     # Populate debug log
     _DEBUG "\$ ${words[*]}"
@@ -480,6 +480,28 @@ _DEBUG () {
 # Disable completion.
 ch-completion-disable () {
     complete -r ch-image
+    complete -r ch-run
+}
+
+_ch_convert_parse () {
+    local cword="$1"
+    shift 1
+    local -n in_fmt=$1
+    local -n out_fmt=$2
+    local -n opts_end=$3
+    shift 3
+    local wrds=("$@")
+    local ct=1
+
+    while ((ct < ${#wrds[@]})); do
+        if [[ $ct != "$cword" ]]; then
+            if [[ "${wrds[$ct-1]}" == "-i" ]]; then
+                in_fmt="${wrds[$ct]}"
+            elif [[ "${wrds[$ct-1]}" == "-o" ]]; then
+                out_fmt="${wrds[$ct]}"
+            fi
+        fi
+    done
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
