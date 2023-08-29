@@ -27,7 +27,6 @@
 
 import configparser
 import datetime
-import enum
 import glob
 import hashlib
 import itertools
@@ -38,7 +37,6 @@ import shutil
 import stat
 import tempfile
 import textwrap
-import time
 
 import charliecloud as ch
 import image as im
@@ -158,7 +156,7 @@ def have_deps(required=True):
    global git
    git = shutil.which("git")
    if (git is None):
-      (FATAL if required else VERBOSE)("no git(1) found")
+      (ch.FATAL if required else ch.VERBOSE)("no git(1) found")
       return False
    # As of 2.34.1, we get: "git version 2.34.1\n".
    return ch.version_check([git, "--version"], GIT_MIN, required=required)
@@ -1091,7 +1089,7 @@ class Enabled_Cache:
             # no PID file, therefore no GC running
             pass
          except OSError as x:
-            FATAL("can’t open GC PID file: %s: %s" % (pid_path, x.strerror))
+            ch.FATAL("can’t open GC PID file: %s: %s" % (pid_path, x.strerror))
          # Delete images that are worktrees referring back to the build cache.
          ch.INFO("deleting build cache")
          for d in ch.storage.unpack_base.listdir():

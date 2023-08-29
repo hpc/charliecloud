@@ -60,12 +60,12 @@ Libfabric
 MPI implementations have numerous ways of communicating messages over
 interconnects. We use libfabric (OFI), an OpenFabric framework that
 exports fabric communication services to applications, to manage these
-communcations with built-in, or loadable, fabric providers.
+communications with built-in, or loadable, fabric providers.
 
    - https://ofiwg.github.io/libfabric
    - https://ofiwg.github.io/libfabric/v1.14.0/man/fi_provider.3.html
 
-Using OFI, we can (a) uniformly manage fabric communcation services for both
+Using OFI, we can (a) uniformly manage fabric communication services for both
 OpenMPI and MPICH, and (b) use simplified methods of accessing proprietary host
 hardware, e.g., Cray's Gemini/Aries and Slingshot (CXI).
 

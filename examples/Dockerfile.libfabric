@@ -20,12 +20,12 @@ FROM almalinux_8ch
 # MPI implementations have numerous ways of communicating messages over
 # interconnects. We use Libfabric (OFI), an OpenFabric framework that
 # exports fabric communication services to applications, to manage these
-# communcations with built-in, or loadable, fabric providers.
+# communications with built-in, or loadable, fabric providers.
 #
 #   - https://ofiwg.github.io/libfabric
 #   - https://ofiwg.github.io/libfabric/v1.14.0/man/fi_provider.3.html
 #
-# Using OFI, we can: 1) uniformly manage fabric communcations services for both
+# Using OFI, we can: 1) uniformly manage fabric communications services for both
 # OpenMPI and MPICH; 2) use host-built OFI shared object providers to use
 # proprietary host hardware, e.g., Cray Gemini/Aries; and 3) replace the
 # container’s OFI with that of the hosts to leverage special fabric interfaces,
