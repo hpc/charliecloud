@@ -164,7 +164,8 @@ COPY dirA dir08a
 # Dest:    new directory, one level, trailing slash
 COPY dirA dir08b/
 
-# NOTE: Not currently tested (see #1707).
+# NOTE: Not currently tested (see #1707). We keep it around but commented out
+# to illustrate what we really would like to test.
 #
 # # Source:  one directory
 # # Dest:    existing file, 2nd level

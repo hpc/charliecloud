@@ -592,6 +592,8 @@ EOF
     prerequisites_ok argenv
 
     sed_ () {
+        # Print only lines listing a test variable, with instruction number
+        # prefixes added by BuildKit stripped if present.
         sed -En "s/^(#[0-9]+ [0-9.]+ )?(chse_.+)$/\2/p"
     }
 
