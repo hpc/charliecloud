@@ -85,6 +85,9 @@ Common options placed before or after the sub-command:
     :code:`ch-image` instances as you want against the same storage directory,
     which risks corruption but may be OK for some workloads.
 
+  :code:`--no-xattrs`
+    Ignore xattrs and ACLs.
+
   :code:`--profile`
     Dump profile to files :code:`/tmp/chofile.p` (:code:`cProfile` dump
     format) and :code:`/tmp/chofile.txt` (text summary). You can convert the
@@ -294,6 +297,12 @@ Git’s various storage limitations, so things like file metadata and Git
 repositories within the image should work. **Important exception**: No files
 named :code:`.git*` or other Git metadata are permitted in the image’s root
 directory.
+
+`Extended attributes <https://man7.org/linux/man-pages/man7/xattr.7.html>`_ (xattrs)
+belonging to unprivileged namespaces (e.g. :code:`user`) are also saved and
+restored by the cache by default. Notably, extended attributes in privileged
+namespaces (e.g. :code:`trusted`) cannot be read by :code:`ch-image` and will be
+lost without warning.
 
 The cache has three modes, *enabled*, *disabled*, and a hybrid mode called
 *rebuild* where the cache is fully enabled for :code:`FROM` instructions, but

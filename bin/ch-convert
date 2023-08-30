@@ -50,7 +50,8 @@ cv_chimage_dir () {
     # (2) it allows a progress meter (issue #1332). A very quick, very dirty,
     # completely half-assed performance test suggests that's about the same.
     dir_make "$2"
-    tar_ "$img" | tar xf - -pC "$2"
+    # shellcheck disable=SC2086
+    tar_ "$img" | tar xf - $tar_xattr_args -pC "$2"
     dir_fixup "$2"
 }
 
@@ -111,7 +112,8 @@ cv_dir_squash () {
     mount_points_ensure "$1" "$pflist"
     # Exclude build cache metadata. 64kiB block size based on Shane's
     # experiments.
-    mksquashfs "$1" "$2" -b 65536 -noappend -all-root -pf "$pflist" \
+    # shellcheck disable=SC2086
+    mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root -pf "$pflist" \
                          -e "$1"/.git -e "$1"/.gitignore -e "$1"/ch/git.pickle
     # Zero the archive's internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
@@ -313,11 +315,11 @@ cv_tar_dir () {
     ex2="/${ex1}"
     ex3="./${ex1}"
     VERBOSE "exclude patterns: ${ex1} ${ex2} ${ex3}"
-    #shellcheck disable=SC2094
+    #shellcheck disable=SC2094,SC2086
       pv_ -s "$(stat -c%s "$1")" < "$1" \
     | tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
           --xform 's|^\./||x' --strip-components=$strip_ct \
-          --anchored --no-wildcards-match-slash \
+          --anchored --no-wildcards-match-slash $tar_xattr_args \
           --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"
     dir_fixup "$2"
 }
@@ -422,7 +424,8 @@ dockman_to_tar () {
             --format='{{range .Config.Env}}{{println .}}{{end}}' > "$tmpenv"
     # The tar flavor Docker gives us does not support UIDs or GIDs greater
     # than 2**21, so use 0/0 rather than what’s on the filesystem. See #1573.
-    tar rf "$tmptar" -b1 -P --owner=0 --group=0 \
+    # shellcheck disable=SC2086
+    tar rf "$tmptar" -b1 -P --owner=0 --group=0 $tar_xattr_args \
         --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
     INFO 'compressing ...'
     pv_ < "$tmptar" | gzip_ -6 > "$3"
@@ -707,7 +710,9 @@ path_noclobber () {
 # Tar $1 and emit the result on stdout, excluding build cache metadata.
 # Produce a tarbomb because Docker requires tarbombs.
 tar_ () {
-    ( cd "$1" && tar cf - --exclude=./.git \
+    # shellcheck disable=SC2086
+    ( cd "$1" && tar cf - $tar_xattr_args \
+                          --exclude=./.git \
                           --exclude=./.gitignore \
                           --exclude=./ch/git.pickle . ) | pv_
 }
@@ -832,6 +837,9 @@ while true; do
             --no-clobber)
                 no_clobber=yes
                 ;;
+            --no-xattrs)
+                no_xattrs=yes
+                ;;
             -o|--out-fmt)
                 shift
                 out_fmt=$1
@@ -856,6 +864,13 @@ while true; do
 done
 if [ "$#" -ne 2 ]; then
     usage
+fi
+if [ -n "$no_xattrs" ]; then
+    tar_xattr_args=
+    squash_xattr_arg=
+else
+    tar_xattr_args='--xattrs-include=user.* --xattrs-include=system.*'
+    squash_xattr_arg=-xattrs
 fi
 in_desc=$1
 out_desc=$2

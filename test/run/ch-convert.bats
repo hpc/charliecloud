@@ -493,6 +493,70 @@ test_from () {
     [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
 }
 
+@test 'ch-convert: b0rked xattrs' {
+    # b0rked: (adj) broken, messed up
+    #
+    # In this test, we create a tarball with “unusual” xattrs that we don’t want
+    # to restore (i.e. a borked tarball), and try to convert it into a ch-image.
+    [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
+
+    cd "$BATS_TMPDIR"
+
+    borked_img="borked_image"
+    borked_file="${borked_img}/home/foo"
+    borked_tar="borked.tgz"
+    borked_out="borked_dir"
+
+    rm -rf "$borked_img" "$borked_tar" "$borked_out"
+
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.17
+RUN touch /home/foo
+EOF
+
+    # convert image to dir and actually bork it
+    ch-convert -i ch-image -o dir tmpimg "$borked_img"
+    setfattr -n user.foo -v bar "$borked_file"
+    sudo setfattr -n security.foo -v bar "$borked_file"
+    sudo setfattr -n trusted.foo -v bar "$borked_file"
+    setfacl -m "u:$USER:r" "$borked_file"
+
+    # confirm it worked
+    run sudo getfattr -dm - -- "$borked_file"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"# file: $borked_file"* ]]
+    [[ $output = *'security.foo="bar"'* ]]
+    [[ $output = *'trusted.foo="bar"'* ]]
+    [[ $output = *'user.foo="bar"'* ]]
+
+    run getfacl "$borked_file"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"user:$USER:r--"* ]]
+
+    # tar it up
+    sudo tar --xattrs-include='user.*' \
+             --xattrs-include='system.*' \
+             --xattrs-include='security.*' \
+             --xattrs-include='trusted.*' \
+             -czvf "$borked_tar" "$borked_img"
+
+    ch-convert -i tar -o dir "$borked_tar" "$borked_out"
+
+    run sudo getfattr -dm - -- "$borked_out/home/foo"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'security.foo="bar"'* ]]
+    [[ $output != *'trusted.foo="bar"'* ]]
+    [[ $output = *'user.foo="bar"'* ]]
+
+    run getfacl "$borked_out/home/foo"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"user:$USER:r--"* ]]
+}
+
 
 @test 'ch-convert: dir -> ch-image -> X' {
     test_from ch-image
