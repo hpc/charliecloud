@@ -140,30 +140,32 @@ char *argv_to_string(char **argv)
 }
 
 /* Iterate through buffer “buf” of size “s” consisting of null-terminated
-   strings and return the number of strings in it. Key assumtions:
+   strings and return the number of strings in it. Key assumptions:
 
       1. The buffer has been initialized to zero, i.e. all bytes that have not
          been explicitly set are null.
+
       2. All strings have been appended to the buffer in full without
          truncation, including their null terminator.
+
+      3. The buffer contains no empty strings.
 
    These assumptions are consistent with the construction of the “warnings”
    shared memory buffer, which is the main justification for this function. Note
    that under these assumptions, the final byte in the buffer is guaranteed to
    be null. */
-int buf_strings_count(char *buf, size_t s) {
-    int count = 0;
-    if (buf[0] != '\0') {
-        for (int i = 1; i < s; i++) {
-            if (buf[i] == '\0') {
-                if (buf[i -1 ] == '\0') {
-                    break;
-                }
-                count++;
-            }
-        }
-    }
-    return count;
+int buf_strings_count(char *buf, size_t size)
+{
+   int count = 0;
+
+   for (size_t i = 0; i < size; i++)
+      if (buf[i] == '\0') {                     // found string terminator
+         count++;
+         if (i < size - 1 && buf[i+1] == '\0')  // two term. in a row; done
+            break;
+      }
+
+   return count;
 }
 
 /* Return true if buffer buf of length size is all zeros, false otherwise. */
@@ -489,8 +491,8 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
-   char *message = NULL;
-   char *ap_msg = NULL;
+   char *message, *prefix, *ap_msg;
+
    if (level > verbose)
       return;
 
@@ -499,14 +501,13 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    // Prefix for the more urgent levels.
    switch (level) {
    case LL_FATAL:
-      //T_ (1 <= asprintf(&message, "%s%s", message, "error: ")); // "fatal" too morbid for users
-      message = cat(message, "error: ");
+      prefix = "error: ";  // "fatal" too morbid for users
       break;
    case LL_WARNING:
-      //T_ (1 <= asprintf(&message, "%s%s", message, "warning: "));
-      message = cat(message, "warning: ");
+      prefix = "warning: ";
       break;
    default:
+      prefix = "";
       break;
    }
 
@@ -515,19 +516,16 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
       fmt = "please report this bug";
 
    T_ (1 <= vasprintf(&ap_msg, fmt, ap));
-   //T_ (1 <= asprintf(&message, "%s%s", message, ap_msg));
-   message = cat(message, ap_msg);
-
    if (errno_) {
-      T_ (1 <= asprintf(&message, "%s: %s (%s:%d %d)", message,
+      T_ (1 <= asprintf(&message, "%s%s: %s (%s:%d %d)", prefix, ap_msg,
                         strerror(errno_), file, line, errno_));
    } else {
-      T_ (1 <= asprintf(&message, "%s (%s:%d)", message, file, line));
+      T_ (1 <= asprintf(&message, "%s%s (%s:%d)", prefix, ap_msg, file, line));
    }
 
    if (level == LL_WARNING) {
       warnings_offset += string_append(warnings, message,
-                                         warnings_size, warnings_offset);
+                                       warnings_size, warnings_offset);
    }
    fprintf(stderr, "%s\n", message);
    if (fflush(stderr))
@@ -700,11 +698,11 @@ void version(void)
    nothing and return zero. */
 size_t string_append(char *addr, char *str, size_t size, size_t offset)
 {
-   size_t written = 0;
-   if (size > (offset + strlen(str))) { // check if there’s space
-      memcpy(addr + offset, str, strlen(str) + 1);
-      written = strlen(str) + 1;
-   }
+   size_t written = strlen(str) + 1;
+
+   if (size > (offset + written - 1))  // there is space
+      memcpy(addr + offset, str, written);
+
    return written;
 }
 
@@ -712,20 +710,18 @@ size_t string_append(char *addr, char *str, size_t size, size_t offset)
 void warnings_reprint(void)
 {
    size_t offset = 0;
-   int num_warnings = buf_strings_count(warnings, warnings_size);
-   if (num_warnings > 0) {
-      printf("reprinting %d warning(s)\n", num_warnings);
-   }
-   while ((warnings[offset] != 0) ||
-            ((offset < (warnings_size - 1) &&
-            (warnings[offset+1] != 0)))) {
+   int warn_ct = buf_strings_count(warnings, warnings_size);
+
+   if (warn_ct > 0)
+      fprintf(stderr, "warning: reprinting first %d warning(s)\n", warn_ct);
+
+   while (   warnings[offset] != 0
+          || (offset < (warnings_size - 1) && warnings[offset+1] != 0)) {
         fputs(warnings + offset, stderr);
         fputc('\n', stderr);
-        while ((offset < warnings_size - 2) && (warnings[offset] != 0)) {
-            offset++;
-        }
-        offset++;
-    }
+        offset += strlen(warnings + offset) + 1;
+   }
+
    if (fflush(stderr))
          abort();  // can't print an error b/c already trying to do that
 }

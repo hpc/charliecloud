@@ -120,7 +120,7 @@ log_fp = sys.stderr  # File object to print logs to.
 trace_fatal = False  # Add abbreviated traceback to fatal error hint.
 
 # Warnings to be re-printed when program exits
-warnings = []
+warnings = list()
 
 # True if the download cache is enabled.
 dlcache_p = None
@@ -855,6 +855,6 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
 
 def warnings_dump():
    if (len(warnings) > 0):
-      INFO("reprinting %d warning(s)" % len(warnings))
+      WARNING("reprinting %d warning(s)" % len(warnings), msg_save=False)
    for msg in warnings:
       WARNING(msg, msg_save=False)

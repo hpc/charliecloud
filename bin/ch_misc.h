@@ -19,7 +19,6 @@
    and hopefully others support the following extension. */
 #define noreturn __attribute__ ((noreturn))
 
-
 /* Size of “warnings” buffer, in bytes. We want this to be big enough that we
    don’t need to worry about running out of room. */
 #define warnings_size 4096
