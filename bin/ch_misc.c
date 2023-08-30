@@ -158,12 +158,15 @@ int buf_strings_count(char *buf, size_t size)
 {
    int count = 0;
 
-   for (size_t i = 0; i < size; i++)
-      if (buf[i] == '\0') {                     // found string terminator
-         count++;
-         if (i < size - 1 && buf[i+1] == '\0')  // two term. in a row; done
-            break;
-      }
+   if (buf[0] != '\0')
+   {
+      for (size_t i = 0; i < size; i++)
+         if (buf[i] == '\0') {                     // found string terminator
+            count++;
+            if (i < size - 1 && buf[i+1] == '\0')  // two term. in a row; done
+               break;
+         }
+   }
 
    return count;
 }

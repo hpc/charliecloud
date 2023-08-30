@@ -160,7 +160,7 @@ test 7 b
 grown in 16 instructions: tmpimg
 build slow? consider enabling the new build cache
 hint: https://hpc.github.io/charliecloud/command-usage.html#build-cache
-reprinting 1 warning(s)
+warning: reprinting 1 warning(s)
 warning: not yet supported, ignored: issue #777: .dockerignore file
 EOF
 )
