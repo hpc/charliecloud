@@ -121,12 +121,15 @@ _ch_convert_complete () {
     local cur
     local cword
     local words
-    local sub_cmd
+    local in_fmt
+    local out_fmt
+    local opts_end
     local strg_dir
     local extras=
     _get_comp_words_by_ref -n : cur prev words cword
 
     strg_dir=$(_ch_find_storage "${words[@]}")
+    _ch_convert_parse $cword in_fmt out_fmt opts_end "${words[@]}"
 
     # Populate debug log
     _DEBUG "\$ ${words[*]}"
@@ -134,7 +137,9 @@ _ch_convert_complete () {
     _DEBUG " word index: $cword"
     _DEBUG " current: $cur"
     _DEBUG " previous: $prev"
-    _DEBUG " sub command: $sub_cmd"
+    _DEBUG " in format: $in_fmt"
+    _DEBUG " out format $out_fmt"
+    _DEBUG " end opts: $opts_end"
 
     # Common opts that take args
     #
@@ -169,6 +174,8 @@ _ch_convert_complete () {
         fi
         ;;
     esac
+
+    return 0;
 }
 
 
@@ -483,12 +490,22 @@ ch-completion-disable () {
     complete -r ch-run
 }
 
+_convert_fmt_get () {
+    for word in $_convert_fmts; do
+        if [[ "$1" == "$word" ]]; then
+            echo "$word"
+            return 0
+        fi
+    done
+    echo ""
+}
+
 _ch_convert_parse () {
     local cword="$1"
     shift 1
-    local -n in_fmt=$1
-    local -n out_fmt=$2
-    local -n opts_end=$3
+    local -n fmt_in=$1
+    local -n fmt_out=$2
+    local -n end_opts=$3
     shift 3
     local wrds=("$@")
     local ct=1
@@ -496,12 +513,15 @@ _ch_convert_parse () {
     while ((ct < ${#wrds[@]})); do
         if [[ $ct != "$cword" ]]; then
             if [[ "${wrds[$ct-1]}" == "-i" ]]; then
-                in_fmt="${wrds[$ct]}"
+                fmt_in=$(_convert_fmt_get "${wrds[$ct]}")
             elif [[ "${wrds[$ct-1]}" == "-o" ]]; then
-                out_fmt="${wrds[$ct]}"
+                fmt_out=$(_convert_fmt_get "${wrds[$ct]}")
             fi
         fi
+        ((ct++))
     done
+
+    end_opts=0
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
@@ -726,3 +746,4 @@ _sanitized_tilde_expand () {
 
 complete -F _ch_image_complete ch-image
 complete -F _ch_run_complete ch-run
+complete -F _ch_convert_complete ch-convert
