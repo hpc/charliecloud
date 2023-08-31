@@ -702,9 +702,14 @@ void version(void)
 size_t string_append(char *addr, char *str, size_t size, size_t offset)
 {
    size_t written = strlen(str) + 1;
+   size_t foo = offset + written - 1;
+   printf("test num: %ld\n", foo);
 
    if (size > (offset + written - 1))  // there is space
+   {
+      printf("got past if\n");
       memcpy(addr + offset, str, written);
+   }
 
    return written;
 }
@@ -712,6 +717,7 @@ size_t string_append(char *addr, char *str, size_t size, size_t offset)
 /* Reprint messages stored in “warnings” memory buffer. */
 void warnings_reprint(void)
 {
+   printf("calling warings_reprint\n");
    size_t offset = 0;
    int warn_ct = buf_strings_count(warnings, warnings_size);
 
