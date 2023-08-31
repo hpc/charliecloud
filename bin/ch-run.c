@@ -132,8 +132,7 @@ int main(int argc, char *argv[])
 
    privs_verify_invoking();
 
-   //Z_ (atexit(warnings_reprint));
-   Z_ (atexit(test_exit));
+   Z_ (atexit(warnings_reprint));
    
 
 #ifdef ENABLE_SYSLOG

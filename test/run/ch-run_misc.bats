@@ -1063,8 +1063,7 @@ EOF
     run ch-run --warnings=1
     echo "$output"
     [[ $status -eq 0 ]]
-    #[[ $(echo "$output" | grep -Fc 'this is warning 0!') -eq 2 ]]
-    [[ $(echo "$output" | grep -Ec 'this is warning [0-9]*!') -eq 2 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 0!') -eq 2 ]]
 
     # Warnings list is a statically sized memory buffer. Ensure it works as
     # intended by printing more warnings than can be saved to this buffer and
