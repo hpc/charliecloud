@@ -107,7 +107,6 @@ void parse_set_env(struct args *args, char *arg, int delim);
 void privs_verify_invoking();
 char *storage_default(void);
 extern void warnings_reprint(void);
-void test_exit(void);
 
 
 /** Global variables **/
@@ -133,7 +132,6 @@ int main(int argc, char *argv[])
    privs_verify_invoking();
 
    Z_ (atexit(warnings_reprint));
-   
 
 #ifdef ENABLE_SYSLOG
    syslog(LOG_USER|LOG_INFO, "uid=%u args=%d: %s", getuid(), argc,
@@ -599,8 +597,4 @@ char *storage_default(void)
       T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch", username));
 
    return storage;
-}
-
-void test_exit (void) {
-   printf("EXIT\n");
 }
