@@ -49,6 +49,9 @@ producing the final format actually needed.
   :code:`--no-clobber`
     Error if :code:`OUT` already exists, rather than replacing it.
 
+  :code:`--no-xattrs`
+    Ignore xattrs and ACLs when converting.
+
   :code:`-o`, :code:`--out-fmt FMT`
     Output image format is :code:`FMT`; inferred if omitted.
 
@@ -99,7 +102,9 @@ Image formats
   :code:`dir`
     Ordinary filesystem directory (i.e., not a mount point) containing an
     unpacked image. Output directories that already exist are replaced if they
-    look like an image; otherwise, exit with an error.
+    look like an image. If the output directory is empty, the conversion should
+    use the directory without overwriting it. If the directory doesn’t look like
+    an image and isn’t empty, exit with an error.
 
   :code:`docker`
     Internal storage for Docker.

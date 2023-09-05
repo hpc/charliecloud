@@ -112,8 +112,8 @@ _image_build_opts="-b --bind --build-arg -f --file --force
 
 _image_common_opts="-a --arch --always-download --auth --cache
                     --cache-large --dependencies -h --help
-                    --no-cache --no-lock --profile --rebuild
-                    --password-many -q --quiet -s --storage
+                    --no-cache --no-lock --no-xattrs --profile
+                    --rebuild --password-many -q --quiet -s --storage
                     --tls-no-verify -v --verbose --version"
 
 _image_subcommands="build build-cache delete gestalt
@@ -276,11 +276,13 @@ _ch_image_complete () {
 # Options for ch-run
 #
 
-_run_opts="-b --bind -c --cd --env-no-expand -g --gid
+_run_opts="-b --bind -c --cd --env-no-expand --feature -g --gid
            --home -j --join --join-pid --join-ct --join-tag -m
            --mount --no-passwd -s --storage --seccomp -t
            --private-tmp --set-env -u --uid --unsafe --unset-env
            -v --verbose -w --write -? --help --usage -V --version"
+
+_run_features="extglob seccomp squash" # args for the --feature option
 
 # Completion function for ch-run
 #
@@ -324,6 +326,10 @@ _ch_run_complete () {
         ;;
     -c|--cd)
         COMPREPLY=()
+        return 0
+        ;;
+    --feature)
+        COMPREPLY=( $(compgen -W "$_run_features" --  "$cur") )
         return 0
         ;;
     -g|--gid)
@@ -454,15 +460,17 @@ _ch_image_subcmd_get () {
 # command line. This function takes five arguments:
 #
 #   1.) A string representing the path to the storage directory.
-
+#
 #   2.) The current position (measured in words) of the cursor in the array
 #       representing the command line (index starting at 0).
+#
 #   3.) An out parameter (explanation below). If “_ch_run_image_finder” finds
 #       the name of an image in storage (e.g. “alpine:latest”) or something that
 #       looks like an image path (i.e. a directory, tarball or file named like a
 #       squash archive) in the command line, the value of the variable will be
 #       updated to the image name or path. If neither are found, the function
 #       will not modify the value of this variable.
+#
 #   4.) Another out parameter. If this function finds “--” in the current
 #       command line and it doesn't seem like the user is trying to complete
 #       that “--” to an option, “_ch_run_image_finder” will assume that this is
@@ -472,6 +480,7 @@ _ch_image_subcmd_get () {
 #       option is that the current index of the cursor in the word array
 #       (argument 2, see above) is not equal to the position of the “--” in said
 #       array.
+#
 #   5.) A string representing the expanded command line array (i.e.
 #       "${array[@]}").
 #

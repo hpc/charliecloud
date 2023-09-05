@@ -1,6 +1,11 @@
 Installing
 **********
 
+.. admonition:: Audience
+
+   This section assumes a moderate level of experience installing UNIX
+   software.
+
 This section describes what you need to install Charliecloud and how to do so.
 
 Note that installing and using Charliecloud can be done as a normal user with
@@ -453,10 +458,11 @@ To mount these archives using :code:`ch-run`'s internal code, you need:
      setuid, but Charliecloud does not need that**; you can :code:`chmod u-s`
      the file or build/install as a normal user.
 
-2. `SquashFUSE <https://github.com/vasi/squashfuse>`_ v0.1.105 or later (we
-   need the :code:`libsquashfuse_ll` shared library). This must be installed,
-   not linked from its build directory, though it can be installed in a
-   non-standard location.
+2. `SquashFUSE <https://github.com/vasi/squashfuse>`_ v0.1.105 or later,
+   excluding v0.3.0 (we need the :code:`libsquashfuse_ll` shared library).
+   Version 0.3.0 contains an incompatible function signature change that was
+   reverted in 0.4.0. This must be installed, not linked from its build
+   directory, though it can be installed in a non-standard location.
 
 Without these, you can still use a SquashFS workflow but must mount and
 unmount the filesystem archives manually. You can do this using the

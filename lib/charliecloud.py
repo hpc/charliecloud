@@ -220,6 +220,8 @@ class ArgumentParser(argparse.ArgumentParser):
 
    def parse_args(self, *args, **kwargs):
       cli = super().parse_args(*args, **kwargs)
+      if (not hasattr(cli, "func")):
+         self.error("CMD not specified")
       # Bring in environment variables that set options.
       if (cli.bucache is None and "CH_IMAGE_CACHE" in os.environ):
          try:
@@ -511,7 +513,8 @@ def cmd_base(argv, fail_ok=False, **kwargs):
    argv = [str(i) for i in argv]
    VERBOSE("executing: %s" % argv_to_string(argv))
    if ("env" in kwargs):
-      VERBOSE("environment: %s" % kwargs["env"])
+      for (k,v) in sorted(kwargs["env"].items()):
+         VERBOSE("env: %s=%s" % (k,v))
    if ("stderr" not in kwargs):
       if (verbose <= 1):  # VERBOSE or lower: capture for printing on fail only
          kwargs["stderr"] = subprocess.PIPE
@@ -617,10 +620,11 @@ def exit(code):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, log_quiet, trace_fatal, verbose
+   global log_festoon, log_fp, log_quiet, trace_fatal, verbose, save_xattrs
    log_quiet = cli.quiet
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
+   save_xattrs = (not cli.no_xattrs)
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
    if (log_quiet > 0):
       fail_ct = 0
@@ -749,7 +753,7 @@ def monkey_write_streams():
                "“”’".encode(encoding=encoding)
             except UnicodeEncodeError:
                monkey_write_insert(stream)
-               break
+            break
 
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"

@@ -87,7 +87,7 @@ struct bind BINDS_DEFAULT[] = {
 int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
                         AUDIT_ARCH_ARM,       // arm32
                         AUDIT_ARCH_I386,      // x86 (32-bit)
-                        AUDIT_ARCH_PPC64,     // PPC
+                        AUDIT_ARCH_PPC64LE,   // PPC
                         AUDIT_ARCH_X86_64,    // x86-64
                         -1 };
 #endif
