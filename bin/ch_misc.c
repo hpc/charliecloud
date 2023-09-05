@@ -494,23 +494,23 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
-   char *message, *prefix, *ap_msg;
+   char *message, *ap_msg;
 
    if (level > verbose)
       return;
 
-   T_ (1 <= asprintf(&message, "%s[%d]: ", program_invocation_short_name, getpid()));
+   T_ (1 <= asprintf(&message, "%s[%d]: ",
+                     program_invocation_short_name, getpid()));
 
    // Prefix for the more urgent levels.
    switch (level) {
    case LL_FATAL:
-      prefix = "error: ";  // "fatal" too morbid for users
+      message = cat(message, "error: ");  // "fatal" too morbid for users
       break;
    case LL_WARNING:
-      prefix = "warning: ";
+      message = cat(message, "warning: ");
       break;
    default:
-      prefix = "";
       break;
    }
 
@@ -520,15 +520,15 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
 
    T_ (1 <= vasprintf(&ap_msg, fmt, ap));
    if (errno_) {
-      T_ (1 <= asprintf(&message, "%s%s: %s (%s:%d %d)", prefix, ap_msg,
+      T_ (1 <= asprintf(&message, "%s%s: %s (%s:%d %d)", message, ap_msg,
                         strerror(errno_), file, line, errno_));
    } else {
-      T_ (1 <= asprintf(&message, "%s%s (%s:%d)", prefix, ap_msg, file, line));
+      T_ (1 <= asprintf(&message, "%s%s (%s:%d)", message, ap_msg, file, line));
    }
 
    if (level == LL_WARNING) {
       warnings_offset += string_append(warnings, message,
-                                       warnings_size, warnings_offset);
+                                       WARNINGS_SIZE, warnings_offset);
    }
    fprintf(stderr, "%s\n", message);
    if (fflush(stderr))
