@@ -587,9 +587,9 @@ Options:
        extension with invalid characters stripped, e.g.
        :code:`Dockerfile.@FOO.bar` → :code:`foo.bar`.
 
-    2. If Dockerfile has extension :code:`dockerfile`: use the basename with
-       the same transformation, e.g. :code:`baz.@QUX.dockerfile` ->
-       :code:`baz.qux`.
+    2. If Dockerfile has extension :code:`df` or :code:`dockerfile`: use the
+       basename with the same transformation, e.g. :code:`baz.@QUX.dockerfile`
+       -> :code:`baz.qux`.
 
     3. If context directory is not :code:`/`: use its name, i.e. the last
        component of the absolute path to the context directory, with the same
