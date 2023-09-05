@@ -41,10 +41,10 @@ should be able to tell you if this is linked in.
 ::
 
   $ cd /usr/local/share/doc/charliecloud/examples/hello
-  $ ch-image build --force .
+  $ ch-image build --force -- .
   inferred image name: hello
   [...]
-  grown in 4 instructions: hello
+  grown in 3 instructions: hello
   $ ch-convert hello /var/tmp/hello.sqfs
   input:   ch-image  hello
   output:  squash    /var/tmp/hello.sqfs

@@ -45,7 +45,7 @@ jobs:
       ch_prefix: /var/tmp
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: early setup & validation
         run: |
@@ -154,6 +154,9 @@ jobs:
           cd /usr/local/src
           git clone https://github.com/vasi/squashfuse.git
           cd squashfuse
+          # checkout the last commit that we support. FIXME: find a more
+          # permanent solution (#1696).
+          git checkout 4465c39
           ./autogen.sh
           ./configure --prefix=/usr/local
           make

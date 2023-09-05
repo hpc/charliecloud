@@ -1,16 +1,42 @@
+# Note on how we use Git:
+#
+# Git is extremely flexible and can be configured in many ways, including
+# various configuration files [1] as well as environment variables [2]. We do
+# our best to use a fully-isolated Git that brings along no external
+# configuration the user or system may have, by excluding configuration files
+# other than Charliecloud’s and clearing the environment.
+#
+# Another gotcha that is not (yet?) documented is $PATH. git(1) re-executes
+# itself in the same way that it was invoked; e.g., if you invoke it with
+# plain “git”, which looks up the binary in the path, then sub-invocations
+# will do the same and look up “git” again [3]. If somehow you use different
+# paths to find the outer and inner Git — which is easy to do accidentally
+# with subprocess — you can run a mixed-version Git, which is bad (see #1606).
+# We work around this by looking up git(1) once and then calling it by its
+# absolute path, with an empty environment including unset $PATH.
+#
+# Alternately, we could have sanitized the environment more carefully, passing
+# through $PATH and perhaps other variables. This seemed difficult to do
+# correctly (e.g., should we keep $LD_LIBRARY_PATH?), and it seemed unlikely
+# that Git would be executing programs other than Git that weren’t readily
+# available in the standard paths or using any non-standard features.
+#
+# [1]: https://git-scm.com/book/en/v2/Customizing-Git-Git-Configuration
+# [2]: https://git-scm.com/book/en/v2/Git-Internals-Environment-Variables
+# [3]: https://lore.kernel.org/git/E7D87B07-C416-4A58-8726-CCDA0907AC66@lanl.gov/t/#u
+
 import configparser
 import datetime
-import enum
 import glob
 import hashlib
 import itertools
 import os
 import pickle
 import re
+import shutil
 import stat
 import tempfile
 import textwrap
-import time
 
 import charliecloud as ch
 import image as im
@@ -111,6 +137,9 @@ cache = None
 # Path to DOT output (.gv and .pdf will be appended)
 dot_base = None
 
+# Absolute path of Git binary we’re using.
+git = None
+
 # Default path within image to metadata pickle.
 PICKLE_PATH = fs.Path("ch/git.pickle")
 
@@ -120,9 +149,17 @@ PICKLE_PATH = fs.Path("ch/git.pickle")
 def have_deps(required=True):
    """Return True if dependencies for the build cache are present, False
       otherwise. Note this does not include the --dot debugging option; that
-      checks its own dependencies when invoked."""
+      checks its own dependencies when invoked.
+
+      This function also figures out which Git to use and sets the appropriate
+      variables."""
+   global git
+   git = shutil.which("git")
+   if (git is None):
+      (ch.FATAL if required else ch.VERBOSE)("no git(1) found")
+      return False
    # As of 2.34.1, we get: "git version 2.34.1\n".
-   return ch.version_check(["git", "--version"], GIT_MIN, required=required)
+   return ch.version_check([git, "--version"], GIT_MIN, required=required)
 
 def have_dot():
    ch.version_check(["git2dot.py", "--version"], GIT2DOT_MIN)
@@ -204,6 +241,13 @@ class File_Metadata:
    #   hardlink_to ... If non-None, file is a hard link to this other file,
    #                   stored as a Path object relative to the image root.
    #
+   #   xattrs ........ Extended attributes of the file, stored as a dictionary.
+   #                   The keys take the form “namespace.name”, where
+   #                   “namespace” is the namespace the xattr belongs to (e.g.
+   #                   “user” or “system”) and “name” is the actual name of the
+   #                   xattr. The value in the dictionary is the value assigned
+   #                   to the xattr.
+   #
    # Attributes not stored (recomputed on unpickle):
    #
    #   image_root .... Absolute path to the image directory to which path is
@@ -230,6 +274,10 @@ class File_Metadata:
       self.dont_restore = False
       self.hardlink_to = None
       self.large_name = None
+      self.xattrs = dict()
+      if ch.save_xattrs:
+         for xattr in os.listxattr(self.path_abs, follow_symlinks=False):
+            self.xattrs[xattr] = os.getxattr(self.path_abs, xattr, follow_symlinks=False)
 
    def __getstate__(self):
       return { a:v for (a,v) in self.__dict__.items()
@@ -409,10 +457,11 @@ class File_Metadata:
 
    def git_restore(self, quick):
       #ch.TRACE(self.str_for_log())  # output is extreme even for TRACE?
-      # Do-nothing case.
-      if (self.dont_restore):
+      # Do-nothing case. Exclude RPM databases explicitly because old caches
+      # can have them left over without being tagged don’t restore.
+      if (self.dont_restore or self.path.match("var/lib/rpm/__db.*")):
          if (not quick and self.path != im.GIT_DIR):
-            ch.WARNING("ignoring un-restorable file: /%s" % self.path)
+            ch.INFO("ignoring un-restorable file: /%s" % self.path)
          return
       # Make sure I exist, and with the correct name.
       if (self.hardlink_to is not None):
@@ -432,6 +481,10 @@ class File_Metadata:
          ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
       elif (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
+      if ch.save_xattrs:
+         for (xattr, val) in self.xattrs.items():
+            ch.ossafe(os.setxattr, "unable to restore xattr: %s" % xattr,
+                      self.path_abs, xattr, val, follow_symlinks=False)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
@@ -508,11 +561,13 @@ class File_Metadata:
 
    def unpickle_fix(self, image_root, path):
       "Does no I/O."
-      # old: large_name, size: no such attribute
+      # old: large_name, size, xattrs: no such attribute
       if (not (hasattr(self, "large_name"))):
          self.large_name = None
       if (not (hasattr(self, "size"))):
          self.size = -1
+      if (not (hasattr(self, "xattrs"))):
+         self.xattrs = dict()
       # old: hardlink_to: stored as string
       if (isinstance(self.hardlink_to, str)):
          self.hardlink_to = fs.Path(self.hardlink_to)
@@ -655,7 +710,7 @@ class Enabled_Cache:
       self.bootstrap_ct += 1
       # Initialize bare repo. Don’t use wrapper because the build cache
       # doesn’t exist yet.
-      ch.cmd_quiet(["git", "init", "--bare", "-b", "root", self.root])
+      ch.cmd_quiet([git, "init", "--bare", "-b", "root", self.root], env={})
       self.configure()
       # Create empty root commit. This is done in a strange way with no real
       # working directory at all, because (1) cloning the bucache doesn’t
@@ -945,7 +1000,7 @@ class Enabled_Cache:
             kwargs["env"] = dict()
          kwargs["env"].update({ "GIT_DIR": str(cwd // im.GIT_DIR),
                                 "GIT_WORK_TREE": str(cwd) })
-      return (ch.cmd_stdout if quiet else ch.cmd)(["git"] + argv, cwd=cwd,
+      return (ch.cmd_stdout if quiet else ch.cmd)([git] + argv, cwd=cwd,
                                                   *args, **kwargs)
 
    def git_prepare(self, unpack_path, files, write=True):
@@ -1051,7 +1106,7 @@ class Enabled_Cache:
             # no PID file, therefore no GC running
             pass
          except OSError as x:
-            FATAL("can’t open GC PID file: %s: %s" % (pid_path, x.strerror))
+            ch.FATAL("can’t open GC PID file: %s: %s" % (pid_path, x.strerror))
          # Delete images that are worktrees referring back to the build cache.
          ch.INFO("deleting build cache")
          for d in ch.storage.unpack_base.listdir():

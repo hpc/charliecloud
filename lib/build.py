@@ -16,7 +16,6 @@ import build_cache as bu
 import filesystem as fs
 import force
 import image as im
-import pull
 
 
 ## Globals ##
@@ -75,7 +74,7 @@ def main(cli_):
       if (base == "Dockerfile"):
          cli.tag = ext_all
          ch.VERBOSE("inferring name from Dockerfile extension: %s" % cli.tag)
-      elif (ext_last == "dockerfile"):
+      elif (ext_last in ("df", "dockerfile")):
          cli.tag = base_all
          ch.VERBOSE("inferring name from Dockerfile basename: %s" % cli.tag)
       elif (os.path.abspath(cli.context) != "/"):

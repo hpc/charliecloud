@@ -56,6 +56,11 @@ mounting SquashFS images with FUSE.
   :code:`--env-no-expand`
     Don’t expand variables when using :code:`--set-env`.
 
+  :code:`--feature=FEAT`
+    If feature :code:`FEAT` is enabled, exit with success. Valid values of
+    :code:`FEAT` are :code:`extglob` for extended globs, :code:`seccomp` for
+    :code:`seccomp(2)`, and :code:`squash` for squashfs archives.
+
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.
 
@@ -107,21 +112,12 @@ mounting SquashFS images with FUSE.
     :code:`tmpfs` is mounted on the container’s :code:`/tmp` instead.
 
   :code:`--set-env`, :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
-    Set environment variable(s). With:
+    Set environment variables with newline-separated file
+    (:code:`/ch/environment` within the image if not specified) or on the
+    command line. See below for details.
 
-       * no argument: as listed in file :code:`/ch/environment` within the
-         image. It is an error if the file does not exist or cannot be read.
-         (Note that with SquashFS images, it is not currently possible to use
-         other files within the image.)
-
-       * :code:`FILE` (i.e., no equals in argument): as specified in file at
-         host path :code:`FILE`. Again, it is an error if the file cannot be
-         read.
-
-       * :code:`NAME=VALUE` (i.e., equals sign in argument): set variable
-         :code:`NAME` to :code:`VALUE`.
-
-    See below for details on how environment variables work in :code:`ch-run`.
+  :code:`--set-env0`, :code:`--set-env0=FILE`, :code:`--set-env0=VAR=VALUE`
+    Like :code:`--set-env`, but file is null-byte separated.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
@@ -375,13 +371,13 @@ By default, :code:`ch-run` makes the following environment variable changes:
   made available in the guest at :code:`/tmp` unless :code:`--private-tmp` is
   given.
 
-Setting variables with :code:`--set-env`
-----------------------------------------
+Setting variables with :code:`--set-env` or :code:`--set-env0`
+--------------------------------------------------------------
 
-The purpose of :code:`--set-env` is to set environment variables within the
+The purpose of these two options is to set environment variables within the
 container. Values given replace any already in the environment (i.e.,
-inherited from the host shell) or set by earlier :code:`--set-env`. This flag
-takes an optional argument with two possible forms:
+inherited from the host shell) or set by earlier uses of the options. These
+flags take an optional argument with two possible forms:
 
 1. **If the argument contains an equals sign** (:code:`=`, ASCII 61), that
    sets an environment variable directly. For example, to set :code:`FOO` to
@@ -399,11 +395,16 @@ takes an optional argument with two possible forms:
 
 2. **If the argument does not contain an equals sign**, it is a host path to a
    file containing zero or more variables using the same syntax as above
-   (except with no prior shell processing). This file contains a sequence of
-   assignments separated by newlines. Empty lines are ignored, and no comments
-   are interpreted. (This syntax is designed to accept the output of
-   :code:`printenv` and be easily produced by other simple mechanisms.) For
-   example::
+   (except with no prior shell processing).
+
+   With :code:`--set-env`, this file contains a sequence of assignments
+   separated by newline (:code:`\n` or ASCII 10); with :code:`--set-env0`, the
+   assignments are separated by the null byte (i.e., :code:`\0` or ASCII 0).
+   Empty assignments are ignored, and no comments are interpreted. (This
+   syntax is designed to accept the output of :code:`printenv` and be easily
+   produced by other simple mechanisms.) The file need not be seekable.
+
+   For example::
 
      $ cat /tmp/env.txt
      FOO=bar
