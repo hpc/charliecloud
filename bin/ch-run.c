@@ -460,7 +460,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #endif
    case -16: { // --warnings
       int w_num = parse_int(arg, false, "--warnings");
-      for (int i = 0; i < w_num; i++) {
+      for (int i = 1; i <= w_num; i++) {
          WARNING("this is warning %d!", i);
       }
       exit(0); }
