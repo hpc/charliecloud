@@ -21,7 +21,7 @@
 
 /* Size of “warnings” buffer, in bytes. We want this to be big enough that we
    don’t need to worry about running out of room. */
-#define warnings_size 4096
+#define WARNINGS_SIZE (3*1024)
 
 /* Test some value, and if it's not what we expect, exit with a fatal error.
    These are macros so we have access to the file and line number.

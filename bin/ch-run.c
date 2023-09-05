@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
    char ** c_argv;
 
    // initialize “warnings” buffer
-   warnings = mmap(NULL, warnings_size, PROT_READ | PROT_WRITE,
+   warnings = mmap(NULL, WARNINGS_SIZE, PROT_READ | PROT_WRITE,
                    MAP_SHARED | MAP_ANONYMOUS, -1, 0);
 
    privs_verify_invoking();

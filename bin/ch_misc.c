@@ -713,13 +713,14 @@ size_t string_append(char *addr, char *str, size_t size, size_t offset)
 void warnings_reprint(void)
 {
    size_t offset = 0;
-   int warn_ct = buf_strings_count(warnings, warnings_size);
+   int warn_ct = buf_strings_count(warnings, WARNINGS_SIZE);
 
    if (warn_ct > 0)
-      fprintf(stderr, "warning: reprinting first %d warning(s)\n", warn_ct);
+      fprintf(stderr, "%s[%d]: warning: reprinting first %d warning(s)\n",
+              program_invocation_short_name, getpid(), warn_ct);
 
    while (   warnings[offset] != 0
-          || (offset < (warnings_size - 1) && warnings[offset+1] != 0)) {
+          || (offset < (WARNINGS_SIZE - 1) && warnings[offset+1] != 0)) {
         fputs(warnings + offset, stderr);
         fputc('\n', stderr);
         offset += strlen(warnings + offset) + 1;
