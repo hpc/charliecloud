@@ -84,7 +84,7 @@ Common options placed before or after the sub-command:
     Disable storage directory locking. This lets you run as many concurrent
     :code:`ch-image` instances as you want against the same storage directory,
     which risks corruption but may be OK for some workloads.
-    
+
   :code:`--no-xattrs`
     Ignore xattrs and ACLs.
 
@@ -103,11 +103,11 @@ Common options placed before or after the sub-command:
     Suppress logging info.
     Incompatible with :code:`--verbose` and overrides :code:`--debug` regardless of option order.
     Can be repeated:
-    
+
       * :code:`-q` quiets logging from :code:`ch-image` itself but leaves output from programs executed by :code:`RUN` instructions unchanged.
       * :code:`-qq` logs even less and also quiets :code:`RUN` programs by suppressing their standard output.
       * :code:`-qqq` further quiets :code:`RUN` by suppressing their standard error. (This means these subprocesses are completely silenced no matter what goes wrong with them.)
-      
+
     See the summary table FIXME for details.
 
     .. list-table::
