@@ -102,83 +102,6 @@ if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
 fi
 
 
-## ch-convert ##
-
-# Options for ch-convert
-#
-
-_convert_opts="-h --help -i --in-fmt -n --dry-run --no-clobber -o
-               --out-fmt -s --storage --tmp -v --verbose"
-
-# valid image formats
-_convert_fmts="ch-image dir docker podman squash tar"
-
-# Completion function for ch-convert
-#
-# WARNING: Prototype. This doesn't work.
-_ch_convert_complete () {
-    local prev
-    local cur
-    local cword
-    local words
-    local in_fmt
-    local out_fmt
-    local opts_end
-    local strg_dir
-    local extras=
-    _get_comp_words_by_ref -n : cur prev words cword
-
-    strg_dir=$(_ch_find_storage "${words[@]}")
-    _ch_convert_parse $cword in_fmt out_fmt opts_end "${words[@]}"
-
-    # Populate debug log
-    _DEBUG "\$ ${words[*]}"
-    _DEBUG " storage: dir: $strg_dir"
-    _DEBUG " word index: $cword"
-    _DEBUG " current: $cur"
-    _DEBUG " previous: $prev"
-    _DEBUG " in format: $in_fmt"
-    _DEBUG " out format $out_fmt"
-    _DEBUG " end opts: $opts_end"
-
-    # Common opts that take args
-    #
-    case "$prev" in
-    -i|--in-fmt)
-        # FIXME: don’t complete out fmt if specified
-        COMPREPLY=( $(compgen -W "$_convert_fmts" -- "$cur") )
-        return 0
-        ;;
-    -o|--out-fmt)
-        # FIXME: don’t complete in fmt if specified
-        COMPREPLY=( $(compgen -W "$_convert_fmts" -- "$cur") )
-        return 0
-        ;;
-    -s|--storage)
-        # Avoid overzealous completion. E.g. if there’s only one subdir of the
-        # current dir, this command completes to that dir even if $cur is
-        # empty (i.e. the user hasn’t yet typed anything), which seems
-        # confusing for the user.
-        if [[ -n "$cur" ]]; then
-            compopt -o nospace
-            COMPREPLY=( $(compgen -d -S / -- "$cur") )
-        fi
-        return 0
-        ;;
-    --tmp)
-        # See previous comment about overzealous completion for the “--storage”
-        # option.
-        if [[ -n "$cur" ]]; then
-            compopt -o nospace
-            COMPREPLY=( $(compgen -d -S / -- "$cur") )
-        fi
-        ;;
-    esac
-
-    return 0;
-}
-
-
 ## ch-image ##
 
 # Subcommands and options for ch-image
@@ -490,40 +413,6 @@ ch-completion-disable () {
     complete -r ch-run
 }
 
-_convert_fmt_get () {
-    for word in $_convert_fmts; do
-        if [[ "$1" == "$word" ]]; then
-            echo "$word"
-            return 0
-        fi
-    done
-    echo ""
-}
-
-_ch_convert_parse () {
-    local cword="$1"
-    shift 1
-    local -n fmt_in=$1
-    local -n fmt_out=$2
-    local -n end_opts=$3
-    shift 3
-    local wrds=("$@")
-    local ct=1
-
-    while ((ct < ${#wrds[@]})); do
-        if [[ $ct != "$cword" ]]; then
-            if [[ "${wrds[$ct-1]}" == "-i" ]]; then
-                fmt_in=$(_convert_fmt_get "${wrds[$ct]}")
-            elif [[ "${wrds[$ct-1]}" == "-o" ]]; then
-                fmt_out=$(_convert_fmt_get "${wrds[$ct]}")
-            fi
-        fi
-        ((ct++))
-    done
-
-    end_opts=0
-}
-
 # Figure out which storage directory to use (including cli-specified storage).
 # Remove trailing slash. Note that this isn't performed when the script is
 # sourced because the working storage directory can effectively change at any
@@ -746,4 +635,3 @@ _sanitized_tilde_expand () {
 
 complete -F _ch_image_complete ch-image
 complete -F _ch_run_complete ch-run
-complete -F _ch_convert_complete ch-convert
