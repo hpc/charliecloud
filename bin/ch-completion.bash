@@ -134,17 +134,17 @@ _ch_image_complete () {
     local extras=
     _get_comp_words_by_ref -n : cur prev words cword
 
-    # FIXME: update comment so it's accurate
-    # To find the subcommand and storage directory, we pass the associated
-    # functions the current command line without the last word (note that
-    # “${words[@]::${#words[@]}-1}” in bash is analagous to “words[:-1]” in
-    # python). We do this because the last word is most likely either an empty
-    # string, or is not yet complete. We don’t lose anything by dropping the
-    # empty string, and an incomplete word in the command line can lead to
-    # false positives from these functions and consequently unexpected
-    # behavior, so we don’t consider it.
     sub_cmd=$(_ch_image_subcmd_get "$cword" "${words[@]}")
-    strg_dir=$(_ch_find_storage "${words[@]}")
+    # To find the storage directory, we want to look at all the words in the
+    # current command line except for the current word (“${words[$cword]}”
+    # here). We do this to prevent unexpected behavior resulting from the
+    # current word being incomplete. The bash syntax we use to accomplish this
+    # is “"${array[@]::$i}" "${array[@]:$i+1:${#array[@]}-1}"” which is
+    # analagous to “array[:i] + array[i+1:]” in Python, giving you all elements
+    # of the array, except for the one at index “i”. The syntax glossary at the
+    # top of this file gives a breakdown of the constituent elements of this
+    # hideous expression.
+    strg_dir=$(_ch_find_storage "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}-1}")
 
     # Populate debug log
     _DEBUG "\$ ${words[*]}"
@@ -167,8 +167,10 @@ _ch_image_complete () {
         return 0
         ;;
     -s|--storage)
-        # See comment about overzealous completion for the “--storage” option
-        # under “_ch_convert_complete”.
+        # Avoid overzealous completion. E.g. if there’s only one subdir of the
+        # current dir, this command completes to that dir even if $cur is empty
+        # (i.e. the user hasn’t yet typed anything), which seems confusing for
+        # the user.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -296,7 +298,9 @@ _ch_run_complete () {
     local extras=
     _get_comp_words_by_ref -n : cur prev words cword
 
-    strg_dir=$(_ch_find_storage "${words[@]}")
+    # See the comment above the first call to “_ch_find_storage” for an
+    # explanation of the horrible syntax here.
+    strg_dir=$(_ch_find_storage "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}-1}")
     local cli_image
     local cmd_index=-1
    _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
