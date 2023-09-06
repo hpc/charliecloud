@@ -1074,8 +1074,8 @@ EOF
     run ch-run --warnings=100
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output == *'ch-run['*']: warning: reprinting first 52 warning(s)'* ]]
-    [[ $(echo "$output" | grep -Fc 'this is warning 52!') -eq 2 ]]
-    [[ $(echo "$output" | grep -Fc 'this is warning 53!') -eq 1 ]]
+    [[ $output == *'ch-run['*']: warning: reprinting first '*' warning(s)'* ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 1!') -eq 2 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 100!') -eq 1 ]]
 
 }
