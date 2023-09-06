@@ -1399,3 +1399,33 @@ EOF
     [[ $output = *'deleting, see issue #1351: var/lib/rpm/__db.001'* ]]
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg/var/lib/rpm/__db.001 ]]
 }
+
+@test "${tag}: restore ACLs, xattrs" {  # issue #1287
+    # Build an image, then re-build from cache to test xattr/ACL cache
+    # functionality.
+    TMP_CX=$BATS_TMPDIR
+    TMP_DF=$BATS_TMPDIR/weirdal.df
+    cat <<'EOF' > "$TMP_DF"
+FROM alpine:3.17
+RUN apk add attr
+RUN apk add acl
+RUN touch /home/foo
+RUN setfattr -n user.foo -v bar /home/foo
+RUN setfacl -m u:root:r /home/foo
+EOF
+    ch-image build-cache --reset
+    ch-image build -t tmpimg -f "$TMP_DF" "$TMP_CX"
+    ch-image delete tmpimg
+    ch-image build -t tmpimg -f "$TMP_DF" "$TMP_CX"
+    run ch-run tmpimg -- getfattr home/foo
+    # don’t check for ACL xattr bc it’s more straightforward to use getfacl(1).
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'# file: home/foo'* ]]
+    [[ $output = *'user.foo'* ]]
+
+    run ch-run tmpimg -- getfacl home/foo
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"user:$USER:r--"* ]]
+}

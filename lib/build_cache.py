@@ -241,6 +241,13 @@ class File_Metadata:
    #   hardlink_to ... If non-None, file is a hard link to this other file,
    #                   stored as a Path object relative to the image root.
    #
+   #   xattrs ........ Extended attributes of the file, stored as a dictionary.
+   #                   The keys take the form “namespace.name”, where
+   #                   “namespace” is the namespace the xattr belongs to (e.g.
+   #                   “user” or “system”) and “name” is the actual name of the
+   #                   xattr. The value in the dictionary is the value assigned
+   #                   to the xattr.
+   #
    # Attributes not stored (recomputed on unpickle):
    #
    #   image_root .... Absolute path to the image directory to which path is
@@ -267,6 +274,10 @@ class File_Metadata:
       self.dont_restore = False
       self.hardlink_to = None
       self.large_name = None
+      self.xattrs = dict()
+      if ch.save_xattrs:
+         for xattr in os.listxattr(self.path_abs, follow_symlinks=False):
+            self.xattrs[xattr] = os.getxattr(self.path_abs, xattr, follow_symlinks=False)
 
    def __getstate__(self):
       return { a:v for (a,v) in self.__dict__.items()
@@ -470,6 +481,10 @@ class File_Metadata:
          ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
       elif (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
+      if ch.save_xattrs:
+         for (xattr, val) in self.xattrs.items():
+            ch.ossafe(os.setxattr, "unable to restore xattr: %s" % xattr,
+                      self.path_abs, xattr, val, follow_symlinks=False)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
@@ -546,11 +561,13 @@ class File_Metadata:
 
    def unpickle_fix(self, image_root, path):
       "Does no I/O."
-      # old: large_name, size: no such attribute
+      # old: large_name, size, xattrs: no such attribute
       if (not (hasattr(self, "large_name"))):
          self.large_name = None
       if (not (hasattr(self, "size"))):
          self.size = -1
+      if (not (hasattr(self, "xattrs"))):
+         self.xattrs = dict()
       # old: hardlink_to: stored as string
       if (isinstance(self.hardlink_to, str)):
          self.hardlink_to = fs.Path(self.hardlink_to)
