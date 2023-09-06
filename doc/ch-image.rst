@@ -100,47 +100,9 @@ Common options placed before or after the sub-command:
     not if the program crashes.
 
   :code:`-q, --quiet`
-    Suppress logging info.
-    Incompatible with :code:`--verbose` and overrides :code:`--debug` regardless of option order.
-    Can be repeated:
-
-      * :code:`-q` quiets logging from :code:`ch-image` itself but leaves output from programs executed by :code:`RUN` instructions unchanged.
-      * :code:`-qq` logs even less and also quiets :code:`RUN` programs by suppressing their standard output.
-      * :code:`-qqq` further quiets :code:`RUN` by suppressing their standard error. (This means these subprocesses are completely silenced no matter what goes wrong with them.)
-
-    See the summary table FIXME for details.
-
-    .. list-table::
-      :header-rows: 1
-
-      * -
-        - :code:`-q`
-        - :code:`-qq`
-        - :code:`-qqq`
-      * - :code:`ch-image` stdout
-        - ✅
-        - ✅
-        - ✅
-      * - :code:`ch-image` fatal errors
-        - ✅
-        - ✅
-        - ✅
-      * - :code:`ch-image` warnings and errors
-        - ✅
-        - ✅
-        - ❌
-      * - :code:`ch-image` info logging
-        - ❌
-        - ❌
-        - ❌
-      * - Subprocess stderr
-        - ✅
-        - ✅
-        - ❌
-      * - Subprocess stdout
-        - ✅
-        - ❌
-        - ❌
+    Be quieter; can be repeated. Incompatible :code:`-v` and suppresses
+    :code:`--debug` regardless of option order. See the :ref:`FAQ entry on
+    verbosity <faq_verbosity>` for details.
 
   :code:`--rebuild`
     Execute all instructions, even if they are build cache hits, except for
@@ -154,7 +116,8 @@ Common options placed before or after the sub-command:
     unless you understand the risks.)
 
   :code:`-v`, :code:`--verbose`
-    Print extra chatter; can be repeated.
+    Print extra chatter; can be repeated. See the :ref:`FAQ entry on verbosity
+    <faq_verbosity>` for details.
 
 
 Architecture
