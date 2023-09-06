@@ -158,8 +158,7 @@ int buf_strings_count(char *buf, size_t size)
 {
    int count = 0;
 
-   if (buf[0] != '\0')
-   {
+   if (buf[0] != '\0') {
       for (size_t i = 0; i < size; i++)
          if (buf[i] == '\0') {                     // found string terminator
             count++;
@@ -527,8 +526,8 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    }
 
    if (level == LL_WARNING) {
-      warnings_offset += string_append(warnings, message,
-                                       WARNINGS_SIZE, warnings_offset);
+      warnings_offset += string_append(warnings, message, WARNINGS_SIZE,
+                                       warnings_offset);
    }
    fprintf(stderr, "%s\n", message);
    if (fflush(stderr))
@@ -721,11 +720,11 @@ void warnings_reprint(void)
 
    while (   warnings[offset] != 0
           || (offset < (WARNINGS_SIZE - 1) && warnings[offset+1] != 0)) {
-        fputs(warnings + offset, stderr);
-        fputc('\n', stderr);
-        offset += strlen(warnings + offset) + 1;
+      fputs(warnings + offset, stderr);
+      fputc('\n', stderr);
+      offset += strlen(warnings + offset) + 1;
    }
 
    if (fflush(stderr))
-         abort();  // can't print an error b/c already trying to do that
+      abort();  // can't print an error b/c already trying to do that
 }
