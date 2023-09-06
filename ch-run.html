@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>7. ch-run &mdash; Charliecloud 0.33 documentation</title>
+  <title>7. ch-run &mdash; Charliecloud 0.34~pre+5d8f4c25 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.33
+                0.34~pre+5d8f4c25
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -56,7 +56,7 @@
 <li class="toctree-l2"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">7.5. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#environment-variables">7.6. Environment variables</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#default-behavior">7.6.1. Default behavior</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#setting-variables-with-set-env">7.6.2. Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setting-variables-with-set-env-or-set-env0">7.6.2. Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code></a></li>
 <li class="toctree-l3"><a class="reference internal" href="#removing-variables-with-unset-env">7.6.3. Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code></a></li>
 </ul>
 </li>
@@ -183,21 +183,11 @@ that man page for a detailed discussion.</p>
 bind-mounted at container <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>. If this is specified, a new
 <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> is mounted on the container’s <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> instead.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>, <code class="code docutils literal notranslate"><span class="pre">--set-env=FILE</span></code>, <code class="code docutils literal notranslate"><span class="pre">--set-env=VAR=VALUE</span></code></dt><dd><p>Set environment variable(s). With:</p>
-<blockquote>
-<div><ul class="simple">
-<li><p>no argument: as listed in file <code class="code docutils literal notranslate"><span class="pre">/ch/environment</span></code> within the
-image. It is an error if the file does not exist or cannot be read.
-(Note that with SquashFS images, it is not currently possible to use
-other files within the image.)</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">FILE</span></code> (i.e., no equals in argument): as specified in file at
-host path <code class="code docutils literal notranslate"><span class="pre">FILE</span></code>. Again, it is an error if the file cannot be
-read.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">NAME=VALUE</span></code> (i.e., equals sign in argument): set variable
-<code class="code docutils literal notranslate"><span class="pre">NAME</span></code> to <code class="code docutils literal notranslate"><span class="pre">VALUE</span></code>.</p></li>
-</ul>
-</div></blockquote>
-<p>See below for details on how environment variables work in <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>, <code class="code docutils literal notranslate"><span class="pre">--set-env=FILE</span></code>, <code class="code docutils literal notranslate"><span class="pre">--set-env=VAR=VALUE</span></code></dt><dd><p>Set environment variables with newline-separated file
+(<code class="code docutils literal notranslate"><span class="pre">/ch/environment</span></code> within the image if not specified) or on the
+command line. See below for details.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code>, <code class="code docutils literal notranslate"><span class="pre">--set-env0=FILE</span></code>, <code class="code docutils literal notranslate"><span class="pre">--set-env0=VAR=VALUE</span></code></dt><dd><p>Like <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>, but file is null-byte separated.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-u</span></code>, <code class="code docutils literal notranslate"><span class="pre">--uid=UID</span></code></dt><dd><p>Run as user <code class="code docutils literal notranslate"><span class="pre">UID</span></code> within container.</p>
 </dd>
@@ -423,12 +413,12 @@ given.</p>
 </dd>
 </dl>
 </section>
-<section id="setting-variables-with-set-env">
-<h3><span class="section-number">7.6.2. </span>Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code><a class="headerlink" href="#setting-variables-with-set-env" title="Permalink to this headline">¶</a></h3>
-<p>The purpose of <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> is to set environment variables within the
+<section id="setting-variables-with-set-env-or-set-env0">
+<h3><span class="section-number">7.6.2. </span>Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code><a class="headerlink" href="#setting-variables-with-set-env-or-set-env0" title="Permalink to this headline">¶</a></h3>
+<p>The purpose of these two options is to set environment variables within the
 container. Values given replace any already in the environment (i.e.,
-inherited from the host shell) or set by earlier <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>. This flag
-takes an optional argument with two possible forms:</p>
+inherited from the host shell) or set by earlier uses of the options. These
+flags take an optional argument with two possible forms:</p>
 <ol class="arabic">
 <li><p><strong>If the argument contains an equals sign</strong> (<code class="code docutils literal notranslate"><span class="pre">=</span></code>, ASCII 61), that
 sets an environment variable directly. For example, to set <code class="code docutils literal notranslate"><span class="pre">FOO</span></code> to
@@ -447,11 +437,14 @@ double quotes are removed by the shell and the single quotes are removed by
 </li>
 <li><p><strong>If the argument does not contain an equals sign</strong>, it is a host path to a
 file containing zero or more variables using the same syntax as above
-(except with no prior shell processing). This file contains a sequence of
-assignments separated by newlines. Empty lines are ignored, and no comments
-are interpreted. (This syntax is designed to accept the output of
-<code class="code docutils literal notranslate"><span class="pre">printenv</span></code> and be easily produced by other simple mechanisms.) For
-example:</p>
+(except with no prior shell processing).</p>
+<p>With <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>, this file contains a sequence of assignments
+separated by newline (<code class="code docutils literal notranslate"><span class="pre">\n</span></code> or ASCII 10); with <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code>, the
+assignments are separated by the null byte (i.e., <code class="code docutils literal notranslate"><span class="pre">\0</span></code> or ASCII 0).
+Empty assignments are ignored, and no comments are interpreted. (This
+syntax is designed to accept the output of <code class="code docutils literal notranslate"><span class="pre">printenv</span></code> and be easily
+produced by other simple mechanisms.) The file need not be seekable.</p>
+<p>For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat /tmp/env.txt
 <span class="go">FOO=bar</span>
 <span class="go">BAZ=&#39;qux&#39;</span>
@@ -775,7 +768,7 @@ status is 1 regardless of the signal value.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2014–2022, Triad National Security, LLC and others.</p>
+    <p>&#169; Copyright 2014–2023, Triad National Security, LLC and others.</p>
   </div>
 
    

@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Tutorial &mdash; Charliecloud 0.33 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.34~pre+5d8f4c25 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.33
+                0.34~pre+5d8f4c25
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -190,10 +190,10 @@ Charliecloud for your own applications.</p>
 <p>The preferred workflow uses our internal SquashFS mounting code. Your sysadmin
 should be able to tell you if this is linked in.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/share/doc/charliecloud/examples/hello
-<span class="gp">$</span> ch-image build --force .
+<span class="gp">$</span> ch-image build --force -- .
 <span class="go">inferred image name: hello</span>
 <span class="go">[...]</span>
-<span class="go">grown in 4 instructions: hello</span>
+<span class="go">grown in 3 instructions: hello</span>
 <span class="gp">$</span> ch-convert hello /var/tmp/hello.sqfs
 <span class="go">input:   ch-image  hello</span>
 <span class="go">output:  squash    /var/tmp/hello.sqfs</span>
@@ -1394,7 +1394,7 @@ your site administrators for the latter.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2014–2022, Triad National Security, LLC and others.</p>
+    <p>&#169; Copyright 2014–2023, Triad National Security, LLC and others.</p>
   </div>
 
    

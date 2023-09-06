@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>6. ch-image &mdash; Charliecloud 0.33 documentation</title>
+  <title>6. ch-image &mdash; Charliecloud 0.34~pre+5d8f4c25 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.33
+                0.34~pre+5d8f4c25
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -210,6 +210,8 @@ instead.</p>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-lock</span></code></dt><dd><p>Disable storage directory locking. This lets you run as many concurrent
 <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> instances as you want against the same storage directory,
 which risks corruption but may be OK for some workloads.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-xattrs</span></code></dt><dd><p>Ignore xattrs and ACLs.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--profile</span></code></dt><dd><p>Dump profile to files <code class="code docutils literal notranslate"><span class="pre">/tmp/chofile.p</span></code> (<code class="code docutils literal notranslate"><span class="pre">cProfile</span></code> dump
 format) and <code class="code docutils literal notranslate"><span class="pre">/tmp/chofile.txt</span></code> (text summary). You can convert the
@@ -390,6 +392,11 @@ Git’s various storage limitations, so things like file metadata and Git
 repositories within the image should work. <strong>Important exception</strong>: No files
 named <code class="code docutils literal notranslate"><span class="pre">.git*</span></code> or other Git metadata are permitted in the image’s root
 directory.</p>
+<p><a class="reference external" href="https://man7.org/linux/man-pages/man7/xattr.7.html">Extended attributes</a> (xattrs)
+belonging to unprivileged namespaces (e.g. <code class="code docutils literal notranslate"><span class="pre">user</span></code>) are also saved and
+restored by the cache by default. Notably, extended attributes in privileged
+namespaces (e.g. <code class="code docutils literal notranslate"><span class="pre">trusted</span></code>) cannot be read by <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> and will be
+lost without warning.</p>
 <p>The cache has three modes, <em>enabled</em>, <em>disabled</em>, and a hybrid mode called
 <em>rebuild</em> where the cache is fully enabled for <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instructions, but
 all other operations re-execute and re-cache their results. The purpose of
@@ -641,9 +648,9 @@ also. Section “Privilege model” below explains why you might need this.</p>
 <li><p>If Dockerfile named <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> with an extension: use the
 extension with invalid characters stripped, e.g.
 <code class="code docutils literal notranslate"><span class="pre">Dockerfile.&#64;FOO.bar</span></code> → <code class="code docutils literal notranslate"><span class="pre">foo.bar</span></code>.</p></li>
-<li><p>If Dockerfile has extension <code class="code docutils literal notranslate"><span class="pre">dockerfile</span></code>: use the basename with
-the same transformation, e.g. <code class="code docutils literal notranslate"><span class="pre">baz.&#64;QUX.dockerfile</span></code> -&gt;
-<code class="code docutils literal notranslate"><span class="pre">baz.qux</span></code>.</p></li>
+<li><p>If Dockerfile has extension <code class="code docutils literal notranslate"><span class="pre">df</span></code> or <code class="code docutils literal notranslate"><span class="pre">dockerfile</span></code>: use the
+basename with the same transformation, e.g. <code class="code docutils literal notranslate"><span class="pre">baz.&#64;QUX.dockerfile</span></code>
+-&gt; <code class="code docutils literal notranslate"><span class="pre">baz.qux</span></code>.</p></li>
 <li><p>If context directory is not <code class="code docutils literal notranslate"><span class="pre">/</span></code>: use its name, i.e. the last
 component of the absolute path to the context directory, with the same
 transformation,</p></li>
@@ -865,6 +872,13 @@ Can be repeated.</p>
 </section>
 <section id="copy">
 <h4><span class="section-number">6.7.4.6. </span><code class="code docutils literal notranslate"><span class="pre">COPY</span></code><a class="headerlink" href="#copy" title="Permalink to this headline">¶</a></h4>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>The behavior described here matches Docker’s <a class="reference external" href="https://docs.docker.com/engine/deprecated/#legacy-builder-for-linux-images">now-deprecated legacy
+builder</a>.
+Docker’s new builder, BuildKit, has different behavior in some
+cases, which we have not characterized.</p>
+</div>
 <p>Especially for people used to UNIX <code class="code docutils literal notranslate"><span class="pre">cp(1)</span></code>, the semantics of the
 Dockerfile <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> instruction can be confusing.</p>
 <p>Most notably, when a source of the copy is a directory, the <em>contents</em> of that
@@ -875,7 +889,7 @@ many things you can do in one <code class="code docutils literal notranslate"><s
 <p>Also, the reference documentation is incomplete. In our experience, Docker
 also behaves as follows; <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> does the same in an attempt to be
 bug-compatible.</p>
-<ol class="arabic">
+<ol class="arabic simple">
 <li><p>You can use absolute paths in the source; the root is the context
 directory.</p></li>
 <li><p>Destination directories are created if they don’t exist in the following
@@ -902,21 +916,10 @@ itself is copied.</p></li>
 <li><p>If a directory appears at the same path in source and destination, and is
 at the 2nd level or deeper, the source directory’s metadata (e.g.,
 permissions) are copied to the destination directory. (Not documented.)</p></li>
-<li><p>If an object appears in both the source and destination, and is at the 2nd
-level or deeper, and is of different types in the source and destination,
-then the source object will overwrite the destination object. (Not
-documented.) For example, if <code class="code docutils literal notranslate"><span class="pre">/tmp/foo/bar</span></code> is a regular file, and
-<code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> is the context directory, then the following Dockerfile
-snippet will result in a <em>file</em> in the container at <code class="code docutils literal notranslate"><span class="pre">/foo/bar</span></code>
-(copied from <code class="code docutils literal notranslate"><span class="pre">/tmp/foo/bar</span></code>); the directory and all its contents will
-be lost.</p>
-<blockquote>
-<div><div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir -p /foo/bar <span class="o">&amp;&amp;</span> touch /foo/bar/baz
-<span class="k">COPY</span> foo /foo
-</pre></div>
-</div>
-</div></blockquote>
-</li>
+<li><p>If an object (a) appears in both the source and destination, (b) is at the
+2nd level or deeper, and (c) is different file types in source and
+destination, the source object will overwrite the destination object. (Not
+documented.)</p></li>
 </ol>
 <p>We expect the following differences to be permanent:</p>
 <ul class="simple">
@@ -1362,7 +1365,7 @@ useful for debugging situations where standard error is consumed or lost.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2014–2022, Triad National Security, LLC and others.</p>
+    <p>&#169; Copyright 2014–2023, Triad National Security, LLC and others.</p>
   </div>
 
    
