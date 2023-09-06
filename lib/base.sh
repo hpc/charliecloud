@@ -144,9 +144,15 @@ vset () {
     fi
 }
 
-
-# Do we need sudo to run docker?
-if docker info > /dev/null 2>&1; then
+# Is Docker present, and if so, do we need sudo? If docker is a wrapper for
+# podman, “docker info” hangs (#1656), so treat that as not found.
+if    ( ! command -v docker > /dev/null 2>&1 ) \
+   || ( docker --help 2>&1 | grep -Fqi podman ); then
+    docker_ () {
+        echo 'docker not found; unreachable code reached' 1>&1
+        exit 1
+    }
+elif docker info > /dev/null 2>&1; then
     docker_ () {
         docker "$@"
     }
