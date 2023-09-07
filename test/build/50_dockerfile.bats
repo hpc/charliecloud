@@ -161,6 +161,8 @@ test 7 b
 grown in 16 instructions: tmpimg
 build slow? consider enabling the new build cache
 hint: https://hpc.github.io/charliecloud/command-usage.html#build-cache
+warning: reprinting 1 warning(s)
+warning: not yet supported, ignored: issue #777: .dockerignore file
 EOF
 )
     diff -u <(echo "$output_expected") <(echo "$output")
@@ -290,7 +292,7 @@ ONBUILD foo
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 4 ]]
+    [[ $(echo "$output" | grep -Ec 'not yet supported.+instruction') -eq 8 ]]
     [[ $output = *'warning: not yet supported, ignored: issue #782: ADD instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #780: CMD instruction'* ]]
     [[ $output = *'warning: not yet supported, ignored: issue #780: ENTRYPOINT instruction'* ]]
@@ -362,7 +364,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'warning: not supported, ignored: parser directives'* ]]
-    [[ $(echo "$output" | grep -Fc 'parser directives') -eq 5 ]]
+    [[ $(echo "$output" | grep -Fc 'parser directives') -eq 10 ]]
 
     # COPY --from
     run ch-image build -t tmpimg -f - . <<'EOF'
@@ -385,7 +387,7 @@ VOLUME foo
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | grep -Fc 'not supported') -eq 6 ]]
+    [[ $(echo "$output" | grep -Fc 'not supported') -eq 12 ]]
     [[ $output = *'warning: not supported, ignored: EXPOSE instruction'* ]]
     [[ $output = *'warning: not supported, ignored: HEALTHCHECK instruction'* ]]
     [[ $output = *'warning: not supported, ignored: MAINTAINER instruction'* ]]

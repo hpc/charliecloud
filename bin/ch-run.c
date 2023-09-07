@@ -9,6 +9,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <syslog.h>
+#include <sys/mman.h>
 #include <unistd.h>
 
 #include "config.h"
@@ -73,6 +74,7 @@ const struct argp_option options[] = {
    { "unset-env",      -7, "GLOB", 0, "unset environment variable(s)" },
    { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
+   { "warnings",      -16, "NUM",  0, "log NUM warnings and exit" },
    { "write",         'w', 0,      0, "mount image read-write"},
    { 0 }
 };
@@ -104,12 +106,14 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void parse_set_env(struct args *args, char *arg, int delim);
 void privs_verify_invoking();
 char *storage_default(void);
+extern void warnings_reprint(void);
 
 
 /** Global variables **/
 
 const struct argp argp = { options, parse_opt, args_doc, usage };
 extern char **environ;  // see environ(7)
+extern char *warnings;
 
 
 /** Main **/
@@ -121,7 +125,14 @@ int main(int argc, char *argv[])
    int arg_next;
    char ** c_argv;
 
+   // initialize “warnings” buffer
+   warnings = mmap(NULL, WARNINGS_SIZE, PROT_READ | PROT_WRITE,
+                   MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+   T_ (warnings != MAP_FAILED);
+
    privs_verify_invoking();
+
+   Z_ (atexit(warnings_reprint));
 
 #ifdef ENABLE_SYSLOG
    syslog(LOG_USER|LOG_INFO, "uid=%u args=%d: %s", getuid(), argc,
@@ -448,6 +459,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->seccomp_p = true;
       break;
 #endif
+   case -16: // --warnings
+      for (int i = 1; i <= parse_int(arg, false, "--warnings"); i++)
+         WARNING("this is warning %d!", i);
+      exit(0);
+      break;
    case -15: // --set-env0
       parse_set_env(args, arg, '\0');
       break;
