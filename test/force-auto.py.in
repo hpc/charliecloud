@@ -300,7 +300,10 @@ class T_OpenSUSE_Leap_Latest(SUSE):
 
 # Arch has tons of old tags, versioned by date, on Docker Hub. However, only
 # :latest (or equivalently :base) is documented.
-class T_Arch_Latest(Test):
+#
+# FIXME: This is currently disabled due to GPG key problems (#1722)
+#class T_Arch_Latest(Test):
+class Arch_Latest(Test):
    config = "arch"
    base = "archlinux:latest"
    arch_excludes = ["aarch64", "ppc64le"]  # base only amd64
