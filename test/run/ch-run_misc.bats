@@ -1054,3 +1054,28 @@ EOF
     echo "$text"
     echo "$text" | grep -F "$expected"
 }
+
+@test 'reprint warnings' {
+    run ch-run --warnings=0
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 1!') -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 2!') -eq 0 ]]
+    [[ "$output" != *'reprinting first'* ]]
+
+    run ch-run --warnings=1
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *'ch-run['*']: warning: reprinting first 1 warning(s)'* ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 1!') -eq 2 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 2!') -eq 0 ]]
+
+    # Warnings list is a statically sized memory buffer. Ensure it works as
+    # intended by printing more warnings than can be saved to this buffer.
+    run ch-run --warnings=100
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *'ch-run['*']: warning: reprinting first '*' warning(s)'* ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 1!') -eq 2 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 100!') -eq 1 ]]
+
+}

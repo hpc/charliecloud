@@ -321,6 +321,7 @@ def main():
    # Dispatch.
    ch.profile_start()
    cli.func(cli)
+   ch.warnings_dump()
    ch.exit(0)
 
 
@@ -330,5 +331,6 @@ if (__name__ == "__main__"):
    try:
       main()
    except ch.Fatal_Error as x:
+      ch.warnings_dump()
       ch.ERROR(*x.args, **x.kwargs)
       ch.exit(1)

@@ -281,6 +281,7 @@ find . -type f -a \( \
      -o -path ./.gitignore \
      -o -path ./VERSION \
      -o -path ./misc/docker-clean.sh \
+     -o -path ./misc/branches-tidy \
      -o -path ./misc/grep \
      -o -path ./misc/loc \) | sort > /tmp/loc.misc
 countem "MISCELLANEOUS" /tmp/loc.misc
