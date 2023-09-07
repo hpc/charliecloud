@@ -10,5 +10,5 @@
 ./test/build/50_dockerfile.bats:96:RUN echo test4   \  
 ./test/build/50_dockerfile.bats:97:b   \  
 ./test/build/50_dockerfile.bats:131:  4. RUN.S true 
-./test/build/50_dockerfile.bats:432:#ENV chse_1a value 1a 
-./test/build/50_dockerfile.bats:435:#ENV chse_1c=value\ 1c\ 
+./test/build/50_dockerfile.bats:434:#ENV chse_1a value 1a 
+./test/build/50_dockerfile.bats:437:#ENV chse_1c=value\ 1c\ 
