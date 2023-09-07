@@ -531,7 +531,6 @@ EOF
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
-    # FIXME!!!
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  (force) WORKDIR /usr
 *  RUN.S dnf install -y ed  # doesn’t need --force
@@ -549,7 +548,6 @@ EOF
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
-    # FIXME!!!
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  WORKDIR /usr
 *  RUN.S dnf install -y ed  # doesn’t need --force
