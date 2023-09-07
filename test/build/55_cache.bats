@@ -1175,7 +1175,7 @@ EOF
 
     # Build it. Every instruction does a quick restore, so this validates that
     # works, aside from mtime and atime which are expected to vary.
-    ch-image build -t tmpimg -f ./bucache/difficult.df .
+    ch-image build --force=none -t tmpimg -f ./bucache/difficult.df .
     stat "$CH_IMAGE_STORAGE"/img/tmpimg/test/fifo_
     stat1=$(statwalk)
     diff -u - <(echo "$stat1" | sed -E 's/([am])=[0-9T:.-]+/\1=:::/g') <<'EOF'
@@ -1226,10 +1226,10 @@ EOF
     # including timestamps.
     ch-image delete tmpimg
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg ]]
-    run ch-image build -t tmpimg -f ./bucache/difficult.df .
+    run ch-image build --force=none -t tmpimg -f ./bucache/difficult.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'* RUN.S echo last'* ]]
+    [[ $output = *'* RUN.N echo last'* ]]
     statwalk | diff -u <(echo "$stat1") -
 }
 
