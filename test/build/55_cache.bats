@@ -1174,7 +1174,10 @@ EOF
     umask 0027
 
     # Build it. Every instruction does a quick restore, so this validates that
-    # works, aside from mtime and atime which are expected to vary.
+    # works, aside from mtime and atime which are expected to vary. Note that
+    # “--force=none” is necessary because the dockerfile includes a call to
+    # mkfifo(1), which uses the system call mknod(2), which is intercepted by
+    # our seccomp(2) filter (see also: #1646).
     ch-image build --force=none -t tmpimg -f ./bucache/difficult.df .
     stat "$CH_IMAGE_STORAGE"/img/tmpimg/test/fifo_
     stat1=$(statwalk)
