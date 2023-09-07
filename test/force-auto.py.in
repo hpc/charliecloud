@@ -145,7 +145,7 @@ echo "$output"
 [[ $status -eq 0 ]]
 {self.build1_post_hook}"""
       # force
-      force = "--force=%s" % (self.force) if self.force else ""
+      force = "--force=%s" % (self.force) if self.force else "--force=none"
       # run command we’re testing
       try:
          run = self.runs[self.run]

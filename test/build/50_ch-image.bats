@@ -878,7 +878,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'1* FROM alpine:3.17'* ]]
-    [[ $output = *'2. RUN true'* ]]
+    [[ $output = *'2. RUN.S true'* ]]
 
     echo
     echo '*** Build again: hit'
@@ -886,7 +886,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'1* FROM alpine:3.17'* ]]
-    [[ $output = *'2* RUN true'* ]]
+    [[ $output = *'2* RUN.S true'* ]]
 
     echo
     echo '*** Build a 3rd time with the second base image: should now miss'
@@ -894,5 +894,5 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'1* FROM alpine:3.16'* ]]
-    [[ $output = *'2. RUN true'* ]]
+    [[ $output = *'2. RUN.S true'* ]]
 }

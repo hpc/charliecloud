@@ -292,7 +292,7 @@ FORCE_CMD_DEFAULT = { "apt":     ["-o", "APT::Sandbox::User=root"],
 def new(image_path, force_mode, force_cmds):
    """Return a new forcer object appropriate for image at image_path in mode
       force_mode. If no such object can be found, exit with error."""
-   if (force_mode is None):
+   if (force_mode == "none"):
       return Nope()
    elif (force_mode == "fakeroot"):
       return Fakeroot(image_path)

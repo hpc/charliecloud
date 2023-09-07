@@ -1155,8 +1155,8 @@ class Run(Instruction):
    def str_name(self):
       # Can’t get this from the forcer object because it might not have been
       # initialized yet.
-      if (cli.force is None):
-         tag = ""
+      if (cli.force == "none"):
+         tag = ".N"
       elif (cli.force == "fakeroot"):
          # FIXME: This causes spurious misses because it adds the force tag to
          # *all* RUN instructions, not just those that actually were modified
