@@ -761,12 +761,10 @@ if [[ ! -d $TMP_ ]]; then
     chmod 700 "$TMP_"
 fi
 
-# Find test directories. (At one point we tried to unify the paths between the
-# two conditions using a deeper directory hierarchy and symlinks to . in the
-# source code to keep it from being even deeper, but this became too unruly.)
+# Find test directories. Note some of this gets rewritten at install time.
 CHTEST_DIR=${ch_base}/test
 CHTEST_EXAMPLES_DIR=${ch_base}/examples
-if [[ -d ${ch_base}/share ]]; then
+if [[ ! -f ${ch_base}/VERSION ]]; then
     # installed
     CHTEST_INSTALLED=yes
     CHTEST_GITWD=

@@ -263,7 +263,15 @@ jobs:
           else
               LDD=ldd
           fi
-          ./configure --prefix=$ch_prefix/from-git
+          # Go wild with install directories to make sure it works (see #683).
+          # We do have a normal install below.
+          ./configure --prefix=$ch_prefix/from-git \
+                      --datarootdir=$ch_prefix/from-git_dataroot \
+                      --libexecdir=$ch_prefix/from-git_libexec \
+                      --libdir=$ch_prefix/from-git_lib \
+                      --mandir=$ch_prefix/from-git_man \
+                      --docdir=$ch_prefix/from-git_doc \
+                      --htmldir=$ch_prefix/from-git_html
           set -x
           fgrep 'documentation: yes' config.log
           [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
@@ -344,7 +352,7 @@ jobs:
           mv charliecloud-*.tar.gz $ch_prefix
           cd $ch_prefix
           tar xf charliecloud-*.tar.gz
-          rm charliecloud-*.tar.gz  # else cd fails with "too many arguments"
+          rm charliecloud-*.tar.gz  # else cd fails with “too many arguments”
           cd charliecloud-*
           pwd
           # Configure and verify output.
