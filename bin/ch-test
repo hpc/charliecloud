@@ -31,7 +31,7 @@ warning () {
 
 ### Setup
 
-ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib
 if [[ ! -f ${ch_lib}/base.sh ]]; then
     fatal "install or build problem: not found: ${ch_lib}/base.sh"
 fi
@@ -764,12 +764,12 @@ fi
 # Find test directories. (At one point we tried to unify the paths between the
 # two conditions using a deeper directory hierarchy and symlinks to . in the
 # source code to keep it from being even deeper, but this became too unruly.)
+CHTEST_DIR=${ch_base}/test
+CHTEST_EXAMPLES_DIR=${ch_base}/examples
 if [[ -d ${ch_base}/share ]]; then
     # installed
     CHTEST_INSTALLED=yes
     CHTEST_GITWD=
-    CHTEST_DIR=${ch_base}/libexec/charliecloud/test
-    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
 else
     # build dir
     CHTEST_INSTALLED=
@@ -778,8 +778,6 @@ else
     else
         CHTEST_GITWD=
     fi
-    CHTEST_DIR=${ch_base}/test
-    CHTEST_EXAMPLES_DIR=${ch_base}/examples
 fi
 export ch_base
 export CHTEST_INSTALLED

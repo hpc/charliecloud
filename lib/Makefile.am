@@ -16,7 +16,6 @@ dist_mylib_DATA = base.sh \
                   pull.py \
                   push.py \
                   registry.py
-noinst_DATA = charliecloud
 mylib_DATA = contributors.bash \
              version.py \
              version.sh \
@@ -89,12 +88,7 @@ if ENABLE_LARK
 nobase_dist_mylib_DATA = $(LARK)
 endif
 
-CLEANFILES = $(mylib_DATA) $(noinst_DATA)
-
-# This symlink is so scripts can use "lib/charliecloud" whether they are
-# installed or not.
-charliecloud:
-	ln -s . charliecloud
+CLEANFILES = $(mylib_DATA)
 
 contributors.bash: ../README.rst
 	rm -f $@

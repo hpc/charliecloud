@@ -5,8 +5,8 @@ import inspect
 import os.path
 import sys
 
-sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/../lib/charliecloud"))
+ch_lib = os.path.dirname(os.path.abspath(__file__)) + "/../lib"
+sys.path.insert(0, ch_lib)
 import build_cache as bu
 import charliecloud as ch
 import build

@@ -19,7 +19,6 @@ a.out
 /doc/doctrees/
 /doc/html/
 /doc/man/*.[17]
-/lib/charliecloud
 /lib/contributors.bash
 /lib/lark
 /lib/lark-stubs
