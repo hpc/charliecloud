@@ -560,8 +560,9 @@ Options:
 
   :code:`--force[=MODE]`
     Use unprivileged build workarounds of mode :code:`MODE`, which can be
-    :code:`fakeroot` or :code:`seccomp` (the default). See section “Privilege
-    model” below for details on what this does and when you might need it.
+    :code:`fakeroot`, :code:`seccomp` (the default), or :code:`none`. See
+    section “Privilege model” below for details on what this does and when you
+    might need it.
 
   :code:`--force-cmd=CMD,ARG1[,ARG2...]`
     If command :code:`CMD` is found in a :code:`RUN` instruction, add the
@@ -612,10 +613,10 @@ or “`fakeroot <https://sylabs.io/guides/3.7/user-guide/fakeroot.html>`_” mod
 of some competing builders, which do require privileged supporting code or
 utilities.
 
-Without workarounds provided by :code:`--force`, this approach does confuse
-programs that expect to have real root privileges, most notably distribution
-package installers. This subsection describes why that happens and what you
-can do about it.
+Without root emulation workarounds, this approach does confuse programs that
+expect to have real root privileges, most notably distribution package
+installers. This subsection describes why that happens and what you can do about
+it.
 
 :code:`ch-image` executes all instructions as the normal user who invokes it.
 For :code:`RUN`, this is accomplished with :code:`ch-run` arguments including

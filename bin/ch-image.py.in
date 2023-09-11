@@ -190,7 +190,7 @@ def main():
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
    sp.add_argument("--force", metavar="MODE", nargs="?", default="seccomp",
-                   choices=["fakeroot", "none", "seccomp"], const="seccomp",
+                   type=ch.Force_Mode, const="seccomp",
                    help="inject unprivileged build workarounds")
    sp.add_argument("--force-cmd", metavar="CMD,ARG1[,ARG2...]",
                    action="append", default=[],
