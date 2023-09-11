@@ -13,12 +13,12 @@ EXTRA_DIST += LICENSE README.rst VERSION autogen.sh
 # others are just sh.
 install-exec-hook:
 	@echo '### re-writing embedded paths ###'
-	for i in @bindir@/ch-convert \
-	         @bindir@/ch-fromhost \
-	         @bindir@/ch-image \
-	         @bindir@/ch-run-oci \
-	         @bindir@/ch-test \
-	         @libdir@/charliecloud/base.sh; \
+	for i in $(DESTDIR)@bindir@/ch-convert \
+	         $(DESTDIR)@bindir@/ch-fromhost \
+	         $(DESTDIR)@bindir@/ch-image \
+	         $(DESTDIR)@bindir@/ch-run-oci \
+	         $(DESTDIR)@bindir@/ch-test \
+	         $(DESTDIR)@libdir@/charliecloud/base.sh; \
 	do \
 	  sed -Ei -e 's|^(ch_lib ?= ?).+/lib"?$$|\1"@libdir@/charliecloud"|' \
 	          -e 's|^(CHTEST_DIR=).+$$|\1@libexecdir@/charliecloud/test|' \
