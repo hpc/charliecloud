@@ -621,6 +621,9 @@ def init(cli):
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
    VERBOSE("verbose level: %d" % verbose)
+   # signal handling
+   signal.signal(signal.SIGINT, sigterm)
+   signal.signal(signal.SIGTERM, sigterm)
    # storage directory
    global storage
    storage = fs.Storage(cli.storage)
@@ -796,6 +799,10 @@ def si_decimal(ct):
          return (ct, suffix)
       ct /= 1000
    assert False, "unreachable"
+
+def sigterm(signum, frame):
+   "Handler for SIGTERM and friends."
+   FATAL("received %s" % signal.Signals(signum).name)
 
 def user():
    "Return the current username; exit with error if it can’t be obtained."
