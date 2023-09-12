@@ -312,7 +312,7 @@ class Progress:
             ct = "%.*f/%.*f" % (self.precision, self.progress / self.divisor,
                                 self.precision, self.length / self.divisor)
             pct = "%d%%" % (100 * self.progress / self.length)
-            if (ct == "0.0/0.0" or self.unit is None):
+            if (ct == "0.0/0.0"):
                # too small, don’t print count
                line = "%s: %s" % (self.msg, pct)
             else:

@@ -1246,15 +1246,13 @@ class Enabled_Cache:
          if (self.commit_hash_p(base) and base == self.worktree_head(image)):
             ch.VERBOSE("already checked out: %s %s" % (image.unpack_path, base))
          else:
-            p = ch.Progress("updating existing image", None, 1, 1)
+            ch.INFO("updating existing image ...")
             t = ch.Timer()
             self.git(["checkout", "-B", self.branch_name_unready(image.ref),
                       base], cwd=image.unpack_path)
             t.log("adjusted worktree")
-            p.update(1)
-            p.done()
       else:
-         p = ch.Progress("copying image from cache", None, 1, 1)
+         ch.INFO("copying image from cache ...")
          image.unpack_clear()
          t = ch.Timer()
          self.git(["worktree", "add", "-f", "-B",
@@ -1266,8 +1264,6 @@ class Enabled_Cache:
          git_dir_new.parent.mkdir_()
          git_dir_default.rename_(git_dir_new)
          t.log("created worktree")
-         p.update(1)
-         p.done()
 
    def worktree_adopt(self, image, base):
       """Create a new worktree with the contents of existing directory
