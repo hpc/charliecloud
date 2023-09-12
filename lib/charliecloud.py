@@ -312,7 +312,7 @@ class Progress:
             ct = "%.*f/%.*f" % (self.precision, self.progress / self.divisor,
                                 self.precision, self.length / self.divisor)
             pct = "%d%%" % (100 * self.progress / self.length)
-            if (ct == "0.0/0.0"):
+            if (ct == "0.0/0.0" or self.unit is None):
                # too small, don’t print count
                line = "%s: %s" % (self.msg, pct)
             else:
@@ -802,6 +802,7 @@ def si_decimal(ct):
 
 def sigterm(signum, frame):
    "Handler for SIGTERM and friends."
+   print()  # don’t stomp on progress meter if one is being printed
    FATAL("received %s" % signal.Signals(signum).name)
 
 def user():
