@@ -743,6 +743,17 @@ filter and has no knowledge of which instructions actually used the
 intercepted system calls. Therefore, the printed “instructions modified”
 number is only a count of instructions with a hook applied as described above.
 
+:code:`RUN` instruction
+~~~~~~~~~~~~~~~~~~~~~~~
+
+In terminal output, image metadata, and the build cache, the :code:`RUN`
+instruction is always logged as :code:`RUN.S`, :code:`RUN.F`, or :code:`RUN.N`.
+The letter appended to the instruction reflects the root emulation mode used
+during the build in which the instruction was executed. :code:`RUN.S` indicates
+:code:`seccomp`, :code:`RUN.F` indicates :code:`fakeroot`, and :code:`RUN.N`
+indicates that neither form of root emulation was used (:code:`--force=none`).
+
+
 Compatibility with other Dockerfile interpreters
 ------------------------------------------------
 
