@@ -435,12 +435,10 @@ def DEBUG(msg, hint=None, **kwargs):
    if (log_level >= Log_Level.DEBUG):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
-def ERROR(msg, hint=None, trace=None, fatal=False, **kwargs):
-   if (fatal):
-      log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
+def ERROR(msg, hint=None, trace=None, **kwargs):
+   log(msg, hint, trace, "1;31m", "error: ", **kwargs)  # bold red
 
 def FATAL(msg, hint=None, **kwargs):
-   kwargs["fatal"] = True
    if (trace_fatal):
       # One-line traceback, skipping top entry (which is always bootstrap code
       # calling ch-image.main()) and last entry (this function).
