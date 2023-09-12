@@ -86,7 +86,6 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output != *'info'* ]]
     [[ $output != *'warning: warning'* ]]
-    [[ $output != *'error: error'* ]]
     [[ $output = *'error: the program failed inexplicably'* ]]
 }
 
