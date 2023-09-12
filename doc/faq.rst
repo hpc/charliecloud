@@ -99,31 +99,6 @@ two solutions:
    processes and one writes a file in the image that another is reading or
    writing).
 
-:code:`ch-image` fails with "argument --force: invalid choice"
---------------------------------------------------------------
-
-This happens when specifying the context directly after the :code:`--force`
-option, e.g.
-
-::
-
-  $ ch-image build --force examples/hello/
-  [...]
-  ch-image build: error: argument --force: invalid choice: 'examples/hello/' (choose from 'fakeroot', 'seccomp')
-
-This happens because the command line interprets the argument after
-:code:`--force` as the optional input for :code:`--force`. When said argument
-isn’t :code:`fakeroot` or :code:`seccomp`, the program throws an error. The
-solution is to add a :code:`--` after :code:`--force` to indicate the end of
-the command line options, e.g.
-
-::
-
-  $ ch-image build --force -- .
-  inferred image name: hello
-  [...]
-  grown in 3 instructions: hello
-
 :code:`ch-image` fails with "certificate verify failed"
 -------------------------------------------------------
 

@@ -114,8 +114,8 @@ EOF
     ch-image build -t a -f bucache/a.df .
 
     blessed_out=$(cat << 'EOF'
-*  (a) RUN echo bar
-*  RUN echo foo
+*  (a) RUN.S echo bar
+*  RUN.S echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -134,9 +134,9 @@ EOF
     ch-image build -t b -f bucache/b.df .
 
     blessed_out=$(cat << 'EOF'
-*  (b) RUN echo baz
-*  (a) RUN echo bar
-*  RUN echo foo
+*  (b) RUN.S echo baz
+*  (a) RUN.S echo bar
+*  RUN.S echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -157,11 +157,11 @@ EOF
     ch-image build -t c -f bucache/c.df .
 
     blessed_out=$(cat << 'EOF'
-*  (c) RUN echo qux
-| *  (b) RUN echo baz
-| *  (a) RUN echo bar
+*  (c) RUN.S echo qux
+| *  (b) RUN.S echo baz
+| *  (a) RUN.S echo bar
 |/
-*  RUN echo foo
+*  RUN.S echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -177,13 +177,13 @@ EOF
     # Forcing a rebuild show produce a new pair of FOO and BAR commits from
     # from the alpine branch.
     blessed_out=$(cat << 'EOF'
-*  (a) RUN echo bar
-*  RUN echo foo
-| *  (c) RUN echo qux
-| | *  (b) RUN echo baz
-| | *  RUN echo bar
+*  (a) RUN.S echo bar
+*  RUN.S echo foo
+| *  (c) RUN.S echo qux
+| | *  (b) RUN.S echo baz
+| | *  RUN.S echo bar
 | |/
-| *  RUN echo foo
+| *  RUN.S echo foo
 |/
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
@@ -202,14 +202,14 @@ EOF
     # the rebuild behavior only forces misses on non-FROM instructions, it
     # should now be based on A's new commits.
     blessed_out=$(cat << 'EOF'
-*  (b) RUN echo baz
-*  (a) RUN echo bar
-*  RUN echo foo
-| *  (c) RUN echo qux
-| | *  RUN echo baz
-| | *  RUN echo bar
+*  (b) RUN.S echo baz
+*  (a) RUN.S echo bar
+*  RUN.S echo foo
+| *  (c) RUN.S echo qux
+| | *  RUN.S echo baz
+| | *  RUN.S echo bar
 | |/
-| *  RUN echo foo
+| *  RUN.S echo foo
 |/
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
@@ -230,17 +230,17 @@ EOF
     #  - No! Rebuild forces misses; since c.df has it’s own FOO it should miss.
     #     --jogas 2/24
     blessed_out=$(cat << 'EOF'
-*  (c) RUN echo qux
-*  RUN echo foo
-| *  (b) RUN echo baz
-| *  (a) RUN echo bar
-| *  RUN echo foo
+*  (c) RUN.S echo qux
+*  RUN.S echo foo
+| *  (b) RUN.S echo baz
+| *  (a) RUN.S echo bar
+| *  RUN.S echo foo
 |/
-| *  RUN echo qux
-| | *  RUN echo baz
-| | *  RUN echo bar
+| *  RUN.S echo qux
+| | *  RUN.S echo baz
+| | *  RUN.S echo bar
 | |/
-| *  RUN echo foo
+| *  RUN.S echo foo
 |/
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
@@ -264,10 +264,10 @@ EOF
     ch-image build -t e -f bucache/c.df .
 
     blessed_out=$(cat << 'EOF'
-*  (e) RUN echo qux
-| *  RUN echo bar
+*  (e) RUN.S echo qux
+| *  RUN.S echo bar
 |/
-*  RUN echo foo
+*  RUN.S echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -281,10 +281,10 @@ EOF
     ch-image build -t e -f bucache/a.df .
 
     blessed_out=$(cat << 'EOF'
-*  RUN echo qux
-| *  (e) RUN echo bar
+*  RUN.S echo qux
+| *  (e) RUN.S echo bar
 |/
-*  RUN echo foo
+*  RUN.S echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -334,7 +334,7 @@ RUN cat /worldchampion
 EOF
 )
     tree_ours_before=$(cat <<'EOF'
-*  (wc) RUN cat /worldchampion
+*  (wc) RUN.S cat /worldchampion
 *  (localhost+5000%champ) PULL localhost:5000/champ
 *  (root) ROOT
 EOF
@@ -367,7 +367,7 @@ EOF
     [[ $output = *'manifest list: downloading'* ]]
     [[ $output != *'manifest: downloading'* ]]
     [[ $output = *'config: downloading'* ]]
-    [[ $output = *'. RUN'* ]]
+    [[ $output = *'. RUN.S'* ]]
     run ch-image -s "$so" --tls-no-verify build -t wc -f <(echo "$df_ours") /tmp
     echo "$output"
     [[ $status -eq 0 ]]
@@ -375,7 +375,7 @@ EOF
     [[ $output != *'manifest list: downloading'* ]]
     [[ $output != *'manifest: downloading'* ]]
     [[ $output != *'config: downloading'* ]]
-    [[ $output = *'* RUN'* ]]
+    [[ $output = *'* RUN.S'* ]]
     run ch-image -s "$so" build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
@@ -415,7 +415,7 @@ EOF
     [[ $output != *'manifest list: downloading'* ]]
     [[ $output != *'manifest: downloading'* ]]
     [[ $output != *'config: downloading'* ]]
-    [[ $output = *'* RUN'* ]]
+    [[ $output = *'* RUN.S'* ]]
     run ch-image -s "$so" build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
@@ -437,7 +437,7 @@ EOF
     [[ $status -eq 0 ]]
     diff -u - <(echo "$output" | treeonly) <<'EOF'
 *  (localhost+5000%champ) PULL localhost:5000/champ
-| *  (wc) RUN cat /worldchampion
+| *  (wc) RUN.S cat /worldchampion
 | *  PULL localhost:5000/champ
 |/
 *  (root) ROOT
@@ -455,14 +455,14 @@ EOF
     [[ $output != *'manifest list: downloading'* ]]
     [[ $output != *'manifest: downloading'* ]]
     [[ $output != *'config: using existing file'* ]]
-    [[ $output = *'. RUN'* ]]
+    [[ $output = *'. RUN.S'* ]]
     run ch-image -s "$so" build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u - <(echo "$output" | treeonly) <<'EOF'
-*  (wc) RUN cat /worldchampion
+*  (wc) RUN.S cat /worldchampion
 *  (localhost+5000%champ) PULL localhost:5000/champ
-| *  RUN cat /worldchampion
+| *  RUN.S cat /worldchampion
 | *  PULL localhost:5000/champ
 |/
 *  (root) ROOT
@@ -492,8 +492,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     blessed_out=$(cat << 'EOF'
-*  (foo) RUN echo bar
-*  (foo#) RUN echo foo
+*  (foo) RUN.S echo bar
+*  (foo#) RUN.S echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -507,10 +507,10 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     blessed_out=$(cat << 'EOF'
-*  (foo) RUN echo qux
-| *  RUN echo bar
+*  (foo) RUN.S echo qux
+| *  RUN.S echo bar
 |/
-*  RUN echo foo
+*  RUN.S echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -523,11 +523,11 @@ EOF
     ch-image build-cache --reset
 
     # First build, without --force.
-    ch-image build -t force -f ./bucache/force.df ./bucache
+    ch-image build --force=none -t force -f ./bucache/force.df ./bucache
 
     # Second build, with --force. This should diverge after the first WORKDIR.
     sleep 1
-    ch-image build --force -t force -f ./bucache/force.df ./bucache
+    ch-image build --force=seccomp -t force -f ./bucache/force.df ./bucache
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
@@ -535,7 +535,7 @@ EOF
 *  (force) WORKDIR /usr
 *  RUN.S dnf install -y ed  # doesn’t need --force
 | *  WORKDIR /usr
-| *  RUN dnf install -y ed  # doesn’t need --force
+| *  RUN.N dnf install -y ed  # doesn’t need --force
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
@@ -544,7 +544,7 @@ EOF
 
     # Third build, without --force. This should re-use the first build.
     sleep 1
-    ch-image build -t force -f ./bucache/force.df ./bucache
+    ch-image build --force=none -t force -f ./bucache/force.df ./bucache
     run ch-image build-cache --tree
     echo "$output"
     [[ $status -eq 0 ]]
@@ -552,7 +552,7 @@ EOF
 *  WORKDIR /usr
 *  RUN.S dnf install -y ed  # doesn’t need --force
 | *  (force) WORKDIR /usr
-| *  RUN dnf install -y ed  # doesn’t need --force
+| *  RUN.N dnf install -y ed  # doesn’t need --force
 |/
 *  WORKDIR /
 *  (almalinux+8) PULL almalinux:8
@@ -575,13 +575,13 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'* FROM'* ]]
-    [[ $output = *'. RUN echo foo'* ]]
-    [[ $output = *'. RUN echo bar'* ]]
+    [[ $output = *'. RUN.S echo foo'* ]]
+    [[ $output = *'. RUN.S echo bar'* ]]
     blessed_out=$(cat << 'EOF'
-*  (a) RUN echo bar
-*  RUN echo foo
-| *  RUN echo bar
-| *  RUN echo foo
+*  (a) RUN.S echo bar
+*  RUN.S echo foo
+| *  RUN.S echo bar
+| *  RUN.S echo foo
 |/
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
@@ -667,7 +667,7 @@ EOF
     run ch-image build -t ae1 -f ./bucache/argenv.df ./bucache
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'5* RUN'* ]]
+    [[ $output = *'5* RUN.S'* ]]
 
     # Re-build, with partial hits. ARG and ENV from first build should pass
     # through with correct values.
@@ -707,17 +707,17 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     blessed_out=$(cat << 'EOF'
-*  (ae5) RUN echo 1 $argA $argB $envA $envB
+*  (ae5) RUN.S echo 1 $argA $argB $envA $envB
 *  ENV envB='venvBvargA'
 *  ENV envA='venvA'
 *  ARG argB='bar'
-| *  (ae4, ae3) RUN echo 1 $argA $argB $envA $envB
+| *  (ae4, ae3) RUN.S echo 1 $argA $argB $envA $envB
 | *  ENV envB='venvBvargA'
 | *  ENV envA='venvA'
 | *  ARG argB='foo'
 |/
-| *  (ae2) RUN echo 2 $argA $argB $envA $envB
-| | *  (ae1) RUN echo 1 $argA $argB $envA $envB
+| *  (ae2) RUN.S echo 2 $argA $argB $envA $envB
+| | *  (ae1) RUN.S echo 1 $argA $argB $envA $envB
 | |/
 | *  ENV envB='venvBvargA'
 | *  ENV envA='venvA'
@@ -743,7 +743,7 @@ EOF
     [[ $output = *'1. FROM'* ]]
     [[ $output = *'2. ARG'* ]]
     [[ $output = *'3. ARG'* ]]
-    [[ $output = *'4. RUN'* ]]
+    [[ $output = *'4. RUN.S'* ]]
     [[ $output = *'vargA sockA'* ]]
 
     # Re-build. All hits.
@@ -753,7 +753,7 @@ EOF
     [[ $output = *'1* FROM'* ]]
     [[ $output = *'2* ARG'* ]]
     [[ $output = *'3* ARG'* ]]
-    [[ $output = *'4* RUN'* ]]
+    [[ $output = *'4* RUN.S'* ]]
     [[ $output != *'vargA sockA'* ]]
 
     # Re-build with new value from command line. All hits again.
@@ -764,7 +764,7 @@ EOF
     [[ $output = *'1* FROM'* ]]
     [[ $output = *'2* ARG'* ]]
     [[ $output = *'3* ARG'* ]]
-    [[ $output = *'4* RUN'* ]]
+    [[ $output = *'4* RUN.S'* ]]
     [[ $output != *'vargA sockA'* ]]
     [[ $output != *'vargA sockB'* ]]
 }
@@ -884,11 +884,11 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'. FROM'* ]]
     [[ $output = *'base image only exists non-cached; adding to cache'* ]]
-    [[ $output = *'. RUN'* ]]
+    [[ $output = *'. RUN.S'* ]]
 
     # Check tree.
     blessed_out=$(cat << 'EOF'
-*  (foo) RUN echo foo
+*  (foo) RUN.S echo foo
 *  (alpine+3.17) IMPORT alpine:3.17
 *  (root) ROOT
 EOF
@@ -904,8 +904,8 @@ EOF
     ch-image build-cache --reset
 
     blessed_out=$(cat << 'EOF'
-*  (a2, a) RUN echo bar
-*  RUN echo foo
+*  (a2, a) RUN.S echo bar
+*  RUN.S echo foo
 *  (alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -942,7 +942,7 @@ EOF
     printf 'FROM alpine:3.17\n' | ch-image build -t foo -
     printf 'FROM foo\nRUN echo foo\n' | ch-image build -t alpine:3.17 -
     blessed_out=$(cat << 'EOF'
-*  (alpine+3.17) RUN echo foo
+*  (alpine+3.17) RUN.S echo foo
 *  (foo) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -959,7 +959,7 @@ EOF
     [[ $output != *'pulled image: adding to build cache'* ]]  # C1, C4
     [[ $output  = *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
-*  RUN echo foo
+*  RUN.S echo foo
 *  (foo, alpine+3.17) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -973,7 +973,7 @@ EOF
     sleep 1
     printf 'FROM alpine:3.17\n' | ch-image build -t alpine:3.16 -
     blessed_out=$(cat << 'EOF'
-*  RUN echo foo
+*  RUN.S echo foo
 *  (foo, alpine+3.17, alpine+3.16) PULL alpine:3.17
 *  (root) ROOT
 EOF
@@ -990,7 +990,7 @@ EOF
     [[ $output != *'pulled image: found in build cache'* ]]   # C2, C3
     blessed_out=$(cat << 'EOF'
 *  (alpine+3.16) PULL alpine:3.16
-| *  RUN echo foo
+| *  RUN.S echo foo
 | *  (foo, alpine+3.17) PULL alpine:3.17
 |/
 *  (root) ROOT
@@ -1151,7 +1151,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'* FROM'* ]]
-    [[ $output = *'* RUN'* ]]
+    [[ $output = *'* RUN.S'* ]]
     [[ $output = *"no image found: $CH_IMAGE_STORAGE/img/tmpimg"* ]]
     [[ $output = *'created worktree'* ]]
 }
@@ -1174,8 +1174,11 @@ EOF
     umask 0027
 
     # Build it. Every instruction does a quick restore, so this validates that
-    # works, aside from mtime and atime which are expected to vary.
-    ch-image build -t tmpimg -f ./bucache/difficult.df .
+    # works, aside from mtime and atime which are expected to vary. Note that
+    # “--force=none” is necessary because the dockerfile includes a call to
+    # mkfifo(1), which uses the system call mknod(2), which is intercepted by
+    # our seccomp(2) filter (see also: #1646).
+    ch-image build --force=none -t tmpimg -f ./bucache/difficult.df .
     stat "$CH_IMAGE_STORAGE"/img/tmpimg/test/fifo_
     stat1=$(statwalk)
     diff -u - <(echo "$stat1" | sed -E 's/([am])=[0-9T:.-]+/\1=:::/g') <<'EOF'
@@ -1226,10 +1229,10 @@ EOF
     # including timestamps.
     ch-image delete tmpimg
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg ]]
-    run ch-image build -t tmpimg -f ./bucache/difficult.df .
+    run ch-image build --force=none -t tmpimg -f ./bucache/difficult.df .
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'* RUN echo last'* ]]
+    [[ $output = *'* RUN.N echo last'* ]]
     statwalk | diff -u <(echo "$stat1") -
 }
 

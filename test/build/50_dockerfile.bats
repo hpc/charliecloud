@@ -128,35 +128,36 @@ EOF
 warning: not yet supported, ignored: issue #777: .dockerignore file
   1. FROM alpine:3.17
 copying image ...
-  4. RUN true 
- 13. RUN echo test1a
+  4. RUN.S true 
+ 13. RUN.S echo test1a
 test1a
- 16. RUN echo test1bc
+ 16. RUN.S echo test1bc
 test1bc
- 21. RUN echo test2  a
+ 21. RUN.S echo test2  a
 test2 a
- 24. RUN echo test2  b  c
+ 24. RUN.S echo test2  b  c
 test2 b c
- 29. RUN echo test3a
+ 29. RUN.S echo test3a
 test3a
- 32. RUN echo test3bc
+ 32. RUN.S echo test3bc
 test3bc
- 37. RUN echo test4   a
+ 37. RUN.S echo test4   a
 test4 a
- 40. RUN echo test4   b   c
+ 40. RUN.S echo test4   b   c
 test4 b c
- 45. RUN echo test5  a
+ 45. RUN.S echo test5  a
 test5 a
- 48. RUN echo test5  b  c
+ 48. RUN.S echo test5  b  c
 test5 b c
- 53. RUN echo test6  a
+ 53. RUN.S echo test6  a
 test6 a
- 57. RUN echo test6    b
+ 57. RUN.S echo test6    b
 test6 b
- 63. RUN echo test\ 7a
+ 63. RUN.S echo test\ 7a
 test 7a
- 66. RUN echo test\ 7\ b
+ 66. RUN.S echo test\ 7\ b
 test 7 b
+--force=seccomp: modified 0 RUN instructions
 grown in 16 instructions: tmpimg
 build slow? consider enabling the new build cache
 hint: https://hpc.github.io/charliecloud/command-usage.html#build-cache
@@ -905,11 +906,11 @@ EOF
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
         [[ $output = *"ARG BASEIMG='alpine:3.17'"* ]]
         [[ $output = *'FROM alpine:3.17 AS a'* ]]
-        [[ $output = *'RUN true'* ]]
+        [[ $output = *'RUN.S true'* ]]
         [[ $output = *'FROM a AS b'* ]]
-        [[ $output = *'RUN true'* ]]
+        [[ $output = *'RUN.S true'* ]]
         [[ $output = *'FROM b'* ]]
-        [[ $output = *'RUN true'* ]]
+        [[ $output = *'RUN.S true'* ]]
         run ch-image list
         echo "$output"
         [[ $status -eq 0 ]]
