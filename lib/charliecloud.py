@@ -44,7 +44,7 @@ class Build_Mode(enum.Enum):
 class Download_Mode(enum.Enum):
    ENABLED = "enabled"
    WRITE_ONLY = "write-only"
-  
+
 # Root emulation mode
 class Force_Mode(enum.Enum):
    FAKEROOT="fakeroot"
