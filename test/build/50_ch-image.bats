@@ -78,7 +78,7 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output != *'info'* ]]
     [[ $output != *'warning: warning'* ]]
-    [[ $output != *'error: error'* ]]
+    [[ $output = *'error: error'* ]]
 
     # failure at quiet level 3
     run ch-image gestalt logging -qqq --fail
