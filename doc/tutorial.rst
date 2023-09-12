@@ -41,7 +41,7 @@ should be able to tell you if this is linked in.
 ::
 
   $ cd /usr/local/share/doc/charliecloud/examples/hello
-  $ ch-image build --force -- .
+  $ ch-image build .
   inferred image name: hello
   [...]
   grown in 3 instructions: hello
@@ -67,7 +67,7 @@ section.
 ::
 
   $ cd /usr/local/share/doc/charliecloud/examples/hello
-  $ ch-image build --force .
+  $ ch-image build .
   inferred image name: hello
   [...]
   grown in 4 instructions: hello
@@ -444,16 +444,14 @@ These two build should take about 15 minutes total, depending on the speed of
 your system.
 
 Note that Charliecloud infers their names from the Dockerfile name, so we
-don’t need to specify :code:`-t`. Also, :code:`--force` enables some
-workarounds for tools like distribution package managers that expect to really
-be root.
+don’t need to specify :code:`-t`.
 
 ::
 
-  $ ch-image build --force \
+  $ ch-image build \
        -f /usr/local/share/doc/charliecloud/examples/Dockerfile.almalinux_8ch \
        /usr/local/share/doc/charliecloud/examples
-  $ ch-image build --force \
+  $ ch-image build \
        -f /usr/local/share/doc/charliecloud/examples/Dockerfile.openmpi \
           /usr/local/share/doc/charliecloud/examples
 
