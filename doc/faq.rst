@@ -1219,6 +1219,14 @@ This table list which logging is printed at which verbosity levels (✅ indicate
      - ❌
      - ❌
      - ❌
+   * - program stdout
+     - ✅
+     - ✅
+     - [1]
+     - [1]
+     - [1]
+     - ❌
+     - ❌
    * - subprocess stdout
      - ✅
      - ✅
