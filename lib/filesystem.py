@@ -667,7 +667,15 @@ class Storage:
             entries.remove(entry)
          except KeyError:
             ch.FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      # Ignore some files that may or may not exist.
       entries -= { i.name for i in (self.lockfile, self.mount_point) }
+      # Delete some files that exist only if we crashed.
+      for i in (self.image_tmp, ):
+         if (i.name in entries):
+            ch.WARNING("deleting leftover temporary file/dir: %s" % i.name)
+            i.rmtree()
+            entries.remove(i.name)
+      # If anything is left, yell about it.
       if (len(entries) > 0):
          ch.FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(sorted(entries))))

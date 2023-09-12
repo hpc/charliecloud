@@ -821,8 +821,14 @@ def si_decimal(ct):
 
 def sigterm(signum, frame):
    "Handler for SIGTERM and friends."
-   print()  # don’t stomp on progress meter if one is being printed
-   FATAL("received %s" % signal.Signals(signum).name)
+   # Ignore further signals because we are already cleaning up.
+   signal.signal(signal.SIGINT, signal.SIG_IGN)
+   signal.signal(signal.SIGTERM, signal.SIG_IGN)
+   # Don’t stomp on progress meter if one is being printed.
+   print()
+   signame = signal.Signals(signum).name
+   ERROR("received %s, exiting" % signame)
+   FATAL("received %s" % signame)
 
 def user():
    "Return the current username; exit with error if it can’t be obtained."
