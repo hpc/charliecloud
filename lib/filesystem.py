@@ -522,6 +522,17 @@ class Storage:
    def build_large_path(self, name):
       return self.build_large // name
 
+   def cleanup(self):
+      "Called during initialization after we know the storage dir is valid."
+      # Delete partial downloads.
+      part_ct = 0
+      for path in self.download_cache.glob("part_*"):
+         ch.VERBOSE("deleting: %s" % path)
+         path.unlink_()
+         part_ct += 1
+      if (part_ct > 0):
+         ch.WARNING("deleted %d partially downloaded files" % part_ct)
+
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
@@ -590,6 +601,7 @@ class Storage:
                   % (v_found, self.root),
                   'you can delete and re-initialize with "ch-image reset"')
       self.validate_strict()
+      self.cleanup()
 
    def lock(self):
       """Lock the storage directory. Charliecloud does not at present support
