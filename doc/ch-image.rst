@@ -559,7 +559,7 @@ Options:
     this case.
 
   :code:`--force[=MODE]`
-    Use unprivileged build workarounds of mode :code:`MODE`, which can be
+    Use unprivileged build with root emulation mode :code:`MODE`, which can be
     :code:`fakeroot`, :code:`seccomp` (the default), or :code:`none`. See
     section “Privilege model” below for details on what this does and when you
     might need it.
@@ -613,20 +613,18 @@ or “`fakeroot <https://sylabs.io/guides/3.7/user-guide/fakeroot.html>`_” mod
 of some competing builders, which do require privileged supporting code or
 utilities.
 
-Without root emulation workarounds, this approach does confuse programs that
-expect to have real root privileges, most notably distribution package
-installers. This subsection describes why that happens and what you can do about
-it.
+Without root emulation, this approach does confuse programs that expect to have
+real root privileges, most notably distribution package installers. This
+subsection describes why that happens and what you can do about it.
 
 :code:`ch-image` executes all instructions as the normal user who invokes it.
 For :code:`RUN`, this is accomplished with :code:`ch-run` arguments including
-:code:`-w --uid=0 --gid=0`. That is, your host EUID and EGID are both mapped
-to zero inside the container, and only one UID (zero) and GID (zero) are
-available inside the container. Under this arrangement, processes running in
-the container for each :code:`RUN` *appear* to be running as root, but many
-privileged system calls will fail without the workarounds described below.
-**This affects any fully unprivileged container build, not just
-Charliecloud.**
+:code:`-w --uid=0 --gid=0`. That is, your host EUID and EGID are both mapped to
+zero inside the container, and only one UID (zero) and GID (zero) are available
+inside the container. Under this arrangement, processes running in the container
+for each :code:`RUN` *appear* to be running as root, but many privileged system
+calls will fail without the root emulation methods described below. **This
+affects any fully unprivileged container build, not just Charliecloud.**
 
 The most common time to see this is installing packages. For example, here is
 RPM failing to :code:`chown(2)` a file, which makes the package update fail:
@@ -652,8 +650,8 @@ Charliecloud provides two different mechanisms to avoid these problems. Both
 involve lying to the containerized process about privileged system calls, but
 at very different levels of complexity.
 
-Workaround mode :code:`fakeroot`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Root emulation mode :code:`fakeroot`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This mode uses :code:`fakeroot(1)` to maintain an elaborate web of deceit that
 is internally consistent. This program intercepts both privileged system calls
@@ -701,8 +699,8 @@ exactly what it is doing.
    :code:`fakeroot` mode works and :code:`seccomp` does not, please let us
    know.
 
-Workaround mode :code:`seccomp` (default)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Root emulation mode :code:`seccomp` (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This mode uses the kernel’s :code:`seccomp(2)` system call filtering to
 intercept certain privileged system calls, do absolutely nothing, and return
