@@ -1407,7 +1407,7 @@ EOF
     # Check if test needs to be skipped
     touch "$BATS_TMPDIR/tmpfs_test"
     run setfattr -n user.foo -v bar "$BATS_TMPDIR/tmpfs_test"
-    if [[ ("$status" != 0) && (-n $GITHUB_ACTIONS) ]]; then
+    if [[ ("$status" != 0) && (-z $GITHUB_ACTIONS) ]]; then
         skip 'xattrs unsupported by tmpfs'
     fi
 
