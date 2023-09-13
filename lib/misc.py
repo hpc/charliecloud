@@ -87,10 +87,10 @@ def gestalt_storage_path(cli):
    print(ch.storage.root)
 
 def gestalt_logging(cli):
-   ch.INFO("info")
-   ch.VERBOSE("verbose")
-   ch.DEBUG("debug")
    ch.TRACE("trace")
+   ch.DEBUG("debug")
+   ch.VERBOSE("verbose")
+   ch.INFO("info")
    ch.WARNING("warning")
    ch.ERROR("error")
    if (cli.fail):

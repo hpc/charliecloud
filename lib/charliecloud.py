@@ -517,8 +517,8 @@ def cmd(argv, fail_ok=False, **kwargs):
       process succeeded and exit with fatal error if it failed."""
    if (log_level < Log_Level.QUIET_INFO):
       kwargs["stdout"] = subprocess.DEVNULL
-   if (log_level <= Log_Level.QUIET_STDERR):
-      kwargs["stderr"] = subprocess.DEVNULL
+      if (log_level <= Log_Level.QUIET_STDERR):
+         kwargs["stderr"] = subprocess.DEVNULL
    cp = cmd_base(argv, fail_ok=fail_ok, **kwargs)
    return cp.returncode
 
@@ -645,7 +645,7 @@ def init(cli):
    if (cli.quiet):
       fail_ct = 0
       if (trace_fatal):
-         ERROR("“quiet” incompatible with “debug”")
+         ERROR("“quiet” incompatible with “debug” and “CH_IMAGE_DEBUG”")
          fail_ct += 1
       if (cli.verbose):
          ERROR("“quiet” incompatible with “verbose”")
