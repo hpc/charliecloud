@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Tutorial &mdash; Charliecloud 0.34~pre+5d8f4c25 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.34 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34~pre+5d8f4c25
+                0.34
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -190,7 +190,7 @@ Charliecloud for your own applications.</p>
 <p>The preferred workflow uses our internal SquashFS mounting code. Your sysadmin
 should be able to tell you if this is linked in.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/share/doc/charliecloud/examples/hello
-<span class="gp">$</span> ch-image build --force -- .
+<span class="gp">$</span> ch-image build .
 <span class="go">inferred image name: hello</span>
 <span class="go">[...]</span>
 <span class="go">grown in 3 instructions: hello</span>
@@ -214,7 +214,7 @@ should be able to tell you if this is linked in.</p>
 tutorial uses SquashFS images, but you can adapt it analogously to this
 section.</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> /usr/local/share/doc/charliecloud/examples/hello
-<span class="gp">$</span> ch-image build --force .
+<span class="gp">$</span> ch-image build .
 <span class="go">inferred image name: hello</span>
 <span class="go">[...]</span>
 <span class="go">grown in 4 instructions: hello</span>
@@ -558,13 +558,11 @@ In that case, follow your site’s instructions instead.</p>
 These two build should take about 15 minutes total, depending on the speed of
 your system.</p>
 <p>Note that Charliecloud infers their names from the Dockerfile name, so we
-don’t need to specify <code class="code docutils literal notranslate"><span class="pre">-t</span></code>. Also, <code class="code docutils literal notranslate"><span class="pre">--force</span></code> enables some
-workarounds for tools like distribution package managers that expect to really
-be root.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build --force <span class="se">\</span>
+don’t need to specify <code class="code docutils literal notranslate"><span class="pre">-t</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build <span class="se">\</span>
      -f /usr/local/share/doc/charliecloud/examples/Dockerfile.almalinux_8ch <span class="se">\</span>
      /usr/local/share/doc/charliecloud/examples
-<span class="gp">$</span> ch-image build --force <span class="se">\</span>
+<span class="gp">$</span> ch-image build <span class="se">\</span>
      -f /usr/local/share/doc/charliecloud/examples/Dockerfile.openmpi <span class="se">\</span>
         /usr/local/share/doc/charliecloud/examples
 </pre></div>

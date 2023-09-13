@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>6. ch-image &mdash; Charliecloud 0.34~pre+5d8f4c25 documentation</title>
+  <title>6. ch-image &mdash; Charliecloud 0.34 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34~pre+5d8f4c25
+                0.34
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -66,8 +66,9 @@
 <li class="toctree-l3"><a class="reference internal" href="#id3">6.7.2. Description</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#privilege-model">6.7.3. Privilege model</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#id4">6.7.3.1. Overview</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#workaround-mode-fakeroot">6.7.3.2. Workaround mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#workaround-mode-seccomp-default">6.7.3.3. Workaround mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#root-emulation-mode-fakeroot">6.7.3.2. Root emulation mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#root-emulation-mode-seccomp-default">6.7.3.3. Root emulation mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-instruction">6.7.3.4. <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instruction</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#compatibility-with-other-dockerfile-interpreters">6.7.4. Compatibility with other Dockerfile interpreters</a><ul>
@@ -196,11 +197,12 @@ subsequent requests in authenticated mode. For most subcommands, the
 default is to never authenticate, i.e., make all requests anonymously. The
 exception is <code class="code docutils literal notranslate"><span class="pre">push</span></code>, which implies <code class="code docutils literal notranslate"><span class="pre">--auth</span></code>.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--cache</span></code></dt><dd><p>Enable build cache. Default if a sufficiently new Git is available.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--cache</span></code></dt><dd><p>Enable build cache. Default if a sufficiently new Git is available. See
+section <a class="reference internal" href="#ch-image-build-cache"><span class="std std-ref">Build cache</span></a> for details.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--cache-large</span> <span class="pre">SIZE</span></code></dt><dd><p>Set the cache’s large file threshold to <code class="code docutils literal notranslate"><span class="pre">SIZE</span></code> MiB, or <code class="code docutils literal notranslate"><span class="pre">0</span></code> for
 no large files, which is the default. This can speed up some builds.
-<strong>Experimental.</strong> See section “Build cache” for details.</p>
+<strong>Experimental.</strong> See section <a class="reference internal" href="#ch-image-bu-large"><span class="std std-ref">Large file threshold</span></a> for details.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code></dt><dd><p>Disable build cache. Default if a sufficiently new Git is not available.
 This option turns off the cache completely; if you want to re-execute a
@@ -376,7 +378,7 @@ will likely have strong opinions.</p>
 </div>
 </section>
 <section id="build-cache">
-<h2><span class="section-number">6.6. </span>Build cache<a class="headerlink" href="#build-cache" title="Permalink to this headline">¶</a></h2>
+<span id="ch-image-build-cache"></span><h2><span class="section-number">6.6. </span>Build cache<a class="headerlink" href="#build-cache" title="Permalink to this headline">¶</a></h2>
 <section id="overview">
 <h3><span class="section-number">6.6.1. </span>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
 <p>Subcommands that create images, such as <code class="code docutils literal notranslate"><span class="pre">build</span></code> and <code class="code docutils literal notranslate"><span class="pre">pull</span></code>, can
@@ -397,7 +399,7 @@ belonging to unprivileged namespaces (e.g. <code class="code docutils literal no
 restored by the cache by default. Notably, extended attributes in privileged
 namespaces (e.g. <code class="code docutils literal notranslate"><span class="pre">trusted</span></code>) cannot be read by <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> and will be
 lost without warning.</p>
-<p>The cache has three modes, <em>enabled</em>, <em>disabled</em>, and a hybrid mode called
+<p>The cache has three modes: <em>enabled</em>, <em>disabled</em>, and a hybrid mode called
 <em>rebuild</em> where the cache is fully enabled for <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instructions, but
 all other operations re-execute and re-cache their results. The purpose of
 <em>rebuild</em> is to do a clean rebuild of a Dockerfile atop a known-good base
@@ -410,21 +412,54 @@ appropriate Git is installed, otherwise <em>disabled</em>.</p>
 </section>
 <section id="compared-to-other-implementations">
 <h3><span class="section-number">6.6.2. </span>Compared to other implementations<a class="headerlink" href="#compared-to-other-implementations" title="Permalink to this headline">¶</a></h3>
-<p>Other container implementations typically use build caches based on overlayfs,
-or fuse-overlayfs in unprivileged situations (configured via a “storage
-driver”). This works by creating a new tmpfs for each instruction, layered
-atop the previous instruction’s tmpfs using overlayfs. Each layer can then be
-tarred up separately to form a tar-based diff.</p>
-<p>The Git-based cache has two advantages over the overlayfs approach. First,
-kernel-mode overlayfs is only available unprivileged in Linux 5.11 and higher,
-forcing the use of fuse-overlayfs and its accompanying FUSE overhead for
-unprivileged use cases. Second, Git de-duplicates and compresses files in a
-fairly sophisticated way across the entire build cache, not just between image
-states with an ancestry relationship (detailed in the next section).</p>
-<p>A disadvantage is lowered performance in some cases. Preliminary experiments
-suggest this performance penalty is relatively modest, and sometimes
-Charliecloud is actually faster than alternatives. We have ongoing experiments
-to answer this performance question in more detail.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>This section is a lightly edited excerpt from our paper “<a class="reference external" href="https://arxiv.org/abs/2309.00166">Charliecloud’s
+layer-free, Git-based container build cache</a>”.</p>
+</div>
+<p>Existing tools such as Docker and Podman implement their build cache with a
+layered (union) filesystem such as <a class="reference external" href="https://github.com/torvalds/linux/blob/af5f239/Documentation/filesystems/overlayfs.rst">OverlayFS</a>
+or <a class="reference external" href="https://github.com/containers/fuse-overlayfs/tree/v1.12">FUSE-OverlayFS</a>
+and tar archives to represent the content of each layer; this approach is
+<a class="reference external" href="https://github.com/opencontainers/image-spec/blob/63b8bd0/spec.md">standardized by OCI</a>. The
+layered cache works, but it has drawbacks in three critical areas:</p>
+<ol class="arabic">
+<li><p><strong>Diff format.</strong> The tar format is poorly standardized and <a class="reference external" href="https://www.cyphar.com/blog/post/20190121-ociv2-images-i-tar">not designed
+for diffs</a>.
+Notably, tar cannot represent file deletion. The workaround used for OCI
+layers is specially named <em>whiteout</em> files, which means the tar archives
+cannot be unpacked by standard UNIX tools and require special
+container-specific processing.</p></li>
+<li><p><strong>Cache overhead.</strong> Each time a Dockerfile instruction is started, a new
+overlay filesystem is mounted atop the existing layer stack. File metadata
+operations in the instruction then start at the top layer and descend the
+stack until the layer containing the desired file is reached. The cost of
+these operations is therefore proportional to the number of layers, i.e.,
+the number of instructions between the empty root image and the instruction
+being executed. This results in a <a class="reference external" href="https://docs.docker.com/develop/develop-images/dockerfile_best-practices/">best practice</a>
+of large, complex instructions to minimize their number, which can conflict
+with simpler, more numerous instructions the user might prefer.</p></li>
+<li><p><strong>De-duplication.</strong> Identical files on layers with an ancestry relationship
+(i.e., instruction <em>A</em> precedes <em>B</em> in a build) are stored only once.
+However, identical files on layers without this relationship are stored
+multiple times. For example, if instructions <em>B</em> and <em>B’</em> both follow <em>A</em> —
+perhaps because <em>B</em> was modified and the image rebuilt — then any files
+created by both <em>B</em> and <em>B’</em> will be stored twice.</p>
+<p>Also, similar files are never de-duplicated, regardless of ancestry. For
+example, if instruction <em>A</em> creates a file and subsequently instruction <em>B</em>
+modifies a single bit in that file, both versions are stored in their
+entirety.</p>
+</li>
+</ol>
+<p>Our Git-based cache addresses the three drawbacks: (1) Git is purpose-built to
+store changing directory trees, (2) cache overhead is imposed only at
+instruction commit time, and (3) Git de-duplicates both identical and similar
+files. Also, it is based on an extremely widely used tool that enjoys development
+support from well-resourced actors, in particular on scaling (e.g.,
+Microsoft’s large-repository accelerator <a class="reference external" href="https://devblogs.microsoft.com/devops/introducing-scalar/">Scalar</a> was recently
+<a class="reference external" href="https://github.blog/2022-10-03-highlights-from-git-2-38/">merged into Git</a>).</p>
+<p>In addition to these structural advantages, performance experiments reported in our paper above show that the Git-based approach is as good as (and sometimes better than) overlay-based caches. On build time, the two approaches are broadly similar, with one or the other being faster depending on context. Both had performance problems on NFS. Notably, however, the Git-based cache was much faster for a 129-instruction Dockerfile. On disk usage, the winner depended on the condition. For example, we saw the layered cache storing large sibling layers redundantly; on the other hand, the Git-based cache has some obvious redundancies as well, and one must compact it for full de-duplication benefit. However, Git’s de-duplication was quite effective in some conditions and we suspect will prove even better in more realistic scenarios.</p>
+<p>That is, we believe our results show that the Git-based build cache is highly competitive with the layered approach, with no obvious inferiority so far and hints that it may be superior on important dimensions. We have ongoing work to explore these questions in more detail.</p>
 </section>
 <section id="de-duplication-and-garbage-collection">
 <h3><span class="section-number">6.6.3. </span>De-duplication and garbage collection<a class="headerlink" href="#de-duplication-and-garbage-collection" title="Permalink to this headline">¶</a></h3>
@@ -472,7 +507,7 @@ files. In both cases, garbage uses all available cores.</p>
 use, and <code class="code docutils literal notranslate"><span class="pre">-v</span></code> can be added for more detail.</p>
 </section>
 <section id="large-file-threshold">
-<h3><span class="section-number">6.6.4. </span>Large file threshold<a class="headerlink" href="#large-file-threshold" title="Permalink to this headline">¶</a></h3>
+<span id="ch-image-bu-large"></span><h3><span class="section-number">6.6.4. </span>Large file threshold<a class="headerlink" href="#large-file-threshold" title="Permalink to this headline">¶</a></h3>
 <p>Because Git uses content-addressed storage, upon commit, it must read in full
 all files modified by an instruction. This I/O cost can be a significant
 fraction of build time for some large images. Regular files larger than the
@@ -625,9 +660,10 @@ hyphen (<code class="code docutils literal notranslate"><span class="pre">-</spa
 like <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code>, the context directory is still available in
 this case.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--force[=MODE]</span></code></dt><dd><p>Use unprivileged build workarounds of mode <code class="code docutils literal notranslate"><span class="pre">MODE</span></code>, which can be
-<code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code> or <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (the default). See section “Privilege
-model” below for details on what this does and when you might need it.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--force[=MODE]</span></code></dt><dd><p>Use unprivileged build with root emulation mode <code class="code docutils literal notranslate"><span class="pre">MODE</span></code>, which can be
+<code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code>, <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (the default), or <code class="code docutils literal notranslate"><span class="pre">none</span></code>. See
+section “Privilege model” below for details on what this does and when you
+might need it.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--force-cmd=CMD,ARG1[,ARG2...]</span></code></dt><dd><p>If command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code> is found in a <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instruction, add the
 comma-separated <code class="code docutils literal notranslate"><span class="pre">ARGs</span></code> to it. For example,
@@ -671,19 +707,17 @@ setuid or setcap helper programs, and it does not use configuration files
 or “<a class="reference external" href="https://sylabs.io/guides/3.7/user-guide/fakeroot.html">fakeroot</a>” modes
 of some competing builders, which do require privileged supporting code or
 utilities.</p>
-<p>Without workarounds provided by <code class="code docutils literal notranslate"><span class="pre">--force</span></code>, this approach does confuse
-programs that expect to have real root privileges, most notably distribution
-package installers. This subsection describes why that happens and what you
-can do about it.</p>
+<p>Without root emulation, this approach does confuse programs that expect to have
+real root privileges, most notably distribution package installers. This
+subsection describes why that happens and what you can do about it.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> executes all instructions as the normal user who invokes it.
 For <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>, this is accomplished with <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> arguments including
-<code class="code docutils literal notranslate"><span class="pre">-w</span> <span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>. That is, your host EUID and EGID are both mapped
-to zero inside the container, and only one UID (zero) and GID (zero) are
-available inside the container. Under this arrangement, processes running in
-the container for each <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> <em>appear</em> to be running as root, but many
-privileged system calls will fail without the workarounds described below.
-<strong>This affects any fully unprivileged container build, not just
-Charliecloud.</strong></p>
+<code class="code docutils literal notranslate"><span class="pre">-w</span> <span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>. That is, your host EUID and EGID are both mapped to
+zero inside the container, and only one UID (zero) and GID (zero) are available
+inside the container. Under this arrangement, processes running in the container
+for each <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> <em>appear</em> to be running as root, but many privileged system
+calls will fail without the root emulation methods described below. <strong>This
+affects any fully unprivileged container build, not just Charliecloud.</strong></p>
 <p>The most common time to see this is installing packages. For example, here is
 RPM failing to <code class="code docutils literal notranslate"><span class="pre">chown(2)</span></code> a file, which makes the package update fail:</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>  Updating   : 1:dbus-1.10.24-13.el7_6.x86_64                            2/4
@@ -704,8 +738,8 @@ E: setgroups 0 failed - setgroups (1: Operation not permitted)
 involve lying to the containerized process about privileged system calls, but
 at very different levels of complexity.</p>
 </section>
-<section id="workaround-mode-fakeroot">
-<h4><span class="section-number">6.7.3.2. </span>Workaround mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code><a class="headerlink" href="#workaround-mode-fakeroot" title="Permalink to this headline">¶</a></h4>
+<section id="root-emulation-mode-fakeroot">
+<h4><span class="section-number">6.7.3.2. </span>Root emulation mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code><a class="headerlink" href="#root-emulation-mode-fakeroot" title="Permalink to this headline">¶</a></h4>
 <p>This mode uses <code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code> to maintain an elaborate web of deceit that
 is internally consistent. This program intercepts both privileged system calls
 (e.g., <code class="code docutils literal notranslate"><span class="pre">setuid(2)</span></code>) as well as other system calls whose return values
@@ -749,8 +783,8 @@ exactly what it is doing.</p>
 know.</p>
 </div>
 </section>
-<section id="workaround-mode-seccomp-default">
-<h4><span class="section-number">6.7.3.3. </span>Workaround mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)<a class="headerlink" href="#workaround-mode-seccomp-default" title="Permalink to this headline">¶</a></h4>
+<section id="root-emulation-mode-seccomp-default">
+<h4><span class="section-number">6.7.3.3. </span>Root emulation mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)<a class="headerlink" href="#root-emulation-mode-seccomp-default" title="Permalink to this headline">¶</a></h4>
 <p>This mode uses the kernel’s <code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code> system call filtering to
 intercept certain privileged system calls, do absolutely nothing, and return
 success to the program.</p>
@@ -783,6 +817,15 @@ workaround is to add escape syntax transparent to the shell; e.g., <code class="
 filter and has no knowledge of which instructions actually used the
 intercepted system calls. Therefore, the printed “instructions modified”
 number is only a count of instructions with a hook applied as described above.</p>
+</section>
+<section id="run-instruction">
+<h4><span class="section-number">6.7.3.4. </span><code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instruction<a class="headerlink" href="#run-instruction" title="Permalink to this headline">¶</a></h4>
+<p>In terminal output, image metadata, and the build cache, the <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
+instruction is always logged as <code class="code docutils literal notranslate"><span class="pre">RUN.S</span></code>, <code class="code docutils literal notranslate"><span class="pre">RUN.F</span></code>, or <code class="code docutils literal notranslate"><span class="pre">RUN.N</span></code>.
+The letter appended to the instruction reflects the root emulation mode used
+during the build in which the instruction was executed. <code class="code docutils literal notranslate"><span class="pre">RUN.S</span></code> indicates
+<code class="code docutils literal notranslate"><span class="pre">seccomp</span></code>, <code class="code docutils literal notranslate"><span class="pre">RUN.F</span></code> indicates <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code>, and <code class="code docutils literal notranslate"><span class="pre">RUN.N</span></code>
+indicates that neither form of root emulation was used (<code class="code docutils literal notranslate"><span class="pre">--force=none</span></code>).</p>
 </section>
 </section>
 <section id="compatibility-with-other-dockerfile-interpreters">

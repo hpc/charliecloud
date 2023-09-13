@@ -99,31 +99,6 @@ two solutions:
    processes and one writes a file in the image that another is reading or
    writing).
 
-:code:`ch-image` fails with "argument --force: invalid choice"
---------------------------------------------------------------
-
-This happens when specifying the context directly after the :code:`--force`
-option, e.g.
-
-::
-
-  $ ch-image build --force examples/hello/
-  [...]
-  ch-image build: error: argument --force: invalid choice: 'examples/hello/' (choose from 'fakeroot', 'seccomp')
-
-This happens because the command line interprets the argument after
-:code:`--force` as the optional input for :code:`--force`. When said argument
-isn’t :code:`fakeroot` or :code:`seccomp`, the program throws an error. The
-solution is to add a :code:`--` after :code:`--force` to indicate the end of
-the command line options, e.g.
-
-::
-
-  $ ch-image build --force -- .
-  inferred image name: hello
-  [...]
-  grown in 3 instructions: hello
-
 :code:`ch-image` fails with "certificate verify failed"
 -------------------------------------------------------
 
@@ -529,27 +504,6 @@ other stuff cannot be written anywhere in the image. You have three options:
 
 3. Run the image read-write with :code:`ch-run -w`. Be careful that multiple
    containers do not try to write to the same files.
-
-Which specific :code:`sudo` commands are needed?
-------------------------------------------------
-
-For running images, :code:`sudo` is not needed at all.
-
-For building images, it depends on what you would like to support. For
-example, do you want to let users build images with Docker? Do you want to let
-them run the build tests?
-
-We do not maintain specific lists, but you can search the source code and
-documentation for uses of :code:`sudo` and :code:`$DOCKER` and evaluate them
-on a case-by-case basis. (The latter includes :code:`sudo` if needed to invoke
-:code:`docker` in your environment.) For example::
-
-  $ find . \(   -type f -executable \
-             -o -name Makefile \
-             -o -name '*.bats' \
-             -o -name '*.rst' \
-             -o -name '*.sh' \) \
-           -exec egrep -H '(sudo|\$DOCKER)' {} \;
 
 OpenMPI Charliecloud jobs don’t work
 ------------------------------------
