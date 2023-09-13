@@ -1150,10 +1150,20 @@ class I_from_(Instruction):
       # AFAICT the only thing that might be busted is the unpack directories
       # for either the base image or the image. We could probably be smarter
       # about this, but for now just delete them.
-      if (hasattr(self, "image")):
+      try:
+         base_image = self.base_image
+      except AttributeError:
+         base_image = None
+      try:
+         image = self.image
+      except AttributeError:
+         image = None
+      if (base_image is not None or image is not None):
          ch.INFO("something went wrong, rolling back ...")
-         bu.cache.unpack_delete(self.base_image, missing_ok=True)
-         bu.cache.unpack_delete(self.image, missing_ok=True)
+         if (base_image is not None):
+            bu.cache.unpack_delete(self.base_image, missing_ok=True)
+         if (image is not None):
+            bu.cache.unpack_delete(self.image, missing_ok=True)
 
    def execute(self):
       # Everything happens in prepare().
