@@ -25,7 +25,3 @@ install-exec-hook:
 	          -e 's|^(CHTEST_EXAMPLES_DIR=).+$$|\1@docdir@/examples|' \
               $$i; \
 	done
-
-#bindir: @bindir@
-#	echo libdir: @libdir@
-#	echo libexecdir: @libexecdir@
