@@ -1161,9 +1161,9 @@ class I_from_(Instruction):
       if (base_image is not None or image is not None):
          ch.INFO("something went wrong, rolling back ...")
          if (base_image is not None):
-            bu.cache.unpack_delete(self.base_image, missing_ok=True)
+            bu.cache.unpack_delete(base_image, missing_ok=True)
          if (image is not None):
-            bu.cache.unpack_delete(self.image, missing_ok=True)
+            bu.cache.unpack_delete(image, missing_ok=True)
 
    def execute(self):
       # Everything happens in prepare().
