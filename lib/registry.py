@@ -2,8 +2,8 @@ import getpass
 import io
 import os
 import re
-import urllib
 import types
+import urllib
 
 import charliecloud as ch
 
@@ -196,6 +196,24 @@ class Auth_Basic(Auth):
       return i
 
 
+class Auth_Bearer_Anon(Auth_Bearer_IDed):
+   anon_p = True
+   scheme = "Bearer"
+   auth_p = False
+
+   __slots__ = ()
+
+   @property
+   def escalators(self):
+      return (Auth_Bearer_IDed,)
+
+   @classmethod
+   def token_auth(class_, creds):
+      # The way to get an anonymous Bearer token is to give no Basic auth
+      # header in the token request.
+      return None
+
+
 class Auth_Bearer_IDed(Auth):
    # https://stackoverflow.com/a/58055668
    anon_p = False
@@ -258,24 +276,6 @@ class Auth_Bearer_IDed(Auth):
          request."""
       (username, password) = creds.get()
       return requests.auth.HTTPBasicAuth(username, password)
-
-
-class Auth_Bearer_Anon(Auth_Bearer_IDed):
-   anon_p = True
-   scheme = "Bearer"
-   auth_p = False
-
-   __slots__ = ()
-
-   @property
-   def escalators(self):
-      return (Auth_Bearer_IDed,)
-
-   @classmethod
-   def token_auth(class_, creds):
-      # The way to get an anonymous Bearer token is to give no Basic auth
-      # header in the token request.
-      return None
 
 
 class Auth_None(Auth):

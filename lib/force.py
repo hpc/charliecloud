@@ -289,18 +289,6 @@ FORCE_CMD_DEFAULT = { "apt":     ["-o", "APT::Sandbox::User=root"],
 
 ## Functions ###
 
-def new(image_path, force_mode, force_cmds):
-   """Return a new forcer object appropriate for image at image_path in mode
-      force_mode. If no such object can be found, exit with error."""
-   if (force_mode == ch.Force_Mode.NONE):
-      return Nope()
-   elif (force_mode == ch.Force_Mode.FAKEROOT):
-      return Fakeroot(image_path)
-   elif (force_mode == ch.Force_Mode.SECCOMP):
-      return Seccomp(force_cmds)
-   else:
-      assert False, "unreachable code reached"
-
 def force_cmd_parse(text):
    # 1. Split on “,” preceded by even number of backslashes.
    #
@@ -317,6 +305,18 @@ def force_cmd_parse(text):
    # 4. Replace “\x” for any char x ⇒ literal “x”.
    args = [re.sub(r"\\(.)", r"\1", a) for a in args]
    return (args[0], args[1:])
+
+def new(image_path, force_mode, force_cmds):
+   """Return a new forcer object appropriate for image at image_path in mode
+      force_mode. If no such object can be found, exit with error."""
+   if (force_mode == ch.Force_Mode.NONE):
+      return Nope()
+   elif (force_mode == ch.Force_Mode.FAKEROOT):
+      return Fakeroot(image_path)
+   elif (force_mode == ch.Force_Mode.SECCOMP):
+      return Seccomp(force_cmds)
+   else:
+      assert False, "unreachable code reached"
 
 
 ## Classes ##
@@ -346,10 +346,6 @@ class Base:
 
    def run_modified_(self, args, env):
       return args.copy()
-
-
-class Nope(Base):
-   pass
 
 
 class Fakeroot(Base):
@@ -413,6 +409,10 @@ class Fakeroot(Base):
          self.install(self.image_path, env)
          self.install_done = True
       return self.each + args
+
+
+class Nope(Base):
+   pass
 
 
 class Seccomp(Base):

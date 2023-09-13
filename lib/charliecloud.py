@@ -46,9 +46,9 @@ class Download_Mode(enum.Enum):
 
 # Root emulation mode
 class Force_Mode(enum.Enum):
-   FAKEROOT="fakeroot"
-   SECCOMP="seccomp"
-   NONE="none"
+   FAKEROOT = "fakeroot"
+   SECCOMP = "seccomp"
+   NONE = "none"
 
 
 ## Constants ##
@@ -63,8 +63,7 @@ class Force_Mode(enum.Enum):
 #
 # [1]: https://stackoverflow.com/a/45125525
 # [2]: https://github.com/docker-library/bashbrew/blob/v0.1.0/vendor/github.com/docker-library/go-dockerlibrary/architecture/oci-platform.go
-ARCH_MAP = { "x86_64":    "amd64",
-             "armv5l":    "arm/v5",
+ARCH_MAP = { "armv5l":    "arm/v5",
              "armv6l":    "arm/v6",
              "aarch32":   "arm/v7",
              "armv7l":    "arm/v7",
@@ -74,7 +73,8 @@ ARCH_MAP = { "x86_64":    "amd64",
              "i686":      "386",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
-             "s390x":     "s390x" }  # a.k.a. IBM Z
+             "s390x":     "s390x",     # a.k.a. IBM Z
+             "x86_64":    "amd64" }
 
 # Some images have oddly specified architecture. For example, as of
 # 2022-06-08, on Docker Hub, opensuse/leap:15.1 offers architectures amd64,
@@ -142,8 +142,8 @@ class Fatal_Error(Exception):
    def __init__(self, *args, **kwargs):
       self.args = args
       self.kwargs = kwargs
-class No_Fatman_Error(Exception): pass
 class Image_Unavailable_Error(Exception): pass
+class No_Fatman_Error(Exception): pass
 
 
 ## Classes ##
@@ -305,6 +305,11 @@ class Progress:
       self.display_last = float("-inf")
       self.update(0)
 
+   def done(self):
+      self.update(0, True)
+      if (self.overwrite_p):
+         INFO("")  # newline to release display line
+
    def update(self, increment, last=False):
       now = time.monotonic()
       self.progress += increment
@@ -325,11 +330,6 @@ class Progress:
                line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
          INFO(line, end=("\r" if self.overwrite_p else "\n"))
          self.display_last = now
-
-   def done(self):
-      self.update(0, True)
-      if (self.overwrite_p):
-         INFO("")  # newline to release display line
 
 
 class Progress_Reader:
@@ -538,6 +538,15 @@ def cmd_base(argv, fail_ok=False, **kwargs):
             % (cp.returncode, argv_to_string(argv)))
    return cp
 
+def cmd_quiet(argv, **kwargs):
+   """Run command using cmd() and return the exit code. If logging is verbose
+      or lower, discard stdout."""
+   if (verbose >= 2):  # debug or higher
+      stdout=None
+   else:
+      stdout=subprocess.DEVNULL
+   return cmd(argv, stdout=stdout, **kwargs)
+
 def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
       CompletedProcess object (its stdout is available in the “stdout”
@@ -548,15 +557,6 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
       sys.stdout.write(cp.stdout)
       sys.stdout.flush()
    return cp
-
-def cmd_quiet(argv, **kwargs):
-   """Run command using cmd() and return the exit code. If logging is verbose
-      or lower, discard stdout."""
-   if (verbose >= 2):  # debug or higher
-      stdout=None
-   else:
-      stdout=subprocess.DEVNULL
-   return cmd(argv, stdout=stdout, **kwargs)
 
 def color_reset(*fps):
    for fp in fps:
@@ -688,18 +688,6 @@ def kill_blocking(pid, timeout=10):
       time.sleep(0.5)
    FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid),
          BUG_REPORT_PLZ)
-
-def walk(*args, **kwargs):
-   """Wrapper for os.walk(). Return a generator of the files in a directory
-      tree (root specified in *args). For each directory in said tree, yield a
-      3-tuple (dirpath, dirnames, filenames), where dirpath is a Path object,
-      and dirnames and filenames are lists of Path objects. For insight into
-      these being lists rather than generators, see use of ch.walk() in
-      I_copy.copy_src_dir()."""
-   for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
-      yield (fs.Path(dirpath),
-             [fs.Path(dirname) for dirname in dirnames],
-             [fs.Path(filename) for filename in filenames])
 
 def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
@@ -859,6 +847,18 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
       return False
    VERBOSE("%s version OK: %d.%d.%d ≥ %d.%d.%d" % ((prog,) + v + min_))
    return True
+
+def walk(*args, **kwargs):
+   """Wrapper for os.walk(). Return a generator of the files in a directory
+      tree (root specified in *args). For each directory in said tree, yield a
+      3-tuple (dirpath, dirnames, filenames), where dirpath is a Path object,
+      and dirnames and filenames are lists of Path objects. For insight into
+      these being lists rather than generators, see use of ch.walk() in
+      I_copy.copy_src_dir()."""
+   for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
+      yield (fs.Path(dirpath),
+             [fs.Path(dirname) for dirname in dirnames],
+             [fs.Path(filename) for filename in filenames])
 
 def warnings_dump():
    if (len(warnings) > 0):
