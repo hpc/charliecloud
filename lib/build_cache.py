@@ -1337,6 +1337,15 @@ class Enabled_Cache:
       t.log("re-linked worktrees")
 
 
+class Rebuild_Cache(Enabled_Cache):
+
+   def __str__(self):
+      return ("rebuild (large=%g)" % self.large_threshold)
+
+   def find_sid(self, sid, branch):
+      return None
+
+
 class Disabled_Cache(Rebuild_Cache):
 
    def __init__(self, *args):
@@ -1402,12 +1411,3 @@ class Disabled_Cache(Rebuild_Cache):
 
    def worktrees_prune(self, *args):
       pass
-
-
-class Rebuild_Cache(Enabled_Cache):
-
-   def __str__(self):
-      return ("rebuild (large=%g)" % self.large_threshold)
-
-   def find_sid(self, sid, branch):
-      return None

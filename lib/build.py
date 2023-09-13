@@ -1168,7 +1168,7 @@ class Run(Instruction):
       elif (cli.force == ch.Force_Mode.SECCOMP):
          tag = ".S"
       else:
-         assert False, "unreachable code reached"
+         assert False, "unreachable code reached (force mode = %s)" % cli.force
       return super().str_name + tag
 
    def execute(self):
