@@ -102,7 +102,7 @@ Common options placed before or after the sub-command:
     not if the program crashes.
 
   :code:`-q, --quiet`
-    Be quieter; can be repeated. Incompatible :code:`-v` and suppresses
+    Be quieter; can be repeated. Incompatible with :code:`-v` and suppresses
     :code:`--debug` regardless of option order. See the :ref:`FAQ entry on
     verbosity <faq_verbosity>` for details.
 

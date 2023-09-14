@@ -1113,7 +1113,7 @@ Charliecloud logs various chatter about what is going on to standard error. This
 
   3. **Info**. Chatter useful enough to be printed by default. Example:
      progress messages during image download and unpacking. (:code:`ch-run` is
-     silent during normal operations and does not have any “info” logging)
+     silent during normal operations and does not have any “info” logging.)
 
   4. **Verbose**. Diagnostic information useful for debugging user containers,
      the Charliecloud installation, and Charliecloud itself. Examples:
