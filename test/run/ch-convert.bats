@@ -496,9 +496,9 @@ test_from () {
 @test 'ch-convert: b0rked xattrs' {
     # Check if test needs to be skipped
     touch "$BATS_TMPDIR/tmpfs_test"
-    run setfattr -n user.foo -v bar "$BATS_TMPDIR/tmpfs_test"
-    if [[ ("$status" != 0) && (-z $GITHUB_ACTIONS) ]]; then
-        skip 'xattrs unsupported by tmpfs'
+    if    ! setfattr -n user.foo -v bar "$BATS_TMPDIR/tmpfs_test" \
+       && [[ -z $GITHUB_ACTIONS ]]; then
+        skip "xattrs unsupported in ${BATS_TMPDIR}"
     fi
 
     # b0rked: (adj) broken, messed up
