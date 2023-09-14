@@ -112,6 +112,7 @@ compare () {
 #
 #   4. Directory sizes also seem not to be stable.
 #
+# See also “ls_” in 50_rsync.bats.
 compare-ls () {
     cd "$1" || exit  # to make -path reasonable
       find . -mindepth 1 \

@@ -1006,14 +1006,18 @@ New instructions
 :code:`RSYNC`
 ~~~~~~~~~~~~~
 
+.. warning::
+
+   This instruction is experimental and may change or be removed.
+
 Copying files is often simple but has numerous difficult corner cases, e.g.
 when dealing with symbolic or hard links. The standard instruction
 :code:`COPY` deals with many of these corner cases differently from other UNIX
-utilities, lacks documentation, and behaves inconsistently between different
-Dockerfile interpreters (e.g., Docker’s legacy builder vs. BuildKit), as
-detailed above. On the other hand, :code:`rsync(1)` is an extremely capable,
-widely used file copy tool, with detailed options to specify behavior and 25
-years of history dealing with copy weirdness.
+utilities, lacks complete documentation, and behaves inconsistently between
+different Dockerfile interpreters (e.g., Docker’s legacy builder vs.
+BuildKit), as detailed above. On the other hand, :code:`rsync(1)` is an
+extremely capable, widely used file copy tool, with detailed options to
+specify behavior and 25 years of history dealing with weirdness.
 
 :code:`RSYNC` (also spelled :code:`NSYNC`) is a Charliecloud extension that
 gives copying behavior identical to :code:`rsync(1)`, including remote
@@ -1038,8 +1042,9 @@ example,
    RSYNC --foo ssh:src1 ./src2 ./dst1
    RSYNC ./src3 /dst2
 
-behaves as the following under the hood::
+is translated to (the equivalent of)::
 
+   $ mkdir -p /foo
    $ rsync --foo ssh:src1 /context/src2 /storage/imgroot/foo/dst2
    $ rsync /context/src3 /storage/imgroot/dst2
 
@@ -1065,6 +1070,9 @@ metadata. This single option is one of:
     * :code:`-X`: preserve xattrs in :code:`user.*` namespace.
     * :code:`-p`: preserve permissions.
     * :code:`-r`: recurse into directories.
+    * :code:`--info=progress2` (only if stderr is a terminal): show progress
+      meter (note `subtleties in interpretation
+      <https://unix.stackexchange.com/questions/215271>`_).
 
   :code:`+L`
     Equivalent to the options listed for :code:`+` and also:
@@ -1094,6 +1102,12 @@ miss otherwise.
    its command line processing. Currently, this configuration is respected for
    :code:`RSYNC` arguments, but that may change without notice.
 
+For example:
+
+**FIXME**
+
+See the file :code:`50_rsync.bats` in the source code for more examples, including many corner cases.
+
 **FIXME**::
 
   examples
@@ -1114,6 +1128,8 @@ miss otherwise.
         absolute
           target in same directory
           target in different directory
+    ssh: transport
+    rsync: transport
 
 Examples
 --------
