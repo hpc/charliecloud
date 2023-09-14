@@ -122,6 +122,9 @@ def main():
            [["--no-lock"],
             { "action": "store_true",
               "help": "allow concurrent storage directory access (risky!)" }],
+           [["--no-xattrs"],
+            { "action": "store_true",
+              "help": "build cache ignores xattrs and ACLs"}],
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],
@@ -186,8 +189,8 @@ def main():
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
-   sp.add_argument("--force", metavar="MODE", nargs="?", default=None,
-                   choices=["fakeroot", "seccomp"], const="seccomp",
+   sp.add_argument("--force", metavar="MODE", nargs="?", default="seccomp",
+                   type=ch.Force_Mode, const="seccomp",
                    help="inject unprivileged build workarounds")
    sp.add_argument("--force-cmd", metavar="CMD,ARG1[,ARG2...]",
                    action="append", default=[],
@@ -309,6 +312,7 @@ def main():
    # Dispatch.
    ch.profile_start()
    cli.func(cli)
+   ch.warnings_dump()
    ch.exit(0)
 
 
@@ -318,5 +322,6 @@ if (__name__ == "__main__"):
    try:
       main()
    except ch.Fatal_Error as x:
+      ch.warnings_dump()
       ch.ERROR(*x.args, **x.kwargs)
       ch.exit(1)

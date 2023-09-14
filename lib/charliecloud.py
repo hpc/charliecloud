@@ -44,6 +44,12 @@ class Download_Mode(enum.Enum):
    ENABLED = "enabled"
    WRITE_ONLY = "write-only"
 
+# Root emulation mode
+class Force_Mode(enum.Enum):
+   FAKEROOT="fakeroot"
+   SECCOMP="seccomp"
+   NONE="none"
+
 
 ## Constants ##
 
@@ -118,6 +124,9 @@ verbose = 0          # Verbosity level.
 log_festoon = False  # If true, prepend pid and timestamp to chatter.
 log_fp = sys.stderr  # File object to print logs to.
 trace_fatal = False  # Add abbreviated traceback to fatal error hint.
+
+# Warnings to be re-printed when program exits
+warnings = list()
 
 # True if the download cache is enabled.
 dlcache_p = None
@@ -439,7 +448,9 @@ def VERBOSE(msg, hint=None, **kwargs):
    if (verbose >= 1):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
-def WARNING(msg, hint=None, **kwargs):
+def WARNING(msg, hint=None, msg_save=True, **kwargs):
+   if (msg_save):
+      warnings.append(msg)
    log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
@@ -602,9 +613,10 @@ def exit(code):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, trace_fatal, verbose
+   global log_festoon, log_fp, trace_fatal, verbose, save_xattrs
    assert (0 <= cli.verbose <= 3)
    verbose = cli.verbose
+   save_xattrs = (not cli.no_xattrs)
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
@@ -847,3 +859,9 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
       return False
    VERBOSE("%s version OK: %d.%d.%d ≥ %d.%d.%d" % ((prog,) + v + min_))
    return True
+
+def warnings_dump():
+   if (len(warnings) > 0):
+      WARNING("reprinting %d warning(s)" % len(warnings), msg_save=False)
+   for msg in warnings:
+      WARNING(msg, msg_save=False)

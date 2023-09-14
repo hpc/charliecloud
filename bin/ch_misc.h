@@ -19,6 +19,10 @@
    and hopefully others support the following extension. */
 #define noreturn __attribute__ ((noreturn))
 
+/* Size of “warnings” buffer, in bytes. We want this to be big enough that we
+   don’t need to worry about running out of room. */
+#define WARNINGS_SIZE (4*1024)
+
 /* Test some value, and if it's not what we expect, exit with a fatal error.
    These are macros so we have access to the file and line number.
 
@@ -103,11 +107,14 @@ enum log_level { LL_FATAL =   -2,  // minimum number of -v to print the msg
 extern enum log_level verbose;
 extern char *host_tmp;
 extern char *username;
+extern char *warnings;
+extern size_t warnings_offset;
 
 
 /** Function prototypes **/
 
 char *argv_to_string(char **argv);
+int buf_strings_count(char *str, size_t s);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
 struct env_var *env_file_read(const char *path, int delim);
@@ -130,3 +137,5 @@ char *realpath_(const char *path, bool fail_ok);
 void replace_char(char *str, char old, char new);
 void split(char **a, char **b, const char *str, char del);
 void version(void);
+size_t string_append(char *addr, char *str, size_t size, size_t offset);
+void warnings_reprint(void);

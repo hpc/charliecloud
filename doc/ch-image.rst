@@ -67,12 +67,14 @@ Common options placed before or after the sub-command:
     exception is :code:`push`, which implies :code:`--auth`.
 
   :code:`--cache`
-    Enable build cache. Default if a sufficiently new Git is available.
+    Enable build cache. Default if a sufficiently new Git is available. See
+    section :ref:`Build cache <ch-image_build-cache>` for details.
 
   :code:`--cache-large SIZE`
     Set the cache’s large file threshold to :code:`SIZE` MiB, or :code:`0` for
     no large files, which is the default. This can speed up some builds.
-    **Experimental.** See section "Build cache" for details.
+    **Experimental.** See section :ref:`Large file threshold
+    <ch-image_bu-large>` for details.
 
   :code:`--no-cache`
     Disable build cache. Default if a sufficiently new Git is not available.
@@ -84,6 +86,9 @@ Common options placed before or after the sub-command:
     Disable storage directory locking. This lets you run as many concurrent
     :code:`ch-image` instances as you want against the same storage directory,
     which risks corruption but may be OK for some workloads.
+
+  :code:`--no-xattrs`
+    Ignore xattrs and ACLs.
 
   :code:`--profile`
     Dump profile to files :code:`/tmp/chofile.p` (:code:`cProfile` dump
@@ -274,6 +279,8 @@ storage directory with :code:`ch-image reset`.
    will likely have strong opinions.
 
 
+.. _ch-image_build-cache:
+
 Build cache
 ===========
 
@@ -295,7 +302,13 @@ repositories within the image should work. **Important exception**: No files
 named :code:`.git*` or other Git metadata are permitted in the image’s root
 directory.
 
-The cache has three modes, *enabled*, *disabled*, and a hybrid mode called
+`Extended attributes <https://man7.org/linux/man-pages/man7/xattr.7.html>`_ (xattrs)
+belonging to unprivileged namespaces (e.g. :code:`user`) are also saved and
+restored by the cache by default. Notably, extended attributes in privileged
+namespaces (e.g. :code:`trusted`) cannot be read by :code:`ch-image` and will be
+lost without warning.
+
+The cache has three modes: *enabled*, *disabled*, and a hybrid mode called
 *rebuild* where the cache is fully enabled for :code:`FROM` instructions, but
 all other operations re-execute and re-cache their results. The purpose of
 *rebuild* is to do a clean rebuild of a Dockerfile atop a known-good base
@@ -310,23 +323,64 @@ appropriate Git is installed, otherwise *disabled*.
 Compared to other implementations
 ---------------------------------
 
-Other container implementations typically use build caches based on overlayfs,
-or fuse-overlayfs in unprivileged situations (configured via a "storage
-driver"). This works by creating a new tmpfs for each instruction, layered
-atop the previous instruction’s tmpfs using overlayfs. Each layer can then be
-tarred up separately to form a tar-based diff.
+.. note::
 
-The Git-based cache has two advantages over the overlayfs approach. First,
-kernel-mode overlayfs is only available unprivileged in Linux 5.11 and higher,
-forcing the use of fuse-overlayfs and its accompanying FUSE overhead for
-unprivileged use cases. Second, Git de-duplicates and compresses files in a
-fairly sophisticated way across the entire build cache, not just between image
-states with an ancestry relationship (detailed in the next section).
+   This section is a lightly edited excerpt from our paper “`Charliecloud’s
+   layer-free, Git-based container build cache
+   <https://arxiv.org/abs/2309.00166>`_”.
 
-A disadvantage is lowered performance in some cases. Preliminary experiments
-suggest this performance penalty is relatively modest, and sometimes
-Charliecloud is actually faster than alternatives. We have ongoing experiments
-to answer this performance question in more detail.
+Existing tools such as Docker and Podman implement their build cache with a
+layered (union) filesystem such as `OverlayFS
+<https://github.com/torvalds/linux/blob/af5f239/Documentation/filesystems/overlayfs.rst>`_
+or `FUSE-OverlayFS <https://github.com/containers/fuse-overlayfs/tree/v1.12>`_
+and tar archives to represent the content of each layer; this approach is
+`standardized by OCI
+<https://github.com/opencontainers/image-spec/blob/63b8bd0/spec.md>`_. The
+layered cache works, but it has drawbacks in three critical areas:
+
+1. **Diff format.** The tar format is poorly standardized and `not designed
+   for diffs <https://www.cyphar.com/blog/post/20190121-ociv2-images-i-tar>`_.
+   Notably, tar cannot represent file deletion. The workaround used for OCI
+   layers is specially named *whiteout* files, which means the tar archives
+   cannot be unpacked by standard UNIX tools and require special
+   container-specific processing.
+
+2. **Cache overhead.** Each time a Dockerfile instruction is started, a new
+   overlay filesystem is mounted atop the existing layer stack. File metadata
+   operations in the instruction then start at the top layer and descend the
+   stack until the layer containing the desired file is reached. The cost of
+   these operations is therefore proportional to the number of layers, i.e.,
+   the number of instructions between the empty root image and the instruction
+   being executed. This results in a `best practice
+   <https://docs.docker.com/develop/develop-images/dockerfile_best-practices/>`_
+   of large, complex instructions to minimize their number, which can conflict
+   with simpler, more numerous instructions the user might prefer.
+
+3. **De-duplication.** Identical files on layers with an ancestry relationship
+   (i.e., instruction *A* precedes *B* in a build) are stored only once.
+   However, identical files on layers without this relationship are stored
+   multiple times. For example, if instructions *B* and *B'* both follow *A* —
+   perhaps because *B* was modified and the image rebuilt — then any files
+   created by both *B* and *B'* will be stored twice.
+
+   Also, similar files are never de-duplicated, regardless of ancestry. For
+   example, if instruction *A* creates a file and subsequently instruction *B*
+   modifies a single bit in that file, both versions are stored in their
+   entirety.
+
+Our Git-based cache addresses the three drawbacks: (1) Git is purpose-built to
+store changing directory trees, (2) cache overhead is imposed only at
+instruction commit time, and (3) Git de-duplicates both identical and similar
+files. Also, it is based on an extremely widely used tool that enjoys development
+support from well-resourced actors, in particular on scaling (e.g.,
+Microsoft’s large-repository accelerator `Scalar
+<https://devblogs.microsoft.com/devops/introducing-scalar/>`_ was recently
+`merged into Git
+<https://github.blog/2022-10-03-highlights-from-git-2-38/>`_).
+
+In addition to these structural advantages, performance experiments reported in our paper above show that the Git-based approach is as good as (and sometimes better than) overlay-based caches. On build time, the two approaches are broadly similar, with one or the other being faster depending on context. Both had performance problems on NFS. Notably, however, the Git-based cache was much faster for a 129-instruction Dockerfile. On disk usage, the winner depended on the condition. For example, we saw the layered cache storing large sibling layers redundantly; on the other hand, the Git-based cache has some obvious redundancies as well, and one must compact it for full de-duplication benefit. However, Git’s de-duplication was quite effective in some conditions and we suspect will prove even better in more realistic scenarios.
+
+That is, we believe our results show that the Git-based build cache is highly competitive with the layered approach, with no obvious inferiority so far and hints that it may be superior on important dimensions. We have ongoing work to explore these questions in more detail.
 
 De-duplication and garbage collection
 -------------------------------------
@@ -379,6 +433,8 @@ files. In both cases, garbage uses all available cores.
 
 :code:`git build-cache` prints the specific garbage collection parameters in
 use, and :code:`-v` can be added for more detail.
+
+.. _ch-image_bu-large:
 
 Large file threshold
 --------------------
@@ -552,9 +608,10 @@ Options:
     this case.
 
   :code:`--force[=MODE]`
-    Use unprivileged build workarounds of mode :code:`MODE`, which can be
-    :code:`fakeroot` or :code:`seccomp` (the default). See section “Privilege
-    model” below for details on what this does and when you might need it.
+    Use unprivileged build with root emulation mode :code:`MODE`, which can be
+    :code:`fakeroot`, :code:`seccomp` (the default), or :code:`none`. See
+    section “Privilege model” below for details on what this does and when you
+    might need it.
 
   :code:`--force-cmd=CMD,ARG1[,ARG2...]`
     If command :code:`CMD` is found in a :code:`RUN` instruction, add the
@@ -580,9 +637,9 @@ Options:
        extension with invalid characters stripped, e.g.
        :code:`Dockerfile.@FOO.bar` → :code:`foo.bar`.
 
-    2. If Dockerfile has extension :code:`dockerfile`: use the basename with
-       the same transformation, e.g. :code:`baz.@QUX.dockerfile` ->
-       :code:`baz.qux`.
+    2. If Dockerfile has extension :code:`df` or :code:`dockerfile`: use the
+       basename with the same transformation, e.g. :code:`baz.@QUX.dockerfile`
+       -> :code:`baz.qux`.
 
     3. If context directory is not :code:`/`: use its name, i.e. the last
        component of the absolute path to the context directory, with the same
@@ -608,20 +665,18 @@ or “`fakeroot <https://sylabs.io/guides/3.7/user-guide/fakeroot.html>`_” mod
 of some competing builders, which do require privileged supporting code or
 utilities.
 
-Without workarounds provided by :code:`--force`, this approach does confuse
-programs that expect to have real root privileges, most notably distribution
-package installers. This subsection describes why that happens and what you
-can do about it.
+Without root emulation, this approach does confuse programs that expect to have
+real root privileges, most notably distribution package installers. This
+subsection describes why that happens and what you can do about it.
 
 :code:`ch-image` executes all instructions as the normal user who invokes it.
 For :code:`RUN`, this is accomplished with :code:`ch-run` arguments including
-:code:`-w --uid=0 --gid=0`. That is, your host EUID and EGID are both mapped
-to zero inside the container, and only one UID (zero) and GID (zero) are
-available inside the container. Under this arrangement, processes running in
-the container for each :code:`RUN` *appear* to be running as root, but many
-privileged system calls will fail without the workarounds described below.
-**This affects any fully unprivileged container build, not just
-Charliecloud.**
+:code:`-w --uid=0 --gid=0`. That is, your host EUID and EGID are both mapped to
+zero inside the container, and only one UID (zero) and GID (zero) are available
+inside the container. Under this arrangement, processes running in the container
+for each :code:`RUN` *appear* to be running as root, but many privileged system
+calls will fail without the root emulation methods described below. **This
+affects any fully unprivileged container build, not just Charliecloud.**
 
 The most common time to see this is installing packages. For example, here is
 RPM failing to :code:`chown(2)` a file, which makes the package update fail:
@@ -647,8 +702,8 @@ Charliecloud provides two different mechanisms to avoid these problems. Both
 involve lying to the containerized process about privileged system calls, but
 at very different levels of complexity.
 
-Workaround mode :code:`fakeroot`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Root emulation mode :code:`fakeroot`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This mode uses :code:`fakeroot(1)` to maintain an elaborate web of deceit that
 is internally consistent. This program intercepts both privileged system calls
@@ -696,8 +751,8 @@ exactly what it is doing.
    :code:`fakeroot` mode works and :code:`seccomp` does not, please let us
    know.
 
-Workaround mode :code:`seccomp` (default)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Root emulation mode :code:`seccomp` (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 This mode uses the kernel’s :code:`seccomp(2)` system call filtering to
 intercept certain privileged system calls, do absolutely nothing, and return
@@ -737,6 +792,16 @@ This mode executes *all* :code:`RUN` instructions with the :code:`seccomp(2)`
 filter and has no knowledge of which instructions actually used the
 intercepted system calls. Therefore, the printed “instructions modified”
 number is only a count of instructions with a hook applied as described above.
+
+:code:`RUN`  logging
+~~~~~~~~~~~~~~~~~~~~
+
+In terminal output, image metadata, and the build cache, the :code:`RUN`
+instruction is always logged as :code:`RUN.S`, :code:`RUN.F`, or :code:`RUN.N`.
+The letter appended to the instruction reflects the root emulation mode used
+during the build in which the instruction was executed. :code:`RUN.S` indicates
+:code:`seccomp`, :code:`RUN.F` indicates :code:`fakeroot`, and :code:`RUN.N`
+indicates that neither form of root emulation was used (:code:`--force=none`).
 
 Compatibility and behavior differences
 --------------------------------------
@@ -849,6 +914,12 @@ Can be repeated.
 :code:`COPY`
 ~~~~~~~~~~~~
 
+.. note:: The behavior described here matches Docker’s `now-deprecated legacy
+          builder
+          <https://docs.docker.com/engine/deprecated/#legacy-builder-for-linux-images>`_.
+          Docker’s new builder, BuildKit, has different behavior in some
+          cases, which we have not characterized.
+
 Especially for people used to UNIX :code:`cp(1)`, the semantics of the
 Dockerfile :code:`COPY` instruction can be confusing.
 
@@ -891,19 +962,10 @@ bug-compatible.
    at the 2nd level or deeper, the source directory’s metadata (e.g.,
    permissions) are copied to the destination directory. (Not documented.)
 
-5. If an object appears in both the source and destination, and is at the 2nd
-   level or deeper, and is of different types in the source and destination,
-   then the source object will overwrite the destination object. (Not
-   documented.) For example, if :code:`/tmp/foo/bar` is a regular file, and
-   :code:`/tmp` is the context directory, then the following Dockerfile
-   snippet will result in a *file* in the container at :code:`/foo/bar`
-   (copied from :code:`/tmp/foo/bar`); the directory and all its contents will
-   be lost.
-
-     .. code-block:: docker
-
-       RUN mkdir -p /foo/bar && touch /foo/bar/baz
-       COPY foo /foo
+5. If an object (a) appears in both the source and destination, (b) is at the
+   2nd level or deeper, and (c) is different file types in source and
+   destination, the source object will overwrite the destination object. (Not
+   documented.)
 
 We expect the following differences to be permanent:
 

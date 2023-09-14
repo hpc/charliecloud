@@ -112,9 +112,9 @@ _image_build_opts="-b --bind --build-arg -f --file --force
 
 _image_common_opts="-a --arch --always-download --auth --cache
                     --cache-large --dependencies -h --help
-                    --no-cache --no-lock --profile --rebuild
-                    --password-many -s --storage --tls-no-verify
-                    -v --verbose --version"
+                    --no-cache --no-lock --no-xattrs --profile
+                    --rebuild --password-many -s --storage
+                    --tls-no-verify -v --verbose --version"
 
 _image_subcommands="build build-cache delete gestalt
                     import list pull push reset undelete"
@@ -127,29 +127,32 @@ _archs="amd64 arm/v5 arm/v6 arm/v7 arm64/v8 386 mips64le ppc64le s390x"
 _ch_image_complete () {
     local prev
     local cur
+    local cword
     local words
     local sub_cmd
     local strg_dir
     local extras=
-    _get_comp_words_by_ref -n : cur prev words
+    _get_comp_words_by_ref -n : cur prev words cword
 
-    # To find the subcommand and storage directory, we pass the associated
-    # functions the current command line without the last word (note that
-    # “${words[@]::${#words[@]}-1}” in bash is analagous to “words[:-1]” in
-    # python). We do this because the last word is most likely either an empty
-    # string, or is not yet complete. We don’t lose anything by dropping the
-    # empty string, and an incomplete word in the command line can lead to
-    # false positives from these functions and consequently unexpected
-    # behavior, so we don’t consider it.
-    sub_cmd=$(_ch_image_subcmd_get "${words[@]::${#words[@]}-1}")
-    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
+    sub_cmd=$(_ch_image_subcmd_get "$cword" "${words[@]}")
+    # To find the storage directory, we want to look at all the words in the
+    # current command line except for the current word (“${words[$cword]}”
+    # here). We do this to prevent unexpected behavior resulting from the
+    # current word being incomplete. The bash syntax we use to accomplish this
+    # is “"${array[@]::$i}" "${array[@]:$i+1:${#array[@]}-1}"” which is
+    # analagous to “array[:i] + array[i+1:]” in Python, giving you all elements
+    # of the array, except for the one at index “i”. The syntax glossary at the
+    # top of this file gives a breakdown of the constituent elements of this
+    # hideous expression.
+    strg_dir=$(_ch_find_storage "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}-1}")
 
     # Populate debug log
-    DEBUG "\$ ${words[*]}"
-    DEBUG " storage: dir: $strg_dir"
-    DEBUG " current: $cur"
-    DEBUG " previous: $prev"
-    DEBUG " sub command: $sub_cmd"
+    _DEBUG "\$ ${words[*]}"
+    _DEBUG " storage: dir: $strg_dir"
+    _DEBUG " word index: $cword"
+    _DEBUG " current: $cur"
+    _DEBUG " previous: $prev"
+    _DEBUG " sub command: $sub_cmd"
 
     # Common opts that take args
     #
@@ -165,9 +168,9 @@ _ch_image_complete () {
         ;;
     -s|--storage)
         # Avoid overzealous completion. E.g. if there’s only one subdir of the
-        # current dir, this command completes to that dir even if $cur is
-        # empty (i.e. the user hasn’t yet typed anything), which seems
-        # confusing for the user.
+        # current dir, this command completes to that dir even if $cur is empty
+        # (i.e. the user hasn’t yet typed anything), which seems confusing for
+        # the user.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -293,20 +296,22 @@ _ch_run_complete () {
     local words
     local strg_dir
     local extras=
-    #local image
     _get_comp_words_by_ref -n : cur prev words cword
 
-    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
+    # See the comment above the first call to “_ch_find_storage” for an
+    # explanation of the horrible syntax here.
+    strg_dir=$(_ch_find_storage "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}-1}")
     local cli_image
     local cmd_index=-1
-    _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
+   _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
 
     # Populate debug log
-    DEBUG "\$ ${words[*]}"
-    DEBUG " storage: dir: $strg_dir"
-    DEBUG " current: $cur"
-    DEBUG " previous: $prev"
-    DEBUG " cli image: $cli_image"
+    _DEBUG "\$ ${words[*]}"
+    _DEBUG " storage: dir: $strg_dir"
+    _DEBUG " word index: $cword"
+    _DEBUG " current: $cur"
+    _DEBUG " previous: $prev"
+    _DEBUG " cli image: $cli_image"
 
     # Currently, we don’t try to suggest completions if you’re in the “command”
     # part of the ch-run CLI (i.e. entering commands to be run inside the
@@ -354,6 +359,8 @@ _ch_run_complete () {
         return 0
         ;;
     -s|--storage)
+        # See comment about overzealous completion for the “--storage” option
+        # under “_ch_convert_complete”.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -398,7 +405,7 @@ _ch_run_complete () {
 
 ## Helper functions ##
 
-DEBUG () {
+_DEBUG () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         echo "$@" >> /tmp/ch-completion.log
     fi
@@ -407,6 +414,7 @@ DEBUG () {
 # Disable completion.
 ch-completion-disable () {
     complete -r ch-image
+    complete -r ch-run
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
@@ -444,14 +452,22 @@ _ch_list_images () {
 #   >> _ch_image_subcmd_get "ch-image [...] build [...]"
 #   build
 _ch_image_subcmd_get () {
+    local cword="$1"
+    shift 1
     local subcmd
-    for word in "$@"; do
-        for subcmd_i in $_image_subcommands; do
-            if [[ "$word" == "$subcmd_i" ]]; then
-                subcmd="$subcmd_i"
-                break 2
-            fi
-        done
+    local wrds=("$@")
+    local ct=1
+
+    while ((ct < ${#wrds[@]})); do
+        if [[ $ct != "$cword" ]]; then
+            for subcmd_i in $_image_subcommands; do
+                if [[ "${wrds[$ct]}" == "$subcmd_i" ]]; then
+                    subcmd="$subcmd_i"
+                    break 2
+                fi
+            done
+        fi
+        ((ct++))
     done
     echo "$subcmd"
 }

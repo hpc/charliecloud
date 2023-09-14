@@ -41,6 +41,18 @@ char *host_tmp = NULL;
 /* Username of invoking users. Set during command line processing. */
 char *username = NULL;
 
+/* List of warnings to be re-printed on exit. This is a buffer of shared memory
+   allocated by mmap(2), structured as a sequence of null-terminated character
+   strings. Warnings that do not fit in this buffer will be lost, though we
+   allocate enough memory that this is unlikely. See “string_append()” for
+   more details. */
+char *warnings;
+
+/* Current byte offset from start of “warnings” buffer. This gives the address
+   where the next appended string will start. This means that the null
+   terminator of the previous string is warnings_offset - 1. */
+size_t warnings_offset = 0;
+
 
 /** Function prototypes (private) **/
 
@@ -125,6 +137,37 @@ char *argv_to_string(char **argv)
    }
 
    return s;
+}
+
+/* Iterate through buffer “buf” of size “s” consisting of null-terminated
+   strings and return the number of strings in it. Key assumptions:
+
+      1. The buffer has been initialized to zero, i.e. all bytes that have not
+         been explicitly set are null.
+
+      2. All strings have been appended to the buffer in full without
+         truncation, including their null terminator.
+
+      3. The buffer contains no empty strings.
+
+   These assumptions are consistent with the construction of the “warnings”
+   shared memory buffer, which is the main justification for this function. Note
+   that under these assumptions, the final byte in the buffer is guaranteed to
+   be null. */
+int buf_strings_count(char *buf, size_t size)
+{
+   int count = 0;
+
+   if (buf[0] != '\0') {
+      for (size_t i = 0; i < size; i++)
+         if (buf[i] == '\0') {                     // found string terminator
+            count++;
+            if (i < size - 1 && buf[i+1] == '\0')  // two term. in a row; done
+               break;
+         }
+   }
+
+   return count;
 }
 
 /* Return true if buffer buf of length size is all zeros, false otherwise. */
@@ -450,18 +493,21 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
+   char *message, *ap_msg;
+
    if (level > verbose)
       return;
 
-   fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
+   T_ (1 <= asprintf(&message, "%s[%d]: ",
+                     program_invocation_short_name, getpid()));
 
    // Prefix for the more urgent levels.
    switch (level) {
    case LL_FATAL:
-      fprintf(stderr, "error: ");  // "fatal" too morbid for users
+      message = cat(message, "error: ");  // "fatal" too morbid for users
       break;
    case LL_WARNING:
-      fprintf(stderr, "warning: ");
+      message = cat(message, "warning: ");
       break;
    default:
       break;
@@ -471,12 +517,19 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    if (fmt == NULL)
       fmt = "please report this bug";
 
-   vfprintf(stderr, fmt, ap);
-   if (errno_)
-      fprintf(stderr, ": %s (%s:%d %d)\n",
-              strerror(errno_), file, line, errno_);
-   else
-      fprintf(stderr, " (%s:%d)\n", file, line);
+   T_ (1 <= vasprintf(&ap_msg, fmt, ap));
+   if (errno_) {
+      T_ (1 <= asprintf(&message, "%s%s: %s (%s:%d %d)", message, ap_msg,
+                        strerror(errno_), file, line, errno_));
+   } else {
+      T_ (1 <= asprintf(&message, "%s%s (%s:%d)", message, ap_msg, file, line));
+   }
+
+   if (level == LL_WARNING) {
+      warnings_offset += string_append(warnings, message, WARNINGS_SIZE,
+                                       warnings_offset);
+   }
+   fprintf(stderr, "%s\n", message);
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
 }
@@ -639,4 +692,39 @@ void split(char **a, char **b, const char *str, char del)
 void version(void)
 {
    fprintf(stderr, "%s\n", VERSION);
+}
+
+/* Append null-terminated string “str” to the memory buffer “offset” bytes after
+   from the address pointed to by “addr”. Buffer length is “size” bytes. Return
+   the number of bytes written. If there isn’t enough room for the string, do
+   nothing and return zero. */
+size_t string_append(char *addr, char *str, size_t size, size_t offset)
+{
+   size_t written = strlen(str) + 1;
+
+   if (size > (offset + written - 1))  // there is space
+      memcpy(addr + offset, str, written);
+
+   return written;
+}
+
+/* Reprint messages stored in “warnings” memory buffer. */
+void warnings_reprint(void)
+{
+   size_t offset = 0;
+   int warn_ct = buf_strings_count(warnings, WARNINGS_SIZE);
+
+   if (warn_ct > 0)
+      fprintf(stderr, "%s[%d]: warning: reprinting first %d warning(s)\n",
+              program_invocation_short_name, getpid(), warn_ct);
+
+   while (   warnings[offset] != 0
+          || (offset < (WARNINGS_SIZE - 1) && warnings[offset+1] != 0)) {
+      fputs(warnings + offset, stderr);
+      fputc('\n', stderr);
+      offset += strlen(warnings + offset) + 1;
+   }
+
+   if (fflush(stderr))
+      abort();  // can't print an error b/c already trying to do that
 }
