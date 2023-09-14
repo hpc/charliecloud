@@ -1144,7 +1144,8 @@ Most Charliecloud programs accept :code:`-v` to increase logging verbosity and
 
   * :code:`-q` suppresses normal logging.
 
-  * :code:`-qq` also suppresses warnings and subprocess stdout.
+  * :code:`-qq` also suppresses stdout for the program and its subprocesses, and
+    warnings from the program.
 
   * :code:`-qqq` also suppresses subprocess stderr. (This means subprocesses
     are completely silenced no matter what goes wrong!)

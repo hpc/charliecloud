@@ -70,6 +70,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output != *"Dependencies resolved."* ]]
+    [[ $output != *"this is stdout"* ]]
+    [[ $output = *"this is stderr"* ]]
     [[ $output != *"grown in 4 instructions: tmpimg"* ]]
 
     # quiet level 3

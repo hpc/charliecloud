@@ -58,8 +58,8 @@ class Log_Level(enum.Enum):
    DEBUG = 2
    VERBOSE = 1
    INFO = 0
-   QUIET_INFO = -1
-   QUIET_WARNING = -2
+   WARNING = -1
+   STDERR = -2
    QUIET_STDERR = -3
    # In order to support comparisons between instances of this class, we need to
    # define at least one “ordering” operator.
@@ -469,7 +469,7 @@ def VERBOSE(msg, hint=None, **kwargs):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
 def WARNING(msg, hint=None, msg_save=True, **kwargs):
-   if (log_level > Log_Level.QUIET_WARNING):
+   if (log_level > Log_Level.STDERR):
       if (msg_save):
          warnings.append(msg)
       log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
@@ -515,7 +515,7 @@ def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
       or not the process succeeded; otherwise, return (zero) only if the
       process succeeded and exit with fatal error if it failed."""
-   if (log_level < Log_Level.QUIET_INFO):
+   if (log_level < Log_Level.WARNING):
       kwargs["stdout"] = subprocess.DEVNULL
       if (log_level <= Log_Level.QUIET_STDERR):
          kwargs["stderr"] = subprocess.DEVNULL
@@ -641,19 +641,12 @@ def init(cli):
    global log_festoon, log_fp, log_level, trace_fatal, save_xattrs
    save_xattrs = (not cli.no_xattrs)
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
-   if (cli.quiet):
-      fail_ct = 0
-      if (trace_fatal):
-         ERROR("“quiet” incompatible with “debug” and “CH_IMAGE_DEBUG”")
-         fail_ct += 1
-      if (cli.verbose):
-         ERROR("“--quiet” incompatible with “--verbose”")
-         fail_ct += 1
-      if (fail_ct != 0):
-         FATAL(("%d incompatible option" % fail_ct) + ((fail_ct > 1) * "s"))
+   if ((cli.quiet) and (cli.verbose)):
+      ERROR("“--quiet” incompatible with “--verbose”")
+      FATAL("incompatible option")
    log_level = Log_Level(cli.verbose - cli.quiet)
    assert (-3 <= log_level.value <= 3)
-   if (log_level <= Log_Level.QUIET_WARNING):
+   if (log_level <= Log_Level.STDERR):
       # suppress writing to stdout (particularly “print”).
       sys.stdout = open(os.devnull, 'w')
    if ("CH_LOG_FESTOON" in os.environ):
