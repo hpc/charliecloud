@@ -76,6 +76,10 @@ Common options placed before or after the sub-command:
     **Experimental.** See section :ref:`Large file threshold
     <ch-image_bu-large>` for details.
 
+  :code:`--debug`
+    Add a stack trace to fatal error hints. This can also be done by setting
+    the environment variable `CH_IMAGE_DEBUG`.
+
   :code:`--no-cache`
     Disable build cache. Default if a sufficiently new Git is not available.
     This option turns off the cache completely; if you want to re-execute a
