@@ -61,9 +61,8 @@ class Log_Level(enum.Enum):
    WARNING = -1
    STDERR = -2
    QUIET_STDERR = -3
-   # In order to support comparisons between instances of this class, we need to
-   # define at least one “ordering” operator.
-   # See: https://stackoverflow.com/a/39269589
+   # To support comparisons, we need to define at least one “ordering”
+   # operator. See: https://stackoverflow.com/a/39269589
    def __lt__(self, other):
       if self.__class__ is other.__class__:
          return self.value < other.value
@@ -641,7 +640,7 @@ def init(cli):
    global log_festoon, log_fp, log_level, trace_fatal, save_xattrs
    save_xattrs = (not cli.no_xattrs)
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
-   if ((cli.quiet) and (cli.verbose)):
+   if (cli.quiet and cli.verbose):
       ERROR("“--quiet” incompatible with “--verbose”")
       FATAL("incompatible option")
    log_level = Log_Level(cli.verbose - cli.quiet)

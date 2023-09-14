@@ -1099,7 +1099,9 @@ linuxcontainers.org uses the opposite order for “le” in the architecture nam
 How can I control Charliecloud’s quietness or verbosity?
 --------------------------------------------------------
 
-Charliecloud logs various chatter about what is going on to standard error. This is distinct from *output*, e.g., :code:`ch-image list` prints the list of images to standard output. We use reasonably standard log levels:
+Charliecloud logs various chatter about what is going on to standard error.
+This is distinct from *output*, e.g., :code:`ch-image list` prints the list of
+images to standard output. We use reasonably standard log levels:
 
   1. **Error**. Some error condition that makes it impossible to proceed. The
      program exits soon after printing the error. Examples: unknown image
@@ -1144,13 +1146,14 @@ Most Charliecloud programs accept :code:`-v` to increase logging verbosity and
 
   * :code:`-q` suppresses normal logging.
 
-  * :code:`-qq` also suppresses stdout for the program and its subprocesses, and
-    warnings from the program.
+  * :code:`-qq` also suppresses stdout for the program and its subprocesses,
+    and warnings from the program.
 
   * :code:`-qqq` also suppresses subprocess stderr. (This means subprocesses
     are completely silenced no matter what goes wrong!)
 
-This table list which logging is printed at which verbosity levels (✅ indicates printed, ❌ suppressed).
+This table list which logging is printed at which verbosity levels (✅
+indicates printed, ❌ suppressed).
 
 .. list-table::
    :header-rows: 1

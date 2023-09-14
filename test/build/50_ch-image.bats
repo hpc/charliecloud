@@ -62,17 +62,17 @@ EOF
     [[ $output = *'error: error'* ]]
 
     # quiet level 2
-    run ch-image build --no-cache --force seccomp -t tmpimg -qq -f - . << 'EOF'
+    run ch-image build --rebuild -t tmpimg -qq -f - . << 'EOF'
 FROM alpine:3.17
 RUN echo 'this is stdout'
 RUN echo 'this is stderr' 1>&2
 EOF
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output != *"Dependencies resolved."* ]]
-    [[ $output != *"this is stdout"* ]]
-    [[ $output = *"this is stderr"* ]]
-    [[ $output != *"grown in 4 instructions: tmpimg"* ]]
+    [[ $output != *'Dependencies resolved.'* ]]
+    [[ $output != *'this is stdout'* ]]
+    [[ $output = *'this is stderr'* ]]
+    [[ $output != *'grown in 4 instructions: tmpimg'* ]]
 
     # quiet level 3
     run ch-image gestalt logging -qqq
