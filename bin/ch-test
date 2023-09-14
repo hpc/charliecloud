@@ -31,7 +31,7 @@ warning () {
 
 ### Setup
 
-ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
+ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib
 if [[ ! -f ${ch_lib}/base.sh ]]; then
     fatal "install or build problem: not found: ${ch_lib}/base.sh"
 fi
@@ -612,7 +612,7 @@ test_make_tag_from_path () {
     case $basicname in
         Build|Dockerfile)
             case $dir in
-                .|test|examples)  # dot is directory “test”
+                .|examples|charliecloud|test)  # dot is directory “test”
                     if [[ -z $extension ]]; then
                         fatal "can't compute tag: $1"
                     else
@@ -761,15 +761,13 @@ if [[ ! -d $TMP_ ]]; then
     chmod 700 "$TMP_"
 fi
 
-# Find test directories. (At one point we tried to unify the paths between the
-# two conditions using a deeper directory hierarchy and symlinks to . in the
-# source code to keep it from being even deeper, but this became too unruly.)
-if [[ -d ${ch_base}/share ]]; then
+# Find test directories. Note some of this gets rewritten at install time.
+CHTEST_DIR=${ch_base}/test
+CHTEST_EXAMPLES_DIR=${ch_base}/examples
+if [[ ! -f ${ch_base}/VERSION ]]; then
     # installed
     CHTEST_INSTALLED=yes
     CHTEST_GITWD=
-    CHTEST_DIR=${ch_base}/libexec/charliecloud/test
-    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
 else
     # build dir
     CHTEST_INSTALLED=
@@ -778,8 +776,6 @@ else
     else
         CHTEST_GITWD=
     fi
-    CHTEST_DIR=${ch_base}/test
-    CHTEST_EXAMPLES_DIR=${ch_base}/examples
 fi
 export ch_base
 export CHTEST_INSTALLED

@@ -5,8 +5,8 @@ ch_bin="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2034
 ch_base=${ch_bin%/*}
 
-lib="${ch_bin}/../lib/charliecloud"
-. "${lib}/version.sh"
+ch_lib=${ch_bin}/../lib
+. "${ch_lib}/version.sh"
 
 
 # Verbosity level; works the same as the Python code.
@@ -54,7 +54,7 @@ exist_p () {
 parse_basic_arg () {
     case $1 in
         --_lib-path)  # undocumented
-            echo "$lib"
+            echo "$ch_lib"
             exit 0
             ;;
         --help)

@@ -11,8 +11,8 @@ import sys
 import time
 import types
 
-sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/../lib/charliecloud"))
+ch_lib = os.path.dirname(os.path.abspath(__file__)) + "/../lib"
+sys.path.insert(0, ch_lib)
 import charliecloud as ch
 import misc
 import filesystem as fs
