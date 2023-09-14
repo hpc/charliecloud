@@ -568,7 +568,6 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
       CompletedProcess object (its stdout is available in the “stdout”
       attribute). If logging is debug or higher, print stdout."""
    cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
-   # FIXME: Add a “log_quiet” check here!
    if (log_level >= Log_Level.DEBUG):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
       sys.stdout.write(cp.stdout)
@@ -648,7 +647,7 @@ def init(cli):
          ERROR("“quiet” incompatible with “debug” and “CH_IMAGE_DEBUG”")
          fail_ct += 1
       if (cli.verbose):
-         ERROR("“quiet” incompatible with “verbose”")
+         ERROR("“--quiet” incompatible with “--verbose”")
          fail_ct += 1
       if (fail_ct != 0):
          FATAL(("%d incompatible option" % fail_ct) + ((fail_ct > 1) * "s"))
@@ -664,7 +663,8 @@ def init(cli):
       log_fp = file_.open_("at")
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
-   VERBOSE("verbose level: %d" % log_level.value)
+   VERBOSE("verbose level: %d (%s))" % (log_level.value,
+                                        log_level.name))
    # storage directory
    global storage
    storage = fs.Storage(cli.storage)
