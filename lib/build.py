@@ -391,7 +391,10 @@ class Instruction(abc.ABC):
    def announce_maybe(self):
       "Announce myself if I haven’t already been announced."
       if (not self.announced_p):
-         ch.INFO("%3s%s %s" % (self.lineno, self.status_char, self))
+         self_ = str(self)
+         if (ch.user() == "qwofford" and sys.stderr.isatty()):
+            self_ = re.sub(r"^RSYNC", "NSYNC", self_)
+         ch.INFO("%3s%s %s" % (self.lineno, self.status_char, self_))
          self.announced_p = True
 
    def chdir(self, path):
@@ -660,7 +663,8 @@ class I_copy(Instruction):
    #
    # Note: The Dockerfile specification for COPY is complex, messy,
    # inexplicably different from cp(1), and incomplete. We try to be
-   # bug-compatible with Docker but probably are not 100%. See the FAQ.
+   # bug-compatible with Docker (legacy builder, not BuildKit -- yes, they are
+   # different) but probably are not 100%. See the FAQ.
    #
    # Because of these weird semantics, none of this abstracted into a general
    # copy function. I don’t want people calling it except from here.
@@ -1145,6 +1149,93 @@ class I_from_(Instruction):
    def execute(self):
       # Everything happens in prepare().
       pass
+
+
+class I_rsync(Instruction):
+
+   __slots__ = ("dst",
+                "dst_raw",
+                "plus_option",
+                "rsync_options",
+                "srcs",
+                "srcs_raw")
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      st = self.tree.child("option_plus")
+      self.plus_option = None if st is None else st.terminal("OPTION_LETTER")
+      ch.VERBOSE(self.plus_option)
+      options_done = False
+      self.rsync_options = list()
+      self.srcs_raw = list()
+      for word in self.tree.terminals("WORDE"):
+         if (not options_done and word.startswith("-")):
+            # Option. See assumption in docs that makes parsing a lot easier.
+            if (word == "--"):             # end of options
+               options_done = True
+            elif (word.startswith("--")):  # long option
+               self.rsync_options.append(word)
+            else:                          # short option(s)
+               if (len(word) == 1):
+                  ch.FATAL("RSYNC: invalid argument: %s" % word)
+               # Append options individually so we can process them more later.
+               for m in re.finditer(r"[^=]=.*$|[^=]", word[1:]):
+                  self.rsync_options.append("-" + m[0])
+            continue
+         # Not an option, so it must be a source or destination path.
+         self.srcs_raw.append(word)
+      if (len(self.srcs_raw) == 0):
+         ch.FATAL("RSYNC: source and destination missing")
+      elif (len(self.srcs_raw) == 1):
+         ch.FATAL("RSYNC: source or destination missing")
+      self.dst_raw = self.srcs_raw.pop()
+
+   @property
+   def rsync_options_concise(self):
+      "Return self.rsync_options with short options coalesced."
+      # We don’t group short options with an argument even though we could
+      # because it seems confusing, e.g. “-ab=c” vs. “-a -b=c”.
+      def ship_out():
+         nonlocal group
+         if (group != ""):
+            ret.append(group)
+            group = ""
+      ret = list()
+      group = ""
+      for o in self.rsync_options:
+         if (o.startswith("--")):  # long option, not grouped
+            ship_out()
+            ret.append(o)
+         elif (len(o) > 2):        # short option with argument, not grouped
+            ship_out()
+            ret.append(o)
+         else:                     # short option without argument, grouped
+            if (group == ""):
+               group = "-"
+            group += o[1:]         # add to group
+      ship_out()
+      return ret
+
+   @property
+   def sid_input(self):
+      return super().sid_input  # FIXME - seems hard?
+
+   @property
+   def str_(self):
+      ret = list()
+      if (self.plus_option is not None):
+         ret.append("+" + self.plus_option)
+      if (len(self.rsync_options_concise) > 0):
+         ret += self.rsync_options_concise
+      ret += self.srcs_raw
+      ret.append(self.dst_raw)
+      return " ".join(ret)
+
+   #def prepare(self, miss_ct):
+   #   ...
+
+   def execute(self):
+      ...
 
 
 class Run(Instruction):
