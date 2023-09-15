@@ -1220,7 +1220,7 @@ class Enabled_Cache:
       self.git(args + ["--format=%s" % fmt], quiet=False)
       print()  # blank line to separate from summary
 
-   def unpack_delete(self, image, missing_ok):
+   def unpack_delete(self, image, missing_ok=False):
       """Wrapper for Image.unpack_delete() that first detaches the work tree's
          head. If we delete an image's unpack path without first detaching HEAD,
          the corresponding work tree must also be deleted before the bucache
