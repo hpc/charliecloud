@@ -131,6 +131,10 @@ def main():
            [["--profile"],
             { "action": "store_true",
               "help": "dump profile to “./profile.{p,txt}”" }],
+           [["-q", "--quiet"],
+            { "action": "count",
+              "default": 0,
+              "help": "print less output (can be repeated)"}],
            [["-s", "--storage"],
             { "metavar": "DIR",
               "type": fs.Path,
@@ -240,6 +244,11 @@ def main():
    # python-path
    tp = sp.add_parser("python-path", "print path to python interpreter in use")
    add_opts(tp, misc.gestalt_python_path, deps_check=False, stog_init=False)
+   # logging
+   tp = sp.add_parser("logging", "print logging messages at all levels")
+   add_opts(tp, misc.gestalt_logging, deps_check=False, stog_init=False)
+   tp.add_argument("--fail", action="store_true",
+                   help="also generate a fatal error")
 
    # import
    sp = ap.add_parser("import", "copy external image into storage")

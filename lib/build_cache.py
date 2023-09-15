@@ -1169,7 +1169,7 @@ class Enabled_Cache:
       print("internal files: %5d %s" % (file_ct, file_suffix))
       print("disk used:      %5d %s" % (byte_ct, byte_suffix))
       # some information directly from Git
-      if (ch.verbose >= 1):
+      if (ch.log_level >= ch.Log_Level.VERBOSE):
          out = self.git(["count-objects", "-vH"]).stdout
          print("Git statistics:")
          print(textwrap.indent(out, "  "), end="")
@@ -1185,7 +1185,7 @@ class Enabled_Cache:
       # Note the percent codes are interpreted by Git.
       # See: https://git-scm.com/docs/git-log#_pretty_formats
       args = ["log", "--graph", "--all", "--reflog", "--topo-order"]
-      if (ch.verbose == 0):
+      if (ch.log_level == ch.Log_Level.INFO):
          # ref names, subject (instruction), branch heads.
          fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
          args.append("--decorate-refs=refs/heads")

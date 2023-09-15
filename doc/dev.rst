@@ -943,54 +943,6 @@ This form of list should be used unless some API requires something else.
     char **list = list_new(sizeof(char *), 0)
     list_append((void **)list, &bar, sizeof(char *));  // OK
 
-Logging
--------
-
-Charliecloud uses reasonably standard log levels for its stderr logging. The
-verbosity can be increased by up to three :code:`-v` command line arguments.
-Both the Python and C code use the same levels by calling logging functions
-named by level. The main error can be accompanied by a hint. The levels are:
-
-  1. **FATAL**; always printed. Some error condition that makes it impossible
-     to proceed. The program exits unsuccessfully immediately after printing
-     the error. Examples: unknown image type, Dockerfile parse error.
-
-  2. **WARNING**; always printed. Unexpected condition the user needs to know
-     about but that should not stop the program. Examples: :code:`ch-run
-     --mount` with a directory image (which does not use a mount point),
-     unsupported Dockerfile instructions that are ignored.
-
-  3. **INFO**; always printed. Chatter useful enough to always be printed.
-     Example: progress messages during image download and unpacking. Note
-     :code:`ch-run` is silent during normal operations and does not have any
-     INFO logging.
-
-  4. **VERBOSE**; printed if :code:`-v` or more. Diagnostic information useful
-     for debugging user containers, the Charliecloud installation, and
-     Charliecloud itself. Examples: :code:`ch-run --join` coordination
-     progress, :code:`ch-image` internal paths, Dockerfile parse tree.
-
-  5. **DEBUG**; printed if :code:`-vv` or more. More detailed diagnostic
-     information useful for debugging Charliecloud. Examples: data structures
-     unserialized from image registry metadata JSON, image reference parse
-     tree.
-
-  6. **TRACE**; printed if :code:`-vvv`. Grotesquely detailed diagnostic
-     information for debugging Charliecloud, to the extent it interferes with
-     normal use. A sensible person might use a `debugger
-     <https://twitter.com/wesamo__/status/1464764461831663626>`_ instead.
-     Examples: component-by-component progress of bind-mount target directory
-     analysis/creation, text of image registry JSON, every single file
-     unpacked from image layers.
-
-There is no level ERROR; anything important the user needs to know about is
-WARNING if we can safely proceed or FATAL if not.
-
-.. warning::
-
-   Do not use INFO for *output*. For example, the results of :code:`ch-image
-   list` just use plain :code:`print()` to stdout.
-
 
 OCI technical notes
 ===================

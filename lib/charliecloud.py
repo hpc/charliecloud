@@ -5,6 +5,7 @@ import collections.abc
 import cProfile
 import datetime
 import enum
+import functools
 import hashlib
 import io
 import locale
@@ -49,6 +50,23 @@ class Force_Mode(enum.Enum):
    FAKEROOT="fakeroot"
    SECCOMP="seccomp"
    NONE="none"
+
+# Log level
+@functools.total_ordering
+class Log_Level(enum.Enum):
+   TRACE = 3
+   DEBUG = 2
+   VERBOSE = 1
+   INFO = 0
+   WARNING = -1
+   STDERR = -2
+   QUIET_STDERR = -3
+   # To support comparisons, we need to define at least one “ordering”
+   # operator. See: https://stackoverflow.com/a/39269589
+   def __lt__(self, other):
+      if self.__class__ is other.__class__:
+         return self.value < other.value
+      return NotImplemented
 
 
 ## Constants ##
@@ -120,10 +138,10 @@ CH_BIN = None
 CH_RUN = None
 
 # Logging; set using init() below.
-verbose = 0          # Verbosity level.
-log_festoon = False  # If true, prepend pid and timestamp to chatter.
-log_fp = sys.stderr  # File object to print logs to.
-trace_fatal = False  # Add abbreviated traceback to fatal error hint.
+log_level = Log_Level(0)  # Verbosity level.
+log_festoon = False       # If true, prepend pid and timestamp to chatter.
+log_fp = sys.stderr       # File object to print logs to.
+trace_fatal = False       # Add abbreviated traceback to fatal error hint.
 
 # Warnings to be re-printed when program exits
 warnings = list()
@@ -419,7 +437,7 @@ class Timer:
 ## Supporting functions ##
 
 def DEBUG(msg, hint=None, **kwargs):
-   if (verbose >= 2):
+   if (log_level >= Log_Level.DEBUG):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
@@ -438,20 +456,22 @@ def FATAL(msg, hint=None, **kwargs):
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(msg, hint, None, "33m", "", **kwargs)  # yellow
+   if (log_level >= Log_Level.INFO):
+      log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
-   if (verbose >= 3):
+   if (log_level >= Log_Level.TRACE):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def VERBOSE(msg, hint=None, **kwargs):
-   if (verbose >= 1):
+   if (log_level >= Log_Level.VERBOSE):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
 def WARNING(msg, hint=None, msg_save=True, **kwargs):
-   if (msg_save):
-      warnings.append(msg)
-   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
+   if (log_level > Log_Level.STDERR):
+      if (msg_save):
+         warnings.append(msg)
+      log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -494,6 +514,10 @@ def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
       or not the process succeeded; otherwise, return (zero) only if the
       process succeeded and exit with fatal error if it failed."""
+   if (log_level < Log_Level.WARNING):
+      kwargs["stdout"] = subprocess.DEVNULL
+      if (log_level <= Log_Level.QUIET_STDERR):
+         kwargs["stderr"] = subprocess.DEVNULL
    cp = cmd_base(argv, fail_ok=fail_ok, **kwargs)
    return cp.returncode
 
@@ -510,7 +534,7 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       for (k,v) in sorted(kwargs["env"].items()):
          VERBOSE("env: %s=%s" % (k,v))
    if ("stderr" not in kwargs):
-      if (verbose <= 1):  # VERBOSE or lower: capture for printing on fail only
+      if (log_level <= Log_Level.INFO):  # VERBOSE or lower: capture for printing on fail only
          kwargs["stderr"] = subprocess.PIPE
    if ("input" not in kwargs):
       kwargs["stdin"] = subprocess.DEVNULL
@@ -543,7 +567,7 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
       CompletedProcess object (its stdout is available in the “stdout”
       attribute). If logging is debug or higher, print stdout."""
    cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
-   if (verbose >= 2):  # debug or higher
+   if (log_level >= Log_Level.DEBUG):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
       sys.stdout.write(cp.stdout)
       sys.stdout.flush()
@@ -552,7 +576,7 @@ def cmd_stdout(argv, encoding="UTF-8", **kwargs):
 def cmd_quiet(argv, **kwargs):
    """Run command using cmd() and return the exit code. If logging is verbose
       or lower, discard stdout."""
-   if (verbose >= 2):  # debug or higher
+   if (log_level >= Log_Level.DEBUG):  # debug or higher
       stdout=None
    else:
       stdout=subprocess.DEVNULL
@@ -613,20 +637,26 @@ def exit(code):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, trace_fatal, verbose, save_xattrs
-   assert (0 <= cli.verbose <= 3)
-   verbose = cli.verbose
+   global log_festoon, log_fp, log_level, trace_fatal, save_xattrs
    save_xattrs = (not cli.no_xattrs)
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
+   if (cli.quiet and cli.verbose):
+      ERROR("“--quiet” incompatible with “--verbose”")
+      FATAL("incompatible option")
+   log_level = Log_Level(cli.verbose - cli.quiet)
+   assert (-3 <= log_level.value <= 3)
+   if (log_level <= Log_Level.STDERR):
+      # suppress writing to stdout (particularly “print”).
+      sys.stdout = open(os.devnull, 'w')
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
-      verbose = max(verbose, 1)
       log_fp = file_.open_("at")
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
-   VERBOSE("verbose level: %d" % verbose)
+   VERBOSE("verbose level: %d (%s))" % (log_level.value,
+                                        log_level.name))
    # storage directory
    global storage
    storage = fs.Storage(cli.storage)
