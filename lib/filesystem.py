@@ -128,6 +128,14 @@ class Path(pathlib.PosixPath):
          else:
             ch.FATAL("can’t find path to gzip or pigz")
 
+   @staticmethod
+   def stat_bytes_all(paths):
+      "Return concatenation of metadata_bytes() on each given Path object."
+      md = bytearray()
+      for path in paths:
+         md += path.stat_bytes_recursive()
+      return md
+
    def add_suffix(self, suff):
       """Returns the path object restulting from appending the specified
          suffix to the end of the path name. E.g. Path(foo).add_suffix(".txt")
@@ -411,6 +419,25 @@ class Path(pathlib.PosixPath):
          want to retain compatibility with."""
       return ch.ossafe(os.stat, "can’t stat: %s" % self, self,
                     follow_symlinks=links)
+
+   def stat_bytes(self, links=False):
+      "Return self.stat_() encoded as an opaque bytearray."
+      st = self.stat_(links)
+      return (  str(self).encode("UTF-8")
+              + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
+
+   def stat_bytes_recursive(self):
+      """Return concatenation of self.stat_() and all my children as an opaque
+         bytearray, in unspecified but consistent order."""
+      # FIXME: Locale issues related to sorting?
+      md = self.stat_bytes(links=True)
+      if (self.is_dir()):
+         for (dir_, dirs, files) in ch.walk(src):
+            md += dir_.stat_bytes()
+            for f in sorted(files):
+               md += (dir_ // f).stat_bytes()
+            dirs.sort()
+      return md
 
    def symlink(self, target, clobber=False):
       if (clobber and self.is_file()):

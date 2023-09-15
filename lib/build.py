@@ -863,10 +863,6 @@ class I_copy(Instruction):
             ch.FATAL("can’t COPY: unknown file type: %s" % src)
 
    def prepare(self, miss_ct):
-      def stat_bytes(path, links=False):
-         st = path.stat_(links)
-         return (  str(path).encode("UTF-8")
-                 + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
       # Error checking.
       if (cli.context == "-" and self.from_ is None):
          ch.FATAL("no context because “-” given")
@@ -918,16 +914,7 @@ class I_copy(Instruction):
                                               # commonpath in pathlib
             ch.FATAL("can’t copy from outside context: %s" % src)
       # Gather metadata for hashing.
-      # FIXME: Locale issues related to sorting?
-      self.src_metadata = bytearray()
-      for src in self.srcs:
-         self.src_metadata += stat_bytes(src, links=True)
-         if (src.is_dir()):
-            for (dir_, dirs, files) in ch.walk(src):
-               self.src_metadata += stat_bytes(dir_)
-               for f in sorted(files):
-                  self.src_metadata += stat_bytes(dir_ // f)
-               dirs.sort()
+      self.src_metadata = fs.Path.stat_bytes_all(self.srcs)
       # Pass on to superclass.
       return super().prepare(miss_ct)
 
@@ -1157,14 +1144,15 @@ class I_rsync(Instruction):
                 "dst_raw",
                 "plus_option",
                 "rsync_options",
+                "src_metadata",
                 "srcs",
                 "srcs_raw")
 
    def __init__(self, *args):
       super().__init__(*args)
+      line_no = self.tree.line
       st = self.tree.child("option_plus")
       self.plus_option = None if st is None else st.terminal("OPTION_LETTER")
-      ch.VERBOSE(self.plus_option)
       options_done = False
       self.rsync_options = list()
       self.srcs_raw = list()
@@ -1177,7 +1165,7 @@ class I_rsync(Instruction):
                self.rsync_options.append(word)
             else:                          # short option(s)
                if (len(word) == 1):
-                  ch.FATAL("RSYNC: invalid argument: %s" % word)
+                  ch.FATAL("RSYNC: %d: invalid argument: %s" % (line_no, word))
                # Append options individually so we can process them more later.
                for m in re.finditer(r"[^=]=.*$|[^=]", word[1:]):
                   self.rsync_options.append("-" + m[0])
@@ -1185,9 +1173,9 @@ class I_rsync(Instruction):
          # Not an option, so it must be a source or destination path.
          self.srcs_raw.append(word)
       if (len(self.srcs_raw) == 0):
-         ch.FATAL("RSYNC: source and destination missing")
+         ch.FATAL("RSYNC: %d: source and destination missing" % line_no)
       elif (len(self.srcs_raw) == 1):
-         ch.FATAL("RSYNC: source or destination missing")
+         ch.FATAL("RSYNC: %d: source or destination missing" % line_no)
       self.dst_raw = self.srcs_raw.pop()
 
    @property
@@ -1231,8 +1219,20 @@ class I_rsync(Instruction):
       ret.append(self.dst_raw)
       return " ".join(ret)
 
-   #def prepare(self, miss_ct):
-   #   ...
+   def prepare(self, miss_ct):
+      ...
+      # Find the context directory. FIXME: This is pretty simple because we
+      # don’t yet support the equivalent of COPY --from.
+      if (cli.context == "-"):
+         ch.FATAL("no context because “-” given")
+      context = cli.context
+      # Expand sources.
+      # Expand destination.
+      # Expand --*-from options.
+      # Gather metadata for hashing.
+      self.src_metadata = fs.Path.stat_bytes_all(self.srcs)
+      # Pass on to superclass.
+      return super().prepare(miss_ct)
 
    def execute(self):
       ...
@@ -1397,7 +1397,7 @@ class Environment:
    #         image_i attributes?
 
 
-## Supporting functions ###
+## Supporting functions ##
 
 def unescape(sl):
    # FIXME: This is also ugly and should go in the grammar.
@@ -1411,6 +1411,3 @@ def unescape(sl):
       sl = '"%s"' % sl
    assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
    return ast.literal_eval(sl)
-
-
-#  LocalWords:  earley topdown iter lineno sid keypair dst srcs pathlib
