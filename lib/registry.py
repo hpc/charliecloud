@@ -2,8 +2,8 @@ import getpass
 import io
 import os
 import re
-import urllib
 import types
+import urllib
 
 import charliecloud as ch
 

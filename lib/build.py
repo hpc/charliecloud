@@ -413,9 +413,6 @@ class Instruction(abc.ABC):
       self.git_hash = bu.cache.commit(path, self.sid, str(self),
                                       self.commit_files)
 
-   def ready(self):
-      bu.cache.ready(self.image)
-
    def execute(self):
       """Do what the instruction says. At this point, the unpack directory is
          all ready to go. Thus, the method is cache-ignorant."""
@@ -482,6 +479,9 @@ class Instruction(abc.ABC):
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       return miss_ct + int(self.miss)
 
+   def ready(self):
+      bu.cache.ready(self.image)
+
    def rollback(self):
       """Discard everything done by execute(), which may have completed
          partially, fully, or not at all."""
@@ -490,13 +490,13 @@ class Instruction(abc.ABC):
    def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported, ignored: %s %s" % (self.str_name, msg))
 
-   def unsupported_yet_warn(self, msg, issue_no):
-      ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
-                 % (issue_no, self.str_name, msg))
-
    def unsupported_yet_fatal(self, msg, issue_no):
       ch.FATAL("not yet supported: issue #%d: %s %s"
                % (issue_no, self.str_name, msg))
+
+   def unsupported_yet_warn(self, msg, issue_no):
+      ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
+                 % (issue_no, self.str_name, msg))
 
 
 class Instruction_Unsupported(Instruction):
@@ -1059,6 +1059,10 @@ class I_from_(Instruction):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
       super().checkout_for_build(self.base_image)
 
+   def execute(self):
+      # Everything happens in prepare().
+      pass
+
    def metadata_update(self, *args):
       # FROM doesn’t update metadata because it never misses when the cache is
       # enabled, so this would never be called, and we want disabled results
@@ -1142,10 +1146,6 @@ class I_from_(Instruction):
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 
-   def execute(self):
-      # Everything happens in prepare().
-      pass
-
 
 class Run(Instruction):
 
@@ -1168,7 +1168,7 @@ class Run(Instruction):
       elif (cli.force == ch.Force_Mode.SECCOMP):
          tag = ".S"
       else:
-         assert False, "unreachable code reached"
+         assert False, "unreachable code reached (force mode = %s)" % cli.force
       return super().str_name + tag
 
    def execute(self):
@@ -1320,6 +1320,3 @@ def unescape(sl):
       sl = '"%s"' % sl
    assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
    return ast.literal_eval(sl)
-
-
-#  LocalWords:  earley topdown iter lineno sid keypair dst srcs pathlib

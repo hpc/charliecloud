@@ -1181,22 +1181,6 @@ class Enabled_Cache:
       """Delete specified git tag. Used for recovering deleted branches."""
       return self.git(["tag", "-d", "&%s" % tag], *args, **kwargs)
 
-   def tree_print(self):
-      # Note the percent codes are interpreted by Git.
-      # See: https://git-scm.com/docs/git-log#_pretty_formats
-      args = ["log", "--graph", "--all", "--reflog", "--topo-order"]
-      if (ch.log_level == ch.Log_Level.INFO):
-         # ref names, subject (instruction), branch heads.
-         fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
-         args.append("--decorate-refs=refs/heads")
-      else:
-         # ref names, short commit hash, subject (instruction), body (state ID)
-         # FIXME: The body contains a trailing newline I can’t figure out how
-         # to remove.
-         fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
-      self.git(args + ["--format=%s" % fmt], quiet=False)
-      print()  # blank line to separate from summary
-
    def tree_dot(self):
       have_dot()
       path_gv = fs.Path(dot_base + ".gv")
@@ -1219,6 +1203,22 @@ class Enabled_Cache:
  "-l", "@SID@|%s", str(path_gv)], cwd=self.root)
       ch.VERBOSE("writing %s" % path_pdf)
       ch.cmd_quiet(["dot", "-Tpdf", "-o%s" % path_pdf, str(path_gv)])
+
+   def tree_print(self):
+      # Note the percent codes are interpreted by Git.
+      # See: https://git-scm.com/docs/git-log#_pretty_formats
+      args = ["log", "--graph", "--all", "--reflog", "--topo-order"]
+      if (ch.log_level == ch.Log_Level.INFO):
+         # ref names, subject (instruction), branch heads.
+         fmt = "%C(auto)%d %Creset%<|(77,trunc)%s"
+         args.append("--decorate-refs=refs/heads")
+      else:
+         # ref names, short commit hash, subject (instruction), body (state ID)
+         # FIXME: The body contains a trailing newline I can’t figure out how
+         # to remove.
+         fmt = "%C(auto)%d%C(yellow) %h %Creset%s %b"
+      self.git(args + ["--format=%s" % fmt], quiet=False)
+      print()  # blank line to separate from summary
 
    def unpack_delete(self, image):
       """Wrapper for Image.unpack_delete() that first detaches the work tree's
@@ -1280,6 +1280,14 @@ class Enabled_Cache:
       image.unpack_path.rmtree()
       ch.storage.image_tmp.rename_(image.unpack_path)
 
+   def worktree_head(self, image):
+      cp = self.git(["rev-parse", "--short", "HEAD"],
+                    fail_ok=True, cwd=image.unpack_path)
+      if (cp.returncode != 0):
+         return None
+      else:
+         return cp.stdout.strip()
+
    def worktrees_fix(self):
       """Git stores pointers (paths) both from the main repository to each
          worktree, and in the other direction from each worktree back to the
@@ -1327,14 +1335,6 @@ class Enabled_Cache:
                (wt_repo_dir // "gitdir").file_write(str(wt_img_git) + "\n")
             ch.VERBOSE("fixed %d worktrees" % len(wt_actuals))
       t.log("re-linked worktrees")
-
-   def worktree_head(self, image):
-      cp = self.git(["rev-parse", "--short", "HEAD"],
-                    fail_ok=True, cwd=image.unpack_path)
-      if (cp.returncode != 0):
-         return None
-      else:
-         return cp.stdout.strip()
 
 
 class Rebuild_Cache(Enabled_Cache):

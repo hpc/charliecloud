@@ -9,8 +9,8 @@ import sys
 
 import build_cache as bu
 import charliecloud as ch
-import image as im
 import filesystem as fs
+import image as im
 import pull
 import version
 

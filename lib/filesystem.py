@@ -339,22 +339,6 @@ class Path(pathlib.PosixPath):
          effort required to make the change."""
       return set(ch.ossafe(os.listdir, "can’t list: %s" % self.name, self))
 
-   def strip(self, left=0, right=0):
-      """Return a copy of myself with n leading components removed. E.g.:
-
-           >>> a = Path("/a/b/c")
-           >>> a.strip(left=1)
-           Path("a/b/c")
-           >>> a.strip(right=1)
-           Path("/a/b")
-           >>> a.strip(left=1, right=1)
-           Path("a/b")
-
-         It is an error if I don’t have at least left + right components,
-         i.e., you can strip a path down to nothing but not further."""
-      assert (len(self.parts) >= left + right)
-      return Path(*self.parts[left:len(self.parts)-right])
-
    def mkdir_(self):
       ch.TRACE("ensuring directory: %s" % self)
       try:
@@ -411,6 +395,22 @@ class Path(pathlib.PosixPath):
          want to retain compatibility with."""
       return ch.ossafe(os.stat, "can’t stat: %s" % self, self,
                     follow_symlinks=links)
+
+   def strip(self, left=0, right=0):
+      """Return a copy of myself with n leading components removed. E.g.:
+
+           >>> a = Path("/a/b/c")
+           >>> a.strip(left=1)
+           Path("a/b/c")
+           >>> a.strip(right=1)
+           Path("/a/b")
+           >>> a.strip(left=1, right=1)
+           Path("a/b")
+
+         It is an error if I don’t have at least left + right components,
+         i.e., you can strip a path down to nothing but not further."""
+      assert (len(self.parts) >= left + right)
+      return Path(*self.parts[left:len(self.parts)-right])
 
    def symlink(self, target, clobber=False):
       if (clobber and self.is_file()):
@@ -522,6 +522,9 @@ class Storage:
    def build_large_path(self, name):
       return self.build_large // name
 
+   def fatman_for_download(self, image_ref):
+      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
+
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
@@ -619,9 +622,6 @@ class Storage:
          digest = "skinny"
       return (   self.download_cache
               // ("%s%%%s.manifest.json" % (image_ref.for_path, digest)))
-
-   def fatman_for_download(self, image_ref):
-      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def reset(self):
       if (self.valid_p):
