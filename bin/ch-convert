@@ -2,8 +2,8 @@
 
 ## preamble ##################################################################
 
-lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
-. "${lib}/base.sh"
+ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib
+. "${ch_lib}/base.sh"
 PATH=${ch_bin}:$PATH
 
 usage=$(cat <<EOF

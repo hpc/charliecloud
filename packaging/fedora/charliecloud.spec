@@ -169,7 +169,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 %files test
 %{_bindir}/ch-test
-%{_libexecdir}/%{name}/test
+%{_libexecdir}/%{name}
 %{_mandir}/man1/ch-test.1*
 
 %changelog

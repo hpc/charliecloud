@@ -41,6 +41,54 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'verbose level: 1'* ]]
+
+    # unset debug in preparation for “--quiet” tests
+    unset CH_IMAGE_DEBUG
+
+    # test gestalt logging
+    run ch-image gestalt logging
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"info"* ]]
+    [[ $output = *'warning: warning'* ]]
+    [[ $output = *'error: error'* ]]
+
+    # quiet level 1
+    run ch-image gestalt -q logging
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *"info"* ]]
+    [[ $output = *'warning: warning'* ]]
+    [[ $output = *'error: error'* ]]
+
+    # quiet level 2
+    run ch-image build --rebuild -t tmpimg -qq -f - . << 'EOF'
+FROM alpine:3.17
+RUN echo 'this is stdout'
+RUN echo 'this is stderr' 1>&2
+EOF
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'Dependencies resolved.'* ]]
+    [[ $output != *'this is stdout'* ]]
+    [[ $output = *'this is stderr'* ]]
+    [[ $output != *'grown in 4 instructions: tmpimg'* ]]
+
+    # quiet level 3
+    run ch-image gestalt logging -qqq
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *'warning: warning'* ]]
+    [[ $output = *'error: error'* ]]
+
+    # failure at quiet level 3
+    run ch-image gestalt logging -qqq --fail
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *'warning: warning'* ]]
+    [[ $output = *'error: the program failed inexplicably'* ]]
 }
 
 

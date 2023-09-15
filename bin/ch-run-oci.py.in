@@ -11,8 +11,8 @@ import sys
 import time
 import types
 
-sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/../lib/charliecloud"))
+ch_lib = os.path.dirname(os.path.abspath(__file__)) + "/../lib"
+sys.path.insert(0, ch_lib)
 import charliecloud as ch
 import misc
 import filesystem as fs
@@ -92,6 +92,7 @@ def args_parse():
    args_.no_lock = False
    args_.password_many = False
    args_.profile = False
+   args_.quiet = False
    args_.storage = None
    args_.tls_no_verify = False
    args_.no_xattrs = False
