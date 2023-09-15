@@ -34,8 +34,8 @@
 #   3. Here string, e.g. 'while IFS= read -r FILE; do ... done <<< "$FILES"'.
 #      This is a bashism.
 
-lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
-. "${lib}/base.sh"
+ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib
+. "${ch_lib}/base.sh"
 
 set -e
 

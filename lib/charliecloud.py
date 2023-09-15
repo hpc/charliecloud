@@ -5,6 +5,7 @@ import collections.abc
 import cProfile
 import datetime
 import enum
+import functools
 import hashlib
 import io
 import locale
@@ -44,6 +45,29 @@ class Download_Mode(enum.Enum):
    ENABLED = "enabled"
    WRITE_ONLY = "write-only"
 
+# Root emulation mode
+class Force_Mode(enum.Enum):
+   FAKEROOT = "fakeroot"
+   SECCOMP = "seccomp"
+   NONE = "none"
+
+# Log level
+@functools.total_ordering
+class Log_Level(enum.Enum):
+   TRACE = 3
+   DEBUG = 2
+   VERBOSE = 1
+   INFO = 0
+   WARNING = -1
+   STDERR = -2
+   QUIET_STDERR = -3
+   # To support comparisons, we need to define at least one “ordering”
+   # operator. See: https://stackoverflow.com/a/39269589
+   def __lt__(self, other):
+      if self.__class__ is other.__class__:
+         return self.value < other.value
+      return NotImplemented
+
 
 ## Constants ##
 
@@ -57,8 +81,7 @@ class Download_Mode(enum.Enum):
 #
 # [1]: https://stackoverflow.com/a/45125525
 # [2]: https://github.com/docker-library/bashbrew/blob/v0.1.0/vendor/github.com/docker-library/go-dockerlibrary/architecture/oci-platform.go
-ARCH_MAP = { "x86_64":    "amd64",
-             "armv5l":    "arm/v5",
+ARCH_MAP = { "armv5l":    "arm/v5",
              "armv6l":    "arm/v6",
              "aarch32":   "arm/v7",
              "armv7l":    "arm/v7",
@@ -68,7 +91,8 @@ ARCH_MAP = { "x86_64":    "amd64",
              "i686":      "386",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
-             "s390x":     "s390x" }  # a.k.a. IBM Z
+             "s390x":     "s390x",     # a.k.a. IBM Z
+             "x86_64":    "amd64" }
 
 # Some images have oddly specified architecture. For example, as of
 # 2022-06-08, on Docker Hub, opensuse/leap:15.1 offers architectures amd64,
@@ -114,10 +138,10 @@ CH_BIN = None
 CH_RUN = None
 
 # Logging; set using init() below.
-verbose = 0          # Verbosity level.
-log_festoon = False  # If true, prepend pid and timestamp to chatter.
-log_fp = sys.stderr  # File object to print logs to.
-trace_fatal = False  # Add abbreviated traceback to fatal error hint.
+log_level = Log_Level(0)  # Verbosity level.
+log_festoon = False       # If true, prepend pid and timestamp to chatter.
+log_fp = sys.stderr       # File object to print logs to.
+trace_fatal = False       # Add abbreviated traceback to fatal error hint.
 
 # Warnings to be re-printed when program exits
 warnings = list()
@@ -136,8 +160,8 @@ class Fatal_Error(Exception):
    def __init__(self, *args, **kwargs):
       self.args = args
       self.kwargs = kwargs
-class No_Fatman_Error(Exception): pass
 class Image_Unavailable_Error(Exception): pass
+class No_Fatman_Error(Exception): pass
 
 
 ## Classes ##
@@ -299,6 +323,11 @@ class Progress:
       self.display_last = float("-inf")
       self.update(0)
 
+   def done(self):
+      self.update(0, True)
+      if (self.overwrite_p):
+         INFO("")  # newline to release display line
+
    def update(self, increment, last=False):
       now = time.monotonic()
       self.progress += increment
@@ -319,11 +348,6 @@ class Progress:
                line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
          INFO(line, end=("\r" if self.overwrite_p else "\n"))
          self.display_last = now
-
-   def done(self):
-      self.update(0, True)
-      if (self.overwrite_p):
-         INFO("")  # newline to release display line
 
 
 class Progress_Reader:
@@ -432,7 +456,7 @@ class Timer:
 ## Supporting functions ##
 
 def DEBUG(msg, hint=None, **kwargs):
-   if (verbose >= 2):
+   if (log_level >= Log_Level.DEBUG):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
@@ -451,20 +475,22 @@ def FATAL(msg, hint=None, **kwargs):
 
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(msg, hint, None, "33m", "", **kwargs)  # yellow
+   if (log_level >= Log_Level.INFO):
+      log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
-   if (verbose >= 3):
+   if (log_level >= Log_Level.TRACE):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def VERBOSE(msg, hint=None, **kwargs):
-   if (verbose >= 1):
+   if (log_level >= Log_Level.VERBOSE):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
 def WARNING(msg, hint=None, msg_save=True, **kwargs):
-   if (msg_save):
-      warnings.append(msg)
-   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
+   if (log_level > Log_Level.STDERR):
+      if (msg_save):
+         warnings.append(msg)
+      log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -507,6 +533,10 @@ def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
       or not the process succeeded; otherwise, return (zero) only if the
       process succeeded and exit with fatal error if it failed."""
+   if (log_level < Log_Level.WARNING):
+      kwargs["stdout"] = subprocess.DEVNULL
+      if (log_level <= Log_Level.QUIET_STDERR):
+         kwargs["stderr"] = subprocess.DEVNULL
    cp = cmd_base(argv, fail_ok=fail_ok, **kwargs)
    return cp.returncode
 
@@ -523,7 +553,7 @@ def cmd_base(argv, fail_ok=False, **kwargs):
       for (k,v) in sorted(kwargs["env"].items()):
          VERBOSE("env: %s=%s" % (k,v))
    if ("stderr" not in kwargs):
-      if (verbose <= 1):  # VERBOSE or lower: capture for printing on fail only
+      if (log_level <= Log_Level.INFO):  # VERBOSE or lower: capture for printing on fail only
          kwargs["stderr"] = subprocess.PIPE
    if ("input" not in kwargs):
       kwargs["stdin"] = subprocess.DEVNULL
@@ -551,25 +581,25 @@ def cmd_base(argv, fail_ok=False, **kwargs):
             % (cp.returncode, argv_to_string(argv)))
    return cp
 
+def cmd_quiet(argv, **kwargs):
+   """Run command using cmd() and return the exit code. If logging is verbose
+      or lower, discard stdout."""
+   if (log_level >= Log_Level.DEBUG):  # debug or higher
+      stdout=None
+   else:
+      stdout=subprocess.DEVNULL
+   return cmd(argv, stdout=stdout, **kwargs)
+
 def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
       CompletedProcess object (its stdout is available in the “stdout”
       attribute). If logging is debug or higher, print stdout."""
    cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
-   if (verbose >= 2):  # debug or higher
+   if (log_level >= Log_Level.DEBUG):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
       sys.stdout.write(cp.stdout)
       sys.stdout.flush()
    return cp
-
-def cmd_quiet(argv, **kwargs):
-   """Run command using cmd() and return the exit code. If logging is verbose
-      or lower, discard stdout."""
-   if (verbose >= 2):  # debug or higher
-      stdout=None
-   else:
-      stdout=subprocess.DEVNULL
-   return cmd(argv, stdout=stdout, **kwargs)
 
 def color_reset(*fps):
    for fp in fps:
@@ -626,20 +656,25 @@ def exit(code):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, trace_fatal, verbose, save_xattrs
-   assert (0 <= cli.verbose <= 3)
-   verbose = cli.verbose
+   global log_festoon, log_fp, log_level, trace_fatal, save_xattrs
    save_xattrs = (not cli.no_xattrs)
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
+   if (cli.quiet and cli.verbose):
+      ERROR("“--quiet” incompatible with “--verbose”")
+      FATAL("incompatible option")
+   log_level = Log_Level(cli.verbose - cli.quiet)
+   assert (-3 <= log_level.value <= 3)
+   if (log_level <= Log_Level.STDERR):
+      # suppress writing to stdout (particularly “print”).
+      sys.stdout = open(os.devnull, 'w')
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
-      verbose = max(verbose, 1)
       log_fp = file_.open_("at")
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
-   VERBOSE("verbose level: %d" % verbose)
+   VERBOSE("verbose level: %d (%s))" % (log_level.value, log_level.name))
    # signal handling
    signal.signal(signal.SIGINT, sigterm)
    signal.signal(signal.SIGTERM, sigterm)
@@ -704,18 +739,6 @@ def kill_blocking(pid, timeout=10):
       time.sleep(0.5)
    FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid),
          BUG_REPORT_PLZ)
-
-def walk(*args, **kwargs):
-   """Wrapper for os.walk(). Return a generator of the files in a directory
-      tree (root specified in *args). For each directory in said tree, yield a
-      3-tuple (dirpath, dirnames, filenames), where dirpath is a Path object,
-      and dirnames and filenames are lists of Path objects. For insight into
-      these being lists rather than generators, see use of ch.walk() in
-      I_copy.copy_src_dir()."""
-   for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
-      yield (fs.Path(dirpath),
-             [fs.Path(dirname) for dirname in dirnames],
-             [fs.Path(filename) for filename in filenames])
 
 def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
@@ -886,6 +909,18 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
       return False
    VERBOSE("%s version OK: %d.%d.%d ≥ %d.%d.%d" % ((prog,) + v + min_))
    return True
+
+def walk(*args, **kwargs):
+   """Wrapper for os.walk(). Return a generator of the files in a directory
+      tree (root specified in *args). For each directory in said tree, yield a
+      3-tuple (dirpath, dirnames, filenames), where dirpath is a Path object,
+      and dirnames and filenames are lists of Path objects. For insight into
+      these being lists rather than generators, see use of ch.walk() in
+      I_copy.copy_src_dir()."""
+   for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
+      yield (fs.Path(dirpath),
+             [fs.Path(dirname) for dirname in dirnames],
+             [fs.Path(filename) for filename in filenames])
 
 def warnings_dump():
    if (len(warnings) > 0):

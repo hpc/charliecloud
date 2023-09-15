@@ -113,7 +113,7 @@ _image_build_opts="-b --bind --build-arg -f --file --force
 _image_common_opts="-a --arch --always-download --auth --cache
                     --cache-large --dependencies -h --help
                     --no-cache --no-lock --no-xattrs --profile
-                    --rebuild --password-many -s --storage
+                    --rebuild --password-many -q --quiet -s --storage
                     --tls-no-verify -v --verbose --version"
 
 _image_subcommands="build build-cache delete gestalt

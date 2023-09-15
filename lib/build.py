@@ -88,12 +88,12 @@ def main(cli_):
       ch.INFO("inferred image name: %s" % cli.tag)
 
    # --force and friends.
-   if (cli.force_cmd and cli.force == "fakeroot"):
+   if (cli.force_cmd and cli.force == ch.Force_Mode.FAKEROOT):
       ch.FATAL("--force-cmd and --force=fakeroot are incompatible")
    if (not cli.force_cmd):
       cli.force_cmd = force.FORCE_CMD_DEFAULT
    else:
-      cli.force = "seccomp"
+      cli.force = ch.Force_Mode.SECCOMP
       # convert cli.force_cmd to parsed dict
       force_cmd = dict()
       for line in cli.force_cmd:
@@ -101,10 +101,10 @@ def main(cli_):
          force_cmd[cmd] = args
       cli.force_cmd = force_cmd
    ch.VERBOSE("force mode: %s" % cli.force)
-   if (cli.force == "seccomp"):
+   if (cli.force == ch.Force_Mode.SECCOMP):
       for (cmd, args) in cli.force_cmd.items():
          ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
-   if (    cli.force == "seccomp"
+   if (    cli.force == ch.Force_Mode.SECCOMP
        and ch.cmd([ch.CH_BIN + "/ch-run", "--feature=seccomp"],
                   fail_ok=True) != 0):
       ch.FATAL("ch-run was not built with seccomp(2) support")
@@ -199,9 +199,9 @@ def main(cli_):
    if (ml.instruction_total_ct == 0):
       ch.FATAL("no instructions found: %s" % cli.file)
    assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
-   if (cli.force and ml.miss_ct != 0):
+   if ((cli.force != ch.Force_Mode.NONE) and ml.miss_ct != 0):
       ch.INFO("--force=%s: modified %d RUN instructions"
-              % (cli.force, forcer.run_modified_ct))
+              % (cli.force.value, forcer.run_modified_ct))
    ch.INFO("grown in %d instructions: %s"
            % (ml.instruction_total_ct, ml.inst_prev.image))
    # FIXME: remove when we’re done encouraging people to use the build cache.
@@ -414,9 +414,6 @@ class Instruction(abc.ABC):
       self.git_hash = bu.cache.commit(path, self.sid, str(self),
                                       self.commit_files)
 
-   def ready(self):
-      bu.cache.ready(self.image)
-
    def execute(self):
       """Do what the instruction says. At this point, the unpack directory is
          all ready to go. Thus, the method is cache-ignorant."""
@@ -486,6 +483,9 @@ class Instruction(abc.ABC):
    def prepare_rollback(self):
       pass  # typically a no-op
 
+   def ready(self):
+      bu.cache.ready(self.image)
+
    def rollback(self):
       """Discard everything done by execute(), which may have completed
          partially, fully, or not at all."""
@@ -494,13 +494,13 @@ class Instruction(abc.ABC):
    def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported, ignored: %s %s" % (self.str_name, msg))
 
-   def unsupported_yet_warn(self, msg, issue_no):
-      ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
-                 % (issue_no, self.str_name, msg))
-
    def unsupported_yet_fatal(self, msg, issue_no):
       ch.FATAL("not yet supported: issue #%d: %s %s"
                % (issue_no, self.str_name, msg))
+
+   def unsupported_yet_warn(self, msg, issue_no):
+      ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
+                 % (issue_no, self.str_name, msg))
 
 
 class Instruction_Unsupported(Instruction):
@@ -1063,6 +1063,10 @@ class I_from_(Instruction):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
       super().checkout_for_build(self.base_image)
 
+   def execute(self):
+      # Everything happens in prepare().
+      pass
+
    def metadata_update(self, *args):
       # FROM doesn’t update metadata because it never misses when the cache is
       # enabled, so this would never be called, and we want disabled results
@@ -1165,10 +1169,6 @@ class I_from_(Instruction):
          if (image is not None):
             bu.cache.unpack_delete(image, missing_ok=True)
 
-   def execute(self):
-      # Everything happens in prepare().
-      pass
-
 
 class Run(Instruction):
 
@@ -1178,9 +1178,9 @@ class Run(Instruction):
    def str_name(self):
       # Can’t get this from the forcer object because it might not have been
       # initialized yet.
-      if (cli.force is None):
-         tag = ""
-      elif (cli.force == "fakeroot"):
+      if (cli.force == ch.Force_Mode.NONE):
+         tag = ".N"
+      elif (cli.force == ch.Force_Mode.FAKEROOT):
          # FIXME: This causes spurious misses because it adds the force tag to
          # *all* RUN instructions, not just those that actually were modified
          # (i.e, any RUN instruction will miss the equivalent RUN without
@@ -1188,10 +1188,10 @@ class Run(Instruction):
          # modifications until the result is checked out, which happens after
          # we check the cache. See issue #1339.
          tag = ".F"
-      elif (cli.force == "seccomp"):
+      elif (cli.force == ch.Force_Mode.SECCOMP):
          tag = ".S"
       else:
-         assert False, "unreachable code reached"
+         assert False, "unreachable code reached (force mode = %s)" % cli.force
       return super().str_name + tag
 
    def execute(self):
@@ -1343,6 +1343,3 @@ def unescape(sl):
       sl = '"%s"' % sl
    assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
    return ast.literal_eval(sl)
-
-
-#  LocalWords:  earley topdown iter lineno sid keypair dst srcs pathlib

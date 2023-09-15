@@ -231,12 +231,12 @@ class Image:
       return self.unpack_path // "ch"
 
    @property
-   def unpack_exist_p(self):
-      return os.path.exists(self.unpack_path)
-
-   @property
    def unpack_cache_linked(self):
       return (self.unpack_path // GIT_DIR).exists_()
+
+   @property
+   def unpack_exist_p(self):
+      return os.path.exists(self.unpack_path)
 
    def __str__(self):
       return str(self.ref)

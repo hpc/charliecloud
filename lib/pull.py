@@ -217,6 +217,30 @@ class Image_Puller:
       "Return the path to tarball for layer layer_hash."
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
+   def manifest_digest_by_arch(self):
+      "Return skinny manifest digest for target architecture."
+      fatman  = self.fat_manifest_path.json_from_file()
+      arch    = None
+      digest  = None
+      variant = None
+      try:
+         arch, variant = ch.arch.split("/", maxsplit=1)
+      except ValueError:
+         arch = ch.arch
+      if ("manifests" not in fatman):
+         ch.FATAL("manifest list has no manifests")
+      for k in fatman["manifests"]:
+         if (k.get('platform').get('os') != 'linux'):
+            continue
+         elif (    k.get('platform').get('architecture') == arch
+               and (   variant is None
+                    or k.get('platform').get('variant') == variant)):
+            digest = k.get('digest')
+      if (digest is None):
+         ch.FATAL("arch not found for image: %s" % arch,
+                  'try "ch-image list IMAGE_REF"')
+      return digest
+
    def manifest_load(self, have_skinny=False):
       """Download the manifest file, parse it, and set self.config_hash and
          self.layer_hashes. If the image does not exist,
@@ -283,30 +307,6 @@ class Image_Puller:
       # Remember State_ID input. We can’t rely on the manifest existing in
       # serialized form (e.g. for internal manifests), so re-serialize.
       self.sid_input = json.dumps(manifest, sort_keys=True)
-
-   def manifest_digest_by_arch(self):
-      "Return skinny manifest digest for target architecture."
-      fatman  = self.fat_manifest_path.json_from_file()
-      arch    = None
-      digest  = None
-      variant = None
-      try:
-         arch, variant = ch.arch.split("/", maxsplit=1)
-      except ValueError:
-         arch = ch.arch
-      if ("manifests" not in fatman):
-         ch.FATAL("manifest list has no manifests")
-      for k in fatman["manifests"]:
-         if (k.get('platform').get('os') != 'linux'):
-            continue
-         elif (    k.get('platform').get('architecture') == arch
-               and (   variant is None
-                    or k.get('platform').get('variant') == variant)):
-            digest = k.get('digest')
-      if (digest is None):
-         ch.FATAL("arch not found for image: %s" % arch,
-                  'try "ch-image list IMAGE_REF"')
-      return digest
 
    def unpack(self, last_layer=None):
       layer_paths = [self.layer_path(h) for h in self.layer_hashes]
