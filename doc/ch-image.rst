@@ -1003,6 +1003,8 @@ Features we do not plan to support
 New instructions
 ----------------
 
+.. _ch-image_rsync:
+
 :code:`RSYNC`
 ~~~~~~~~~~~~~
 
@@ -1039,14 +1041,50 @@ example,
 .. code-block:: docker
 
    WORKDIR /foo
-   RSYNC --foo ssh:src1 ./src2 ./dst1
-   RSYNC ./src3 /dst2
+   RSYNC --foo src1 src2 dst
 
 is translated to (the equivalent of)::
 
    $ mkdir -p /foo
-   $ rsync --foo ssh:src1 /context/src2 /storage/imgroot/foo/dst2
-   $ rsync /context/src3 /storage/imgroot/dst2
+   $ rsync -@=-1 -AHSXpr --info=progress2 -l --copy-unsafe-links \
+           --foo /context/src1 /context/src2 /storage/imgroot/foo/dst2
+
+Note the extensive default arguments to :code:`rsync(1)`. :code:`RSYNC` takes
+a single instruction option beginning with :code:`+` (plus) that is shorthand
+for a group of :code:`rsync(1)` options. This single option is one of:
+
+  :code:`+m`
+    Preserves metadata. Equivalent to all of:
+
+    * :code:`-@=-1`: use nanosecond precision when comparing timestamps.
+    * :code:`-A`: preserve ACLs.
+    * :code:`-H`: preserve hard link groups.
+    * :code:`-S`: preserve file sparseness when possible.
+    * :code:`-X`: preserve xattrs in :code:`user.*` namespace.
+    * :code:`-p`: preserve permissions.
+    * :code:`-r`: recurse into directories.
+    * :code:`--info=progress2` (only if stderr is a terminal): show progress
+      meter (note `subtleties in interpretation
+      <https://unix.stackexchange.com/questions/215271>`_).
+
+  :code:`+l` (default)
+    Preserves metadata and symlinks (if within source directory). Equivalent
+    to the options listed for :code:`+m` and also:
+
+    * :code:`-l`: Copy symlinks as symlinks if their target is within the
+      top-of-transfer directory. This is *not the context directory and often
+      not the source directory*; see below for examples.
+
+    * :code:`--copy-unsafe-links`: copy the target of symlinks that point
+      outside the top-of-transfer directory for each source.
+
+  :code:`+z`
+
+    No default arguments. No metadata will be preserved, and both hard and
+    symbolic links will be ignored, except as specified by :code:`rsync(1)`
+    options starting with a hyphen. (Note that :code:`-a`/:code:`--archive` is
+    discouraged because it omits some metadata and handles symlinks
+    inappropriately for containers.)
 
 A small number of :code:`rsync(1)` features are actively disallowed:
 
@@ -1087,34 +1125,7 @@ For arguments that read input from a file (e.g. :code:`--exclude-from` or
 absolute paths refer to the image root, and :code:`-` (standard input) is an
 error.
 
-:code:`RSYNC` allows specifying a single option beginning with :code:`+`
-(plus) that is shorthand for a group of :code:`rsync(1)` options. **These are
-preferred** to :code:`rsync(1)`’s own :code:`-a`/:code:`--archive` option
-because that may handle symlinks inappropriately for containers and omits some
-metadata. This single option is one of:
 
-  :code:`+a`
-    Equivalent to all of:
-
-    * :code:`-@=-1`: use nanosecond precision when comparing timestamps.
-    * :code:`-A`: preserve ACLs.
-    * :code:`-H`: preserve hard link groups.
-    * :code:`-S`: preserve file sparseness when possible.
-    * :code:`-X`: preserve xattrs in :code:`user.*` namespace.
-    * :code:`-p`: preserve permissions.
-    * :code:`-r`: recurse into directories.
-    * :code:`--info=progress2` (only if stderr is a terminal): show progress
-      meter (note `subtleties in interpretation
-      <https://unix.stackexchange.com/questions/215271>`_).
-
-  :code:`+l`
-    Equivalent to the options listed for :code:`+` and also:
-
-    * :code:`-l`: process symlinks in the sources.
-
-    * :code:`--copy-unsafe-links`: copy the target of symlinks that point
-      outside the top-of-transfer directory for each source. This is *not the
-      context directory*; see below for examples.
 
 Symlink handling is particularly fraught, so use care. In particular, you must
 state explicitly what to do with symlinks in the source: both plain

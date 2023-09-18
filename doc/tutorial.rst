@@ -265,7 +265,7 @@ recipe:
 
    FROM almalinux:8
    RUN yum -y install python36
-   COPY ./hello.py /
+   RSYNC ./hello.py /
    RUN chmod 755 /hello.py
 
 These four instructions say:
@@ -275,9 +275,11 @@ These four instructions say:
   2. :code:`RUN`: Install the :code:`python36` RPM package, which we need for
      our Hello World program.
 
-  3. :code:`COPY`: Copy the file :code:`hello.py` we just made to the root
+  3. :code:`RSYNC`: Copy the file :code:`hello.py` we just made to the root
      directory of the image. In the source argument, the path is relative to
-     the *context directory*, which we’ll see more of below.
+     the *context directory*, which we’ll see more of below. (This instruction
+     is a Charliecloud extension; see :ref:`its documentation <ch-image_rsync>`
+     for details.) You can also use standard :code:`COPY` if you prefer.)
 
   4. :code:`RUN`: Make that file executable.
 
