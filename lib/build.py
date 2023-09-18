@@ -2,13 +2,13 @@
 
 import abc
 import ast
+import enum
 import glob
 import json
 import os
 import os.path
 import re
 import shutil
-import struct
 import sys
 
 import charliecloud as ch
@@ -165,6 +165,14 @@ def main(cli_):
    # Count the number of stages (i.e., FROM instructions)
    global image_ct
    image_ct = sum(1 for i in tree.children_("from_"))
+
+   # If we use RSYNC, error out quickly if appropriate rsync(1) not present.
+   if (tree.child("rsync") is not None):
+      try:
+         ch.version_check(["rsync", "--version"], ch.RSYNC_MIN)
+      except ch.Fatal_Error:
+         ch.ERROR("Dockerfile uses RSYNC, so rsync(1) is required")
+         raise
 
    # Traverse the tree and do what it says.
    #
@@ -552,6 +560,75 @@ class Instruction_No_Image(Instruction):
       return miss_ct + int(self.miss)
 
 
+class Copy(Instruction):
+
+   # Superclass for instructions that do some flavor of file copying (ADD,
+   # COPY, RSYNC).
+
+   __slots__ = ("dst",
+                "dst_raw",
+                "from_",
+                "src_metadata",
+                "srcs",
+                "srcs_base",
+                "srcs_raw")
+
+   def expand_dest(self):
+      """Set self.dst from self.dst_raw with environment variables expanded
+         and image root prepended."""
+      self.dst =    self.image.unpack_path \
+                 // ch.variables_sub(self.dst_raw, self.env_build)
+
+   def expand_sources(self):
+      """Set self.srcs from self.srcs_raw with environment variables and globs
+         expanded, absolute paths with appropriate base, and validate that
+         they are within the sources base."""
+      if (cli.context == "-" and self.from_ is None):
+         ch.FATAL("no context because “-” given")
+      if (len(self.srcs_raw) < 1):
+         ch.FATAL("source or destination missing")
+      self.srcs_base_set()
+      self.srcs = list()
+      for src in (ch.variables_sub(i, self.env_build) for i in self.srcs_raw):
+         # glob can’t take Path
+         matches = [fs.Path(i)
+                    for i in glob.glob("%s/%s" % (self.srcs_base, src))]
+         if (len(matches) == 0):
+            ch.FATAL("source not found: %s" % src)
+         for m in matches:
+            self.srcs.append(m)
+            ch.VERBOSE("source: %s" % m)
+            # Validate source is within context directory. (We need the source
+            # as given later, so don’t canonicalize persistently.) There is no
+            # clear subsitute for commonpath() in pathlib.
+            mc = m.resolve()
+            if (not os.path.commonpath([mc, self.srcs_base])
+                           .startswith(self.srcs_base)):
+               ch.FATAL("can’t copy from outside context: %s" % src)
+
+   def srcs_base_set(self):
+      "Set self.srcs_base according to context and --from."
+      if (self.from_ is None):
+         self.srcs_base = cli.context
+      else:
+         if (self.from_ == self.image_i or self.from_ == self.image_alias):
+            ch.FATAL("--from: stage %s is the current stage" % self.from_)
+         if (not self.from_ in images):
+            # FIXME: Would be nice to also report if a named stage is below.
+            if (isinstance(self.from_, int) and self.from_ < image_ct):
+               if (self.from_ < 0):
+                  ch.FATAL("--from: invalid negative stage index %d"
+                           % self.from_)
+               else:
+                  ch.FATAL("--from: stage %d does not exist yet"
+                           % self.from_)
+            else:
+               ch.FATAL("--from: stage %s does not exist" % self.from_)
+         self.srcs_base = images[self.from_].unpack_path
+      self.srcs_base = os.path.realpath(self.srcs_base)
+      ch.VERBOSE("context: %s" % self.srcs_base)
+
+
 class Arg(Instruction):
 
    __slots__ = ("key",
@@ -657,7 +734,7 @@ class I_arg_first_equals(Arg_First):
       return v
 
 
-class I_copy(Instruction):
+class I_copy(Copy):
 
    # ABANDON ALL HOPE YE WHO ENTER HERE
    #
@@ -669,12 +746,7 @@ class I_copy(Instruction):
    # Because of these weird semantics, none of this abstracted into a general
    # copy function. I don’t want people calling it except from here.
 
-   __slots__ = ("dst",
-                "dst_raw",
-                "from_",
-                "src_metadata",
-                "srcs",
-                "srcs_raw")
+   __slots__ = ()
 
    def __init__(self, *args):
       super().__init__(*args)
@@ -863,56 +935,14 @@ class I_copy(Instruction):
             ch.FATAL("can’t COPY: unknown file type: %s" % src)
 
    def prepare(self, miss_ct):
-      # Error checking.
-      if (cli.context == "-" and self.from_ is None):
-         ch.FATAL("no context because “-” given")
-      if (len(self.srcs_raw) < 1):
-         ch.FATAL("must specify at least one source")
       # Complain about unsupported stuff.
       if (self.options.pop("chown", False)):
          self.unsupported_forever_warn("--chown")
       # Any remaining options are invalid.
       self.options_assert_empty()
-      # Find the context directory.
-      if (self.from_ is None):
-         context = cli.context
-      else:
-         if (self.from_ == self.image_i or self.from_ == self.image_alias):
-            ch.FATAL("--from: stage %s is the current stage" % self.from_)
-         if (not self.from_ in images):
-            # FIXME: Would be nice to also report if a named stage is below.
-            if (isinstance(self.from_, int) and self.from_ < image_ct):
-               if (self.from_ < 0):
-                  ch.FATAL("--from: invalid negative stage index %d"
-                           % self.from_)
-               else:
-                  ch.FATAL("--from: stage %d does not exist yet"
-                           % self.from_)
-            else:
-               ch.FATAL("--from: stage %s does not exist" % self.from_)
-         context = images[self.from_].unpack_path
-      context_canon = os.path.realpath(context)
-      ch.VERBOSE("context: %s" % context)
-      # Expand sources.
-      self.srcs = list()
-      for src in (ch.variables_sub(i, self.env_build) for i in self.srcs_raw):
-         # glob can’t take Path
-         matches = [fs.Path(i) for i in glob.glob("%s/%s" % (context, src))]
-         if (len(matches) == 0):
-            ch.FATAL("source file not found: %s" % src)
-         for i in matches:
-            self.srcs.append(i)
-            ch.VERBOSE("source: %s" % i)
-      # Expand destination.
-      self.dst = ch.variables_sub(self.dst_raw, self.env_build)
-      # Validate sources are within context directory. (Can’t convert to
-      # canonical paths yet because we need the source path as given.)
-      for src in self.srcs:
-         src_canon = src.resolve()
-         if (not os.path.commonpath([src_canon, context_canon])
-                 .startswith(context_canon)): # no clear substitute for
-                                              # commonpath in pathlib
-            ch.FATAL("can’t copy from outside context: %s" % src)
+      # Expand operands.
+      self.expand_sources()
+      self.expand_dest()
       # Gather metadata for hashing.
       self.src_metadata = fs.Path.stat_bytes_all(self.srcs)
       # Pass on to superclass.
@@ -1138,18 +1168,14 @@ class I_from_(Instruction):
       pass
 
 
-class I_rsync(Instruction):
+class I_rsync(Copy):
 
-   __slots__ = ("dst",
-                "dst_raw",
-                "plus_option",
-                "rsync_options",
-                "src_metadata",
-                "srcs",
-                "srcs_raw")
+   __slots__ = ("plus_option",
+                "rsync_options")
 
    def __init__(self, *args):
       super().__init__(*args)
+      self.from_ = None  # not supported yet
       line_no = self.tree.line
       st = self.tree.child("option_plus")
       self.plus_option = None if st is None else st.terminal("OPTION_LETTER")
@@ -1174,8 +1200,6 @@ class I_rsync(Instruction):
          self.srcs_raw.append(word)
       if (len(self.srcs_raw) == 0):
          ch.FATAL("RSYNC: %d: source and destination missing" % line_no)
-      elif (len(self.srcs_raw) == 1):
-         ch.FATAL("RSYNC: %d: source or destination missing" % line_no)
       self.dst_raw = self.srcs_raw.pop()
 
    @property
@@ -1219,23 +1243,60 @@ class I_rsync(Instruction):
       ret.append(self.dst_raw)
       return " ".join(ret)
 
+   def execute(self):
+      plus_options = list()
+      if (self.plus_option in ("a", "l")):
+         # see man page for explanations
+         plus_options = ["-@=-1", "-AHSXpr"]
+         if (sys.stderr.isatty()):
+            plus_options += ["--info=progress2"]
+         if (self.plus_option == "l"):
+            plus_options += ["-l", "--copy-unsafe-links"]
+      ch.cmd(["rsync"] + plus_options + self.rsync_options_concise
+                       + self.srcs + [self.dst])
+
+   def expand_rsync_froms(self):
+      for i in range(len(self.rsync_options)):
+         o = self.rsync_options[i]
+         m = re.search("^--([a-z]+)-from=(.+)$", o)
+         if (m is not None):
+            key = m[1]
+            if (m[2] == "-"):
+               ch.FATAL("--*-from: can’t use standard input")
+            path = ch.Path(m[2])
+            if (path.is_absolute()):
+               path = self.image.unpack_path // path
+            else:
+               path = self.srcs_base // path
+            self.rsync_options[i] = "--%s-from=%s" % (key, path)
+
    def prepare(self, miss_ct):
-      ...
-      # Find the context directory. FIXME: This is pretty simple because we
-      # don’t yet support the equivalent of COPY --from.
-      if (cli.context == "-"):
-         ch.FATAL("no context because “-” given")
-      context = cli.context
-      # Expand sources.
-      # Expand destination.
-      # Expand --*-from options.
+      self.rsync_validate()
+      # Expand operands.
+      self.expand_sources()
+      self.expand_dest()
+      self.expand_rsync_froms()
       # Gather metadata for hashing.
       self.src_metadata = fs.Path.stat_bytes_all(self.srcs)
       # Pass on to superclass.
       return super().prepare(miss_ct)
 
-   def execute(self):
-      ...
+   def rsync_validate(self):
+      # Reject bad + options.
+      if (self.plus_option not in ("a", "l")):
+         ch.FATAL("invalid plus option: %s" % self.plus_option)
+      # Reject SSH and rsync transports. I *believe* simply the presence of
+      # “:” (colon) in the filename triggers this behavior.
+      for src in self.srcs_raw:
+         if (":" in src):
+            ch.FATAL("SSH and rsync transports not supported: %s" % src)
+      # Reject bad flags.
+      bad = { "--daemon",
+              "-n", "--dry-run",
+              "--remove-source-files" }
+      for o in self.rsync_options:
+         if (o in bad):
+            ch.FATAL("bad option: %s" % o)
 
 
 class Run(Instruction):
@@ -1378,23 +1439,6 @@ class I_uns_yet(Instruction_Unsupported):
 class Environment:
    """The state we are in: environment variables, working directory, etc. Most
       of this is just passed through from the image metadata."""
-
-   # FIXME:
-   # - problem:
-   #   1. COPY (at least) needs a valid build environment to figure out if it’s
-   #      a hit or miss, which happens in prepare()
-   #   2. no files from the image are available in prepare(), so we can’t read
-   #      image metadata then
-   #      - could get it from Git if needed, but that seems complicated
-   # - valid during prepare() and execute() but not __init__()
-   #   - in particular, don’t ch.variables_sub() in __init__()
-   # - instructions that update it need to change the env object in prepare()
-   #   - WORKDIR SHELL ARG ENV
-   #   - FROM
-   #     - global images and image_i makes this harder because we need to read
-   #       the metadata of image_i - 1
-   #       - solution: remove those two globals? instructions grow image and
-   #         image_i attributes?
 
 
 ## Supporting functions ##

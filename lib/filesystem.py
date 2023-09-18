@@ -8,6 +8,7 @@ import re
 import pprint
 import shutil
 import stat
+import struct
 import tarfile
 
 import charliecloud as ch

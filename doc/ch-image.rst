@@ -1050,10 +1050,7 @@ is translated to (the equivalent of)::
 
 A small number of :code:`rsync(1)` features are actively disallowed:
 
-  1. The :code:`--daemon` flag is an error. Running :code:`rsync(1)` in daemon
-     mode does not make sense for container build.
-
-  2. :code:`rsync:` and :code:`ssh:` transports are an error. Charliecloud
+  1. :code:`rsync:` and :code:`ssh:` transports are an error. Charliecloud
      needs access to the entire input to compute cache hit or miss, and these
      transports make that impossible. It is possible these will become
      available in the future (please let us know if that is your use case!).
@@ -1061,7 +1058,7 @@ A small number of :code:`rsync(1)` features are actively disallowed:
      use it in a :code:`RUN` instruction, though only the instruction text
      will be considered for the cache.
 
-  3. Option arguments must be delimited with :code:`=` (equals). For example,
+  2. Option arguments must be delimited with :code:`=` (equals). For example,
      to set the block size to 4 MiB, you must say :code:`--block-size=4M` or
      :code:`-B=4M`. :code:`-B4M` will be interpreted as the three arguments
      :code:`-B`, :code:`-4`, and :code:`-M`; :code:`--block-size 4M` will be
@@ -1069,9 +1066,21 @@ A small number of :code:`rsync(1)` features are actively disallowed:
      named :code:`4M`. This is so Charliecloud can process :code:`rsync(1)`
      options without knowing fully which ones take an argument.
 
-Note that there are other flags that don’t make sense and/or cause undesirable
-behavior (for example, :code:`-n` / :code:`--dry-run`). We have not
-characterized this problem.
+  3. Invalid :code:`rsync(1)` options:
+
+     :code:`--daemon`
+       Running :code:`rsync(1)` in daemon mode does not make sense for
+       container build.
+
+     :code:`-n`, :code:`--dry-run`
+       This makes the copy a no-op, and Charliecloud may want to use it
+       internally in the future.
+
+     :code:`--remove-source-files`
+       This would let the instruction alter the context directory.
+
+Note that there are likely other flags that don’t make sense and/or cause
+undesirable behavior. We have not characterized this problem.
 
 For arguments that read input from a file (e.g. :code:`--exclude-from` or
 :code:`--files-from`), relative paths are relative to the context directory,
