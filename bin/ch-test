@@ -55,7 +55,7 @@ Usage:
   $ $(basename "$0") [PHASE] [--scope SCOPE] [--pack-fmt FMT] [OPTIONS]
 
 Valid phases: build, build-images, run, examples, all, mk-perm-dirs, clean,
-              rm-perm-dirs
+              rm-perm-dirs, rootemu, most
 Valid scopes: quick, standard, full
 Valid pack formats: squash-mount, tar-unpack, squash-unpack
 
@@ -662,6 +662,11 @@ test_one_file () {
     bats "$one_file"
 }
 
+test_rootemu () {
+    echo 'executing root emulation tests...'
+    bats 61_force-auto.bats
+}
+
 test_run () {
     echo 'executing run phase tests ...'
     if [[ ! -f ${TMP_}/run_auto.bats ]]; then
@@ -799,7 +804,7 @@ fi
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    all|build|build-images|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+    all|build|build-images|clean|examples|mk-perm-dirs|most|rm-perm-dirs|rootemu|run)
         require_unset phase
         phase=$opt
         ;;
@@ -1118,6 +1123,9 @@ case $phase in
         test_build_images
         test_build
 
+        phase=rootemu
+        test_rootemu
+
         phase=run
         dir_img_mk
         dir_tar_check
@@ -1171,6 +1179,9 @@ case $phase in
         done
         echo
         ;;
+    most)
+        echo "foo"
+        ;;
     one-file)
         test_one_file
         win
@@ -1179,6 +1190,9 @@ case $phase in
         for d in $CH_TEST_PERMDIRS; do
             dir_perm_rm "$d"
         done
+        ;;
+    rootemu)
+        test_rootemu
         ;;
     run)
         dir_img_mk
