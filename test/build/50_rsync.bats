@@ -9,6 +9,7 @@ setup () {
     fixtures=$BATS_TMPDIR/rsync
     context=$fixtures/ctx
     context_out=$fixtures/ctx-out
+    context_doc=$fixtures/doc
     if [[ -e $fixtures ]]; then
         echo '## input ##'
         ls_ "$fixtures"
@@ -41,6 +42,7 @@ ls_ () {
     # top level
     mkdir "$context"
     mkdir "$context_out"
+    mkdir "$context_doc"
     ln -s "$context" "$fixtures"/ctx_direct
 
     # outside context
@@ -92,8 +94,81 @@ ls_ () {
     touch weird-perms-607 > weird-perms-607
     chmod 607 weird-perms-607
 
+    # simpler example for the docs
+    cd "$context_doc"
+    mkdir src1
+    echo file-src1 > src1/file-src1
+    chmod 607 src1/file-src1
+    mkdir src2
+    echo file-src2 > src2/file-src2
+    cd src1
+    ln -s file-src1 link_file-src1
+    ln -s ../src2/file-src2 link_file-src2
+
     echo "## created fixtures ##"
     ls_ "$fixtures"
+}
+
+@test "${tag}: doc examples" {
+    # This generates copy-paste source for ch-image(1) man page. We still
+    # validate it, though.
+
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+
+# copy single file
+RSYNC /src1/file-src1 /
+# ... renamed
+RSYNC /src1/file-src1 /file-src1_renamed
+# ... without metadata
+RSYNC +z /src1/file-src1 /file-src1_nom
+# ... with trailing slash on *destination*
+RSYNC /src1/file-src1 /file-src1_slash/
+
+# copy directory
+RSYNC /src1 /
+# ... renamed?
+RSYNC /src1 /dst2
+# ... renamed
+RSYNC /src1/ /dst3
+# ... destination trailing slash has no effect for directory sources
+RSYNC /src1 /dst2b/
+RSYNC /src1/ /dst3b/
+
+# copy two directories separately
+RUN mkdir /dst4 && echo file-dst4 > /dst4/file-dst4
+RSYNC /src1 /src2 /dst4
+# ... with wildcards
+RUN mkdir /dst4b && echo file-dst4b > /dst4/file-dst4b
+RSYNC /src* /dst4b
+
+# ... with trailing slashes
+RUN mkdir /dst5 && echo file-dst5 > /dst5/file-dst5
+# ... with trailing slashes and wildcards
+# ... with one trailing slash and one not
+
+EOF
+
+    ch-image build --rebuild -v -f "$ch_tmpimg_df" "$context_doc"
+
+    # +z permissions don't come across
+
+    # copy both src1 and src2
+
+    # merge directories
+
+    # top of transfer with just a file
+
+    # symlink stuff?
+    # symlink between src1 and src2
+
+    # FIXME YOU ARE HERE -- doc examples become comprehensive? or maybe split into symlinks and not symlinks?
+
+    cd "$CH_IMAGE_STORAGE/img/tmpimg"
+    ls -lh file-src1*
+    ls -lhR src1
+    ls -lhR dst*
+
     false
 }
 
@@ -104,6 +179,7 @@ ls_ () {
 # +L with slash
 # -rl --copy-unsafe-links
 # single file
+# single file with trailing slash on *destination*
 # file and directory
 
 # ssh: transport

@@ -19,6 +19,9 @@ if false; then
     status=
 fi
 
+# Some defaults
+ch_tmpimg_df="$BATS_TMPDIR"/tmpimg.df
+
 arch_exclude () {
     # Skip the test if architecture (from “uname -m”) matches $1.
     [[ $(uname -m) != "$1" ]] || skip "arch ${1}"

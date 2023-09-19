@@ -1079,12 +1079,11 @@ for a group of :code:`rsync(1)` options. This single option is one of:
       outside the top-of-transfer directory for each source.
 
   :code:`+z`
-
-    No default arguments. No metadata will be preserved, and both hard and
-    symbolic links will be ignored, except as specified by :code:`rsync(1)`
-    options starting with a hyphen. (Note that :code:`-a`/:code:`--archive` is
-    discouraged because it omits some metadata and handles symlinks
-    inappropriately for containers.)
+    No default arguments. Directories will not be descended, no metadata will
+    be preserved, and both hard and symbolic links will be ignored, except as
+    specified by :code:`rsync(1)` options starting with a hyphen. (Note that
+    :code:`-a`/:code:`--archive` is discouraged because it omits some metadata
+    and handles symlinks inappropriately for containers.)
 
 A small number of :code:`rsync(1)` features are actively disallowed:
 

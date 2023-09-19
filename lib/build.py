@@ -565,11 +565,11 @@ class Copy(Instruction):
    # Superclass for instructions that do some flavor of file copying (ADD,
    # COPY, RSYNC).
 
-   __slots__ = ("dst",
+   __slots__ = ("dst",          # string b/c trailing slash is significant
                 "dst_raw",
                 "from_",
                 "src_metadata",
-                "srcs",
+                "srcs",         # strings b/c trailing slashes are significant
                 "srcs_base",
                 "srcs_raw")
 
@@ -590,6 +590,7 @@ class Copy(Instruction):
       self.srcs_base_set()
       self.srcs = list()
       for src in (ch.variables_sub(i, self.env_build) for i in self.srcs_raw):
+         ts_p = src[1] == "/"
          # glob can’t take Path
          matches = [fs.Path(i)
                     for i in glob.glob("%s/%s" % (self.srcs_base, src))]
@@ -602,6 +603,8 @@ class Copy(Instruction):
             # as given later, so don’t canonicalize persistently.) There is no
             # clear subsitute for commonpath() in pathlib.
             mc = m.resolve()
+            m.trailing_slash_p
+            mc.trailing_slash_p
             if (not os.path.commonpath([mc, self.srcs_base])
                            .startswith(self.srcs_base)):
                ch.FATAL("can’t copy from outside context: %s" % src)
@@ -1178,7 +1181,7 @@ class I_rsync(Copy):
       self.from_ = None  # not supported yet
       line_no = self.tree.line
       st = self.tree.child("option_plus")
-      self.plus_option = None if st is None else st.terminal("OPTION_LETTER")
+      self.plus_option = "l" if st is None else st.terminal("OPTION_LETTER")
       options_done = False
       self.rsync_options = list()
       self.srcs_raw = list()
@@ -1245,7 +1248,7 @@ class I_rsync(Copy):
 
    def execute(self):
       plus_options = list()
-      if (self.plus_option in ("a", "l")):
+      if (self.plus_option in ("m", "l")):  # no action needed for +z
          # see man page for explanations
          plus_options = ["-@=-1", "-AHSXpr"]
          if (sys.stderr.isatty()):
@@ -1283,7 +1286,7 @@ class I_rsync(Copy):
 
    def rsync_validate(self):
       # Reject bad + options.
-      if (self.plus_option not in ("a", "l")):
+      if (self.plus_option not in ("m", "l", "z")):
          ch.FATAL("invalid plus option: %s" % self.plus_option)
       # Reject SSH and rsync transports. I *believe* simply the presence of
       # “:” (colon) in the filename triggers this behavior.
