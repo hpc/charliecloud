@@ -663,8 +663,13 @@ test_one_file () {
 }
 
 test_rootemu () {
-    echo 'executing root emulation tests...'
-    bats 61_force-auto.bats
+    if command -v ch-image > /dev/null 2>&1; then
+        echo 'executing root emulation tests...'
+        bats 61_force-auto.bats
+    elif [[ -n "$1" ]]; then
+        printf "error: ch-image required, not found\n"
+        exit 1
+    fi
 }
 
 test_run () {
@@ -1146,6 +1151,7 @@ case $phase in
         test_make
         test_build_images
         test_build
+        test_rootemu
         win
         ;;
     clean)
@@ -1192,7 +1198,7 @@ case $phase in
         done
         ;;
     rootemu)
-        test_rootemu
+        test_rootemu "foo"
         ;;
     run)
         dir_img_mk
