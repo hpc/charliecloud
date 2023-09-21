@@ -1,5 +1,7 @@
 load ../common
 
+# NOTE: ls(1) output is not checked; this is for copy-paste into docs
+
 # shellcheck disable=SC2034
 tag=RSYNC
 
@@ -21,11 +23,9 @@ ls_ () {
     # also “compare-ls” in ch-convert.bats.
     (
         cd "$1"
-          find . -mindepth 1 -printf '%M %n %3s%y  :%d:%f -> %l\n' \
-        | sed -E -e 's|:1:||' \
-                 -e 's|:2:|  |' \
-                 -e 's|:3:|    |' \
-                 -e 's|:4:|      |' \
+          find . -mindepth 1 -printf '%M %n %3s%y  %P -> %l\n' \
+        | LC_ALL=C sort -k4 \
+        | sed -E -e 's|\w+/|  |g' \
                  -e 's| -> $||' \
                  -e 's|([0-9]+)[f]|\1|' \
                  -e 's|([0-9]+ )[0-9 ]+[a-z] |\1    |' \
@@ -41,136 +41,190 @@ ls_ () {
 
     # top level
     mkdir "$context"
-    mkdir "$context_out"
-    mkdir "$context_doc"
-    ln -s "$context" "$fixtures"/ctx_direct
+    echo file-top > file-top
 
-    # outside context
-    cd "$context_out"
-    echo file-out > file-out
-    mkdir dir-out
-    echo dir-out.file-out > dir-out/dir-out.file-out
-    ln -s file-out link.out2out
-    cd ..
-
-    # inside context
+    # basic example
     cd "$context"
-    echo file-ctx > file-ctx
-    mkdir src
-    echo src.file > src/src.file
-    mkdir src/src.dir
-    echo src.dir.file > src/src.dir/src.dir.file
-    mkdir not-src
-    echo not-src.file > not-src.file
+    mkdir basic1
+    echo file-basic1 > basic1/file-basic1
+    chmod 607 basic1/file-basic1  # weird permissions
+    mkdir basic2
+    echo file-basic2 > basic2/file-basic2
 
-    # symlinks to inside source
-    cd src
-    # to file
-    ln -s src.file src.file_direct
-    ln -s ../src/src.file src.file_up_over
-    ln -s "$context"/src/src.file src.file_abs
-    # relative to directory
-    ln -s src.dir src.dir_direct
-    ln -s ../src/src.dir src.dir_upover
-    ln -s "$context"/src/src.dir src.dir_abs
+    # # outside context
+    # cd "$context_out"
+    # echo file-out > file-out
+    # mkdir dir-out
+    # echo dir-out.file-out > dir-out/dir-out.file-out
+    # ln -s file-out link.out2out
+    # cd ..
 
-    # symlinks to outside source but inside context
-    ln -s ../file-ctx file-ctx_up
-    ln -s "$context"/file-ctx file-ctx_abs
-    ln -s ../not-src not-src_up
-    ln -s "$context"/not-src not-src_abs
+    # # inside context
+    # cd "$context"
+    # echo file-ctx > file-ctx
+    # mkdir src
+    # echo src.file > src/src.file
+    # mkdir src/src.dir
+    # echo src.dir.file > src/src.dir/src.dir.file
+    # mkdir not-src
+    # echo not-src.file > not-src.file
 
-    # symlinks to outside context
-    ln -s ../../ctx-out/file-out file-out_rel
-    ln -s "$context_out"/file-out file-out_abs
-    ln -s ../../ctx-out/dir-out dir-out_rel
-    ln -s "$context_out"/dir-out dir-out_abs
+    # # symlinks to inside source
+    # cd src
+    # # to file
+    # ln -s src.file src.file_direct
+    # ln -s ../src/src.file src.file_up_over
+    # ln -s "$context"/src/src.file src.file_abs
+    # # relative to directory
+    # ln -s src.dir src.dir_direct
+    # ln -s ../src/src.dir src.dir_upover
+    # ln -s "$context"/src/src.dir src.dir_abs
 
-    # hard links
-    echo hard1 > hard1
-    ln hard1 hard2
+    # # symlinks to outside source but inside context
+    # ln -s ../file-ctx file-ctx_up
+    # ln -s "$context"/file-ctx file-ctx_abs
+    # ln -s ../not-src not-src_up
+    # ln -s "$context"/not-src not-src_abs
 
-    # weird permissions
-    touch weird-perms-607 > weird-perms-607
-    chmod 607 weird-perms-607
-
-    # simpler example for the docs
-    cd "$context_doc"
-    mkdir src1
-    echo file-src1 > src1/file-src1
-    chmod 607 src1/file-src1
-    mkdir src2
-    echo file-src2 > src2/file-src2
-    cd src1
-    ln -s file-src1 link_file-src1
-    ln -s ../src2/file-src2 link_file-src2
+    # # symlinks to outside context
+    # ln -s ../../ctx-out/file-out file-out_rel
+    # ln -s "$context_out"/file-out file-out_abs
+    # ln -s ../../ctx-out/dir-out dir-out_rel
+    # ln -s "$context_out"/dir-out dir-out_abs
 
     echo "## created fixtures ##"
     ls_ "$fixtures"
 }
 
-@test "${tag}: doc examples" {
-    # This generates copy-paste source for ch-image(1) man page. We still
-    # validate it, though.
-
+@test "${tag}: basic examples" {
+    # files
     cat <<EOF > "$ch_tmpimg_df"
 FROM alpine:3.17
+RUN mkdir /dst
 
-# copy single file
-RSYNC /src1/file-src1 /
+# single file
+RSYNC /basic1/file-basic1 /dst
 # ... renamed
-RSYNC /src1/file-src1 /file-src1_renamed
+RSYNC /basic1/file-basic1 /dst/file-basic1_renamed
 # ... without metadata
-RSYNC +z /src1/file-src1 /file-src1_nom
+RSYNC +z /basic1/file-basic1 /dst/file-basic1_nom
 # ... with trailing slash on *destination*
-RSYNC /src1/file-src1 /file-src1_slash/
-
-# copy directory
-RSYNC /src1 /
-# ... renamed?
-RSYNC /src1 /dst2
-# ... renamed
-RSYNC /src1/ /dst3
-# ... destination trailing slash has no effect for directory sources
-RSYNC /src1 /dst2b/
-RSYNC /src1/ /dst3b/
-
-# copy two directories separately
-RUN mkdir /dst4 && echo file-dst4 > /dst4/file-dst4
-RSYNC /src1 /src2 /dst4
-# ... with wildcards
-RUN mkdir /dst4b && echo file-dst4b > /dst4/file-dst4b
-RSYNC /src* /dst4b
-
-# ... with trailing slashes
-RUN mkdir /dst5 && echo file-dst5 > /dst5/file-dst5
-# ... with trailing slashes and wildcards
-# ... with one trailing slash and one not
-
+RSYNC /basic1/file-basic1 /dst/new/
+EOF
+    ch-image build -f "$ch_tmpimg_df" "$context"
+    ( cd "$CH_IMAGE_STORAGE/img/tmpimg/dst" && ls -lhR . )
+    run ls_ "$CH_IMAGE_STORAGE/img/tmpimg/dst"
+    echo "$output"
+    [[ $status -eq -0 ]]
+cat <<EOF | diff -u - <(echo "$output")
+-rw----rwx 1  12  file-basic1
+-rw------- 1  12  file-basic1_nom
+-rw----rwx 1  12  file-basic1_renamed
+drwxrwx--- 1      new
+-rw----rwx 1  12    file-basic1
 EOF
 
-    ch-image build --rebuild -v -f "$ch_tmpimg_df" "$context_doc"
+    # single directory
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
 
-    # +z permissions don't come across
+# directory
+RSYNC /basic1 /dst
+# ... renamed?
+RSYNC /basic1 /dst/basic1_new
+# ... renamed (trailing slash on source)
+RSYNC /basic1/ /dst/basic1_renamed
+# ... destination trailing slash has no effect for directory sources
+RSYNC /basic1 /dst/basic1_newB
+RSYNC /basic1/ /dst/basic1_renamedB/
+# ... with +z (no-op!!)
+RSYNC +z /basic1 /dst/basic1_newC
+# ... need -r at least
+RSYNC +z -r /basic1/ /dst/basic1_newD
+EOF
+    ch-image build -f "$ch_tmpimg_df" "$context"
+    ( cd "$CH_IMAGE_STORAGE/img/tmpimg/dst" && ls -lhR . )
+    run ls_ "$CH_IMAGE_STORAGE/img/tmpimg/dst"
+    echo "$output"
+    [[ $status -eq -0 ]]
+cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      basic1
+-rw----rwx 1  12    file-basic1
+drwxrwx--- 1      basic1_new
+drwxrwx--- 1        basic1
+-rw----rwx 1  12      file-basic1
+drwxrwx--- 1      basic1_newB
+drwxrwx--- 1        basic1
+-rw----rwx 1  12      file-basic1
+drwxrwx--- 1      basic1_newD
+-rw------- 1  12    file-basic1
+drwxrwx--- 1      basic1_renamed
+-rw----rwx 1  12    file-basic1
+drwxrwx--- 1      basic1_renamedB
+-rw----rwx 1  12    file-basic1
+EOF
 
-    # copy both src1 and src2
+    # multiple directories
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
 
-    # merge directories
-
-    # top of transfer with just a file
-
-    # symlink stuff?
-    # symlink between src1 and src2
-
-    # FIXME YOU ARE HERE -- doc examples become comprehensive? or maybe split into symlinks and not symlinks?
-
-    cd "$CH_IMAGE_STORAGE/img/tmpimg"
-    ls -lh file-src1*
-    ls -lhR src1
-    ls -lhR dst*
-
-    false
+# two directories explicitly
+RUN mkdir /dst/dstB && echo file-dstB > /dst/dstB/file-dstB
+RSYNC /basic1 /basic2 /dst/dstB
+# ... with wildcards
+RUN mkdir /dst/dstC && echo file-dstC > /dst/dstC/file-dstC
+RSYNC /basic* /dst/dstC
+# ... with trailing slashes
+RUN mkdir /dst/dstD && echo file-dstD > /dst/dstD/file-dstD
+RSYNC /basic1/ /basic2/ /dst/dstD
+# ... with trailing slashes and wildcards
+RUN mkdir /dst/dstE && echo file-dstE > /dst/dstE/file-dstE
+RSYNC /basic*/ /dst/dstE
+# ... with one trailing slash and one not
+RUN mkdir /dst/dstF && echo file-dstF > /dst/dstF/file-dstF
+RSYNC /basic1 /basic2/ /dst/dstF
+EOF
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    ( cd "$CH_IMAGE_STORAGE/img/tmpimg/dst" && ls -lhR . )
+    run ls_ "$CH_IMAGE_STORAGE/img/tmpimg/dst"
+    echo "$output"
+    [[ $status -eq -0 ]]
+cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      dstB
+drwxrwx--- 1        basic1
+-rw----rwx 1  12      file-basic1
+drwxrwx--- 1        basic2
+-rw-rw---- 1  12      file-basic2
+-rw-rw---- 1  10    file-dstB
+drwxrwx--- 1      dstC
+drwxrwx--- 1        basic1
+-rw----rwx 1  12      file-basic1
+drwxrwx--- 1        basic2
+-rw-rw---- 1  12      file-basic2
+-rw-rw---- 1  10    file-dstC
+drwxrwx--- 1      dstD
+-rw----rwx 1  12    file-basic1
+-rw-rw---- 1  12    file-basic2
+-rw-rw---- 1  10    file-dstD
+drwxrwx--- 1      dstE
+-rw----rwx 1  12    file-basic1
+-rw-rw---- 1  12    file-basic2
+-rw-rw---- 1  10    file-dstE
+drwxrwx--- 1      dstF
+drwxrwx--- 1        basic1
+-rw----rwx 1  12      file-basic1
+-rw-rw---- 1  12    file-basic2
+-rw-rw---- 1  10    file-dstF
+EOF
 }
+
+# symlink stuff?
+# symlink between src1 and src2
+# hard links
+# top of transfer with just a file
+# replace directory (i.e., don't merge)
 
 # no options
 # +
@@ -182,10 +236,3 @@ EOF
 # single file with trailing slash on *destination*
 # file and directory
 
-# ssh: transport
-#   ssh -o batchmode=yes localhost true
-# rsync: transport
-#   $ rsync --info=progress2 'rsync://archive.kernel.org/debian-archive/debian/dists/buzz/main/binary-i386/editors/e[de]*.deb' /tmp
-#   $ ls -lh /tmp/*.deb
-#   -rw-r----- 1 reidpr reidpr 98K Sep 14 14:17 /tmp/ed-0.2-11.deb
-#   -rw-r----- 1 reidpr reidpr 39K Sep 14 14:17 /tmp/ee-126.1.89-1.deb

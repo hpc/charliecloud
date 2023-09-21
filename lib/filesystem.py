@@ -131,6 +131,12 @@ class Path(pathlib.PosixPath):
       "Return True if I can’t be stored in Git because of my name."
       return self.name.startswith(".git")
 
+   @property
+   def parent(self):
+      ret = super().parent
+      ret.trailing_slash_p = False  # trailing slash in removed part
+      return ret
+
    @classmethod
    def gzip_set(cls):
       """Set gzip class attribute on first call to file_gzip().
@@ -423,6 +429,11 @@ class Path(pathlib.PosixPath):
                 "can’t rename: %s -> %s" % (self.name, name_new),
                 name_new)
 
+   def resolve(self, *args, **kwargs):
+      ret = super().resolve(*args, **kwargs)
+      ret.trailing_slash_p = self.trailing_slash_p
+      return ret
+
    def rmdir_(self):
       ch.ossafe(super().rmdir, "can’t rmdir: %s" % self.name)
 
@@ -490,11 +501,6 @@ class Path(pathlib.PosixPath):
       if (missing_ok and not self.exists_()):
          return
       ch.ossafe(super().unlink, "can’t unlink: %s" % self.name)
-
-   def resolve(self, *args, **kwargs):
-      ret = super().resolve(*args, **kwargs)
-      ret.trailing_slash_p = self.trailing_slash_p
-      return ret
 
 
 class Storage:
