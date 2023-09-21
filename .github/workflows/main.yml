@@ -314,7 +314,13 @@ jobs:
       - name: late setup & validation, all
         run: |
           bin/ch-test --is-pedantic all
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+            false
+          fi
           bin/ch-test --is-sudo all
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+            false
+          fi
 
       - name: make filesystem permissions fixtures
         run: |
@@ -393,6 +399,9 @@ jobs:
       - name: run test suite (Git WD, standard)
         run: |
           bin/ch-test all
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+            false
+          fi
 
       - name: run test suite (installed from Git WD, standard)
         if: ${{    matrix.builder == 'ch-image'
@@ -400,6 +409,9 @@ jobs:
                 && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+            false
+          fi
 
       - name: run test suite (installed from tarball, standard)
         if: ${{    matrix.builder == 'ch-image'
@@ -407,6 +419,9 @@ jobs:
                 && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-tarball/bin/ch-test all
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+            false
+          fi
 
       - name: uninstall from tarball
         if: ${{ matrix.keep_sudo }}
@@ -448,6 +463,9 @@ jobs:
         if: ${{ matrix.builder == 'docker' }}
         run: |
           bin/ch-test all
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "no"]]; then
+            false
+          fi
 
       - name: remove non-essential dependencies
         if: ${{ matrix.builder == 'docker' }}
@@ -486,6 +504,9 @@ jobs:
         if: ${{ matrix.builder == 'docker' }}
         run: |
           bin/ch-test all
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+            false
+          fi
 
       - name: print ending environment
         if: ${{ always() }}

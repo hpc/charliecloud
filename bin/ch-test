@@ -666,6 +666,7 @@ test_rootemu () {
     if command -v ch-image > /dev/null 2>&1; then
         echo 'executing root emulation tests...'
         bats 61_force-auto.bats
+        echo 'yes' > "$TMP_/rootemu"
     elif [[ -n "$1" ]]; then
         printf "error: ch-image required, not found\n"
         exit 1
@@ -770,6 +771,9 @@ if [[ ! -d $TMP_ ]]; then
     mkdir "$TMP_"
     chmod 700 "$TMP_"
 fi
+
+# Record that we haven’t (yet) un the “rootemu” tests
+echo 'no' > "$TMP_/rootemu"
 
 # Find test directories. Note some of this gets rewritten at install time.
 CHTEST_DIR=${ch_base}/test
