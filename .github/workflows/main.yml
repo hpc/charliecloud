@@ -314,11 +314,11 @@ jobs:
       - name: late setup & validation, all
         run: |
           bin/ch-test --is-pedantic all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
             false
           fi
           bin/ch-test --is-sudo all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
             false
           fi
 
@@ -399,7 +399,7 @@ jobs:
       - name: run test suite (Git WD, standard)
         run: |
           bin/ch-test all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
             false
           fi
 
@@ -409,7 +409,7 @@ jobs:
                 && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
             false
           fi
 
@@ -419,7 +419,7 @@ jobs:
                 && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-tarball/bin/ch-test all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
             false
           fi
 
@@ -463,7 +463,7 @@ jobs:
         if: ${{ matrix.builder == 'docker' }}
         run: |
           bin/ch-test all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "no"]]; then
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "no" ]]; then
             false
           fi
 
@@ -504,7 +504,7 @@ jobs:
         if: ${{ matrix.builder == 'docker' }}
         run: |
           bin/ch-test all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes"]]; then
+          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
             false
           fi
 
