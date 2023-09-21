@@ -1190,7 +1190,26 @@ case $phase in
         echo
         ;;
     most)
-        echo "foo"
+        phase=build
+        dir_tar_mk
+        builder_check
+        test_make
+        test_build_images
+        test_build
+
+        phase=run
+        dir_img_mk
+        dir_tar_check
+        test_make
+        test_run
+
+        phase=examples
+        dir_tar_check
+        test_make
+        test_examples
+
+        # Kobe.
+        win
         ;;
     one-file)
         test_one_file
