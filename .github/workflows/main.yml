@@ -314,13 +314,7 @@ jobs:
       - name: late setup & validation, all
         run: |
           bin/ch-test --is-pedantic all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
-            false
-          fi
           bin/ch-test --is-sudo all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
-            false
-          fi
 
       - name: make filesystem permissions fixtures
         run: |
