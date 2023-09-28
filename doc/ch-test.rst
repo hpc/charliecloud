@@ -74,7 +74,7 @@ allows trading off thoroughness versus time.
     images directory produced by a successful :code:`build` phase, which can
     be copied from the build system if it’s not also the run system.
 
-  :code:`rooteum`
+  :code:`rootemu`
     Test the root emulation modes (:code:`seccomp`, :code:`fakeroot`, and
     :code:`none`) on various linux distributions.
 

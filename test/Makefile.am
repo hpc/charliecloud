@@ -68,15 +68,15 @@ sotest/sotest
 
 CLEANFILES = $(sobuilts) \
              docs-sane force-auto make-perms-test \
-             61_force-auto.bats
+             force-auto.bats
 
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
 if ENABLE_CH_IMAGE  # this means we have Python
-nobase_test_DATA += 61_force-auto.bats
-61_force-auto.bats: force-auto
+nobase_test_DATA += force-auto.bats
+force-auto.bats: force-auto
 	./$< > $@
 endif
 # See comment about symlinks in examples/Makefile.am.

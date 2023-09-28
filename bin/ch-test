@@ -54,8 +54,8 @@ Usage:
 
   $ $(basename "$0") [PHASE] [--scope SCOPE] [--pack-fmt FMT] [OPTIONS]
 
-Valid phases: build, build-images, run, examples, all, mk-perm-dirs, clean,
-              rm-perm-dirs, rootemu, most
+Valid phases: build-images, build, rootemu, run, examples, all, most, mk-perm-dirs, clean,
+              rm-perm-dirs
 Valid scopes: quick, standard, full
 Valid pack formats: squash-mount, tar-unpack, squash-unpack
 
@@ -665,8 +665,8 @@ test_one_file () {
 test_rootemu () {
     if command -v ch-image > /dev/null 2>&1; then
         echo 'executing root emulation tests...'
-        bats 61_force-auto.bats
-        echo 'yes' > "$TMP_/rootemu"
+        bats force-auto.bats
+        echo yes > "$TMP_/rootemu"
     elif [[ -n "$1" ]]; then
         printf "error: ch-image required, not found\n"
         exit 1
@@ -772,8 +772,8 @@ if [[ ! -d $TMP_ ]]; then
     chmod 700 "$TMP_"
 fi
 
-# Record that we haven’t (yet) un the “rootemu” tests
-echo 'no' > "$TMP_/rootemu"
+# Record that we haven’t (yet) run the “rootemu” tests
+echo no > "$TMP_/rootemu"
 
 # Find test directories. Note some of this gets rewritten at install time.
 CHTEST_DIR=${ch_base}/test
