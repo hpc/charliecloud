@@ -393,9 +393,7 @@ jobs:
       - name: run test suite (Git WD, standard)
         run: |
           bin/ch-test all
-          if [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) != "yes" ]]; then
-            false
-          fi
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) == "yes" ]]
 
       - name: run test suite (installed from Git WD, standard)
         if: ${{    matrix.builder == 'ch-image'
