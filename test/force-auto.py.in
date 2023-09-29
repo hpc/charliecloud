@@ -329,6 +329,8 @@ class T_Alpine_Latest(Alpine):
 print("""\
 # NOTE: This file is auto-generated. Do not modify.
 
+scope full
+
 load common
 
 setup () {

@@ -1221,6 +1221,10 @@ case $phase in
         done
         ;;
     rootemu)
+        if [[ $scope != full ]]; then
+            printf "error: rootemu incompatible with scope: $scope\n"
+            exit 1
+        fi
         test_rootemu "foo"
         ;;
     run)
