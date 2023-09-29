@@ -13,7 +13,7 @@ ch_lib=${ch_bin}/../lib
 verbose=0
 
 DEBUG () {
-    if [ "$verbose" -ge 2 ]; then
+    if [ "$verbose" -ge 2 ] && [ -z "$quiet" ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -21,21 +21,25 @@ DEBUG () {
 }
 
 FATAL () {
-    printf 'error: ' 1>&2
-    # shellcheck disable=SC2059
-    printf "$@" 1>&2
-    printf '\n' 1>&2
+    if [ -z "$quiet" ]; then
+        printf 'error: ' 1>&2
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
     exit 1
 }
 
 INFO () {
-    # shellcheck disable=SC2059
-    printf "$@" 1>&2
-    printf '\n' 1>&2
+    if [ -z "$quiet" ]; then
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
 }
 
 VERBOSE () {
-    if [ "$verbose" -ge 1 ]; then
+    if [ "$verbose" -ge 1 ] && [ -z "$quiet" ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -59,6 +63,10 @@ parse_basic_arg () {
             ;;
         --help)
             usage 0   # exits
+            ;;
+        -q|--quiet)
+            quiet="yes"
+            return 0
             ;;
         -v|--verbose)
             verbose=$((verbose+1))
