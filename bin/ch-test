@@ -813,7 +813,7 @@ fi
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    all|build|build-images|clean|examples|mk-perm-dirs|most|rm-perm-dirs|rootemu|run)
+    all|build|build-images|clean|examples|mk-perm-dirs|rm-perm-dirs|rootemu|run)
         require_unset phase
         phase=$opt
         ;;
@@ -1189,28 +1189,6 @@ case $phase in
         done
         echo
         ;;
-    most)
-        phase=build
-        dir_tar_mk
-        builder_check
-        test_make
-        test_build_images
-        test_build
-
-        phase=run
-        dir_img_mk
-        dir_tar_check
-        test_make
-        test_run
-
-        phase=examples
-        dir_tar_check
-        test_make
-        test_examples
-
-        # Kobe.
-        win
-        ;;
     one-file)
         test_one_file
         win
@@ -1222,7 +1200,7 @@ case $phase in
         ;;
     rootemu)
         if [[ $scope != full ]]; then
-            printf "error: rootemu incompatible with scope: $scope\n"
+            printf "error: rootemu incompatible with scope: %s\n" "$scope"
             exit 1
         fi
         test_rootemu "foo"

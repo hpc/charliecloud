@@ -86,10 +86,6 @@ allows trading off thoroughness versus time.
     Execute phases :code:`build`, :code:`rootemu`, :code:`run`, and
     :code:`examples`, in that order.
 
-  :code:`most`
-    Execute phases :code:`build`, :code:`run`, and :code:`examples`, in that
-    order. Equivalent to :code:`all`, without the :code:`rootemu` phase.
-
   :code:`mk-perm-dirs`
     Create the filesystem permissions directories. Requires
     :code:`--perm-dirs`.
