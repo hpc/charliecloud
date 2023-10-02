@@ -565,6 +565,23 @@ EOF
 }
 
 
+@test 'ch-convert: --quiet' {
+    printf 'FROM alpine:3.17\n' | ch-image build -t tmpimg -f - "$BATS_TMPDIR"
+
+    # successful convert
+    run ch-convert -q -i ch-image -o dir tmpimg "${BATS_TMPDIR}/tmpimg"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ -z "$output" ]]
+
+    # failed convert
+    run ch-convert -q -i dir -o dir "${BATS_TMPDIR}/tmpimg" "${BATS_TMPDIR}/tmpimg2"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ "$output" = *'error: input and output formats must be different'* ]]
+}
+
+
 @test 'ch-convert: dir -> ch-image -> X' {
     test_from ch-image
 }

@@ -21,12 +21,10 @@ DEBUG () {
 }
 
 FATAL () {
-    if [ -z "$quiet" ]; then
-        printf 'error: ' 1>&2
-        # shellcheck disable=SC2059
-        printf "$@" 1>&2
-        printf '\n' 1>&2
-    fi
+    printf 'error: ' 1>&2
+    # shellcheck disable=SC2059
+    printf "$@" 1>&2
+    printf '\n' 1>&2
     exit 1
 }
 
