@@ -1022,26 +1022,25 @@ extremely capable, widely used file copy tool, with detailed options to
 specify behavior and 25 years of history dealing with weirdness.
 
 :code:`RSYNC` (also spelled :code:`NSYNC`) is a Charliecloud extension that
-gives copying behavior identical to :code:`rsync(1)`, including remote
-:code:`ssh:` and :code:`rsync:` transports. (In fact, Charliecloud’s current
-literally calls the host’s :code:`rsync(1)` to perform the copy, though this
-may change in the future.) There is no list form of :code:`RSYNC`.
+gives copying behavior identical to :code:`rsync(1)`. In fact, Charliecloud’s
+current implementation literally calls the host’s :code:`rsync(1)` to do the
+copy, though this may change in the future. There is no list form of
+:code:`RSYNC`.
 
 :code:`RSYNC` takes the same arguments as :code:`rsync(1)`, so refer to its
 `man page <https://man7.org/linux/man-pages/man1/rsync.1.html>`_ for a
-detailed explanation of all the options. Source arguments that are remote
-(i.e., starting with :code:`ssh:` or :code:`rsync:`) are unchanged, while
-local sources must be relative paths and are relative to the context
-directory. Any globbed sources are processed by :code:`ch-image(1)` using
-Python rules, i.e., :code:`rsync(1)` sees no wildcard sources. Destinations
-must be local. Relative destinations are relative to the image’s current
-working directory, while absolute destinations refer to the image’s root. For
-example,
+detailed explanation of all the options. Sources are relative to the context
+directory even if they look absolute with a leading slash. Any globbed sources
+are processed by :code:`ch-image(1)` using Python rules, i.e.,
+:code:`rsync(1)` sees the expanded sources with no wildcards. Relative
+destinations are relative to the image’s current working directory, while
+absolute destinations refer to the image’s root. For example,
 
 .. code-block:: docker
 
    WORKDIR /foo
    RSYNC --foo src1 src2 dst
+   COPY --foo src1 src2 dst
 
 is translated to (the equivalent of)::
 
@@ -1101,7 +1100,7 @@ A small number of :code:`rsync(1)` features are actively disallowed:
      :code:`-B`, :code:`-4`, and :code:`-M`; :code:`--block-size 4M` will be
      interpreted as :code:`--block-size` with no argument and a copy source
      named :code:`4M`. This is so Charliecloud can process :code:`rsync(1)`
-     options without knowing fully which ones take an argument.
+     options without knowing which ones take an argument.
 
   3. Invalid :code:`rsync(1)` options:
 
@@ -1124,20 +1123,25 @@ For arguments that read input from a file (e.g. :code:`--exclude-from` or
 absolute paths refer to the image root, and :code:`-` (standard input) is an
 error.
 
-
-
-Symlink handling is particularly fraught, so use care. In particular, you must
-state explicitly what to do with symlinks in the source: both plain
-:code:`RSYNC` and :code:`RSYNC +` ignore them with a warning. Your options are
-:code:`+L` (which is a pretty reasonable default) and any valid combination of
+Symlink handling is particularly fraught, so use care. The default handling
+(see above) seemed reasonable to us, but you may want something different. See
 :code:`rsync(1)`’s `normal symlink options
 <https://man7.org/linux/man-pages/man1/rsync.1.html#SYMBOLIC_LINKS>`_.
-(:code:`COPY` isn’t any less fraught, and you have no choice about what to do
-with symlinks.)
+Importantly, :code:`COPY` is not any less fraught, and you have no choice
+about what to do with symlinks.
 
-The instruction is a cache hit if :code:`rsync(1)` would not change anything,
-i.e. if :code:`-ni` prepended to the given options lists no changes, and a
-miss otherwise.
+The instruction is a cache hit if the metadata of all source files is
+unchanged (specifically: filename, file type and permissions, xattrs, size,
+and last modified time). Unlike Docker, Charliecloud does not use file
+contents. This has two implications. First, it is possible to fool the cache
+by manually restoring the last-modified time. Second, :code:`RSYNC` is
+I/O-intensive even when it hits, because it must :code:`stat(2)` every source
+file before checking the cache. However, this is still less I/O than reading
+the file content too.
+
+Notably, Charliecloud’s cache ignores :code:`rsync(1)`’s own internal notion
+of whether anything would be transferred (e.g., :code:`rsync -ni`). This may
+change in the future.
 
 .. note::
 
@@ -1610,4 +1614,4 @@ Environment variables
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc bae
 ..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
 ..  LocalWords:  pstats gprof chofile cffd cacdb ARGs NSYNC dst imgroot popt
-..  LocalWords:  globbed ni
+..  LocalWords:  globbed ni AHSXpr
