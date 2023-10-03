@@ -315,10 +315,6 @@ print("""\
 
 load common
 
-setup_file () {
-   scope full
-}
-
 setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
     [[ $CH_IMAGE_CACHE = enabled ]] || skip 'bucache enabled only'
