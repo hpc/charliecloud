@@ -43,11 +43,6 @@ import sys
 
 
 @enum.unique
-class Scope(enum.Enum):
-   STANDARD = "standard"
-   FULL = "full"
-
-@enum.unique
 class Run(enum.Enum):
    UNNEEDED_FAIL = "unneeded fail"
    UNNEEDED_WIN = "unneeded win"
@@ -61,7 +56,6 @@ class Test(abc.ABC):
    force_excludes = []
    base = None
    config = None
-   scope = Scope.FULL
    prep_run = None
    runs = { Run.UNNEEDED_FAIL: "false",
             Run.UNNEEDED_WIN: "true" }
@@ -121,12 +115,6 @@ class Test(abc.ABC):
       if (self.force in self.force_excludes):
          print(f"\n# skip: {self}: --force=%s excluded" % self.force)
          return
-      # scope
-      if (    (self.scope == Scope.STANDARD or self.run == Run.NEEDED)
-          and self.force != "fakeroot"):
-         scope = "standard"
-      else:
-         scope = "full"
       # architecture excludes
       arch_excludes = "\n".join("arch_exclude %s" % i
                                 for i in self.arch_excludes)
@@ -168,7 +156,6 @@ echo "$output"
       # emit the test
       print(f"""
 @test "ch-image --force: {self}" {{
-scope {scope}
 {arch_excludes}
 
 # build 1: intermediate image for preparatory commands
@@ -215,7 +202,6 @@ class RHEL7(Test):
    runs = { **Test.runs, **{ Run.FAKE_NEEDED: "yum install -y ed",
                              Run.NEEDED:      "yum install -y openssh" } }
 class T_CentOS_7(RHEL7, EPEL_Mixin):
-   scope = Scope.STANDARD
    base = "centos:7"
    prep_run = "yum install -y epel-release"
 
@@ -241,7 +227,6 @@ class T_CentOS_8_Stream(CentOS_8):
 #   base = "quay.io/centos/centos:stream9"
 
 class T_Alma_8(CentOS_8):
-   scope = Scope.STANDARD
    base = "almalinux:8"  # :latest same as :8 as of 2022-03-01
 class T_Rocky_8(CentOS_8):
    base = "rockylinux:8"  # :latest same as :8 as of 2022-03-01
@@ -274,7 +259,6 @@ class T_Debian_10(Debian):
    base = "debian:10"
    arch_excludes = ["ppc64le"]  # base image unavailable
 class T_Debian_Latest(Debian):
-   scope = Scope.STANDARD
    base = "debian:latest"
 class T_Ubuntu_16(Debian):
    base = "ubuntu:16.04"
@@ -329,9 +313,11 @@ class T_Alpine_Latest(Alpine):
 print("""\
 # NOTE: This file is auto-generated. Do not modify.
 
-scope full
-
 load common
+
+setup_file () {
+   scope full
+}
 
 setup () {
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
