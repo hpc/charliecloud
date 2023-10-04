@@ -255,8 +255,12 @@ void fix_environment(struct args *args)
    char *old_value, *new_value;
 
    // $HOME: If --home, set to “/home/$USER”.
-   if (args->c.host_home)
+   if (args->c.host_home) {
       Z_ (setenv("HOME", cat("/home/", username), 1));
+   } else if (path_exists(cat(args->c.newroot, "/root"), NULL, true)) {
+      Z_ (setenv("HOME", "/root", 1));
+   } else
+      Z_ (setenv("HOME", "/", 1));
 
    // $PATH: Append /bin if not already present.
    old_value = getenv("PATH");
