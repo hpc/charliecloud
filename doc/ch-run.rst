@@ -317,6 +317,8 @@ Environment variables
 :code:`ch-run` leaves environment variables unchanged, i.e. the host
 environment is passed through unaltered, except:
 
+* by default (:code:`--home` not specified), :code:`HOME` is set to
+  :code:`/root`, if it exists, and :code:`/` otherwise.
 * limited tweaks to avoid significant guest breakage;
 * user-set variables via :code:`--set-env`;
 * user-unset variables via :code:`--unset-env`; and
