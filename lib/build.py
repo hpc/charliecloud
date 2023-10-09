@@ -1248,13 +1248,15 @@ class I_rsync(Copy):
 
    def execute(self):
       plus_options = list()
-      if (self.plus_option in ("m", "l")):  # no action needed for +z
+      if (self.plus_option in "lmu"):  # no action needed for +z
          # see man page for explanations
          plus_options = ["-@=-1", "-AHSXpr"]
          if (sys.stderr.isatty()):
             plus_options += ["--info=progress2"]
          if (self.plus_option == "l"):
             plus_options += ["-l", "--copy-unsafe-links"]
+         elif (self.plus_option == "u"):
+            plus_options += ["-l", "--safe-links"]
       ch.cmd(["rsync"] + plus_options + self.rsync_options_concise
                        + self.srcs + [self.dst])
 
@@ -1286,7 +1288,7 @@ class I_rsync(Copy):
 
    def rsync_validate(self):
       # Reject bad + options.
-      if (self.plus_option not in ("m", "l", "z")):
+      if (self.plus_option not in ("mluz")):
          ch.FATAL("invalid plus option: %s" % self.plus_option)
       # Reject SSH and rsync transports. I *believe* simply the presence of
       # “:” (colon) in the filename triggers this behavior.

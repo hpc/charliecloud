@@ -1040,7 +1040,6 @@ absolute destinations refer to the image’s root. For example,
 
    WORKDIR /foo
    RSYNC --foo src1 src2 dst
-   COPY --foo src1 src2 dst
 
 is translated to (the equivalent of)::
 
@@ -1053,7 +1052,8 @@ a single instruction option beginning with :code:`+` (plus) that is shorthand
 for a group of :code:`rsync(1)` options. This single option is one of:
 
   :code:`+m`
-    Preserves metadata. Equivalent to all of:
+    Preserves metadata and directory structure. Symlinks are skipped *with a
+    warning*. Equivalent to all of:
 
     * :code:`-@=-1`: use nanosecond precision when comparing timestamps.
     * :code:`-A`: preserve ACLs.
@@ -1067,22 +1067,43 @@ for a group of :code:`rsync(1)` options. This single option is one of:
       <https://unix.stackexchange.com/questions/215271>`_).
 
   :code:`+l` (default)
-    Preserves metadata and symlinks (if within source directory). Equivalent
-    to the options listed for :code:`+m` and also:
+    Like :code:`+u`, but *replaces* with their target “unsafe” symlinks whose
+    target is outside the top-of-transfer directory. Preserves:
 
-    * :code:`-l`: Copy symlinks as symlinks if their target is within the
-      top-of-transfer directory. This is *not the context directory and often
-      not the source directory*; see below for examples.
+    * Metadata.
 
-    * :code:`--copy-unsafe-links`: copy the target of symlinks that point
-      outside the top-of-transfer directory for each source.
+    * Directory structure.
+
+    * Symlinks, if a link’s target is within the “top-of-transfer directory”.
+      *This is not the context directory and often not the source either.*
+      Also, this creates broken symlinks if the target is not within the
+      source but is within the top-of-transfer. See below for examples.
+
+    Equivalent to the :code:`rsync(1)` options listed for :code:`+m` plus
+    :code:`--links` (copy symlinks as symlinks unless otherwise specified) and
+    :code:`--copy-unsafe-links` (copy the target of unsafe symlinks).
+
+  :code:`+u`
+    Like :code:`+l`, but *silently skips* “unsafe” symlinks whose target is
+    outside the top-of-transfer directory. Preserves:
+
+    * Metadata.
+
+    * Directory structure.
+
+    * Symlinks, if a link’s target is within the “top-of-transfer directory”.
+      *See important caveats above* under :code:`+l`.
+
+    Equivalent to the :code:`rsync(1)` options listed for :code:`+m` plus
+    :code:`--links` (copy symlinks as symlinks unless otherwise specified) and
+    :code:`--safe-links` (silently skip unsafe symlinks).
 
   :code:`+z`
     No default arguments. Directories will not be descended, no metadata will
     be preserved, and both hard and symbolic links will be ignored, except as
-    specified by :code:`rsync(1)` options starting with a hyphen. (Note that
-    :code:`-a`/:code:`--archive` is discouraged because it omits some metadata
-    and handles symlinks inappropriately for containers.)
+    otherwise specified by :code:`rsync(1)` options starting with a hyphen.
+    (Note that :code:`-a`/:code:`--archive` is discouraged because it omits
+    some metadata and handles symlinks inappropriately for containers.)
 
 A small number of :code:`rsync(1)` features are actively disallowed:
 
@@ -1152,6 +1173,8 @@ change in the future.
 For example:
 
 **FIXME**
+
+main gotchas: trailing slash, symlinks; rsync’s notion of unsafe symlinks
 
 See the file :code:`50_rsync.bats` in the source code for more examples, including many corner cases.
 

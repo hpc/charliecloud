@@ -8,14 +8,10 @@ tag=RSYNC
 setup () {
     scope standard
     [[ $CH_TEST_BUILDER = ch-image ]] || skip 'ch-image only'
+    umask 0007
     fixtures=$BATS_TMPDIR/rsync
     context=$fixtures/ctx
-    context_out=$fixtures/ctx-out
-    context_doc=$fixtures/doc
-    if [[ -e $fixtures ]]; then
-        echo '## input ##'
-        ls_ "$fixtures"
-    fi
+    dst=$CH_IMAGE_STORAGE/img/tmpimg/dst
 }
 
 ls_ () {
@@ -25,12 +21,22 @@ ls_ () {
         cd "$1"
           find . -mindepth 1 -printf '%M %n %3s%y  %P -> %l\n' \
         | LC_ALL=C sort -k4 \
-        | sed -E -e 's|\w+/|  |g' \
-                 -e 's| -> $||' \
-                 -e 's|([0-9]+)[f]|\1|' \
-                 -e 's|([0-9]+ )[0-9 ]+[a-z] |\1    |' \
-                 -e "s|$1|/...|"
+        | sed -E -e 's#  ([[:alnum:]._-]+/){4}#          #' \
+                 -e 's#  ([[:alnum:]._-]+/){3}#        #' \
+                 -e 's#  ([[:alnum:]._-]+/){2}#      #' \
+                 -e 's#  ([[:alnum:]._-]+/){1}#    #' \
+                 -e 's# -> $##' \
+                 -e 's#([0-9]+)[f]#\1#' \
+                 -e 's#([0-9]+ )[0-9 ]+[a-z] #\1    #' \
+                 -e "s#$1#/...#"
     )
+}
+
+ls_dump () {
+    target=$1
+    out_basename=$2
+
+    ( cd "$target" && ls -oghR . > "${BATS_TMPDIR}/rsync_${out_basename}" )
 }
 
 
@@ -38,66 +44,73 @@ ls_ () {
     rm -Rf --one-file-system "$fixtures"
     mkdir "$fixtures"
     cd "$fixtures"
-
-    # top level
     mkdir "$context"
-    echo file-top > file-top
 
-    # basic example
+    # outside context
+    echo file-out > file-out
+    mkdir dir-out
+    echo dir-out.file > dir-out/dir-out.file
+
+    # top level of context
     cd "$context"
+    echo file-top > file-top
+    mkdir dir-top
+    echo dir-top.file > dir-top/dir-top.file
+
+    # plain files and directories
     mkdir basic1
     echo file-basic1 > basic1/file-basic1
     chmod 607 basic1/file-basic1  # weird permissions
     mkdir basic2
     echo file-basic2 > basic2/file-basic2
 
-    # # outside context
-    # cd "$context_out"
-    # echo file-out > file-out
-    # mkdir dir-out
-    # echo dir-out.file-out > dir-out/dir-out.file-out
-    # ln -s file-out link.out2out
-    # cd ..
+    # symlinks
+    cd "$context"
+    mkdir sym2
+    echo file-sym2 > sym2/file-sym2
+    mkdir sym1
+    cd sym1
+    echo file-sym1 > file-sym1
+    mkdir dir-sym1
+    echo dir-sym1.file > dir-sym1/dir-sym1.file
+    # target outside context
+    ln -s "$fixtures"/file-out file-out_abs
+    ln -s ../../file-out file-out_rel
+    ln -s ../../dir-out dir-out_rel
+    # target outside source (but inside context)
+    ln -s "$context"/file-top file-top_abs
+    ln -s ../file-top file-top_rel
+    ln -s ../dir-top dir-top_rel
+    # target inside source
+    ln -s "$context"/sym1/file-sym1 file-sym1_abs
+    ln -s file-sym1 file-sym1_direct
+    ln -s ../sym1/file-sym1 file-sym1_upover
+    ln -s dir-sym1 dir-sym1_direct
+    # target inside other source
+    ln -s "$context"/sym2/file-sym2 file-sym2_abs
+    ln -s ../sym2/file-sym2 file-sym2_upover
 
-    # # inside context
-    # cd "$context"
-    # echo file-ctx > file-ctx
-    # mkdir src
-    # echo src.file > src/src.file
-    # mkdir src/src.dir
-    # echo src.dir.file > src/src.dir/src.dir.file
-    # mkdir not-src
-    # echo not-src.file > not-src.file
+    # broken symlink
+    cd "$context"
+    mkdir sym-broken
+    cd sym-broken
+    ln -s doesnotexist doesnotexist_broken_direct
 
-    # # symlinks to inside source
-    # cd src
-    # # to file
-    # ln -s src.file src.file_direct
-    # ln -s ../src/src.file src.file_up_over
-    # ln -s "$context"/src/src.file src.file_abs
-    # # relative to directory
-    # ln -s src.dir src.dir_direct
-    # ln -s ../src/src.dir src.dir_upover
-    # ln -s "$context"/src/src.dir src.dir_abs
-
-    # # symlinks to outside source but inside context
-    # ln -s ../file-ctx file-ctx_up
-    # ln -s "$context"/file-ctx file-ctx_abs
-    # ln -s ../not-src not-src_up
-    # ln -s "$context"/not-src not-src_abs
-
-    # # symlinks to outside context
-    # ln -s ../../ctx-out/file-out file-out_rel
-    # ln -s "$context_out"/file-out file-out_abs
-    # ln -s ../../ctx-out/dir-out dir-out_rel
-    # ln -s "$context_out"/dir-out dir-out_abs
+    # hard links
+    cd "$context"
+    mkdir hard
+    cd hard
+    echo hard-file > hard-file1
+    ln hard-file1 hard-file2
 
     echo "## created fixtures ##"
     ls_ "$fixtures"
+    ls_ "$fixtures" > $BATS_TMPDIR/rsync_fixtures-ls_
+    ls_dump "$fixtures" fixtures
 }
 
-@test "${tag}: basic examples" {
-    # files
+
+@test "${tag}: source: file(s)" {
     cat <<EOF > "$ch_tmpimg_df"
 FROM alpine:3.17
 RUN mkdir /dst
@@ -112,19 +125,21 @@ RSYNC +z /basic1/file-basic1 /dst/file-basic1_nom
 RSYNC /basic1/file-basic1 /dst/new/
 EOF
     ch-image build -f "$ch_tmpimg_df" "$context"
-    ( cd "$CH_IMAGE_STORAGE/img/tmpimg/dst" && ls -lhR . )
-    run ls_ "$CH_IMAGE_STORAGE/img/tmpimg/dst"
+    ls_dump "$dst" files
+    run ls_ "$dst"
     echo "$output"
     [[ $status -eq -0 ]]
-cat <<EOF | diff -u - <(echo "$output")
+    cat <<EOF | diff -u - <(echo "$output")
 -rw----rwx 1  12  file-basic1
 -rw------- 1  12  file-basic1_nom
 -rw----rwx 1  12  file-basic1_renamed
 drwxrwx--- 1      new
 -rw----rwx 1  12    file-basic1
 EOF
+}
 
-    # single directory
+
+@test "${tag}: source: one directory" {
     cat <<EOF > "$ch_tmpimg_df"
 FROM alpine:3.17
 RUN mkdir /dst
@@ -144,11 +159,11 @@ RSYNC +z /basic1 /dst/basic1_newC
 RSYNC +z -r /basic1/ /dst/basic1_newD
 EOF
     ch-image build -f "$ch_tmpimg_df" "$context"
-    ( cd "$CH_IMAGE_STORAGE/img/tmpimg/dst" && ls -lhR . )
-    run ls_ "$CH_IMAGE_STORAGE/img/tmpimg/dst"
+    ls_dump "$dst" dir1
+    run ls_ "$dst"
     echo "$output"
     [[ $status -eq -0 ]]
-cat <<EOF | diff -u - <(echo "$output")
+    cat <<EOF | diff -u - <(echo "$output")
 drwxrwx--- 1      basic1
 -rw----rwx 1  12    file-basic1
 drwxrwx--- 1      basic1_new
@@ -164,8 +179,10 @@ drwxrwx--- 1      basic1_renamed
 drwxrwx--- 1      basic1_renamedB
 -rw----rwx 1  12    file-basic1
 EOF
+}
 
-    # multiple directories
+
+@test "${tag}: source: multiple directories" {
     cat <<EOF > "$ch_tmpimg_df"
 FROM alpine:3.17
 RUN mkdir /dst
@@ -185,13 +202,16 @@ RSYNC /basic*/ /dst/dstE
 # ... with one trailing slash and one not
 RUN mkdir /dst/dstF && echo file-dstF > /dst/dstF/file-dstF
 RSYNC /basic1 /basic2/ /dst/dstF
+# ... replace (do not merge with) existing contents
+RUN mkdir /dst/dstG && echo file-dstG > /dst/dstG/file-dstG
+RSYNC --delete /basic*/ /dst/dstG
 EOF
     ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
-    ( cd "$CH_IMAGE_STORAGE/img/tmpimg/dst" && ls -lhR . )
-    run ls_ "$CH_IMAGE_STORAGE/img/tmpimg/dst"
+    ls_dump "$dst" dir2
+    run ls_ "$dst"
     echo "$output"
     [[ $status -eq -0 ]]
-cat <<EOF | diff -u - <(echo "$output")
+    cat <<EOF | diff -u - <(echo "$output")
 drwxrwx--- 1      dstB
 drwxrwx--- 1        basic1
 -rw----rwx 1  12      file-basic1
@@ -217,22 +237,350 @@ drwxrwx--- 1        basic1
 -rw----rwx 1  12      file-basic1
 -rw-rw---- 1  12    file-basic2
 -rw-rw---- 1  10    file-dstF
+drwxrwx--- 1      dstG
+-rw----rwx 1  12    file-basic1
+-rw-rw---- 1  12    file-basic2
 EOF
 }
 
-# symlink stuff?
-# symlink between src1 and src2
-# hard links
-# top of transfer with just a file
-# replace directory (i.e., don't merge)
 
-# no options
-# +
-# +L
-# +L renamed
-# +L with slash
-# -rl --copy-unsafe-links
-# single file
-# single file with trailing slash on *destination*
-# file and directory
+@test "${tag}: symlinks: default" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC /sym1 /dst
+EOF
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    ls_dump "$dst" sym-default
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      sym1
+drwxrwx--- 1        dir-out_rel
+-rw-rw---- 1  13      dir-out.file
+drwxrwx--- 1        dir-sym1
+-rw-rw---- 1  14      dir-sym1.file
+lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
+lrwxrwxrwx 1        dir-top_rel -> ../dir-top
+-rw-rw---- 1   9    file-out_abs
+-rw-rw---- 1   9    file-out_rel
+-rw-rw---- 1  10    file-sym1
+-rw-rw---- 1  10    file-sym1_abs
+lrwxrwxrwx 1        file-sym1_direct -> file-sym1
+lrwxrwxrwx 1        file-sym1_upover -> ../sym1/file-sym1
+-rw-rw---- 1  10    file-sym2_abs
+lrwxrwxrwx 1        file-sym2_upover -> ../sym2/file-sym2
+-rw-rw---- 1   9    file-top_abs
+lrwxrwxrwx 1        file-top_rel -> ../file-top
+EOF
+}
+
+
+@test "${tag}: symlinks: default, source trailing slash" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC /sym1/ /dst/sym1
+EOF
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    ls_dump "$dst" sym-slashed
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      sym1
+drwxrwx--- 1        dir-out_rel
+-rw-rw---- 1  13      dir-out.file
+drwxrwx--- 1        dir-sym1
+-rw-rw---- 1  14      dir-sym1.file
+lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
+drwxrwx--- 1        dir-top_rel
+-rw-rw---- 1  13      dir-top.file
+-rw-rw---- 1   9    file-out_abs
+-rw-rw---- 1   9    file-out_rel
+-rw-rw---- 1  10    file-sym1
+-rw-rw---- 1  10    file-sym1_abs
+lrwxrwxrwx 1        file-sym1_direct -> file-sym1
+-rw-rw---- 1  10    file-sym1_upover
+-rw-rw---- 1  10    file-sym2_abs
+-rw-rw---- 1  10    file-sym2_upover
+-rw-rw---- 1   9    file-top_abs
+-rw-rw---- 1   9    file-top_rel
+EOF
+}
+
+
+@test "${tag}: symlinks: +m" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC +m /sym1/ /dst/sym1
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ 12 -eq $(echo "$output" | grep -F 'skipping non-regular file' | wc -l) ]]
+    ls_dump "$dst" sym-m
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      sym1
+drwxrwx--- 1        dir-sym1
+-rw-rw---- 1  14      dir-sym1.file
+-rw-rw---- 1  10    file-sym1
+EOF
+}
+
+
+@test "${tag}: symlinks: +u" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC +u /sym1/ /dst/sym1
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ 0 -eq $(echo "$output" | grep -F 'skipping non-regular file' | wc -l) ]]
+    ls_dump "$dst" sym-u
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      sym1
+drwxrwx--- 1        dir-sym1
+-rw-rw---- 1  14      dir-sym1.file
+lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
+-rw-rw---- 1  10    file-sym1
+lrwxrwxrwx 1        file-sym1_direct -> file-sym1
+EOF
+}
+
+
+@test "${tag}: symlinks: between sources" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC /sym1 /sym2 /dst
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-between
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      sym1
+drwxrwx--- 1        dir-out_rel
+-rw-rw---- 1  13      dir-out.file
+drwxrwx--- 1        dir-sym1
+-rw-rw---- 1  14      dir-sym1.file
+lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
+lrwxrwxrwx 1        dir-top_rel -> ../dir-top
+-rw-rw---- 1   9    file-out_abs
+-rw-rw---- 1   9    file-out_rel
+-rw-rw---- 1  10    file-sym1
+-rw-rw---- 1  10    file-sym1_abs
+lrwxrwxrwx 1        file-sym1_direct -> file-sym1
+lrwxrwxrwx 1        file-sym1_upover -> ../sym1/file-sym1
+-rw-rw---- 1  10    file-sym2_abs
+lrwxrwxrwx 1        file-sym2_upover -> ../sym2/file-sym2
+-rw-rw---- 1   9    file-top_abs
+lrwxrwxrwx 1        file-top_rel -> ../file-top
+drwxrwx--- 1      sym2
+-rw-rw---- 1  10    file-sym2
+EOF
+}
+
+
+@test "${tag}: symlinks: sources are symlinks to file" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC /sym1/file-sym1_direct /sym1/file-sym1_upover /dst
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-to-file
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+lrwxrwxrwx 1      file-sym1_direct -> file-sym1
+-rw-rw---- 1  10  file-sym1_upover
+EOF
+}
+
+
+@test "${tag}: symlinks: source is symlink to directory" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC /sym1/dir-sym1_direct /dst
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-to-dir
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+lrwxrwxrwx 1      dir-sym1_direct -> dir-sym1
+EOF
+}
+
+
+@test "${tag}: symlinks: source is symlink to directory (trailing slash)" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC /sym1/dir-sym1_direct/ /dst/dir-sym1_direct
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-to-dir-slashed
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      dir-sym1_direct
+-rw-rw---- 1  14    dir-sym1.file
+EOF
+}
+
+
+@test "${tag}: symlinks: broken" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC /sym-broken /dst
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-broken
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      sym-broken
+lrwxrwxrwx 1        doesnotexist_broken_direct -> doesnotexist
+EOF
+}
+
+
+@test "${tag}: symlinks: broken (--copy-links)" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC +m --copy-links /sym-broken /dst
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"symlink has no referent: \"${context}/sym-broken/doesnotexist_broken_direct\""* ]]
+}
+
+
+@test "${tag}: symlinks: src file, dst symlink to file" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst && touch /dst/file-dst && ln -s file-dst /dst/file-dst_direct
+RUN ls -lh /dst
+RSYNC /file-top /dst/file-dst_direct
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-dst-symlink-file
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+-rw-rw---- 1   0  file-dst
+-rw-rw---- 1   9  file-dst_direct
+EOF
+}
+
+
+@test "${tag}: symlinks: src dir, dst symlink to dir" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst \
+ && mkdir /dst/dir-dst \
+ && ln -s dir-dst /dst/dir-dst_direct \
+ && ls -lh /dst
+RSYNC /dir-top /dst/dir-dst_direct
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-dst-symlink-dir
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      dir-dst
+drwxrwx--- 1        dir-top
+-rw-rw---- 1  13      dir-top.file
+lrwxrwxrwx 1      dir-dst_direct -> dir-dst
+EOF
+}
+
+
+@test "${tag}: symlinks: src dir (slashed), dst symlink to dir" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst \
+ && mkdir /dst/dir-dst \
+ && ln -s dir-dst /dst/dir-dst_direct \
+ && ls -lh /dst
+RSYNC /dir-top/ /dst/dir-dst_direct
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-dst-symlink-dir-slashed
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      dir-dst
+-rw-rw---- 1  13    dir-top.file
+lrwxrwxrwx 1      dir-dst_direct -> dir-dst
+EOF
+}
+
+
+@test "${tag}: hard links" {
+    inode_src=$(stat -c %i "$context"/hard/hard-file1)
+    [[ $inode_src -eq $(stat -c %i "$context"/hard/hard-file2) ]]
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC /hard /dst
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" hard
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      hard
+-rw-rw---- 2  10    hard-file1
+-rw-rw---- 2  10    hard-file2
+EOF
+    inode_dst=$(stat -c %i "$CH_IMAGE_STORAGE"/img/tmpimg/dst/hard/hard-file1)
+    [[     $inode_dst \
+       -eq $(stat -c %i "$CH_IMAGE_STORAGE"/img/tmpimg/dst/hard/hard-file2) ]]
+    [[ $inode_src -ne $inode_dst ]]
+}
 
