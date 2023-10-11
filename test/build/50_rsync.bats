@@ -34,9 +34,12 @@ ls_ () {
 
 ls_dump () {
     target=$1
+    target_basename=$(basename "$target")
+    target_parent=$(dirname "$target")
     out_basename=$2
 
-    ( cd "$target" && ls -oghR . > "${BATS_TMPDIR}/rsync_${out_basename}" )
+    (    cd "$target_parent" \
+      && ls -oghR "$target_basename" > "${BATS_TMPDIR}/rsync_${out_basename}" )
 }
 
 
@@ -59,8 +62,9 @@ ls_dump () {
 
     # plain files and directories
     mkdir basic1
+    chmod 705 basic1              # weird permissions
     echo file-basic1 > basic1/file-basic1
-    chmod 607 basic1/file-basic1  # weird permissions
+    chmod 604 basic1/file-basic1  # weird permissions
     mkdir basic2
     echo file-basic2 > basic2/file-basic2
 
@@ -123,18 +127,23 @@ RSYNC /basic1/file-basic1 /dst/file-basic1_renamed
 RSYNC +z /basic1/file-basic1 /dst/file-basic1_nom
 # ... with trailing slash on *destination*
 RSYNC /basic1/file-basic1 /dst/new/
+# multiple files
+RSYNC /basic1/file-basic1 /basic2/file-basic2 /dst/newB
 EOF
-    ch-image build -f "$ch_tmpimg_df" "$context"
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
     ls_dump "$dst" files
     run ls_ "$dst"
     echo "$output"
     [[ $status -eq -0 ]]
     cat <<EOF | diff -u - <(echo "$output")
--rw----rwx 1  12  file-basic1
+-rw----r-- 1  12  file-basic1
 -rw------- 1  12  file-basic1_nom
--rw----rwx 1  12  file-basic1_renamed
+-rw----r-- 1  12  file-basic1_renamed
 drwxrwx--- 1      new
--rw----rwx 1  12    file-basic1
+-rw----r-- 1  12    file-basic1
+drwxrwx--- 1      newB
+-rw----r-- 1  12    file-basic1
+-rw-rw---- 1  12    file-basic2
 EOF
 }
 
@@ -158,26 +167,26 @@ RSYNC +z /basic1 /dst/basic1_newC
 # ... need -r at least
 RSYNC +z -r /basic1/ /dst/basic1_newD
 EOF
-    ch-image build -f "$ch_tmpimg_df" "$context"
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
     ls_dump "$dst" dir1
     run ls_ "$dst"
     echo "$output"
     [[ $status -eq -0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      basic1
--rw----rwx 1  12    file-basic1
+drwx---r-x 1      basic1
+-rw----r-- 1  12    file-basic1
 drwxrwx--- 1      basic1_new
-drwxrwx--- 1        basic1
--rw----rwx 1  12      file-basic1
+drwx---r-x 1        basic1
+-rw----r-- 1  12      file-basic1
 drwxrwx--- 1      basic1_newB
-drwxrwx--- 1        basic1
--rw----rwx 1  12      file-basic1
-drwxrwx--- 1      basic1_newD
+drwx---r-x 1        basic1
+-rw----r-- 1  12      file-basic1
+drwx------ 1      basic1_newD
 -rw------- 1  12    file-basic1
-drwxrwx--- 1      basic1_renamed
--rw----rwx 1  12    file-basic1
-drwxrwx--- 1      basic1_renamedB
--rw----rwx 1  12    file-basic1
+drwx---r-x 1      basic1_renamed
+-rw----r-- 1  12    file-basic1
+drwx---r-x 1      basic1_renamedB
+-rw----r-- 1  12    file-basic1
 EOF
 }
 
@@ -213,33 +222,74 @@ EOF
     [[ $status -eq -0 ]]
     cat <<EOF | diff -u - <(echo "$output")
 drwxrwx--- 1      dstB
-drwxrwx--- 1        basic1
--rw----rwx 1  12      file-basic1
+drwx---r-x 1        basic1
+-rw----r-- 1  12      file-basic1
 drwxrwx--- 1        basic2
 -rw-rw---- 1  12      file-basic2
 -rw-rw---- 1  10    file-dstB
 drwxrwx--- 1      dstC
-drwxrwx--- 1        basic1
--rw----rwx 1  12      file-basic1
+drwx---r-x 1        basic1
+-rw----r-- 1  12      file-basic1
 drwxrwx--- 1        basic2
 -rw-rw---- 1  12      file-basic2
 -rw-rw---- 1  10    file-dstC
-drwxrwx--- 1      dstD
--rw----rwx 1  12    file-basic1
+drwx---r-x 1      dstD
+-rw----r-- 1  12    file-basic1
 -rw-rw---- 1  12    file-basic2
 -rw-rw---- 1  10    file-dstD
-drwxrwx--- 1      dstE
--rw----rwx 1  12    file-basic1
+drwx---r-x 1      dstE
+-rw----r-- 1  12    file-basic1
 -rw-rw---- 1  12    file-basic2
 -rw-rw---- 1  10    file-dstE
 drwxrwx--- 1      dstF
-drwxrwx--- 1        basic1
--rw----rwx 1  12      file-basic1
+drwx---r-x 1        basic1
+-rw----r-- 1  12      file-basic1
 -rw-rw---- 1  12    file-basic2
 -rw-rw---- 1  10    file-dstF
-drwxrwx--- 1      dstG
--rw----rwx 1  12    file-basic1
+drwx---r-x 1      dstG
+-rw----r-- 1  12    file-basic1
 -rw-rw---- 1  12    file-basic2
+EOF
+}
+
+
+@test "${tag}: source: /" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+
+RSYNC / /dst
+EOF
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    ls_dump "$dst" dir-root
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq -0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwx---r-x 1      basic1
+-rw----r-- 1  12    file-basic1
+drwxrwx--- 1      basic2
+-rw-rw---- 1  12    file-basic2
+drwxrwx--- 1      dir-top
+-rw-rw---- 1  13    dir-top.file
+-rw-rw---- 1   9  file-top
+drwxrwx--- 1      hard
+-rw-rw---- 2  10    hard-file1
+-rw-rw---- 2  10    hard-file2
+drwxrwx--- 1      sym-broken
+lrwxrwxrwx 1        doesnotexist_broken_direct -> doesnotexist
+drwxrwx--- 1      sym1
+drwxrwx--- 1        dir-sym1
+-rw-rw---- 1  14      dir-sym1.file
+lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
+lrwxrwxrwx 1        dir-top_rel -> ../dir-top
+-rw-rw---- 1  10    file-sym1
+lrwxrwxrwx 1        file-sym1_direct -> file-sym1
+lrwxrwxrwx 1        file-sym1_upover -> ../sym1/file-sym1
+lrwxrwxrwx 1        file-sym2_upover -> ../sym2/file-sym2
+lrwxrwxrwx 1        file-top_rel -> ../file-top
+drwxrwx--- 1      sym2
+-rw-rw---- 1  10    file-sym2
 EOF
 }
 
@@ -250,28 +300,24 @@ FROM alpine:3.17
 RUN mkdir /dst
 RSYNC /sym1 /dst
 EOF
-    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ 0 -eq $(echo "$output" | grep -F 'skipping non-regular file' | wc -l) ]]
     ls_dump "$dst" sym-default
     run ls_ "$dst"
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
 drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-out_rel
--rw-rw---- 1  13      dir-out.file
 drwxrwx--- 1        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
 lrwxrwxrwx 1        dir-top_rel -> ../dir-top
--rw-rw---- 1   9    file-out_abs
--rw-rw---- 1   9    file-out_rel
 -rw-rw---- 1  10    file-sym1
--rw-rw---- 1  10    file-sym1_abs
 lrwxrwxrwx 1        file-sym1_direct -> file-sym1
 lrwxrwxrwx 1        file-sym1_upover -> ../sym1/file-sym1
--rw-rw---- 1  10    file-sym2_abs
 lrwxrwxrwx 1        file-sym2_upover -> ../sym2/file-sym2
--rw-rw---- 1   9    file-top_abs
 lrwxrwxrwx 1        file-top_rel -> ../file-top
 EOF
 }
@@ -290,23 +336,11 @@ EOF
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
 drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-out_rel
--rw-rw---- 1  13      dir-out.file
 drwxrwx--- 1        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
-drwxrwx--- 1        dir-top_rel
--rw-rw---- 1  13      dir-top.file
--rw-rw---- 1   9    file-out_abs
--rw-rw---- 1   9    file-out_rel
 -rw-rw---- 1  10    file-sym1
--rw-rw---- 1  10    file-sym1_abs
 lrwxrwxrwx 1        file-sym1_direct -> file-sym1
--rw-rw---- 1  10    file-sym1_upover
--rw-rw---- 1  10    file-sym2_abs
--rw-rw---- 1  10    file-sym2_upover
--rw-rw---- 1   9    file-top_abs
--rw-rw---- 1   9    file-top_rel
 EOF
 }
 
@@ -340,21 +374,30 @@ FROM alpine:3.17
 RUN mkdir /dst
 RSYNC +u /sym1/ /dst/sym1
 EOF
-    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ 0 -eq $(echo "$output" | grep -F 'skipping non-regular file' | wc -l) ]]
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
     ls_dump "$dst" sym-u
     run ls_ "$dst"
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
 drwxrwx--- 1      sym1
+drwxrwx--- 1        dir-out_rel
+-rw-rw---- 1  13      dir-out.file
 drwxrwx--- 1        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
+drwxrwx--- 1        dir-top_rel
+-rw-rw---- 1  13      dir-top.file
+-rw-rw---- 1   9    file-out_abs
+-rw-rw---- 1   9    file-out_rel
 -rw-rw---- 1  10    file-sym1
+-rw-rw---- 1  10    file-sym1_abs
 lrwxrwxrwx 1        file-sym1_direct -> file-sym1
+-rw-rw---- 1  10    file-sym1_upover
+-rw-rw---- 1  10    file-sym2_abs
+-rw-rw---- 1  10    file-sym2_upover
+-rw-rw---- 1   9    file-top_abs
+-rw-rw---- 1   9    file-top_rel
 EOF
 }
 
@@ -374,21 +417,14 @@ EOF
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
 drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-out_rel
--rw-rw---- 1  13      dir-out.file
 drwxrwx--- 1        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
 lrwxrwxrwx 1        dir-top_rel -> ../dir-top
--rw-rw---- 1   9    file-out_abs
--rw-rw---- 1   9    file-out_rel
 -rw-rw---- 1  10    file-sym1
--rw-rw---- 1  10    file-sym1_abs
 lrwxrwxrwx 1        file-sym1_direct -> file-sym1
 lrwxrwxrwx 1        file-sym1_upover -> ../sym1/file-sym1
--rw-rw---- 1  10    file-sym2_abs
 lrwxrwxrwx 1        file-sym2_upover -> ../sym2/file-sym2
--rw-rw---- 1   9    file-top_abs
 lrwxrwxrwx 1        file-top_rel -> ../file-top
 drwxrwx--- 1      sym2
 -rw-rw---- 1  10    file-sym2
@@ -411,7 +447,6 @@ EOF
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
 lrwxrwxrwx 1      file-sym1_direct -> file-sym1
--rw-rw---- 1  10  file-sym1_upover
 EOF
 }
 
@@ -491,8 +526,10 @@ EOF
 @test "${tag}: symlinks: src file, dst symlink to file" {
     cat <<EOF > "$ch_tmpimg_df"
 FROM alpine:3.17
-RUN mkdir /dst && touch /dst/file-dst && ln -s file-dst /dst/file-dst_direct
-RUN ls -lh /dst
+RUN mkdir /dst \
+ && touch /dst/file-dst \
+ && ln -s file-dst /dst/file-dst_direct \
+ && ls -lh /dst
 RSYNC /file-top /dst/file-dst_direct
 EOF
     run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
@@ -505,6 +542,30 @@ EOF
     cat <<EOF | diff -u - <(echo "$output")
 -rw-rw---- 1   0  file-dst
 -rw-rw---- 1   9  file-dst_direct
+EOF
+}
+
+
+@test "${tag}: symlinks: src file, dst symlink to dir" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst \
+ && mkdir /dst/dir-dst \
+ && ln -s dir-dst /dst/dir-dst_direct \
+ && ls -lh /dst
+RSYNC /file-top /dst/dir-dst_direct
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    ls_dump "$dst" sym-dst-symlink-dir-src-file
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwxrwx--- 1      dir-dst
+-rw-rw---- 1   9    file-top
+lrwxrwxrwx 1      dir-dst_direct -> dir-dst
 EOF
 }
 
@@ -584,3 +645,6 @@ EOF
     [[ $inode_src -ne $inode_dst ]]
 }
 
+
+#FIXME: relative source path
+#FIXME: relative dest path

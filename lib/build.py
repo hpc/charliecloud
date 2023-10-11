@@ -590,10 +590,9 @@ class Copy(Instruction):
       self.srcs_base_set()
       self.srcs = list()
       for src in (ch.variables_sub(i, self.env_build) for i in self.srcs_raw):
-         ts_p = src[1] == "/"
          # glob can’t take Path
-         matches = [fs.Path(i)
-                    for i in glob.glob("%s/%s" % (self.srcs_base, src))]
+         matches = sorted(fs.Path(i)
+                          for i in glob.glob("%s/%s" % (self.srcs_base, src)))
          if (len(matches) == 0):
             ch.FATAL("source not found: %s" % src)
          for m in matches:
@@ -603,8 +602,6 @@ class Copy(Instruction):
             # as given later, so don’t canonicalize persistently.) There is no
             # clear subsitute for commonpath() in pathlib.
             mc = m.resolve()
-            m.trailing_slash_p
-            mc.trailing_slash_p
             if (not os.path.commonpath([mc, self.srcs_base])
                            .startswith(self.srcs_base)):
                ch.FATAL("can’t copy from outside context: %s" % src)
@@ -1254,9 +1251,9 @@ class I_rsync(Copy):
          if (sys.stderr.isatty()):
             plus_options += ["--info=progress2"]
          if (self.plus_option == "l"):
-            plus_options += ["-l", "--copy-unsafe-links"]
-         elif (self.plus_option == "u"):
             plus_options += ["-l", "--safe-links"]
+         elif (self.plus_option == "u"):
+            plus_options += ["-l", "--copy-unsafe-links"]
       ch.cmd(["rsync"] + plus_options + self.rsync_options_concise
                        + self.srcs + [self.dst])
 

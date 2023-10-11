@@ -39,8 +39,10 @@ class Path(pathlib.PosixPath):
    """Filesystem paths with two important differences from the stock Path:
 
       1. This Path remembers whether a trailing slash is present, and appends
-         it when str() or repr(). Note that Path("/") is considered *not* to
-         have a trailing slash.
+         it when str() or repr(). Note that while Path("/") is considered
+         internally *not* to have a trailing slash, when stringified (as "/")
+         and passed to rsync(1) on its command line, rsync(1) *does* interpret
+         it as trailing-slashed.
 
       2. Stock Path objects have the very weird property that appending an
          absolute path to an existing path ignores the left operand, leaving
