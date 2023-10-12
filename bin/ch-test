@@ -664,7 +664,7 @@ test_one_file () {
 
 test_rootemu () {
     if command -v ch-image > /dev/null 2>&1; then
-        if [[ "$scope" != "full" ]]; then
+        if [[ ("$scope" != "full") && (-z "$with_rootemu") ]]; then
             echo "skipping root emulation tests (full scope only)"
         else
             echo 'executing root emulation tests...'
@@ -937,6 +937,9 @@ while [[ $# -gt 0 ]]; do
     --version)
         version
         ;;
+    --with-rootemu)
+        with_rootemu="yes"
+        ;;
     *)
         fatal "unrecognized argument: $opt"
         ;;
@@ -1203,14 +1206,14 @@ case $phase in
         done
         ;;
     rootemu)
-        if [[ $scope != full ]]; then
+        if [[ ($scope != full) && (-z "$with_rootemu") ]]; then
             if [[ -z "$scope" ]]; then
                 scope="standard"
             fi
             printf "error: rootemu incompatible with scope: %s\n" "$scope"
             exit 1
         fi
-        test_rootemu "foo"
+        test_rootemu optional # ch-image optional
         ;;
     run)
         dir_img_mk
