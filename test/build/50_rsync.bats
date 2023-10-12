@@ -646,5 +646,18 @@ EOF
 }
 
 
-#FIXME: relative source path
-#FIXME: relative dest path
+@test "${tag}: relative paths" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+WORKDIR /dst
+RSYNC file-basic1 .
+EOF
+    ch-image build -v --rebuild -f "$ch_tmpimg_df" "$context"/basic1
+    ls_dump "$dst" files
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq -0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+EOF
+
+}

@@ -576,8 +576,13 @@ class Copy(Instruction):
    def expand_dest(self):
       """Set self.dst from self.dst_raw with environment variables expanded
          and image root prepended."""
-      self.dst =    self.image.unpack_path \
-                 // ch.variables_sub(self.dst_raw, self.env_build)
+      dst_raw = ch.variables_sub(self.dst_raw, self.env_build)
+      if (len(dst_raw) < 1):
+         ch.FATAL("destination is empty after expansion: %s" % self.dst_raw)
+      base = self.image.unpack_path
+      if (dst_raw[0] != "/"):
+         base //= self.workdir
+      self.dst = base // ch.variables_sub(self.dst_raw, self.env_build)
 
    def expand_sources(self):
       """Set self.srcs from self.srcs_raw with environment variables and globs
