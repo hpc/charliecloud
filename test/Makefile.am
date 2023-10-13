@@ -1,4 +1,4 @@
-testdir = $(pkglibexecdir)/test
+testdir = $(pkglibexecdir)
 
 # These test files require no special handling.
 testfiles = \

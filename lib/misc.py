@@ -9,8 +9,8 @@ import sys
 
 import build_cache as bu
 import charliecloud as ch
-import image as im
 import filesystem as fs
+import image as im
 import pull
 import version
 
@@ -85,6 +85,16 @@ def gestalt_python_path(cli):
 
 def gestalt_storage_path(cli):
    print(ch.storage.root)
+
+def gestalt_logging(cli):
+   ch.TRACE("trace")
+   ch.DEBUG("debug")
+   ch.VERBOSE("verbose")
+   ch.INFO("info")
+   ch.WARNING("warning")
+   ch.ERROR("error")
+   if (cli.fail):
+      ch.FATAL("the program failed inexplicably")
 
 def import_(cli):
    if (not os.path.exists(cli.path)):

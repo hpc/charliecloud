@@ -389,22 +389,6 @@ class Path(pathlib.PosixPath):
          effort required to make the change."""
       return set(ch.ossafe(os.listdir, "can’t list: %s" % self.name, self))
 
-   def strip(self, left=0, right=0):
-      """Return a copy of myself with n leading components removed. E.g.:
-
-           >>> a = Path("/a/b/c")
-           >>> a.strip(left=1)
-           Path("a/b/c")
-           >>> a.strip(right=1)
-           Path("/a/b")
-           >>> a.strip(left=1, right=1)
-           Path("a/b")
-
-         It is an error if I don’t have at least left + right components,
-         i.e., you can strip a path down to nothing but not further."""
-      assert (len(self.parts) >= left + right)
-      return Path(*self.parts[left:len(self.parts)-right])
-
    def mkdir_(self):
       ch.TRACE("ensuring directory: %s" % self)
       try:
@@ -490,6 +474,22 @@ class Path(pathlib.PosixPath):
                md += (dir_ // f).stat_bytes()
             dirs.sort()
       return md
+
+   def strip(self, left=0, right=0):
+      """Return a copy of myself with n leading components removed. E.g.:
+
+           >>> a = Path("/a/b/c")
+           >>> a.strip(left=1)
+           Path("a/b/c")
+           >>> a.strip(right=1)
+           Path("/a/b")
+           >>> a.strip(left=1, right=1)
+           Path("a/b")
+
+         It is an error if I don’t have at least left + right components,
+         i.e., you can strip a path down to nothing but not further."""
+      assert (len(self.parts) >= left + right)
+      return Path(*self.parts[left:len(self.parts)-right])
 
    def symlink(self, target, clobber=False):
       if (clobber and self.is_file()):
@@ -601,6 +601,20 @@ class Storage:
    def build_large_path(self, name):
       return self.build_large // name
 
+   def cleanup(self):
+      "Called during initialization after we know the storage dir is valid."
+      # Delete partial downloads.
+      part_ct = 0
+      for path in self.download_cache.glob("part_*"):
+         ch.VERBOSE("deleting: %s" % path)
+         path.unlink_()
+         part_ct += 1
+      if (part_ct > 0):
+         ch.WARNING("deleted %d partially downloaded files" % part_ct)
+
+   def fatman_for_download(self, image_ref):
+      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
+
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
          top-level directories & metadata, and is the appropriate version."""
@@ -669,6 +683,7 @@ class Storage:
                   % (v_found, self.root),
                   'you can delete and re-initialize with "ch-image reset"')
       self.validate_strict()
+      self.cleanup()
 
    def lock(self):
       """Lock the storage directory. Charliecloud does not at present support
@@ -698,9 +713,6 @@ class Storage:
          digest = "skinny"
       return (   self.download_cache
               // ("%s%%%s.manifest.json" % (image_ref.for_path, digest)))
-
-   def fatman_for_download(self, image_ref):
-      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def reset(self):
       if (self.valid_p):
@@ -734,7 +746,15 @@ class Storage:
             entries.remove(entry)
          except KeyError:
             ch.FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      # Ignore some files that may or may not exist.
       entries -= { i.name for i in (self.lockfile, self.mount_point) }
+      # Delete some files that exist only if we crashed.
+      for i in (self.image_tmp, ):
+         if (i.name in entries):
+            ch.WARNING("deleting leftover temporary file/dir: %s" % i.name)
+            i.rmtree()
+            entries.remove(i.name)
+      # If anything is left, yell about it.
       if (len(entries) > 0):
          ch.FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(sorted(entries))))

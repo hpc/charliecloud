@@ -236,12 +236,12 @@ class Image:
       return self.unpack_path // "ch"
 
    @property
-   def unpack_exist_p(self):
-      return os.path.exists(self.unpack_path)
-
-   @property
    def unpack_cache_linked(self):
       return (self.unpack_path // GIT_DIR).exists_()
+
+   @property
+   def unpack_exist_p(self):
+      return os.path.exists(self.unpack_path)
 
    def __str__(self):
       return str(self.ref)
@@ -456,8 +456,8 @@ class Image:
       """Unpack config_json (path to JSON config file) and layer_tars
          (sequence of paths to tarballs, with lowest layer first) into the
          unpack directory, validating layer contents and dealing with
-         whiteouts. Empty layers are ignored. The unpack directory must exist,
-         and either be empty or contain only a single entry called “.git”."""
+         whiteouts. Empty layers are ignored. The unpack directory must not
+         exist."""
       if (last_layer is None):
          last_layer = sys.maxsize
       ch.INFO("flattening image")

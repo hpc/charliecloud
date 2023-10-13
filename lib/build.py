@@ -250,6 +250,7 @@ class Main_Loop(lark.Visitor):
             return
          except ch.Fatal_Error:
             inst.announce_maybe()
+            inst.prepare_rollback()
             raise
          if (inst.miss):
             if (self.miss_ct == 1):
@@ -424,9 +425,6 @@ class Instruction(abc.ABC):
       self.git_hash = bu.cache.commit(path, self.sid, str(self),
                                       self.commit_files)
 
-   def ready(self):
-      bu.cache.ready(self.image)
-
    def execute(self):
       """Do what the instruction says. At this point, the unpack directory is
          all ready to go. Thus, the method is cache-ignorant."""
@@ -480,10 +478,10 @@ class Instruction(abc.ABC):
               time in prepare() should call announce_maybe() as soon as they
               know hit/miss status.
 
-           2. Errors: Calling ch.FATAL() normally exits immediately, but here
-              this often happens before the instruction has been announced
-              (see issue #1486). Therefore, the caller catches Fatal_Error,
-              announces, and then re-raises.
+           2. Errors: The caller catches Fatal_Error, announces, calls
+              prepare_rollback(), and then re-raises. This to ensure the
+              instruction is announced (see #1486) and any
+              possibly-inconsistent state is fixed before existing.
 
            3. Modifying image metadata: Instructions like ARG, ENV, FROM,
               LABEL, SHELL, and WORKDIR must modify metadata here, not in
@@ -493,6 +491,12 @@ class Instruction(abc.ABC):
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       return miss_ct + int(self.miss)
 
+   def prepare_rollback(self):
+      pass  # typically a no-op
+
+   def ready(self):
+      bu.cache.ready(self.image)
+
    def rollback(self):
       """Discard everything done by execute(), which may have completed
          partially, fully, or not at all."""
@@ -501,13 +505,13 @@ class Instruction(abc.ABC):
    def unsupported_forever_warn(self, msg):
       ch.WARNING("not supported, ignored: %s %s" % (self.str_name, msg))
 
-   def unsupported_yet_warn(self, msg, issue_no):
-      ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
-                 % (issue_no, self.str_name, msg))
-
    def unsupported_yet_fatal(self, msg, issue_no):
       ch.FATAL("not yet supported: issue #%d: %s %s"
                % (issue_no, self.str_name, msg))
+
+   def unsupported_yet_warn(self, msg, issue_no):
+      ch.WARNING("not yet supported, ignored: issue #%d: %s %s"
+                 % (issue_no, self.str_name, msg))
 
 
 class Instruction_Unsupported(Instruction):
@@ -1085,6 +1089,10 @@ class I_from_(Instruction):
       assert (isinstance(bu.cache, bu.Disabled_Cache))
       super().checkout_for_build(self.base_image)
 
+   def execute(self):
+      # Everything happens in prepare().
+      pass
+
    def metadata_update(self, *args):
       # FROM doesn’t update metadata because it never misses when the cache is
       # enabled, so this would never be called, and we want disabled results
@@ -1168,9 +1176,24 @@ class I_from_(Instruction):
       # Done.
       return int(self.miss)  # will still miss in disabled mode
 
-   def execute(self):
-      # Everything happens in prepare().
-      pass
+   def prepare_rollback(self):
+      # AFAICT the only thing that might be busted is the unpack directories
+      # for either the base image or the image. We could probably be smarter
+      # about this, but for now just delete them.
+      try:
+         base_image = self.base_image
+      except AttributeError:
+         base_image = None
+      try:
+         image = self.image
+      except AttributeError:
+         image = None
+      if (base_image is not None or image is not None):
+         ch.INFO("something went wrong, rolling back ...")
+         if (base_image is not None):
+            bu.cache.unpack_delete(base_image, missing_ok=True)
+         if (image is not None):
+            bu.cache.unpack_delete(image, missing_ok=True)
 
 
 class I_rsync(Copy):
@@ -1325,7 +1348,7 @@ class Run(Instruction):
       elif (cli.force == ch.Force_Mode.SECCOMP):
          tag = ".S"
       else:
-         assert False, "unreachable code reached"
+         assert False, "unreachable code reached (force mode = %s)" % cli.force
       return super().str_name + tag
 
    def execute(self):

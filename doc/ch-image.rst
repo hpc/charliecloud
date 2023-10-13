@@ -76,6 +76,10 @@ Common options placed before or after the sub-command:
     **Experimental.** See section :ref:`Large file threshold
     <ch-image_bu-large>` for details.
 
+  :code:`--debug`
+    Add a stack trace to fatal error hints. This can also be done by setting
+    the environment variable `CH_IMAGE_DEBUG`.
+
   :code:`--no-cache`
     Disable build cache. Default if a sufficiently new Git is not available.
     This option turns off the cache completely; if you want to re-execute a
@@ -90,6 +94,9 @@ Common options placed before or after the sub-command:
   :code:`--no-xattrs`
     Ignore xattrs and ACLs.
 
+  :code:`--password-many`
+    Re-prompt the user every time a registry password is needed.
+
   :code:`--profile`
     Dump profile to files :code:`/tmp/chofile.p` (:code:`cProfile` dump
     format) and :code:`/tmp/chofile.txt` (text summary). You can convert the
@@ -98,12 +105,14 @@ Common options placed before or after the sub-command:
     subprocesses. Profile data should still be written on fatal errors, but
     not if the program crashes.
 
+  :code:`-q, --quiet`
+    Be quieter; can be repeated. Incompatible with :code:`-v` and suppresses
+    :code:`--debug` regardless of option order. See the :ref:`FAQ entry on
+    verbosity <faq_verbosity>` for details.
+
   :code:`--rebuild`
     Execute all instructions, even if they are build cache hits, except for
     :code:`FROM` which is retrieved from cache on hit.
-
-  :code:`--password-many`
-    Re-prompt the user every time a registry password is needed.
 
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory (see below for important details).
@@ -113,7 +122,8 @@ Common options placed before or after the sub-command:
     unless you understand the risks.)
 
   :code:`-v`, :code:`--verbose`
-    Print extra chatter; can be repeated.
+    Print extra chatter; can be repeated. See the :ref:`FAQ entry on verbosity
+    <faq_verbosity>` for details.
 
 
 Architecture

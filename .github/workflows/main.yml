@@ -234,7 +234,7 @@ jobs:
           test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
-          [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py' ]]
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/lark/__init__.py' ]]
           [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
           make clean
           # no install, enable: build fails, untested
@@ -263,7 +263,15 @@ jobs:
           else
               LDD=ldd
           fi
-          ./configure --prefix=$ch_prefix/from-git
+          # Go wild with install directories to make sure it works (see #683).
+          # We do have a normal install below.
+          ./configure --prefix=$ch_prefix/from-git \
+                      --datarootdir=$ch_prefix/from-git_dataroot \
+                      --libexecdir=$ch_prefix/from-git_libexec \
+                      --libdir=$ch_prefix/from-git_lib \
+                      --mandir=$ch_prefix/from-git_man \
+                      --docdir=$ch_prefix/from-git_doc \
+                      --htmldir=$ch_prefix/from-git_html
           set -x
           fgrep 'documentation: yes' config.log
           [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
@@ -299,9 +307,9 @@ jobs:
         run: |
           set -x
           [[ $(bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
-          [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py" ]]
+          [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/lark/__init__.py" ]]
           [[ $($ch_prefix/from-git/bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
-          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git/lib/charliecloud/lark/__init__.py" ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git_lib/charliecloud/lark/__init__.py" ]]
 
       - name: late setup & validation, all
         run: |
@@ -344,7 +352,7 @@ jobs:
           mv charliecloud-*.tar.gz $ch_prefix
           cd $ch_prefix
           tar xf charliecloud-*.tar.gz
-          rm charliecloud-*.tar.gz  # else cd fails with "too many arguments"
+          rm charliecloud-*.tar.gz  # else cd fails with “too many arguments”
           cd charliecloud-*
           pwd
           # Configure and verify output.
