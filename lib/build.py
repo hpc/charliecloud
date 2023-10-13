@@ -573,6 +573,10 @@ class Copy(Instruction):
                 "srcs_base",
                 "srcs_raw")
 
+   @property
+   def sid_input(self):
+      return super().sid_input + self.src_metadata
+
    def expand_dest(self):
       """Set self.dst from self.dst_raw with environment variables expanded
          and image root prepended."""
@@ -774,10 +778,6 @@ class I_copy(Copy):
       self.dst_raw = args[-1]
 
    @property
-   def sid_input(self):
-      return super().sid_input + self.src_metadata
-
-   @property
    def str_(self):
       dst = repr(self.dst) if hasattr(self, "dst") else self.dst_raw
       return "%s -> %s" % (self.srcs_raw, dst)
@@ -947,7 +947,7 @@ class I_copy(Copy):
       self.options_assert_empty()
       # Expand operands.
       self.expand_sources()
-      self.expand_dest()
+      self.dst = ch.variables_sub(self.dst_raw, self.env_build)
       # Gather metadata for hashing.
       self.src_metadata = fs.Path.stat_bytes_all(self.srcs)
       # Pass on to superclass.
@@ -1232,10 +1232,6 @@ class I_rsync(Copy):
             group += o[1:]         # add to group
       ship_out()
       return ret
-
-   @property
-   def sid_input(self):
-      return super().sid_input  # FIXME - seems hard?
 
    @property
    def str_(self):

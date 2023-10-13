@@ -424,6 +424,11 @@ class Path(pathlib.PosixPath):
                        "can’t open for %s: %s" % (mode, self.name),
                        mode, *args, **kwargs)
 
+   def relative_to(self, other):  # FIXME: does not support component-wise
+      ret = super().relative_to(other)
+      ret.trailing_slash_p = other.trailing_slash_p
+      return ret
+
    def rename_(self, name_new):
       if (Path(name_new).exists()):
          ch.FATAL("can’t rename: destination exists: %s" % name_new)
