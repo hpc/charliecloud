@@ -397,26 +397,45 @@ class Progress_Reader:
 
 class Progress_Writer:
    """Wrapper around a binary file object to maintain a progress meter while
-      data are written."""
+      data are written. Overwrite the file if it already exists.
+
+      This downloads to a temporary file to ease recovery if the download is
+      interrupted. This uses a predictable name to support restarts in the
+      future, which would probably require verification after download. For
+      now, we just delete any leftover temporary files in Storage.init().
+
+      An interesting alternative is to download to an anonymous temporary file
+      that vanishes if not linked into the filesystem. Recent Linux provides a
+      very cool procedure to do this -- open(2) with O_TMPFILE followed by
+      linkat(2) [1] -- but it’s not always supported and the workaround
+      (create, then immediately unlink(2)) does not support re-linking [2].
+      This would also not support restarting the download.
+
+      [1]: https://man7.org/linux/man-pages/man2/open.2.html
+      [2]: https://stackoverflow.com/questions/4171713"""
 
    __slots__ = ("fp",
                 "msg",
                 "path",
+                "path_tmp",
                 "progress")
 
    def __init__(self, path, msg):
       self.msg = msg
       self.path = path
+      self.path_tmp = path.with_name("part_" + path.name)
       self.progress = None
 
    def close(self):
       if (self.progress is not None):
          self.progress.done()
          close_(self.fp)
+         self.path.unlink_(missing_ok=True)
+         self.path_tmp.rename_(self.path)
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
-      self.fp = self.path.open_("wb")
+      self.fp = self.path_tmp.open_("wb")
 
    def write(self, data):
       self.progress.update(len(data))
@@ -655,8 +674,10 @@ def init(cli):
       log_fp = file_.open_("at")
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
-   VERBOSE("verbose level: %d (%s))" % (log_level.value,
-                                        log_level.name))
+   VERBOSE("verbose level: %d (%s))" % (log_level.value, log_level.name))
+   # signal handling
+   signal.signal(signal.SIGINT, sigterm)
+   signal.signal(signal.SIGTERM, sigterm)
    # storage directory
    global storage
    storage = fs.Storage(cli.storage)
@@ -820,6 +841,17 @@ def si_decimal(ct):
          return (ct, suffix)
       ct /= 1000
    assert False, "unreachable"
+
+def sigterm(signum, frame):
+   "Handler for SIGTERM and friends."
+   # Ignore further signals because we are already cleaning up.
+   signal.signal(signal.SIGINT, signal.SIG_IGN)
+   signal.signal(signal.SIGTERM, signal.SIG_IGN)
+   # Don’t stomp on progress meter if one is being printed.
+   print()
+   signame = signal.Signals(signum).name
+   ERROR("received %s, exiting" % signame)
+   FATAL("received %s" % signame)
 
 def user():
    "Return the current username; exit with error if it can’t be obtained."

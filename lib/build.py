@@ -242,6 +242,7 @@ class Main_Loop(lark.Visitor):
             return
          except ch.Fatal_Error:
             inst.announce_maybe()
+            inst.prepare_rollback()
             raise
          if (inst.miss):
             if (self.miss_ct == 1):
@@ -466,10 +467,10 @@ class Instruction(abc.ABC):
               time in prepare() should call announce_maybe() as soon as they
               know hit/miss status.
 
-           2. Errors: Calling ch.FATAL() normally exits immediately, but here
-              this often happens before the instruction has been announced
-              (see issue #1486). Therefore, the caller catches Fatal_Error,
-              announces, and then re-raises.
+           2. Errors: The caller catches Fatal_Error, announces, calls
+              prepare_rollback(), and then re-raises. This to ensure the
+              instruction is announced (see #1486) and any
+              possibly-inconsistent state is fixed before existing.
 
            3. Modifying image metadata: Instructions like ARG, ENV, FROM,
               LABEL, SHELL, and WORKDIR must modify metadata here, not in
@@ -478,6 +479,9 @@ class Instruction(abc.ABC):
       self.sid = bu.cache.sid_from_parent(self.parent.sid, self.sid_input)
       self.git_hash = bu.cache.find_sid(self.sid, self.image.ref.for_path)
       return miss_ct + int(self.miss)
+
+   def prepare_rollback(self):
+      pass  # typically a no-op
 
    def ready(self):
       bu.cache.ready(self.image)
@@ -1145,6 +1149,25 @@ class I_from_(Instruction):
 
       # Done.
       return int(self.miss)  # will still miss in disabled mode
+
+   def prepare_rollback(self):
+      # AFAICT the only thing that might be busted is the unpack directories
+      # for either the base image or the image. We could probably be smarter
+      # about this, but for now just delete them.
+      try:
+         base_image = self.base_image
+      except AttributeError:
+         base_image = None
+      try:
+         image = self.image
+      except AttributeError:
+         image = None
+      if (base_image is not None or image is not None):
+         ch.INFO("something went wrong, rolling back ...")
+         if (base_image is not None):
+            bu.cache.unpack_delete(base_image, missing_ok=True)
+         if (image is not None):
+            bu.cache.unpack_delete(image, missing_ok=True)
 
 
 class Run(Instruction):

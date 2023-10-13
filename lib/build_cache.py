@@ -1066,10 +1066,10 @@ class Enabled_Cache:
          # a young hen, especially one less than one year old
          pullet = pull.Image_Puller(img, src_ref)
          pullet.download()
-      self.worktree_add(img, "root")
       pullet.unpack(last_layer)
       sid = self.sid_from_parent(self.root_id, pullet.sid_input)
       pullet.done()
+      self.worktree_adopt(img, "root")
       commit = self.commit(img.unpack_path, sid, "PULL %s" % src_ref, [])
       self.ready(img)
       if (img.ref != src_ref):
@@ -1220,12 +1220,14 @@ class Enabled_Cache:
       self.git(args + ["--format=%s" % fmt], quiet=False)
       print()  # blank line to separate from summary
 
-   def unpack_delete(self, image):
+   def unpack_delete(self, image, missing_ok=False):
       """Wrapper for Image.unpack_delete() that first detaches the work tree's
          head. If we delete an image's unpack path without first detaching HEAD,
          the corresponding work tree must also be deleted before the bucache
          branch. This involves multiple calls to worktrees_fix(), which is
          clunky, so we use this method instead."""
+      if (not image.unpack_exist_p and missing_ok):
+         return
       (_, commit) = self.find_commit(image.ref.for_path)
       if (commit is not None):
          # Off with her head!
@@ -1380,7 +1382,6 @@ class Disabled_Cache(Rebuild_Cache):
       for (dir_, subdirs, files) in ch.walk(path):
          for i in itertools.chain(subdirs, files):
             (dir_ // i).chmod_min()
-
 
    def pull_lazy(self, img, src_ref, last_layer=None, pullet=None):
       if (pullet is None and os.path.exists(img.unpack_path)):

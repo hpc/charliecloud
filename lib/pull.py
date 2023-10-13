@@ -310,6 +310,7 @@ class Image_Puller:
 
    def unpack(self, last_layer=None):
       layer_paths = [self.layer_path(h) for h in self.layer_hashes]
+      bu.cache.unpack_delete(self.image, missing_ok=True)
       self.image.unpack(layer_paths, last_layer)
       self.image.metadata_replace(self.config_path)
       # Check architecture we got. This is limited because image metadata does

@@ -522,6 +522,17 @@ class Storage:
    def build_large_path(self, name):
       return self.build_large // name
 
+   def cleanup(self):
+      "Called during initialization after we know the storage dir is valid."
+      # Delete partial downloads.
+      part_ct = 0
+      for path in self.download_cache.glob("part_*"):
+         ch.VERBOSE("deleting: %s" % path)
+         path.unlink_()
+         part_ct += 1
+      if (part_ct > 0):
+         ch.WARNING("deleted %d partially downloaded files" % part_ct)
+
    def fatman_for_download(self, image_ref):
       return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
@@ -593,6 +604,7 @@ class Storage:
                   % (v_found, self.root),
                   'you can delete and re-initialize with "ch-image reset"')
       self.validate_strict()
+      self.cleanup()
 
    def lock(self):
       """Lock the storage directory. Charliecloud does not at present support
@@ -655,7 +667,15 @@ class Storage:
             entries.remove(entry)
          except KeyError:
             ch.FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      # Ignore some files that may or may not exist.
       entries -= { i.name for i in (self.lockfile, self.mount_point) }
+      # Delete some files that exist only if we crashed.
+      for i in (self.image_tmp, ):
+         if (i.name in entries):
+            ch.WARNING("deleting leftover temporary file/dir: %s" % i.name)
+            i.rmtree()
+            entries.remove(i.name)
+      # If anything is left, yell about it.
       if (len(entries) > 0):
          ch.FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(sorted(entries))))
