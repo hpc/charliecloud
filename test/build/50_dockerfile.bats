@@ -1128,7 +1128,7 @@ EOF
     echo "$output"
     [[ $status -ne 0 ]]
     if [[ $CH_TEST_BUILDER = ch-image ]]; then
-        [[ $output = *"error: must specify at least one source"* ]]
+        [[ $output = *'error: source or destination missing'* ]]
     else
         [[ $output = *'COPY requires at least two arguments'* ]]
     fi
