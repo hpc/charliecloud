@@ -1270,6 +1270,8 @@ class I_rsync(Copy):
             key = m[1]
             if (m[2] == "-"):
                ch.FATAL("--*-from: can’t use standard input")
+            elif (":" in m[2]):
+               ch.FATAL("--*-from: can’t use remote hosts (colon in path)")
             path = ch.Path(m[2])
             if (path.is_absolute()):
                path = self.image.unpack_path // path
@@ -1303,7 +1305,7 @@ class I_rsync(Copy):
               "--remove-source-files" }
       for o in self.rsync_options:
          if (o in bad):
-            ch.FATAL("bad option: %s" % o)
+            ch.FATAL("disallowed option: %s" % o)
 
 
 class Run(Instruction):

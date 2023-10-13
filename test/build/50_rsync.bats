@@ -56,7 +56,7 @@ ls_dump () {
 
     # top level of context
     cd "$context"
-    echo file-top > file-top
+    printf 'basic1/file-basic1\nbasic2\n' > file-top  # also list of files
     mkdir dir-top
     echo dir-top.file > dir-top/dir-top.file
 
@@ -272,7 +272,7 @@ drwxrwx--- 1      basic2
 -rw-rw---- 1  12    file-basic2
 drwxrwx--- 1      dir-top
 -rw-rw---- 1  13    dir-top.file
--rw-rw---- 1   9  file-top
+-rw-rw---- 1  26  file-top
 drwxrwx--- 1      hard
 -rw-rw---- 2  10    hard-file1
 -rw-rw---- 2  10    hard-file2
@@ -396,8 +396,8 @@ lrwxrwxrwx 1        file-sym1_direct -> file-sym1
 -rw-rw---- 1  10    file-sym1_upover
 -rw-rw---- 1  10    file-sym2_abs
 -rw-rw---- 1  10    file-sym2_upover
--rw-rw---- 1   9    file-top_abs
--rw-rw---- 1   9    file-top_rel
+-rw-rw---- 1  26    file-top_abs
+-rw-rw---- 1  26    file-top_rel
 EOF
 }
 
@@ -541,7 +541,7 @@ EOF
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
 -rw-rw---- 1   0  file-dst
--rw-rw---- 1   9  file-dst_direct
+-rw-rw---- 1  26  file-dst_direct
 EOF
 }
 
@@ -564,7 +564,7 @@ EOF
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
 drwxrwx--- 1      dir-dst
--rw-rw---- 1   9    file-top
+-rw-rw---- 1  26    file-top
 lrwxrwxrwx 1      dir-dst_direct -> dir-dst
 EOF
 }
@@ -652,12 +652,119 @@ FROM alpine:3.17
 WORKDIR /dst
 RSYNC file-basic1 .
 EOF
-    ch-image build -v --rebuild -f "$ch_tmpimg_df" "$context"/basic1
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"/basic1
     ls_dump "$dst" files
     run ls_ "$dst"
     echo "$output"
     [[ $status -eq -0 ]]
     cat <<EOF | diff -u - <(echo "$output")
+-rw----r-- 1  12  file-basic1
+EOF
+}
+
+
+@test "${tag}: no context" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RSYNC foo bar
+EOF
+    run ch-image build -t tmpimg - < "$ch_tmpimg_df"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: no context'* ]]
+}
+
+
+@test "${tag}: bad + option" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RSYNC +y foo bar
+EOF
+    run ch-image build -t tmpimg - < "$ch_tmpimg_df"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: invalid plus option: y'* ]]
+}
+
+
+@test "${tag}: remote transports" {
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RSYNC foo://bar baz
+EOF
+    run ch-image build -t tmpimg - < "$ch_tmpimg_df"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: SSH and rsync transports not supported'* ]]
+}
+
+
+@test "${tag}: excluded options" {
+    # We only test one of them, for DRY, though I did pick the one that seemed
+    # most dangerous.
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RSYNC --remove-source-files foo bar
+EOF
+    run ch-image build -t tmpimg - < "$ch_tmpimg_df"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: disallowed option: --remove-source-files'* ]]
+
+}
+
+@test "${tag}: --*-from translation" {
+    # relative (context)
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RSYNC --files-from=./file-top / /dst
+EOF
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    ls_dump "$dst" files
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq -0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+drwx---r-x 1      basic1
+-rw----r-- 1  12    file-basic1
+drwxrwx--- 1      basic2
+-rw-rw---- 1  12    file-basic2
 EOF
 
+    # absolute (image)
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RUN mkdir /dst
+RUN printf 'file-top\n' > /fls
+RSYNC --files-from=/fls / /dst
+EOF
+    ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    ls_dump "$dst" files
+    run ls_ "$dst"
+    echo "$output"
+    [[ $status -eq -0 ]]
+    cat <<EOF | diff -u - <(echo "$output")
+-rw-rw---- 1  26  file-top
+EOF
+
+    # bare hyphen disallowed
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RSYNC --files-from=- / /dst
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: --*-from: can'?'t use standard input'* ]]
+
+    # colon disallowed
+    cat <<EOF > "$ch_tmpimg_df"
+FROM alpine:3.17
+RSYNC --files-from=foo:bar / /dst
+EOF
+    run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *'error: --*-from: can'?'t use remote hosts'* ]]
 }
