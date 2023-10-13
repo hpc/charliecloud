@@ -393,6 +393,8 @@ jobs:
       - name: run test suite (Git WD, standard)
         run: |
           bin/ch-test all
+          # Validate that “rootemu” test phase didn’t run (skipped by default
+          # on standard scope).
           [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
 
       - name: run test suite (installed from Git WD, standard)
