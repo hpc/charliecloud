@@ -109,7 +109,7 @@ ls_dump () {
 
     echo "## created fixtures ##"
     ls_ "$fixtures"
-    ls_ "$fixtures" > $BATS_TMPDIR/rsync_fixtures-ls_
+    ls_ "$fixtures" > "$BATS_TMPDIR"/rsync_fixtures-ls_
     ls_dump "$fixtures" fixtures
 }
 
@@ -303,7 +303,7 @@ EOF
     run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ 0 -eq $(echo "$output" | grep -F 'skipping non-regular file' | wc -l) ]]
+    [[ 0 -eq $(echo "$output" | grep -Fc 'skipping non-regular file') ]]
     ls_dump "$dst" sym-default
     run ls_ "$dst"
     echo "$output"
@@ -354,7 +354,7 @@ EOF
     run ch-image build --rebuild -f "$ch_tmpimg_df" "$context"
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ 12 -eq $(echo "$output" | grep -F 'skipping non-regular file' | wc -l) ]]
+    [[ 12 -eq $(echo "$output" | grep -Fc 'skipping non-regular file') ]]
     ls_dump "$dst" sym-m
     run ls_ "$dst"
     echo "$output"

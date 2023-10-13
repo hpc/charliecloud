@@ -108,7 +108,11 @@ class Path(pathlib.PosixPath):
       return NotImplemented
 
    def __str__(self):
-      return super().__str__() + ("/" if self.trailing_slash_p else "")
+      # Because subclassing pathlib.Path is so bonkers, we often get instances
+      # that don’t have attribute trailing_slash_p. Don’t crash in this case,
+      # and cross our fingers we haven’t just lost the trailing slash.
+      return super().__str__() + ("/" if (    hasattr(self, "trailing_slash_p")
+                                          and self.trailing_slash_p) else "")
 
    def __truediv__(self, right):
       return NotImplemented
