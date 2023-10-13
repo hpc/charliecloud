@@ -1206,13 +1206,9 @@ case $phase in
         done
         ;;
     rootemu)
-        if [[ ($scope != full) && (-z "$with_rootemu") ]]; then
-            if [[ -z "$scope" ]]; then
-                scope="standard"
-            fi
-            printf "error: rootemu incompatible with scope: %s\n" "$scope"
-            exit 1
-        fi
+        # assume that “ch-test rootemu” means the user wants to run root
+        # emulation tests.
+        with_rootemu="yes"
         test_rootemu optional # ch-image optional
         ;;
     run)
