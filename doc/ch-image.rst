@@ -1616,7 +1616,7 @@ have changed to the normal files and directories pointed to.
 
 The sources themselves, if symlinks, do not get special treatment:
 
-.. code-block::
+.. code-block:: docker
 
    RSYNC /sym1/file-sym1_direct /sym1/file-sym1_upover /dst
 

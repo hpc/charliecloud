@@ -28,6 +28,7 @@ ls_ () {
                  -e 's# -> $##' \
                  -e 's#([0-9]+)[f]#\1#' \
                  -e 's#([0-9]+ )[0-9 ]+[a-z] #\1    #' \
+                 -e 's#^(d[rwx-]{9}) [0-9]#\1 .#' \
                  -e "s#$1#/...#"
     )
 }
@@ -139,9 +140,9 @@ EOF
 -rw----r-- 1  12  file-basic1
 -rw------- 1  12  file-basic1_nom
 -rw----r-- 1  12  file-basic1_renamed
-drwxrwx--- 1      new
+drwxrwx--- .      new
 -rw----r-- 1  12    file-basic1
-drwxrwx--- 1      newB
+drwxrwx--- .      newB
 -rw----r-- 1  12    file-basic1
 -rw-rw---- 1  12    file-basic2
 EOF
@@ -173,19 +174,19 @@ EOF
     echo "$output"
     [[ $status -eq -0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwx---r-x 1      basic1
+drwx---r-x .      basic1
 -rw----r-- 1  12    file-basic1
-drwxrwx--- 1      basic1_new
-drwx---r-x 1        basic1
+drwxrwx--- .      basic1_new
+drwx---r-x .        basic1
 -rw----r-- 1  12      file-basic1
-drwxrwx--- 1      basic1_newB
-drwx---r-x 1        basic1
+drwxrwx--- .      basic1_newB
+drwx---r-x .        basic1
 -rw----r-- 1  12      file-basic1
-drwx------ 1      basic1_newD
+drwx------ .      basic1_newD
 -rw------- 1  12    file-basic1
-drwx---r-x 1      basic1_renamed
+drwx---r-x .      basic1_renamed
 -rw----r-- 1  12    file-basic1
-drwx---r-x 1      basic1_renamedB
+drwx---r-x .      basic1_renamedB
 -rw----r-- 1  12    file-basic1
 EOF
 }
@@ -221,32 +222,32 @@ EOF
     echo "$output"
     [[ $status -eq -0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      dstB
-drwx---r-x 1        basic1
+drwxrwx--- .      dstB
+drwx---r-x .        basic1
 -rw----r-- 1  12      file-basic1
-drwxrwx--- 1        basic2
+drwxrwx--- .        basic2
 -rw-rw---- 1  12      file-basic2
 -rw-rw---- 1  10    file-dstB
-drwxrwx--- 1      dstC
-drwx---r-x 1        basic1
+drwxrwx--- .      dstC
+drwx---r-x .        basic1
 -rw----r-- 1  12      file-basic1
-drwxrwx--- 1        basic2
+drwxrwx--- .        basic2
 -rw-rw---- 1  12      file-basic2
 -rw-rw---- 1  10    file-dstC
-drwx---r-x 1      dstD
+drwx---r-x .      dstD
 -rw----r-- 1  12    file-basic1
 -rw-rw---- 1  12    file-basic2
 -rw-rw---- 1  10    file-dstD
-drwx---r-x 1      dstE
+drwx---r-x .      dstE
 -rw----r-- 1  12    file-basic1
 -rw-rw---- 1  12    file-basic2
 -rw-rw---- 1  10    file-dstE
-drwxrwx--- 1      dstF
-drwx---r-x 1        basic1
+drwxrwx--- .      dstF
+drwx---r-x .        basic1
 -rw----r-- 1  12      file-basic1
 -rw-rw---- 1  12    file-basic2
 -rw-rw---- 1  10    file-dstF
-drwx---r-x 1      dstG
+drwx---r-x .      dstG
 -rw----r-- 1  12    file-basic1
 -rw-rw---- 1  12    file-basic2
 EOF
@@ -266,20 +267,20 @@ EOF
     echo "$output"
     [[ $status -eq -0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwx---r-x 1      basic1
+drwx---r-x .      basic1
 -rw----r-- 1  12    file-basic1
-drwxrwx--- 1      basic2
+drwxrwx--- .      basic2
 -rw-rw---- 1  12    file-basic2
-drwxrwx--- 1      dir-top
+drwxrwx--- .      dir-top
 -rw-rw---- 1  13    dir-top.file
 -rw-rw---- 1  26  file-top
-drwxrwx--- 1      hard
+drwxrwx--- .      hard
 -rw-rw---- 2  10    hard-file1
 -rw-rw---- 2  10    hard-file2
-drwxrwx--- 1      sym-broken
+drwxrwx--- .      sym-broken
 lrwxrwxrwx 1        doesnotexist_broken_direct -> doesnotexist
-drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-sym1
+drwxrwx--- .      sym1
+drwxrwx--- .        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
 lrwxrwxrwx 1        dir-top_rel -> ../dir-top
@@ -288,7 +289,7 @@ lrwxrwxrwx 1        file-sym1_direct -> file-sym1
 lrwxrwxrwx 1        file-sym1_upover -> ../sym1/file-sym1
 lrwxrwxrwx 1        file-sym2_upover -> ../sym2/file-sym2
 lrwxrwxrwx 1        file-top_rel -> ../file-top
-drwxrwx--- 1      sym2
+drwxrwx--- .      sym2
 -rw-rw---- 1  10    file-sym2
 EOF
 }
@@ -309,8 +310,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-sym1
+drwxrwx--- .      sym1
+drwxrwx--- .        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
 lrwxrwxrwx 1        dir-top_rel -> ../dir-top
@@ -335,8 +336,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-sym1
+drwxrwx--- .      sym1
+drwxrwx--- .        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
 -rw-rw---- 1  10    file-sym1
@@ -360,8 +361,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-sym1
+drwxrwx--- .      sym1
+drwxrwx--- .        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 -rw-rw---- 1  10    file-sym1
 EOF
@@ -380,13 +381,13 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-out_rel
+drwxrwx--- .      sym1
+drwxrwx--- .        dir-out_rel
 -rw-rw---- 1  13      dir-out.file
-drwxrwx--- 1        dir-sym1
+drwxrwx--- .        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
-drwxrwx--- 1        dir-top_rel
+drwxrwx--- .        dir-top_rel
 -rw-rw---- 1  13      dir-top.file
 -rw-rw---- 1   9    file-out_abs
 -rw-rw---- 1   9    file-out_rel
@@ -416,8 +417,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      sym1
-drwxrwx--- 1        dir-sym1
+drwxrwx--- .      sym1
+drwxrwx--- .        dir-sym1
 -rw-rw---- 1  14      dir-sym1.file
 lrwxrwxrwx 1        dir-sym1_direct -> dir-sym1
 lrwxrwxrwx 1        dir-top_rel -> ../dir-top
@@ -426,7 +427,7 @@ lrwxrwxrwx 1        file-sym1_direct -> file-sym1
 lrwxrwxrwx 1        file-sym1_upover -> ../sym1/file-sym1
 lrwxrwxrwx 1        file-sym2_upover -> ../sym2/file-sym2
 lrwxrwxrwx 1        file-top_rel -> ../file-top
-drwxrwx--- 1      sym2
+drwxrwx--- .      sym2
 -rw-rw---- 1  10    file-sym2
 EOF
 }
@@ -484,7 +485,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      dir-sym1_direct
+drwxrwx--- .      dir-sym1_direct
 -rw-rw---- 1  14    dir-sym1.file
 EOF
 }
@@ -504,7 +505,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      sym-broken
+drwxrwx--- .      sym-broken
 lrwxrwxrwx 1        doesnotexist_broken_direct -> doesnotexist
 EOF
 }
@@ -563,7 +564,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      dir-dst
+drwxrwx--- .      dir-dst
 -rw-rw---- 1  26    file-top
 lrwxrwxrwx 1      dir-dst_direct -> dir-dst
 EOF
@@ -587,8 +588,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      dir-dst
-drwxrwx--- 1        dir-top
+drwxrwx--- .      dir-dst
+drwxrwx--- .        dir-top
 -rw-rw---- 1  13      dir-top.file
 lrwxrwxrwx 1      dir-dst_direct -> dir-dst
 EOF
@@ -612,7 +613,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      dir-dst
+drwxrwx--- .      dir-dst
 -rw-rw---- 1  13    dir-top.file
 lrwxrwxrwx 1      dir-dst_direct -> dir-dst
 EOF
@@ -635,7 +636,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwxrwx--- 1      hard
+drwxrwx--- .      hard
 -rw-rw---- 2  10    hard-file1
 -rw-rw---- 2  10    hard-file2
 EOF
@@ -726,9 +727,9 @@ EOF
     echo "$output"
     [[ $status -eq -0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-drwx---r-x 1      basic1
+drwx---r-x .      basic1
 -rw----r-- 1  12    file-basic1
-drwxrwx--- 1      basic2
+drwxrwx--- .      basic2
 -rw-rw---- 1  12    file-basic2
 EOF
 
