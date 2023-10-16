@@ -72,9 +72,16 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = "/root" ]]
 
-    run echo "$ch_timg"
+    # default: no “/root”
+    ch-image build -t noroot -f - . << 'EOF'
+    FROM alpine:latest
+    RUN rm -rf /root
+EOF
+    # shellcheck disable=SC2016
+    run ch-run noroot -- /bin/sh -c 'echo $HOME'
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 0 ]]
+    [[ $output = "/" ]]
 
     # set $HOME if --home
     # shellcheck disable=SC2016
