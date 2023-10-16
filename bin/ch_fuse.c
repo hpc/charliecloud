@@ -134,7 +134,7 @@ void sq_fork(struct container *c)
    sq_mount(c->img_ref, c->newroot);
 
    // (try to) Set “HOME” (hangs on “newfstatat” syscall).
-   if (args->c.host_home) {
+   if (c->host_home) {
       Z_ (setenv("HOME", cat("/home/", username), 1));
    } else if (path_exists(cat(c->newroot, "/root"), NULL, true)) {
       Z_ (setenv("HOME", "/root", 1));
