@@ -70,7 +70,11 @@ EOF
     run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = "/" ]]
+    [[ $output = "/root" ]]
+
+    run echo "$ch_timg"
+    echo "$output"
+    [[ $status -eq 1 ]]
 
     # set $HOME if --home
     # shellcheck disable=SC2016

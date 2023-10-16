@@ -133,14 +133,6 @@ void sq_fork(struct container *c)
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
    sq_mount(c->img_ref, c->newroot);
 
-   // (try to) Set “HOME” (hangs on “newfstatat” syscall).
-   if (c->host_home) {
-      Z_ (setenv("HOME", cat("/home/", username), 1));
-   } else if (path_exists(cat(c->newroot, "/root"), NULL, true)) {
-      Z_ (setenv("HOME", "/root", 1));
-   } else
-      Z_ (setenv("HOME", "/", 1));
-
    // Now that the filesystem is mounted, we can fork without race condition.
    // The child returns to caller and runs the user command. When that exits,
    // the parent gets SIGCHLD.
