@@ -12,6 +12,9 @@ ch_lib=${ch_bin}/../lib
 # Verbosity level; works the same as the Python code.
 verbose=0
 
+# Quiet level
+quiet=0
+
 DEBUG () {
     if [ "$verbose" -ge 2 ] && [ -z "$quiet" ]; then
         # shellcheck disable=SC2059
@@ -29,7 +32,7 @@ FATAL () {
 }
 
 INFO () {
-    if [ -z "$quiet" ]; then
+    if [ "$quiet" -eq 0 ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -37,7 +40,7 @@ INFO () {
 }
 
 VERBOSE () {
-    if [ "$verbose" -ge 1 ] && [ -z "$quiet" ]; then
+    if [ "$verbose" -ge 1 ] && [ "$quiet" -le 0 ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -63,7 +66,7 @@ parse_basic_arg () {
             usage 0   # exits
             ;;
         -q|--quiet)
-            quiet="yes"
+            quiet=$((quiet+1))
             return 0
             ;;
         -v|--verbose)
@@ -144,7 +147,7 @@ vset () {
     if [ -z "$value" ]; then
         value=no
     fi
-    if [ -z "$quiet" ]; then
+    if [ "$quiet" -eq 0 ]; then
         var_desc="$var_desc:"
         printf "%-*s %s (%s)\n" "$desc_width" "$var_desc" "$value" "$method"
     fi
