@@ -125,6 +125,8 @@ chmod 0777 img/maxperms_file
 mkdir img/maxperms_dir
 chmod 1777 img/maxperms_dir
 
+# Get rid of “/root” directory, used for “HOME” test in “ch-run_misc.bats”.
+rmdir "$img"/root
 
 ## Tar it up.
 

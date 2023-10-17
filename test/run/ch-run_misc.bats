@@ -60,6 +60,8 @@ EOF
 }
 
 @test "\$HOME" {
+    LC_ALL=C
+
     scope quick
     echo "host: $HOME"
     [[ $HOME ]]
@@ -67,18 +69,14 @@ EOF
 
     # default: no change
     # shellcheck disable=SC2016
-    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run hello -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "/root" ]]
 
     # default: no “/root”
-    ch-image build -t noroot -f - . << 'EOF'
-    FROM alpine:latest
-    RUN rm -rf /root
-EOF
     # shellcheck disable=SC2016
-    run ch-run noroot -- /bin/sh -c 'echo $HOME'
+    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "/" ]]
