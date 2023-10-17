@@ -111,6 +111,31 @@ class Path(pathlib.PosixPath):
       "Return True if I can’t be stored in Git because of my name."
       return self.name.startswith(".git")
 
+   @property
+   def is_root(self):
+      return (str(self) == "/")
+
+   @property
+   def mountpoint(self):
+      """Return the mount point of the filesystem containing me (or, if
+         symlink, the file pointed to)."""
+      # https://stackoverflow.com/a/4453715
+      try:
+         pc = self.resolve(strict=True)
+      except RuntimeError:
+         ch.FATAL("not found, can’t resolve: %s" % self)
+      # Unclear whether ismount() deals correctly with the root directory, so
+      # do the stat(2) stuff ourself.
+      dev_child = pc.stat().st_dev
+      while (not pc.is_root):
+         dev_parent = pc.parent.stat().st_dev
+         if (dev_child != dev_parent):
+            return pc
+         pc = pc.parent
+      # Got all the way up to root without finding a transition, so we’re on
+      # the root filesystem.
+      return Path("/")
+
    @classmethod
    def gzip_set(cls):
       """Set gzip class attribute on first call to file_gzip().
@@ -382,6 +407,22 @@ class Path(pathlib.PosixPath):
                      % (self.name, x.filename, x.strerror))
       else:
          assert False, "unimplemented"
+
+   def setxattr(self, name, value, follow_symlinks=True):
+      if (ch.save_xattrs):
+         try:
+            os.setxattr(self, name, value, follow_symlinks)
+         except OSError as x:
+            if (x.errno == errno.ENOTSUP):  # no OSError subclass
+               ch.WARNING("xattrs not supported on %s, setting --no-xattr"
+                          % (self.mountpoint))
+               ch.save_xattrs = False
+            else:
+               ch.FATAL("can’t set xattr: %s: %s: %s"
+                        % (self, name, x.strerror))
+      if (not ch.save_xattrs):  # not “else” because could have change in “if”
+         ch.DEBUG("xattrs disabled, ignoring: %s: %s" % (self, name))
+         return
 
    def stat_(self, links):
       """An error-checking version of stat(). Note that we cannot simply
