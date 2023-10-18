@@ -113,7 +113,7 @@ cv_dir_squash () {
     # Exclude build cache metadata. 64kiB block size based on Shane's
     # experiments.
     # shellcheck disable=SC2086
-    mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root -pf "$pflist" \
+    quiet_process mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root -pf "$pflist" \
                          -e "$1"/.git -e "$1"/.gitignore -e "$1"/ch/git.pickle
     # Zero the archive's internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
@@ -316,8 +316,8 @@ cv_tar_dir () {
     ex3="./${ex1}"
     VERBOSE "exclude patterns: ${ex1} ${ex2} ${ex3}"
     #shellcheck disable=SC2094,SC2086
-      pv_ -s "$(stat -c%s "$1")" < "$1" \
-    | tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
+      quiet_process pv_ -s "$(stat -c%s "$1")" < "$1" \
+    | quiet_process tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
           --xform 's|^\./||x' --strip-components=$strip_ct \
           --anchored --no-wildcards-match-slash $tar_xattr_args \
           --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"

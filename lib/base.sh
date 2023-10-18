@@ -89,6 +89,20 @@ parse_basic_args () {
     done
 }
 
+# Redirect standard streams (or not) depending on “quiet” level. See table in
+# FAQ.
+quiet_process () {
+    printf "quiet called\n"
+    if [ $quiet -ge 1 ]; then
+        printf "shh I'm being quiet\n"
+        $@ 1>/dev/null
+    fi
+    if [ $quiet -ge 3 ]; then
+        printf "I'm being double-quiet\n"
+        $@ 2>/dev/null
+    fi
+}
+
 # Convert container registry path to filesystem compatible path.
 #
 # NOTE: This is used both to name user-visible stuff like tarballs as well as
