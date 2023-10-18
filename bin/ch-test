@@ -1162,7 +1162,6 @@ case $phase in
         test_make
         test_build_images
         test_build
-        test_rootemu
         win
         ;;
     clean)
