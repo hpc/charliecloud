@@ -69,7 +69,7 @@ EOF
 
     # default: no change
     # shellcheck disable=SC2016
-    run ch-run "${ch_imgdir}"/quick -- /bin/sh -c 'echo $HOME'
+    run ch-run quick -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "/root" ]]
