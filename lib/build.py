@@ -206,7 +206,7 @@ def main(cli_):
            % (ml.instruction_total_ct, ml.inst_prev.image))
    # FIXME: remove when we’re done encouraging people to use the build cache.
    if (isinstance(bu.cache, bu.Disabled_Cache)):
-      ch.INFO("build slow? consider enabling the new build cache",
+      ch.INFO("build slow? consider enabling the build cache",
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
 
 

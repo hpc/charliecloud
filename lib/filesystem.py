@@ -39,6 +39,10 @@ def copy(src, dst, follow_symlinks=False):
       shutil.copy2(). See Path.copy() for lots of gory details. Accepts
       follow_symlinks, but the only valid value is False."""
    assert (not follow_symlinks)
+   if (isinstance(src, str)):
+      src = Path(src)
+   if (isinstance(dst, str)):
+      dst = Path(dst)
    src.copy(dst)
 
 
@@ -256,7 +260,7 @@ class Path(pathlib.PosixPath):
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exits on the first error."
-      shutil.copytree(str(self), copy_function=copy, *args, **kwargs)
+      shutil.copytree(self, copy_function=copy, *args, **kwargs)
 
    def disk_bytes(self):
       """Return the number of disk bytes consumed by path. Note this is
