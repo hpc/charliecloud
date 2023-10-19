@@ -276,8 +276,13 @@ class File_Metadata:
       self.large_name = None
       self.xattrs = dict()
       if ch.save_xattrs:
-         for xattr in os.listxattr(self.path_abs, follow_symlinks=False):
-            self.xattrs[xattr] = os.getxattr(self.path_abs, xattr, follow_symlinks=False)
+         for xattr in ch.ossafe(os.listxattr,
+                                "can’t list xattrs: %s" % self.path_abs,
+                                self.path_abs, follow_symlinks=False):
+            self.xattrs[xattr] = \
+               ch.ossafe(os.getxattr, ("can’t get xattr: %s: %s"
+                                       % (self.path_abs, xattr)),
+                         self.path_abs, xattr, follow_symlinks=False)
 
    def __getstate__(self):
       return { a:v for (a,v) in self.__dict__.items()
@@ -481,10 +486,8 @@ class File_Metadata:
          ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
       elif (self.path.git_incompatible_p):
          self.path_abs.git_escaped.rename_(self.path_abs)
-      if ch.save_xattrs:
-         for (xattr, val) in self.xattrs.items():
-            ch.ossafe(os.setxattr, "unable to restore xattr: %s" % xattr,
-                      self.path_abs, xattr, val, follow_symlinks=False)
+      for (xattr, val) in self.xattrs.items():
+         self.path_abs.setxattr(xattr, val, follow_symlinks=False)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
