@@ -664,13 +664,7 @@ test_one_file () {
 
 test_rootemu () {
     if command -v ch-image > /dev/null 2>&1; then
-        if [[ ("$scope" != "full") && (-z "$with_rootemu") ]]; then
-            echo "skipping root emulation tests (full scope only)"
-        else
-            echo 'executing root emulation tests...'
-            bats force-auto.bats
-            echo yes > "$TMP_/rootemu"
-        fi
+        bats force-auto.bats
     elif [[ -n "$1" ]]; then
         printf "error: ch-image required, not found\n"
         exit 1
@@ -1140,7 +1134,14 @@ case $phase in
         test_build
 
         phase=rootemu
-        test_rootemu
+        #test_rootemu
+        if [[ ("$scope" != "full") && (-z "$with_rootemu") ]]; then
+            echo "skipping root emulation tests (full scope only)"
+        else
+            echo 'executing root emulation tests...'
+            test_rootemu
+            echo yes > "$TMP_/rootemu"
+        fi
 
         phase=run
         dir_img_mk
