@@ -540,8 +540,8 @@ class File_Metadata:
    def large_restore(self):
       "Hard link my file to the copy in large file storage."
       target = ch.storage.build_large_path(self.large_name)
-      ch.DEBUG("large file: %s: linking: %s" % (self.path_abs, self.large_name))
-      self.path_abs.hardlink(target)
+      ch.DEBUG("large file: %s: copying: %s" % (self.path_abs, self.large_name))
+      ch.copy2(target, self.path_abs)
 
    def pickle(self):
       (self.image_root // PICKLE_PATH) \
