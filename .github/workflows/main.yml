@@ -392,6 +392,10 @@ jobs:
 
       - name: run test suite (Git WD, standard)
         run: |
+          # We only really need to run the root emulation tests once in CI. We
+          # choose to run it on squash-mount with ch-image and a disabled cache
+          # because this CI test is the fastest valid option, and should have a
+          # minimal impact the runtime of CI as a whole if rootemu is included.
           if [[ (${{ matrix.pack_fmt }} == squash-mount) &&
                 (${{ matrix.builder }} == ch-image) &&
                 (${{ matrix.cache }} == disabled) ]]; then
