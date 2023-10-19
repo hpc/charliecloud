@@ -392,10 +392,18 @@ jobs:
 
       - name: run test suite (Git WD, standard)
         run: |
-          bin/ch-test all
-          # Validate that “rootemu” test phase didn’t run (skipped by default
-          # on standard scope).
-          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
+          if [[ (${{ matrix.pack_fmt }} == squash-mount) &&
+                (${{ matrix.builder }} == ch-image) &&
+                (${{ matrix.cache }} == disabled) ]]; then
+            bin/ch-test --with-rootemu all
+            # Validate that “rootemu” test phase ran.
+            [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = yes ]]
+          else
+            bin/ch-test all
+            # Validate that “rootemu” test phase didn’t run (skipped by default
+            # on standard scope).
+            [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
+          fi
 
       - name: run test suite (installed from Git WD, standard)
         if: ${{    matrix.builder == 'ch-image'
