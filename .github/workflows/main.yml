@@ -400,7 +400,7 @@ jobs:
           if [[ (${{ matrix.pack_fmt }} == squash-mount) &&
                 (${{ matrix.builder }} == ch-image) &&
                 (${{ matrix.cache }} == disabled) ]]; then
-            bin/ch-tet rootemu
+            bin/ch-test rootemu
             # Validate that “rootemu” test phase ran.
             [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = yes ]]
           else
