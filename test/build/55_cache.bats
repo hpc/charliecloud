@@ -906,10 +906,10 @@ EOF
     # Prepare fixtures. These need various manipulating during the test, which
     # is why they’re built here on the fly.
     fixtures=${BATS_TMPDIR}/rsync-cache
-    mkdir -p "$fixtures"
+    rm -Rf --one-file-system "$fixtures"
+    mkdir "$fixtures"
     echo hello > "$fixtures"/file1
-    rm -f "$fixtures"/file1a
-    mkdir -p "$fixtures"/dir1
+    mkdir "$fixtures"/dir1
     touch "$fixtures"/dir1/file1 "$fixtures"/dir1/file2
 
     printf '\n*** Build; all misses.\n\n'
