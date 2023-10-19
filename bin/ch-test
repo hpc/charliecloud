@@ -1131,7 +1131,7 @@ case $phase in
         test_build
 
         phase=rootemu
-        if [["$scope" != "full"]]; then
+        if [[ "$scope" != "full" ]]; then
             echo "skipping root emulation tests (full scope only)"
         else
             echo 'executing root emulation tests...'
