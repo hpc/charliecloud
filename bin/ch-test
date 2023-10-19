@@ -931,9 +931,6 @@ while [[ $# -gt 0 ]]; do
     --version)
         version
         ;;
-    --with-rootemu)
-        with_rootemu="yes"
-        ;;
     *)
         fatal "unrecognized argument: $opt"
         ;;
@@ -1134,8 +1131,7 @@ case $phase in
         test_build
 
         phase=rootemu
-        #test_rootemu
-        if [[ ("$scope" != "full") && (-z "$with_rootemu") ]]; then
+        if [["$scope" != "full"]]; then
             echo "skipping root emulation tests (full scope only)"
         else
             echo 'executing root emulation tests...'
@@ -1206,9 +1202,6 @@ case $phase in
         done
         ;;
     rootemu)
-        # assume that “ch-test rootemu” means the user wants to run root
-        # emulation tests.
-        with_rootemu="yes"
         test_rootemu optional # ch-image optional
         ;;
     run)
