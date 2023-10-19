@@ -212,11 +212,10 @@ class Path(pathlib.PosixPath):
          [2]: https://man7.org/linux/man-pages/man2/copy_file_range.2.html
          [3]: https://elixir.bootlin.com/linux/latest/A/ident/remap_file_range
       """
-      assert (not follow_symlinks)
-      src_st = self.stat_(follow_symlinks=False)
+      src_st = self.stat_(False)
       # dst is not a directory, so parent must be on the same filesystem. We
       # *do* want to follow symlinks on the parent.
-      dst_dev = dst.parent.stat_(follow_symlinks=True).st_dev
+      dst_dev = dst.parent.stat_(True).st_dev
       if (    stat.S_ISREG(src_st.st_mode)
           and src_st.st_dev == dst_dev
           and hasattr(os, "copy_file_range")):
@@ -235,7 +234,7 @@ class Path(pathlib.PosixPath):
             # man page example does.
             remaining = src_st.st_size
             while (remaining > 0):
-               copied = os.copy_file_range(src_fd, dst_fd, sys.maxsize)
+               copied = os.copy_file_range(src_fd, dst_fd, remaining)
                if (copied == 0):
                   ch.FATAL("zero bytes copied: %s -> %s" % (self, dst))
                remaining -= copied
