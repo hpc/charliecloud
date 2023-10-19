@@ -609,10 +609,6 @@ def color_set(color, fp):
    if (fp.isatty()):
       print("\033[" + color, end="", flush=True, file=fp)
 
-def copy2(src, dst, **kwargs):
-   "Wrapper for shutil.copy2() with error checking."
-   ossafe(shutil.copy2, "can’t copy: %s -> %s" % (src, dst), src, dst, **kwargs)
-
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
       (e.g., lark module checked at import time), then complain and exit."""

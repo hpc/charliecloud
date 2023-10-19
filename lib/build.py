@@ -767,7 +767,7 @@ class I_copy(Instruction):
                   dst_path.rmtree()
                else:
                   dst_path.unlink_()
-            ch.copy2(src_path, dst_path, follow_symlinks=False)
+            src_path.copy(dst_path)
 
    def copy_src_file(self, src, dst):
       """Copy file src to dst. src might be a symlink, but dst is a canonical
@@ -789,8 +789,11 @@ class I_copy(Instruction):
       assert (not dst.is_symlink())
       assert (   (dst.exists() and (dst.is_dir() or dst.is_file()))
               or (not dst.exists() and dst.parent.is_dir()))
+      if (dst.is_dir()):
+         dst = dst.parent // src.name
+      src = src.resolve()
       ch.DEBUG("copying named file: %s -> %s" % (src, dst))
-      ch.copy2(src, dst, follow_symlinks=True)
+      src.copy(dst)
 
    def dest_realpath(self, unpack_path, dst):
       """Return the canonicalized version of path dst within (canonical) image

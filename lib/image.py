@@ -396,7 +396,7 @@ class Image:
       else:
          # Copy pulled config file into the image so we still have it.
          path = self.metadata_path // "config.pulled.json"
-         ch.copy2(config_json, path)
+         config_json.copy(path)
          ch.VERBOSE("pulled config path: %s" % path)
          self.metadata_merge_from_config(path.json_from_file("config"))
       self.metadata_save()
