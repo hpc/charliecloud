@@ -60,6 +60,9 @@ EOF
 }
 
 @test "\$HOME" {
+    [[ $CH_TEST_BUILDER != 'none' ]] || skip 'image builder required'
+    LC_ALL=C
+
     scope quick
     echo "host: $HOME"
     [[ $HOME ]]
@@ -67,10 +70,17 @@ EOF
 
     # default: no change
     # shellcheck disable=SC2016
+    run ch-run "${ch_imgdir}"/quick -- /bin/sh -c 'echo $HOME'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = "/root" ]]
+
+    # default: no “/root”
+    # shellcheck disable=SC2016
     run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = "$HOME" ]]
+    [[ $output = "/" ]]
 
     # set $HOME if --home
     # shellcheck disable=SC2016
