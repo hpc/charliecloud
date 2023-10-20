@@ -790,7 +790,7 @@ class I_copy(Instruction):
       assert (   (dst.exists() and (dst.is_dir() or dst.is_file()))
               or (not dst.exists() and dst.parent.is_dir()))
       if (dst.is_dir()):
-         dst = dst.parent // src.name
+         dst //= src.name
       src = src.resolve()
       ch.DEBUG("copying named file: %s -> %s" % (src, dst))
       src.copy(dst)
