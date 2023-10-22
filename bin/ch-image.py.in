@@ -111,8 +111,8 @@ def main():
             { "metavar": "SIZE",
               "type": lambda s: ch.positive(s) * 2**20,  # internal unit: bytes
               "default": ch.positive(
-                 os.environ.get("CH_IMAGE_CACHE_LARGE", 0)) * 2**20,
-              "help": "large file threshold in MiB" }],
+                 os.environ.get("CH_IMAGE_CACHE_LARGE", 4)) * 2**20,
+              "help": "large file threshold in MiB (default: 4)" }],
            [["--debug"],
             { "action": "store_true",
               "help": "add short traceback to fatal error hints" }],

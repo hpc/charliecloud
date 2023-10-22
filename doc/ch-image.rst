@@ -72,9 +72,8 @@ Common options placed before or after the sub-command:
 
   :code:`--cache-large SIZE`
     Set the cache’s large file threshold to :code:`SIZE` MiB, or :code:`0` for
-    no large files, which is the default. This can speed up some builds.
-    **Experimental.** See section :ref:`Large file threshold
-    <ch-image_bu-large>` for details.
+    no large files. The default is 4 MiB. This can speed up some builds. See
+    section :ref:`Large file threshold <ch-image_bu-large>` for details.
 
   :code:`--debug`
     Add a stack trace to fatal error hints. This can also be done by setting
@@ -458,9 +457,9 @@ somewhat like `Git Large File Storage <https://git-lfs.github.com/>`_.
 needed, which is a fast metadata operation that ignores file content.
 
 Option :code:`--cache-large` sets the threshold in MiB; if not set,
-environment variable :code:`CH_IMAGE_CACHE_LARGE` is used; if that is not set
-either, the default value :code:`0` indicates that no files are considered
-large.
+environment variable :code:`CH_IMAGE_CACHE_LARGE` is used. If that is not set
+either, the default value is 4 MiB. (See our `build cache paper
+<https://arxiv.org/abs/2309.00166>`_ for details on why.)
 
 There are two trade-offs. First, large files in any image with the same path,
 mode, size, and mtime (to nanosecond precision if possible) are considered
