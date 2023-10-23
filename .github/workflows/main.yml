@@ -393,21 +393,19 @@ jobs:
       - name: run test suite (Git WD, standard)
         run: |
           bin/ch-test all
-          # We only really need to run the root emulation tests once in CI. We
-          # choose to run it on squash-mount with ch-image and a disabled cache
-          # because this CI test is the fastest valid option, and should have a
-          # minimal impact the runtime of CI as a whole if rootemu is included.
-          if [[ (${{ matrix.pack_fmt }} == squash-mount) &&
-                (${{ matrix.builder }} == ch-image) &&
-                (${{ matrix.cache }} == disabled) ]]; then
-            bin/ch-test rootemu
-            # Validate that “rootemu” test phase ran.
-            [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = yes ]]
-          else
-            # Validate that “rootemu” test phase didn’t run (skipped by default
-            # on standard scope).
-            [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
-          fi
+          # Validate that “rootemu” test phase didn’t run (skipped by default
+          # on standard scope).
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
+
+      - name: run root emulation phase
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
+        run: |
+          # We only really need to run the root emulation tests once in CI.
+          bin/ch-test rootemu
+          # Validate that “rootemu” test phase ran.
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = yes ]]
 
       - name: run test suite (installed from Git WD, standard)
         if: ${{    matrix.builder == 'ch-image'
