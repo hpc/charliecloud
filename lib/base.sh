@@ -92,13 +92,10 @@ parse_basic_args () {
 # Redirect standard streams (or not) depending on “quiet” level. See table in
 # FAQ.
 quiet_process () {
-    printf "quiet called\n"
     if [ $quiet -ge 1 ]; then
-        printf "shh I'm being quiet\n"
         $@ 1>/dev/null
     fi
     if [ $quiet -ge 3 ]; then
-        printf "I'm being double-quiet\n"
         $@ 2>/dev/null
     fi
 }
@@ -208,7 +205,11 @@ fi
 # WARNING: You must pipe in the file because arguments are ignored if this is
 # cat(1). (We also don't want a progress bar if stdin is not a terminal, but
 # pv takes care of that.)
-if command -v pv > /dev/null 2>&1; then
+if [ "$quiet" -ge 1 ]; then
+    pv_ () {
+        : # noop if “--quiet”
+    }
+elif command -v pv > /dev/null 2>&1; then
     pv_ () {
         pv -pteb "$@"
     }
