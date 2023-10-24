@@ -403,6 +403,10 @@ jobs:
                 && matrix.cache == 'enabled' }}
         run: |
           # We only really need to run the root emulation tests once in CI.
+          # ch-image with an enabled cache is required for these unit tests.
+          # Since all CI tests that use ch-image with an enabled cache take
+          # roughly the same amount of time, we arbitrarily chose squash-mount
+          # as the pack format.
           bin/ch-test rootemu
           # Validate that “rootemu” test phase ran.
           [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = yes ]]
