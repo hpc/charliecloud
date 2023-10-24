@@ -20,6 +20,78 @@ This isn’t the last word. Also consider:
   NIST Special Publication 800-190; Souppaya, Morello, and Scarfone 2017.
 
 
+Filesystems
+===========
+
+There are two performance gotchas to be aware of for Charliecloud.
+
+Metadata traffic
+----------------
+
+Directory-format container images and the Charliecloud storage directory often
+contain, and thus Charliecloud must manipulate, a very large number of files.
+For example, after running the test suite, the storage directory contains
+almost 140,000 files. That is, metadata traffic can be quite high.
+
+Such images and the storage directory should be stored on a filesystem with
+reasonable metadata performance. Notably, this *excludes* Lustre, which is
+commonly used for scratch filesystems in HPC; i.e., don’t store these things
+on Lustre. NFS is usually fine, though in general it performs worse than a
+local filesystem.
+
+In contrast, SquashFS images, which encapsulate the image into a single file
+that is mounted using FUSE at runtime, insulate the filesystem from this
+metadata traffic. Images in this format are suitable for any filesystem,
+including Lustre.
+
+.. _best-practices_file-copy:
+
+File copy performance
+---------------------
+
+:code:`ch-image` does a lot of file copying. The bulk of this is copying
+images around in the storage directory. Importantly, this includes :ref:`large
+files <ch-image_bu-large>` stored by the build cache outside its Git
+repository, which by definition hold a lot of data to copy.
+
+Copies are costly both in time (to read, transfer, and write the duplicate
+bytes) and space (to store the bytes). However, with the right Python and
+filesystem, significant optimizations are available. Charliecloud’s internal
+file copies (unfortunately not sub-programs like Git) can take advantage of
+multiple file-copy optimized paths offered by Linux:
+
+1. Copy data in-kernel without passing through user-space. Saves time but not
+   space. All filesystems support this.
+
+2. Copy data server-side without sending it over the network, relevant of
+   course only for network filesystems. Saves time but not space. NFS 4
+   supports this, among others.
+
+3. Copy-on-write via “`reflink
+   <https://blog.ram.rachum.com/post/620335081764077568/symlinks-and-hardlinks-move-over-make-room-for>`_”.
+   The destination file gets a new inode but shares the data extents the
+   source file — i.e., no data are copied! — with extents copied and unshared
+   later if/when are written. Saves potentially a lot of both time and space.
+   BTRFS, XFS, and ZFS support this, among others.
+
+Support of course varies by kernel and filesystem tools version, and we have
+listed only the most common filesystems above. In-kernel filesystem support
+can be checked in the `Linux source code
+<https://elixir.bootlin.com/linux/latest/A/ident/remap_file_range>`_, and ZFS
+has `release notes <https://github.com/openzfs/zfs/releases>`_. Also, paths 2
+and 3 require that source and destination be on the same filesystem.
+
+If available (Python ≥3.8), :code:`ch-image` copies file data with
+:code:`os.copy_file_range()` (`docs
+<https://docs.python.org/3/library/os.html#os.copy_file_range>`_), which wraps
+:code:`copy_file_range(2)` (`man page
+<https://man7.org/linux/man-pages/man2/copy_file_range.2.html>`_). This system
+call copies data between files using the best method available of the three
+above.
+
+Thus, we recommend using a kernel, filesystem, and other tools that support
+path 3 or at least path 2.
+
 Installing your own software
 ============================
 
@@ -36,7 +108,7 @@ Charliecloud container:
    trustworthy image on Docker Hub you can use as a base?
 
 Third-party software via package manager
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+----------------------------------------
 
 This approach is the simplest and fastest way to install stuff in your image.
 The :code:`examples/hello` Dockerfile does this to install the package
@@ -57,9 +129,8 @@ you add an HTTP cache, which is out of scope of this documentation).
    rather troublesome in containers, and we suspect there are bugs we haven’t
    ironed out yet. If you encounter problems, please do file a bug!
 
-
 Third-party software compiled from source
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------------------
 
 Under this method, one uses :code:`RUN` commands to fetch the desired software
 using :code:`curl` or :code:`wget`, compile it, and install. Our example does
@@ -104,7 +175,7 @@ So what is going on here?
    :code:`/usr` rather than :code:`/usr/local`.
 
 Your software stored in the image
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------
 
 This method covers software provided by you that is included in the image.
 This is recommended when your software is relatively stable or is not easily
@@ -154,7 +225,7 @@ Once the image is built, we can see the results. (Install the image into
   -rwxrwx--- 1 charlie charlie  441 Aug  5 22:37 test.sh
 
 Your software stored on the host
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------------
 
 This method leaves your software on the host but compiles it in the image.
 This is recommended when your software is volatile or each image user needs a
@@ -187,4 +258,5 @@ A common use case is to leave a container shell open in one terminal for
 building, and then run using a separate container invoked from a different
 terminal.
 
-..  LocalWords:  userguide Gruening Souppaya Morello Scarfone openmpi
+
+..  LocalWords:  userguide Gruening Souppaya Morello Scarfone openmpi nist

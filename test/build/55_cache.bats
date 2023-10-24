@@ -1326,7 +1326,7 @@ EOF
     [[ -z $output ]]
 
     echo
-    echo '*** threshold = 4'
+    echo '*** threshold = 5'
     ch-image build-cache --reset
     echo "$df" | ch-image build --cache-large=5 -t tmpimg -
     run ls "$CH_IMAGE_STORAGE"/bularge
@@ -1337,7 +1337,7 @@ b2dbc2a2bb35d6d0d5590aedc122cab6%bigfile5
 EOF
 
     echo
-    echo '*** threshold = 3, rebuild'
+    echo '*** threshold = 4, rebuild'
     echo "$df" | ch-image build --rebuild --cache-large=4 -t tmpimg -
     run ls "$CH_IMAGE_STORAGE"/bularge
     echo "$output"
@@ -1349,7 +1349,7 @@ b2dbc2a2bb35d6d0d5590aedc122cab6%bigfile5
 EOF
 
     echo
-    echo '*** threshold = 3, reset'
+    echo '*** threshold = 4, reset'
     ch-image build-cache --reset
     echo "$df" | ch-image build --rebuild --cache-large=4 -t tmpimg -
     run ls "$CH_IMAGE_STORAGE"/bularge
