@@ -118,7 +118,7 @@ cv_dir_squash () {
     # Zero the archive's internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
     # CentOS 7 comes with 4.2.  [1]: https://dr-emann.github.io/squashfs/
-    printf '\x00\x00\x00\x00' | dd of="$2" bs=1 count=4 seek=8 conv=notrunc
+    printf '\x00\x00\x00\x00' | quiet_process dd of="$2" bs=1 count=4 seek=8 conv=notrunc status=none
     rm "$pflist"
 }
 

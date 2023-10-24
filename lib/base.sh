@@ -95,7 +95,7 @@ quiet_process () {
     if [ $quiet -ge 1 ]; then
         $@ 1>/dev/null
     fi
-    if [ $quiet -ge 3 ]; then
+    if [ $quiet -ge 2 ]; then
         $@ 2>/dev/null
     fi
 }
