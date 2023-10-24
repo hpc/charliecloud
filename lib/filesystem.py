@@ -365,7 +365,7 @@ class Path(pathlib.PosixPath):
 
    def joinpath_posix(self, right):
       # This method is a hot spot, so the hairiness is due to optimizations.
-      # It runs about 30% faster than the naïve verson referenced below.
+      # It runs about 30% faster than the naïve version referenced below.
       if (isinstance(right, Path)):
          right_parts = right._parts
          ts_p = right.trailing_slash_p
