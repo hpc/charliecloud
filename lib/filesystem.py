@@ -245,18 +245,20 @@ class Path(pathlib.PosixPath):
             os.close(src_fd)
             os.close(dst_fd)
          except OSError as x:
-            FATAL("can’t copy (fast): %s -> %s: %s" % (self, dst, x.strerror))
+            ch.FATAL("can’t copy data (fast): %s -> %s: %s"
+                     % (self, dst, x.strerror))
       else:
          # Slow path.
          try:
             shutil.copyfile(self, dst, follow_symlinks=False)
          except OSError as x:
-            FATAL("can’t copy (slow): %s -> %s: %s" % (self, dst, x.strerror))
+            ch.FATAL("can’t copy data (slow): %s -> %s: %s"
+                     % (self, dst, x.strerror))
       try:
          # Metadata.
          shutil.copystat(self, dst, follow_symlinks=False)
       except OSError as x:
-         FATAL("can’t copy metadata: %s -> %s" % (self, dst, x.strerror))
+         ch.FATAL("can’t copy metadata: %s -> %s" % (self, dst, x.strerror))
 
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exits on the first error."
