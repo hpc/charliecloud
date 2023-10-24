@@ -74,13 +74,17 @@ allows trading off thoroughness versus time.
     images directory produced by a successful :code:`build` phase, which can
     be copied from the build system if it’s not also the run system.
 
+  :code:`rootemu`
+    Test the root emulation modes (:code:`seccomp`, :code:`fakeroot`, and
+    :code:`none`) on various linux distributions.
+
   :code:`examples`
     Example applications. Requires an unpacked images directory produced by a
     successful :code:`run` phase.
 
   :code:`all`
-    Execute phases :code:`build`, :code:`run`, and :code:`examples`, in that
-    order.
+    Execute phases :code:`build`, :code:`rootemu`, :code:`run`, and
+    :code:`examples`, in that order.
 
   :code:`mk-perm-dirs`
     Create the filesystem permissions directories. Requires

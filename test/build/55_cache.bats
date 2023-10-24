@@ -1238,6 +1238,7 @@ EOF
 
 
 @test "${tag}: ignore patterns" {
+    # fails unless “__ch-test_ignore__” is included in the global gitignore file.
        git check-ignore -q __ch-test_ignore__ \
     || pedantic_fail 'global ignore not configured'
 
