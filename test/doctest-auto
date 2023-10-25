@@ -25,7 +25,7 @@ for f in ../lib/*.py; do
     fi
 cat <<EOF
 
-@test 'doctest: $m" {
+@test 'doctest: $m' {
     ./doctest $m
 }
 EOF
