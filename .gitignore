@@ -28,6 +28,7 @@ a.out
 /lib/version.txt
 /test/build/61_force-auto.bats
 /test/docs-sane
+/test/doctest
 /test/fixtures/symlink-to-tmp
 /test/force-auto
 /test/make-perms-test

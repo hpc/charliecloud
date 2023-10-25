@@ -18,7 +18,8 @@ install-exec-hook:
 	         $(DESTDIR)@bindir@/ch-image \
 	         $(DESTDIR)@bindir@/ch-run-oci \
 	         $(DESTDIR)@bindir@/ch-test \
-	         $(DESTDIR)@libdir@/charliecloud/base.sh; \
+	         $(DESTDIR)@libdir@/charliecloud/base.sh \
+	         $(DESTDIR)@libexecdir@/charliecloud/doctest; \
 	do \
 	  sed -Ei -e 's|^(ch_lib ?= ?).+/lib"?$$|\1"@libdir@/charliecloud"|' \
 	          -e 's|^(CHTEST_DIR=).+$$|\1@libexecdir@/charliecloud|' \

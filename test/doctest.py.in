@@ -1,0 +1,82 @@
+#!%PYTHON_SHEBANG%
+
+import doctest
+import fnmatch
+import importlib.util
+import os
+import re
+import sys
+
+usage = """\
+Usage:
+
+  $ test/doctest MODULE [OBJECT_REGEX]
+
+Run doctests in Charliecloud Python MODULE (in lib/). If OBJECT_REGEX given,
+only fun tests on objects with names (excluding the module name) matching that
+regular expression (default all objects). Exits unsuccessfully on first
+failure."""
+
+
+# Command line arguments.
+
+try:
+   module_name = sys.argv[1]
+except IndexError:
+   module_name = "--help"
+try:
+   object_re = sys.argv[2]
+except IndexError:
+   object_re = ".*"
+if (module_name in ("-h", "--help", "-?")):
+   print(usage, file=sys.stderr)
+   sys.exit(1)  # help message is not a successful test
+
+
+# Import target module.
+
+ch_lib = os.path.dirname(os.path.abspath(__file__)) + "/../lib"
+sys.path.insert(0, ch_lib)
+import charliecloud as ch  # avoid circular import problems
+print("imported %s from %s" % (ch.__name__, ch.__file__))
+module = importlib.import_module(module_name)
+print("imported %s from %s" % (module.__name__, module.__file__))
+
+
+# Locate tests to run.
+# see: https://github.com/python/cpython/blob/73a003f/Lib/doctest.py#L1905
+
+tests_all = doctest.DocTestFinder().find(module)
+for test in tests_all:
+   test.name_short = re.sub(r"^[a-z_]+\.", "", test.name)
+tests_nonempty = [i for i in tests_all if len(i.examples) > 0]
+tests = [i for i in tests_nonempty if re.search(object_re, i.name_short)]
+print("will run %d/%d tests" % (len(tests), len(tests_nonempty)))
+
+
+# Run tests.
+
+out = ""
+def out_save(text):
+   global out
+   out += text
+runner = doctest.DocTestRunner(optionflags=(  doctest.DONT_ACCEPT_TRUE_FOR_1
+                                            | doctest.ELLIPSIS))
+for test in tests:
+   print("%s (%d examples) ... " % (test.name_short, len(test.examples)),
+         end="")
+   out = ""
+   results = runner.run(test, out=out_save)
+   assert (results.attempted == len(test.examples))
+   if (results.failed == 0):
+      print("ok")
+   else:
+      print("%d failed" % results.failed)
+      print(out)
+      print("big L, stopping tests")
+      sys.exit(1)
+
+
+# Summarize.
+
+print("all tests passed")
