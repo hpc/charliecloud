@@ -119,8 +119,9 @@ FILENAME_MAX_CHARS = 192
 # takes over.
 HTTP_CHUNK_SIZE = 256 * 1024
 
-# Minimum Python version. NOTE: Keep in sync with configure.ac.
+# Minimum versions. NOTE: Keep in sync with configure.ac.
 PYTHON_MIN = (3,6)
+RSYNC_MIN = (3,1,0)
 
 
 ## Globals ##

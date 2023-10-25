@@ -66,6 +66,7 @@ LINE_CHUNK: /[^\\\n]+|(\\(?![ \t]+\n))+/
 
 HEX_STRING: /[0-9A-Fa-f]+/
 WORD: /[^ \t\n=]/+
+WORDE: /[^ \t\n]/+
 
 IR_PATH_COMPONENT: /[a-z0-9_.-]+/
 
@@ -94,7 +95,7 @@ start: dockerfile
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( arg_first | directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( arg | copy | env | from_ | label | run | shell | workdir | uns_forever | uns_yet )
+?instruction: _WS? ( arg | copy | env | from_ | label | rsync | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
@@ -127,6 +128,8 @@ label_space: WORD _WS _line
 label_equalses: label_equals ( _WS label_equals )*
 label_equals: WORD "=" ( WORD | STRING_QUOTED )
 
+rsync: ( "RSYNC"i | "NSYNC"i ) ( _WS option_plus )? _WS WORDE ( _WS WORDE )+ _NEWLINES
+
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
 run_shell: _line
@@ -145,7 +148,9 @@ UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "ONBUILD"i )
 
 option: "--" OPTION_KEY "=" OPTION_VALUE
 option_keypair: "--" OPTION_KEY "=" OPTION_VAR "=" OPTION_VALUE
+option_plus: "+" OPTION_LETTER
 OPTION_KEY: /[a-z]+/
+OPTION_LETTER: /[a-z]/
 OPTION_VALUE: /[^= \t\n]+/
 OPTION_VAR: /[a-z]+/
 

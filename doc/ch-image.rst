@@ -572,10 +572,12 @@ Synopsis
 Description
 -----------
 
-Uses :code:`ch-run -w -u0 -g0 --no-passwd --unsafe` to execute :code:`RUN`
-instructions. Note that :code:`FROM` implicitly pulls the base image if
-needed, so you may want to read about the :code:`pull` subcommand below as
-well.
+See below for differences with other Dockerfile interpreters. Charliecloud
+supports an extended instruction (:code:`RSYNC`), a few other instructions
+behave slightly differently, and a few are ignored.
+
+Note that :code:`FROM` implicitly pulls the base image if needed, so you may
+want to read about the :code:`pull` subcommand below as well.
 
 Required argument:
 
@@ -656,6 +658,9 @@ Options:
     4. Otherwise (context directory is :code:`/`): use :code:`root`.
 
     If no colon present in the name, append :code:`:latest`.
+
+Uses :code:`ch-run -w -u0 -g0 --no-passwd --unsafe` to execute :code:`RUN`
+instructions.
 
 Privilege model
 ---------------
@@ -798,8 +803,8 @@ filter and has no knowledge of which instructions actually used the
 intercepted system calls. Therefore, the printed “instructions modified”
 number is only a count of instructions with a hook applied as described above.
 
-:code:`RUN` instruction
-~~~~~~~~~~~~~~~~~~~~~~~
+:code:`RUN`  logging
+~~~~~~~~~~~~~~~~~~~~
 
 In terminal output, image metadata, and the build cache, the :code:`RUN`
 instruction is always logged as :code:`RUN.S`, :code:`RUN.F`, or :code:`RUN.N`.
@@ -808,9 +813,8 @@ during the build in which the instruction was executed. :code:`RUN.S` indicates
 :code:`seccomp`, :code:`RUN.F` indicates :code:`fakeroot`, and :code:`RUN.N`
 indicates that neither form of root emulation was used (:code:`--force=none`).
 
-
-Compatibility with other Dockerfile interpreters
-------------------------------------------------
+Compatibility and behavior differences
+--------------------------------------
 
 :code:`ch-image` is an independent implementation and shares no code with
 other Dockerfile interpreters. It uses a formal Dockerfile parsing grammar
@@ -845,8 +849,9 @@ Context directory
 
 The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
-directly from storage like any other local process would. However, you still
-can’t access anything outside the context directory.
+directly from storage like any other local process would (i.e., it is
+reasonable use :code:`/` for the context). However, you still can’t
+access anything outside the context directory.
 
 Variable substitution
 ~~~~~~~~~~~~~~~~~~~~~
@@ -990,8 +995,8 @@ Features we do not plan to support
   unprivileged processes.
 
 * :code:`HEALTHCHECK`: This instruction’s main use case is monitoring server
-  processes rather than applications. Also, implementing it requires a
-  container supervisor daemon, which we have no plans to add.
+  processes rather than applications. Also, it requires a container supervisor
+  daemon, which we have no plans to add.
 
 * :code:`MAINTAINER` is deprecated.
 
@@ -1000,10 +1005,659 @@ Features we do not plan to support
 
 * :code:`USER` does not make sense for unprivileged builds.
 
-* :code:`VOLUME`: This instruction is not currently supported. Charliecloud
+* :code:`VOLUME`: Charliecloud
   has good support for bind mounts; we anticipate that it will continue to
   focus on that and will not introduce the volume management features that
   Docker has.
+
+.. _ch-image_rsync:
+
+:code:`RSYNC` (Dockerfile extension)
+------------------------------------
+
+.. warning::
+
+   This instruction is experimental and may change or be removed.
+
+Overview
+~~~~~~~~
+
+Copying files is often simple but has numerous difficult corner cases, e.g.
+when dealing with symbolic or hard links. The standard instruction
+:code:`COPY` deals with many of these corner cases differently from other UNIX
+utilities, lacks complete documentation, and behaves inconsistently between
+different Dockerfile interpreters (e.g., Docker’s legacy builder vs.
+BuildKit), as detailed above. On the other hand, :code:`rsync(1)` is an
+extremely capable, widely used file copy tool, with detailed options to
+specify behavior and 25 years of history dealing with weirdness.
+
+:code:`RSYNC` (also spelled :code:`NSYNC`) is a Charliecloud extension that
+gives copying behavior identical to :code:`rsync(1)`. In fact, Charliecloud’s
+current implementation literally calls the host’s :code:`rsync(1)` to do the
+copy, though this may change in the future. There is no list form of
+:code:`RSYNC`.
+
+The two key usage challenges are trailing slashes on paths and symlink
+handling. In particular, the default symlink handling seemed reasonable to us,
+but you may want something different. See the arguments and examples below.
+Importantly, :code:`COPY` is not any less fraught, and you have no choice
+about what to do with symlinks.
+
+
+Arguments
+~~~~~~~~~
+
+:code:`RSYNC` takes the same arguments as :code:`rsync(1)`, so refer to its
+`man page <https://man7.org/linux/man-pages/man1/rsync.1.html>`_ for a
+detailed explanation of all the options (with possible emphasis on its
+`symlink options
+<https://man7.org/linux/man-pages/man1/rsync.1.html#SYMBOLIC_LINKS>`_).
+Sources are relative to the context directory even if they look absolute with
+a leading slash. Any globbed sources are processed by :code:`ch-image(1)`
+using Python rules, i.e., :code:`rsync(1)` sees the expanded sources with no
+wildcards. Relative destinations are relative to the image’s current working
+directory, while absolute destinations refer to the image’s root.
+
+For arguments that read input from a file (e.g. :code:`--exclude-from` or
+:code:`--files-from`), relative paths are relative to the context directory,
+absolute paths refer to the image root, and :code:`-` (standard input) is an
+error.
+
+For example,
+
+.. code-block:: docker
+
+   WORKDIR /foo
+   RSYNC --foo src1 src2 dst
+
+is translated to (the equivalent of)::
+
+   $ mkdir -p /foo
+   $ rsync -@=-1 -AHSXpr --info=progress2 -l --safe-links \
+           --foo /context/src1 /context/src2 /storage/imgroot/foo/dst2
+
+Note the extensive default arguments to :code:`rsync(1)`. :code:`RSYNC` takes
+a single instruction option beginning with :code:`+` (plus) that is shorthand
+for a group of :code:`rsync(1)` options. This single option is one of:
+
+  :code:`+m`
+    Preserves metadata and directory structure. Symlinks are skipped *with a
+    warning*. Equivalent to all of:
+
+    * :code:`-@=-1`: use nanosecond precision when comparing timestamps.
+    * :code:`-A`: preserve ACLs.
+    * :code:`-H`: preserve hard link groups.
+    * :code:`-S`: preserve file sparseness when possible.
+    * :code:`-X`: preserve xattrs in :code:`user.*` namespace.
+    * :code:`-p`: preserve permissions.
+    * :code:`-r`: recurse into directories.
+    * :code:`--info=progress2` (only if stderr is a terminal): show progress
+      meter (note `subtleties in interpretation
+      <https://unix.stackexchange.com/questions/215271>`_).
+
+  :code:`+l` (default)
+    Like :code:`+u`, but *silently skips* “unsafe” symlinks whose target is
+    outside the top-of-transfer directory. Preserves:
+
+    * Metadata.
+
+    * Directory structure.
+
+    * Symlinks, if a link’s target is within the “top-of-transfer directory”.
+      This is not the context directory and often not the source either. Also,
+      this creates broken symlinks if the target is not within the source but
+      is within the top-of-transfer. See examples below.
+
+    Equivalent to the :code:`rsync(1)` options listed for :code:`+m` plus
+    :code:`--links` (copy symlinks as symlinks unless otherwise specified) and
+    :code:`--safe-links` (silently skip unsafe symlinks).
+
+  :code:`+u`
+    Like :code:`+l`, but *replaces* with their target “unsafe” symlinks whose
+    target is outside the top-of-transfer directory, and thus *can copy data
+    outside the context directory into the image*. Preserves:
+
+    * Metadata.
+
+    * Directory structure.
+
+    * Symlinks, if a link’s target is within the “top-of-transfer directory”.
+      This is not the context directory and often not the source either. Also,
+      this creates broken symlinks if the target is not within the source but
+      is within the top-of-transfer. See examples below.
+
+    Equivalent to the :code:`rsync(1)` options listed for :code:`+m` plus
+    :code:`--links` (copy symlinks as symlinks unless otherwise specified) and
+    :code:`--copy-unsafe-links` (copy the target of unsafe symlinks).
+
+  :code:`+z`
+    No default arguments. Directories will not be descended, no metadata will
+    be preserved, and both hard and symbolic links will be ignored, except as
+    otherwise specified by :code:`rsync(1)` options starting with a hyphen.
+    (Note that :code:`-a`/:code:`--archive` is discouraged because it omits
+    some metadata and handles symlinks inappropriately for containers.)
+
+.. note::
+
+   :code:`rsync(1)` supports a configuration file :code:`~/.popt` that alters
+   its command line processing. Currently, this configuration is respected for
+   :code:`RSYNC` arguments, but that may change without notice.
+
+Disallowed :code:`rsync(1)` features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A small number of :code:`rsync(1)` features are actively disallowed:
+
+  1. :code:`rsync:` and :code:`ssh:` transports are an error. Charliecloud
+     needs access to the entire input to compute cache hit or miss, and these
+     transports make that impossible. It is possible these will become
+     available in the future (please let us know if that is your use case!).
+     For now, the workaround is to install :code:`rsync(1)` in the image and
+     use it in a :code:`RUN` instruction, though only the instruction text
+     will be considered for the cache.
+
+  2. Option arguments must be delimited with :code:`=` (equals). For example,
+     to set the block size to 4 MiB, you must say :code:`--block-size=4M` or
+     :code:`-B=4M`. :code:`-B4M` will be interpreted as the three arguments
+     :code:`-B`, :code:`-4`, and :code:`-M`; :code:`--block-size 4M` will be
+     interpreted as :code:`--block-size` with no argument and a copy source
+     named :code:`4M`. This is so Charliecloud can process :code:`rsync(1)`
+     options without knowing which ones take an argument.
+
+  3. Invalid :code:`rsync(1)` options:
+
+     :code:`--daemon`
+       Running :code:`rsync(1)` in daemon mode does not make sense for
+       container build.
+
+     :code:`-n`, :code:`--dry-run`
+       This makes the copy a no-op, and Charliecloud may want to use it
+       internally in the future.
+
+     :code:`--remove-source-files`
+       This would let the instruction alter the context directory.
+
+Note that there are likely other flags that don’t make sense and/or cause
+undesirable behavior. We have not characterized this problem.
+
+Build cache
+~~~~~~~~~~~
+
+The instruction is a cache hit if the metadata of all source files is
+unchanged (specifically: filename, file type and permissions, xattrs, size,
+and last modified time). Unlike Docker, Charliecloud does not use file
+contents. This has two implications. First, it is possible to fool the cache
+by manually restoring the last-modified time. Second, :code:`RSYNC` is
+I/O-intensive even when it hits, because it must :code:`stat(2)` every source
+file before checking the cache. However, this is still less I/O than reading
+the file content too.
+
+Notably, Charliecloud’s cache ignores :code:`rsync(1)`’s own internal notion
+of whether anything would be transferred (e.g., :code:`rsync -ni`). This may
+change in the future.
+
+Examples and tutorial
+~~~~~~~~~~~~~~~~~~~~~
+
+All of these examples use the same input, whose content will be introduced
+gradually, using edited output of :code:`ls -oghR` (which is like :code:`ls
+-lhR` but omits user and group). Examples assume a umask of :code:`0007`. The
+Dockerfile instructions listed also assume a preceding:
+
+.. code-block:: docker
+
+   FROM alpine:3.17
+   RUN mkdir /dst
+
+i.e., a simple base image containing a top-level directory :code:`dst`.
+
+Many additional examples are available in the source code in the file
+:code:`test/build/50_rsync.bats`.
+
+We begin by copying regular files. The context directory :code:`ctx` contains,
+in part, two directories containing one regular file each. Note that one of
+these files (:code:`file-basic1`) and one of the directories (:code:`basic1`)
+have strange permissions.
+
+::
+
+   ./ctx:
+   drwx---r-x 2  60 Oct 11 13:20 basic1
+   drwxrwx--- 2  60 Oct 11 13:20 basic2
+
+   ./ctx/basic1:
+   -rw----r-- 1 12 Oct 11 13:20 file-basic1
+
+   ./ctx/basic2:
+   -rw-rw---- 1 12 Oct 11 13:20 file-basic2
+
+The simplest form of :code:`RSYNC` is to copy a single file into a specified
+directory:
+
+.. code-block:: docker
+
+   RSYNC /basic1/file-basic1 /dst
+
+resulting in::
+
+   $ ls -oghR dst
+   dst:
+   -rw----r-- 1 12 Oct 11 13:26 file-basic1
+
+Note that :code:`file-basic1`’s metadata — here its odd permissions — are
+preserved. :code:`1` is the number of hard links to the file, and :code:`12`
+is the file size.
+
+One can also rename the destination by specifying a new file name, and with
+:code:`+z`, not copy metadata (from here on the :code:`ls` command is omitted
+for brevity):
+
+.. code-block:: docker
+
+   RSYNC +z /basic1/file-basic1 /dst/file-basic1_nom
+
+::
+
+   dst:
+   -rw------- 1 12 Sep 21 15:51 file-basic1_nom
+
+A trailing slash on the destination creates a new directory and places the
+source file within:
+
+.. code-block:: docker
+
+   RSYNC /basic1/file-basic1 /dst/new/
+
+::
+
+   dst:
+   drwxrwx--- 1 22 Oct 11 13:26 new
+
+   dst/new:
+   -rw----r-- 1 12 Oct 11 13:26 file-basic1
+
+With multiple source files, the destination trailing slash is optional:
+
+.. code-block:: docker
+
+   RSYNC /basic1/file-basic1 /basic2/file-basic2 /dst/newB
+
+::
+
+   dst:
+   drwxrwx--- 1 44 Oct 11 13:26 newB
+
+   dst/newB:
+   -rw----r-- 1 12 Oct 11 13:26 file-basic1
+   -rw-rw---- 1 12 Oct 11 13:26 file-basic2
+
+For directory sources, the presence or absence of a trailing slash is highly
+significant. Without one, the directory itself is placed in the destination
+(recall that this would rename a source *file*):
+
+.. code-block:: docker
+
+   RSYNC /basic1 /dst/basic1_new
+
+::
+
+   dst:
+   drwxrwx--- 1 12 Oct 11 13:28 basic1_new
+
+   dst/basic1_new:
+   drwx---r-x 1 22 Oct 11 13:28 basic1
+
+   dst/basic1_new/basic1:
+   -rw----r-- 1 12 Oct 11 13:28 file-basic1
+
+A source trailing slash means copy the *contents of* a directory rather than
+the directory itself. Importantly, however, the directory’s metadata is copied
+to the destination directory.
+
+.. code-block:: docker
+
+   RSYNC /basic1/ /dst/basic1_renamed
+
+::
+
+   dst:
+   drwx---r-x 1 22 Oct 11 13:28 basic1_renamed
+
+   dst/basic1_renamed:
+   -rw----r-- 1 12 Oct 11 13:28 file-basic1
+
+One gotcha is that :code:`RSYNC +z` is a no-op if the source is a directory:
+
+.. code-block:: docker
+
+   RSYNC +z /basic1 /dst/basic1_newC
+
+::
+
+   dst:
+
+At least :code:`-r` is needed with :code:`+z` in this case:
+
+.. code-block:: docker
+
+   RSYNC +z -r /basic1/ /dst/basic1_newD
+
+::
+
+   dst:
+   drwx------ 1 22 Oct 11 13:28 basic1_newD
+
+   dst/basic1_newD:
+   -rw------- 1 12 Oct 11 13:28 file-basic1
+
+Multiple source directories can be specified, including with wildcards. This
+example also illustrates that copies files are by default merged with content
+already existing in the image.
+
+.. code-block:: docker
+
+   RUN mkdir /dst/dstC && echo file-dstC > /dst/dstC/file-dstC
+   RSYNC /basic* /dst/dstC
+
+::
+
+   dst:
+   drwxrwx--- 1 42 Oct 11 13:33 dstC
+
+   dst/dstC:
+   drwx---r-x 1 22 Oct 11 13:33 basic1
+   drwxrwx--- 1 22 Oct 11 13:33 basic2
+   -rw-rw---- 1 10 Oct 11 13:33 file-dstC
+
+   dst/dstC/basic1:
+   -rw----r-- 1 12 Oct 11 13:33 file-basic1
+
+   dst/dstC/basic2:
+   -rw-rw---- 1 12 Oct 11 13:33 file-basic2
+
+Trailing slashes can be specified independently for each source:
+
+.. code-block:: docker
+
+   RUN mkdir /dst/dstF && echo file-dstF > /dst/dstF/file-dstF
+   RSYNC /basic1 /basic2/ /dst/dstF
+
+::
+
+   dst:
+   drwxrwx--- 1 52 Oct 11 13:33 dstF
+
+   dst/dstF:
+   drwx---r-x 1 22 Oct 11 13:33 basic1
+   -rw-rw---- 1 12 Oct 11 13:33 file-basic2
+   -rw-rw---- 1 10 Oct 11 13:33 file-dstF
+
+   dst/dstF/basic1:
+   -rw----r-- 1 12 Oct 11 13:33 file-basic1
+
+Bare :code:`/` (i.e., the entire context directory) is considered to have a
+trailing slash:
+
+.. code-block:: docker
+
+   RSYNC / /dst
+
+::
+
+   dst:
+   drwx---r-x 1  22 Oct 11 13:33 basic1
+   drwxrwx--- 1  22 Oct 11 13:33 basic2
+
+   dst/basic1:
+   -rw----r-- 1 12 Oct 11 13:33 file-basic1
+
+   dst/basic2:
+   -rw-rw---- 1 12 Oct 11 13:33 file-basic2
+
+To *replace* (rather than merge with) existing content, use :code:`--delete`.
+Note also that wildcards can be combined with trailing slashes and that the
+directory gets the metadata of the *first* slashed directory.
+
+.. code-block:: docker
+
+   RUN mkdir /dst/dstG && echo file-dstG > /dst/dstG/file-dstG
+   RSYNC --delete /basic*/ /dst/dstG
+
+::
+
+   dst:
+   drwx---r-x 1 44 Oct 11 14:00 dstG
+
+   dst/dstG:
+   -rw----r-- 1 12 Oct 11 14:00 file-basic1
+   -rw-rw---- 1 12 Oct 11 14:00 file-basic2
+
+Symbolic links in the source(s) add significant complexity. Like
+:code:`rsync(1)`, :code:`RSYNC` can do one of three things with a given
+symlink:
+
+1. Ignore it, silently or with a warning.
+
+2. Preserve it: copy as a symlink, with the same target.
+
+3. Dereference it: copy the target instead.
+
+These actions are selected independently for *safe symlinks* and *unsafe
+symlinks*. Safe symlinks are those which point to a target within the *top of
+transfer*, which is the deepest directory in the source path with a trailing
+slash. For example, :code:`/foo/bar`’s top-of-transfer is :code:`/foo`
+(regardless of whether :code:`bar` is a directory or file), while
+:code:`/foo/bar/`’s top-of-transfer is :code:`/foo/bar`.
+
+For the symlink examples, the context contains two sub-directories with a
+variety of symlinks, as well as a sibling file and directory outside the
+context. All of these links are valid on the host. In this listing, the
+absolute path to the parent of the context directory is replaced with
+:code:`/...`.
+
+::
+
+   .:
+   drwxrwx--- 9 200 Oct 11 14:00 ctx
+   drwxrwx--- 2  60 Oct 11 14:00 dir-out
+   -rw-rw---- 1   9 Oct 11 14:00 file-out
+
+   ./ctx:
+   drwxrwx--- 3 320 Oct 11 14:00 sym1
+
+   ./ctx/sym1:
+   lrwxrwxrwx 1 13 Oct 11 14:00 dir-out_rel -> ../../dir-out
+   drwxrwx--- 2 60 Oct 11 14:00 dir-sym1
+   lrwxrwxrwx 1  8 Oct 11 14:00 dir-sym1_direct -> dir-sym1
+   lrwxrwxrwx 1 10 Oct 11 14:00 dir-top_rel -> ../dir-top
+   lrwxrwxrwx 1 47 Oct 11 14:00 file-out_abs -> /.../file-out
+   lrwxrwxrwx 1 14 Oct 11 14:00 file-out_rel -> ../../file-out
+   -rw-rw---- 1 10 Oct 11 14:00 file-sym1
+   lrwxrwxrwx 1 57 Oct 11 14:00 file-sym1_abs -> /.../ctx/sym1/file-sym1
+   lrwxrwxrwx 1  9 Oct 11 14:00 file-sym1_direct -> file-sym1
+   lrwxrwxrwx 1 17 Oct 11 14:00 file-sym1_upover -> ../sym1/file-sym1
+   lrwxrwxrwx 1 51 Oct 11 14:00 file-top_abs -> /.../ctx/file-top
+   lrwxrwxrwx 1 11 Oct 11 14:00 file-top_rel -> ../file-top
+
+   ./ctx/sym1/dir-sym1:
+   -rw-rw---- 1 14 Oct 11 14:00 dir-sym1.file
+
+   ./dir-out:
+   -rw-rw---- 1 13 Oct 11 14:00 dir-out.file
+
+By default, safe symlinks are preserved while unsafe symlinks are silently
+ignored:
+
+.. code-block:: docker
+
+   RSYNC /sym1 /dst
+
+::
+
+   dst:
+   drwxrwx--- 1 206 Oct 11 17:10 sym1
+
+   dst/sym1:
+   drwxrwx--- 1 26 Oct 11 17:10 dir-sym1
+   lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -> dir-sym1
+   lrwxrwxrwx 1 10 Oct 11 17:10 dir-top_rel -> ../dir-top
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1
+   lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -> file-sym1
+   lrwxrwxrwx 1 17 Oct 11 17:10 file-sym1_upover -> ../sym1/file-sym1
+   lrwxrwxrwx 1 17 Oct 11 17:10 file-sym2_upover -> ../sym2/file-sym2
+   lrwxrwxrwx 1 11 Oct 11 17:10 file-top_rel -> ../file-top
+
+   dst/sym1/dir-sym1:
+   -rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file
+
+The source files have four rough fates:
+
+1. Regular files and directories (:code:`file-sym1` and :code:`dir-sym1`).
+   These are copied into the image unchanged, including metadata.
+
+2. Safe symlinks, now broken. This is one of the gotchas of :code:`RSYNC`’s
+   top-of-transfer directory (here host path :code:`./ctx`, image path
+   :code:`/`) differing from the source directory (:code:`./ctx/sym1`,
+   :code:`/sym1`), because the latter lacks a trailing slash.
+   :code:`dir-top_rel`, :code:`file-sym2_upover`, and :code:`file-top_rel` all
+   ascend only as high as :code:`./ctx` (host path, :code:`/` image) before
+   re-descending. This is within the top-of-transfer, so the symlinks are safe
+   and thus copied unchanged, but their targets were not included in the copy.
+
+3. Safe symlinks, still valid.
+
+   1. :code:`dir-sym1_direct` and :code:`file-sym1_direct` point directly to
+      files in the same directory.
+
+   2. :code:`dir-sym1_upover` and :code:`file-sym1_upover` point to files in
+      the same directory, but by first ascending into their parent — within
+      the top-of-transfer, so they are safe — and then re-descending. If
+      :code:`sym1` were renamed during the copy, these links would break.
+
+4. Unsafe symlinks, which are ignored by the copy and do not appear in the
+   image.
+
+   1. Absolute symlinks are always unsafe (:code:`*_abs`).
+
+   2. :code:`dir-out_rel` and :code:`file-out_rel` are relative symlinks that
+      ascend above the top-of-transfer, in this case to targets outside the
+      context, and are thus unsafe.
+
+The top-of-transfer can be changed to :code:`sym1` with a trailing slash. This
+also adds :code:`sym1` to the destination so the resulting directory structure
+is the same.
+
+.. code-block:: docker
+
+   RSYNC /sym1/ /dst/sym1
+
+::
+
+   dst:
+   drwxrwx--- 1 96 Oct 11 17:10 sym1
+
+   dst/sym1:
+   drwxrwx--- 1 26 Oct 11 17:10 dir-sym1
+   lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -> dir-sym1
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1
+   lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -> file-sym1
+
+   dst/sym1/dir-sym1:
+   -rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file
+
+:code:`*_upover` and :code:`*-out_rel` are now unsafe and replaced with their
+targets.
+
+Another common use case is to follow unsafe symlinks and copy their targets in
+place of the links. This is accomplished with :code:`+u`:
+
+.. code-block:: docker
+
+   RSYNC +u /sym1/ /dst/sym1
+
+::
+
+   dst:
+   drwxrwx--- 1 352 Oct 11 17:10 sym1
+
+   dst/sym1:
+   drwxrwx--- 1 24 Oct 11 17:10 dir-out_rel
+   drwxrwx--- 1 26 Oct 11 17:10 dir-sym1
+   lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -> dir-sym1
+   drwxrwx--- 1 24 Oct 11 17:10 dir-top_rel
+   -rw-rw---- 1  9 Oct 11 17:10 file-out_abs
+   -rw-rw---- 1  9 Oct 11 17:10 file-out_rel
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1_abs
+   lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -> file-sym1
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1_upover
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym2_abs
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym2_upover
+   -rw-rw---- 1  9 Oct 11 17:10 file-top_abs
+   -rw-rw---- 1  9 Oct 11 17:10 file-top_rel
+
+   dst/sym1/dir-out_rel:
+   -rw-rw---- 1 13 Oct 11 17:10 dir-out.file
+
+   dst/sym1/dir-sym1:
+   -rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file
+
+   dst/sym1/dir-top_rel:
+   -rw-rw---- 1 13 Oct 11 17:10 dir-top.file
+
+Now all the unsafe symlinks noted above are present in the image, but they
+have changed to the normal files and directories pointed to.
+
+.. warning::
+
+   This feature lets you copy files outside the context into the image, unlike
+   other container builders where :code:`COPY` can never access anything
+   outside the context.
+
+The sources themselves, if symlinks, do not get special treatment:
+
+.. code-block:: docker
+
+   RSYNC /sym1/file-sym1_direct /sym1/file-sym1_upover /dst
+
+::
+
+   dst:
+   lrwxrwxrwx 1 9 Oct 11 17:10 file-sym1_direct -> file-sym1
+
+Note that :code:`file-sym1_upover` does not appear in the image, despite being
+named explicitly in the instruction, because it is an unsafe symlink.
+
+If the *destination* is a symlink to a file, and the source is a file, the
+link is replaced and the target is unchanged. (If the source is a directory,
+that is an error.)
+
+.. code-block:: docker
+
+   RUN touch /dst/file-dst && ln -s file-dst /dst/file-dst_direct
+   RSYNC /file-top /dst/file-dst_direct
+
+::
+
+   dst:
+   -rw-rw---- 1 0 Oct 11 17:42 file-dst
+   -rw-rw---- 1 9 Oct 11 17:42 file-dst_direct
+
+If the destination is a symlink to a directory, the link is followed:
+
+.. code-block:: docker
+
+    RUN mkdir /dst/dir-dst && ln -s dir-dst /dst/dir-dst_direct
+    RSYNC /file-top /dst/dir-dst_direct
+
+::
+
+   dst:
+   drwxrwx--- 1 16 Oct 11 17:50 dir-dst
+   lrwxrwxrwx 1  7 Oct 11 17:50 dir-dst_direct -> dir-dst
+
+   dst/dir-dst:
+   -rw-rw---- 1 9 Oct 11 17:50 file-top
 
 Examples
 --------
@@ -1440,4 +2094,6 @@ Environment variables
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc bae
 ..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
-..  LocalWords:  pstats gprof chofile cffd cacdb ARGs
+..  LocalWords:  pstats gprof chofile cffd cacdb ARGs NSYNC dst imgroot popt
+..  LocalWords:  globbed ni AHSXpr drwxrwx ctx sym nom newB newC newD dstC
+..  LocalWords:  dstB dstF dstG upover drwx

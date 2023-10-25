@@ -36,6 +36,21 @@ try:
 except ImportError:
    pass
 
+# Monkey-patch RSYNC keyword into Pygments. Ignore any problems. print()
+# statements here show up in the make(1) chatter.
+#
+# See: https://github.com/pygments/pygments/blob/e2cb7c9/pygments/lexers/configs.py#L667
+try:
+   import pygments.lexers.configs as plc
+   import re
+   for (i, tok) in enumerate(plc.DockerLexer.tokens["root"]):
+      m = re.search(r"^(.*COPY.*)\)\)$", tok[0])
+      if (m is not None):
+         re_new = m[1] + "|RSYNC))"
+         plc.DockerLexer.tokens["root"][i] = (re_new, tok[1])
+except Exception:
+   pass
+
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
 
