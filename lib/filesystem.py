@@ -8,6 +8,7 @@ import re
 import pprint
 import shutil
 import stat
+import struct
 import tarfile
 
 import charliecloud as ch
@@ -35,45 +36,63 @@ storage_lock = True
 ## Classes ##
 
 class Path(pathlib.PosixPath):
-   """Stock Path objects have the very weird property that appending an
-      *absolute* path to an existing path ignores the left operand, leaving
-      only the absolute right operand:
+   """Filesystem paths with two important differences from the stock Path:
 
-        >>> import pathlib
-        >>> a = pathlib.Path("/foo/bar")
-        >>> a.joinpath("baz")
-        PosixPath('/foo/bar/baz')
-        >>> a.joinpath("/baz")
-        PosixPath('/baz')
+      1. This Path remembers whether a trailing slash is present, and appends
+         it when str() or repr(). Note that while Path("/") is considered
+         internally *not* to have a trailing slash, when stringified (as "/")
+         and passed to rsync(1) on its command line, rsync(1) *does* interpret
+         it as trailing-slashed.
 
-      This is contrary to long-standing UNIX/POSIX, where extra slashes in a
-      path are ignored, e.g. the path "foo//bar" is equivalent to "foo/bar".
-      It seems to be inherited from os.path.join().
+      2. Stock Path objects have the very weird property that appending an
+         absolute path to an existing path ignores the left operand, leaving
+         only the absolute right operand:
 
-      Even with the relatively limited use of Path objects so far, this has
-      caused quite a few bugs. IMO it’s too difficult and error-prone to
-      manually manage whether paths are absolute or relative. Thus, this
-      subclass introduces a new operator "//" which does the right thing,
-      i.e., if the right operand is absolute, that fact is ignored. E.g.:
+           >>> import pathlib
+           >>> a = pathlib.Path("/foo/bar")
+           >>> a.joinpath("baz")
+           PosixPath('/foo/bar/baz')
+           >>> a.joinpath("/baz")
+           PosixPath('/baz')
 
-        >>> a = Path("/foo/bar")
-        >>> a.joinpath_posix("baz")
-        Path('/foo/bar/baz')
-        >>> a.joinpath_posix("/baz")
-        Path('/foo/bar/baz')
-        >>> a // "/baz"
-        Path('/foo/bar/baz')
-        >>> "/baz" // a
-        Path('/baz/foo/bar')
+        This is contrary to long-standing UNIX/POSIX, where extra slashes in a
+        path are ignored, e.g. the path "foo//bar" is equivalent to "foo/bar".
+        It seems to be inherited from os.path.join().
 
-      We introduce a new operator because it seemed like too subtle a change
-      to the existing operator "/" (which we disable to avoid getting burned
-      here in Charliecloud). An alternative was "+" like strings, but that led
-      to silently wrong results when the paths *were* strings (components
-      concatenated with no slash)."""
+        Even with the relatively limited use of Path objects so far, this has
+        caused quite a few bugs. IMO it’s too difficult and error-prone to
+        manually manage whether paths are absolute or relative. Thus, this
+        subclass introduces a new operator "//" which does the right thing,
+        i.e., if the right operand is absolute, that fact is ignored. E.g.:
+
+           >>> a = Path("/foo/bar")
+           >>> a.joinpath_posix("baz")
+           Path('/foo/bar/baz')
+           >>> a.joinpath_posix("/baz")
+           Path('/foo/bar/baz')
+           >>> a // "/baz"
+           Path('/foo/bar/baz')
+           >>> "/baz" // a
+           Path('/baz/foo/bar')
+
+        We introduce a new operator because it seemed like too subtle a change
+        to the existing operator "/" (which we disable to avoid getting burned
+        here in Charliecloud). An alternative was "+" like strings, but that
+        led to silently wrong results when the paths *were* strings
+        (components concatenated with no slash)."""
+
+   __slots__ = ("trailing_slash_p",)
 
    # Name of the gzip(1) to use; set on first call of file_gzip().
    gzip = None
+
+   def __init__(self, *args):
+      # WARNING: Something very weird is going on with the superclass [1] that
+      # means super().__init__ refers to object.__init__, not
+      # PosixPath.__init__. All seems well if we don’t call it but omg.
+      # [1]: https://stackoverflow.com/questions/61689391
+      self.trailing_slash_p = (    len(args) > 0 and isinstance(args[-1], str)
+                               and len(args[-1]) > 1 and args[-1][-1] == "/")
 
    def __floordiv__(self, right):
       return self.joinpath_posix(right)
@@ -87,6 +106,13 @@ class Path(pathlib.PosixPath):
 
    def __rtruediv__(self, left):
       return NotImplemented
+
+   def __str__(self):
+      # Because subclassing pathlib.Path is so bonkers, we often get instances
+      # that don’t have attribute trailing_slash_p. Don’t crash in this case,
+      # and cross our fingers we haven’t just lost the trailing slash.
+      return super().__str__() + ("/" if (    hasattr(self, "trailing_slash_p")
+                                          and self.trailing_slash_p) else "")
 
    def __truediv__(self, right):
       return NotImplemented
@@ -136,6 +162,12 @@ class Path(pathlib.PosixPath):
       # the root filesystem.
       return Path("/")
 
+   @property
+   def parent(self):
+      ret = super().parent
+      ret.trailing_slash_p = False  # trailing slash in removed part
+      return ret
+
    @classmethod
    def gzip_set(cls):
       """Set gzip class attribute on first call to file_gzip().
@@ -152,6 +184,14 @@ class Path(pathlib.PosixPath):
             cls.gzip = "gzip"
          else:
             ch.FATAL("can’t find path to gzip or pigz")
+
+   @staticmethod
+   def stat_bytes_all(paths):
+      "Return concatenation of metadata_bytes() on each given Path object."
+      md = bytearray()
+      for path in paths:
+         md += path.stat_bytes_recursive()
+      return md
 
    def add_suffix(self, suff):
       """Returns the path object restulting from appending the specified
@@ -323,22 +363,32 @@ class Path(pathlib.PosixPath):
          except ValueError:
             return False
 
-   def joinpath_posix(self, other):
+   def joinpath_posix(self, right):
       # This method is a hot spot, so the hairiness is due to optimizations.
-      # It runs about 30% faster than the naïve verson below.
-      if (isinstance(other, Path)):
-         other_parts = other._parts
-         if (len(other_parts) > 0 and other_parts[0] == "/"):
-            other_parts = other_parts[1:]
-      elif (isinstance(other, str)):
-         other_parts = other.split("/")
-         if (len(other_parts) > 0 and len(other_parts[0]) == 0):
-            other_parts = other_parts[1:]
+      # It runs about 30% faster than the naïve version referenced below.
+      if (isinstance(right, Path)):
+         right_parts = right._parts
+         ts_p = right.trailing_slash_p
+         if (len(right_parts) > 0 and right_parts[0] == "/"):
+            right_parts = right_parts[1:]
+      elif (isinstance(right, str)):
+         right_parts = right.split("/")
+         if (len(right_parts) > 0 and len(right_parts[0]) == 0):
+            # absolute path, rm empty first component
+            right_parts = right_parts[1:]
+         if (len(right_parts) > 0 and len(right_parts[-1]) == 0):
+            # trailing slash, rm empty last component
+            right_parts = right_parts[:-1]
+            ts_p = True
+         else:
+            ts_p = False
       else:
-         ch.INFO(type(other))
-         assert False, "unknown type"
-      return self._from_parsed_parts(self._drv, self._root,
-                                     self._parts + other_parts)
+         assert False, "unknown type: %s" % type(right)
+      ret = self._from_parsed_parts(self._drv, self._root,
+                                    self._parts + right_parts)
+      ret.trailing_slash_p = ts_p
+      return ret
+
       # Naïve implementation for reference.
       #other = Path(other)
       #if (other.is_absolute()):
@@ -387,12 +437,22 @@ class Path(pathlib.PosixPath):
                        "can’t open for %s: %s" % (mode, self.name),
                        mode, *args, **kwargs)
 
+   def relative_to(self, other):  # FIXME: does not support component-wise
+      ret = super().relative_to(other)
+      ret.trailing_slash_p = other.trailing_slash_p
+      return ret
+
    def rename_(self, name_new):
       if (Path(name_new).exists()):
          ch.FATAL("can’t rename: destination exists: %s" % name_new)
       ch.ossafe(super().rename,
                 "can’t rename: %s -> %s" % (self.name, name_new),
                 name_new)
+
+   def resolve(self, *args, **kwargs):
+      ret = super().resolve(*args, **kwargs)
+      ret.trailing_slash_p = self.trailing_slash_p
+      return ret
 
    def rmdir_(self):
       ch.ossafe(super().rmdir, "can’t rmdir: %s" % self.name)
@@ -436,6 +496,25 @@ class Path(pathlib.PosixPath):
          want to retain compatibility with."""
       return ch.ossafe(os.stat, "can’t stat: %s" % self, self,
                     follow_symlinks=links)
+
+   def stat_bytes(self, links=False):
+      "Return self.stat_() encoded as an opaque bytearray."
+      st = self.stat_(links)
+      return (  str(self).encode("UTF-8")
+              + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
+
+   def stat_bytes_recursive(self):
+      """Return concatenation of self.stat_() and all my children as an opaque
+         bytearray, in unspecified but consistent order."""
+      # FIXME: Locale issues related to sorting?
+      md = self.stat_bytes(links=True)
+      if (self.is_dir()):
+         for (dir_, dirs, files) in ch.walk(self):
+            md += dir_.stat_bytes()
+            for f in sorted(files):
+               md += (dir_ // f).stat_bytes()
+            dirs.sort()
+      return md
 
    def strip(self, left=0, right=0):
       """Return a copy of myself with n leading components removed. E.g.:

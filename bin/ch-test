@@ -54,7 +54,7 @@ Usage:
 
   $ $(basename "$0") [PHASE] [--scope SCOPE] [--pack-fmt FMT] [OPTIONS]
 
-Valid phases: build, build-images, run, examples, all, mk-perm-dirs, clean,
+Valid phases: build-images, build, rootemu, run, examples, all, most, mk-perm-dirs, clean,
               rm-perm-dirs
 Valid scopes: quick, standard, full
 Valid pack formats: squash-mount, tar-unpack, squash-unpack
@@ -662,6 +662,16 @@ test_one_file () {
     bats "$one_file"
 }
 
+test_rootemu () {
+    if command -v ch-image > /dev/null 2>&1; then
+        bats force-auto.bats
+        echo yes > "$TMP_/rootemu"
+    elif [[ -n "$1" ]]; then
+        printf "error: ch-image required, not found\n"
+        exit 1
+    fi
+}
+
 test_run () {
     echo 'executing run phase tests ...'
     if [[ ! -f ${TMP_}/run_auto.bats ]]; then
@@ -761,6 +771,9 @@ if [[ ! -d $TMP_ ]]; then
     chmod 700 "$TMP_"
 fi
 
+# Record that we haven’t (yet) run the “rootemu” tests
+echo no > "$TMP_/rootemu"
+
 # Find test directories. Note some of this gets rewritten at install time.
 CHTEST_DIR=${ch_base}/test
 CHTEST_EXAMPLES_DIR=${ch_base}/examples
@@ -799,7 +812,7 @@ fi
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    all|build|build-images|clean|examples|mk-perm-dirs|rm-perm-dirs|run)
+    all|build|build-images|clean|examples|mk-perm-dirs|rm-perm-dirs|rootemu|run)
         require_unset phase
         phase=$opt
         ;;
@@ -1118,6 +1131,14 @@ case $phase in
         test_build_images
         test_build
 
+        phase=rootemu
+        if [[ "$scope" != "full" ]]; then
+            echo "skipping root emulation tests (full scope only)"
+        else
+            echo 'executing root emulation tests...'
+            test_rootemu
+        fi
+
         phase=run
         dir_img_mk
         dir_tar_check
@@ -1179,6 +1200,9 @@ case $phase in
         for d in $CH_TEST_PERMDIRS; do
             dir_perm_rm "$d"
         done
+        ;;
+    rootemu)
+        test_rootemu optional # ch-image optional
         ;;
     run)
         dir_img_mk

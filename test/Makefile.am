@@ -17,6 +17,7 @@ bucache/copy.df \
 bucache/difficult.df \
 bucache/force.df \
 bucache/from.df \
+bucache/rsync.df \
 build/10_sanity.bats \
 build/40_pull.bats \
 build/50_ch-image.bats \

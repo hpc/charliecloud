@@ -900,6 +900,104 @@ EOF
 }
 
 
+@test "${tag}: RSYNC" {
+    ch-image build-cache --reset
+
+    # Prepare fixtures. These need various manipulating during the test, which
+    # is why they’re built here on the fly.
+    fixtures=${BATS_TMPDIR}/rsync-cache
+    rm -Rf --one-file-system "$fixtures"
+    mkdir "$fixtures"
+    echo hello > "$fixtures"/file1
+    mkdir "$fixtures"/dir1
+    touch "$fixtures"/dir1/file1 "$fixtures"/dir1/file2
+
+    printf '\n*** Build; all misses.\n\n'
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'. FROM'* ]]
+    [[ $output = *'. RSYNC'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RSYNC'* ]]
+
+    printf '\n*** Add remove file in directory; should miss b/c dir mtime.\n\n'
+    touch "$fixtures"/dir1/file2
+    rm "$fixtures"/dir1/file2
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. RSYNC'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RSYNC'* ]]
+
+    printf '\n*** Touch file; should miss because file mtime.\n\n'
+    touch "$fixtures"/file1
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. RSYNC'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RSYNC'* ]]
+
+    printf '\n*** Rename file; should miss because filename.\n\n'
+    mv "$fixtures"/file1 "$fixtures"/file1a
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'. RSYNC'* ]]
+
+    printf '\n*** Re-build; all hits.\n\n'
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RSYNC'* ]]
+
+    printf '\n*** Rename file back; all hits.\n\n'
+    stat "$fixtures"/file1a
+    mv "$fixtures"/file1a "$fixtures"/file1
+    stat "$fixtures"/file1
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RSYNC'* ]]
+
+    printf '\n*** Update content, same length, reset mtime; all hits.\n\n'
+    cat "$fixtures"/file1
+    stat "$fixtures"/file1
+    mtime=$(stat -c %y "$fixtures"/file1)
+    echo world > "$fixtures"/file1
+    touch -d "$mtime" "$fixtures"/file1
+    cat "$fixtures"/file1
+    stat "$fixtures"/file1
+    run ch-image build -f ./bucache/rsync.df "$fixtures"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'* FROM'* ]]
+    [[ $output = *'* RSYNC'* ]]
+}
+
+
 @test "${tag}: all hits, new name" {
     ch-image build-cache --reset
 
@@ -1238,6 +1336,7 @@ EOF
 
 
 @test "${tag}: ignore patterns" {
+    # fails unless “__ch-test_ignore__” is included in the global gitignore file.
        git check-ignore -q __ch-test_ignore__ \
     || pedantic_fail 'global ignore not configured'
 

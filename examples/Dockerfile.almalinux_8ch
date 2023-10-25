@@ -16,32 +16,15 @@ FROM almalinux:8
 #
 #   4. Issue #1103: Install libarchive to resolve cmake bug
 #
+# FIXME: This instruction seems to be running afoul of #1679. I’ve re-wrapped
+# it to have fewer continuations in hopes we trigger that less.
 RUN dnf install -y --setopt=install_weak_deps=false \
                 epel-release \
                 'dnf-command(config-manager)' \
  && dnf config-manager --enable powertools \
  && dnf install -y --setopt=install_weak_deps=false \
                 dnf-plugin-ovl \
-                autoconf \
-                automake \
-                gcc \
-                git \
-                libarchive \
-                libpng-devel \
-                make \
-                python3 \
-                python3-devel \
-                python3-lark-parser \
-                python3-requests \
-                python3-sphinx \
-                python3-sphinx_rtd_theme \
-                rpm-build \
-                rpmlint \
-                rsync \
-                squashfs-tools \
-                squashfuse \
-                wget \
-                which \
+                autoconf automake gcc git libarchive libpng-devel make python3 python3-devel python3-lark-parser python3-requests python3-sphinx python3-sphinx_rtd_theme rpm-build rpmlint rsync squashfs-tools squashfuse wget which \
  && dnf clean all
 
 # Need wheel to install bundled Lark, and the RPM version doesn’t work.

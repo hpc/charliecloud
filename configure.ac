@@ -481,20 +481,26 @@ AS_IF([   test $enable_bundled_lark = yes \
        && test $lark_status != bundled],
        [AC_MSG_ERROR([bundled Lark not found; see docs])])
 
-# Git
-vmin_git=2.28.1
-AC_CHECK_PROG([GIT], [git], [git])
-CH_CHECK_VERSION([GIT], [$vmin_git], [--version | cut -d' ' -f3])
-
 # DOT
 vmin_dot=2.30.1
 AC_CHECK_PROG([DOT], [dot], [dot])
 CH_CHECK_VERSION([DOT], [$vmin_dot], [dot -V 2>&1 | cut -d' ' -f5])
 
+# Git
+vmin_git=2.28.1
+AC_CHECK_PROG([GIT], [git], [git])
+CH_CHECK_VERSION([GIT], [$vmin_git], [--version | cut -d' ' -f3])
+
 # git2dot
 vmin_git2dot=0.8.3
 AC_CHECK_PROG([GIT2DOT], [git2dot.py], [git2dot.py])
 CH_CHECK_VERSION([GIT2DOT], [$vmin_git2dot], [--version | cut -d' ' -f3])
+
+# rsync
+vmin_rsync=3.1.0  # NOTE: keep in sync with lib/charliecloud.py
+AC_CHECK_PROG([RSYNC], [rsync], [rsync])
+CH_CHECK_VERSION([RSYNC], [$vmin_rsync],
+  [-V | sed -En 's/rsync +version (@<:@0-9@:>@+\.@<:@0-9@:>@+\.@<:@0-9@:>@+).*$/\1/p'])
 
 
 ### Docs #####################################################################
@@ -727,6 +733,11 @@ AS_IF([   test $have_ch_image = yes \
       [have_ch_image_bu=yes],
       [have_ch_image_bu=no])
 
+AS_IF([   test $have_ch_image = yes \
+       && test -n "$RSYNC"],
+      [have_ch_image_rsync=yes],
+      [have_ch_image_rsync=no])
+
 AS_IF([   test -n "$DOCKER" \
        && test -n "$MKTEMP"],
       [have_docker=yes],
@@ -887,6 +898,10 @@ Building images
   with ch-image(1) using build cache: ${have_ch_image_bu}
     ch-image(1): ... ${have_ch_image}
     Git ≥ $vmin_git ... ${GIT_VERSION_NOTE}
+
+  with ch-image(1) using RSYNC instruction: ${have_ch_image_rsync}
+    ch-image(1): ... ${have_ch_image}
+    rsync ≥ $vmin_rsync ... ${RSYNC_VERSION_NOTE}
 
   with Docker: ${have_docker}
     Docker ≥ $vmin_docker ... ${DOCKER_VERSION_NOTE}
