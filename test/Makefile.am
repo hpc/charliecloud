@@ -51,6 +51,8 @@ Build.docker_pull \
 Build.missing \
 docs-sane \
 doctest \
+doctest-auto \
+force-auto \
 make-perms-test \
 old-storage
 
@@ -68,15 +70,21 @@ sotest/libsotest.so.1.0 \
 sotest/sotest
 
 CLEANFILES = $(sobuilts) \
-             docs-sane force-auto force-auto.bats make-perms-test
+             docs-sane \
+             doctest build/30_doctest-auto.bats \
+             force-auto force-auto.bats \
+             make-perms-test
 
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
 if ENABLE_CH_IMAGE  # this means we have Python
-nobase_test_DATA += build/61_force-auto.bats
-build/61_force-auto.bats: force-auto
+nobase_test_DATA += force-auto.bats
+force-auto.bats: force-auto
+	./$< > $@
+nobase_test_DATA += build/30_doctest-auto.bats
+build/30_doctest-auto.bats: doctest-auto
 	./$< > $@
 endif
 # See comment about symlinks in examples/Makefile.am.
