@@ -93,10 +93,12 @@ parse_basic_args () {
 # FAQ.
 quiet_process () {
     if [ $quiet -ge 1 ]; then
-        $@ 1>/dev/null
-    fi
-    if [ $quiet -ge 2 ]; then
-        $@ 2>/dev/null
+        "$@" 1>/dev/null
+        if [ $quiet -ge 2 ]; then
+            "$@" 2>/dev/null
+        fi
+    else
+        "$@"
     fi
 }
 
@@ -205,11 +207,7 @@ fi
 # WARNING: You must pipe in the file because arguments are ignored if this is
 # cat(1). (We also don't want a progress bar if stdin is not a terminal, but
 # pv takes care of that.)
-if [ "$quiet" -ge 1 ]; then
-    pv_ () {
-        : # noop if “--quiet”
-    }
-elif command -v pv > /dev/null 2>&1; then
+if command -v pv > /dev/null 2>&1 && [ "$quiet" -lt 1 ]; then
     pv_ () {
         pv -pteb "$@"
     }
