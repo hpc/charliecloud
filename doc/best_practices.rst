@@ -49,48 +49,97 @@ including Lustre.
 File copy performance
 ---------------------
 
-:code:`ch-image` does a lot of file copying. The bulk of this is copying
-images around in the storage directory. Importantly, this includes :ref:`large
-files <ch-image_bu-large>` stored by the build cache outside its Git
-repository, which by definition hold a lot of data to copy.
+:code:`ch-image` does a lot of file copying. The bulk of this is manipulating
+images in the storage directory. Importantly, this includes :ref:`large files
+<ch-image_bu-large>` stored by the build cache outside its Git repository,
+though this feature is disabled by default.
 
 Copies are costly both in time (to read, transfer, and write the duplicate
-bytes) and space (to store the bytes). However, with the right Python and
-filesystem, significant optimizations are available. Charliecloud’s internal
-file copies (unfortunately not sub-programs like Git) can take advantage of
-multiple file-copy optimized paths offered by Linux:
+bytes) and space (to store the bytes). However significant optimizations are
+sometimes available. Charliecloud’s internal file copies (unfortunately not
+sub-programs like Git) can take advantage of multiple optimized file-copy
+paths offered by Linux:
 
-1. Copy data in-kernel without passing through user-space. Saves time but not
-   space. All filesystems support this.
+in-kernel copy
+   Copy data inside the kernel without passing through user-space. Saves time
+   but not space.
 
-2. Copy data server-side without sending it over the network, relevant of
-   course only for network filesystems. Saves time but not space. NFS 4
-   supports this, among others.
+server-side copy
+   Copy data on the server without sending it over the network, relevant only
+   for network filesystems. Saves time but not space.
 
-3. Copy-on-write via “`reflink
+reflink copy (best)
+   Copy-on-write via “`reflink
    <https://blog.ram.rachum.com/post/620335081764077568/symlinks-and-hardlinks-move-over-make-room-for>`_”.
-   The destination file gets a new inode but shares the data extents the
-   source file — i.e., no data are copied! — with extents copied and unshared
-   later if/when are written. Saves potentially a lot of both time and space.
-   BTRFS, XFS, and ZFS support this, among others.
+   The destination file gets a new inode but shares the data extents of the
+   source file — i.e., no data are copied! — with extents unshared later
+   if/when are written. Saves both time and space (and potentially quite a
+   lot).
 
-Support of course varies by kernel and filesystem tools version, and we have
-listed only the most common filesystems above. In-kernel filesystem support
-can be checked in the `Linux source code
-<https://elixir.bootlin.com/linux/latest/A/ident/remap_file_range>`_, and ZFS
-has `release notes <https://github.com/openzfs/zfs/releases>`_. Also, paths 2
-and 3 require that source and destination be on the same filesystem.
+To use these optimizations, you need:
 
-If available (Python ≥3.8), :code:`ch-image` copies file data with
-:code:`os.copy_file_range()` (`docs
-<https://docs.python.org/3/library/os.html#os.copy_file_range>`_), which wraps
-:code:`copy_file_range(2)` (`man page
-<https://man7.org/linux/man-pages/man2/copy_file_range.2.html>`_). This system
-call copies data between files using the best method available of the three
-above.
+   1. Python ≥3.8, for :code:`os.copy_file_range()` (`docs
+      <https://docs.python.org/3/library/os.html#os.copy_file_range>`_), which
+      wraps :code:`copy_file_range(2)` (`man page
+      <https://man7.org/linux/man-pages/man2/copy_file_range.2.html>`_), which
+      selects the best method from the three above.
 
-Thus, we recommend using a kernel, filesystem, and other tools that support
-path 3 or at least path 2.
+   2. A new-ish Linux kernel (details vary).
+
+   3. The right filesystem.
+
+.. |yes| replace:: ✅
+.. |no| replace:: ❌
+
+The following table summarizes our (possibly incorrect) understanding of
+filesystem support as of October 2023. For current or historical information,
+see the `Linux source code
+<https://elixir.bootlin.com/linux/latest/A/ident/remap_file_range>`_ for
+in-kernel filesystems or specific filesystem release nodes, e.g. `ZFS
+<https://github.com/openzfs/zfs/releases>`_. A checkmark |yes| indicates
+supported, |no| unsupported. We recommend using a filesystem that supports
+reflink and also (if applicable) server-side copy.
+
++----------------------------+---------------+---------------+----------------+
+|                            | in-kernel     | server-side   | reflink (best) |
++============================+===============+===============+================+
+| *local filesystems*                                                         |
++----------------------------+---------------+---------------+----------------+
+| BTRFS                      | |yes|         | n/a           | |yes|          |
++----------------------------+---------------+---------------+----------------+
+| OCFS2                      | |yes|         | n/a           | |yes|          |
++----------------------------+---------------+---------------+----------------+
+| XFS                        | |yes|         | n/a           | |yes|          |
++----------------------------+---------------+---------------+----------------+
+| ZFS                        | |yes|         | n/a           | |yes| [1]      |
++----------------------------+---------------+---------------+----------------+
+| *network filesystems*                                                       |
++----------------------------+---------------+---------------+----------------+
+| CIFS/SMB                   | |yes|         | |yes|         | ?              |
++----------------------------+---------------+---------------+----------------+
+| NFSv3                      | |yes|         | |no|          | |no|           |
++----------------------------+---------------+---------------+----------------+
+| NFSv4                      | |yes|         | |yes|         | |yes| [2]      |
++----------------------------+---------------+---------------+----------------+
+| *other situations*                                                          |
++----------------------------+---------------+---------------+----------------+
+| filesystems not listed     | |yes|         | |no|          | |no|           |
++----------------------------+---------------+---------------+----------------+
+| copies between filesystems | |no| [3]      | |no|          | |no|           |
++----------------------------+---------------+---------------+----------------+
+
+Notes:
+
+  1. As of `ZFS 2.2.0
+     <https://github.com/openzfs/zfs/releases/tag/zfs-2.2.0>`_.
+
+  2. If the underlying exported filesystem also supports reflink.
+
+  3. Recent kernels (≥5.18 as well as stable kernels if backported) support
+     in-kernel file copy between filesystems, but for many kernels it is `not
+     stable
+     <https://man7.org/linux/man-pages/man2/copy_file_range.2.html#BUGS>`_, so
+     Charliecloud does not currently attempt it.
 
 Installing your own software
 ============================
@@ -260,3 +309,4 @@ terminal.
 
 
 ..  LocalWords:  userguide Gruening Souppaya Morello Scarfone openmpi nist
+..  LocalWords:  ident OCFS
