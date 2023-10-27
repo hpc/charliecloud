@@ -549,9 +549,9 @@ tar_out_validate () {
 # Return the path to image $1 in ch-image storage.
 chimage_path () {
     if [ -z "$cli_storage" ]; then
-        quiet_process echo "$(ch-image gestalt storage-path)/img/$(tag_to_path "$1")"
+        echo "$(ch-image gestalt storage-path)/img/$(tag_to_path "$1")"
     else
-        quiet_process echo "$cli_storage/img/$(tag_to_path "$1")"
+        echo "$cli_storage/img/$(tag_to_path "$1")"
     fi
 }
 
@@ -711,7 +711,7 @@ path_noclobber () {
 # Produce a tarbomb because Docker requires tarbombs.
 tar_ () {
     # shellcheck disable=SC2086
-    ( quiet_process cd "$1" && quiet_process tar cf - $tar_xattr_args \
+    ( cd "$1" && tar cf - $tar_xattr_args \
                           --exclude=./.git \
                           --exclude=./.gitignore \
                           --exclude=./ch/git.pickle . ) | pv_
