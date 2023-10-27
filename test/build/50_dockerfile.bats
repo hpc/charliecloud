@@ -159,7 +159,7 @@ test 7a
 test 7 b
 --force=seccomp: modified 0 RUN instructions
 grown in 16 instructions: tmpimg
-build slow? consider enabling the new build cache
+build slow? consider enabling the build cache
 hint: https://hpc.github.io/charliecloud/command-usage.html#build-cache
 warning: reprinting 1 warning(s)
 warning: not yet supported, ignored: issue #777: .dockerignore file

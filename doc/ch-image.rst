@@ -72,13 +72,14 @@ Common options placed before or after the sub-command:
 
   :code:`--cache-large SIZE`
     Set the cache’s large file threshold to :code:`SIZE` MiB, or :code:`0` for
-    no large files, which is the default. This can speed up some builds.
+    no large files, which is the default. Values greater than zero can speed
+    up many builds but can also cause performance degradation.
     **Experimental.** See section :ref:`Large file threshold
     <ch-image_bu-large>` for details.
 
   :code:`--debug`
     Add a stack trace to fatal error hints. This can also be done by setting
-    the environment variable `CH_IMAGE_DEBUG`.
+    the environment variable :code:`CH_IMAGE_DEBUG`.
 
   :code:`--no-cache`
     Disable build cache. Default if a sufficiently new Git is not available.
@@ -451,26 +452,36 @@ Large file threshold
 
 Because Git uses content-addressed storage, upon commit, it must read in full
 all files modified by an instruction. This I/O cost can be a significant
-fraction of build time for some large images. Regular files larger than the
-experimental *large file threshold* are stored outside the Git repository,
-somewhat like `Git Large File Storage <https://git-lfs.github.com/>`_.
-:code:`ch-image` uses hard links to bring large files in and out of images as
-needed, which is a fast metadata operation that ignores file content.
+fraction of build time for some images. To mitigate this, regular files larger
+than the experimental *large file threshold* are stored outside the Git
+repository, somewhat like `Git Large File Storage
+<https://git-lfs.github.com/>`_.
+
+:code:`ch-image` copies large files in and out of images at each instruction
+commit. It tries to do this with a fast metadata-only copy-on-write operation
+called “reflink”, but that is only supported with the right Python version,
+Linux kernel version, and filesystem. If unsupported, Charliecloud falls back
+to an expensive standard copy, which is likely slower than letting Git deal
+with the files. See :ref:`File copy performance <best-practices_file-copy>`
+for details.
+
+Every version of a large file is stored verbatim and uncompressed (e.g., a
+large file with a one-byte change will be stored in full twice), so Git’s
+de-duplication does not apply. *However*, on filesystems with reflink support,
+files can share extents (e.g., each of the two files will have its own extent
+containing the changed byte, but the rest of the extents will remain shared).
+This provides de-duplication between large files images that share ancestry.
+Also, unused large files are deleted by :code:`ch-image build-cache --gc`.
+
+A final caveat: Large files in any image with the same path, mode, size, and
+mtime (to nanosecond precision if possible) are considered identical, even if
+their content is not actually identical (e.g., :code:`touch(1)` shenanigans
+can corrupt an image).
 
 Option :code:`--cache-large` sets the threshold in MiB; if not set,
 environment variable :code:`CH_IMAGE_CACHE_LARGE` is used; if that is not set
 either, the default value :code:`0` indicates that no files are considered
 large.
-
-There are two trade-offs. First, large files in any image with the same path,
-mode, size, and mtime (to nanosecond precision if possible) are considered
-identical, *even if their content is not actually identical*; e.g.,
-:code:`touch(1)` shenanigans can corrupt an image. Second, every version of a
-large file is stored verbatim and uncompressed (e.g., a large file with a
-one-byte change will be stored in full twice), and large files do not
-participate in the build cache’s de-duplication, so more storage space will
-likely be used. Unused versions *are* deleted by :code:`ch-image build-cache
---gc`.
 
 (Note that Git has an unrelated setting called :code:`core.bigFileThreshold`.)
 

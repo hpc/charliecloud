@@ -33,6 +33,20 @@ STORAGE_VERSION = 7
 storage_lock = True
 
 
+### Functions ###
+
+def copy(src, dst, follow_symlinks=False):
+   """Copy file src to dst. Wrapper function providing same signature as
+      shutil.copy2(). See Path.copy() for lots of gory details. Accepts
+      follow_symlinks, but the only valid value is False."""
+   assert (not follow_symlinks)
+   if (isinstance(src, str)):
+      src = Path(src)
+   if (isinstance(dst, str)):
+      dst = Path(dst)
+   src.copy(dst)
+
+
 ## Classes ##
 
 class Path(pathlib.PosixPath):
@@ -227,9 +241,68 @@ class Path(pathlib.PosixPath):
          ch.ossafe(os.chmod, "can’t chmod: %s" % self, self, perms_new)
       return (st.st_mode | perms_new)
 
+   def copy(self, dst):
+      """Copy file myself to dst, including metadata, overwriting dst if it
+         exists. dst must be the actual destination path, i.e., it may not be
+         a directory. Does not follow symlinks.
+
+         If (a) src is a regular file, (b) src and dst are on the same
+         filesystem, and (c) Python is version ≥3.8, then use
+         os.copy_file_range() [1,2], which at a minimum does an in-kernel data
+         transfer. If that filesystem also (d) supports copy-on-write [3],
+         then this is a very fast lazy reflink copy.
+
+         [1]: https://docs.python.org/3/library/os.html#os.copy_file_range
+         [2]: https://man7.org/linux/man-pages/man2/copy_file_range.2.html
+         [3]: https://elixir.bootlin.com/linux/latest/A/ident/remap_file_range
+      """
+      src_st = self.stat_(False)
+      # dst is not a directory, so parent must be on the same filesystem. We
+      # *do* want to follow symlinks on the parent.
+      dst_dev = dst.parent.stat_(True).st_dev
+      if (    stat.S_ISREG(src_st.st_mode)
+          and src_st.st_dev == dst_dev
+          and hasattr(os, "copy_file_range")):
+         # Fast path. The same-filesystem restriction is because reliable
+         # copy_file_range(2) between filesystems seems quite new (maybe
+         # kernel 5.18?).
+         try:
+            if (dst.exists()):
+               # If dst is a symlink, we get OLOOP from os.open(). Delete it
+               # unconditionally though, for simplicity.
+               dst.unlink()
+            src_fd = os.open(self, os.O_RDONLY|os.O_NOFOLLOW)
+            dst_fd = os.open(dst, os.O_WRONLY|os.O_NOFOLLOW|os.O_CREAT)
+            # I’m not sure why we need to loop this -- there’s no explanation
+            # of *when* fewer bytes than requested would be copied -- but the
+            # man page example does.
+            remaining = src_st.st_size
+            while (remaining > 0):
+               copied = os.copy_file_range(src_fd, dst_fd, remaining)
+               if (copied == 0):
+                  ch.FATAL("zero bytes copied: %s -> %s" % (self, dst))
+               remaining -= copied
+            os.close(src_fd)
+            os.close(dst_fd)
+         except OSError as x:
+            ch.FATAL("can’t copy data (fast): %s -> %s: %s"
+                     % (self, dst, x.strerror))
+      else:
+         # Slow path.
+         try:
+            shutil.copyfile(self, dst, follow_symlinks=False)
+         except OSError as x:
+            ch.FATAL("can’t copy data (slow): %s -> %s: %s"
+                     % (self, dst, x.strerror))
+      try:
+         # Metadata.
+         shutil.copystat(self, dst, follow_symlinks=False)
+      except OSError as x:
+         ch.FATAL("can’t copy metadata: %s -> %s" % (self, dst, x.strerror))
+
    def copytree(self, *args, **kwargs):
       "Wrapper for shutil.copytree() that exits on the first error."
-      shutil.copytree(str(self), copy_function=ch.copy2, *args, **kwargs)
+      shutil.copytree(self, copy_function=copy, *args, **kwargs)
 
    def disk_bytes(self):
       """Return the number of disk bytes consumed by path. Note this is
@@ -495,7 +568,7 @@ class Path(pathlib.PosixPath):
          follow_symlinks kwarg is absent in pathlib for Python 3.6, which we
          want to retain compatibility with."""
       return ch.ossafe(os.stat, "can’t stat: %s" % self, self,
-                    follow_symlinks=links)
+                       follow_symlinks=links)
 
    def stat_bytes(self, links=False):
       "Return self.stat_() encoded as an opaque bytearray."
