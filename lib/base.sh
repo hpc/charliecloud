@@ -93,9 +93,10 @@ parse_basic_args () {
 # FAQ.
 quiet_process () {
     if [ $quiet -ge 1 ]; then
-        "$@" 1>/dev/null
         if [ $quiet -ge 2 ]; then
-            "$@" 2>/dev/null
+            "$@" 1>/dev/null 2>/dev/null
+        else
+            "$@" 1>/dev/null
         fi
     else
         "$@"
@@ -203,17 +204,16 @@ else
     }
 fi
 
-# Use pv(1) to show a progress bar, if it's available, otherwise cat(1).
-# WARNING: You must pipe in the file because arguments are ignored if this is
-# cat(1). (We also don't want a progress bar if stdin is not a terminal, but
-# pv takes care of that.)
-if command -v pv > /dev/null 2>&1 && [ "$quiet" -lt 1 ]; then
-    pv_ () {
+# Use pv(1) to show a progress bar, if it’s available and the quiet level is
+# less than one, otherwise cat(1). WARNING: You must pipe in the file because
+# arguments are ignored if this is cat(1). (We also don’t want a progress bar if
+# stdin is not a terminal, but pv takes care of that). Note that we put the if
+# statement in the scope of the function because doing so ensures that it gets
+# evaulated after “quiet” is assigned an appropriate value by “parse_basic_arg”.
+pv_ () {
+    if command -v pv > /dev/null 2>&1 && [ "$quiet" -lt 1 ]; then
         pv -pteb "$@"
-    }
-else
-    pv_ () {
-        # Arguments may be present, but we ignore them.
+    else
         cat
-    }
-fi
+    fi
+}

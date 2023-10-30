@@ -109,7 +109,7 @@ cv_dir_squash () {
     pflist=${tmpdir}/pseudofiles
     INFO 'packing ...'
     quiet_process touch "$pflist"
-    mount_points_ensure "$1" "$pflist"
+    quiet_process mount_points_ensure "$1" "$pflist"
     # Exclude build cache metadata. 64kiB block size based on Shane's
     # experiments.
     # shellcheck disable=SC2086
