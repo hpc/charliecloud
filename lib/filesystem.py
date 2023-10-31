@@ -974,18 +974,6 @@ class Path(os.PathLike):
                             + ("/" if self.trailed_p else ""))
 
 
-
-
-
-   
-
-
-
-      
-class Path_OLD(pathlib.PosixPath):
-
-
-
 class Storage:
 
    """Source of truth for all paths within the storage directory. Do not
