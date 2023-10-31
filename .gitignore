@@ -26,8 +26,10 @@ a.out
 /lib/version.py
 /lib/version.sh
 /lib/version.txt
+/test/build/30_doctest-auto.bats
 /test/force-auto.bats
 /test/docs-sane
+/test/doctest
 /test/fixtures/symlink-to-tmp
 /test/force-auto
 /test/make-perms-test

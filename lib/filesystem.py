@@ -594,11 +594,11 @@ class Path(pathlib.PosixPath):
 
            >>> a = Path("/a/b/c")
            >>> a.strip(left=1)
-           Path("a/b/c")
+           Path('a/b/c')
            >>> a.strip(right=1)
-           Path("/a/b")
+           Path('/a/b')
            >>> a.strip(left=1, right=1)
-           Path("a/b")
+           Path('a/b')
 
          It is an error if I don’t have at least left + right components,
          i.e., you can strip a path down to nothing but not further."""

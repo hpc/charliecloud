@@ -51,6 +51,9 @@ Build.centos7xz \
 Build.docker_pull \
 Build.missing \
 docs-sane \
+doctest \
+doctest-auto \
+force-auto \
 make-perms-test \
 old-storage
 
@@ -68,8 +71,10 @@ sotest/libsotest.so.1.0 \
 sotest/sotest
 
 CLEANFILES = $(sobuilts) \
-             docs-sane force-auto make-perms-test \
-             force-auto.bats
+             docs-sane \
+             doctest build/30_doctest-auto.bats \
+             force-auto force-auto.bats \
+             make-perms-test
 
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
@@ -78,6 +83,9 @@ nobase_nodist_test_SCRIPTS = $(sobuilts)
 if ENABLE_CH_IMAGE  # this means we have Python
 nobase_test_DATA += force-auto.bats
 force-auto.bats: force-auto
+	./$< > $@
+nobase_test_DATA += build/30_doctest-auto.bats
+build/30_doctest-auto.bats: doctest-auto
 	./$< > $@
 endif
 # See comment about symlinks in examples/Makefile.am.
@@ -93,12 +101,16 @@ uninstall-hook:
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
 	rmdir $$(find $(pkglibexecdir) -type d | sort -r)
 endif
-EXTRA_DIST = $(testfiles) $(testfiles_exec) \
-             docs-sane.py.in force-auto.py.in make-perms-test.py.in
+EXTRA_DIST = $(testfiles) \
+             $(testfiles_exec) \
+             docs-sane.py.in \
+             doctest.py.in \
+             force-auto.py.in \
+	     make-perms-test.py.in
 EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing
-docs-sane force-auto make-perms-test: %: %.py.in
+docs-sane doctest force-auto make-perms-test: %: %.py.in
 	rm -f $@
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
 	chmod +rx,-w $@  # respects umask
