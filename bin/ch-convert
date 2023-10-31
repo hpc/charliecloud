@@ -79,7 +79,7 @@ cv_chimage_tar () {
     tar_out_validate "$2"
     img=$(chimage_path "$1")
     INFO 'exporting ...'
-    tar_ "$img" | quiet_process gzip_ > "$2"
+    tar_ "$img" | gzip_ > "$2"
 }
 
 cv_dir_chimage () {
@@ -128,7 +128,7 @@ cv_dir_tar () {
     # Don't add essential files & directories because that will happen later
     # when converted to dir or squash.
     INFO 'packing ...'
-    tar_ "$1" | quiet_process gzip_ > "$2"
+    tar_ "$1" | gzip_ > "$2"
 }
 
 cv_docker_chimage () {
@@ -428,7 +428,7 @@ dockman_to_tar () {
     quiet_process tar rf "$tmptar" -b1 -P --owner=0 --group=0 $tar_xattr_args \
         --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
     INFO 'compressing ...'
-    pv_ < "$tmptar" | quiet_process gzip_ -6 > "$3"
+    pv_ < "$tmptar" | gzip_ -6 > "$3"
     quiet_process rm "$tmptar"
     quiet_process rm "$tmpenv"
 }
