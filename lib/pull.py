@@ -182,7 +182,7 @@ class Image_Puller:
          # actually a misleadingly named skinny manifest. Link is relative to
          # avoid embedding the storage directory path within the storage
          # directory (see PR #1657).
-         if (not self.manifest_path.exists_()):
+         if (not self.manifest_path.exists()):
             self.manifest_path.symlink_to(self.fatman_path.name)
          raise ch.No_Fatman_Error()
       if ("errors" in fm):

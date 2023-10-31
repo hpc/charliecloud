@@ -152,18 +152,18 @@ nogroup:x:65534:
    # unprivileged user namespace. See also the default environment.
    #
    # Debian apt/dpkg/etc. want to chown(1), chgrp(1), etc. in various ways.
-   fs.Path("/bin/true").symlink("%s/ch/bin/chgrp" % path)
-   fs.Path("/bin/true").symlink("%s/ch/bin/dpkg-statoverride" % path)
+   fs.Path(path, "ch/bin/chgrp").symlink_to("/bin/true")
+   fs.Path(path, "ch/bin/dpkg-statoverride").symlink_to("/bin/true")
    # Debian package management also wants to mess around with users. This is
    # causing problems with /etc/gshadow and other files. These links don’t
    # work if they are in /ch/bin, I think because dpkg is resetting the path?
    # For now we’ll do this, but I don’t like it. fakeroot(1) also solves the
    # problem (see issue #472).
-   fs.Path("/bin/true").symlink("%s/bin/chown" % path, clobber=True)
-   fs.Path("/bin/true").symlink("%s/usr/sbin/groupadd" % path, clobber=True)
-   fs.Path("/bin/true").symlink("%s/usr/sbin/useradd" % path, clobber=True)
-   fs.Path("/bin/true").symlink("%s/usr/sbin/usermod" % path, clobber=True)
-   fs.Path("/bin/true").symlink("%s/usr/bin/chage" % path, clobber=True)
+   fs.Path(path, "bin/chown").symlink_to("/bin/true", clobber=True)
+   fs.Path(path, "usr/sbin/groupadd").symlink_to("/bin/true", clobber=True)
+   fs.Path(path, "usr/sbin/useradd").symlink_to("/bin/true", clobber=True)
+   fs.Path(path, "usr/sbin/usermod").symlink_to("/bin/true", clobber=True)
+   fs.Path(path, "usr/bin/chage").symlink_to("/bin/true", clobber=True)
 
 def op_create():
    # Validate arguments.
@@ -188,7 +188,7 @@ def op_create():
       sleep_forever()
    else:
       state.pid = pid
-      with args.pid_file.open_("wt") as fp:
+      with args.pid_file.open("wt") as fp:
          print("%d" % pid, file=fp)
       ch.VERBOSE("dummy supervisor started with pid %d" % pid)
 
@@ -223,7 +223,7 @@ def op_start():
    #
    # GNU tar, when it thinks it’s running as root, tries to chown(2) and
    # chgrp(2) files to whatever’s in the tarball. --no-same-owner avoids this.
-   with fs.Path(args.bundle + "/environment").open_("wt") as fp:
+   with fs.Path(args.bundle + "/environment").open("wt") as fp:
       for line in (  c["process"]["env"]                  # from Dockerfile
                    + [ "TAR_OPTIONS=--no-same-owner" ]):  # ours
          line = re.sub(r"^(PATH=)", "\\1/ch/bin:", line)
@@ -300,7 +300,7 @@ def pid_file_from_bundle(bundle):
 def state_load():
    st = types.SimpleNamespace()
 
-   st.config = json.load(fs.Path(args.bundle + "/config.json").open_("rt"))
+   st.config = fs.Path(args.bundle, "config.json").json_from_file("state")
    #debug_lines(json.dumps(st.config, indent=2))
 
    v_min = version_parse_oci(OCI_VERSION_MIN)

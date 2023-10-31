@@ -431,12 +431,12 @@ class Progress_Writer:
       if (self.progress is not None):
          self.progress.done()
          close_(self.fp)
-         self.path.unlink_(missing_ok=True)
-         self.path_tmp.rename_(self.path)
+         self.path.unlink(missing_ok=True)
+         self.path_tmp.rename(self.path)
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
-      self.fp = self.path_tmp.open_("wb")
+      self.fp = self.path_tmp.open("wb")
 
    def write(self, data):
       self.progress.update(len(data))
@@ -668,7 +668,7 @@ def init(cli):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
-      log_fp = file_.open_("at")
+      log_fp = file_.open("at")
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
    VERBOSE("verbose level: %d (%s))" % (log_level.value, log_level.name))
