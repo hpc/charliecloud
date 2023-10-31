@@ -1,9 +1,10 @@
 import errno
 import fcntl
+import fnmatch
+import glob
 import hashlib
 import json
 import os
-import pathlib
 import re
 import pprint
 import shutil
@@ -203,6 +204,9 @@ class Path(os.PathLike):
    def __fspath__(self):
       return self.path
 
+   def __hash__(self):
+      return hash(self.path)
+
    def __repr__(self):
       """e.g.:
 
@@ -313,8 +317,18 @@ class Path(os.PathLike):
          ch.FATAL("can’t stat: %s: %s" % (self, x.strerror))
       return True
 
+   def glob(self, pattern):
+      oldcwd = self.chdir()
+      # No root_dir in glob.glob() until 3.10.
+      ret = glob.glob(pattern, recursive=True)
+      oldcwd.chdir()
+      return ret
+
    def hardlink_to(self, target):
       ch.ossafe(os.link, "can’t hard link: %s -> %s", target, self)
+
+   def is_absolute(self):
+      return (self.path[0] == "/")
 
    def is_dir(self):
       """e.g.:
@@ -345,6 +359,16 @@ class Path(os.PathLike):
          return True
       except ValueError:
          return False
+
+   def match(self, pattern):
+      """e.g.:
+
+         >>> a = Path("/foo/bar.txt")
+         >>> a.match("*.txt")
+         True
+         >>> a.match("*.TXT")
+         False"""
+      return fnmatch.fnmatchcase(self.__fspath__(), pattern)
 
    def mkdir(self):
       ch.TRACE("ensuring directory: %s" % self)
@@ -400,8 +424,8 @@ class Path(os.PathLike):
 
    def rename(self, path_new):
       path_new = self.__class__(path_new)
-      ch.ossafe(os.rename, "can’t rename: %s -> %s" % (name, name_new),
-                self, name_new)
+      ch.ossafe(os.rename, "can’t rename: %s -> %s" % (self, path_new),
+                self, path_new)
       return path_new
 
    def resolve(self):
@@ -452,7 +476,7 @@ class Path(os.PathLike):
    def unlink(self, missing_ok=False):
       if (missing_ok and not self.exists()):
          return
-      ch.ossafe(os.unlink, "can’t unlink: %s" % self)
+      ch.ossafe(os.unlink, "can’t unlink: %s" % self, self)
 
    def with_name(self, name_new):
       """e.g.:
@@ -652,10 +676,10 @@ class Path(os.PathLike):
          [2]: https://man7.org/linux/man-pages/man2/copy_file_range.2.html
          [3]: https://elixir.bootlin.com/linux/latest/A/ident/remap_file_range
       """
-      src_st = self.stat_(False)
+      src_st = self.stat(False)
       # dst is not a directory, so parent must be on the same filesystem. We
       # *do* want to follow symlinks on the parent.
-      dst_dev = dst.parent.stat_(True).st_dev
+      dst_dev = dst.parent.stat(True).st_dev
       if (    stat.S_ISREG(src_st.st_mode)
           and src_st.st_dev == dst_dev
           and hasattr(os, "copy_file_range")):
@@ -772,7 +796,7 @@ class Path(os.PathLike):
       fp = self.open("rb")
       h = hashlib.sha256()
       while True:
-         data = ch.ossafe(fp.read, "can’t read: %s" % self.name, 2**18)
+         data = ch.ossafe(fp.read, "can’t read: %s" % self, 2**18)
          if (len(data) == 0):  # EOF
             break
          h.update(data)
@@ -794,7 +818,7 @@ class Path(os.PathLike):
          mode = "rb"
          encoding = None
       fp = self.open(mode, encoding=encoding)
-      data = ch.ossafe(fp.read, "can’t read: %s" % self.name)
+      data = ch.ossafe(fp.read, "can’t read: %s" % self)
       ch.close_(fp)
       return data
 
@@ -813,7 +837,7 @@ class Path(os.PathLike):
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
       fp = self.open("wb")
-      ch.ossafe(fp.write, "can’t write: %s" % self.name, content)
+      ch.ossafe(fp.write, "can’t write: %s" % self, content)
       ch.close_(fp)
 
    def grep_p(self, rx):
@@ -887,7 +911,7 @@ class Path(os.PathLike):
       return self.__class__("/")
 
    def rmtree(self):
-      ch.TRACE("deleting directory: %s" % self.name)
+      ch.TRACE("deleting directory: %s" % self)
       try:
          shutil.rmtree(self)
       except OSError as x:
@@ -1066,6 +1090,7 @@ class Storage:
       # Delete partial downloads.
       part_ct = 0
       for path in self.download_cache.glob("part_*"):
+         path = Path(path)
          ch.VERBOSE("deleting: %s" % path)
          path.unlink()
          part_ct += 1
@@ -1141,7 +1166,7 @@ class Storage:
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
                   % (v_found, self.root),
-                  'you can delete and re-initialize with "ch-image reset"')
+                  'you can delete and re-initialize with “ch-image reset”')
       self.validate_strict()
       self.cleanup()
 

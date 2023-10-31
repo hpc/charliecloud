@@ -432,14 +432,14 @@ class File_Metadata:
       # Remove empty directories. Git will ignore them, including leaving them
       # there when switching the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
-         fm.path_abs.rmdir_()
+         fm.path_abs.rmdir()
          return fm
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(fm.mode)):
          fm.path_abs.unlink()
          return fm
       # Rename if necessary.
-      if (path.git_incompatible_p):
+      if (not path.git_compatible_p):
          ch.DEBUG("renaming: %s -> %s" % (path, path.git_escaped))
          fm.path_abs.rename(fm.path_abs.git_escaped)
       # Done.
@@ -484,7 +484,7 @@ class File_Metadata:
          ch.ossafe(os.mkdir, "can’t mkdir: %s" % self.path, self.path_abs)
       elif (stat.S_ISFIFO(self.mode)):
          ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
-      elif (self.path.git_incompatible_p):
+      elif (not self.path.git_compatible_p):
          self.path_abs.git_escaped.rename(self.path_abs)
       for (xattr, val) in self.xattrs.items():
          self.path_abs.setxattr(xattr, val, follow_symlinks=False)
@@ -1264,8 +1264,8 @@ class Enabled_Cache:
          # Move GIT_DIR from default location to where we want it.
          git_dir_default = image.unpack_path // ".git"
          git_dir_new = image.unpack_path // im.GIT_DIR
-         git_dir_new.parent.mkdir_()
-         git_dir_default.rename_(git_dir_new)
+         git_dir_new.parent.mkdir()
+         git_dir_default.rename(git_dir_new)
          t.log("created worktree")
 
    def worktree_adopt(self, image, base):
