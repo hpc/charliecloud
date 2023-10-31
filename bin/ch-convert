@@ -865,6 +865,9 @@ done
 if [ "$#" -ne 2 ]; then
     usage
 fi
+if [ $verbose -gt 0 ] && [ $quiet -gt 0 ]; then
+    FATAL "incompatible options: --quiet, --verbose"
+fi
 if [ -n "$no_xattrs" ]; then
     tar_xattr_args=
     squash_xattr_arg=

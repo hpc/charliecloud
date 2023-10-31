@@ -56,7 +56,8 @@ producing the final format actually needed.
     Output image format is :code:`FMT`; inferred if omitted.
 
   :code:`-q`, :code:`--quiet`
-    Suppress program output. Note that this does not suppress errors.
+    Be quieter; can be repeated. Incompatible with :code:`-v`. See the :ref:`FAQ
+    entry on verbosity <faq_verbosity>` for details.
 
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory. Equivalent to the same option for :code:`ch-image(1)`
