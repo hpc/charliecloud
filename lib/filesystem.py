@@ -199,13 +199,28 @@ class Path(os.PathLike):
            True
            >>> Path("a/b") == Path("a//b") == Path("a///b")
            True"""
-      return (self.path == other.path)
+      return (self.path == Path(other).path)
 
    def __fspath__(self):
       return self.path
 
+   def __ge__(self, other):
+      return not self.__lt__(other)
+
+   def __gt__(self, other):
+      return not self.__le__(other)
+
+   def __le__(self, other):
+      return (self.path <= Path(other).path)
+
+   def __lt__(self, other):
+      return (self.path < Path(other).path)
+
    def __hash__(self):
       return hash(self.path)
+
+   def __ne__(self, other):
+      return not self.__eq__(other)
 
    def __repr__(self):
       """e.g.:
@@ -343,6 +358,9 @@ class Path(os.PathLike):
            False"""
       return os.path.isdir(self)
 
+   def is_file(self):
+      return os.path.isfile(self)
+
    def is_relative_to(self, other):
       """e.g.:
 
@@ -359,6 +377,9 @@ class Path(os.PathLike):
          return True
       except ValueError:
          return False
+
+   def is_symlink(self):
+      return os.path.islink(self)
 
    def match(self, pattern):
       """e.g.:
@@ -462,7 +483,7 @@ class Path(os.PathLike):
       if (clobber and self.is_file()):
          self.unlink()
       try:
-         super().symlink_to(target)
+         os.symlink(target, self)
       except FileExistsError:
          if (not self.is_symlink()):
             ch.FATAL("can’t symlink: source exists and isn’t a symlink: %s"
@@ -471,7 +492,7 @@ class Path(os.PathLike):
             ch.FATAL("can’t symlink: %s exists; want target %s but existing is %s"
                      % (self, target, self.readlink()))
       except OSError as x:
-         ch.FATAL("can’t symlink: %s -> %s: %s" % (name, target, x.strerror))
+         ch.FATAL("can’t symlink: %s -> %s: %s" % (self, target, x.strerror))
 
    def unlink(self, missing_ok=False):
       if (missing_ok and not self.exists()):
@@ -740,7 +761,7 @@ class Path(os.PathLike):
    def disk_bytes(self):
       """Return the number of disk bytes consumed by path. Note this is
          probably different from the file size."""
-      return self.stat().st_blocks * 512
+      return self.stat(False).st_blocks * 512
 
    def du(self):
       """Return a tuple (number of files, total bytes on disk) for everything
@@ -872,8 +893,9 @@ class Path(os.PathLike):
          #992, but decided that the advantages it offered didn’t warrant the
          effort required to make the change.
 
-           >>> sorted(Path("/dev/fd").listdir())
-           ['0', '1', '2', '3']"""
+           >>> import os
+           >>> Path("/proc/self/task").listdir() == { str(os.getpid()) }
+           True"""
       return set(ch.ossafe(os.listdir, "can’t list: %s" % self, self))
 
    def mkdirs(self, exist_ok=True):
