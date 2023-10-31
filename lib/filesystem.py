@@ -790,7 +790,7 @@ class Path(os.PathLike):
       path_c = self.suffix_add(".gz")
       # On first call, remember first available of pigz and gzip using class
       # attribute 'gzip'.
-      self.__class__.gzip_set()
+      self.__class__._gzip_set()
       # Remove destination if it already exists, because “gzip --force” does
       # several other things too. Also, pigz(1) sometimes confusingly reports
       # “Inappropriate ioctl for device” if destination already exists.
