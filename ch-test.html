@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>9. ch-test &mdash; Charliecloud 0.34 documentation</title>
+  <title>9. ch-test &mdash; Charliecloud 0.35 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34
+                0.35
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -143,11 +143,14 @@ allows trading off thoroughness versus time.</p>
 images directory produced by a successful <code class="code docutils literal notranslate"><span class="pre">build</span></code> phase, which can
 be copied from the build system if it’s not also the run system.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">rootemu</span></code></dt><dd><p>Test the root emulation modes (<code class="code docutils literal notranslate"><span class="pre">seccomp</span></code>, <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code>, and
+<code class="code docutils literal notranslate"><span class="pre">none</span></code>) on various linux distributions.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">examples</span></code></dt><dd><p>Example applications. Requires an unpacked images directory produced by a
 successful <code class="code docutils literal notranslate"><span class="pre">run</span></code> phase.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">all</span></code></dt><dd><p>Execute phases <code class="code docutils literal notranslate"><span class="pre">build</span></code>, <code class="code docutils literal notranslate"><span class="pre">run</span></code>, and <code class="code docutils literal notranslate"><span class="pre">examples</span></code>, in that
-order.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">all</span></code></dt><dd><p>Execute phases <code class="code docutils literal notranslate"><span class="pre">build</span></code>, <code class="code docutils literal notranslate"><span class="pre">rootemu</span></code>, <code class="code docutils literal notranslate"><span class="pre">run</span></code>, and
+<code class="code docutils literal notranslate"><span class="pre">examples</span></code>, in that order.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">mk-perm-dirs</span></code></dt><dd><p>Create the filesystem permissions directories. Requires
 <code class="code docutils literal notranslate"><span class="pre">--perm-dirs</span></code>.</p>

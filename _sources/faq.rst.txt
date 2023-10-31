@@ -394,8 +394,6 @@ of the default 1001:1001), i.e. :code:`--gid=5`. Then, step 4 succeeds because
 the call is mapped to :code:`chown("/dev/pts/0", 1000, 1001)` and MATLAB is
 happy.
 
-.. _faq_docker2tar-size:
-
 :code:`ch-convert` from Docker incorrect image sizes
 ----------------------------------------------------
 
@@ -1031,7 +1029,6 @@ One fix is to configure your :code:`.bashrc` or equivalent to:
          fi
      }
 
-
 How can I build images for a foreign architecture?
 --------------------------------------------------
 
@@ -1079,7 +1076,6 @@ install :code:`qemu-*-static`, is to populate a chroot for it with the `PRoot
 specifying a :code:`qemu-*-static` binary (perhaps obtained by unpacking a
 distribution package).
 
-
 How can I use tarball base images from e.g. linuxcontainers.org?
 ----------------------------------------------------------------
 
@@ -1098,6 +1094,157 @@ linuxcontainers.org uses the opposite order for “le” in the architecture nam
   $ wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
   $ ch-image import rootfs.tar.xz ppc64le/alpine:3.17
 
+.. _faq_verbosity:
+
+How can I control Charliecloud’s quietness or verbosity?
+--------------------------------------------------------
+
+Charliecloud logs various chatter about what is going on to standard error.
+This is distinct from *output*, e.g., :code:`ch-image list` prints the list of
+images to standard output. We use reasonably standard log levels:
+
+  1. **Error**. Some error condition that makes it impossible to proceed. The
+     program exits soon after printing the error. Examples: unknown image
+     type, Dockerfile parse error. (There is an internal distinction between
+     “fatal” and “error” levels, but this isn’t really meaningful to users.)
+
+  2. **Warning**. Unexpected condition the user needs to know about but that
+     should not stop the program. Examples: :code:`ch-run --mount` with a
+     directory image (which does not use a mount point), unsupported
+     Dockerfile instructions that are ignored.
+
+  3. **Info**. Chatter useful enough to be printed by default. Example:
+     progress messages during image download and unpacking. (:code:`ch-run` is
+     silent during normal operations and does not have any “info” logging.)
+
+  4. **Verbose**. Diagnostic information useful for debugging user containers,
+     the Charliecloud installation, and Charliecloud itself. Examples:
+     :code:`ch-run --join` coordination progress, :code:`ch-image` internal
+     paths, Dockerfile parse tree.
+
+  5. **Debug**. More detailed diagnostic information useful for debugging
+     Charliecloud. Examples: data structures unserialized from image registry
+     metadata JSON, image reference parse tree.
+
+  6. **Trace**; printed if :code:`-vvv`. Grotesquely detailed diagnostic
+     information for debugging Charliecloud, to the extent it interferes with
+     normal use. A sensible person might use a `debugger
+     <https://twitter.com/wesamo__/status/1464764461831663626>`_ instead.
+     Examples: component-by-component progress of bind-mount target directory
+     analysis/creation, text of image registry JSON, every single file
+     unpacked from image layers.
+
+Charliecloud also runs sub-programs at various times, notably commands in
+:code:`RUN` instructions and :code:`git(1)` to manage the build cache. These
+programs have their own standard error and standard output streams, which
+Charliecloud either suppresses or passes through depending on verbosity level.
+
+Most Charliecloud programs accept :code:`-v` to increase logging verbosity and
+:code:`-q` to decrease it. Generally:
+
+  * Each :code:`-v` (up to three) makes Charliecloud noisier.
+
+  * :code:`-q` suppresses normal logging.
+
+  * :code:`-qq` also suppresses stdout for the program and its subprocesses,
+    and warnings from the program.
+
+  * :code:`-qqq` also suppresses subprocess stderr. (This means subprocesses
+    are completely silenced no matter what goes wrong!)
+
+This table list which logging is printed at which verbosity levels (✅
+indicates printed, ❌ suppressed).
+
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - :code:`-vvv`
+     - :code:`-vv`
+     - :code:`-v`
+     - def.
+     - :code:`-q`
+     - :code:`-qq`
+     - :code:`-qqq`
+   * - trace
+     - ✅
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+   * - debug
+     - ✅
+     - ✅
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+   * - verbose
+     - ✅
+     - ✅
+     - ✅
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+   * - info
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ❌
+     - ❌
+     - ❌
+   * - program stdout
+     - ✅
+     - ✅
+     - [1]
+     - [1]
+     - [1]
+     - ❌
+     - ❌
+   * - subprocess stdout
+     - ✅
+     - ✅
+     - [1]
+     - [1]
+     - [1]
+     - ❌
+     - ❌
+   * - warning
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ❌
+     - ❌
+   * - subprocess stderr
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ❌
+   * - error
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+
+Notes:
+
+1. Charliecloud handles subprocess stdout on case-by-case basis for these log
+   levels. For example, sometimes it’s passed through by default (e.g.,
+   :code:`RUN`) and sometimes it’s captured for internal use (e.g., many
+   :code:`git(1)` invocations).
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
-..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq

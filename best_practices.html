@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>11. Best practices &mdash; Charliecloud 0.34 documentation</title>
+  <title>11. Best practices &mdash; Charliecloud 0.35 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34
+                0.35
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -54,11 +54,16 @@
 <li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
 <li class="toctree-l1 current"><a class="current reference internal" href="#">11. Best practices</a><ul>
 <li class="toctree-l2"><a class="reference internal" href="#other-best-practices-information">11.1. Other best practices information</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">11.2. Installing your own software</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#third-party-software-via-package-manager">11.2.1. Third-party software via package manager</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#third-party-software-compiled-from-source">11.2.2. Third-party software compiled from source</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-in-the-image">11.2.3. Your software stored in the image</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">11.2.4. Your software stored on the host</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#filesystems">11.2. Filesystems</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#metadata-traffic">11.2.1. Metadata traffic</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#file-copy-performance">11.2.2. File copy performance</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#installing-your-own-software">11.3. Installing your own software</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#third-party-software-via-package-manager">11.3.1. Third-party software via package manager</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#third-party-software-compiled-from-source">11.3.2. Third-party software compiled from source</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-in-the-image">11.3.3. Your software stored in the image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">11.3.4. Your software stored on the host</a></li>
 </ul>
 </li>
 </ul>
@@ -105,8 +110,148 @@ recommendations for scientific software.</p></li>
 NIST Special Publication 800-190; Souppaya, Morello, and Scarfone 2017.</p></li>
 </ul>
 </section>
+<section id="filesystems">
+<h2><span class="section-number">11.2. </span>Filesystems<a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h2>
+<p>There are two performance gotchas to be aware of for Charliecloud.</p>
+<section id="metadata-traffic">
+<h3><span class="section-number">11.2.1. </span>Metadata traffic<a class="headerlink" href="#metadata-traffic" title="Permalink to this headline">¶</a></h3>
+<p>Directory-format container images and the Charliecloud storage directory often
+contain, and thus Charliecloud must manipulate, a very large number of files.
+For example, after running the test suite, the storage directory contains
+almost 140,000 files. That is, metadata traffic can be quite high.</p>
+<p>Such images and the storage directory should be stored on a filesystem with
+reasonable metadata performance. Notably, this <em>excludes</em> Lustre, which is
+commonly used for scratch filesystems in HPC; i.e., don’t store these things
+on Lustre. NFS is usually fine, though in general it performs worse than a
+local filesystem.</p>
+<p>In contrast, SquashFS images, which encapsulate the image into a single file
+that is mounted using FUSE at runtime, insulate the filesystem from this
+metadata traffic. Images in this format are suitable for any filesystem,
+including Lustre.</p>
+</section>
+<section id="file-copy-performance">
+<span id="best-practices-file-copy"></span><h3><span class="section-number">11.2.2. </span>File copy performance<a class="headerlink" href="#file-copy-performance" title="Permalink to this headline">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> does a lot of file copying. The bulk of this is manipulating
+images in the storage directory. Importantly, this includes <a class="reference internal" href="ch-image.html#ch-image-bu-large"><span class="std std-ref">large files</span></a> stored by the build cache outside its Git repository,
+though this feature is disabled by default.</p>
+<p>Copies are costly both in time (to read, transfer, and write the duplicate
+bytes) and space (to store the bytes). However significant optimizations are
+sometimes available. Charliecloud’s internal file copies (unfortunately not
+sub-programs like Git) can take advantage of multiple optimized file-copy
+paths offered by Linux:</p>
+<dl class="simple">
+<dt>in-kernel copy</dt><dd><p>Copy data inside the kernel without passing through user-space. Saves time
+but not space.</p>
+</dd>
+<dt>server-side copy</dt><dd><p>Copy data on the server without sending it over the network, relevant only
+for network filesystems. Saves time but not space.</p>
+</dd>
+<dt>reflink copy (best)</dt><dd><p>Copy-on-write via “<a class="reference external" href="https://blog.ram.rachum.com/post/620335081764077568/symlinks-and-hardlinks-move-over-make-room-for">reflink</a>”.
+The destination file gets a new inode but shares the data extents of the
+source file — i.e., no data are copied! — with extents unshared later
+if/when are written. Saves both time and space (and potentially quite a
+lot).</p>
+</dd>
+</dl>
+<p>To use these optimizations, you need:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Python ≥3.8, for <code class="code docutils literal notranslate"><span class="pre">os.copy_file_range()</span></code> (<a class="reference external" href="https://docs.python.org/3/library/os.html#os.copy_file_range">docs</a>), which
+wraps <code class="code docutils literal notranslate"><span class="pre">copy_file_range(2)</span></code> (<a class="reference external" href="https://man7.org/linux/man-pages/man2/copy_file_range.2.html">man page</a>), which
+selects the best method from the three above.</p></li>
+<li><p>A new-ish Linux kernel (details vary).</p></li>
+<li><p>The right filesystem.</p></li>
+</ol>
+</div></blockquote>
+<p>The following table summarizes our (possibly incorrect) understanding of
+filesystem support as of October 2023. For current or historical information,
+see the <a class="reference external" href="https://elixir.bootlin.com/linux/latest/A/ident/remap_file_range">Linux source code</a> for
+in-kernel filesystems or specific filesystem release nodes, e.g. <a class="reference external" href="https://github.com/openzfs/zfs/releases">ZFS</a>. A checkmark ✅ indicates
+supported, ❌ unsupported. We recommend using a filesystem that supports
+reflink and also (if applicable) server-side copy.</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 38%" />
+<col style="width: 20%" />
+<col style="width: 20%" />
+<col style="width: 22%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p>in-kernel</p></th>
+<th class="head"><p>server-side</p></th>
+<th class="head"><p>reflink (best)</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td colspan="4"><p><em>local filesystems</em></p></td>
+</tr>
+<tr class="row-odd"><td><p>BTRFS</p></td>
+<td><p>✅</p></td>
+<td><p>n/a</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p>OCFS2</p></td>
+<td><p>✅</p></td>
+<td><p>n/a</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-odd"><td><p>XFS</p></td>
+<td><p>✅</p></td>
+<td><p>n/a</p></td>
+<td><p>✅</p></td>
+</tr>
+<tr class="row-even"><td><p>ZFS</p></td>
+<td><p>✅</p></td>
+<td><p>n/a</p></td>
+<td><p>✅ [1]</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p><em>network filesystems</em></p></td>
+</tr>
+<tr class="row-even"><td><p>CIFS/SMB</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>?</p></td>
+</tr>
+<tr class="row-odd"><td><p>NFSv3</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>NFSv4</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅ [2]</p></td>
+</tr>
+<tr class="row-odd"><td colspan="4"><p><em>other situations</em></p></td>
+</tr>
+<tr class="row-even"><td><p>filesystems not listed</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>copies between filesystems</p></td>
+<td><p>❌ [3]</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>As of <a class="reference external" href="https://github.com/openzfs/zfs/releases/tag/zfs-2.2.0">ZFS 2.2.0</a>.</p></li>
+<li><p>If the underlying exported filesystem also supports reflink.</p></li>
+<li><p>Recent kernels (≥5.18 as well as stable kernels if backported) support
+in-kernel file copy between filesystems, but for many kernels it is <a class="reference external" href="https://man7.org/linux/man-pages/man2/copy_file_range.2.html#BUGS">not
+stable</a>, so
+Charliecloud does not currently attempt it.</p></li>
+</ol>
+</div></blockquote>
+</section>
+</section>
 <section id="installing-your-own-software">
-<h2><span class="section-number">11.2. </span>Installing your own software<a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">11.3. </span>Installing your own software<a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
 <p>This section covers four situations for making software available inside a
 Charliecloud container:</p>
 <blockquote>
@@ -123,7 +268,7 @@ Charliecloud container:</p>
 trustworthy image on Docker Hub you can use as a base?</p>
 </div>
 <section id="third-party-software-via-package-manager">
-<h3><span class="section-number">11.2.1. </span>Third-party software via package manager<a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.3.1. </span>Third-party software via package manager<a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
 <p>This approach is the simplest and fastest way to install stuff in your image.
 The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile does this to install the package
 <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
@@ -145,7 +290,7 @@ ironed out yet. If you encounter problems, please do file a bug!</p>
 </div>
 </section>
 <section id="third-party-software-compiled-from-source">
-<h3><span class="section-number">11.2.2. </span>Third-party software compiled from source<a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.3.2. </span>Third-party software compiled from source<a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
 <p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic AlmaLinux image
@@ -168,32 +313,15 @@ this with two chained Dockerfiles. First, we build a basic AlmaLinux image
 <span class="c">#</span>
 <span class="c">#   4. Issue #1103: Install libarchive to resolve cmake bug</span>
 <span class="c">#</span>
+<span class="c"># FIXME: This instruction seems to be running afoul of #1679. I’ve re-wrapped</span>
+<span class="c"># it to have fewer continuations in hopes we trigger that less.</span>
 <span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
                 epel-release <span class="se">\</span>
                 <span class="s1">&#39;dnf-command(config-manager)&#39;</span> <span class="se">\</span>
  <span class="o">&amp;&amp;</span> dnf config-manager --enable powertools <span class="se">\</span>
  <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
                 dnf-plugin-ovl <span class="se">\</span>
-                autoconf <span class="se">\</span>
-                automake <span class="se">\</span>
-                gcc <span class="se">\</span>
-                git <span class="se">\</span>
-                libarchive <span class="se">\</span>
-                libpng-devel <span class="se">\</span>
-                make <span class="se">\</span>
-                python3 <span class="se">\</span>
-                python3-devel <span class="se">\</span>
-                python3-lark-parser <span class="se">\</span>
-                python3-requests <span class="se">\</span>
-                python3-sphinx <span class="se">\</span>
-                python3-sphinx_rtd_theme <span class="se">\</span>
-                rpm-build <span class="se">\</span>
-                rpmlint <span class="se">\</span>
-                rsync <span class="se">\</span>
-                squashfs-tools <span class="se">\</span>
-                squashfuse <span class="se">\</span>
-                wget <span class="se">\</span>
-                which <span class="se">\</span>
+                autoconf automake gcc git libarchive libpng-devel make python3 python3-devel python3-lark-parser python3-requests python3-sphinx python3-sphinx_rtd_theme rpm-build rpmlint rsync squashfs-tools squashfuse wget which <span class="se">\</span>
  <span class="o">&amp;&amp;</span> dnf clean all
 
 <span class="c"># Need wheel to install bundled Lark, and the RPM version doesn’t work.</span>
@@ -292,7 +420,7 @@ resulting Charliecloud image (<code class="code docutils literal notranslate"><s
 </ol>
 </section>
 <section id="your-software-stored-in-the-image">
-<h3><span class="section-number">11.2.3. </span>Your software stored in the image<a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.3.3. </span>Your software stored in the image<a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
 <p>This method covers software provided by you that is included in the image.
 This is recommended when your software is relatively stable or is not easily
 available to users of your image, for example a library rather than simulation
@@ -341,7 +469,7 @@ build files, since they would be inappropriate inside the container.</p></li>
 </div>
 </section>
 <section id="your-software-stored-on-the-host">
-<h3><span class="section-number">11.2.4. </span>Your software stored on the host<a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.3.4. </span>Your software stored on the host<a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
 <p>This method leaves your software on the host but compiles it in the image.
 This is recommended when your software is volatile or each image user needs a
 different version, for example a simulation code under active development.</p>

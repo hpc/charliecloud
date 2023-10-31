@@ -281,6 +281,12 @@ These four instructions say:
 
   4. :code:`RUN`: Make that file executable.
 
+.. note::
+
+   :code:`COPY` is a standard instruction but has a number of disadvantages in
+   its corner cases. Charliecloud also has :code:`RSYNC`, which addresses
+   these; see :ref:`its documentation <ch-image_rsync>` for details.
+
 Let’s build this image::
 
   $ ch-image build -t hello -f Dockerfile .

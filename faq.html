@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>10. Frequently asked questions (FAQ) &mdash; Charliecloud 0.34 documentation</title>
+  <title>10. Frequently asked questions (FAQ) &mdash; Charliecloud 0.35 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34
+                0.35
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -103,6 +103,7 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#how-can-i-use-tarball-base-images-from-e-g-linuxcontainers-org">10.4.10. How can I use tarball base images from e.g. linuxcontainers.org?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-can-i-control-charlieclouds-quietness-or-verbosity">10.4.11. How can I control Charliecloud’s quietness or verbosity?</a></li>
 </ul>
 </li>
 </ul>
@@ -196,6 +197,7 @@
 </ul>
 </li>
 <li><p><a class="reference internal" href="#how-can-i-use-tarball-base-images-from-e-g-linuxcontainers-org" id="id41">How can I use tarball base images from e.g. linuxcontainers.org?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-control-charlieclouds-quietness-or-verbosity" id="id42">How can I control Charliecloud’s quietness or verbosity?</a></p></li>
 </ul>
 </li>
 </ul>
@@ -217,7 +219,7 @@ is, <em>Charlie Cloud</em> and <em>CharlieCloud</em> are both incorrect.</p>
 <section id="how-large-is-charliecloud">
 <h3><a class="toc-backref" href="#id6"><span class="section-number">10.1.3. </span>How large is Charliecloud?</a><a class="headerlink" href="#how-large-is-charliecloud" title="Permalink to this headline">¶</a></h3>
 <p>We pride ourselves on keeping Charliecloud lightweight and simple. The lines
-of code as of version 0.34 is:</p>
+of code as of version 0.35 is:</p>
 <table class="docutils align-default">
 <colgroup>
 <col style="width: 50%" />
@@ -225,25 +227,25 @@ of code as of version 0.34 is:</p>
 </colgroup>
 <tbody>
 <tr class="row-odd"><td><p>Program itself</p></td>
-<td><p>8124</p></td>
+<td><p>8463</p></td>
 </tr>
 <tr class="row-even"><td><p>Test suite &amp; examples</p></td>
-<td><p>10744</p></td>
+<td><p>11563</p></td>
 </tr>
 <tr class="row-odd"><td><p>Documentation</p></td>
-<td><p>5511</p></td>
+<td><p>6070</p></td>
 </tr>
 <tr class="row-even"><td><p>Build system</p></td>
-<td><p>1199</p></td>
+<td><p>1222</p></td>
 </tr>
 <tr class="row-odd"><td><p>Packaging</p></td>
 <td><p>628</p></td>
 </tr>
 <tr class="row-even"><td><p>Miscellaneous</p></td>
-<td><p>503</p></td>
+<td><p>502</p></td>
 </tr>
 <tr class="row-odd"><td><p>Total</p></td>
-<td><p>26709</p></td>
+<td><p>28448</p></td>
 </tr>
 </tbody>
 </table>
@@ -568,7 +570,7 @@ the call is mapped to <code class="code docutils literal notranslate"><span clas
 happy.</p>
 </section>
 <section id="ch-convert-from-docker-incorrect-image-sizes">
-<span id="faq-docker2tar-size"></span><h3><a class="toc-backref" href="#id20"><span class="section-number">10.3.5. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> from Docker incorrect image sizes</a><a class="headerlink" href="#ch-convert-from-docker-incorrect-image-sizes" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20"><span class="section-number">10.3.5. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> from Docker incorrect image sizes</a><a class="headerlink" href="#ch-convert-from-docker-incorrect-image-sizes" title="Permalink to this headline">¶</a></h3>
 <p>When converting from Docker, <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> often finishes before the
 progress bar is complete. For example:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert -i docker foo /var/tmp/foo.tar.gz
@@ -1188,6 +1190,171 @@ linuxcontainers.org uses the opposite order for “le” in the architecture nam
 <span class="gp">$</span> ch-image import rootfs.tar.xz ppc64le/alpine:3.17
 </pre></div>
 </div>
+</section>
+<section id="how-can-i-control-charlieclouds-quietness-or-verbosity">
+<span id="faq-verbosity"></span><h3><a class="toc-backref" href="#id42"><span class="section-number">10.4.11. </span>How can I control Charliecloud’s quietness or verbosity?</a><a class="headerlink" href="#how-can-i-control-charlieclouds-quietness-or-verbosity" title="Permalink to this headline">¶</a></h3>
+<p>Charliecloud logs various chatter about what is going on to standard error.
+This is distinct from <em>output</em>, e.g., <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">list</span></code> prints the list of
+images to standard output. We use reasonably standard log levels:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p><strong>Error</strong>. Some error condition that makes it impossible to proceed. The
+program exits soon after printing the error. Examples: unknown image
+type, Dockerfile parse error. (There is an internal distinction between
+“fatal” and “error” levels, but this isn’t really meaningful to users.)</p></li>
+<li><p><strong>Warning</strong>. Unexpected condition the user needs to know about but that
+should not stop the program. Examples: <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--mount</span></code> with a
+directory image (which does not use a mount point), unsupported
+Dockerfile instructions that are ignored.</p></li>
+<li><p><strong>Info</strong>. Chatter useful enough to be printed by default. Example:
+progress messages during image download and unpacking. (<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> is
+silent during normal operations and does not have any “info” logging.)</p></li>
+<li><p><strong>Verbose</strong>. Diagnostic information useful for debugging user containers,
+the Charliecloud installation, and Charliecloud itself. Examples:
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--join</span></code> coordination progress, <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> internal
+paths, Dockerfile parse tree.</p></li>
+<li><p><strong>Debug</strong>. More detailed diagnostic information useful for debugging
+Charliecloud. Examples: data structures unserialized from image registry
+metadata JSON, image reference parse tree.</p></li>
+<li><p><strong>Trace</strong>; printed if <code class="code docutils literal notranslate"><span class="pre">-vvv</span></code>. Grotesquely detailed diagnostic
+information for debugging Charliecloud, to the extent it interferes with
+normal use. A sensible person might use a <a class="reference external" href="https://twitter.com/wesamo__/status/1464764461831663626">debugger</a> instead.
+Examples: component-by-component progress of bind-mount target directory
+analysis/creation, text of image registry JSON, every single file
+unpacked from image layers.</p></li>
+</ol>
+</div></blockquote>
+<p>Charliecloud also runs sub-programs at various times, notably commands in
+<code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions and <code class="code docutils literal notranslate"><span class="pre">git(1)</span></code> to manage the build cache. These
+programs have their own standard error and standard output streams, which
+Charliecloud either suppresses or passes through depending on verbosity level.</p>
+<p>Most Charliecloud programs accept <code class="code docutils literal notranslate"><span class="pre">-v</span></code> to increase logging verbosity and
+<code class="code docutils literal notranslate"><span class="pre">-q</span></code> to decrease it. Generally:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>Each <code class="code docutils literal notranslate"><span class="pre">-v</span></code> (up to three) makes Charliecloud noisier.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-q</span></code> suppresses normal logging.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-qq</span></code> also suppresses stdout for the program and its subprocesses,
+and warnings from the program.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-qqq</span></code> also suppresses subprocess stderr. (This means subprocesses
+are completely silenced no matter what goes wrong!)</p></li>
+</ul>
+</div></blockquote>
+<p>This table list which logging is printed at which verbosity levels (✅
+indicates printed, ❌ suppressed).</p>
+<table class="docutils align-default">
+<colgroup>
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+<col style="width: 13%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"></th>
+<th class="head"><p><code class="code docutils literal notranslate"><span class="pre">-vvv</span></code></p></th>
+<th class="head"><p><code class="code docutils literal notranslate"><span class="pre">-vv</span></code></p></th>
+<th class="head"><p><code class="code docutils literal notranslate"><span class="pre">-v</span></code></p></th>
+<th class="head"><p>def.</p></th>
+<th class="head"><p><code class="code docutils literal notranslate"><span class="pre">-q</span></code></p></th>
+<th class="head"><p><code class="code docutils literal notranslate"><span class="pre">-qq</span></code></p></th>
+<th class="head"><p><code class="code docutils literal notranslate"><span class="pre">-qqq</span></code></p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>trace</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>debug</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>verbose</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>info</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>program stdout</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>[1]</p></td>
+<td><p>[1]</p></td>
+<td><p>[1]</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>subprocess stdout</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>[1]</p></td>
+<td><p>[1]</p></td>
+<td><p>[1]</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>warning</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-odd"><td><p>subprocess stderr</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>❌</p></td>
+</tr>
+<tr class="row-even"><td><p>error</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+<td><p>✅</p></td>
+</tr>
+</tbody>
+</table>
+<p>Notes:</p>
+<ol class="arabic simple">
+<li><p>Charliecloud handles subprocess stdout on case-by-case basis for these log
+levels. For example, sometimes it’s passed through by default (e.g.,
+<code class="code docutils literal notranslate"><span class="pre">RUN</span></code>) and sometimes it’s captured for internal use (e.g., many
+<code class="code docutils literal notranslate"><span class="pre">git(1)</span></code> invocations).</p></li>
+</ol>
 </section>
 </section>
 </section>

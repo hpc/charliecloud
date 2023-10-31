@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>2. Tutorial &mdash; Charliecloud 0.34 documentation</title>
+  <title>2. Tutorial &mdash; Charliecloud 0.35 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34
+                0.35
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -413,6 +413,12 @@ the <em>context directory</em>, which we’ll see more of below.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">RUN</span></code>: Make that file executable.</p></li>
 </ol>
 </div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="code docutils literal notranslate"><span class="pre">COPY</span></code> is a standard instruction but has a number of disadvantages in
+its corner cases. Charliecloud also has <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code>, which addresses
+these; see <a class="reference internal" href="ch-image.html#ch-image-rsync"><span class="std std-ref">its documentation</span></a> for details.</p>
+</div>
 <p>Let’s build this image:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t hello -f Dockerfile .
 <span class="go">  1. FROM almalinux:8</span>

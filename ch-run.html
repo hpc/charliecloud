@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>7. ch-run &mdash; Charliecloud 0.34 documentation</title>
+  <title>7. ch-run &mdash; Charliecloud 0.35 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34
+                0.35
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -363,6 +363,8 @@ as files in <code class="code docutils literal notranslate"><span class="pre">/d
 <p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> leaves environment variables unchanged, i.e. the host
 environment is passed through unaltered, except:</p>
 <ul class="simple">
+<li><p>by default (<code class="code docutils literal notranslate"><span class="pre">--home</span></code> not specified), <code class="code docutils literal notranslate"><span class="pre">HOME</span></code> is set to
+<code class="code docutils literal notranslate"><span class="pre">/root</span></code>, if it exists, and <code class="code docutils literal notranslate"><span class="pre">/</span></code> otherwise.</p></li>
 <li><p>limited tweaks to avoid significant guest breakage;</p></li>
 <li><p>user-set variables via <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>;</p></li>
 <li><p>user-unset variables via <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code>; and</p></li>

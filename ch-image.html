@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>6. ch-image &mdash; Charliecloud 0.34 documentation</title>
+  <title>6. ch-image &mdash; Charliecloud 0.35 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -31,7 +31,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34
+                0.35
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -68,10 +68,10 @@
 <li class="toctree-l4"><a class="reference internal" href="#id4">6.7.3.1. Overview</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#root-emulation-mode-fakeroot">6.7.3.2. Root emulation mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code></a></li>
 <li class="toctree-l4"><a class="reference internal" href="#root-emulation-mode-seccomp-default">6.7.3.3. Root emulation mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)</a></li>
-<li class="toctree-l4"><a class="reference internal" href="#run-instruction">6.7.3.4. <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instruction</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#run-logging">6.7.3.4. <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>  logging</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#compatibility-with-other-dockerfile-interpreters">6.7.4. Compatibility with other Dockerfile interpreters</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#compatibility-and-behavior-differences">6.7.4. Compatibility and behavior differences</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="#context-directory">6.7.4.1. Context directory</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#variable-substitution">6.7.4.2. Variable substitution</a></li>
 <li class="toctree-l4"><a class="reference internal" href="#arg">6.7.4.3. <code class="code docutils literal notranslate"><span class="pre">ARG</span></code></a></li>
@@ -81,29 +81,37 @@
 <li class="toctree-l4"><a class="reference internal" href="#features-we-do-not-plan-to-support">6.7.4.7. Features we do not plan to support</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#examples">6.7.5. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#rsync-dockerfile-extension">6.7.5. <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> (Dockerfile extension)</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id6">6.7.5.1. Overview</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#arguments">6.7.5.2. Arguments</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#disallowed-rsync-1-features">6.7.5.3. Disallowed <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> features</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id7">6.7.5.4. Build cache</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#examples-and-tutorial">6.7.5.5. Examples and tutorial</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#id6">6.8. <code class="code docutils literal notranslate"><span class="pre">build-cache</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#examples">6.7.6. Examples</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id8">6.8. <code class="code docutils literal notranslate"><span class="pre">build-cache</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#delete">6.9. <code class="code docutils literal notranslate"><span class="pre">delete</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#gestalt">6.10. <code class="code docutils literal notranslate"><span class="pre">gestalt</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#list">6.11. <code class="code docutils literal notranslate"><span class="pre">list</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id7">6.11.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id8">6.11.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id9">6.11.3. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">6.11.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id10">6.11.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id11">6.11.3. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#import">6.12. <code class="code docutils literal notranslate"><span class="pre">import</span></code></a></li>
 <li class="toctree-l2"><a class="reference internal" href="#pull">6.13. <code class="code docutils literal notranslate"><span class="pre">pull</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id10">6.13.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id11">6.13.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id12">6.13.3. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id12">6.13.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">6.13.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">6.13.3. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#push">6.14. <code class="code docutils literal notranslate"><span class="pre">push</span></code></a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id13">6.14.1. Synopsis</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id14">6.14.2. Description</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#id15">6.14.3. Examples</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">6.14.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">6.14.2. Description</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id17">6.14.3. Examples</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#reset">6.15. <code class="code docutils literal notranslate"><span class="pre">reset</span></code></a></li>
@@ -201,8 +209,12 @@ exception is <code class="code docutils literal notranslate"><span class="pre">p
 section <a class="reference internal" href="#ch-image-build-cache"><span class="std std-ref">Build cache</span></a> for details.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--cache-large</span> <span class="pre">SIZE</span></code></dt><dd><p>Set the cache’s large file threshold to <code class="code docutils literal notranslate"><span class="pre">SIZE</span></code> MiB, or <code class="code docutils literal notranslate"><span class="pre">0</span></code> for
-no large files, which is the default. This can speed up some builds.
+no large files, which is the default. Values greater than zero can speed
+up many builds but can also cause performance degradation.
 <strong>Experimental.</strong> See section <a class="reference internal" href="#ch-image-bu-large"><span class="std std-ref">Large file threshold</span></a> for details.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--debug</span></code></dt><dd><p>Add a stack trace to fatal error hints. This can also be done by setting
+the environment variable <code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_DEBUG</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-cache</span></code></dt><dd><p>Disable build cache. Default if a sufficiently new Git is not available.
 This option turns off the cache completely; if you want to re-execute a
@@ -215,6 +227,8 @@ which risks corruption but may be OK for some workloads.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-xattrs</span></code></dt><dd><p>Ignore xattrs and ACLs.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--password-many</span></code></dt><dd><p>Re-prompt the user every time a registry password is needed.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--profile</span></code></dt><dd><p>Dump profile to files <code class="code docutils literal notranslate"><span class="pre">/tmp/chofile.p</span></code> (<code class="code docutils literal notranslate"><span class="pre">cProfile</span></code> dump
 format) and <code class="code docutils literal notranslate"><span class="pre">/tmp/chofile.txt</span></code> (text summary). You can convert the
 former to a PDF call graph with <code class="code docutils literal notranslate"><span class="pre">gprof2dot</span> <span class="pre">-f</span> <span class="pre">pstats</span> <span class="pre">/tmp/chofile.p</span>
@@ -222,17 +236,19 @@ former to a PDF call graph with <code class="code docutils literal notranslate">
 subprocesses. Profile data should still be written on fatal errors, but
 not if the program crashes.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-q,</span> <span class="pre">--quiet</span></code></dt><dd><p>Be quieter; can be repeated. Incompatible with <code class="code docutils literal notranslate"><span class="pre">-v</span></code> and suppresses
+<code class="code docutils literal notranslate"><span class="pre">--debug</span></code> regardless of option order. See the <a class="reference internal" href="faq.html#faq-verbosity"><span class="std std-ref">FAQ entry on
+verbosity</span></a> for details.</p>
+</dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--rebuild</span></code></dt><dd><p>Execute all instructions, even if they are build cache hits, except for
 <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> which is retrieved from cache on hit.</p>
-</dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--password-many</span></code></dt><dd><p>Re-prompt the user every time a registry password is needed.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-s</span></code>, <code class="code docutils literal notranslate"><span class="pre">--storage</span> <span class="pre">DIR</span></code></dt><dd><p>Set the storage directory (see below for important details).</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--tls-no-verify</span></code></dt><dd><p>Don’t verify TLS certificates of the repository. (Do not use this option
 unless you understand the risks.)</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Print extra chatter; can be repeated.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Print extra chatter; can be repeated. See the <a class="reference internal" href="faq.html#faq-verbosity"><span class="std std-ref">FAQ entry on verbosity</span></a> for details.</p>
 </dd>
 </dl>
 </div></blockquote>
@@ -510,24 +526,31 @@ use, and <code class="code docutils literal notranslate"><span class="pre">-v</s
 <span id="ch-image-bu-large"></span><h3><span class="section-number">6.6.4. </span>Large file threshold<a class="headerlink" href="#large-file-threshold" title="Permalink to this headline">¶</a></h3>
 <p>Because Git uses content-addressed storage, upon commit, it must read in full
 all files modified by an instruction. This I/O cost can be a significant
-fraction of build time for some large images. Regular files larger than the
-experimental <em>large file threshold</em> are stored outside the Git repository,
-somewhat like <a class="reference external" href="https://git-lfs.github.com/">Git Large File Storage</a>.
-<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> uses hard links to bring large files in and out of images as
-needed, which is a fast metadata operation that ignores file content.</p>
+fraction of build time for some images. To mitigate this, regular files larger
+than the experimental <em>large file threshold</em> are stored outside the Git
+repository, somewhat like <a class="reference external" href="https://git-lfs.github.com/">Git Large File Storage</a>.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> copies large files in and out of images at each instruction
+commit. It tries to do this with a fast metadata-only copy-on-write operation
+called “reflink”, but that is only supported with the right Python version,
+Linux kernel version, and filesystem. If unsupported, Charliecloud falls back
+to an expensive standard copy, which is likely slower than letting Git deal
+with the files. See <a class="reference internal" href="best_practices.html#best-practices-file-copy"><span class="std std-ref">File copy performance</span></a>
+for details.</p>
+<p>Every version of a large file is stored verbatim and uncompressed (e.g., a
+large file with a one-byte change will be stored in full twice), so Git’s
+de-duplication does not apply. <em>However</em>, on filesystems with reflink support,
+files can share extents (e.g., each of the two files will have its own extent
+containing the changed byte, but the rest of the extents will remain shared).
+This provides de-duplication between large files images that share ancestry.
+Also, unused large files are deleted by <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">build-cache</span> <span class="pre">--gc</span></code>.</p>
+<p>A final caveat: Large files in any image with the same path, mode, size, and
+mtime (to nanosecond precision if possible) are considered identical, even if
+their content is not actually identical (e.g., <code class="code docutils literal notranslate"><span class="pre">touch(1)</span></code> shenanigans
+can corrupt an image).</p>
 <p>Option <code class="code docutils literal notranslate"><span class="pre">--cache-large</span></code> sets the threshold in MiB; if not set,
 environment variable <code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_CACHE_LARGE</span></code> is used; if that is not set
 either, the default value <code class="code docutils literal notranslate"><span class="pre">0</span></code> indicates that no files are considered
 large.</p>
-<p>There are two trade-offs. First, large files in any image with the same path,
-mode, size, and mtime (to nanosecond precision if possible) are considered
-identical, <em>even if their content is not actually identical</em>; e.g.,
-<code class="code docutils literal notranslate"><span class="pre">touch(1)</span></code> shenanigans can corrupt an image. Second, every version of a
-large file is stored verbatim and uncompressed (e.g., a large file with a
-one-byte change will be stored in full twice), and large files do not
-participate in the build cache’s de-duplication, so more storage space will
-likely be used. Unused versions <em>are</em> deleted by <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">build-cache</span>
-<span class="pre">--gc</span></code>.</p>
 <p>(Note that Git has an unrelated setting called <code class="code docutils literal notranslate"><span class="pre">core.bigFileThreshold</span></code>.)</p>
 </section>
 <section id="example">
@@ -620,10 +643,11 @@ common instruction <code class="code docutils literal notranslate"><span class="
 </section>
 <section id="id3">
 <h3><span class="section-number">6.7.2. </span>Description<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
-<p>Uses <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span> <span class="pre">-u0</span> <span class="pre">-g0</span> <span class="pre">--no-passwd</span> <span class="pre">--unsafe</span></code> to execute <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
-instructions. Note that <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> implicitly pulls the base image if
-needed, so you may want to read about the <code class="code docutils literal notranslate"><span class="pre">pull</span></code> subcommand below as
-well.</p>
+<p>See below for differences with other Dockerfile interpreters. Charliecloud
+supports an extended instruction (<code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code>), a few other instructions
+behave slightly differently, and a few are ignored.</p>
+<p>Note that <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> implicitly pulls the base image if needed, so you may
+want to read about the <code class="code docutils literal notranslate"><span class="pre">pull</span></code> subcommand below as well.</p>
 <p>Required argument:</p>
 <blockquote>
 <div><dl class="simple">
@@ -696,6 +720,8 @@ transformation,</p></li>
 </dd>
 </dl>
 </div></blockquote>
+<p>Uses <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span> <span class="pre">-u0</span> <span class="pre">-g0</span> <span class="pre">--no-passwd</span> <span class="pre">--unsafe</span></code> to execute <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
+instructions.</p>
 </section>
 <section id="privilege-model">
 <h3><span class="section-number">6.7.3. </span>Privilege model<a class="headerlink" href="#privilege-model" title="Permalink to this headline">¶</a></h3>
@@ -818,8 +844,8 @@ filter and has no knowledge of which instructions actually used the
 intercepted system calls. Therefore, the printed “instructions modified”
 number is only a count of instructions with a hook applied as described above.</p>
 </section>
-<section id="run-instruction">
-<h4><span class="section-number">6.7.3.4. </span><code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instruction<a class="headerlink" href="#run-instruction" title="Permalink to this headline">¶</a></h4>
+<section id="run-logging">
+<h4><span class="section-number">6.7.3.4. </span><code class="code docutils literal notranslate"><span class="pre">RUN</span></code>  logging<a class="headerlink" href="#run-logging" title="Permalink to this headline">¶</a></h4>
 <p>In terminal output, image metadata, and the build cache, the <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
 instruction is always logged as <code class="code docutils literal notranslate"><span class="pre">RUN.S</span></code>, <code class="code docutils literal notranslate"><span class="pre">RUN.F</span></code>, or <code class="code docutils literal notranslate"><span class="pre">RUN.N</span></code>.
 The letter appended to the instruction reflects the root emulation mode used
@@ -828,8 +854,8 @@ during the build in which the instruction was executed. <code class="code docuti
 indicates that neither form of root emulation was used (<code class="code docutils literal notranslate"><span class="pre">--force=none</span></code>).</p>
 </section>
 </section>
-<section id="compatibility-with-other-dockerfile-interpreters">
-<h3><span class="section-number">6.7.4. </span>Compatibility with other Dockerfile interpreters<a class="headerlink" href="#compatibility-with-other-dockerfile-interpreters" title="Permalink to this headline">¶</a></h3>
+<section id="compatibility-and-behavior-differences">
+<h3><span class="section-number">6.7.4. </span>Compatibility and behavior differences<a class="headerlink" href="#compatibility-and-behavior-differences" title="Permalink to this headline">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is an independent implementation and shares no code with
 other Dockerfile interpreters. It uses a formal Dockerfile parsing grammar
 developed from the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/">Dockerfile reference documentation</a> and miscellaneous other
@@ -855,8 +881,9 @@ revise our thinking about what is needed for HPC containers.</p>
 <h4><span class="section-number">6.7.4.1. </span>Context directory<a class="headerlink" href="#context-directory" title="Permalink to this headline">¶</a></h4>
 <p>The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
-directly from storage like any other local process would. However, you still
-can’t access anything outside the context directory.</p>
+directly from storage like any other local process would (i.e., it is
+reasonable use <code class="code docutils literal notranslate"><span class="pre">/</span></code> for the context). However, you still can’t
+access anything outside the context directory.</p>
 </section>
 <section id="variable-substitution">
 <h4><span class="section-number">6.7.4.2. </span>Variable substitution<a class="headerlink" href="#variable-substitution" title="Permalink to this headline">¶</a></h4>
@@ -980,21 +1007,582 @@ of them.</p></li>
 containerized processes can simply listen on a host port like other
 unprivileged processes.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">HEALTHCHECK</span></code>: This instruction’s main use case is monitoring server
-processes rather than applications. Also, implementing it requires a
-container supervisor daemon, which we have no plans to add.</p></li>
+processes rather than applications. Also, it requires a container supervisor
+daemon, which we have no plans to add.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">MAINTAINER</span></code> is deprecated.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">STOPSIGNAL</span></code> requires a container supervisor daemon process, which we
 have no plans to add.</p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">USER</span></code> does not make sense for unprivileged builds.</p></li>
-<li><p><code class="code docutils literal notranslate"><span class="pre">VOLUME</span></code>: This instruction is not currently supported. Charliecloud
+<li><p><code class="code docutils literal notranslate"><span class="pre">VOLUME</span></code>: Charliecloud
 has good support for bind mounts; we anticipate that it will continue to
 focus on that and will not introduce the volume management features that
 Docker has.</p></li>
 </ul>
 </section>
 </section>
+<section id="rsync-dockerfile-extension">
+<span id="ch-image-rsync"></span><h3><span class="section-number">6.7.5. </span><code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> (Dockerfile extension)<a class="headerlink" href="#rsync-dockerfile-extension" title="Permalink to this headline">¶</a></h3>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This instruction is experimental and may change or be removed.</p>
+</div>
+<section id="id6">
+<h4><span class="section-number">6.7.5.1. </span>Overview<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
+<p>Copying files is often simple but has numerous difficult corner cases, e.g.
+when dealing with symbolic or hard links. The standard instruction
+<code class="code docutils literal notranslate"><span class="pre">COPY</span></code> deals with many of these corner cases differently from other UNIX
+utilities, lacks complete documentation, and behaves inconsistently between
+different Dockerfile interpreters (e.g., Docker’s legacy builder vs.
+BuildKit), as detailed above. On the other hand, <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> is an
+extremely capable, widely used file copy tool, with detailed options to
+specify behavior and 25 years of history dealing with weirdness.</p>
+<p><code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> (also spelled <code class="code docutils literal notranslate"><span class="pre">NSYNC</span></code>) is a Charliecloud extension that
+gives copying behavior identical to <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code>. In fact, Charliecloud’s
+current implementation literally calls the host’s <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> to do the
+copy, though this may change in the future. There is no list form of
+<code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code>.</p>
+<p>The two key usage challenges are trailing slashes on paths and symlink
+handling. In particular, the default symlink handling seemed reasonable to us,
+but you may want something different. See the arguments and examples below.
+Importantly, <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> is not any less fraught, and you have no choice
+about what to do with symlinks.</p>
+</section>
+<section id="arguments">
+<h4><span class="section-number">6.7.5.2. </span>Arguments<a class="headerlink" href="#arguments" title="Permalink to this headline">¶</a></h4>
+<p><code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> takes the same arguments as <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code>, so refer to its
+<a class="reference external" href="https://man7.org/linux/man-pages/man1/rsync.1.html">man page</a> for a
+detailed explanation of all the options (with possible emphasis on its
+<a class="reference external" href="https://man7.org/linux/man-pages/man1/rsync.1.html#SYMBOLIC_LINKS">symlink options</a>).
+Sources are relative to the context directory even if they look absolute with
+a leading slash. Any globbed sources are processed by <code class="code docutils literal notranslate"><span class="pre">ch-image(1)</span></code>
+using Python rules, i.e., <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> sees the expanded sources with no
+wildcards. Relative destinations are relative to the image’s current working
+directory, while absolute destinations refer to the image’s root.</p>
+<p>For arguments that read input from a file (e.g. <code class="code docutils literal notranslate"><span class="pre">--exclude-from</span></code> or
+<code class="code docutils literal notranslate"><span class="pre">--files-from</span></code>), relative paths are relative to the context directory,
+absolute paths refer to the image root, and <code class="code docutils literal notranslate"><span class="pre">-</span></code> (standard input) is an
+error.</p>
+<p>For example,</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">WORKDIR</span><span class="s"> /foo</span>
+<span class="k">RSYNC</span> --foo src1 src2 dst
+</pre></div>
+</div>
+<p>is translated to (the equivalent of):</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir -p /foo
+<span class="gp">$</span> rsync -@<span class="o">=</span>-1 -AHSXpr --info<span class="o">=</span>progress2 -l --safe-links <span class="se">\</span>
+        --foo /context/src1 /context/src2 /storage/imgroot/foo/dst2
+</pre></div>
+</div>
+<p>Note the extensive default arguments to <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code>. <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> takes
+a single instruction option beginning with <code class="code docutils literal notranslate"><span class="pre">+</span></code> (plus) that is shorthand
+for a group of <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> options. This single option is one of:</p>
+<blockquote>
+<div><dl>
+<dt><code class="code docutils literal notranslate"><span class="pre">+m</span></code></dt><dd><p>Preserves metadata and directory structure. Symlinks are skipped <em>with a
+warning</em>. Equivalent to all of:</p>
+<ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">-&#64;=-1</span></code>: use nanosecond precision when comparing timestamps.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-A</span></code>: preserve ACLs.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-H</span></code>: preserve hard link groups.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-S</span></code>: preserve file sparseness when possible.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-X</span></code>: preserve xattrs in <code class="code docutils literal notranslate"><span class="pre">user.*</span></code> namespace.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-p</span></code>: preserve permissions.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">-r</span></code>: recurse into directories.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">--info=progress2</span></code> (only if stderr is a terminal): show progress
+meter (note <a class="reference external" href="https://unix.stackexchange.com/questions/215271">subtleties in interpretation</a>).</p></li>
+</ul>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">+l</span></code> (default)</dt><dd><p>Like <code class="code docutils literal notranslate"><span class="pre">+u</span></code>, but <em>silently skips</em> “unsafe” symlinks whose target is
+outside the top-of-transfer directory. Preserves:</p>
+<ul class="simple">
+<li><p>Metadata.</p></li>
+<li><p>Directory structure.</p></li>
+<li><p>Symlinks, if a link’s target is within the “top-of-transfer directory”.
+This is not the context directory and often not the source either. Also,
+this creates broken symlinks if the target is not within the source but
+is within the top-of-transfer. See examples below.</p></li>
+</ul>
+<p>Equivalent to the <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> options listed for <code class="code docutils literal notranslate"><span class="pre">+m</span></code> plus
+<code class="code docutils literal notranslate"><span class="pre">--links</span></code> (copy symlinks as symlinks unless otherwise specified) and
+<code class="code docutils literal notranslate"><span class="pre">--safe-links</span></code> (silently skip unsafe symlinks).</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">+u</span></code></dt><dd><p>Like <code class="code docutils literal notranslate"><span class="pre">+l</span></code>, but <em>replaces</em> with their target “unsafe” symlinks whose
+target is outside the top-of-transfer directory, and thus <em>can copy data
+outside the context directory into the image</em>. Preserves:</p>
+<ul class="simple">
+<li><p>Metadata.</p></li>
+<li><p>Directory structure.</p></li>
+<li><p>Symlinks, if a link’s target is within the “top-of-transfer directory”.
+This is not the context directory and often not the source either. Also,
+this creates broken symlinks if the target is not within the source but
+is within the top-of-transfer. See examples below.</p></li>
+</ul>
+<p>Equivalent to the <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> options listed for <code class="code docutils literal notranslate"><span class="pre">+m</span></code> plus
+<code class="code docutils literal notranslate"><span class="pre">--links</span></code> (copy symlinks as symlinks unless otherwise specified) and
+<code class="code docutils literal notranslate"><span class="pre">--copy-unsafe-links</span></code> (copy the target of unsafe symlinks).</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">+z</span></code></dt><dd><p>No default arguments. Directories will not be descended, no metadata will
+be preserved, and both hard and symbolic links will be ignored, except as
+otherwise specified by <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> options starting with a hyphen.
+(Note that <code class="code docutils literal notranslate"><span class="pre">-a</span></code>/<code class="code docutils literal notranslate"><span class="pre">--archive</span></code> is discouraged because it omits
+some metadata and handles symlinks inappropriately for containers.)</p>
+</dd>
+</dl>
+</div></blockquote>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p><code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> supports a configuration file <code class="code docutils literal notranslate"><span class="pre">~/.popt</span></code> that alters
+its command line processing. Currently, this configuration is respected for
+<code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> arguments, but that may change without notice.</p>
+</div>
+</section>
+<section id="disallowed-rsync-1-features">
+<h4><span class="section-number">6.7.5.3. </span>Disallowed <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> features<a class="headerlink" href="#disallowed-rsync-1-features" title="Permalink to this headline">¶</a></h4>
+<p>A small number of <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> features are actively disallowed:</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p><code class="code docutils literal notranslate"><span class="pre">rsync:</span></code> and <code class="code docutils literal notranslate"><span class="pre">ssh:</span></code> transports are an error. Charliecloud
+needs access to the entire input to compute cache hit or miss, and these
+transports make that impossible. It is possible these will become
+available in the future (please let us know if that is your use case!).
+For now, the workaround is to install <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> in the image and
+use it in a <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instruction, though only the instruction text
+will be considered for the cache.</p></li>
+<li><p>Option arguments must be delimited with <code class="code docutils literal notranslate"><span class="pre">=</span></code> (equals). For example,
+to set the block size to 4 MiB, you must say <code class="code docutils literal notranslate"><span class="pre">--block-size=4M</span></code> or
+<code class="code docutils literal notranslate"><span class="pre">-B=4M</span></code>. <code class="code docutils literal notranslate"><span class="pre">-B4M</span></code> will be interpreted as the three arguments
+<code class="code docutils literal notranslate"><span class="pre">-B</span></code>, <code class="code docutils literal notranslate"><span class="pre">-4</span></code>, and <code class="code docutils literal notranslate"><span class="pre">-M</span></code>; <code class="code docutils literal notranslate"><span class="pre">--block-size</span> <span class="pre">4M</span></code> will be
+interpreted as <code class="code docutils literal notranslate"><span class="pre">--block-size</span></code> with no argument and a copy source
+named <code class="code docutils literal notranslate"><span class="pre">4M</span></code>. This is so Charliecloud can process <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code>
+options without knowing which ones take an argument.</p></li>
+<li><p>Invalid <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> options:</p>
+<dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">--daemon</span></code></dt><dd><p>Running <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> in daemon mode does not make sense for
+container build.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-n</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dry-run</span></code></dt><dd><p>This makes the copy a no-op, and Charliecloud may want to use it
+internally in the future.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--remove-source-files</span></code></dt><dd><p>This would let the instruction alter the context directory.</p>
+</dd>
+</dl>
+</li>
+</ol>
+</div></blockquote>
+<p>Note that there are likely other flags that don’t make sense and/or cause
+undesirable behavior. We have not characterized this problem.</p>
+</section>
+<section id="id7">
+<h4><span class="section-number">6.7.5.4. </span>Build cache<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h4>
+<p>The instruction is a cache hit if the metadata of all source files is
+unchanged (specifically: filename, file type and permissions, xattrs, size,
+and last modified time). Unlike Docker, Charliecloud does not use file
+contents. This has two implications. First, it is possible to fool the cache
+by manually restoring the last-modified time. Second, <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> is
+I/O-intensive even when it hits, because it must <code class="code docutils literal notranslate"><span class="pre">stat(2)</span></code> every source
+file before checking the cache. However, this is still less I/O than reading
+the file content too.</p>
+<p>Notably, Charliecloud’s cache ignores <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code>’s own internal notion
+of whether anything would be transferred (e.g., <code class="code docutils literal notranslate"><span class="pre">rsync</span> <span class="pre">-ni</span></code>). This may
+change in the future.</p>
+</section>
+<section id="examples-and-tutorial">
+<h4><span class="section-number">6.7.5.5. </span>Examples and tutorial<a class="headerlink" href="#examples-and-tutorial" title="Permalink to this headline">¶</a></h4>
+<p>All of these examples use the same input, whose content will be introduced
+gradually, using edited output of <code class="code docutils literal notranslate"><span class="pre">ls</span> <span class="pre">-oghR</span></code> (which is like <code class="code docutils literal notranslate"><span class="pre">ls</span>
+<span class="pre">-lhR</span></code> but omits user and group). Examples assume a umask of <code class="code docutils literal notranslate"><span class="pre">0007</span></code>. The
+Dockerfile instructions listed also assume a preceding:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">alpine:3.17</span>
+<span class="k">RUN</span> mkdir /dst
+</pre></div>
+</div>
+<p>i.e., a simple base image containing a top-level directory <code class="code docutils literal notranslate"><span class="pre">dst</span></code>.</p>
+<p>Many additional examples are available in the source code in the file
+<code class="code docutils literal notranslate"><span class="pre">test/build/50_rsync.bats</span></code>.</p>
+<p>We begin by copying regular files. The context directory <code class="code docutils literal notranslate"><span class="pre">ctx</span></code> contains,
+in part, two directories containing one regular file each. Note that one of
+these files (<code class="code docutils literal notranslate"><span class="pre">file-basic1</span></code>) and one of the directories (<code class="code docutils literal notranslate"><span class="pre">basic1</span></code>)
+have strange permissions.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">./ctx:</span>
+<span class="go">drwx---r-x 2  60 Oct 11 13:20 basic1</span>
+<span class="go">drwxrwx--- 2  60 Oct 11 13:20 basic2</span>
+
+<span class="go">./ctx/basic1:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:20 file-basic1</span>
+
+<span class="go">./ctx/basic2:</span>
+<span class="go">-rw-rw---- 1 12 Oct 11 13:20 file-basic2</span>
+</pre></div>
+</div>
+<p>The simplest form of <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> is to copy a single file into a specified
+directory:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1/file-basic1 /dst
+</pre></div>
+</div>
+<p>resulting in:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -oghR dst
+<span class="go">dst:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:26 file-basic1</span>
+</pre></div>
+</div>
+<p>Note that <code class="code docutils literal notranslate"><span class="pre">file-basic1</span></code>’s metadata — here its odd permissions — are
+preserved. <code class="code docutils literal notranslate"><span class="pre">1</span></code> is the number of hard links to the file, and <code class="code docutils literal notranslate"><span class="pre">12</span></code>
+is the file size.</p>
+<p>One can also rename the destination by specifying a new file name, and with
+<code class="code docutils literal notranslate"><span class="pre">+z</span></code>, not copy metadata (from here on the <code class="code docutils literal notranslate"><span class="pre">ls</span></code> command is omitted
+for brevity):</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> +z /basic1/file-basic1 /dst/file-basic1_nom
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">-rw------- 1 12 Sep 21 15:51 file-basic1_nom</span>
+</pre></div>
+</div>
+<p>A trailing slash on the destination creates a new directory and places the
+source file within:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1/file-basic1 /dst/new/
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 22 Oct 11 13:26 new</span>
+
+<span class="go">dst/new:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:26 file-basic1</span>
+</pre></div>
+</div>
+<p>With multiple source files, the destination trailing slash is optional:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1/file-basic1 /basic2/file-basic2 /dst/newB
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 44 Oct 11 13:26 newB</span>
+
+<span class="go">dst/newB:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:26 file-basic1</span>
+<span class="go">-rw-rw---- 1 12 Oct 11 13:26 file-basic2</span>
+</pre></div>
+</div>
+<p>For directory sources, the presence or absence of a trailing slash is highly
+significant. Without one, the directory itself is placed in the destination
+(recall that this would rename a source <em>file</em>):</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1 /dst/basic1_new
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 12 Oct 11 13:28 basic1_new</span>
+
+<span class="go">dst/basic1_new:</span>
+<span class="go">drwx---r-x 1 22 Oct 11 13:28 basic1</span>
+
+<span class="go">dst/basic1_new/basic1:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:28 file-basic1</span>
+</pre></div>
+</div>
+<p>A source trailing slash means copy the <em>contents of</em> a directory rather than
+the directory itself. Importantly, however, the directory’s metadata is copied
+to the destination directory.</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1/ /dst/basic1_renamed
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwx---r-x 1 22 Oct 11 13:28 basic1_renamed</span>
+
+<span class="go">dst/basic1_renamed:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:28 file-basic1</span>
+</pre></div>
+</div>
+<p>One gotcha is that <code class="code docutils literal notranslate"><span class="pre">RSYNC</span> <span class="pre">+z</span></code> is a no-op if the source is a directory:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> +z /basic1 /dst/basic1_newC
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+</pre></div>
+</div>
+<p>At least <code class="code docutils literal notranslate"><span class="pre">-r</span></code> is needed with <code class="code docutils literal notranslate"><span class="pre">+z</span></code> in this case:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> +z -r /basic1/ /dst/basic1_newD
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwx------ 1 22 Oct 11 13:28 basic1_newD</span>
+
+<span class="go">dst/basic1_newD:</span>
+<span class="go">-rw------- 1 12 Oct 11 13:28 file-basic1</span>
+</pre></div>
+</div>
+<p>Multiple source directories can be specified, including with wildcards. This
+example also illustrates that copies files are by default merged with content
+already existing in the image.</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir /dst/dstC <span class="o">&amp;&amp;</span> <span class="nb">echo</span> file-dstC &gt; /dst/dstC/file-dstC
+<span class="k">RSYNC</span> /basic* /dst/dstC
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 42 Oct 11 13:33 dstC</span>
+
+<span class="go">dst/dstC:</span>
+<span class="go">drwx---r-x 1 22 Oct 11 13:33 basic1</span>
+<span class="go">drwxrwx--- 1 22 Oct 11 13:33 basic2</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 13:33 file-dstC</span>
+
+<span class="go">dst/dstC/basic1:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:33 file-basic1</span>
+
+<span class="go">dst/dstC/basic2:</span>
+<span class="go">-rw-rw---- 1 12 Oct 11 13:33 file-basic2</span>
+</pre></div>
+</div>
+<p>Trailing slashes can be specified independently for each source:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir /dst/dstF <span class="o">&amp;&amp;</span> <span class="nb">echo</span> file-dstF &gt; /dst/dstF/file-dstF
+<span class="k">RSYNC</span> /basic1 /basic2/ /dst/dstF
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 52 Oct 11 13:33 dstF</span>
+
+<span class="go">dst/dstF:</span>
+<span class="go">drwx---r-x 1 22 Oct 11 13:33 basic1</span>
+<span class="go">-rw-rw---- 1 12 Oct 11 13:33 file-basic2</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 13:33 file-dstF</span>
+
+<span class="go">dst/dstF/basic1:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:33 file-basic1</span>
+</pre></div>
+</div>
+<p>Bare <code class="code docutils literal notranslate"><span class="pre">/</span></code> (i.e., the entire context directory) is considered to have a
+trailing slash:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> / /dst
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwx---r-x 1  22 Oct 11 13:33 basic1</span>
+<span class="go">drwxrwx--- 1  22 Oct 11 13:33 basic2</span>
+
+<span class="go">dst/basic1:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 13:33 file-basic1</span>
+
+<span class="go">dst/basic2:</span>
+<span class="go">-rw-rw---- 1 12 Oct 11 13:33 file-basic2</span>
+</pre></div>
+</div>
+<p>To <em>replace</em> (rather than merge with) existing content, use <code class="code docutils literal notranslate"><span class="pre">--delete</span></code>.
+Note also that wildcards can be combined with trailing slashes and that the
+directory gets the metadata of the <em>first</em> slashed directory.</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir /dst/dstG <span class="o">&amp;&amp;</span> <span class="nb">echo</span> file-dstG &gt; /dst/dstG/file-dstG
+<span class="k">RSYNC</span> --delete /basic*/ /dst/dstG
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwx---r-x 1 44 Oct 11 14:00 dstG</span>
+
+<span class="go">dst/dstG:</span>
+<span class="go">-rw----r-- 1 12 Oct 11 14:00 file-basic1</span>
+<span class="go">-rw-rw---- 1 12 Oct 11 14:00 file-basic2</span>
+</pre></div>
+</div>
+<p>Symbolic links in the source(s) add significant complexity. Like
+<code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code>, <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> can do one of three things with a given
+symlink:</p>
+<ol class="arabic simple">
+<li><p>Ignore it, silently or with a warning.</p></li>
+<li><p>Preserve it: copy as a symlink, with the same target.</p></li>
+<li><p>Dereference it: copy the target instead.</p></li>
+</ol>
+<p>These actions are selected independently for <em>safe symlinks</em> and <em>unsafe
+symlinks</em>. Safe symlinks are those which point to a target within the <em>top of
+transfer</em>, which is the deepest directory in the source path with a trailing
+slash. For example, <code class="code docutils literal notranslate"><span class="pre">/foo/bar</span></code>’s top-of-transfer is <code class="code docutils literal notranslate"><span class="pre">/foo</span></code>
+(regardless of whether <code class="code docutils literal notranslate"><span class="pre">bar</span></code> is a directory or file), while
+<code class="code docutils literal notranslate"><span class="pre">/foo/bar/</span></code>’s top-of-transfer is <code class="code docutils literal notranslate"><span class="pre">/foo/bar</span></code>.</p>
+<p>For the symlink examples, the context contains two sub-directories with a
+variety of symlinks, as well as a sibling file and directory outside the
+context. All of these links are valid on the host. In this listing, the
+absolute path to the parent of the context directory is replaced with
+<code class="code docutils literal notranslate"><span class="pre">/...</span></code>.</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">.:</span>
+<span class="go">drwxrwx--- 9 200 Oct 11 14:00 ctx</span>
+<span class="go">drwxrwx--- 2  60 Oct 11 14:00 dir-out</span>
+<span class="go">-rw-rw---- 1   9 Oct 11 14:00 file-out</span>
+
+<span class="go">./ctx:</span>
+<span class="go">drwxrwx--- 3 320 Oct 11 14:00 sym1</span>
+
+<span class="go">./ctx/sym1:</span>
+<span class="go">lrwxrwxrwx 1 13 Oct 11 14:00 dir-out_rel -&gt; ../../dir-out</span>
+<span class="go">drwxrwx--- 2 60 Oct 11 14:00 dir-sym1</span>
+<span class="go">lrwxrwxrwx 1  8 Oct 11 14:00 dir-sym1_direct -&gt; dir-sym1</span>
+<span class="go">lrwxrwxrwx 1 10 Oct 11 14:00 dir-top_rel -&gt; ../dir-top</span>
+<span class="go">lrwxrwxrwx 1 47 Oct 11 14:00 file-out_abs -&gt; /.../file-out</span>
+<span class="go">lrwxrwxrwx 1 14 Oct 11 14:00 file-out_rel -&gt; ../../file-out</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 14:00 file-sym1</span>
+<span class="go">lrwxrwxrwx 1 57 Oct 11 14:00 file-sym1_abs -&gt; /.../ctx/sym1/file-sym1</span>
+<span class="go">lrwxrwxrwx 1  9 Oct 11 14:00 file-sym1_direct -&gt; file-sym1</span>
+<span class="go">lrwxrwxrwx 1 17 Oct 11 14:00 file-sym1_upover -&gt; ../sym1/file-sym1</span>
+<span class="go">lrwxrwxrwx 1 51 Oct 11 14:00 file-top_abs -&gt; /.../ctx/file-top</span>
+<span class="go">lrwxrwxrwx 1 11 Oct 11 14:00 file-top_rel -&gt; ../file-top</span>
+
+<span class="go">./ctx/sym1/dir-sym1:</span>
+<span class="go">-rw-rw---- 1 14 Oct 11 14:00 dir-sym1.file</span>
+
+<span class="go">./dir-out:</span>
+<span class="go">-rw-rw---- 1 13 Oct 11 14:00 dir-out.file</span>
+</pre></div>
+</div>
+<p>By default, safe symlinks are preserved while unsafe symlinks are silently
+ignored:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /sym1 /dst
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 206 Oct 11 17:10 sym1</span>
+
+<span class="go">dst/sym1:</span>
+<span class="go">drwxrwx--- 1 26 Oct 11 17:10 dir-sym1</span>
+<span class="go">lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -&gt; dir-sym1</span>
+<span class="go">lrwxrwxrwx 1 10 Oct 11 17:10 dir-top_rel -&gt; ../dir-top</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 17:10 file-sym1</span>
+<span class="go">lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -&gt; file-sym1</span>
+<span class="go">lrwxrwxrwx 1 17 Oct 11 17:10 file-sym1_upover -&gt; ../sym1/file-sym1</span>
+<span class="go">lrwxrwxrwx 1 17 Oct 11 17:10 file-sym2_upover -&gt; ../sym2/file-sym2</span>
+<span class="go">lrwxrwxrwx 1 11 Oct 11 17:10 file-top_rel -&gt; ../file-top</span>
+
+<span class="go">dst/sym1/dir-sym1:</span>
+<span class="go">-rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file</span>
+</pre></div>
+</div>
+<p>The source files have four rough fates:</p>
+<ol class="arabic simple">
+<li><p>Regular files and directories (<code class="code docutils literal notranslate"><span class="pre">file-sym1</span></code> and <code class="code docutils literal notranslate"><span class="pre">dir-sym1</span></code>).
+These are copied into the image unchanged, including metadata.</p></li>
+<li><p>Safe symlinks, now broken. This is one of the gotchas of <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code>’s
+top-of-transfer directory (here host path <code class="code docutils literal notranslate"><span class="pre">./ctx</span></code>, image path
+<code class="code docutils literal notranslate"><span class="pre">/</span></code>) differing from the source directory (<code class="code docutils literal notranslate"><span class="pre">./ctx/sym1</span></code>,
+<code class="code docutils literal notranslate"><span class="pre">/sym1</span></code>), because the latter lacks a trailing slash.
+<code class="code docutils literal notranslate"><span class="pre">dir-top_rel</span></code>, <code class="code docutils literal notranslate"><span class="pre">file-sym2_upover</span></code>, and <code class="code docutils literal notranslate"><span class="pre">file-top_rel</span></code> all
+ascend only as high as <code class="code docutils literal notranslate"><span class="pre">./ctx</span></code> (host path, <code class="code docutils literal notranslate"><span class="pre">/</span></code> image) before
+re-descending. This is within the top-of-transfer, so the symlinks are safe
+and thus copied unchanged, but their targets were not included in the copy.</p></li>
+<li><p>Safe symlinks, still valid.</p>
+<ol class="arabic simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">dir-sym1_direct</span></code> and <code class="code docutils literal notranslate"><span class="pre">file-sym1_direct</span></code> point directly to
+files in the same directory.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">dir-sym1_upover</span></code> and <code class="code docutils literal notranslate"><span class="pre">file-sym1_upover</span></code> point to files in
+the same directory, but by first ascending into their parent — within
+the top-of-transfer, so they are safe — and then re-descending. If
+<code class="code docutils literal notranslate"><span class="pre">sym1</span></code> were renamed during the copy, these links would break.</p></li>
+</ol>
+</li>
+<li><p>Unsafe symlinks, which are ignored by the copy and do not appear in the
+image.</p>
+<ol class="arabic simple">
+<li><p>Absolute symlinks are always unsafe (<code class="code docutils literal notranslate"><span class="pre">*_abs</span></code>).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">dir-out_rel</span></code> and <code class="code docutils literal notranslate"><span class="pre">file-out_rel</span></code> are relative symlinks that
+ascend above the top-of-transfer, in this case to targets outside the
+context, and are thus unsafe.</p></li>
+</ol>
+</li>
+</ol>
+<p>The top-of-transfer can be changed to <code class="code docutils literal notranslate"><span class="pre">sym1</span></code> with a trailing slash. This
+also adds <code class="code docutils literal notranslate"><span class="pre">sym1</span></code> to the destination so the resulting directory structure
+is the same.</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /sym1/ /dst/sym1
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 96 Oct 11 17:10 sym1</span>
+
+<span class="go">dst/sym1:</span>
+<span class="go">drwxrwx--- 1 26 Oct 11 17:10 dir-sym1</span>
+<span class="go">lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -&gt; dir-sym1</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 17:10 file-sym1</span>
+<span class="go">lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -&gt; file-sym1</span>
+
+<span class="go">dst/sym1/dir-sym1:</span>
+<span class="go">-rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file</span>
+</pre></div>
+</div>
+<p><code class="code docutils literal notranslate"><span class="pre">*_upover</span></code> and <code class="code docutils literal notranslate"><span class="pre">*-out_rel</span></code> are now unsafe and replaced with their
+targets.</p>
+<p>Another common use case is to follow unsafe symlinks and copy their targets in
+place of the links. This is accomplished with <code class="code docutils literal notranslate"><span class="pre">+u</span></code>:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> +u /sym1/ /dst/sym1
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 352 Oct 11 17:10 sym1</span>
+
+<span class="go">dst/sym1:</span>
+<span class="go">drwxrwx--- 1 24 Oct 11 17:10 dir-out_rel</span>
+<span class="go">drwxrwx--- 1 26 Oct 11 17:10 dir-sym1</span>
+<span class="go">lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -&gt; dir-sym1</span>
+<span class="go">drwxrwx--- 1 24 Oct 11 17:10 dir-top_rel</span>
+<span class="go">-rw-rw---- 1  9 Oct 11 17:10 file-out_abs</span>
+<span class="go">-rw-rw---- 1  9 Oct 11 17:10 file-out_rel</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 17:10 file-sym1</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 17:10 file-sym1_abs</span>
+<span class="go">lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -&gt; file-sym1</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 17:10 file-sym1_upover</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 17:10 file-sym2_abs</span>
+<span class="go">-rw-rw---- 1 10 Oct 11 17:10 file-sym2_upover</span>
+<span class="go">-rw-rw---- 1  9 Oct 11 17:10 file-top_abs</span>
+<span class="go">-rw-rw---- 1  9 Oct 11 17:10 file-top_rel</span>
+
+<span class="go">dst/sym1/dir-out_rel:</span>
+<span class="go">-rw-rw---- 1 13 Oct 11 17:10 dir-out.file</span>
+
+<span class="go">dst/sym1/dir-sym1:</span>
+<span class="go">-rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file</span>
+
+<span class="go">dst/sym1/dir-top_rel:</span>
+<span class="go">-rw-rw---- 1 13 Oct 11 17:10 dir-top.file</span>
+</pre></div>
+</div>
+<p>Now all the unsafe symlinks noted above are present in the image, but they
+have changed to the normal files and directories pointed to.</p>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p>This feature lets you copy files outside the context into the image, unlike
+other container builders where <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> can never access anything
+outside the context.</p>
+</div>
+<p>The sources themselves, if symlinks, do not get special treatment:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /sym1/file-sym1_direct /sym1/file-sym1_upover /dst
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">lrwxrwxrwx 1 9 Oct 11 17:10 file-sym1_direct -&gt; file-sym1</span>
+</pre></div>
+</div>
+<p>Note that <code class="code docutils literal notranslate"><span class="pre">file-sym1_upover</span></code> does not appear in the image, despite being
+named explicitly in the instruction, because it is an unsafe symlink.</p>
+<p>If the <em>destination</em> is a symlink to a file, and the source is a file, the
+link is replaced and the target is unchanged. (If the source is a directory,
+that is an error.)</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> touch /dst/file-dst <span class="o">&amp;&amp;</span> ln -s file-dst /dst/file-dst_direct
+<span class="k">RSYNC</span> /file-top /dst/file-dst_direct
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">-rw-rw---- 1 0 Oct 11 17:42 file-dst</span>
+<span class="go">-rw-rw---- 1 9 Oct 11 17:42 file-dst_direct</span>
+</pre></div>
+</div>
+<p>If the destination is a symlink to a directory, the link is followed:</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir /dst/dir-dst <span class="o">&amp;&amp;</span> ln -s dir-dst /dst/dir-dst_direct
+<span class="k">RSYNC</span> /file-top /dst/dir-dst_direct
+</pre></div>
+</div>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
+<span class="go">drwxrwx--- 1 16 Oct 11 17:50 dir-dst</span>
+<span class="go">lrwxrwxrwx 1  7 Oct 11 17:50 dir-dst_direct -&gt; dir-dst</span>
+
+<span class="go">dst/dir-dst:</span>
+<span class="go">-rw-rw---- 1 9 Oct 11 17:50 file-top</span>
+</pre></div>
+</div>
+</section>
+</section>
 <section id="examples">
-<h3><span class="section-number">6.7.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.7.6. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
 <p>Build image <code class="code docutils literal notranslate"><span class="pre">bar</span></code> using <code class="code docutils literal notranslate"><span class="pre">./foo/bar/Dockerfile</span></code> and context
 directory <code class="code docutils literal notranslate"><span class="pre">./foo/bar</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t bar -f ./foo/bar/Dockerfile ./foo/bar
@@ -1023,8 +1611,8 @@ installing into the image:</p>
 </div>
 </section>
 </section>
-<section id="id6">
-<h2><span class="section-number">6.8. </span><code class="code docutils literal notranslate"><span class="pre">build-cache</span></code><a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h2>
+<section id="id8">
+<h2><span class="section-number">6.8. </span><code class="code docutils literal notranslate"><span class="pre">build-cache</span></code><a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build-cache <span class="o">[</span>...<span class="o">]</span>
 </pre></div>
 </div>
@@ -1100,14 +1688,14 @@ successfully.</p></li>
 <h2><span class="section-number">6.11. </span><code class="code docutils literal notranslate"><span class="pre">list</span></code><a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h2>
 <p>Print information about images. If no argument given, list the images in
 builder storage.</p>
-<section id="id7">
-<h3><span class="section-number">6.11.1. </span>Synopsis<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h3>
+<section id="id9">
+<h3><span class="section-number">6.11.1. </span>Synopsis<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> list <span class="o">[</span>-l<span class="o">]</span> <span class="o">[</span>IMAGE_REF<span class="o">]</span>
 </pre></div>
 </div>
 </section>
-<section id="id8">
-<h3><span class="section-number">6.11.2. </span>Description<a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h3>
+<section id="id10">
+<h3><span class="section-number">6.11.2. </span>Description<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
 <p>Optional argument:</p>
 <blockquote>
 <div><dl class="simple">
@@ -1121,8 +1709,8 @@ the remote registry, if any.</p>
 </dl>
 </div></blockquote>
 </section>
-<section id="id9">
-<h3><span class="section-number">6.11.3. </span>Examples<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
+<section id="id11">
+<h3><span class="section-number">6.11.3. </span>Examples<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
 <p>List images in builder storage:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list
 <span class="go">alpine:3.17 (amd64)</span>
@@ -1176,15 +1764,15 @@ will still hit, even if the new image is different.</p>
 <h2><span class="section-number">6.13. </span><code class="code docutils literal notranslate"><span class="pre">pull</span></code><a class="headerlink" href="#pull" title="Permalink to this headline">¶</a></h2>
 <p>Pull the image described by the image reference <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from a
 repository to the local filesystem.</p>
-<section id="id10">
-<h3><span class="section-number">6.13.1. </span>Synopsis<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<section id="id12">
+<h3><span class="section-number">6.13.1. </span>Synopsis<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> pull <span class="o">[</span>...<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
 </pre></div>
 </div>
 <p>See the FAQ for the gory details on specifying image references.</p>
 </section>
-<section id="id11">
-<h3><span class="section-number">6.13.2. </span>Description<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<section id="id13">
+<h3><span class="section-number">6.13.2. </span>Description<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
 <p>Destination:</p>
 <blockquote>
 <div><dl class="simple">
@@ -1229,8 +1817,8 @@ image if they don’t exist, but no other action is taken.</p></li>
 <p>Note that some images (e.g., those with a “version 1 manifest”) do not contain
 metadata. A warning is printed in this case.</p>
 </section>
-<section id="id12">
-<h3><span class="section-number">6.13.3. </span>Examples<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
+<section id="id14">
+<h3><span class="section-number">6.13.3. </span>Examples<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
 <p>Download the Debian Buster image matching the host’s architecture and place it
 in the storage directory:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> uname -m
@@ -1272,15 +1860,15 @@ in the storage directory:</p>
 <h2><span class="section-number">6.14. </span><code class="code docutils literal notranslate"><span class="pre">push</span></code><a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h2>
 <p>Push the image described by the image reference <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from the
 local filesystem to a repository.</p>
-<section id="id13">
-<h3><span class="section-number">6.14.1. </span>Synopsis<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<section id="id15">
+<h3><span class="section-number">6.14.1. </span>Synopsis<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> push <span class="o">[</span>--image DIR<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
 </pre></div>
 </div>
 <p>See the FAQ for the gory details on specifying image references.</p>
 </section>
-<section id="id14">
-<h3><span class="section-number">6.14.2. </span>Description<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<section id="id16">
+<h3><span class="section-number">6.14.2. </span>Description<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
 <p>Destination:</p>
 <blockquote>
 <div><dl class="simple">
@@ -1304,8 +1892,8 @@ everything in the image is flattened to user:group <code class="code docutils li
 setuid/setgid bits are removed, to avoid surprises if the image is pulled by a
 privileged container implementation.</p>
 </section>
-<section id="id15">
-<h3><span class="section-number">6.14.3. </span>Examples<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
+<section id="id17">
+<h3><span class="section-number">6.14.3. </span>Examples<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
 <p>Push a local image to the registry <code class="code docutils literal notranslate"><span class="pre">example.com:5000</span></code> at path
 <code class="code docutils literal notranslate"><span class="pre">/foo/bar</span></code> with tag <code class="code docutils literal notranslate"><span class="pre">latest</span></code>. Note that in this form, the local
 image must be named to match that remote reference.</p>

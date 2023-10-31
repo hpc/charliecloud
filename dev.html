@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>12. Contributor’s guide &mdash; Charliecloud 0.34 documentation</title>
+  <title>12. Contributor’s guide &mdash; Charliecloud 0.35 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -30,7 +30,7 @@
             <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.34
+                0.35
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -108,7 +108,6 @@
 <li class="toctree-l4"><a class="reference internal" href="#lists">12.4.5.2. Lists</a></li>
 </ul>
 </li>
-<li class="toctree-l3"><a class="reference internal" href="#logging">12.4.6. Logging</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#oci-technical-notes">12.5. OCI technical notes</a><ul>
@@ -198,18 +197,17 @@ consult the internal documentation and other resources.</p>
 <li><p><a class="reference internal" href="#dependency-policy" id="id21">Dependency policy</a></p></li>
 <li><p><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id22">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></p></li>
 <li><p><a class="reference internal" href="#c-code" id="id23">C code</a></p></li>
-<li><p><a class="reference internal" href="#logging" id="id24">Logging</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#oci-technical-notes" id="id25">OCI technical notes</a></p>
+<li><p><a class="reference internal" href="#oci-technical-notes" id="id24">OCI technical notes</a></p>
 <ul>
-<li><p><a class="reference internal" href="#ch-run-oci" id="id26">ch-run-oci</a></p></li>
-<li><p><a class="reference internal" href="#ch-image" id="id27">ch-image</a></p></li>
+<li><p><a class="reference internal" href="#ch-run-oci" id="id25">ch-run-oci</a></p></li>
+<li><p><a class="reference internal" href="#ch-image" id="id26">ch-image</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#miscellaneous-notes" id="id28">Miscellaneous notes</a></p>
+<li><p><a class="reference internal" href="#miscellaneous-notes" id="id27">Miscellaneous notes</a></p>
 <ul>
-<li><p><a class="reference internal" href="#updating-bundled-lark-parser" id="id29">Updating bundled Lark parser</a></p></li>
+<li><p><a class="reference internal" href="#updating-bundled-lark-parser" id="id28">Updating bundled Lark parser</a></p></li>
 </ul>
 </li>
 </ul>
@@ -1026,59 +1024,16 @@ pointers to <code class="code docutils literal notranslate"><span class="pre">ch
 </div>
 </section>
 </section>
-<section id="logging">
-<h3><a class="toc-backref" href="#id24"><span class="section-number">12.4.6. </span>Logging</a><a class="headerlink" href="#logging" title="Permalink to this headline">¶</a></h3>
-<p>Charliecloud uses reasonably standard log levels for its stderr logging. The
-verbosity can be increased by up to three <code class="code docutils literal notranslate"><span class="pre">-v</span></code> command line arguments.
-Both the Python and C code use the same levels by calling logging functions
-named by level. The main error can be accompanied by a hint. The levels are:</p>
-<blockquote>
-<div><ol class="arabic simple">
-<li><p><strong>FATAL</strong>; always printed. Some error condition that makes it impossible
-to proceed. The program exits unsuccessfully immediately after printing
-the error. Examples: unknown image type, Dockerfile parse error.</p></li>
-<li><p><strong>WARNING</strong>; always printed. Unexpected condition the user needs to know
-about but that should not stop the program. Examples: <code class="code docutils literal notranslate"><span class="pre">ch-run</span>
-<span class="pre">--mount</span></code> with a directory image (which does not use a mount point),
-unsupported Dockerfile instructions that are ignored.</p></li>
-<li><p><strong>INFO</strong>; always printed. Chatter useful enough to always be printed.
-Example: progress messages during image download and unpacking. Note
-<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> is silent during normal operations and does not have any
-INFO logging.</p></li>
-<li><p><strong>VERBOSE</strong>; printed if <code class="code docutils literal notranslate"><span class="pre">-v</span></code> or more. Diagnostic information useful
-for debugging user containers, the Charliecloud installation, and
-Charliecloud itself. Examples: <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--join</span></code> coordination
-progress, <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> internal paths, Dockerfile parse tree.</p></li>
-<li><p><strong>DEBUG</strong>; printed if <code class="code docutils literal notranslate"><span class="pre">-vv</span></code> or more. More detailed diagnostic
-information useful for debugging Charliecloud. Examples: data structures
-unserialized from image registry metadata JSON, image reference parse
-tree.</p></li>
-<li><p><strong>TRACE</strong>; printed if <code class="code docutils literal notranslate"><span class="pre">-vvv</span></code>. Grotesquely detailed diagnostic
-information for debugging Charliecloud, to the extent it interferes with
-normal use. A sensible person might use a <a class="reference external" href="https://twitter.com/wesamo__/status/1464764461831663626">debugger</a> instead.
-Examples: component-by-component progress of bind-mount target directory
-analysis/creation, text of image registry JSON, every single file
-unpacked from image layers.</p></li>
-</ol>
-</div></blockquote>
-<p>There is no level ERROR; anything important the user needs to know about is
-WARNING if we can safely proceed or FATAL if not.</p>
-<div class="admonition warning">
-<p class="admonition-title">Warning</p>
-<p>Do not use INFO for <em>output</em>. For example, the results of <code class="code docutils literal notranslate"><span class="pre">ch-image</span>
-<span class="pre">list</span></code> just use plain <code class="code docutils literal notranslate"><span class="pre">print()</span></code> to stdout.</p>
-</div>
-</section>
 </section>
 <section id="oci-technical-notes">
-<h2><a class="toc-backref" href="#id25"><span class="section-number">12.5. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id24"><span class="section-number">12.5. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
 <p>This section describes our analysis of the Open Container Initiative (OCI)
 specification and implications for our implementations of <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>, and
 <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code>. Anything relevant for users goes in the respective man
 page; here is for technical details. The main goals are to guide Charliecloud
 development and provide and opportunity for peer-review of our work.</p>
 <section id="ch-run-oci">
-<h3><a class="toc-backref" href="#id26"><span class="section-number">12.5.1. </span>ch-run-oci</a><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25"><span class="section-number">12.5.1. </span>ch-run-oci</a><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h3>
 <p>Currently, <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> is only tested with Buildah. These notes
 describe what we are seeing from Buildah’s runtime expectations.</p>
 <section id="gotchas">
@@ -1437,7 +1392,7 @@ essentially a no-op, and annotations are not supported, so the
 </section>
 </section>
 <section id="ch-image">
-<h3><a class="toc-backref" href="#id27"><span class="section-number">12.5.2. </span>ch-image</a><a class="headerlink" href="#ch-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id26"><span class="section-number">12.5.2. </span>ch-image</a><a class="headerlink" href="#ch-image" title="Permalink to this headline">¶</a></h3>
 <section id="pull">
 <h4><span class="section-number">12.5.2.1. </span>pull<a class="headerlink" href="#pull" title="Permalink to this headline">¶</a></h4>
 <p>Images pulled from registries come with OCI metadata, i.e. a “config blob”.
@@ -1583,9 +1538,9 @@ non-empty history entries match the number of pushed layers.</p>
 </section>
 </section>
 <section id="miscellaneous-notes">
-<h2><a class="toc-backref" href="#id28"><span class="section-number">12.6. </span>Miscellaneous notes</a><a class="headerlink" href="#miscellaneous-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id27"><span class="section-number">12.6. </span>Miscellaneous notes</a><a class="headerlink" href="#miscellaneous-notes" title="Permalink to this headline">¶</a></h2>
 <section id="updating-bundled-lark-parser">
-<h3><a class="toc-backref" href="#id29"><span class="section-number">12.6.1. </span>Updating bundled Lark parser</a><a class="headerlink" href="#updating-bundled-lark-parser" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id28"><span class="section-number">12.6.1. </span>Updating bundled Lark parser</a><a class="headerlink" href="#updating-bundled-lark-parser" title="Permalink to this headline">¶</a></h3>
 <p>In order to change the version of the bundled lark parser you must modify
 multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
 catch both dot notation and tuples, but not the list of filenames in
