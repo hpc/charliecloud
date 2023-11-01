@@ -565,7 +565,6 @@ EOF
     [[ $output = *"user:$USER:r--"* ]]
 }
 
-
 @test 'ch-convert: dir -> ch-image -> X' {
     test_from ch-image
 }
