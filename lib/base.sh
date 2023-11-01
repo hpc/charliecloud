@@ -91,7 +91,7 @@ parse_basic_args () {
 
 # Redirect standard streams (or not) depending on “quiet” level. See table in
 # FAQ.
-quiet_process () {
+quiet () {
     if [ $quiet -ge 2 ]; then
         "$@" 1>/dev/null 2>/dev/null
     elif [ $quiet -ge 1 ]; then
