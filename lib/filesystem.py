@@ -565,7 +565,7 @@ class Path(pathlib.PosixPath):
          NOTE: We also cannot just call super().stat here because the
          follow_symlinks kwarg is absent in pathlib for Python 3.6, which we
          want to retain compatibility with."""
-      return ch.ossafe("can’t stat: %s" % self, self, os.stat,
+      return ch.ossafe("can’t stat: %s" % self, os.stat, self,
                        follow_symlinks=links)
 
    def stat_bytes(self, links=False):
