@@ -9,14 +9,12 @@ ch_lib=${ch_bin}/../lib
 . "${ch_lib}/version.sh"
 
 
-# Verbosity level; works the same as the Python code.
-verbose=0
-
-# Quiet level
-quiet=0
+# Log level. Incremented by “--verbose” and decremented by “--quiet”, as in the
+# Python code.
+log_level=0
 
 DEBUG () {
-    if [ "$verbose" -ge 2 ] && [ -z "$quiet" ]; then
+    if [ "$log_level" -ge 2 ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -32,7 +30,7 @@ FATAL () {
 }
 
 INFO () {
-    if [ "$quiet" -eq 0 ]; then
+    if [ "$log_level" -ge 0 ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -40,7 +38,7 @@ INFO () {
 }
 
 VERBOSE () {
-    if [ "$verbose" -ge 1 ] && [ "$quiet" -le 0 ]; then
+    if [ "$log_level" -ge 1 ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -66,11 +64,17 @@ parse_basic_arg () {
             usage 0   # exits
             ;;
         -q|--quiet)
-            quiet=$((quiet+1))
+            if [ $log_level -gt 0 ]; then
+                FATAL "incompatible options: --quiet, --verbose"
+            fi
+            log_level=$((log_level-1))
             return 0
             ;;
         -v|--verbose)
-            verbose=$((verbose+1))
+            if [ $log_level -lt 0 ]; then
+                FATAL "incompatible options: --quiet, --verbose"
+            fi
+            log_level=$((log_level+1))
             return 0
             ;;
         --version)
@@ -92,9 +96,9 @@ parse_basic_args () {
 # Redirect standard streams (or not) depending on “quiet” level. See table in
 # FAQ.
 quiet () {
-    if [ $quiet -ge 2 ]; then
+    if [ $log_level -lt -2 ]; then
         "$@" 1>/dev/null 2>/dev/null
-    elif [ $quiet -ge 1 ]; then
+    elif [ $log_level -lt -1 ]; then
         "$@" 1>/dev/null
     else
         "$@"

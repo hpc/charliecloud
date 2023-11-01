@@ -86,6 +86,9 @@ cv_dir_chimage () {
     dir_in_validate "$1"
     chimage_out_validate "$2"
     INFO 'importing ...'
+    # “ch-image” recognizes “-q” as an argument, but we choose to quiet it with
+    # “quiet” instead here because doing so is simpler from the perspective of
+    # “ch-convert”.
     quiet ch-image import "$1" "$2"  # FIXME: no progress meter
 }
 
@@ -109,12 +112,13 @@ cv_dir_squash () {
     pflist=${tmpdir}/pseudofiles
     INFO 'packing ...'
     quiet touch "$pflist"
-    quiet mount_points_ensure "$1" "$pflist"
+    mount_points_ensure "$1" "$pflist"
     # Exclude build cache metadata. 64kiB block size based on Shane's
     # experiments.
     # shellcheck disable=SC2086
-    quiet mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root -pf "$pflist" \
-                         -e "$1"/.git -e "$1"/.gitignore -e "$1"/ch/git.pickle
+    quiet mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root \
+                         -pf "$pflist" -e "$1"/.git -e "$1"/.gitignore \
+                         -e "$1"/ch/git.pickle
     # Zero the archive's internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
     # CentOS 7 comes with 4.2.  [1]: https://dr-emann.github.io/squashfs/
@@ -865,9 +869,6 @@ done
 if [ "$#" -ne 2 ]; then
     usage
 fi
-if [ $verbose -gt 0 ] && [ $quiet -gt 0 ]; then
-    FATAL "incompatible options: --quiet, --verbose"
-fi
 if [ -n "$no_xattrs" ]; then
     tar_xattr_args=
     squash_xattr_arg=
@@ -877,7 +878,7 @@ else
 fi
 in_desc=$1
 out_desc=$2
-VERBOSE "verbose level: ${verbose}"
+VERBOSE "verbose level: ${log_level}"
 
 if command -v ch-image > /dev/null 2>&1; then
     have_ch_image=yes
