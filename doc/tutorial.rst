@@ -93,7 +93,7 @@ All the executables have decent help and can tell you what version of
 Charliecloud you have (if not, please report a bug). For example::
 
   $ ch-run --help
-  Usage: ch-run [OPTION...] NEWROOT CMD [ARG...]
+  Usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]
 
   Run a command in a Charliecloud container.
   [...]

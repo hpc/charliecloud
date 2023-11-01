@@ -41,7 +41,7 @@ Example:\n\
 \n\
 You cannot use this program to actually change your UID.\n";
 
-const char args_doc[] = "IMAGE -- CMD [ARG...]";
+const char args_doc[] = "IMAGE -- COMMAND [ARG...]";
 
 /* Note: Long option numbers, once issued, are permanent; i.e., if you remove
    one, don’t re-number the others. */
@@ -179,7 +179,10 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
-   Te (arg_next < argc - 1, "IMAGE and/or CMD not specified");
+   if (arg_next >= argc - 1) {
+      printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
+      FATAL("IMAGE and/or COMMAND not specified");
+   }
    args.c.img_ref = argv[arg_next++];
    args.c.newroot = realpath_(args.c.newroot, true);
    args.storage_dir = realpath_(args.storage_dir, true);
