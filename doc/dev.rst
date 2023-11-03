@@ -848,6 +848,70 @@ Variable conventions in shell scripts and :code:`.bats` files
     foo=${bar}/baz    # yes
     foo="${bar}/baz"  # no
 
+Statement ordering within source files
+--------------------------------------
+
+In general, we order things alphabetically.
+
+Python
+~~~~~~
+
+The module as a whole, and each class, comprise a sequence of ordering units
+separated by section header comments surrounded by two or more hashes, e.g.
+:code:`## Globals ##`. Sections with the following names must be in this order
+(omissions are fine). Other section names may appear in any order. There is
+also an unnamed zeroth section.
+
+  #. Enums
+  #. Constants
+  #. Globals
+  #. Exceptions
+  #. Main
+  #. Functions
+  #. Classes
+
+Within each section, statements occur in the following order.
+
+  #. imports
+
+     #. standard library
+     #. external imports not in the standard library
+     #. :code:`import charliecloud`
+     #. other Charliecloud imports
+
+  #. assignments
+
+  #. function definitions
+
+     #. :code:`__init__`
+     #. static methods
+     #. class methods
+     #. other double-underscore methods (e.g. :code:`__str__`)
+     #. properties
+     #. “normal” functions (instance methods)
+
+  #. class definitions
+
+Within each group of statements above, identifiers must occur in alphabetical
+order. Exceptions:
+
+  #. Classes must appear after their base class.
+  #. Assignments may appear in any order.
+
+Statement types not listed above may appear in any order.
+
+A statement that must be out of order is exempted with a comment on its first
+line containing 👻, because a ghost says “OOO”, i.e. “out of order”.
+
+Python code
+-----------
+
+Indentation width
+~~~~~~~~~~~~~~~~~
+
+3 spaces per level. No tab characters.
+
+
 C code
 ------
 
@@ -1519,4 +1583,4 @@ What to do in each location should either be obvious or commented.
 
 ..  LocalWords:  milestoned gh nv cht Chacon’s scottchacon mis cantfix tmpimg
 ..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
-..  LocalWords:  abd bbf LOGFILE logfile rtd
+..  LocalWords:  abd bbf LOGFILE logfile rtd Enums

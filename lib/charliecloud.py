@@ -1,8 +1,8 @@
 import argparse
 import atexit
+import cProfile
 import collections
 import collections.abc
-import cProfile
 import datetime
 import enum
 import functools
@@ -24,7 +24,7 @@ import traceback
 
 # List of dependency problems. This variable needs to be created before we
 # import any other Charliecloud stuff to avoid #806.
-depfails = []
+depfails = []  # 👻
 
 
 import filesystem as fs

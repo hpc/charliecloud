@@ -39,8 +39,8 @@ import tempfile
 import textwrap
 
 import charliecloud as ch
-import image as im
 import filesystem as fs
+import image as im
 import pull
 
 
