@@ -274,8 +274,8 @@ jobs:
                       --htmldir=$ch_prefix/from-git_html
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_TEST_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_TEST_BUILDER = buildah* ]] && command -v buildah
+          [[ $CH_TEST_BUILDER = docker ]] && command -v docker
           if [[ $CH_TEST_BUILDER = ch-image ]]; then
               fgrep 'with ch-image(1): yes' config.log
               fgrep '"lark" module ... bundled' config.log
@@ -359,8 +359,8 @@ jobs:
           ./configure --prefix=$ch_prefix/from-tarball
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_TEST_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_TEST_BUILDER = buildah* ]] && command -v buildah
+          [[ $CH_TEST_BUILDER = docker ]] && command -v docker
           [[ $CH_TEST_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
           fgrep 'recommended tests, tar-unpack mode: yes' config.log
           fgrep 'recommended tests, squash-unpack mode: yes' config.log
@@ -454,7 +454,6 @@ jobs:
           fgrep 'HTML documentation ... no' config.log
           fgrep 'man pages ... no' config.log
           fgrep 'ch-image(1) ... no' config.log
-          fgrep 'with Docker: yes' config.log
           fgrep 'with ch-image(1): no' config.log
           fgrep 'basic tests, all stages: yes' config.log
           fgrep 'more complete tests: no' config.log
@@ -493,7 +492,6 @@ jobs:
           ./configure --prefix=/doesnotexist
           set -x
           fgrep 'documentation: no' config.log
-          fgrep 'with Docker: yes' config.log
           fgrep 'basic tests, all stages: yes' config.log
           fgrep 'more complete tests: no' config.log
           fgrep 'recommended tests, squash-mount mode: no' config.log
