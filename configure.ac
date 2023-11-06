@@ -571,16 +571,6 @@ AS_IF([   test $enable_man = yes && test $have_docs = no],
 
 ### Glue scripts #############################################################
 
-# Buildah
-vmin_buildah=1.11.2
-AC_CHECK_PROG([BUILDAH], [buildah], [buildah])
-CH_CHECK_VERSION([BUILDAH], [$vmin_buildah], [--version | cut -d' ' -f3])
-
-# Docker
-vmin_docker=17.03
-AC_CHECK_PROG([DOCKER], [docker], [docker])
-CH_CHECK_VERSION([DOCKER], [$vmin_docker], [-v | tr -d , | cut -d' ' -f3])
-
 # mktemp - no version
 AC_CHECK_PROG([MKTEMP], [mktemp], [mktemp])
 
@@ -716,10 +706,6 @@ AS_IF([   test $have_userns = yes],
 
 # image builders
 
-AS_IF([   test -n "$BUILDAH"],
-      [have_buildah=yes],
-      [have_buildah=no])
-
 AS_IF([   test $enable_ch_image = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
@@ -738,28 +724,21 @@ AS_IF([   test $have_ch_image = yes \
       [have_ch_image_rsync=yes],
       [have_ch_image_rsync=no])
 
-AS_IF([   test -n "$DOCKER" \
-       && test -n "$MKTEMP"],
-      [have_docker=yes],
-      [have_docker=no])
-
 # managing container images
 
-AS_IF([   test $have_buildah = yes \
-       || test $have_ch_image = yes \
-       || test $have_docker = yes],
+AS_IF([   test $have_ch_image = yes],
       [have_any_builder=yes],
       [have_any_builder=no])
 
-AS_IF([   test $have_any_builder = yes],
+AS_IF([   test $have_ch_image = yes],
       [have_dockerfile_build=yes],
       [have_dockerfile_build=no])
 
-AS_IF([   test $have_any_builder = yes],
+AS_IF([   test $have_ch_image = yes],
       [have_builder_to_tar=yes],
       [have_builder_to_tar=no])
 
-AS_IF([   test $have_any_builder = yes \
+AS_IF([   test $have_ch_image = yes \
        && test -n "$MKSQUASHFS"],
       [have_pack_squash=yes],
       [have_pack_squash=no])
@@ -775,7 +754,7 @@ AS_IF([   test -n "$NVIDIA_CLI" \
 
 AS_IF([   test $enable_test = yes \
        && test $have_ch_run = yes \
-       && test $have_any_builder = yes \
+       && test $have_ch_image = yes \
        && test -n "$_BASH" \
        && test -n "$BATS" \
        && test -n "$WGET"],         # assume access to Docker Hub or mirror
@@ -884,9 +863,6 @@ Building Charliecloud
 Building images
 ~~~~~~~~~~~~~~~
 
-  with Buildah (warning: not tested; see issue #990): ${have_buildah}
-    Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
-
   with ch-image(1): ${have_ch_image}
     enabled ... ${enable_ch_image}
     Python shebang line ... ${PYTHON_SHEBANG:-none}
@@ -903,22 +879,18 @@ Building images
     ch-image(1): ... ${have_ch_image}
     rsync ≥ $vmin_rsync ... ${RSYNC_VERSION_NOTE}
 
-  with Docker: ${have_docker}
-    Docker ≥ $vmin_docker ... ${DOCKER_VERSION_NOTE}
-    mktemp(1) ... ${MKTEMP:-not found}
-
 Managing container images
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
   build from Dockerfile: ${have_dockerfile_build}
-    at least one builder ... ${have_any_builder}
+    ch-image(1) builder ... ${have_ch_image}
     access to an image repository ... assumed yes
 
   pack images from builder storage to tarball: ${have_builder_to_tar}
-    at least one builder ... ${have_any_builder}
+    ch-image(1) builder ... ${have_ch_image}
 
   pack images from builder storage to SquashFS: ${have_pack_squash}
-    at least one builder ... ${have_any_builder}
+    ch-image(1) builder ... ${have_ch_image}
     mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION_NOTE}
 
   Note: Pulling/pushing images from/to a repository is currently done using
@@ -944,7 +916,7 @@ Test suite
   basic tests, all stages: ${have_tests_basic}
     test suite enabled ... ${enable_test}
     ch-run(1) ... ${have_ch_run}
-    any builder above ... ${have_any_builder}
+    any builder above ... ${have_ch_image}
     access to Docker Hub or mirror ... assumed yes
     Bats ≥ $vmin_bats ... ${BATS_VERSION_NOTE}
     Bash ≥ $vmin_bash ... ${_BASH_VERSION_NOTE}
