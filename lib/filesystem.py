@@ -215,8 +215,8 @@ class Path(pathlib.PosixPath):
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
-      old = ch.ossafe(os.getcwd, "can’t get cwd(2)")
-      ch.ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
+      old = ch.ossafe("can’t get cwd(2)", os.getcwd)
+      ch.ossafe("can’t chdir: %s" % self.name, os.chdir, self)
       return Path(old)
 
    def chmod_min(self, st=None):
@@ -238,7 +238,7 @@ class Path(pathlib.PosixPath):
       if (perms_new != perms_old):
          ch.VERBOSE("fixing permissions: %s: %03o -> %03o"
                  % (self, perms_old, perms_new))
-         ch.ossafe(os.chmod, "can’t chmod: %s" % self, self, perms_new)
+         ch.ossafe("can’t chmod: %s" % self, os.chmod, self, perms_new)
       return (st.st_mode | perms_new)
 
    def copy(self, dst):
@@ -359,8 +359,8 @@ class Path(pathlib.PosixPath):
       # to ensure layer hash is consistent. See issue #1080.
       # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
       fp = path_c.open_("r+b")
-      ch.ossafe(fp.seek, "can’t seek: %s" % fp, 4)
-      ch.ossafe(fp.write, "can’t write: %s" % fp, b'\x00\x00\x00\x00')
+      ch.ossafe("can’t seek: %s" % fp, fp.seek, 4)
+      ch.ossafe("can’t write: %s" % fp, fp.write, b'\x00\x00\x00\x00')
       ch.close_(fp)
       return path_c
 
@@ -370,7 +370,7 @@ class Path(pathlib.PosixPath):
       fp = self.open_("rb")
       h = hashlib.sha256()
       while True:
-         data = ch.ossafe(fp.read, "can’t read: %s" % self.name, 2**18)
+         data = ch.ossafe("can’t read: %s" % self.name, fp.read, 2**18)
          if (len(data) == 0):
             break  # EOF
          h.update(data)
@@ -387,13 +387,13 @@ class Path(pathlib.PosixPath):
          mode = "rb"
          encoding = None
       fp = self.open_(mode, encoding=encoding)
-      data = ch.ossafe(fp.read, "can’t read: %s" % self.name)
+      data = ch.ossafe("can’t read: %s" % self.name, fp.read)
       ch.close_(fp)
       return data
 
    def file_size(self, follow_symlinks=False):
       "Return the size of file at path in bytes."
-      st = ch.ossafe(os.stat, "can’t stat: %s" % self.name,
+      st = ch.ossafe("can’t stat: %s" % self.name, os.stat,
                   self, follow_symlinks=follow_symlinks)
       return st.st_size
 
@@ -401,7 +401,7 @@ class Path(pathlib.PosixPath):
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
       fp = self.open_("wb")
-      ch.ossafe(fp.write, "can’t write: %s" % self.name, content)
+      ch.ossafe("can’t write: %s" % self.name, fp.write, content)
       ch.close_(fp)
 
    def grep_p(self, rx):
@@ -485,7 +485,7 @@ class Path(pathlib.PosixPath):
          and parent (..). We considered changing this to use os.scandir() for
          #992, but decided that the advantages it offered didn’t warrant the
          effort required to make the change."""
-      return set(ch.ossafe(os.listdir, "can’t list: %s" % self.name, self))
+      return set(ch.ossafe("can’t list: %s" % self.name, os.listdir, self))
 
    def mkdir_(self):
       ch.TRACE("ensuring directory: %s" % self)
@@ -506,9 +506,8 @@ class Path(pathlib.PosixPath):
                                                x.strerror))
 
    def open_(self, mode, *args, **kwargs):
-      return ch.ossafe(super().open,
-                       "can’t open for %s: %s" % (mode, self.name),
-                       mode, *args, **kwargs)
+      return ch.ossafe("can’t open for %s: %s" % (mode, self.name),
+                       super().open, mode, *args, **kwargs)
 
    def relative_to(self, other):  # FIXME: does not support component-wise
       ret = super().relative_to(other)
@@ -518,9 +517,8 @@ class Path(pathlib.PosixPath):
    def rename_(self, name_new):
       if (Path(name_new).exists()):
          ch.FATAL("can’t rename: destination exists: %s" % name_new)
-      ch.ossafe(super().rename,
-                "can’t rename: %s -> %s" % (self.name, name_new),
-                name_new)
+      ch.ossafe("can’t rename: %s -> %s" % (self.name, name_new),
+                super().rename, name_new)
 
    def resolve(self, *args, **kwargs):
       ret = super().resolve(*args, **kwargs)
@@ -528,7 +526,7 @@ class Path(pathlib.PosixPath):
       return ret
 
    def rmdir_(self):
-      ch.ossafe(super().rmdir, "can’t rmdir: %s" % self.name)
+      ch.ossafe("can’t rmdir: %s" % self.name, super().rmdir)
 
    def rmtree(self):
       if (self.is_dir()):
@@ -567,7 +565,7 @@ class Path(pathlib.PosixPath):
          NOTE: We also cannot just call super().stat here because the
          follow_symlinks kwarg is absent in pathlib for Python 3.6, which we
          want to retain compatibility with."""
-      return ch.ossafe(os.stat, "can’t stat: %s" % self, self,
+      return ch.ossafe("can’t stat: %s" % self, os.stat, self,
                        follow_symlinks=links)
 
    def stat_bytes(self, links=False):
@@ -625,7 +623,7 @@ class Path(pathlib.PosixPath):
       # FIXME: Once we require Python 3.8, we can just pass through missing_ok.
       if (missing_ok and not self.exists_()):
          return
-      ch.ossafe(super().unlink, "can’t unlink: %s" % self.name)
+      ch.ossafe("can’t unlink: %s" % self.name, super().unlink)
 
 
 class Storage:
