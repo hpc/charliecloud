@@ -11,13 +11,13 @@ Synopsis
 
 ::
 
-  $ ch-run [OPTION...] IMAGE -- CMD [ARG...]
+  $ ch-run [OPTION...] IMAGE -- COMMAND [ARG...]
 
 
 Description
 ===========
 
-Run command :code:`CMD` in a fully unprivileged Charliecloud container using
+Run command :code:`COMMAND` in a fully unprivileged Charliecloud container using
 the image specified by :code:`IMAGE`, which can be: (1) a path to a directory,
 (2) the name of an image in :code:`ch-image` storage (e.g.
 :code:`example.com:5050/foo`) or, if the proper support is enabled, a SquashFS
@@ -194,12 +194,12 @@ value-add over the standard, unwrapped commands.
 .. warning::
 
    Currently, Charliecloud unmounts the SquashFS filesystem when user command
-   :code:`CMD`’s process exits. It does not monitor any of its child
+   :code:`COMMAND`’s process exits. It does not monitor any of its child
    processes. Therefore, if the user command spawns child processes and then
    exits before them (e.g., some daemons), those children will have the image
    unmounted from underneath them. In this case, the workaround is to
-   mount/unmount using external tools. We expect to remove this limitation in
-   a future version.
+   mount/unmount using external tools. We expect to remove this limitation in a
+   future version.
 
 
 Host files and directories available in container via bind mounts

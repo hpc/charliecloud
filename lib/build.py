@@ -136,12 +136,12 @@ def main(cli_):
 
    # Read input file.
    if (cli.file == "-" or cli.context == "-"):
-      text = ch.ossafe(sys.stdin.read, "can’t read stdin")
+      text = ch.ossafe("can’t read stdin", sys.stdin.read)
    elif (not os.path.isdir(cli.context)):
       ch.FATAL("context must be a directory: %s" % cli.context)
    else:
       fp = fs.Path(cli.file).open("rt")
-      text = ch.ossafe(fp.read, "can’t read: %s" % cli.file)
+      text = ch.ossafe("can’t read: %s" % cli.file, fp.read)
       ch.close_(fp)
 
    # Parse it.
@@ -829,12 +829,11 @@ class I_copy(Copy):
             # If destination directory doesn’t exist, create it.
             if (not os.path.exists(dst_path)):
                ch.TRACE("mkdir dst_path")
-               ch.ossafe(os.mkdir, "can’t mkdir: %s" % dst_path, dst_path)
+               ch.ossafe("can’t mkdir: %s" % dst_path, os.mkdir, dst_path)
             # Copy metadata, now that we know the destination exists and is a
             # directory.
-            ch.ossafe(shutil.copystat,
-                      "can’t copy metadata: %s -> %s" % (src_path, dst_path),
-                      src_path, dst_path, follow_symlinks=False)
+            ch.ossafe("can’t copy metadata: %s -> %s" % (src_path, dst_path),
+                      shutil.copystat, src_path, dst_path, follow_symlinks=False)
          for f in filenames:
             src_path = dirpath // f
             dst_path = dst_dir // f

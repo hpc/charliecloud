@@ -341,7 +341,7 @@ class Path(os.PathLike):
       return ret
 
    def hardlink_to(self, target):
-      ch.ossafe(os.link, "can’t hard link: %s -> %s", target, self)
+      ch.ossafe("can’t hard link: %s -> %s", os.link, target, self)
 
    def is_absolute(self):
       return (self.path[0] == "/")
@@ -404,8 +404,8 @@ class Path(os.PathLike):
          ch.FATAL("can’t mkdir: %s: %s" % (x.filename, x.strerror))
 
    def open(self, mode, *args, **kwargs):
-      return ch.ossafe(open, "can’t open for %s: %s" % (mode, self),
-                       self, mode, *args, **kwargs)
+      return ch.ossafe("can’t open for %s: %s" % (mode, self),
+                       open, self, mode, *args, **kwargs)
 
    def relative_to(self, other):
       """e.g. absolute paths:
@@ -446,8 +446,8 @@ class Path(os.PathLike):
 
    def rename(self, path_new):
       path_new = self.__class__(path_new)
-      ch.ossafe(os.rename, "can’t rename: %s -> %s" % (self, path_new),
-                self, path_new)
+      ch.ossafe("can’t rename: %s -> %s" % (self, path_new),
+                os.rename, self, path_new)
       return path_new
 
    def resolve(self):
@@ -461,7 +461,7 @@ class Path(os.PathLike):
       return self.__class__(os.path.realpath(self))
 
    def rmdir(self):
-      ch.ossafe(os.rmdir, "can’t rmdir: %s" % self, self)
+      ch.ossafe("can’t rmdir: %s" % self, os.rmdir, self)
 
    def stat(self, links):
       """e.g.:
@@ -477,8 +477,8 @@ class Path(os.PathLike):
            True
            >>> stat.S_ISLNK(st.st_mode)
            False"""
-      return ch.ossafe(os.stat, "can’t stat: %s" % self, self,
-                       follow_symlinks=links)
+      return ch.ossafe("can’t stat: %s" % self,
+                       os.stat, self, follow_symlinks=links)
 
    def symlink_to(self, target, clobber=False):
       if (clobber and self.is_file()):
@@ -498,7 +498,7 @@ class Path(os.PathLike):
    def unlink(self, missing_ok=False):
       if (missing_ok and not self.exists()):
          return
-      ch.ossafe(os.unlink, "can’t unlink: %s" % self, self)
+      ch.ossafe("can’t unlink: %s" % self, os.unlink, self)
 
    def with_name(self, name_new):
       """e.g.:
@@ -658,8 +658,8 @@ class Path(os.PathLike):
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
-      old = ch.ossafe(os.getcwd, "can’t getcwd(2)")
-      ch.ossafe(os.chdir, "can’t chdir(2): %s" % self, self)
+      old = ch.ossafe("can’t getcwd(2)", os.getcwd)
+      ch.ossafe("can’t chdir(2): %s" % self, os.chdir, self)
       return self.__class__(old)
 
    def chmod_min(self, st=None):
@@ -680,7 +680,7 @@ class Path(os.PathLike):
       if (perms_new != perms_old):
          ch.VERBOSE("fixing permissions: %s: %03o -> %03o"
                  % (self, perms_old, perms_new))
-         ch.ossafe(os.chmod, "can’t chmod: %s" % self, self, perms_new)
+         ch.ossafe("can’t chmod: %s" % self, os.chmod, self, perms_new)
       return (st.st_mode | perms_new)
 
    def copy(self, dst):
@@ -803,8 +803,8 @@ class Path(os.PathLike):
       # to ensure layer hash is consistent. See issue #1080.
       # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
       fp = path_c.open("r+b")
-      ch.ossafe(fp.seek, "can’t seek: %s" % fp, 4)
-      ch.ossafe(fp.write, "can’t write: %s" % fp, b'\x00\x00\x00\x00')
+      ch.ossafe("can’t seek: %s" % fp, fp.seek, 4)
+      ch.ossafe("can’t write: %s" % fp, fp.write, b'\x00\x00\x00\x00')
       ch.close_(fp)
       return path_c
 
@@ -818,7 +818,7 @@ class Path(os.PathLike):
       fp = self.open("rb")
       h = hashlib.sha256()
       while True:
-         data = ch.ossafe(fp.read, "can’t read: %s" % self, 2**18)
+         data = ch.ossafe("can’t read: %s" % self, fp.read, 2**18)
          if (len(data) == 0):  # EOF
             break
          h.update(data)
@@ -840,7 +840,7 @@ class Path(os.PathLike):
          mode = "rb"
          encoding = None
       fp = self.open(mode, encoding=encoding)
-      data = ch.ossafe(fp.read, "can’t read: %s" % self)
+      data = ch.ossafe("can’t read: %s" % self, fp.read)
       ch.close_(fp)
       return data
 
@@ -859,7 +859,7 @@ class Path(os.PathLike):
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
       fp = self.open("wb")
-      ch.ossafe(fp.write, "can’t write: %s" % self, content)
+      ch.ossafe("can’t write: %s" % self, fp.write, content)
       ch.close_(fp)
 
    def grep_p(self, rx):
@@ -897,7 +897,7 @@ class Path(os.PathLike):
            >>> import os
            >>> Path("/proc/self/task").listdir() == { str(os.getpid()) }
            True"""
-      return set(ch.ossafe(os.listdir, "can’t list: %s" % self, self))
+      return set(ch.ossafe("can’t list: %s" % self, os.listdir, self))
 
    def mkdirs(self, exist_ok=True):
       "Like “mkdir -p”."

@@ -276,13 +276,14 @@ class File_Metadata:
       self.large_name = None
       self.xattrs = dict()
       if ch.save_xattrs:
-         for xattr in ch.ossafe(os.listxattr,
-                                "can’t list xattrs: %s" % self.path_abs,
-                                self.path_abs, follow_symlinks=False):
+         for xattr in ch.ossafe("can’t list xattrs: %s" % self.path_abs,
+                                os.listxattr, self.path_abs,
+                                follow_symlinks=False):
             self.xattrs[xattr] = \
-               ch.ossafe(os.getxattr, ("can’t get xattr: %s: %s"
+               ch.ossafe(("can’t get xattr: %s: %s"
                                        % (self.path_abs, xattr)),
-                         self.path_abs, xattr, follow_symlinks=False)
+                         os.getxattr, self.path_abs, xattr,
+                         follow_symlinks=False)
 
    def __getstate__(self):
       return { a:v for (a,v) in self.__dict__.items()
@@ -475,15 +476,15 @@ class File_Metadata:
          # to subsequent (unstored) links.
          target = self.image_root // self.hardlink_to
          ch.DEBUG("hard link: restoring: %s -> %s" % (self.path_abs, target))
-         ch.ossafe(os.link, "can’t hardlink: %s -> %s" % (self.path_abs,
-                                                          target),
-                   target, self.path_abs, follow_symlinks=False)
+         ch.ossafe("can’t hardlink: %s -> %s" % (self.path_abs,
+                                                       target),
+                   os.link, target, self.path_abs, follow_symlinks=False)
       elif (self.large_name is not None):
          self.large_restore()
       elif (self.empty_dir_p):
-         ch.ossafe(os.mkdir, "can’t mkdir: %s" % self.path, self.path_abs)
+         ch.ossafe("can’t mkdir: %s" % self.path, os.mkdir, self.path_abs)
       elif (stat.S_ISFIFO(self.mode)):
-         ch.ossafe(os.mkfifo, "can’t make FIFO: %s" % self.path, self.path_abs)
+         ch.ossafe("can’t make FIFO: %s" % self.path, os.mkfifo, self.path_abs)
       elif (not self.path.git_compatible_p):
          self.path_abs.git_escaped.rename(self.path_abs)
       for (xattr, val) in self.xattrs.items():
@@ -498,9 +499,9 @@ class File_Metadata:
            or stat.S_ISDIR(self.mode)        # maybe just created or modified
            or stat.S_ISFIFO(self.mode))      # we just made the FIFO
           and not stat.S_ISLNK(self.mode)):  # can’t not follow symlinks
-         ch.ossafe(os.utime, "can’t restore times: %s" % self.path_abs,
+         ch.ossafe("can’t restore times: %s" % self.path_abs, os.utime,
                    self.path_abs, ns=(self.atime_ns, self.mtime_ns))
-         ch.ossafe(os.chmod, "can’t restore mode: %s" % self.path_abs,
+         ch.ossafe("can’t restore mode: %s" % self.path_abs, os.chmod,
                    self.path_abs, stat.S_IMODE(self.mode))
 
    def large_name_get(self):
@@ -850,7 +851,7 @@ class Enabled_Cache:
          ch.VERBOSE("writing updated Git config")
          fp.seek(0)
          fp.truncate()
-         ch.ossafe(config.write, "can’t write Git config: %s" % path, fp)
+         ch.ossafe("can’t write Git config: %s" % path, config.write, fp)
       ch.close_(fp)
       # Ignore list entries:
       #
@@ -1100,7 +1101,7 @@ class Enabled_Cache:
          pid_path = ch.storage.build_cache // "gc.pid"
          try:
             fp = open(pid_path, "rt", encoding="UTF-8")
-            text = ch.ossafe(fp.read, "can’t read: %s" % pid_path)
+            text = ch.ossafe("can’t read: %s" % pid_path, fp.read)
             pid = int(text.split()[0])
             ch.INFO("stopping build cache garbage collection, PID %d" % pid)
             ch.kill_blocking(pid)
