@@ -89,8 +89,9 @@ class Path(os.PathLike):
            caused quite a few Charliecloud bugs. IMO it’s too error-prone to
            manually manage whether paths are absolute or relative.
 
-           Thus, joins paths with “//”, which does the right thing, i.e., if
-           the right operand is absolute, that fact is just ignored. E.g.:
+           Thus, the operator to join instances of this class is “//”, which
+           does the POSIX thing, i.e., if the right operand is absolute, that
+           fact is just ignored. E.g.:
 
              >>> a = Path("/foo/bar")
              >>> a // "/baz"
