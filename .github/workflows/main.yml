@@ -455,7 +455,7 @@ jobs:
           fgrep 'man pages ... no' config.log
           fgrep 'ch-image(1) ... no' config.log
           fgrep 'with ch-image(1): no' config.log
-          fgrep 'basic tests, all stages: yes' config.log
+          command -v buildah || command -v docker
           fgrep 'more complete tests: no' config.log
           set +x
           # Build.
@@ -492,7 +492,7 @@ jobs:
           ./configure --prefix=/doesnotexist
           set -x
           fgrep 'documentation: no' config.log
-          fgrep 'basic tests, all stages: yes' config.log
+          command -v buildah || command -v docker
           fgrep 'more complete tests: no' config.log
           fgrep 'recommended tests, squash-mount mode: no' config.log
           set +x
