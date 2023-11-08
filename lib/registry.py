@@ -488,7 +488,7 @@ class HTTP:
       "Upload gzipped tarball layer at path, which must have hash digest."
       # NOTE: We don’t verify the digest b/c that means reading the whole file.
       ch.VERBOSE("layer tarball: %s" % path)
-      fp = path.open_("rb") # open file avoids reading it all into memory
+      fp = path.open("rb")  # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
       ch.close_(fp)
 

@@ -266,7 +266,7 @@ class File_Metadata:
       self.image_root = image_root
       self.path = path
       self.path_abs = image_root // path
-      self.st = self.path_abs.stat_(False)
+      self.st = self.path_abs.stat(False)
       # Note: Constructor not called during unpickle.
       for attr in ("atime_ns", "mtime_ns", "mode", "size"):
          setattr(self, attr, getattr(self.st, "st_" + attr))
@@ -414,7 +414,7 @@ class File_Metadata:
             ch.DEBUG("hard link: deleting subsequent: %d %d %s"
                      % (fm.st.st_dev, fm.st.st_ino, path))
             fm.hardlink_to = hardlinks[(fm.st.st_dev, fm.st.st_ino)]
-            fm.path_abs.unlink_()
+            fm.path_abs.unlink()
             return fm
          else:
             ch.DEBUG("hard link: recording first: %d %d %s"
@@ -433,16 +433,16 @@ class File_Metadata:
       # Remove empty directories. Git will ignore them, including leaving them
       # there when switching the worktree to a different branch, which is bad.
       if (fm.empty_dir_p):
-         fm.path_abs.rmdir_()
+         fm.path_abs.rmdir()
          return fm
       # Remove FIFOs for the same reason.
       if (stat.S_ISFIFO(fm.mode)):
          fm.path_abs.unlink()
          return fm
       # Rename if necessary.
-      if (path.git_incompatible_p):
+      if (not path.git_compatible_p):
          ch.DEBUG("renaming: %s -> %s" % (path, path.git_escaped))
-         fm.path_abs.rename_(fm.path_abs.git_escaped)
+         fm.path_abs.rename(fm.path_abs.git_escaped)
       # Done.
       return fm
 
@@ -485,8 +485,8 @@ class File_Metadata:
          ch.ossafe("can’t mkdir: %s" % self.path, os.mkdir, self.path_abs)
       elif (stat.S_ISFIFO(self.mode)):
          ch.ossafe("can’t make FIFO: %s" % self.path, os.mkfifo, self.path_abs)
-      elif (self.path.git_incompatible_p):
-         self.path_abs.git_escaped.rename_(self.path_abs)
+      elif (not self.path.git_compatible_p):
+         self.path_abs.git_escaped.rename(self.path_abs)
       for (xattr, val) in self.xattrs.items():
          self.path_abs.setxattr(xattr, val, follow_symlinks=False)
       # Recurse children.
@@ -529,12 +529,12 @@ class File_Metadata:
          exists, then return the appropriate large name."""
       large_name = self.large_name_get()
       target = ch.storage.build_large_path(large_name)
-      if (target.exists_()):
+      if (target.exists()):
          op = "found"
-         self.path_abs.unlink_()
+         self.path_abs.unlink()
       else:
          op = "moving to"
-         self.path_abs.rename_(target)
+         self.path_abs.rename(target)
       ch.DEBUG("large file: %s: %s: %s" % (self.path, op, large_name))
       return large_name
 
@@ -834,7 +834,7 @@ class Enabled_Cache:
    def configure(self):
       # Configuration.
       path = self.root // "config"
-      fp = path.open_("r+")
+      fp = path.open("r+")
       config = configparser.ConfigParser()
       config.read_file(fp, source=path)
       changed = False
@@ -876,7 +876,7 @@ class Enabled_Cache:
       # to prevent deleted .gitignore files from creeping back in. (I couldn’t
       # figure out how to fix this for “filter-branch” either, which I didn’t
       # want to use anyway for the reasons above.)
-      if (ch.storage.bucache_needs_ignore_upgrade.exists_()):
+      if (ch.storage.bucache_needs_ignore_upgrade.exists()):
          ch.INFO("upgrading build cache to v6+, some cached data may be lost",
                  "see release notes for v0.32")
          text = self.git(["fast-export", "--no-data", "--", "--all"],
@@ -987,7 +987,7 @@ class Enabled_Cache:
       ch.INFO("found %d large files used; deleting others" % len(larges_used))
       for l in ch.storage.build_large.listdir():
          if (l not in larges_used):
-            (ch.storage.build_large // l).unlink_()
+            (ch.storage.build_large // l).unlink()
       t.log("deleted unused large files")
 
    def git(self, argv, cwd=None, quiet=True, *args, **kwargs):
@@ -1265,8 +1265,8 @@ class Enabled_Cache:
          # Move GIT_DIR from default location to where we want it.
          git_dir_default = image.unpack_path // ".git"
          git_dir_new = image.unpack_path // im.GIT_DIR
-         git_dir_new.parent.mkdir_()
-         git_dir_default.rename_(git_dir_new)
+         git_dir_new.parent.mkdir()
+         git_dir_default.rename(git_dir_new)
          t.log("created worktree")
 
    def worktree_adopt(self, image, base):
@@ -1279,12 +1279,12 @@ class Enabled_Cache:
          ch.WARNING("temporary image still exists, deleting",
                     "maybe a previous command crashed?")
          ch.storage.image_tmp.rmtree()
-      image.unpack_path.rename_(ch.storage.image_tmp)
+      image.unpack_path.rename(ch.storage.image_tmp)
       self.worktree_add(image, base)
       (image.unpack_path // im.GIT_DIR).rename(   ch.storage.image_tmp
                                                // im.GIT_DIR)
       image.unpack_path.rmtree()
-      ch.storage.image_tmp.rename_(image.unpack_path)
+      ch.storage.image_tmp.rename(image.unpack_path)
 
    def worktree_head(self, image):
       cp = self.git(["rev-parse", "--short", "HEAD"],

@@ -140,7 +140,7 @@ def main(cli_):
    elif (not os.path.isdir(cli.context)):
       ch.FATAL("context must be a directory: %s" % cli.context)
    else:
-      fp = fs.Path(cli.file).open_("rt")
+      fp = fs.Path(cli.file).open("rt")
       text = ch.ossafe("can’t read: %s" % cli.file, fp.read)
       ch.close_(fp)
 
@@ -825,7 +825,7 @@ class I_copy(Copy):
                   ch.TRACE("dst_path exists and is a directory")
                else:
                   ch.TRACE("dst_path exists, not a directory, removing")
-                  dst_path.unlink_()
+                  dst_path.unlink()
             # If destination directory doesn’t exist, create it.
             if (not os.path.exists(dst_path)):
                ch.TRACE("mkdir dst_path")
@@ -846,7 +846,7 @@ class I_copy(Copy):
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   dst_path.rmtree()
                else:
-                  dst_path.unlink_()
+                  dst_path.unlink()
             src_path.copy(dst_path)
 
    def copy_src_file(self, src, dst):
@@ -988,8 +988,7 @@ class Env(Instruction):
       return "%s='%s'" % (self.key, self.value)
 
    def execute(self):
-      with (self.image.unpack_path // "/ch/environment").open_("wt") \
-           as fp:
+      with (self.image.unpack_path // "/ch/environment").open("wt") as fp:
          for (k, v) in self.env_env.items():
             print("%s=%s" % (k, v), file=fp)
 
