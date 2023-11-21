@@ -7,8 +7,8 @@ import os
 import os.path
 import sys
 
-import build_cache as bu
 import charliecloud as ch
+import build_cache as bu
 import filesystem as fs
 import image as im
 import pull
@@ -80,12 +80,6 @@ def gestalt_bucache_dot(cli):
    bu.have_deps()
    bu.have_dot()
 
-def gestalt_python_path(cli):
-   print(sys.executable)
-
-def gestalt_storage_path(cli):
-   print(ch.storage.root)
-
 def gestalt_logging(cli):
    ch.TRACE("trace")
    ch.DEBUG("debug")
@@ -95,6 +89,12 @@ def gestalt_logging(cli):
    ch.ERROR("error")
    if (cli.fail):
       ch.FATAL("the program failed inexplicably")
+
+def gestalt_python_path(cli):
+   print(sys.executable)
+
+def gestalt_storage_path(cli):
+   print(ch.storage.root)
 
 def import_(cli):
    if (not os.path.exists(cli.path)):

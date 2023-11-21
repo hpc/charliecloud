@@ -33,6 +33,7 @@ a.out
 /test/fixtures/symlink-to-tmp
 /test/force-auto
 /test/make-perms-test
+/test/order-py
 /test/sotest/*.so*
 /test/sotest/sotest
 /test/sotest/bin/

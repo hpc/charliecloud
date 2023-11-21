@@ -868,6 +868,8 @@ also an unnamed zeroth section.
   #. Exceptions
   #. Main
   #. Functions
+  #. Supporting classes
+  #. Core classes
   #. Classes
 
 Within each section, statements occur in the following order.
@@ -881,6 +883,8 @@ Within each section, statements occur in the following order.
 
   #. assignments
 
+  #. class definitions
+
   #. function definitions
 
      #. :code:`__init__`
@@ -889,8 +893,6 @@ Within each section, statements occur in the following order.
      #. other double-underscore methods (e.g. :code:`__str__`)
      #. properties
      #. “normal” functions (instance methods)
-
-  #. class definitions
 
 Within each group of statements above, identifiers must occur in alphabetical
 order. Exceptions:

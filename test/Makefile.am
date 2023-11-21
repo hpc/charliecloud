@@ -55,7 +55,8 @@ doctest \
 doctest-auto \
 force-auto \
 make-perms-test \
-old-storage
+old-storage \
+order-py
 
 # Program and shared library used for testing shared library injection. It's
 # built according to the rules below. In principle, we could use libtool for
@@ -74,7 +75,7 @@ CLEANFILES = $(sobuilts) \
              docs-sane \
              doctest build/30_doctest-auto.bats \
              force-auto force-auto.bats \
-             make-perms-test
+             make-perms-test order-py
 
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
@@ -106,11 +107,12 @@ EXTRA_DIST = $(testfiles) \
              docs-sane.py.in \
              doctest.py.in \
              force-auto.py.in \
-	     make-perms-test.py.in
+	     make-perms-test.py.in \
+             order-py.in
 EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing
-docs-sane doctest force-auto make-perms-test: %: %.py.in
+docs-sane doctest force-auto make-perms-test order-py: %: %.py.in
 	rm -f $@
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
 	chmod +rx,-w $@  # respects umask

@@ -31,6 +31,8 @@ SECTION_ORDER = { n:o for (o,n) in enumerate(("Enums",
                                               "Exceptions",
                                               "Main",
                                               "Functions",
+                                              "Supporting classes",
+                                              "Core classes",
                                               "Classes")) }
 
 # Python ≥3.10 has this as sys.stdlib_module_names without the fooling around.
@@ -80,6 +82,34 @@ def FAILO(before, after):
    FAIL(before.lineno, (  "%s precedes %s (line %d) but should follow"
                         % (before.name, after.name, after.lineno)))
 
+def inherits(child, parent):
+   "Return True if child inherits from parent (perhaps indirectly), else False."
+   # FIXME: Considers only first parent.
+   if (not (    isinstance(child, ast.ClassDef)
+            and isinstance(parent, ast.ClassDef))):
+      return False  # not both classes
+   while True:
+      if (len(child.bases) < 1):
+         return False  # no base clase
+      elif (not isinstance(child.bases[0], ast.Name)):
+         return False  # dot in name so can’t be in this file
+      elif (child.bases[0].id == parent.name):
+         return True   # found a match
+      else:
+         # Move child up one generation. All we have here is the name, so
+         # search all the module statements for a matching class. 🤪
+         child_new = None
+         for stmt in tree.body:
+            if (    isinstance(stmt, ast.ClassDef)
+                and stmt.name == child.bases[0].id):
+               child_new = stmt
+               break
+         if (child_new is not None):
+            child = child_new
+         else:
+            return False  # not found, so parent must be in another file
+
+
 def parse(statements_raw):
    statements = [Section(0, 0, "UNNAMED")]
    # Add in section comments.
@@ -93,7 +123,10 @@ def parse(statements_raw):
          section = Section.parse(s_cur.end_lineno + 1, s_next.lineno - 1)
          if (section is not None):
             statements.append(section)
-   statements.append(s_next)
+   try:
+      statements.append(s_next)
+   except UnboundLocalError:
+      pass  # empty body
    # Remove statement types exempt from ordering. Iterate backwards so we can
    # modify in-place.
    for i in reversed(range(len(statements))):
@@ -148,8 +181,18 @@ def sort_key(stmt):
    elif (isinstance(stmt, ast.Assign)):
       pass  # all assignments are equal
    elif (isinstance(stmt, ast.FunctionDef)):
+      dl = stmt.decorator_list
       try:
-         decorator = stmt.decorator_list[0].id
+         #print(ast.dump(stmt, indent=2))
+         try:
+            decorator = dl[0].id
+         except AttributeError:
+            if (isinstance(dl[0], ast.Attribute)):
+                # dotted decorator
+                if (dl[0].attr == "setter"):
+                   decorator = "property"  # setter is close enough
+                else:
+                   decorator = dl[0].value.id + "." + dl[0].attr
       except IndexError:
          decorator = None
       if (stmt.name == "__init__"):
@@ -180,10 +223,15 @@ def validate(statements):
    sections = [stmt for stmt in statements
                if isinstance(stmt, Section) and stmt.name in SECTION_ORDER]
    for i in range(len(sections) - 1):
-      s_cur = sections[i]
-      s_next = sections[i+1]
-      if (SECTION_ORDER[s_cur.name] >= SECTION_ORDER[s_next.name]):
-         FAILO(s_cur, s_next)
+      before = sections[i]
+      for j in range(i + 1, len(sections)):
+         after = sections[j]
+      if (SECTION_ORDER[before.name] >= SECTION_ORDER[after.name]):
+         FAILO(before, after)
+      if (   (before.name == "Classes" and "classes" in after.name.lower())
+          or (after.name == "Classes" and "classes" in before.name.lower())):
+         FAIL(before.lineno, ("§%s not allowed if §%s (line %d) present"
+                              % (before.name, after.name, after.lineno)))
 
    # build statements within sections
    sections = dict()  # retains insertion order ≥3.6
@@ -196,22 +244,14 @@ def validate(statements):
 
    # Validate order within each section. This uses an O(n²) all-to-all
    # comparison so we can consider class inheritance.
-   for section in sections.values():
+   for (section_name, section) in sections.items():
+      #print("analyzing section %s" % section_name)
       for i in range(len(section) - 1):
          before = section[i]
          for j in range(i + 1, len(section)):
             after = section[j]
-            if (    isinstance(before, ast.ClassDef)
-                and isinstance(after, ast.ClassDef)):
-               # ugly special case
-               try:
-                  if (before.bases[0].id == after.name):
-                     FAILO(before, after)
-               except IndexError:
-                  pass  # no base class so it can’t be before
-               except AttributeError:
-                  pass  # base class has dot so can’t be in this file
-            elif (sort_key(before) > sort_key(after)):
+            if (not (   inherits(after, before)
+                     or sort_key(before) <= sort_key(after))):
                #print(before.lineno, sort_key(before), sort_key(after))
                FAILO(before, after)
 

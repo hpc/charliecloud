@@ -48,40 +48,6 @@ auth_p = False
 
 ## Classes ##
 
-class Credentials:
-
-   __slots__ = ("password",
-                "username")
-
-   def __init__(self):
-      self.username = None
-      self.password = None
-
-   def get(self):
-      # If stored, return those.
-      if (self.username is not None):
-         username = self.username
-         password = self.password
-      else:
-         try:
-            # Otherwise, use environment variables.
-            username = os.environ["CH_IMAGE_USERNAME"]
-            password = os.environ["CH_IMAGE_PASSWORD"]
-         except KeyError:
-            # Finally, prompt the user.
-            # FIXME: This hangs in Bats despite sys.stdin.isatty() == True.
-            try:
-               username = input("\nUsername: ")
-            except KeyboardInterrupt:
-               ch.FATAL("authentication cancelled")
-            password = getpass.getpass("Password: ")
-         if (not ch.password_many):
-            # Remember the credentials.
-            self.username = username
-            self.password = password
-      return (username, password)
-
-
 class Auth(requests.auth.AuthBase):
 
    # Every registry request has an “authorization object”. This starts as no
@@ -111,18 +77,18 @@ class Auth(requests.auth.AuthBase):
 
    __slots__ = ("auth_h_next",)  # WWW-Authenticate header for next escalator
 
-   def __eq__(self, other):
-      return (type(self) == type(other))
-
-   @property
-   def escalators(self):
-      ...
-
    @classmethod
    def authenticate(class_, creds, auth_d):
       """Authenticate using the given credentials and parsed WWW-Authenticate
          dictionary. Return a new Auth object if successful, None if
          not. The caller is responsible for dealing with the failure."""
+      ...
+
+   def __eq__(self, other):
+      return (type(self) == type(other))
+
+   @property
+   def escalators(self):
       ...
 
    def escalate(self, reg, res):
@@ -172,6 +138,16 @@ class Auth_Basic(Auth):
 
    __slots__ = ("basic")
 
+   @classmethod
+   def authenticate(class_, reg, auth_d):
+      # Note: Basic does not validate the credentials until we try to use it.
+      if ("realm" not in auth_d):
+         ch.FATAL("WWW-Authenticate missing realm")
+      (username, password) = reg.creds.get()
+      i = class_()
+      i.basic = requests.auth.HTTPBasicAuth(username, password)
+      return i
+
    def __call__(self, *args, **kwargs):
       return self.basic(*args, **kwargs)
 
@@ -184,16 +160,6 @@ class Auth_Basic(Auth):
    @property
    def escalators(self):
       return ()
-
-   @classmethod
-   def authenticate(class_, reg, auth_d):
-      # Note: Basic does not validate the credentials until we try to use it.
-      if ("realm" not in auth_d):
-         ch.FATAL("WWW-Authenticate missing realm")
-      (username, password) = reg.creds.get()
-      i = class_()
-      i.basic = requests.auth.HTTPBasicAuth(username, password)
-      return i
 
 
 class Auth_Bearer_IDed(Auth):
@@ -209,28 +175,6 @@ class Auth_Bearer_IDed(Auth):
    def __init__(self, token, auth_d):
       self.token = token
       self.auth_d = auth_d
-
-   def __call__(self, req):
-      req.headers["Authorization"] = "Bearer %s" % self.token
-      return req
-
-   def __eq__(self, other):
-      return super().__eq__(other) and (self.auth_d == other.auth_d)
-
-   def __str__(self):
-      return ("Bearer (%s) %s" % (self.__class__.__name__.split("_")[-1],
-                                  self.token_short))
-
-   @property
-   def escalators(self):
-      # One can escalate to an authenticated Bearer with a greater scope. I’m
-      # pretty sure this doesn’t create an infinite loop because eventually
-      # the token request will fail.
-      return (Auth_Bearer_IDed,)
-
-   @property
-   def token_short(self):
-      return ("%s..%s" % (self.token[:8], self.token[-8:]))
 
    @classmethod
    def authenticate(class_, reg, auth_d):
@@ -259,6 +203,28 @@ class Auth_Bearer_IDed(Auth):
       (username, password) = creds.get()
       return requests.auth.HTTPBasicAuth(username, password)
 
+   def __call__(self, req):
+      req.headers["Authorization"] = "Bearer %s" % self.token
+      return req
+
+   def __eq__(self, other):
+      return super().__eq__(other) and (self.auth_d == other.auth_d)
+
+   def __str__(self):
+      return ("Bearer (%s) %s" % (self.__class__.__name__.split("_")[-1],
+                                  self.token_short))
+
+   @property
+   def escalators(self):
+      # One can escalate to an authenticated Bearer with a greater scope. I’m
+      # pretty sure this doesn’t create an infinite loop because eventually
+      # the token request will fail.
+      return (Auth_Bearer_IDed,)
+
+   @property
+   def token_short(self):
+      return ("%s..%s" % (self.token[:8], self.token[-8:]))
+
 
 class Auth_Bearer_Anon(Auth_Bearer_IDed):
    anon_p = True
@@ -267,15 +233,15 @@ class Auth_Bearer_Anon(Auth_Bearer_IDed):
 
    __slots__ = ()
 
-   @property
-   def escalators(self):
-      return (Auth_Bearer_IDed,)
-
    @classmethod
    def token_auth(class_, creds):
       # The way to get an anonymous Bearer token is to give no Basic auth
       # header in the token request.
       return None
+
+   @property
+   def escalators(self):
+      return (Auth_Bearer_IDed,)
 
 
 class Auth_None(Auth):
@@ -294,6 +260,40 @@ class Auth_None(Auth):
       return (Auth_Basic,
               Auth_Bearer_Anon,
               Auth_Bearer_IDed)
+
+
+class Credentials:
+
+   __slots__ = ("password",
+                "username")
+
+   def __init__(self):
+      self.username = None
+      self.password = None
+
+   def get(self):
+      # If stored, return those.
+      if (self.username is not None):
+         username = self.username
+         password = self.password
+      else:
+         try:
+            # Otherwise, use environment variables.
+            username = os.environ["CH_IMAGE_USERNAME"]
+            password = os.environ["CH_IMAGE_PASSWORD"]
+         except KeyError:
+            # Finally, prompt the user.
+            # FIXME: This hangs in Bats despite sys.stdin.isatty() == True.
+            try:
+               username = input("\nUsername: ")
+            except KeyboardInterrupt:
+               ch.FATAL("authentication cancelled")
+            password = getpass.getpass("Password: ")
+         if (not ch.password_many):
+            # Remember the credentials.
+            self.username = username
+            self.password = password
+      return (username, password)
 
 
 class HTTP:

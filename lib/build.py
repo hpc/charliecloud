@@ -50,7 +50,61 @@ lark = im.lark
 class Instruction_Ignored(Exception): pass
 
 
-## Main ##
+## Main loop ##
+
+class Environment:
+   """The state we are in: environment variables, working directory, etc. Most
+      of this is just passed through from the image metadata."""
+
+
+class Main_Loop(lark.Visitor):
+
+   __slots__ = ("instruction_total_ct",
+                "miss_ct",    # number of misses during this stage
+                "inst_prev")  # last instruction executed
+
+   def __init__(self, *args, **kwargs):
+      self.miss_ct = 0
+      self.inst_prev = None
+      self.instruction_total_ct = 0
+      super().__init__(*args, **kwargs)
+
+   def __default__(self, tree):
+      class_ = tree.data.title() + "_G"
+      if (class_ in globals()):
+         inst = globals()[class_](tree)
+         if (self.instruction_total_ct == 0):
+            if (not (isinstance(inst, I_directive)
+                  or isinstance(inst, I_from_)
+                  or isinstance(inst, Instruction_No_Image))):
+               ch.FATAL("first instruction must be ARG or FROM")
+         inst.init(self.inst_prev)
+         # The three announce_maybe() calls are clunky but I couldn’t figure
+         # out how to avoid the repeats.
+         try:
+            self.miss_ct = inst.prepare(self.miss_ct)
+            inst.announce_maybe()
+         except Instruction_Ignored:
+            inst.announce_maybe()
+            return
+         except ch.Fatal_Error:
+            inst.announce_maybe()
+            inst.prepare_rollback()
+            raise
+         if (inst.miss):
+            if (self.miss_ct == 1):
+               inst.checkout_for_build()
+            try:
+               inst.execute()
+            except ch.Fatal_Error:
+               inst.rollback()
+               raise
+            if (inst.image_i >= 0):
+               inst.metadata_update()
+            inst.commit()
+         self.inst_prev = inst
+         self.instruction_total_ct += 1
+
 
 def main(cli_):
 
@@ -218,56 +272,23 @@ def main(cli_):
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
 
 
-class Main_Loop(lark.Visitor):
+## Functions ##
 
-   __slots__ = ("instruction_total_ct",
-                "miss_ct",    # number of misses during this stage
-                "inst_prev")  # last instruction executed
-
-   def __init__(self, *args, **kwargs):
-      self.miss_ct = 0
-      self.inst_prev = None
-      self.instruction_total_ct = 0
-      super().__init__(*args, **kwargs)
-
-   def __default__(self, tree):
-      class_ = "I_" + tree.data
-      if (class_ in globals()):
-         inst = globals()[class_](tree)
-         if (self.instruction_total_ct == 0):
-            if (not (isinstance(inst, I_directive)
-                  or isinstance(inst, I_from_)
-                  or isinstance(inst, Instruction_No_Image))):
-               ch.FATAL("first instruction must be ARG or FROM")
-         inst.init(self.inst_prev)
-         # The three announce_maybe() calls are clunky but I couldn’t figure
-         # out how to avoid the repeats.
-         try:
-            self.miss_ct = inst.prepare(self.miss_ct)
-            inst.announce_maybe()
-         except Instruction_Ignored:
-            inst.announce_maybe()
-            return
-         except ch.Fatal_Error:
-            inst.announce_maybe()
-            inst.prepare_rollback()
-            raise
-         if (inst.miss):
-            if (self.miss_ct == 1):
-               inst.checkout_for_build()
-            try:
-               inst.execute()
-            except ch.Fatal_Error:
-               inst.rollback()
-               raise
-            if (inst.image_i >= 0):
-               inst.metadata_update()
-            inst.commit()
-         self.inst_prev = inst
-         self.instruction_total_ct += 1
+def unescape(sl):
+   # FIXME: This is also ugly and should go in the grammar.
+   #
+   # The Dockerfile spec does not precisely define string escaping, but I’m
+   # guessing it’s the Go rules. You will note that we are using Python rules.
+   # This is wrong but close enough for now (see also gripe in previous
+   # paragraph).
+   if (    not sl.startswith('"')                          # no start quote
+       and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
+      sl = '"%s"' % sl
+   assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
+   return ast.literal_eval(sl)
 
 
-## Instruction classes ##
+## Supporting classes ##
 
 class Instruction(abc.ABC):
 
@@ -324,6 +345,12 @@ class Instruction(abc.ABC):
       self.parent = None
       self.image_alias = None
       self.image_i = None
+
+   def __str__(self):
+      options = self.options_str
+      if (options != ""):
+         options = " " + options
+      return "%s%s %s" % (self.str_name, options, self.str_)
 
    @property
    def env_arg(self):
@@ -390,12 +417,6 @@ class Instruction(abc.ABC):
    @workdir.setter
    def workdir(self, x):
       self.image.metadata["cwd"] = str(x)
-
-   def __str__(self):
-      options = self.options_str
-      if (options != ""):
-         options = " " + options
-      return "%s%s %s" % (self.str_name, options, self.str_)
 
    def announce_maybe(self):
       "Announce myself if I haven’t already been announced."
@@ -514,56 +535,6 @@ class Instruction(abc.ABC):
                  % (issue_no, self.str_name, msg))
 
 
-class Instruction_Unsupported(Instruction):
-
-   __slots__ = ()
-
-   @property
-   def str_(self):
-      return "(unsupported)"
-
-   @property
-   def miss(self):
-      return None
-
-
-class Instruction_Supported_Never(Instruction_Unsupported):
-
-   __slots__ = ()
-
-   def prepare(self, *args):
-      self.unsupported_forever_warn("instruction")
-      raise Instruction_Ignored()
-
-
-class Instruction_No_Image(Instruction):
-   # This is a class for instructions that do not affect the image, i.e.,
-   # no-op from the image’s perspective, but executed for their side effects,
-   # e.g., changing some configuration. These instructions do not interact
-   # with the build cache and can be executed when no image exists (i.e.,
-   # before FROM).
-
-   # FIXME: Only tested with instructions before the first FROM. I doubt it
-   # works for instructions elsewhere.
-
-   @property
-   def miss(self):
-      return True
-
-   @property
-   def status_char(self):
-      return bu.cache.status_char(None)
-
-   def checkout_for_build(self):
-      pass
-
-   def commit(self):
-      pass
-
-   def prepare(self, miss_ct):
-      return miss_ct + int(self.miss)
-
-
 class Copy(Instruction):
 
    # Superclass for instructions that do some flavor of file copying (ADD,
@@ -642,6 +613,58 @@ class Copy(Instruction):
       ch.VERBOSE("context: %s" % self.srcs_base)
 
 
+class Instruction_No_Image(Instruction):
+   # This is a class for instructions that do not affect the image, i.e.,
+   # no-op from the image’s perspective, but executed for their side effects,
+   # e.g., changing some configuration. These instructions do not interact
+   # with the build cache and can be executed when no image exists (i.e.,
+   # before FROM).
+
+   # FIXME: Only tested with instructions before the first FROM. I doubt it
+   # works for instructions elsewhere.
+
+   @property
+   def miss(self):
+      return True
+
+   @property
+   def status_char(self):
+      return bu.cache.status_char(None)
+
+   def checkout_for_build(self):
+      pass
+
+   def commit(self):
+      pass
+
+   def prepare(self, miss_ct):
+      return miss_ct + int(self.miss)
+
+
+class Instruction_Unsupported(Instruction):
+
+   __slots__ = ()
+
+   @property
+   def miss(self):
+      return None
+
+   @property
+   def str_(self):
+      return "(unsupported)"
+
+
+class Instruction_Supported_Never(Instruction_Unsupported):
+
+   __slots__ = ()
+
+   def prepare(self, *args):
+      self.unsupported_forever_warn("instruction")
+      raise Instruction_Ignored()
+
+
+## Core classes ##
+
 class Arg(Instruction):
 
    __slots__ = ("key",
@@ -680,7 +703,7 @@ class Arg(Instruction):
       return super().prepare(*args)
 
 
-class I_arg_bare(Arg):
+class Arg_Bare_G(Arg):
 
    __slots__ = ()
 
@@ -688,7 +711,7 @@ class I_arg_bare(Arg):
       return None
 
 
-class I_arg_equals(Arg):
+class Arg_Equals_G(Arg):
 
    __slots__ = ()
 
@@ -728,7 +751,7 @@ class Arg_First(Instruction_No_Image):
       return super().prepare(*args)
 
 
-class I_arg_first_bare(Arg_First):
+class Arg_First_Bare_G(Arg_First):
 
    __slots__ = ()
 
@@ -736,7 +759,7 @@ class I_arg_first_bare(Arg_First):
       return None
 
 
-class I_arg_first_equals(Arg_First):
+class Arg_First_Equals_G(Arg_First):
 
    __slots__ = ()
 
@@ -747,7 +770,7 @@ class I_arg_first_equals(Arg_First):
       return v
 
 
-class I_copy(Copy):
+class Copy_G(Copy):
 
    # ABANDON ALL HOPE YE WHO ENTER HERE
    #
@@ -961,7 +984,7 @@ class I_copy(Copy):
       return super().prepare(miss_ct)
 
 
-class I_directive(Instruction_Supported_Never):
+class Directive_G(Instruction_Supported_Never):
 
    __slots__ = ()
 
@@ -1000,7 +1023,7 @@ class Env(Instruction):
       return super().prepare(*args)
 
 
-class I_env_equals(Env):
+class Env_Equals_G(Env):
 
    __slots__ = ()
 
@@ -1012,7 +1035,7 @@ class I_env_equals(Env):
          self.value = self.tree.terminal("STRING_QUOTED")
 
 
-class I_env_space(Env):
+class Env_Space_G(Env):
 
    __slots__ = ()
 
@@ -1022,60 +1045,19 @@ class I_env_space(Env):
       self.value = self.tree.terminals_cat("LINE_CHUNK")
 
 
-class Label(Instruction):
-
-   __slots__ = ("key",
-                "value")
-
-   def __init__(self, *args):
-      super().__init__(*args)
-      self.commit_files |= {ch.Path("ch/metadata.json")}
-
-   @property
-   def str_(self):
-      return "%s='%s'" % (self.key, self.value)
-
-   def prepare(self, *args):
-      self.value = ch.variables_sub(unescape(self.value), self.env_build)
-      self.image.metadata["labels"][self.key] = self.value
-      return super().prepare(*args)
-
-
-class I_label_equals(Label):
-
-   __slots__ = ()
-
-   def __init__(self, *args):
-      super().__init__(*args)
-      self.key = self.tree.terminal("WORD", 0)
-      self.value = self.tree.terminal("WORD", 1)
-      if (self.value is None):
-         self.value = self.tree.terminal("STRING_QUOTED")
-
-
-class I_label_space(Label):
-
-   __slots__ = ()
-
-   def __init__(self, *args):
-      super().__init__(*args)
-      self.key = self.tree.terminal("WORD")
-      self.value = self.tree.terminals_cat("LINE_CHUNK")
-
-
-class I_from_(Instruction):
+class From__G(Instruction):
 
    __slots__ = ("alias",
                 "base_alias",
                 "base_image",
                 "base_text")
 
+   # Not meaningful for FROM.
+   sid_input = None
+
    def __init__(self, *args):
       super().__init__(*args)
       argfrom.update(self.options.pop("arg", {}))
-
-   # Not meaningful for FROM.
-   sid_input = None
 
    @property
    def str_(self):
@@ -1199,7 +1181,48 @@ class I_from_(Instruction):
             bu.cache.unpack_delete(image, missing_ok=True)
 
 
-class I_rsync(Copy):
+class Label(Instruction):
+
+   __slots__ = ("key",
+                "value")
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.commit_files |= {ch.Path("ch/metadata.json")}
+
+   @property
+   def str_(self):
+      return "%s='%s'" % (self.key, self.value)
+
+   def prepare(self, *args):
+      self.value = ch.variables_sub(unescape(self.value), self.env_build)
+      self.image.metadata["labels"][self.key] = self.value
+      return super().prepare(*args)
+
+
+class Label_Equals_G(Label):
+
+   __slots__ = ()
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.tree.terminal("WORD", 0)
+      self.value = self.tree.terminal("WORD", 1)
+      if (self.value is None):
+         self.value = self.tree.terminal("STRING_QUOTED")
+
+
+class Label_Space_G(Label):
+
+   __slots__ = ()
+
+   def __init__(self, *args):
+      super().__init__(*args)
+      self.key = self.tree.terminal("WORD")
+      self.value = self.tree.terminals_cat("LINE_CHUNK")
+
+
+class Rsync_G(Copy):
 
    __slots__ = ("plus_option",
                 "rsync_options")
@@ -1363,7 +1386,7 @@ class Run(Instruction):
          ch.FATAL("build failed: RUN command exited with %d" % exit_code)
 
 
-class I_run_exec(Run):
+class Run_Exec_G(Run):
 
    __slots__ = ()
 
@@ -1377,7 +1400,7 @@ class I_run_exec(Run):
       return super().prepare(*args)
 
 
-class I_run_shell(Run):
+class Run_Shell_G(Run):
 
    # Note re. line continuations and whitespace: Whitespace before the
    # backslash is passed verbatim to the shell, while the newline and any
@@ -1396,7 +1419,7 @@ class I_run_shell(Run):
       return super().prepare(*args)
 
 
-class I_shell(Instruction):
+class Shell_G(Instruction):
 
    def __init__(self, *args):
       super().__init__(*args)
@@ -1412,25 +1435,7 @@ class I_shell(Instruction):
       return super().prepare(*args)
 
 
-class I_workdir(Instruction):
-
-   __slots__ = ("path")
-
-   @property
-   def str_(self):
-      return str(self.path)
-
-   def execute(self):
-      (self.image.unpack_path // self.workdir).mkdirs()
-
-   def prepare(self, *args):
-      self.path = fs.Path(ch.variables_sub(
-         self.tree.terminals_cat("LINE_CHUNK"), self.env_build))
-      self.chdir(self.path)
-      return super().prepare(*args)
-
-
-class I_uns_forever(Instruction_Supported_Never):
+class Uns_Forever_G(Instruction_Supported_Never):
 
    __slots__ = ("name")
 
@@ -1443,7 +1448,7 @@ class I_uns_forever(Instruction_Supported_Never):
       return self.name
 
 
-class I_uns_yet(Instruction_Unsupported):
+class Uns_Yet_G(Instruction_Unsupported):
 
    __slots__ = ("issue_no",
                 "name")
@@ -1465,24 +1470,19 @@ class I_uns_yet(Instruction_Unsupported):
       raise Instruction_Ignored()
 
 
-## Supporting classes ##
+class Workdir_G(Instruction):
 
-class Environment:
-   """The state we are in: environment variables, working directory, etc. Most
-      of this is just passed through from the image metadata."""
+   __slots__ = ("path")
 
+   @property
+   def str_(self):
+      return str(self.path)
 
-## Supporting functions ##
+   def execute(self):
+      (self.image.unpack_path // self.workdir).mkdirs()
 
-def unescape(sl):
-   # FIXME: This is also ugly and should go in the grammar.
-   #
-   # The Dockerfile spec does not precisely define string escaping, but I’m
-   # guessing it’s the Go rules. You will note that we are using Python rules.
-   # This is wrong but close enough for now (see also gripe in previous
-   # paragraph).
-   if (    not sl.startswith('"')                          # no start quote
-       and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
-      sl = '"%s"' % sl
-   assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
-   return ast.literal_eval(sl)
+   def prepare(self, *args):
+      self.path = fs.Path(ch.variables_sub(
+         self.tree.terminals_cat("LINE_CHUNK"), self.env_build))
+      self.chdir(self.path)
+      return super().prepare(*args)
