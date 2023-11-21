@@ -67,7 +67,7 @@ class Section(ast.AST):
       lineno_found = lineno - 1
       for line in lines[lineno:end_lineno+1]:
          lineno_found += 1
-         m = re.search(r"^ *##+ ([\w ]+) ##+", line)
+         m = re.search(r"^ *##+ (.+) ##+", line)
          if (m is not None):
             return cls(lineno_found, lineno_found, m[1])
       return None
