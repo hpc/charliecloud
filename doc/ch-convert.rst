@@ -55,6 +55,10 @@ producing the final format actually needed.
   :code:`-o`, :code:`--out-fmt FMT`
     Output image format is :code:`FMT`; inferred if omitted.
 
+  :code:`-q`, :code:`--quiet`
+    Be quieter; can be repeated. Incompatible with :code:`-v`. See the :ref:`FAQ
+    entry on verbosity <faq_verbosity>` for details.
+
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory. Equivalent to the same option for :code:`ch-image(1)`
     and :code:`ch-run(1)`.

@@ -379,7 +379,7 @@ class Progress_Reader:
          close_(self.fp)
 
    def read(self, size=-1):
-     data = ossafe(self.fp.read, "can’t read: %s" % self.fp.name, size)
+     data = ossafe("can’t read: %s" % self.fp.name, self.fp.read, size)
      self.progress.update(len(data))
      return data
 
@@ -431,16 +431,16 @@ class Progress_Writer:
       if (self.progress is not None):
          self.progress.done()
          close_(self.fp)
-         self.path.unlink_(missing_ok=True)
-         self.path_tmp.rename_(self.path)
+         self.path.unlink(missing_ok=True)
+         self.path_tmp.rename(self.path)
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
-      self.fp = self.path_tmp.open_("wb")
+      self.fp = self.path_tmp.open("wb")
 
    def write(self, data):
       self.progress.update(len(data))
-      ossafe(self.fp.write, "can’t write: %s" % self.path, data)
+      ossafe("can’t write: %s" % self.path, self.fp.write, data)
 
 
 class Timer:
@@ -528,7 +528,7 @@ def close_(fp):
       path = fp.name
    except AttributeError:
       path = "(no path)"
-   ossafe(fp.close, "can’t close: %s" % path)
+   ossafe("can’t close: %s" % path, fp.close)
 
 def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
@@ -668,7 +668,7 @@ def init(cli):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
-      log_fp = file_.open_("at")
+      log_fp = file_.open("at")
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
    VERBOSE("verbose level: %d (%s))" % (log_level.value, log_level.name))
@@ -776,7 +776,7 @@ def monkey_write_streams():
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
-def ossafe(f, msg, *args, **kwargs):
+def ossafe(msg, f, *args, **kwargs):
    """Call f with args and kwargs. Catch OSError and other problems and fail
       with a nice error message."""
    try:

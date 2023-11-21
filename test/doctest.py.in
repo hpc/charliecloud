@@ -63,15 +63,14 @@ def out_save(text):
 runner = doctest.DocTestRunner(optionflags=(  doctest.DONT_ACCEPT_TRUE_FOR_1
                                             | doctest.ELLIPSIS))
 for test in tests:
-   print("%s (%d examples) ... " % (test.name_short, len(test.examples)),
-         end="")
+   print("%s ... " % test.name_short, end="")
    out = ""
    results = runner.run(test, out=out_save)
    assert (results.attempted == len(test.examples))
    if (results.failed == 0):
-      print("ok")
+      print("ok (%d examples)" % results.attempted)
    else:
-      print("%d failed" % results.failed)
+      print("%d/%d failed" % (results.failed, results.attempted))
       print(out)
       print("big L, stopping tests")
       sys.exit(1)

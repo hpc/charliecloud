@@ -9,11 +9,12 @@ ch_lib=${ch_bin}/../lib
 . "${ch_lib}/version.sh"
 
 
-# Verbosity level; works the same as the Python code.
-verbose=0
+# Log level. Incremented by “--verbose” and decremented by “--quiet”, as in the
+# Python code.
+log_level=0
 
 DEBUG () {
-    if [ "$verbose" -ge 2 ]; then
+    if [ "$log_level" -ge 2 ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -29,13 +30,15 @@ FATAL () {
 }
 
 INFO () {
-    # shellcheck disable=SC2059
-    printf "$@" 1>&2
-    printf '\n' 1>&2
+    if [ "$log_level" -ge 0 ]; then
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
 }
 
 VERBOSE () {
-    if [ "$verbose" -ge 1 ]; then
+    if [ "$log_level" -ge 1 ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -60,8 +63,18 @@ parse_basic_arg () {
         --help)
             usage 0   # exits
             ;;
+        -q|--quiet)
+            if [ $log_level -gt 0 ]; then
+                FATAL "incompatible options: --quiet, --verbose"
+            fi
+            log_level=$((log_level-1))
+            return 0
+            ;;
         -v|--verbose)
-            verbose=$((verbose+1))
+            if [ $log_level -lt 0 ]; then
+                FATAL "incompatible options: --quiet, --verbose"
+            fi
+            log_level=$((log_level+1))
             return 0
             ;;
         --version)
@@ -78,6 +91,18 @@ parse_basic_args () {
     for i in "$@"; do
         parse_basic_arg "$i" || true
     done
+}
+
+# Redirect standard streams (or not) depending on “quiet” level. See table in
+# FAQ.
+quiet () {
+    if [ $log_level -lt -2 ]; then
+        "$@" 1>/dev/null 2>/dev/null
+    elif [ $log_level -lt -1 ]; then
+        "$@" 1>/dev/null
+    else
+        "$@"
+    fi
 }
 
 # Convert container registry path to filesystem compatible path.
@@ -138,7 +163,7 @@ vset () {
     if [ -z "$value" ]; then
         value=no
     fi
-    if [ -z "$quiet" ]; then
+    if [ "$quiet" -eq 0 ]; then
         var_desc="$var_desc:"
         printf "%-*s %s (%s)\n" "$desc_width" "$var_desc" "$value" "$method"
     fi
@@ -181,17 +206,16 @@ else
     }
 fi
 
-# Use pv(1) to show a progress bar, if it's available, otherwise cat(1).
-# WARNING: You must pipe in the file because arguments are ignored if this is
-# cat(1). (We also don't want a progress bar if stdin is not a terminal, but
-# pv takes care of that.)
-if command -v pv > /dev/null 2>&1; then
-    pv_ () {
+# Use pv(1) to show a progress bar, if it’s available and the quiet level is
+# less than one, otherwise cat(1). WARNING: You must pipe in the file because
+# arguments are ignored if this is cat(1). (We also don’t want a progress bar if
+# stdin is not a terminal, but pv takes care of that). Note that we put the if
+# statement in the scope of the function because doing so ensures that it gets
+# evaulated after “quiet” is assigned an appropriate value by “parse_basic_arg”.
+pv_ () {
+    if command -v pv > /dev/null 2>&1 && [ "$quiet" -lt 1 ]; then
         pv -pteb "$@"
-    }
-else
-    pv_ () {
-        # Arguments may be present, but we ignore them.
+    else
         cat
-    }
-fi
+    fi
+}

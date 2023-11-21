@@ -238,7 +238,7 @@ class Image:
       # Return the last modified time of self as a datetime.datetime object in
       # the local time zone.
       return datetime.datetime.fromtimestamp(
-                 (self.metadata_path // "metadata.json").stat_(False).st_mtime,
+                 (self.metadata_path // "metadata.json").stat(False).st_mtime,
                  datetime.timezone.utc).astimezone()
 
    @property
@@ -247,7 +247,7 @@ class Image:
 
    @property
    def unpack_cache_linked(self):
-      return (self.unpack_path // GIT_DIR).exists_()
+      return (self.unpack_path // GIT_DIR).exists()
 
    @property
    def unpack_exist_p(self):
@@ -269,7 +269,7 @@ class Image:
       ch.VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
       fs.Path(src_path).copytree(self.unpack_path, symlinks=True)
       # Simpler to copy this file then delete it, rather than filter it out.
-      (self.unpack_path // GIT_DIR).unlink_(missing_ok=True)
+      (self.unpack_path // GIT_DIR).unlink(missing_ok=True)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
@@ -504,7 +504,7 @@ class Image:
          present will be left unchanged. After this, self.unpack_path is a
          valid Charliecloud image directory."""
       # Metadata directory.
-      (self.unpack_path // "ch").mkdir_()
+      (self.unpack_path // "ch").mkdir()
       (self.unpack_path // "ch/environment").file_ensure_exists()
       # Essential directories & mount points. Do nothing if something already
       # exists, without dereferencing, in case it’s a symlink, which will work
@@ -523,7 +523,7 @@ class Image:
       layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
-      self.unpack_path.mkdir_()  # create directory in case no layers
+      self.unpack_path.mkdir()  # create directory in case no layers
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
          if (i > last_layer):

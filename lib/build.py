@@ -190,12 +190,12 @@ def main(cli_):
 
    # Read input file.
    if (cli.file == "-" or cli.context == "-"):
-      text = ch.ossafe(sys.stdin.read, "can’t read stdin")
+      text = ch.ossafe("can’t read stdin", sys.stdin.read)
    elif (not os.path.isdir(cli.context)):
       ch.FATAL("context must be a directory: %s" % cli.context)
    else:
-      fp = fs.Path(cli.file).open_("rt")
-      text = ch.ossafe(fp.read, "can’t read: %s" % cli.file)
+      fp = fs.Path(cli.file).open("rt")
+      text = ch.ossafe("can’t read: %s" % cli.file, fp.read)
       ch.close_(fp)
 
    # Parse it.
@@ -848,16 +848,15 @@ class Copy_G(Copy):
                   ch.TRACE("dst_path exists and is a directory")
                else:
                   ch.TRACE("dst_path exists, not a directory, removing")
-                  dst_path.unlink_()
+                  dst_path.unlink()
             # If destination directory doesn’t exist, create it.
             if (not os.path.exists(dst_path)):
                ch.TRACE("mkdir dst_path")
-               ch.ossafe(os.mkdir, "can’t mkdir: %s" % dst_path, dst_path)
+               ch.ossafe("can’t mkdir: %s" % dst_path, os.mkdir, dst_path)
             # Copy metadata, now that we know the destination exists and is a
             # directory.
-            ch.ossafe(shutil.copystat,
-                      "can’t copy metadata: %s -> %s" % (src_path, dst_path),
-                      src_path, dst_path, follow_symlinks=False)
+            ch.ossafe("can’t copy metadata: %s -> %s" % (src_path, dst_path),
+                      shutil.copystat, src_path, dst_path, follow_symlinks=False)
          for f in filenames:
             src_path = dirpath // f
             dst_path = dst_dir // f
@@ -870,7 +869,7 @@ class Copy_G(Copy):
                if (os.path.isdir(dst_path) and not os.path.islink(dst_path)):
                   dst_path.rmtree()
                else:
-                  dst_path.unlink_()
+                  dst_path.unlink()
             src_path.copy(dst_path)
 
    def copy_src_file(self, src, dst):
@@ -1012,8 +1011,7 @@ class Env(Instruction):
       return "%s='%s'" % (self.key, self.value)
 
    def execute(self):
-      with (self.image.unpack_path // "/ch/environment").open_("wt") \
-           as fp:
+      with (self.image.unpack_path // "/ch/environment").open("wt") as fp:
          for (k, v) in self.env_env.items():
             print("%s=%s" % (k, v), file=fp)
 

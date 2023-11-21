@@ -51,7 +51,7 @@ cv_chimage_dir () {
     # completely half-assed performance test suggests that's about the same.
     dir_make "$2"
     # shellcheck disable=SC2086
-    tar_ "$img" | tar xf - $tar_xattr_args -pC "$2"
+    tar_ "$img" | quiet tar xf - $tar_xattr_args -pC "$2"
     dir_fixup "$2"
 }
 
@@ -86,7 +86,10 @@ cv_dir_chimage () {
     dir_in_validate "$1"
     chimage_out_validate "$2"
     INFO 'importing ...'
-    ch-image import "$1" "$2"  # FIXME: no progress meter
+    # “ch-image” recognizes “-q” as an argument, but we choose to quiet it with
+    # “quiet” instead here because doing so is simpler from the perspective of
+    # “ch-convert”.
+    quiet ch-image import "$1" "$2"  # FIXME: no progress meter
 }
 
 cv_dir_docker () {
@@ -108,18 +111,19 @@ cv_dir_squash () {
     squash_out_validate "$2"
     pflist=${tmpdir}/pseudofiles
     INFO 'packing ...'
-    touch "$pflist"
+    quiet touch "$pflist"
     mount_points_ensure "$1" "$pflist"
     # Exclude build cache metadata. 64kiB block size based on Shane's
     # experiments.
     # shellcheck disable=SC2086
-    mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root -pf "$pflist" \
-                         -e "$1"/.git -e "$1"/.gitignore -e "$1"/ch/git.pickle
+    quiet mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root \
+                         -pf "$pflist" -e "$1"/.git -e "$1"/.gitignore \
+                         -e "$1"/ch/git.pickle
     # Zero the archive's internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
     # CentOS 7 comes with 4.2.  [1]: https://dr-emann.github.io/squashfs/
-    printf '\x00\x00\x00\x00' | dd of="$2" bs=1 count=4 seek=8 conv=notrunc
-    rm "$pflist"
+    printf '\x00\x00\x00\x00' | quiet dd of="$2" bs=1 count=4 seek=8 conv=notrunc status=none
+    quiet rm "$pflist"
 }
 
 cv_dir_tar () {
@@ -149,7 +153,7 @@ cv_docker_podman () {
     docker_out=${tmpdir}/weirdal.tar.gz
     cv_docker_tar "$1" "$docker_out" # FIXME: needlessly compresses
     cv_tar_podman "$docker_out" "$2"
-    rm "$docker_out"
+    quiet rm "$docker_out"
 }
 
 cv_docker_squash () {
@@ -182,7 +186,7 @@ cv_podman_docker () {
     podman_out=${tmpdir}/weirdal.tar.gz
     cv_podman_tar "$1" "$podman_out" # FIXME: needlesly compresses
     cv_tar_docker "$podman_out" "$2"
-    rm "$podman_out"
+    quiet rm "$podman_out"
 }
 
 cv_podman_squash () {
@@ -203,7 +207,7 @@ cv_squash_chimage () {
     unsquash_dir=${tmpdir}/weirdal
     cv_squash_dir "$1" "$unsquash_dir"
     cv_dir_chimage "$unsquash_dir" "$2"
-    rm -Rf --one-file-system "$unsquash_dir"
+    quiet rm -Rf --one-file-system "$unsquash_dir"
 }
 
 cv_squash_dir () {
@@ -246,7 +250,7 @@ cv_squash_dir () {
     #    and confirm that it’s successful.
     #
     # (https://unix.stackexchange.com/a/583819)
-    unsquashfs -f -d "$2" -user-xattrs "$1"
+    quiet unsquashfs -f -d "$2" -user-xattrs "$1"
     umask "$umask_"
     dir_fixup "$2"
 }
@@ -269,14 +273,14 @@ cv_squash_tar () {
     unsquash_dir=${tmpdir}/weirdal
     cv_squash_dir "$1" "$unsquash_dir"
     cv_dir_tar "$unsquash_dir" "$2"
-    rm -Rf --one-file-system "$unsquash_dir"
+    quiet rm -Rf --one-file-system "$unsquash_dir"
 }
 
 cv_tar_chimage () {
     tar_in_validate "$1"
     chimage_out_validate "$2"
     INFO 'importing ...'
-    ch-image import "$1" "$2"  # FIXME: no progress meter
+    quiet ch-image import "$1" "$2"  # FIXME: no progress meter
 }
 
 cv_tar_dir () {
@@ -316,8 +320,8 @@ cv_tar_dir () {
     ex3="./${ex1}"
     VERBOSE "exclude patterns: ${ex1} ${ex2} ${ex3}"
     #shellcheck disable=SC2094,SC2086
-      pv_ -s "$(stat -c%s "$1")" < "$1" \
-    | tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
+     pv_ -s "$(stat -c%s "$1")" < "$1" \
+    | quiet tar x"$(tar_decompress_arg "$1")" -pC "$2" -f - \
           --xform 's|^\./||x' --strip-components=$strip_ct \
           --anchored --no-wildcards-match-slash $tar_xattr_args \
           --exclude="$ex1" --exclude="$ex2" --exclude="$ex3"
@@ -342,7 +346,7 @@ cv_tar_squash () {
     tar_dir=${tmpdir}/weirdal
     cv_tar_dir "$1" "$tar_dir"
     cv_dir_squash "$tar_dir" "$2"
-    rm -Rf --one-file-system "$tar_dir"
+    quiet rm -Rf --one-file-system "$tar_dir"
 }
 
 ## Dockman functions ##
@@ -357,7 +361,7 @@ chimage_to_dockman () {
     chimage_tar=${tmpdir}/weirdal.tar.gz
     cv_chimage_tar "$2" "$chimage_tar"  # FIXME: needlessly compresses?
     tar_to_dockman "$1" "$chimage_tar" "$3"
-    rm "$chimage_tar"
+    quiet rm "$chimage_tar"
 }
 
 dir_to_dockman () {
@@ -367,7 +371,7 @@ dir_to_dockman () {
     # directory anyway to send it to the Docker daemon.
     cv_dir_tar "$2" "$dirtar"  # FIXME: needlessly compresses
     tar_to_dockman "$1" "$dirtar" "$3"
-    rm "$dirtar"
+    quiet rm "$dirtar"
 }
 
 dm_fmt_name () {
@@ -394,21 +398,21 @@ dockman_to_chimage () {
    dockman_out=${tmpdir}/weirdal.tar.gz
    "cv_${1}tar" "$2" "$dockman_out"  # FIXME: needlessly compresses
    cv_tar_chimage "$dockman_out" "$3"
-   rm "$dockman_out"
+   quiet rm "$dockman_out"
 }
 
 dockman_to_dir () {
     dockman_out=${tmpdir}/weirdal.tar.gz
     "dockman_to_tar" "$1" "$2" "$dockman_out" # FIXME: needlessly compresses
     cv_tar_dir "$dockman_out" "$3"
-    rm "$dockman_out"
+    quiet rm "$dockman_out"
 }
 
 dockman_to_squash () {
     dockman_dir=${tmpdir}/weirdal
     dockman_to_dir "$1" "$2" "$dockman_dir"  # FIXME: needlessly compresses
     cv_dir_squash "$dockman_dir" "$3"
-    rm -Rf --one-file-system "$dockman_dir"
+    quiet rm -Rf --one-file-system "$dockman_dir"
 }
 
 dockman_to_tar () {
@@ -417,7 +421,7 @@ dockman_to_tar () {
     INFO 'exporting ...'
     cid=$("$1" create --read-only "$2" /bin/true)  # cmd needed but not run
     size=$("$1" image inspect "$2" --format='{{.Size}}')
-    "$1" export "$cid" | pv_ -s "$size" > "$tmptar"
+    quiet "$1" export "$cid" | pv_ -s "$size" > "$tmptar"
     "$1" rm "$cid" > /dev/null
     INFO 'adding environment ...'
     "$1" inspect "$2" \
@@ -425,12 +429,12 @@ dockman_to_tar () {
     # The tar flavor Docker gives us does not support UIDs or GIDs greater
     # than 2**21, so use 0/0 rather than what’s on the filesystem. See #1573.
     # shellcheck disable=SC2086
-    tar rf "$tmptar" -b1 -P --owner=0 --group=0 $tar_xattr_args \
+    quiet tar rf "$tmptar" -b1 -P --owner=0 --group=0 $tar_xattr_args \
         --xform="s|${tmpenv}|ch/environment|" "$tmpenv"
     INFO 'compressing ...'
     pv_ < "$tmptar" | gzip_ -6 > "$3"
-    rm "$tmptar"
-    rm "$tmpenv"
+    quiet rm "$tmptar"
+    quiet rm "$tmpenv"
 }
 
 squash_to_dockman () {
@@ -438,20 +442,20 @@ squash_to_dockman () {
     cv_squash_tar "$2" "$unsquash_tar"
     dockman=$(echo "$1" | tr -d "_") # remove trailing underscore
     "cv_tar_$dockman" "$unsquash_tar" "$3"
-    rm "$unsquash_tar"
+    quiet rm "$unsquash_tar"
 }
 
 tar_to_dockman () {
     INFO "importing ..."
     tmpimg=$(mktemp -u tmpimg.XXXXXX | tr '[:upper:]' '[:lower:]')
-    "$1" import "$2" "$tmpimg"    # FIXME: no progress meter
+    quiet "$1" import "$2" "$tmpimg"    # FIXME: no progress meter
     # Podman imports our tarballs with rw------- permissions on “/ch” (i.e.,
     # no execute), which causes all kinds of breakage. Work around that.
-    "$1" build -t "$3" - <<EOF
+    quiet "$1" build -t "$3" - <<EOF
 FROM $tmpimg
 RUN chmod u+rwx /ch || true
 EOF
-    "$1" rmi "$tmpimg"
+    quiet "$1" rmi "$tmpimg"
 }
 
 ## input/output validation functions #########################################
@@ -488,7 +492,7 @@ dir_out_validate () {
                 FATAL "exists, not deleting per --no-clobber: ${1}"
             else
                 INFO "deleting existing image: ${1}"
-                rm -Rf --one-file-system "$1"
+                quiet rm -Rf --one-file-system "$1"
             fi
         elif [ -n "$(find "$1" -maxdepth 0 -type d -empty)" ]; then
             INFO "using empty directory: ${1}"
@@ -584,7 +588,7 @@ desc_base () {
 dir_fixup () {
     DEBUG "fixing up: $1"
     # Make all directories writeable so we can delete later (hello, Red Hat).
-    find "$1" -type d -a ! -perm -u+rwx -exec chmod u+w {} +
+    quiet find "$1" -type d -a ! -perm -u+rwx -exec chmod u+w {} +
     # Ensure mount points are present.
     mount_points_ensure "$1"
 }
@@ -594,7 +598,7 @@ dir_fixup () {
 # $1 is either a directory or doesn’t exist.
 dir_make () {
     if [ ! -e "$1" ]; then
-       mkdir "$1"
+       quiet mkdir "$1"
     fi
 }
 
@@ -676,9 +680,9 @@ mount_points_ensure () {
              mnt/0 mnt/1 mnt/2 mnt/3 mnt/4 mnt/5 mnt/6 mnt/7 mnt/8 mnt/9; do
         if ! exist_p "${1}/${i}"; then
             if [ -n "$2" ]; then
-                echo "${i} d 755 root root" >> "$2"
+                quiet echo "${i} d 755 root root" >> "$2"
             else
-                mkdir "${1}/${i}"
+                quiet mkdir "${1}/${i}"
             fi
         fi
     done
@@ -686,9 +690,9 @@ mount_points_ensure () {
     for i in etc/hosts etc/resolv.conf; do
         if ! exist_p "${1}/${i}"; then
             if [ -n "$2" ]; then
-                echo "${i} f 644 root root true" >> "$2"
+                quiet echo "${i} f 644 root root true" >> "$2"
             else
-                touch "${1}/${i}"
+                quiet touch "${1}/${i}"
             fi
         fi
     done
@@ -874,7 +878,7 @@ else
 fi
 in_desc=$1
 out_desc=$2
-VERBOSE "verbose level: ${verbose}"
+VERBOSE "verbose level: ${log_level}"
 
 if command -v ch-image > /dev/null 2>&1; then
     have_ch_image=yes
@@ -915,6 +919,6 @@ if [ -z "$dry_run" ]; then
         "$in_desc" "$out_desc"
 fi
 
-rmdir "$tmpdir"
+quiet rmdir "$tmpdir"
 
 INFO 'done'

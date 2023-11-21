@@ -1268,8 +1268,8 @@ Maps to :code:`--cd`.
          "apk add --no-cache bc"
        ],
 
-Maps to :code:`CMD [ARG ...]`. Note that we do not run :code:`ch-run` via the
-shell, so there aren’t worries about shell parsing.
+Maps to :code:`COMMAND [ARG ...]`. Note that we do not run :code:`ch-run` via
+the shell, so there aren’t worries about shell parsing.
 
 .. code-block:: javascript
 
