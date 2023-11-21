@@ -108,7 +108,7 @@ EXTRA_DIST = $(testfiles) \
              doctest.py.in \
              force-auto.py.in \
 	     make-perms-test.py.in \
-             order-py.in
+             order-py.py.in
 EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing
