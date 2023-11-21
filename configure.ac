@@ -571,9 +571,6 @@ AS_IF([   test $enable_man = yes && test $have_docs = no],
 
 ### Glue scripts #############################################################
 
-# mktemp - no version
-AC_CHECK_PROG([MKTEMP], [mktemp], [mktemp])
-
 # libnvidia-container-cli
 vmin_nvidia_cli=1.0.0
 AC_CHECK_PROG([NVIDIA_CLI], [nvidia-container-cli], [nvidia-container-cli])

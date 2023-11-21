@@ -274,7 +274,6 @@ jobs:
                       --htmldir=$ch_prefix/from-git_html
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_TEST_BUILDER = buildah* ]] && command -v buildah
           [[ $CH_TEST_BUILDER = docker ]] && command -v docker
           if [[ $CH_TEST_BUILDER = ch-image ]]; then
               fgrep 'with ch-image(1): yes' config.log
@@ -455,6 +454,8 @@ jobs:
           fgrep 'man pages ... no' config.log
           fgrep 'ch-image(1) ... no' config.log
           fgrep 'with ch-image(1): no' config.log
+          # This CI test requires Docker, but the “configure” script doesn’t
+          # check for Docker, so we do it ourselves with “command -v”.
           command -v docker
           fgrep 'more complete tests: no' config.log
           set +x
