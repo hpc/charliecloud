@@ -74,8 +74,8 @@ class Main_Loop(lark.Visitor):
       if (class_ in globals()):
          inst = globals()[class_](tree)
          if (self.instruction_total_ct == 0):
-            if (not (isinstance(inst, I_directive)
-                  or isinstance(inst, I_from_)
+            if (not (isinstance(inst, Directive_G)
+                  or isinstance(inst, From__G)
                   or isinstance(inst, Instruction_No_Image))):
                ch.FATAL("first instruction must be ARG or FROM")
          inst.init(self.inst_prev)
@@ -408,7 +408,7 @@ class Instruction(abc.ABC):
 
    @property
    def str_name(self):
-      return self.__class__.__name__.split("_")[1].upper()
+      return self.__class__.__name__.split("_")[0].upper()
 
    @property
    def workdir(self):

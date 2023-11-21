@@ -913,7 +913,7 @@ def walk(*args, **kwargs):
       3-tuple (dirpath, dirnames, filenames), where dirpath is a Path object,
       and dirnames and filenames are lists of Path objects. For insight into
       these being lists rather than generators, see use of ch.walk() in
-      I_copy.copy_src_dir()."""
+      Copy_G.copy_src_dir()."""
    for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
       yield (fs.Path(dirpath),
              [fs.Path(dirname) for dirname in dirnames],
