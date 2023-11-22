@@ -194,7 +194,7 @@ load ../common
     for f in "$ch_lib"/*.py; do
         run ./order-py "$f"
         echo "$output"
-        status_all=$((status_all+$status))
+        status_all=$((status_all+status))
     done
     [[ $status_all -eq 0 ]]
 }
