@@ -189,28 +189,6 @@ jobs:
                      /usr/include/x86_64-linux-musl/
           sudo ln -s x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/
 
-      - name: install/configure dependencies, all Buildah
-        if: ${{ startsWith(matrix.builder, 'buildah') }}
-        run: |
-          command -v buildah
-          buildah --version
-          command -v runc
-          runc --version
-          # As of 2020-11-30, stock registries.conf is pretty simple; it
-          # includes Docker Hub (docker.io) and then quay.io. Still, use ours
-          # for stability.
-          cat /etc/containers/registries.conf
-          cat <<'EOF' | sudo tee /etc/containers/registries.conf
-          [registries.search]
-            registries = ['docker.io']
-          EOF
-
-      - name: install/configure dependencies, privileged Buildah
-        if: ${{ startsWith(matrix.builder, 'buildah-') }}
-        run: |
-          sudo usermod --add-subuids 10000-65536 $USER
-          sudo usermod --add-subgids 10000-65536 $USER
-
       - name: disable bundled lark, ch-image
         if: ${{    matrix.builder == 'ch-image'
                 && matrix.pack_fmt == 'squash-mount'
@@ -274,8 +252,7 @@ jobs:
                       --htmldir=$ch_prefix/from-git_html
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_TEST_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_TEST_BUILDER = docker ]] && command -v docker
           if [[ $CH_TEST_BUILDER = ch-image ]]; then
               fgrep 'with ch-image(1): yes' config.log
               fgrep '"lark" module ... bundled' config.log
@@ -359,8 +336,8 @@ jobs:
           ./configure --prefix=$ch_prefix/from-tarball
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_TEST_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_TEST_BUILDER = buildah* ]] && command -v buildah
+          [[ $CH_TEST_BUILDER = docker ]] && command -v docker
           [[ $CH_TEST_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
           fgrep 'recommended tests, tar-unpack mode: yes' config.log
           fgrep 'recommended tests, squash-unpack mode: yes' config.log
@@ -454,9 +431,10 @@ jobs:
           fgrep 'HTML documentation ... no' config.log
           fgrep 'man pages ... no' config.log
           fgrep 'ch-image(1) ... no' config.log
-          fgrep 'with Docker: yes' config.log
           fgrep 'with ch-image(1): no' config.log
-          fgrep 'basic tests, all stages: yes' config.log
+          # This CI test requires Docker, but the “configure” script doesn’t
+          # check for Docker, so we do it ourselves with “command -v”.
+          command -v docker
           fgrep 'more complete tests: no' config.log
           set +x
           # Build.
@@ -493,8 +471,7 @@ jobs:
           ./configure --prefix=/doesnotexist
           set -x
           fgrep 'documentation: no' config.log
-          fgrep 'with Docker: yes' config.log
-          fgrep 'basic tests, all stages: yes' config.log
+          command -v docker
           fgrep 'more complete tests: no' config.log
           fgrep 'recommended tests, squash-mount mode: no' config.log
           set +x
