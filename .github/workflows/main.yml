@@ -189,28 +189,6 @@ jobs:
                      /usr/include/x86_64-linux-musl/
           sudo ln -s x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/
 
-      - name: install/configure dependencies, all Buildah
-        if: ${{ startsWith(matrix.builder, 'buildah') }}
-        run: |
-          command -v buildah
-          buildah --version
-          command -v runc
-          runc --version
-          # As of 2020-11-30, stock registries.conf is pretty simple; it
-          # includes Docker Hub (docker.io) and then quay.io. Still, use ours
-          # for stability.
-          cat /etc/containers/registries.conf
-          cat <<'EOF' | sudo tee /etc/containers/registries.conf
-          [registries.search]
-            registries = ['docker.io']
-          EOF
-
-      - name: install/configure dependencies, privileged Buildah
-        if: ${{ startsWith(matrix.builder, 'buildah-') }}
-        run: |
-          sudo usermod --add-subuids 10000-65536 $USER
-          sudo usermod --add-subgids 10000-65536 $USER
-
       - name: disable bundled lark, ch-image
         if: ${{    matrix.builder == 'ch-image'
                 && matrix.pack_fmt == 'squash-mount'
