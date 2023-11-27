@@ -163,7 +163,7 @@ vset () {
     if [ -z "$value" ]; then
         value=no
     fi
-    if [ "$log_level" -ge 0 ]; then
+    if [ -z "$quiet" ]; then
         var_desc="$var_desc:"
         printf "%-*s %s (%s)\n" "$desc_width" "$var_desc" "$value" "$method"
     fi
