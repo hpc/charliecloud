@@ -881,7 +881,8 @@ class Path(os.PathLike):
       """e.g.:
 
            >>> import os
-           >>> set(Path("/proc/self/task").iterdir()) == { str(os.getpid()) }
+           >>> dir = Path("/proc/self/task")
+           >>> set(dir.iterdir()) == { dir // str(os.getpid()) }
            True"""
       for entry in ch.ossafe("can’t scan: %s" % self, os.scandir, self):
          yield self.__class__(entry.path)
