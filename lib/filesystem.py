@@ -877,6 +877,15 @@ class Path(os.PathLike):
       except OSError as x:
          ch.FATAL("can’t read %s: %s" % (self, x.strerror))
 
+   def iterdir(self):
+      """e.g.:
+
+           >>> import os
+           >>> set(Path("/proc/self/task").iterdir()) == { str(os.getpid()) }
+           True"""
+      for entry in ch.ossafe("can’t scan: %s" % self, os.scandir, self):
+         yield self.__class__(entry.path)
+
    def json_from_file(self, msg):
       ch.DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
