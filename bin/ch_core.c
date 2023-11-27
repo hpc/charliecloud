@@ -123,6 +123,7 @@ int FAKE_SYSCALL_NRS[][5] = {
    {      55,     95,     95,     95,     93 },  // fchown
    {       0,    207,    207,      0,      0 },  // fchown32
    {      54,    325,    298,    289,    260 },  // fchownat
+   {     104,    347,    283,    268,    246 },  // kexec_load (see below)
    {       0,     16,     16,     16,     94 },  // lchown
    {       0,    198,    198,      0,      0 },  // lchown32
    {       0,     14,     14,     14,    133 },  // mknod
@@ -592,6 +593,15 @@ void seccomp_install(void)
    // compatibility (Linux 3.5 rather than 3.17) and because there is a glibc
    // wrapper.
    Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p));
+
+   // Test filter. This will fail if the kernel executes the call (because we
+   // are not really privileged and the arguments are bogus) or succeed if
+   // filter handles it. We selected it over something more naturally in the
+   // filter, e.g. setuid(2), because (1) no container process should ever use
+   // it and (2) it’s unlikely to be emulated by a smarter filter in the
+   // future, i.e., it won’t silently start doing something.
+   Zf (syscall(SYS_kexec_load, 0, 0, NULL, 0),
+       "seccomp root emulation failed (is your architecture supported?)");
 }
 #endif
 
