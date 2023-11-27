@@ -163,7 +163,7 @@ vset () {
     if [ -z "$value" ]; then
         value=no
     fi
-    if [ "$quiet" -eq 0 ]; then
+    if [ "$log_level" -ge 0 ]; then
         var_desc="$var_desc:"
         printf "%-*s %s (%s)\n" "$desc_width" "$var_desc" "$value" "$method"
     fi
@@ -213,7 +213,7 @@ fi
 # statement in the scope of the function because doing so ensures that it gets
 # evaulated after “quiet” is assigned an appropriate value by “parse_basic_arg”.
 pv_ () {
-    if command -v pv > /dev/null 2>&1 && [ "$quiet" -lt 1 ]; then
+    if command -v pv > /dev/null 2>&1 && [ "$log_level" -gt -1 ]; then
         pv -pteb "$@"
     else
         cat
