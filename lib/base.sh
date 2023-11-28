@@ -131,9 +131,9 @@ version () {
 #   $2: string:   command line argument value (1st priority)
 #   $3: string:   environment variable value (2nd priority)
 #   $4: string:   default value (3rd priority)
-#   $5: boolean:  if true, suppress chatter
+#   $5: string:   human readable description for stdout
 #   $6: int:      width of description (use -1 for natural width)
-#   $7: string:   human readable description for stdout
+#   $7: boolean:  if true, suppress chatter
 #
 # FIXME: Shouldn't export the variable, and no Bash indirection available.
 # There are safe eval solution out there, but I was too lazy to deal with it.
@@ -163,7 +163,7 @@ vset () {
     if [ -z "$value" ]; then
         value=no
     fi
-    if [ "$quiet" -eq 0 ]; then
+    if [ -z "$quiet" ]; then
         var_desc="$var_desc:"
         printf "%-*s %s (%s)\n" "$desc_width" "$var_desc" "$value" "$method"
     fi
@@ -213,7 +213,7 @@ fi
 # statement in the scope of the function because doing so ensures that it gets
 # evaulated after “quiet” is assigned an appropriate value by “parse_basic_arg”.
 pv_ () {
-    if command -v pv > /dev/null 2>&1 && [ "$quiet" -lt 1 ]; then
+    if command -v pv > /dev/null 2>&1 && [ "$log_level" -gt -1 ]; then
         pv -pteb "$@"
     else
         cat
