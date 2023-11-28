@@ -131,9 +131,9 @@ version () {
 #   $2: string:   command line argument value (1st priority)
 #   $3: string:   environment variable value (2nd priority)
 #   $4: string:   default value (3rd priority)
-#   $5: boolean:  if true, suppress chatter
+#   $5: string:   human readable description for stdout
 #   $6: int:      width of description (use -1 for natural width)
-#   $7: string:   human readable description for stdout
+#   $7: boolean:  if true, suppress chatter
 #
 # FIXME: Shouldn't export the variable, and no Bash indirection available.
 # There are safe eval solution out there, but I was too lazy to deal with it.
