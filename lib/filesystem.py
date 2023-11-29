@@ -951,10 +951,10 @@ class Path(os.PathLike):
          ch.FATAL("can’t recursively delete directory %s: %s: %s"
                   % (self, x.filename, x.strerror))
 
-   def setxattr(self, name, value, follow_symlinks=True):
+   def setxattr(self, name, value):
       if (ch.save_xattrs):
          try:
-            os.setxattr(self, name, value, follow_symlinks)
+            os.setxattr(self, name, value, follow_symlinks=False)
          except OSError as x:
             if (x.errno == errno.ENOTSUP):  # no OSError subclass
                ch.WARNING("xattrs not supported on %s, setting --no-xattr"
