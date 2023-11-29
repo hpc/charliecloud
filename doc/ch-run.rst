@@ -29,12 +29,13 @@ mounting SquashFS images with FUSE.
     not specified is to use the same path as the host; i.e., the default is
     :code:`--bind=SRC:SRC`. Can be repeated.
 
-    If :code:`--write` is given and :code:`DST` does not exist, it will be
-    created as an empty directory. However, :code:`DST` must be entirely
-    within the image itself; :code:`DST` cannot enter a previous bind mount.
-    For example, :code:`--bind /foo:/tmp/foo` will fail because :code:`/tmp`
-    is shared with the host via bind-mount (unless :code:`$TMPDIR` is set to
-    something else or :code:`--private-tmp` is given).
+    If :code:`--write` or :code:`--write-fake` are given and :code:`DST` does
+    not exist, it will be created as an empty directory. However, :code:`DST`
+    must be entirely within the image itself; :code:`DST` cannot enter a
+    previous bind mount. For example, :code:`--bind /foo:/tmp/foo` will fail
+    because :code:`/tmp` is shared with the host via bind-mount (unless
+    :code:`$TMPDIR` is set to something else or :code:`--private-tmp` is
+    given).
 
     Most images do have ten directories :code:`/mnt/[0-9]` already available
     as mount points.
@@ -132,8 +133,26 @@ mounting SquashFS images with FUSE.
   :code:`-v`, :code:`--verbose`
     Be more verbose (can be repeated).
 
+  :code:`-W`, :code:`--write-fake[=SIZE]`
+    Overlay a writeable tmpfs over the image. This makes the image appear
+    read-write, but it actually remains read-only and unchanged. All data
+    written are discarded when the container exits. The size of the writeable
+    filesystem :code:`SIZE` is any :code:`size` specification acceptable to
+    :code:`tmpfs`, e.g. :code:`4m` for 4MiB or :code:`50%` for half of
+    physical memory. The default is :code:`12%`. Note that this limit is a
+    maximum: only actually stored files consume virtual memory. This requires
+    a kernel that supports unprivileged overlayfs (`upstream 5.11
+    <https://kernelnewbies.org/Linux_5.11#Unprivileged_Overlayfs_mounts>`_,
+    but distributions vary considerably).
+
   :code:`-w`, :code:`--write`
-    Mount image read-write (by default, the image is mounted read-only).
+    Mount image read-write. By default, the image is mounted read-only. *This
+    option should be avoided for most use cases,* because (1) changing images
+    live (as opposed to prescriptively with a Dockerfile) destroys their
+    provenance and (2) SquashFS images, which is the best-practice format on
+    parallel filesystems, must be read-only. It is better to use
+    `--write-fake` (for disposable data) or bind-mount host directories (for
+    retained data).
 
   :code:`-?`, :code:`--help`
     Print help and exit.
@@ -696,4 +715,4 @@ status is 1 regardless of the signal value.
 .. include:: ./see_also.rst
 
 ..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH
-..  LocalWords:  noprofile norc SHLVL PWD
+..  LocalWords:  noprofile norc SHLVL PWD kernelnewbies
