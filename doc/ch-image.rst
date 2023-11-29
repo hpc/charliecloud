@@ -92,9 +92,6 @@ Common options placed before or after the sub-command:
     :code:`ch-image` instances as you want against the same storage directory,
     which risks corruption but may be OK for some workloads.
 
-  :code:`--no-xattrs`
-    Ignore xattrs and ACLs.
-
   :code:`--password-many`
     Re-prompt the user every time a registry password is needed.
 
@@ -125,6 +122,10 @@ Common options placed before or after the sub-command:
   :code:`-v`, :code:`--verbose`
     Print extra chatter; can be repeated. See the :ref:`FAQ entry on verbosity
     <faq_verbosity>` for details.
+
+  :code:`--xattrs`
+    Save xattrs and ACLs in the build cache, and restore them when rebuilding
+    from the cache.
 
 
 Architecture

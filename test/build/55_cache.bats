@@ -1523,9 +1523,9 @@ RUN setfattr -n user.foo -v bar /home/foo
 RUN setfacl -m u:root:r /home/foo
 EOF
     ch-image build-cache --reset
-    ch-image build -t tmpimg -f "$TMP_DF" "$TMP_CX"
+    ch-image build --xattrs -t tmpimg -f "$TMP_DF" "$TMP_CX"
     ch-image delete tmpimg
-    ch-image build -t tmpimg -f "$TMP_DF" "$TMP_CX"
+    ch-image build --xattrs -t tmpimg -f "$TMP_DF" "$TMP_CX"
     run ch-run tmpimg -- getfattr home/foo
     # don’t check for ACL xattr bc it’s more straightforward to use getfacl(1).
     echo "$output"

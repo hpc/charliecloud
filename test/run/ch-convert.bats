@@ -523,7 +523,7 @@ RUN touch /home/foo
 EOF
 
     # convert image to dir and actually bork it
-    ch-convert -i ch-image -o dir tmpimg "$borked_img"
+    ch-convert -i ch-image -o dir --xattrs tmpimg "$borked_img"
     setfattr -n user.foo -v bar "$borked_file"
     sudo setfattr -n security.foo -v bar "$borked_file"
     sudo setfattr -n trusted.foo -v bar "$borked_file"
@@ -550,7 +550,7 @@ EOF
              --xattrs-include='trusted.*' \
              -czvf "$borked_tar" "$borked_img"
 
-    ch-convert -i tar -o dir "$borked_tar" "$borked_out"
+    ch-convert -i tar -o dir --xattrs "$borked_tar" "$borked_out"
 
     run sudo getfattr -dm - -- "$borked_out/home/foo"
     echo "$output"

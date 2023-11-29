@@ -654,7 +654,7 @@ def exit(code):
 def init(cli):
    # logging
    global log_festoon, log_fp, log_level, trace_fatal, save_xattrs
-   save_xattrs = (not cli.no_xattrs)
+   save_xattrs = (cli.xattrs)
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
    if (cli.quiet and cli.verbose):
       ERROR("“--quiet” incompatible with “--verbose”")

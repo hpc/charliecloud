@@ -122,9 +122,6 @@ def main():
            [["--no-lock"],
             { "action": "store_true",
               "help": "allow concurrent storage directory access (risky!)" }],
-           [["--no-xattrs"],
-            { "action": "store_true",
-              "help": "build cache ignores xattrs and ACLs"}],
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],
@@ -148,7 +145,10 @@ def main():
               "help": "print extra chatter (can be repeated)" }],
            [["--version"],
             { "action": misc.Version,
-              "help": "print version and exit" }] ] }
+              "help": "print version and exit" }],
+           [["--xattrs"],
+            { "action": "store_true",
+              "help": "enable build cache support for xattrs and ACLs"}] ] }
 
    # Most, but not all, subcommands need to check dependencies before doing
    # anything (the exceptions being basic information commands like

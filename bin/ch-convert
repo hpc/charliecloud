@@ -841,9 +841,6 @@ while true; do
             --no-clobber)
                 no_clobber=yes
                 ;;
-            --no-xattrs)
-                no_xattrs=yes
-                ;;
             -o|--out-fmt)
                 shift
                 out_fmt=$1
@@ -859,6 +856,9 @@ while true; do
                 shift
                 tmpdir=$1
                 ;;
+            --xattrs)
+                xattrs=yes
+                ;;
             *)
                 break
                 ;;
@@ -869,7 +869,7 @@ done
 if [ "$#" -ne 2 ]; then
     usage
 fi
-if [ -n "$no_xattrs" ]; then
+if [ -z "$xattrs" ]; then
     tar_xattr_args=
     squash_xattr_arg=
 else

@@ -95,7 +95,7 @@ def args_parse():
    args_.quiet = False
    args_.storage = None
    args_.tls_no_verify = False
-   args_.no_xattrs = False
+   args_.xattrs = False
    ch.init(args_)
 
    if len(sys.argv) < 2:
