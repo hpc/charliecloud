@@ -488,7 +488,7 @@ class File_Metadata:
       elif (not self.path.git_compatible_p):
          self.path_abs.git_escaped.rename(self.path_abs)
       for (xattr, val) in self.xattrs.items():
-         self.path_abs.setxattr(xattr, val, follow_symlinks=False)
+         self.path_abs.setxattr(xattr, val)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
