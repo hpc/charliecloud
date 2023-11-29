@@ -715,8 +715,7 @@ path_noclobber () {
 tar_ () {
     # shellcheck disable=SC2086
     ( cd "$1" && tar cf - $tar_xattr_args \
-                          --exclude=./.git \
-                          --exclude=./.gitignore \
+                          --exclude=./ch/git \
                           --exclude=./ch/git.pickle . ) | pv_
 }
 
