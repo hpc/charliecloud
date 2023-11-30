@@ -266,7 +266,8 @@ void containerize(struct container *c)
 
 }
 
-/* Enter the UDSS. After this, we are inside the UDSS.
+/* Enter the new root (UDSS). On entry, the namespaces are set up, and this
+   does the mounting and filesystem setup.
 
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
@@ -276,8 +277,26 @@ void enter_udss(struct container *c)
    char *newroot_parent, *newroot_base;
 
    LOG_IDS;
-
    path_split(c->newroot, &newroot_parent, &newroot_base);
+
+   // Overlay a tmpfs for --write-fake. See for useful details:
+   // https://www.kernel.org/doc/html/v5.7/filesystems/tmpfs.html
+   // https://www.kernel.org/doc/html/v5.7/filesystems/overlayfs.html
+   if (c->overlay_size != NULL) {
+      char *options;
+      T_ (1 <= asprintf(&options, "size=%s", c->overlay_size));
+      Zf (mount(NULL, "/mnt", "tmpfs", 0, options),  // host should have /mnt
+          "cannot mount tmpfs for overlay");
+      free(options);
+      Z_ (mkdir("/mnt/upper", 0700));
+      Z_ (mkdir("/mnt/work", 0700));
+      T_ (1 <= asprintf(&options, "lowerdir=%s,upperdir=%s,workdir=%s,"
+                                  "redirect_dir=on,metacopy=on",
+                        c->newroot, "/mnt/upper", "/mnt/work"));
+      Zf (mount(NULL, c->newroot, "overlay", 0, options),
+          "cannot mount overlayfs");
+      free(options);
+   }
 
    // Claim new root for this namespace. We do need both calls to avoid
    // pivot_root(2) failing with EBUSY later.
@@ -294,15 +313,11 @@ void enter_udss(struct container *c)
    } else {
       bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
    }
-   // Container /home.
+   // Bind-mount user’s home directory at /home/$USER if requested.
    if (c->host_home) {
-      char *newhome;
-      // Mount tmpfs on guest /home because guest root may be read-only.
-      tmpfs_mount("/home", c->newroot, "size=4m");
-      // Bind-mount user's home directory at /home/$USER.
-      newhome = cat("/home/", username);
-      Z_ (mkdir(cat(c->newroot, newhome), 0755));
-      bind_mount(c->host_home, newhome, BD_REQUIRED, c->newroot, 0);
+      T_ (c->overlay_size != NULL);
+      bind_mount(c->host_home, cat("/home/", username), BD_MAKE_DST,
+                 c->newroot, 0);
    }
    // Re-mount new root read-only unless --write or already read-only.
    if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {

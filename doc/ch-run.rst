@@ -67,10 +67,8 @@ mounting SquashFS images with FUSE.
 
   :code:`--home`
     Bind-mount your host home directory (i.e., :code:`$HOME`) at guest
-    :code:`/home/$USER`. This is accomplished by over-mounting a new
-    :code:`tmpfs` at :code:`/home`, which hides any image content under that
-    path. By default, neither of these things happens and the image’s
-    :code:`/home` is exposed unaltered.
+    :code:`/home/$USER` (hiding any image content that exists at that path)
+    Implies :code:`--write-fake`.
 
   :code:`-j`, :code:`--join`
     Use the same container (namespaces) as peer :code:`ch-run` invocations.
@@ -133,26 +131,31 @@ mounting SquashFS images with FUSE.
   :code:`-v`, :code:`--verbose`
     Be more verbose (can be repeated).
 
-  :code:`-W`, :code:`--write-fake[=SIZE]`
-    Overlay a writeable tmpfs over the image. This makes the image appear
-    read-write, but it actually remains read-only and unchanged. All data
-    written are discarded when the container exits. The size of the writeable
-    filesystem :code:`SIZE` is any :code:`size` specification acceptable to
-    :code:`tmpfs`, e.g. :code:`4m` for 4MiB or :code:`50%` for half of
-    physical memory. The default is :code:`12%`. Note that this limit is a
-    maximum: only actually stored files consume virtual memory. This requires
-    a kernel that supports unprivileged overlayfs (`upstream 5.11
-    <https://kernelnewbies.org/Linux_5.11#Unprivileged_Overlayfs_mounts>`_,
-    but distributions vary considerably).
-
   :code:`-w`, :code:`--write`
     Mount image read-write. By default, the image is mounted read-only. *This
     option should be avoided for most use cases,* because (1) changing images
     live (as opposed to prescriptively with a Dockerfile) destroys their
     provenance and (2) SquashFS images, which is the best-practice format on
     parallel filesystems, must be read-only. It is better to use
-    `--write-fake` (for disposable data) or bind-mount host directories (for
-    retained data).
+    :code:`--write-fake` (for disposable data) or bind-mount host directories
+    (for retained data).
+
+  :code:`-W`, :code:`--write-fake[=SIZE]`
+    Overlay a writeable tmpfs on top of the image. This makes the image appear
+    read-write, but it actually remains read-only and unchanged. All data
+    “written” to the image are discarded when the container exits.
+
+    The size of the writeable filesystem :code:`SIZE` is any size
+    specification acceptable to :code:`tmpfs`, e.g. :code:`4m` for 4MiB or
+    :code:`50%` for half of physical memory. If this option is specified
+    without :code:`SIZE`, the default is :code:`12%`. Note that this limit is
+    a maximum: only actually stored files consume virtual memory.
+
+    This requires a kernel that supports unprivileged overlayfs (`upstream
+    5.11
+    <https://kernelnewbies.org/Linux_5.11#Unprivileged_Overlayfs_mounts>`_,
+    but distributions vary considerably). If it does not, the error is
+    “operation not permitted”.
 
   :code:`-?`, :code:`--help`
     Print help and exit.
@@ -715,4 +718,4 @@ status is 1 regardless of the signal value.
 .. include:: ./see_also.rst
 
 ..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH
-..  LocalWords:  noprofile norc SHLVL PWD kernelnewbies
+..  LocalWords:  noprofile norc SHLVL PWD kernelnewbies extglob
