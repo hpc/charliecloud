@@ -88,6 +88,7 @@ int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
                         AUDIT_ARCH_ARM,       // arm32
                         AUDIT_ARCH_I386,      // x86 (32-bit)
                         AUDIT_ARCH_PPC64LE,   // PPC
+                        AUDIT_ARCH_S390X,     // s390x
                         AUDIT_ARCH_X86_64,    // x86-64
                         -1 };
 #endif
@@ -114,37 +115,37 @@ int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
    [2]: https://github.com/strace/strace/blob/v4.26/linux/powerpc64/syscallent.h
    [3]: https://unix.stackexchange.com/questions/421750 */
 #ifdef HAVE_SECCOMP
-int FAKE_SYSCALL_NRS[][5] = {
-   // arm64   arm32   x86     PPC64   x86-64
-   // ------  ------  ------  ------  ------
-   {      91,    185,    185,    184,    126 },  // capset
-   {       0,    182,    182,    181,     92 },  // chown
-   {       0,    212,    212,      0,      0 },  // chown32
-   {      55,     95,     95,     95,     93 },  // fchown
-   {       0,    207,    207,      0,      0 },  // fchown32
-   {      54,    325,    298,    289,    260 },  // fchownat
-   {       0,     16,     16,     16,     94 },  // lchown
-   {       0,    198,    198,      0,      0 },  // lchown32
-   {       0,     14,     14,     14,    133 },  // mknod
-   {      33,    324,    297,    288,    259 },  // mknodat
-   {     152,    139,    139,    139,    123 },  // setfsgid
-   {       0,    216,    216,      0,      0 },  // setfsgid32
-   {     151,    138,    138,    138,    122 },  // setfsuid
-   {       0,    215,    215,      0,      0 },  // setfsuid32
-   {     144,     46,     46,     46,    106 },  // setgid
-   {       0,    214,    214,      0,      0 },  // setgid32
-   {     159,     81,     81,     81,    116 },  // setgroups
-   {       0,    206,    206,      0,      0 },  // setgroups32
-   {     143,     71,     71,     71,    114 },  // setregid
-   {       0,    204,    204,      0,      0 },  // setregid32
-   {     149,    170,    170,    169,    119 },  // setresgid
-   {       0,    210,    210,      0,      0 },  // setresgid32
-   {     147,    164,    164,    164,    117 },  // setresuid
-   {       0,    208,    208,      0,      0 },  // setresuid32
-   {     145,     70,     70,     70,    113 },  // setreuid
-   {       0,    203,    203,      0,      0 },  // setreuid32
-   {     146,     23,     23,     23,    105 },  // setuid
-   {       0,    213,    213,      0,      0 },  // setuid32
+int FAKE_SYSCALL_NRS[][6] = {
+   // arm64   arm32   x86     PPC64   s390x   x86-64
+   // ------  ------  ------  ------  ------  ------
+   {      91,    185,    185,    184,    185,    126 },  // capset
+   {       0,    182,    182,    181,    212,     92 },  // chown
+   {       0,    212,    212,      0,      0,      0 },  // chown32
+   {      55,     95,     95,     95,    207,     93 },  // fchown
+   {       0,    207,    207,      0,      0,      0 },  // fchown32
+   {      54,    325,    298,    289,    291,    260 },  // fchownat
+   {       0,     16,     16,     16,    198,     94 },  // lchown
+   {       0,    198,    198,      0,      0,      0 },  // lchown32
+   {       0,     14,     14,     14,     14,    133 },  // mknod
+   {      33,    324,    297,    288,    290,    259 },  // mknodat
+   {     152,    139,    139,    139,    216,    123 },  // setfsgid
+   {       0,    216,    216,      0,      0,      0 },  // setfsgid32
+   {     151,    138,    138,    138,    215,    122 },  // setfsuid
+   {       0,    215,    215,      0,      0,      0 },  // setfsuid32
+   {     144,     46,     46,     46,    214,    106 },  // setgid
+   {       0,    214,    214,      0,      0,      0 },  // setgid32
+   {     159,     81,     81,     81,    206,    116 },  // setgroups
+   {       0,    206,    206,      0,      0,      0 },  // setgroups32
+   {     143,     71,     71,     71,    204,    114 },  // setregid
+   {       0,    204,    204,      0,      0,      0 },  // setregid32
+   {     149,    170,    170,    169,    210,    119 },  // setresgid
+   {       0,    210,    210,      0,      0,      0 },  // setresgid32
+   {     147,    164,    164,    164,    208,    117 },  // setresuid
+   {       0,    208,    208,      0,      0,      0 },  // setresuid32
+   {     145,     70,     70,     70,    203,    113 },  // setreuid
+   {       0,    203,    203,      0,      0,      0 },  // setreuid32
+   {     146,     23,     23,     23,    213,    105 },  // setuid
+   {       0,    213,    213,      0,      0,      0 },  // setuid32
    { -1 }, // end
 };
 #endif
