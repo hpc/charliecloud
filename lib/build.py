@@ -41,7 +41,7 @@ image_ct = None
 
 ## Imports not in standard library ##
 
-# See charliecloud.py for the messy import of this.
+# See image.py for the messy import of this.
 lark = im.lark
 
 

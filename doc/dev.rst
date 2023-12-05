@@ -1574,11 +1574,11 @@ Updating bundled Lark parser
 ----------------------------
 
 In order to change the version of the bundled lark parser you must modify
-multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
+multiple files. To find them, e.g. for version 1.1.8 (the regex is hairy to
 catch both dot notation and tuples, but not the list of filenames in
 :code:`lib/Makefile.am`)::
 
-  $ misc/grep -E '0(\.|, )11(\.|, )3($|\s|\))'
+  $ misc/grep -E '1(\.|, )1(\.|, )8($|\s|\))'
 
 What to do in each location should either be obvious or commented.
 
