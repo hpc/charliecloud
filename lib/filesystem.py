@@ -5,8 +5,8 @@ import glob
 import hashlib
 import json
 import os
-import re
 import pprint
+import re
 import shutil
 import stat
 import struct
@@ -211,14 +211,14 @@ class Path(os.PathLike):
    def __gt__(self, other):
       return not self.__le__(other)
 
+   def __hash__(self):
+      return hash(self.path)
+
    def __le__(self, other):
       return (self.path <= Path(other).path)
 
    def __lt__(self, other):
       return (self.path < Path(other).path)
-
-   def __hash__(self):
-      return hash(self.path)
 
    def __ne__(self, other):
       return not self.__eq__(other)
@@ -523,6 +523,14 @@ class Path(os.PathLike):
 
    ## Extensions ##
 
+   @staticmethod
+   def stat_bytes_all(paths):
+      "Return concatenation of metadata_bytes() on each given Path object."
+      md = bytearray()
+      for path in paths:
+         md += path.stat_bytes_recursive()
+      return md
+
    def __floordiv__(self, right):
       left = self.path
       try:
@@ -559,6 +567,28 @@ class Path(os.PathLike):
       return (self.path == ".")
 
    @property
+   def first(self):
+      """Return my first component as a new Path object, e.g.:
+
+           >>> a = Path("/")
+           >>> b = a.first
+           >>> b
+           Path('/')
+           >>> a == b
+           True
+           >>> a is b
+           False
+           >>> Path("").first
+           Path('.')
+           >>> Path("./a").first
+           Path('a')
+           >>> Path("a/b").first
+           Path('a')"""
+      if (self.root_p):
+         return self.deepcopy()
+      return self.__class__(self.path.partition("/")[0])
+
+   @property
    def git_compatible_p(self):
       """Return True if my filename can be stored in Git, false otherwise.
 
@@ -588,28 +618,6 @@ class Path(os.PathLike):
    @property
    def root_p(self):
       return (self.path == "/")
-
-   @property
-   def first(self):
-      """Return my first component as a new Path object, e.g.:
-
-           >>> a = Path("/")
-           >>> b = a.first
-           >>> b
-           Path('/')
-           >>> a == b
-           True
-           >>> a is b
-           False
-           >>> Path("").first
-           Path('.')
-           >>> Path("./a").first
-           Path('a')
-           >>> Path("a/b").first
-           Path('a')"""
-      if (self.root_p):
-         return self.deepcopy()
-      return self.__class__(self.path.partition("/")[0])
 
    @property
    def trailed_p(self):
@@ -647,14 +655,6 @@ class Path(os.PathLike):
          return self.deepcopy()
       else:
          return self.__class__(self.path.rstrip("/"))
-
-   @staticmethod
-   def stat_bytes_all(paths):
-      "Return concatenation of metadata_bytes() on each given Path object."
-      md = bytearray()
-      for path in paths:
-         md += path.stat_bytes_recursive()
-      return md
 
    def chdir(self):
       "Change CWD to path and return previous CWD. Exit on error."
@@ -877,6 +877,16 @@ class Path(os.PathLike):
       except OSError as x:
          ch.FATAL("can’t read %s: %s" % (self, x.strerror))
 
+   def iterdir(self):
+      """e.g.:
+
+           >>> import os
+           >>> dir = Path("/proc/self/task")
+           >>> set(dir.iterdir()) == { dir // str(os.getpid()) }
+           True"""
+      for entry in ch.ossafe("can’t scan: %s" % self, os.scandir, self):
+         yield self.__class__(entry.path)
+
    def json_from_file(self, msg):
       ch.DEBUG("loading JSON: %s: %s" % (msg, self))
       text = self.file_read_all()
@@ -941,10 +951,10 @@ class Path(os.PathLike):
          ch.FATAL("can’t recursively delete directory %s: %s: %s"
                   % (self, x.filename, x.strerror))
 
-   def setxattr(self, name, value, follow_symlinks=True):
+   def setxattr(self, name, value):
       if (ch.save_xattrs):
          try:
-            os.setxattr(self, name, value, follow_symlinks)
+            os.setxattr(self, name, value, follow_symlinks=False)
          except OSError as x:
             if (x.errno == errno.ENOTSUP):  # no OSError subclass
                ch.WARNING("xattrs not supported on %s, setting --no-xattr"
@@ -1038,6 +1048,23 @@ class Storage:
       if (not self.root.is_absolute()):
          self.root = os.getcwd() // self.root
 
+   @staticmethod
+   def root_default():
+      # FIXME: Perhaps we should use getpass.getch.user() instead of the $USER
+      # environment variable? It seems a lot more robust. But, (1) we’d have
+      # to match it in some scripts and (2) it makes the documentation less
+      # clear becase we have to explain the fallback behavior.
+      return Path("/var/tmp/%s.ch" % ch.user())
+
+   @staticmethod
+   def root_env():
+      if (not "CH_IMAGE_STORAGE" in os.environ):
+         return None
+      path = Path(os.environ["CH_IMAGE_STORAGE"])
+      if (not path.is_absolute()):
+         ch.FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
+      return path
+
    @property
    def bucache_needs_ignore_upgrade(self):
       return self.build_cache // "ch_upgrade-ignore"
@@ -1087,23 +1114,6 @@ class Storage:
    @property
    def version_file(self):
       return self.root // "version"
-
-   @staticmethod
-   def root_default():
-      # FIXME: Perhaps we should use getpass.getch.user() instead of the $USER
-      # environment variable? It seems a lot more robust. But, (1) we’d have
-      # to match it in some scripts and (2) it makes the documentation less
-      # clear becase we have to explain the fallback behavior.
-      return Path("/var/tmp/%s.ch" % ch.user())
-
-   @staticmethod
-   def root_env():
-      if (not "CH_IMAGE_STORAGE" in os.environ):
-         return None
-      path = Path(os.environ["CH_IMAGE_STORAGE"])
-      if (not path.is_absolute()):
-         ch.FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
-      return path
 
    def build_large_path(self, name):
       return self.build_large // name
@@ -1311,44 +1321,6 @@ class TarFile(tarfile.TarFile):
    # [4]: https://bugs.python.org/issue19974
    # [5]: https://bugs.python.org/issue23228
 
-   # Need new method name because add() is called recursively and we don’t
-   # want those internal calls to get our special sauce.
-   def add_(self, name, **kwargs):
-      def filter_(ti):
-         assert (ti.name == "." or ti.name[:2] == "./")
-         if (ti.name in ("./ch/git", "./ch/git.pickle")):
-            ch.DEBUG("omitting from push: %s" % ti.name)
-            return None
-         self.fix_member_uidgid(ti)
-         return ti
-      kwargs["filter"] = filter_
-      super().add(name, **kwargs)
-
-   def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
-      assert (regulars or symlinks or dirs)
-      try:
-         st = os.lstat(targetpath)
-      except FileNotFoundError:
-         # We could move this except clause after all the stat.S_IS* calls,
-         # but that risks catching FileNotFoundError that came from somewhere
-         # other than lstat().
-         st = None
-      except OSError as x:
-         ch.FATAL("can’t lstat: %s" % targetpath, targetpath)
-      if (st is not None):
-         if (stat.S_ISREG(st.st_mode)):
-            if (regulars):
-               Path(targetpath).unlink()
-         elif (stat.S_ISLNK(st.st_mode)):
-            if (symlinks):
-               Path(targetpath).unlink()
-         elif (stat.S_ISDIR(st.st_mode)):
-            if (dirs):
-               Path(targetpath).rmtree()
-         else:
-            ch.FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
-                     % (stat.S_IFMT(st.st_mode), targetpath))
-
    @staticmethod
    def fix_link_target(ti, tb):
       """Deal with link (symbolic or hard) weirdness or breakage. If it can be
@@ -1399,6 +1371,44 @@ class TarFile(tarfile.TarFile):
       if (ti.mode & stat.S_ISGID):
          ch.VERBOSE("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
+
+   # Need new method name because add() is called recursively and we don’t
+   # want those internal calls to get our special sauce.
+   def add_(self, name, **kwargs):
+      def filter_(ti):
+         assert (ti.name == "." or ti.name[:2] == "./")
+         if (ti.name in ("./ch/git", "./ch/git.pickle")):
+            ch.DEBUG("omitting from push: %s" % ti.name)
+            return None
+         self.fix_member_uidgid(ti)
+         return ti
+      kwargs["filter"] = filter_
+      super().add(name, **kwargs)
+
+   def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
+      assert (regulars or symlinks or dirs)
+      try:
+         st = os.lstat(targetpath)
+      except FileNotFoundError:
+         # We could move this except clause after all the stat.S_IS* calls,
+         # but that risks catching FileNotFoundError that came from somewhere
+         # other than lstat().
+         st = None
+      except OSError as x:
+         ch.FATAL("can’t lstat: %s" % targetpath, targetpath)
+      if (st is not None):
+         if (stat.S_ISREG(st.st_mode)):
+            if (regulars):
+               Path(targetpath).unlink()
+         elif (stat.S_ISLNK(st.st_mode)):
+            if (symlinks):
+               Path(targetpath).unlink()
+         elif (stat.S_ISDIR(st.st_mode)):
+            if (dirs):
+               Path(targetpath).rmtree()
+         else:
+            ch.FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
+                     % (stat.S_IFMT(st.st_mode), targetpath))
 
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path
