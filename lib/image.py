@@ -210,6 +210,16 @@ class Image:
          self.unpack_path = ch.storage.unpack(self.ref)
       self.metadata_init()
 
+   @classmethod
+   def glob(class_, image_glob):
+      """Return a possibly-empty iterator of images in the storage directory
+         matching the given glob."""
+      for ref in Reference.glob(image_glob):
+         yield class_(ref)
+
+   def __str__(self):
+      return str(self.ref)
+
    @property
    def deleteable(self):
       """True if it’s OK to delete me, either my unpack directory (a) is at
@@ -242,16 +252,6 @@ class Image:
    @property
    def unpack_exist_p(self):
       return os.path.exists(self.unpack_path)
-
-   def __str__(self):
-      return str(self.ref)
-
-   @classmethod
-   def glob(class_, image_glob):
-      """Return a possibly-empty iterator of images in the storage directory
-         matching the given glob."""
-      for ref in Reference.glob(image_glob):
-         yield class_(ref)
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -715,21 +715,6 @@ class Reference:
       elif (src is not None):
          assert False, "unsupported initialization type"
 
-   def __str__(self):
-      out = ""
-      if (self.host is not None):
-         out += self.host
-      if (self.port is not None):
-         out += ":" + str(self.port)
-      if (self.host is not None):
-         out += "/"
-      out += self.path_full
-      if (self.tag is not None):
-         out += ":" + self.tag
-      if (self.digest is not None):
-         out += "@sha256:" + self.digest
-      return out
-
    @staticmethod
    def path_to_ref(path):
       if (isinstance(path, fs.Path)):
@@ -770,6 +755,21 @@ class Reference:
          ch.FATAL("image ref syntax, at end: %s" % s, hint)
       ch.DEBUG(tree.pretty())
       return tree
+
+   def __str__(self):
+      out = ""
+      if (self.host is not None):
+         out += self.host
+      if (self.port is not None):
+         out += ":" + str(self.port)
+      if (self.host is not None):
+         out += "/"
+      out += self.path_full
+      if (self.tag is not None):
+         out += ":" + self.tag
+      if (self.digest is not None):
+         out += "@sha256:" + self.digest
+      return out
 
    @property
    def as_verbose_str(self):

@@ -186,3 +186,15 @@ load ../common
     | LC_ALL=C sort -t: -k1,1 -k2n,2 \
     | diff -u approved-trailing-whitespace -
 }
+
+
+@test 'python object order' {
+    scope standard
+    status_all=0
+    for f in "$ch_lib"/*.py; do
+        run ./order-py "$f"
+        echo "$output"
+        status_all=$((status_all+status))
+    done
+    [[ $status_all -eq 0 ]]
+}
