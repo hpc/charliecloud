@@ -141,9 +141,9 @@ mounting SquashFS images with FUSE.
     (for retained data).
 
   :code:`-W`, :code:`--write-fake[=SIZE]`
-    Overlay a writeable tmpfs on top of the image. This makes the image appear
-    read-write, but it actually remains read-only and unchanged. All data
-    “written” to the image are discarded when the container exits.
+    Overlay a writeable tmpfs on top of the image. This makes the image
+    *appear* read-write, but it actually remains read-only and unchanged. All
+    data “written” to the image are discarded when the container exits.
 
     The size of the writeable filesystem :code:`SIZE` is any size
     specification acceptable to :code:`tmpfs`, e.g. :code:`4m` for 4MiB or
@@ -151,11 +151,8 @@ mounting SquashFS images with FUSE.
     without :code:`SIZE`, the default is :code:`12%`. Note that this limit is
     a maximum: only actually stored files consume virtual memory.
 
-    This requires a kernel that supports unprivileged overlayfs (`upstream
-    5.11
-    <https://kernelnewbies.org/Linux_5.11#Unprivileged_Overlayfs_mounts>`_,
-    but distributions vary considerably). If it does not, the error is
-    “operation not permitted”.
+    This requires kernel support and there are some caveats. See section
+    “:ref:`ch-run_overlay`” below for details.
 
   :code:`-?`, :code:`--help`
     Print help and exit.
@@ -331,6 +328,35 @@ Caveats:
 
 * Many of the arguments given to the race losers, such as the image path and
   :code:`--bind`, will be ignored in favor of what was given to the winner.
+
+.. _ch-run_overlay:
+
+Writeable overlay with :code:`--write-fake`
+===========================================
+
+If you need the image to stay read-only but appear writeable, you may be able
+to use :code:`--write-fake` to overlay a writeable tmpfs atop the image. This
+requires kernel support. Specifically:
+
+1. To use the feature at all, you need unprivileged overlayfs support. This is
+   available in `upstream 5.11
+   <https://kernelnewbies.org/Linux_5.11#Unprivileged_Overlayfs_mounts>`_
+   (February 2021), but distributions vary considerably. If you don’t have
+   this, the container will fail to start with error “operation not
+   permitted”.
+
+2. To allow fully arbitrary changes in the overlay, you need a tmpfs that
+   supports xattrs in the :code:`user` namespace. This is available in
+   `upstream 6.6 <https://kernelnewbies.org/Linux_6.6#TMPFS>`_ (October 2023).
+   If you don’t have this, most things will work fine, but some operations
+   will fail with “I/O error”, for example creating a directory with the same
+   path as a previously deleted directory. There will also be syslog noise
+   about xattr problems.
+
+   (overlayfs can also use xattrs in the :code:`trusted` namespace, but this
+   requires :code:`CAP_SYS_ADMIN` `on the host
+   <https://elixir.bootlin.com/linux/v5.11/source/kernel/capability.c#L447>`_
+   and thus is not helpful for unprivileged containers.)
 
 
 Environment variables

@@ -605,9 +605,11 @@ void path_split(const char *path, char **dir, char **base)
    char *path2;
 
    T_ (path2 = strdup(path));
-   *dir = dirname(path2);
+   T_ (*dir = strdup(dirname(path2)));
+   free(path2);
    T_ (path2 = strdup(path));
-   *base = basename(path2);
+   T_ (*base = strdup(basename(path2)));
+   free(path2);
 }
 
 /* Return true if path is a subdirectory of base, false otherwise. Acts on the
