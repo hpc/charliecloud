@@ -345,13 +345,13 @@ requires kernel support. Specifically:
    this, the container will fail to start with error “operation not
    permitted”.
 
-2. To allow fully arbitrary changes in the overlay, you need a tmpfs that
-   supports xattrs in the :code:`user` namespace. This is available in
-   `upstream 6.6 <https://kernelnewbies.org/Linux_6.6#TMPFS>`_ (October 2023).
-   If you don’t have this, most things will work fine, but some operations
-   will fail with “I/O error”, for example creating a directory with the same
-   path as a previously deleted directory. There will also be syslog noise
-   about xattr problems.
+2. For a fully functional overlay, you need a tmpfs that supports xattrs in
+   the :code:`user` namespace. This is available in `upstream 6.6
+   <https://kernelnewbies.org/Linux_6.6#TMPFS>`_ (October 2023). If you don’t
+   have this, most things will work fine, but some operations will fail with
+   “I/O error”, for example creating a directory with the same path as a
+   previously deleted directory. There will also be syslog noise about xattr
+   problems.
 
    (overlayfs can also use xattrs in the :code:`trusted` namespace, but this
    requires :code:`CAP_SYS_ADMIN` `on the host

@@ -304,9 +304,9 @@ void enter_udss(struct container *c)
       Zf (mount(NULL, "/mnt", "tmpfs", 0, options),  // host should have /mnt
           "cannot mount tmpfs for overlay");
       free(options);
-      Z_ (mkdir("/mnt/upper", 0755));
-      Z_ (mkdir("/mnt/work", 0755));
-      Z_ (mkdir("/mnt/merged", 0755));
+      Z_ (mkdir("/mnt/upper", 0700));
+      Z_ (mkdir("/mnt/work", 0700));
+      Z_ (mkdir("/mnt/merged", 0700));
       T_ (1 <= asprintf(&options, "lowerdir=%s,upperdir=%s,workdir=%s,"
                                   "index=on,userxattr,volatile",
                                   newroot, "/mnt/upper", "/mnt/work"));

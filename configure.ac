@@ -335,6 +335,83 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
   [AC_MSG_ERROR([cross-compilation not supported])])
 AC_MSG_RESULT($have_userns)
 
+# overlayfs
+AC_DEFUN([CH_OVERLAY_C], [[
+  #define _GNU_SOURCE
+  #include <errno.h>
+  #include <sched.h>
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include <sys/mount.h>
+  #include <sys/stat.h>
+  #include <unistd.h>
+
+  #define T_(x) if (!(x)) fatal_(__FILE__, __LINE__, errno, #x)
+  #define Z_(x) if (x) fatal_(__FILE__, __LINE__, errno, #x)
+
+  void fatal_(const char *file, int line, int errno_, const char *str)
+  {
+     fprintf(stderr, "error: %s: %d: %s\n", file, line, str);
+     fprintf(stderr, "errno: %d: %s\n", errno_, strerror(errno_));
+     exit(1);
+  }
+
+  int main(void)
+  {
+     int fd;
+     uid_t euid = geteuid();
+     gid_t egid = getegid();
+
+     // enter namespaces
+     Z_ (unshare(CLONE_NEWNS|CLONE_NEWUSER));
+
+     // set up ID maps
+     T_ (-1 != (fd = open("/proc/self/uid_map", O_WRONLY)));
+     T_ (1 <= dprintf(fd, "%d %d 1\n", 0, euid));
+     Z_ (close(fd));
+     T_ (-1 != (fd = open("/proc/self/setgroups", O_WRONLY)));
+     T_ (1 <= dprintf(fd, "deny\n"));
+     Z_ (close(fd));
+     T_ (-1 != (fd = open("/proc/self/gid_map", O_WRONLY)));
+     T_ (1 <= dprintf(fd, "%d %d 1\n", 0, egid));
+     Z_ (close(fd));
+
+     // set up overlayfs
+     Z_ (mount("/", "/", NULL, MS_BIND | MS_REC | MS_PRIVATE, NULL));
+     Z_ (mount(NULL, "/mnt", "tmpfs", 0, NULL));
+     Z_ (mkdir("/mnt/upper", 0700));
+     Z_ (mkdir("/mnt/lower", 0700));
+     Z_ (mkdir("/mnt/lower/test", 0700));
+     Z_ (mkdir("/mnt/work", 0700));
+     Z_ (mkdir("/mnt/merged", 0700));
+     Z_ (mount(NULL, "/mnt/merged", "overlay", MS_NOATIME,
+               "lowerdir=/mnt/lower,"
+               "upperdir=/mnt/upper,"
+               "workdir=/mnt/work,"
+               "index=on,userxattr,volatile"));
+
+     // test if user xattrs are working
+  #ifdef XATTRS
+     Z_ (rmdir("/mnt/merged/test"));
+     Z_ (mkdir("/mnt/merged/test", 0700));
+  #endif
+  }
+]])
+AC_MSG_CHECKING([for unprivileged overlayfs])
+AC_RUN_IFELSE([AC_LANG_SOURCE(CH_OVERLAY_C)],
+              [have_overlayfs=yes],
+              [have_overlayfs=no],
+              [AC_MSG_ERROR([cross-compilation not supported])])
+AC_MSG_RESULT($have_overlayfs)
+AC_MSG_CHECKING([for tmpfs user xattrs])
+AC_RUN_IFELSE([#define XATTRS
+               AC_LANG_SOURCE(CH_OVERLAY_C)],
+              [have_tmpfs_xattrs=yes],
+              [have_tmpfs_xattrs=no],
+              [AC_MSG_ERROR([cross-compilation not supported])])
+AC_MSG_RESULT($have_tmpfs_xattrs)
+
 
 ### ch-run optional ##########################################################
 
@@ -847,10 +924,6 @@ Building Charliecloud
     libsquashfuse_ll ... ${have_libsquashfuse_ll}
     ll.h header ... ${have_ll_h}
 
-  fake system calls with seccomp(2): ${have_seccomp}
-    enabled ... ${msg_seccomp}
-    tested working ... ${test_seccomp}
-
   documentation: ${have_docs}
     sphinx-build(1) ≥ $vmin_sphinx ... ${SPHINX_VERSION_NOTE}
     sphinx-build(1) Python ... ${sphinx_python:-n/a}
@@ -902,6 +975,13 @@ Running containers
   run SquashFS images: ${have_any_squashfuse}
     manual mount with SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION_NOTE}
     internal mount with libsquashfuse ... ${have_libsquashfuse}
+
+  fake system calls with seccomp(2): ${have_seccomp}
+    enabled ... ${msg_seccomp}
+    tested working ... ${test_seccomp}
+
+  writeable overlay (--write-fake): ${have_overlayfs}
+    fully functional ... ${have_tmpfs_xattrs}
 
   inject nVidia GPU libraries: ${have_nvidia}
     nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION_NOTE}
