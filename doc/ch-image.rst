@@ -780,9 +780,10 @@ intercept certain privileged system calls, do absolutely nothing, and return
 success to the program.
 
 The quashed system calls are: :code:`capset(2)`; :code:`chown(2)` and friends;
-:code:`mknod(2)` and :code:`mknodat(2)`; and :code:`setuid(2)`,
-:code:`setgid(2)`, and :code:`setgroups(2)` along with the other system calls
-that change user or group.
+:code:`kexec_load(2)` (used to validate the filter itself); :code:`mknod(2)`
+and :code:`mknodat(2)`; and :code:`setuid(2)`, :code:`setgid(2)`, and
+:code:`setgroups(2)` along with the other system calls that change user or
+group.
 
 The advantages of this approach is that it’s much simpler, it’s faster, it’s
 completely agnostic to libc, and it’s mostly agnostic to distribution. The
@@ -2107,4 +2108,4 @@ Environment variables
 ..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
 ..  LocalWords:  pstats gprof chofile cffd cacdb ARGs NSYNC dst imgroot popt
 ..  LocalWords:  globbed ni AHSXpr drwxrwx ctx sym nom newB newC newD dstC
-..  LocalWords:  dstB dstF dstG upover drwx
+..  LocalWords:  dstB dstF dstG upover drwx kexec

@@ -39,8 +39,8 @@ import tempfile
 import textwrap
 
 import charliecloud as ch
-import image as im
 import filesystem as fs
+import image as im
 import pull
 
 
@@ -285,32 +285,6 @@ class File_Metadata:
                          os.getxattr, self.path_abs, xattr,
                          follow_symlinks=False)
 
-   def __getstate__(self):
-      return { a:v for (a,v) in self.__dict__.items()
-                   if (a not in { "image_root", "path", "path_abs", "st" }) }
-
-   @property
-   def empty_dir_p(self):
-      """True if I represent either an empty directory, or a directory that
-         contains only children where empty_dir_p is true. E.g., the root of a
-         directory tree containing only empty directories returns true."""
-      # In principle this could do a lot of recursion, but in practice I’m
-      # guessing it’s not too much.
-      if (not stat.S_ISDIR(self.mode)):
-         return False  # not a directory
-      # True if no children (truly empty directory), or each child is unstored
-      # or empty_dir_p (recursively empty directory tree).
-      return all((c.unstored or c.empty_dir_p) for c in self.children.values())
-
-   @property
-   def unstored(self):
-      """True if I represent something not stored, either ignored by Git or
-         deleted by us before committing."""
-      return (   stat.S_ISFIFO(self.mode)
-              or stat.S_ISSOCK(self.mode)
-              or self.large_name is not None
-              or self.hardlink_to is not None)
-
    @classmethod
    def git_prepare(class_, image_root, large_file_thresh,
                    path=None, hardlinks=None):
@@ -454,6 +428,32 @@ class File_Metadata:
       fm_tree.unpickle_fix(image_root, path=fs.Path("."))
       return fm_tree
 
+   def __getstate__(self):
+      return { a:v for (a,v) in self.__dict__.items()
+                   if (a not in { "image_root", "path", "path_abs", "st" }) }
+
+   @property
+   def empty_dir_p(self):
+      """True if I represent either an empty directory, or a directory that
+         contains only children where empty_dir_p is true. E.g., the root of a
+         directory tree containing only empty directories returns true."""
+      # In principle this could do a lot of recursion, but in practice I’m
+      # guessing it’s not too much.
+      if (not stat.S_ISDIR(self.mode)):
+         return False  # not a directory
+      # True if no children (truly empty directory), or each child is unstored
+      # or empty_dir_p (recursively empty directory tree).
+      return all((c.unstored or c.empty_dir_p) for c in self.children.values())
+
+   @property
+   def unstored(self):
+      """True if I represent something not stored, either ignored by Git or
+         deleted by us before committing."""
+      return (   stat.S_ISFIFO(self.mode)
+              or stat.S_ISSOCK(self.mode)
+              or self.large_name is not None
+              or self.hardlink_to is not None)
+
    def get(self, path):
       "Return the File_Metadata object at path."
       fm = self
@@ -488,7 +488,7 @@ class File_Metadata:
       elif (not self.path.git_compatible_p):
          self.path_abs.git_escaped.rename(self.path_abs)
       for (xattr, val) in self.xattrs.items():
-         self.path_abs.setxattr(xattr, val, follow_symlinks=False)
+         self.path_abs.setxattr(xattr, val)
       # Recurse children.
       if (len(self.children) > 0):
          for child in self.children.values():
@@ -635,10 +635,6 @@ class State_ID:
          ch.FATAL("state ID: malformed hex: %s" % text);
       return class_(b)
 
-   @property
-   def short(self):
-      return str(self)[:4]
-
    def __eq__(self, other):
       return self.id_ == other.id_
 
@@ -649,12 +645,16 @@ class State_ID:
       s = self.id_.hex().upper()
       return ":".join((s[0:4], s[4:8], s[8:16], s[16:24], s[24:32]))
 
+   @property
+   def short(self):
+      return str(self)[:4]
 
-## Main classes ##
+
+## Core classes ##
 
 class Enabled_Cache:
 
-   root_id =   State_ID.from_text("4A6F:73C3:A9204361:7061626C:616E6361")
+   root_id = State_ID.from_text("4A6F:73C3:A9204361:7061626C:616E6361")
 
    __slots__ = ("bootstrap_ct",
                 "file_metadata",
@@ -676,13 +676,6 @@ class Enabled_Cache:
          self.configure()         # updates config if needed
       self.worktrees_fix()
 
-   def __str__(self):
-      return ("enabled (large=%g)" % self.large_threshold)
-
-   @property
-   def root(self):
-      return ch.storage.build_cache
-
    @staticmethod
    def branch_name_ready(ref):
       return ref.for_path
@@ -698,6 +691,13 @@ class Enabled_Cache:
          hashes that don’t exist in the repo, and false positives for
          branch/tag names that look like hashes."""
       return (re.search(r"^[0-9a-f]{7,}$", commit_ish) is not None)
+
+   def __str__(self):
+      return ("enabled (large=%g)" % self.large_threshold)
+
+   @property
+   def root(self):
+      return ch.storage.build_cache
 
    def adopt(self, img):
       self.worktree_adopt(img, "root")

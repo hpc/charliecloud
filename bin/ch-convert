@@ -113,13 +113,12 @@ cv_dir_squash () {
     INFO 'packing ...'
     quiet touch "$pflist"
     mount_points_ensure "$1" "$pflist"
-    # Exclude build cache metadata. 64kiB block size based on Shane's
+    # Exclude build cache metadata. 64kiB block size based on Shane’s
     # experiments.
     # shellcheck disable=SC2086
     quiet mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root \
-                         -pf "$pflist" -e "$1"/.git -e "$1"/.gitignore \
-                         -e "$1"/ch/git.pickle
-    # Zero the archive's internal modification time at bytes 8–11, 0-indexed
+                         -pf "$pflist" -e "$1"/ch/git -e "$1"/ch/git.pickle
+    # Zero the archive’s internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
     # CentOS 7 comes with 4.2.  [1]: https://dr-emann.github.io/squashfs/
     printf '\x00\x00\x00\x00' | quiet dd of="$2" bs=1 count=4 seek=8 conv=notrunc status=none
@@ -716,8 +715,7 @@ path_noclobber () {
 tar_ () {
     # shellcheck disable=SC2086
     ( cd "$1" && tar cf - $tar_xattr_args \
-                          --exclude=./.git \
-                          --exclude=./.gitignore \
+                          --exclude=./ch/git \
                           --exclude=./ch/git.pickle . ) | pv_
 }
 
