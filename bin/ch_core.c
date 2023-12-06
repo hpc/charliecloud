@@ -100,8 +100,8 @@ int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
    architecture), so we can’t just use the build host’s architecture.
 
    I haven’t figured out how to gather these system call numbers
-   automatically, so they are compiled from [1] and [2]. See also [3] for a
-   more general reference.
+   automatically, so they are compiled from [1, 2, 3]. See also [4] for a more
+   general reference.
 
    Zero means the syscall does not exist on that architecture.
 
@@ -113,7 +113,8 @@ int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
 
    [1]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#Cross_arch-Numbers
    [2]: https://github.com/strace/strace/blob/v4.26/linux/powerpc64/syscallent.h
-   [3]: https://unix.stackexchange.com/questions/421750 */
+   [3]: https://github.com/strace/strace/blob/v6.6/src/linux/s390x/syscallent.h
+   [4]: https://unix.stackexchange.com/questions/421750 */
 #ifdef HAVE_SECCOMP
 int FAKE_SYSCALL_NRS[][6] = {
    // arm64   arm32   x86     PPC64   s390x   x86-64
@@ -126,6 +127,7 @@ int FAKE_SYSCALL_NRS[][6] = {
    {      54,    325,    298,    289,    291,    260 },  // fchownat
    {       0,     16,     16,     16,    198,     94 },  // lchown
    {       0,    198,    198,      0,      0,      0 },  // lchown32
+   {     104,    347,    283,    268,    277,    246 },  // kexec_load
    {       0,     14,     14,     14,     14,    133 },  // mknod
    {      33,    324,    297,    288,    290,    259 },  // mknodat
    {     152,    139,    139,    139,    216,    123 },  // setfsgid
@@ -593,6 +595,15 @@ void seccomp_install(void)
    // compatibility (Linux 3.5 rather than 3.17) and because there is a glibc
    // wrapper.
    Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p));
+
+   // Test filter. This will fail if the kernel executes the call (because we
+   // are not really privileged and the arguments are bogus) or succeed if
+   // filter handles it. We selected it over something more naturally in the
+   // filter, e.g. setuid(2), because (1) no container process should ever use
+   // it and (2) it’s unlikely to be emulated by a smarter filter in the
+   // future, i.e., it won’t silently start doing something.
+   Zf (syscall(SYS_kexec_load, 0, 0, NULL, 0),
+       "seccomp root emulation failed (is your architecture supported?)");
 }
 #endif
 
