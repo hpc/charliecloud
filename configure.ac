@@ -63,6 +63,12 @@ MKDIR_P=${MKDIR_P:-install -d -m 0755}
 
 AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 
+# Check for “pkg-config”. It’s here because we use PKG_CHECK_MODULES
+# conditionally later and we want to make sure this always happens [1, §3.4].
+#
+# [1]: https://autotools.info/pkgconfig/pkg_check_modules.html
+PKG_PROG_PKG_CONFIG
+
 AC_CONFIG_HEADERS([bin/config.h])
 AC_CONFIG_FILES([Makefile
                  bin/Makefile
@@ -395,21 +401,36 @@ AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
 CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
                  [--help 2>&1 | head -1 | cut -d' ' -f2])
 
-# libfuse3
-AC_CHECK_LIB([fuse3], [fuse_set_signal_handlers],
-  [have_libfuse3=yes],
+# Check for libsquashfuse if it’s wanted.
+have_libfuse3=n/a
+have_libsquashfuse_ll=n/a
+have_ll_h=n/a
+AS_IF([test $want_libsquashfuse = yes], [
+  # libfuse3. Must use pkg-config because as of version 0.5.0 SquashFUSE’s
+  # ll.h won’t build without an appropriate -I [1]. This macro defines some
+  # variables that we use here; see this third-party documentation [2]. (I
+  # could not find first-party docs for it.)
+  #
+  # [1]: https://github.com/vasi/squashfuse/commit/eca5764
+  # [2]: https://autotools.info/pkgconfig/pkg_check_modules.html
+  PKG_CHECK_MODULES([fuse3], [fuse3], [
+    # libfuse3 found
+    have_libfuse3=yes
+    CFLAGS="$CFLAGS $fuse3_CFLAGS"
+    # libsquashfuse?
+    AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount],
+      [have_libsquashfuse_ll=yes],
+      [have_libsquashfuse_ll=no])
+    # ll.h?
+    AC_CHECK_HEADER([squashfuse/ll.h],
+      [have_ll_h=yes],
+      [have_ll_h=no],
+      [#define SQFS_CONFIG_H
+       #define FUSE_USE_VERSION 32
+      ])  # see comment in ch_fuse.c regarding these defines
+  ],
   [have_libfuse3=no])
-
-# libsquashfuse
-AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount],
-  [have_libsquashfuse_ll=yes],
-  [have_libsquashfuse_ll=no])
-AC_CHECK_HEADER([squashfuse/ll.h],
-  [have_ll_h=yes],
-  [have_ll_h=no],
-  [#define SQFS_CONFIG_H
-   #define FUSE_USE_VERSION 32
-  ])  # see comment in ch_fuse.c regarding these defines
+])
 
 # Should we link with libsquashfuse?
 AS_IF([   test $want_libsquashfuse = yes \
@@ -843,7 +864,7 @@ Building Charliecloud
 
   ch-run(1) internal SquashFS mounting: ${have_libsquashfuse}
     enabled ... ${want_libsquashfuse}
-    libfuse3 ... ${have_libfuse3}
+    libfuse3 ... ${have_libfuse3} ${fuse3_CFLAGS:-}
     libsquashfuse_ll ... ${have_libsquashfuse_ll}
     ll.h header ... ${have_ll_h}
 
