@@ -148,8 +148,9 @@ mounting SquashFS images with FUSE.
     The size of the writeable filesystem :code:`SIZE` is any size
     specification acceptable to :code:`tmpfs`, e.g. :code:`4m` for 4MiB or
     :code:`50%` for half of physical memory. If this option is specified
-    without :code:`SIZE`, the default is :code:`12%`. Note that this limit is
-    a maximum: only actually stored files consume virtual memory.
+    without :code:`SIZE`, the default is :code:`12%`. Note (1) this limit is a
+    maximum — only actually stored files consume virtual memory, and
+    (2) :code:`SIZE` larger than memory can be requested without error.
 
     This requires kernel support and there are some caveats. See section
     “:ref:`ch-run_overlay`” below for details.

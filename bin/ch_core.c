@@ -298,7 +298,7 @@ void enter_udss(struct container *c)
    // https://www.kernel.org/doc/html/v5.11/filesystems/tmpfs.html
    // https://www.kernel.org/doc/html/v5.11/filesystems/overlayfs.html
    if (c->overlay_size != NULL) {
-      VERBOSE("overlaying tmpfs for --write-fake");
+      VERBOSE("overlaying tmpfs for --write-fake (%s)", c->overlay_size);
       char *options;
       T_ (1 <= asprintf(&options, "size=%s", c->overlay_size));
       Zf (mount(NULL, "/mnt", "tmpfs", 0, options),  // host should have /mnt
