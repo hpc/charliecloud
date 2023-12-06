@@ -408,8 +408,8 @@ have_ll_h=n/a
 AS_IF([test $want_libsquashfuse = yes], [
   # libfuse3. Must use pkg-config because as of version 0.5.0 SquashFUSE’s
   # ll.h won’t build without an appropriate -I [1]. This macro defines some
-  # variables; see this third-party documentation [2]. (I could not find
-  # first-party docs for it.)
+  # variables that we use here; see this third-party documentation [2]. (I
+  # could not find first-party docs for it.)
   #
   # [1]: https://github.com/vasi/squashfuse/commit/eca5764
   # [2]: https://autotools.info/pkgconfig/pkg_check_modules.html
