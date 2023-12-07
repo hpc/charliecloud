@@ -463,8 +463,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case -12: // --home
       Tf (args->c.host_home = getenv("HOME"), "--home failed: $HOME not set");
-      if (args->c.overlay_size == NULL)
+      if (args->c.overlay_size == NULL) {
+         VERBOSE("--home specified; also setting --write-fake");
          args->c.overlay_size = WRITE_FAKE_DEFAULT;
+      }
       break;
    case -13: // --unsafe
       args->unsafe = true;
