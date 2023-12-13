@@ -475,7 +475,7 @@ chimage_out_validate () {
         FATAL "exists in ch-image storage, not deleting per --no-clobber: ${1}"
     fi
     if [ -n "$xattrs" ]; then
-        WARNING "--xattrs unsupported for out format “ch-image”"
+        WARNING "--xattrs unsupported for out format \"ch-image\""
     fi
 }
 
@@ -829,7 +829,7 @@ tmpdir_setup () {
 # line.
 xattr_opt_err () {
     if [ -n "$xattrs" ] && [ -n "$no_xattrs" ]; then
-        FATAL "“--xattrs” incompatible with “--no-xattrs”"
+        FATAL "\"--xattrs\" incompatible with \"--no-xattrs\""
     fi
 }
 
