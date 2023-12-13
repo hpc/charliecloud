@@ -110,6 +110,10 @@ AC_ARG_ENABLE([html],
   AS_HELP_STRING([--disable-html], [HTML documentation]),
   [], [enable_html=yes])
 
+AC_ARG_ENABLE([impolite-checks],
+  AS_HELP_STRING([--disable-impolite-checks], [potentially troublesome informational checks]),
+  [], [enable_impolite_checks=yes])
+
 AC_ARG_ENABLE([man],
   AS_HELP_STRING([--disable-man], [man pages]),
   [], [enable_man=yes])
@@ -405,17 +409,21 @@ AC_DEFUN([CH_OVERLAY_C], [[
   }
 ]])
 AC_MSG_CHECKING([for unprivileged overlayfs])
-AC_RUN_IFELSE([AC_LANG_SOURCE(CH_OVERLAY_C)],
-              [have_overlayfs=yes],
-              [have_overlayfs=no],
-              [AC_MSG_ERROR([cross-compilation not supported])])
+have_overlayfs="check disabled"
+AS_IF([test $enable_impolite_checks = yes],
+      [AC_RUN_IFELSE([AC_LANG_SOURCE(CH_OVERLAY_C)],
+                     [have_overlayfs=yes],
+                     [have_overlayfs=no],
+                     [AC_MSG_ERROR([cross-compilation not supported])])])
 AC_MSG_RESULT($have_overlayfs)
+have_tmpfs_xattrs="check disabled"
 AC_MSG_CHECKING([for tmpfs user xattrs])
-AC_RUN_IFELSE([#define XATTRS
-               AC_LANG_SOURCE(CH_OVERLAY_C)],
-              [have_tmpfs_xattrs=yes],
-              [have_tmpfs_xattrs=no],
-              [AC_MSG_ERROR([cross-compilation not supported])])
+AS_IF([test $enable_impolite_checks = yes],
+      [AC_RUN_IFELSE([#define XATTRS
+                      AC_LANG_SOURCE(CH_OVERLAY_C)],
+                     [have_tmpfs_xattrs=yes],
+                     [have_tmpfs_xattrs=no],
+                     [AC_MSG_ERROR([cross-compilation not supported])])])
 AC_MSG_RESULT($have_tmpfs_xattrs)
 
 

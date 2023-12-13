@@ -199,6 +199,21 @@ The main use case for these options is to support package maintainers. If this
 is you and does not meet your needs, please get in touch with us and we will
 help.
 
+Avoid potentially troublesome informational tests: :code:`--disable-impolite-checks`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:code:`configure` performs a lot of checks that do not inform decisions but
+are simply informational, for the report at the end. These checks replicate
+run-time decisions; their purpose is to offer guidance on what to expect at
+run time.
+
+Some of these checks trigger alerts in some situations. for example, writing
+files in :code:`/proc` confuses the Gentoo package build `sandbox
+<https://wiki.gentoo.org/wiki/Project:Sandbox>`_.
+
+Option :code:`--disable-impolite-checks` skips these checks. The only
+consequence is a somewhat less informative report.
+
 
 Install with package manager
 ============================
