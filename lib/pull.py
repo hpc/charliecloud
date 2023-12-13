@@ -28,6 +28,9 @@ def main(cli):
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
       ch.exit(0)
+   if (cli.xattrs):
+      # FIXME: print warning if CH_XATTRS assigned as well?
+      ch.WARNING("--xattrs unsupported for “ch-image pull” (see FAQ)")
    dst_img = im.Image(dst_ref)
    ch.INFO("pulling image:    %s" % src_ref)
    if (src_ref != dst_ref):

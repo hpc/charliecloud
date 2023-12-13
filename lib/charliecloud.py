@@ -103,6 +103,10 @@ ARCH_MAP = { "armv5l":    "arm/v5",
 ARCH_MAP_FALLBACK = { "arm/v7": ("arm",),
                       "arm64/v8": ("arm64",) }
 
+# Incompatible option for the ch-image command line
+CLI_INCOMPATIBLE_OPTS = [("quiet", "verbose"),
+                         ("xattrs", "no_xattrs")]
+
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
 
@@ -654,11 +658,16 @@ def exit(code):
 def init(cli):
    # logging
    global log_festoon, log_fp, log_level, trace_fatal, save_xattrs
-   save_xattrs = (cli.xattrs)
+   incomp_opts = 0
+   for (x,y) in CLI_INCOMPATIBLE_OPTS:
+      if (getattr(cli, x) and getattr(cli, y)):
+         ERROR("“--%s” incompatible with “--%s”" % ((x.replace("_","-"),
+                                                     y.replace("_","-"))))
+         incomp_opts += 1
+   if (incomp_opts > 0):
+      FATAL("%d incompatible option pair(s)" % incomp_opts)
+   save_xattrs = ((cli.xattrs) or (("CH_XATTRS" in os.environ) and (not cli.no_xattrs)))
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
-   if (cli.quiet and cli.verbose):
-      ERROR("“--quiet” incompatible with “--verbose”")
-      FATAL("incompatible option")
    log_level = Log_Level(cli.verbose - cli.quiet)
    assert (-3 <= log_level.value <= 3)
    if (log_level <= Log_Level.STDERR):
@@ -672,6 +681,7 @@ def init(cli):
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
    VERBOSE("verbose level: %d (%s))" % (log_level.value, log_level.name))
+   VERBOSE("save xattrs: %s" % str(save_xattrs))
    # signal handling
    signal.signal(signal.SIGINT, sigterm)
    signal.signal(signal.SIGTERM, sigterm)

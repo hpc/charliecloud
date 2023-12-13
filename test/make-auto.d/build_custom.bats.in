@@ -28,9 +28,9 @@ source common.bash  # for ShellCheck; removed by ch-test
                 # permission error is avoided. (See
                 # https://savannah.gnu.org/support/index.php?110903).
                 if [[ $tarball = *centos7xz* ]]; then
-                    xattrs_arg=
+                    xattrs_arg=--no-xattrs
                 else
-                    xattrs_arg=--xattrs
+                    xattrs_arg=
                 fi
                 ch-convert $xattrs_arg "$tarball" "${tarball/tar.?z/sqfs}"
                 rm "$tarball"

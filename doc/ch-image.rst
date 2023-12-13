@@ -92,6 +92,11 @@ Common options placed before or after the sub-command:
     :code:`ch-image` instances as you want against the same storage directory,
     which risks corruption but may be OK for some workloads.
 
+  :code:`--no-xattrs`
+    Enforce default handling of xattrs, i.e. do not save them in the build cache
+    or restore them on rebuild. Used to override the :code:`CH_XATTRS` environment
+    variable.
+
   :code:`--password-many`
     Re-prompt the user every time a registry password is needed.
 
@@ -314,11 +319,15 @@ repositories within the image should work. **Important exception**: No files
 named :code:`.git*` or other Git metadata are permitted in the image’s root
 directory.
 
-`Extended attributes <https://man7.org/linux/man-pages/man7/xattr.7.html>`_ (xattrs)
-belonging to unprivileged namespaces (e.g. :code:`user`) are also saved and
-restored by the cache by default. Notably, extended attributes in privileged
-namespaces (e.g. :code:`trusted`) cannot be read by :code:`ch-image` and will be
-lost without warning.
+`Extended attributes <https://man7.org/linux/man-pages/man7/xattr.7.html>`_
+(xattrs) are ignored by the build cache by default. Cache support for xattrs
+belonging to unprivileged namespaces (e.g. :code:`user`) can be enabled by
+specifying the :code:`--xattrs` option, or by setting the :code:`CH_XATTRS`
+environment variable. If :code:`CH_XATTRS` is set, the user can manually
+override it via the command line by specifying the :code:`--no-xattrs` option,
+which will restore the default behavior for that command only. Note that
+extended attributes in privileged namespaces (e.g. :code:`trusted`) cannot be
+read by :code:`ch-image` and will always be lost without warning.
 
 The cache has three modes: *enabled*, *disabled*, and a hybrid mode called
 *rebuild* where the cache is fully enabled for :code:`FROM` instructions, but
