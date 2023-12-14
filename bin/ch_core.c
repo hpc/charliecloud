@@ -277,24 +277,23 @@ void containerize(struct container *c)
    in bin/ch-checkns.c. */
 void enter_udss(struct container *c)
 {
-   char *newroot, *newroot_parent, *newroot_base;
+   char *newroot_parent, *newroot_base;
 
    LOG_IDS;
-   newroot = c->newroot;
-   path_split(newroot, &newroot_parent, &newroot_base);
+   path_split(c->newroot, &newroot_parent, &newroot_base);
 
    // Claim new root for this namespace. Despite MS_REC in bind_mount(), we do
    // need both calls to avoid pivot_root(2) failing with EBUSY later.
    DEBUG("claiming new root for this namespace")
-   bind_mount(newroot, newroot, BD_REQUIRED, "/", MS_PRIVATE);
+   bind_mount(c->newroot, c->newroot, BD_REQUIRED, "/", MS_PRIVATE);
    bind_mount(newroot_parent, newroot_parent, BD_REQUIRED, "/", MS_PRIVATE);
    // Re-mount new root read-only unless --write or already read-only.
-   if (!c->writable && !(access(newroot, W_OK) == -1 && errno == EROFS)) {
-      unsigned long flags =   path_mount_flags(newroot)
+   if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
+      unsigned long flags =   path_mount_flags(c->newroot)
                             | MS_REMOUNT  // Re-mount ...
                             | MS_BIND     // only this mount point ...
                             | MS_RDONLY;  // read-only.
-      Zf (mount(NULL, newroot, NULL, flags, NULL),
+      Zf (mount(NULL, c->newroot, NULL, flags, NULL),
           "can't re-mount image read-only (is it on NFS?)");
    }
    // Overlay a tmpfs if --write-fake. See for useful details:
@@ -312,45 +311,46 @@ void enter_udss(struct container *c)
       Z_ (mkdir("/mnt/merged", 0700));
       T_ (1 <= asprintf(&options, "lowerdir=%s,upperdir=%s,workdir=%s,"
                                   "index=on,userxattr,volatile",
-                                  newroot, "/mnt/upper", "/mnt/work"));
+                                  c->newroot, "/mnt/upper", "/mnt/work"));
       // update newroot
-      newroot = "/mnt/merged";
+      c->newroot = "/mnt/merged";
       free(newroot_parent);
       free(newroot_base);
-      path_split(newroot, &newroot_parent, &newroot_base);
-      Zf (mount(NULL, newroot, "overlay", 0, options),
+      path_split(c->newroot, &newroot_parent, &newroot_base);
+      Zf (mount(NULL, c->newroot, "overlay", 0, options),
           "cannot mount overlayfs");
+      VERBOSE("newroot updated: %s", c->newroot);
       free(options);
    }
    DEBUG("starting bind-mounts");
    // Bind-mount default files and directories.
-   bind_mounts(BINDS_DEFAULT, newroot, MS_RDONLY);
+   bind_mounts(BINDS_DEFAULT, c->newroot, MS_RDONLY);
    // /etc/passwd and /etc/group.
    if (!c->private_passwd)
       setup_passwd(c);
    // Container /tmp.
    if (c->private_tmp) {
-      tmpfs_mount("/tmp", newroot, NULL);
+      tmpfs_mount("/tmp", c->newroot, NULL);
    } else {
-      bind_mount(host_tmp, "/tmp", BD_REQUIRED, newroot, 0);
+      bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
    }
    // Bind-mount user’s home directory at /home/$USER if requested.
    if (c->host_home) {
       T_ (c->overlay_size != NULL);
       bind_mount(c->host_home, cat("/home/", username),
-                 BD_MAKE_DST, newroot, 0);
+                 BD_MAKE_DST, c->newroot, 0);
    }
    // Bind-mount user-specified directories.
-   bind_mounts(c->binds, newroot, 0);
+   bind_mounts(c->binds, c->newroot, 0);
    // Overmount / to avoid EINVAL if it’s a rootfs.
    Z_ (chdir(newroot_parent));
    Z_ (mount(newroot_parent, "/", NULL, MS_MOVE, NULL));
    Z_ (chroot("."));
    // Pivot into the new root. Use /dev because it’s available even in
    // extremely minimal images.
-   newroot = cat("/", newroot_base);
-   Zf (chdir(newroot), "can't chdir into new root");
-   Zf (syscall(SYS_pivot_root, newroot, cat(newroot, "/dev")),
+   c->newroot = cat("/", newroot_base);
+   Zf (chdir(c->newroot), "can't chdir into new root");
+   Zf (syscall(SYS_pivot_root, c->newroot, cat(c->newroot, "/dev")),
        "can't pivot_root(2)");
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
