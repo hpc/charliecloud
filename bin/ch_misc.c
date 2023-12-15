@@ -2,6 +2,7 @@
 
 #define _GNU_SOURCE
 #include <ctype.h>
+#include <dirent.h>
 #include <fnmatch.h>
 #include <libgen.h>
 #include <stdarg.h>
@@ -19,6 +20,13 @@
 
 
 /** Macros **/
+
+/* When making a directory writeable with mkdirs_overlay(), this is the
+   maximum number of entries to bind-mount. It seems Linux can handle a very
+   large number of mounts [1] but I don’t want to explode /proc/mounts beyond
+   comprehensibility.
+   [1]: https://serverfault.com/questions/102588 */
+#define MKDIRS_OVERMOUNT_ENTRY_MAX 15
 
 /* FNM_EXTMATCH is a GNU extension to support extended globs in fnmatch(3).
    If not available, define as 0 to ignore this flag. */
@@ -56,6 +64,7 @@ size_t warnings_offset = 0;
 
 /** Function prototypes (private) **/
 
+void mkdir_overlay(const char *path, const char *overscratch);
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap);
 
@@ -189,6 +198,39 @@ char *cat(const char *a, const char *b)
        b = "";
    T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
+}
+
+/* Like scandir(3), but (1) filter excludes “.” and “..”, (2) results are not
+   sorted, and (3) cannot fail (exits with an error instead). */
+int dir_ls(const char *path, struct dirent ***namelist)
+{
+   int entry_ct;
+
+   entry_ct = scandir(path, namelist, dir_ls_filter, NULL);
+   Tf (entry_ct >= 0, "can't scan dir", path);
+   return entry_ct;
+}
+
+/* Return the number of entries in directory path, not including “.” and “..”;
+   i.e., the empty directory returns 0 despite them. */
+int dir_ls_count(const char *path)
+{
+   int ct;
+   struct dirent **namelist;
+
+   ct = dir_ls(path, &namelist);
+   for (size_t i = 0; i < ct; i++)
+      free(namelist[i]);
+   free(namelist);
+
+   return ct;
+}
+
+/* scandir(3) filter that excludes “.” and “..”: Return 0 if e->d_name is one
+   of those strings, else 1. */
+int dir_ls_filter(const struct dirent *e)
+{
+   return !(!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."));
 }
 
 /* Read the file listing environment variables at path, with records separated
@@ -406,13 +448,86 @@ void log_ids(const char *func, int line)
    }
 }
 
+/* Create the directory at path, despite its parent not allowing write access,
+   by overmounting a new, writeable directory with the existing contents of
+   the old directory bind-mounted in. The new directory lives initially in
+   scratch, which must not be used for any other purpose. No cleanup is done
+   here, so a disposable tmpfs is best. If anything goes wrong, exit with an
+   error message. */
+void mkdir_overmount(const char *path, const char *scratch)
+{
+   char *parent, *path2, *over;
+   int entry_ct;
+   struct dirent **entries;
+
+   VERBOSE("making writeable via overmount trick: %s", path);
+   path2 = strdup(path);
+   parent = dirname(path2);
+   T_ (1 <= asprintf(&over, "%s/%d", scratch, dir_ls_count(scratch) + 1));
+
+   // bind-mount existing contents
+   Z_ (mkdir(over, 0755));
+   entry_ct = dir_ls(parent, &entries);
+   DEBUG("existing entries: %d", entry_ct);
+   if (entry_ct > MKDIRS_OVERMOUNT_ENTRY_MAX)
+      WARNING("mkdir overmount: %d entries > limit %d, skipping extras: %s",
+              entry_ct, MKDIRS_OVERMOUNT_ENTRY_MAX, parent);
+   for (int i = 0; i < entry_ct; i++) {
+      if (i < MKDIRS_OVERMOUNT_ENTRY_MAX) {
+         char * src = path_join(parent, entries[i]->d_name);
+         char * dst = path_join(over, entries[i]->d_name);
+         struct stat st;
+         DEBUG("bind-mount %d: %s -> %s", i, src, dst);
+
+         // Linux should always have the d_type field (if not, this won’t
+         // compile), but on some common filesystems (e.g. NFS?) it does not
+         // return a meaningful value, so we have to fall back to lstat(2).
+         if (entries[i]->d_type == DT_UNKNOWN)
+            st.st_mode = DTTOIF(entries[i]->d_type);
+         else
+            Zf (lstat(src, &st), "can't stat", src);
+
+         // Create the mount point.
+         if (S_ISDIR(st.st_mode)) {
+            Z_ (mkdir(dst, 0755));
+         } else {
+            // FIXME: not actually tested with non-regular-files
+            int fd = open(dst, O_WRONLY|O_CREAT|O_EXCL, 0600);
+            Zf (fd == -1, "can't open: %s", dst);
+            Zf (close(fd), "can't close: %s", dst);
+         }
+
+         Zf (mount(src, dst, NULL, MS_REC|MS_BIND, NULL),
+             "can't bind-mount: %s -> %s", src, dst);
+
+         free(src);
+         free(dst);
+      }
+      free(entries[i]);
+   }
+   free(entries);
+
+   DEBUG("overmounting: %s -> %s", over, parent);
+   Zf (mount(over, parent, NULL, MS_REC|MS_BIND, NULL),
+       "can't bind-mount: %s- > %s", over, parent);
+   Zf (mkdir(path, 0755), "can't mkdir even after overmount: %s", path);
+
+   free(over);
+   free(path2);
+}
+
 /* Create directories in path under base. Exit with an error if anything goes
    wrong. For example, mkdirs("/foo", "/bar/baz") will create directories
    /foo/bar and /foo/bar/baz if they don't already exist, but /foo must exist
    already. Symlinks are followed. path must remain under base, i.e. you can't
    use symlinks or ".." to climb out. denylist is a null-terminated array of
-   paths under which no directories may be created, or NULL if none. */
-void mkdirs(const char *base, const char *path, char **denylist)
+   paths under which no directories may be created, or NULL if none.
+
+   Can defeat an un-writeable directory by overmounting a new writeable
+   directory atop it. To enable this behavior, pass the path to an appropriate
+   scratch directory in scratch. */
+void mkdirs(const char *base, const char *path, char **denylist,
+            const char *scratch)
 {
    char *basec, *component, *next, *nextc, *pathw, *saveptr;
    char *denylist_null[] = { NULL };
@@ -434,6 +549,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
    component = strtok_r(pathw, "/", &saveptr);
    nextc = basec;
+   next = NULL;
    while (component != NULL) {
       next = cat(nextc, "/");
       next = cat(next, component);  // canonical except for last component
@@ -458,7 +574,12 @@ void mkdirs(const char *base, const char *path, char **denylist)
             Ze (path_subdir_p(denylist[i], next),
                 "can't mkdir: %s under existing bind-mount %s",
                 next, denylist[i]);
-         Zf (mkdir(next, 0777), "can't mkdir: %s", next);
+         if (mkdir(next, 0755)) {
+            if (scratch && (errno == EACCES || errno == EPERM))
+               mkdir_overmount(next, scratch);
+            else
+               Tf (0, "can't mkdir: %s", next);
+         }
          nextc = next;  // canonical b/c we just created last component as dir
          TRACE("mkdirs: created: %s", nextc)
       }
@@ -555,6 +676,21 @@ bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
 
    Tf (errno == ENOENT, "can't stat: %s", path);
    return false;
+}
+
+/* Concatenate paths a and b, then return the result. */
+char *path_join(const char *a, const char *b)
+{
+   char *ret;
+
+   T_ (a != NULL);
+   T_ (strlen(a) > 0);
+   T_ (b != NULL);
+   T_ (strlen(b) > 0);
+
+   T_ (asprintf(&ret, "%s/%s", a, b) == strlen(a) + strlen(b) + 1);
+
+   return ret;
 }
 
 /* Return the mount flags of the file system containing path, suitable for
