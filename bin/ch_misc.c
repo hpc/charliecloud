@@ -3,6 +3,7 @@
 #define _GNU_SOURCE
 #include <ctype.h>
 #include <dirent.h>
+#include <fcntl.h>
 #include <fnmatch.h>
 #include <libgen.h>
 #include <stdarg.h>
