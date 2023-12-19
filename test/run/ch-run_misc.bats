@@ -74,6 +74,7 @@ EOF
     [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
 }
 
+
 @test "\$HOME" {
     [[ $CH_TEST_BUILDER != 'none' ]] || skip 'image builder required'
     LC_ALL=C
@@ -109,7 +110,8 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     cat <<EOF | diff -u - <(echo "$output")
-overmount-me
+directory-in-home
+file-in-home
 reidpr
 EOF
 
@@ -246,6 +248,60 @@ EOF
     # bind two sources at one destination
     ch-run -b "${bind1_dir}:/mnt/9" -b "${bind2_dir}:/mnt/9" "$ch_timg" \
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
+}
+
+
+@test 'ch-run --bind with tmpfs overmount' {
+    [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
+    demand-overlayfs
+
+    img=$BATS_TMPDIR/bind-overmount
+    src=$BATS_TMPDIR/bind-overmount-src
+
+    rm-img () {
+        # Remove existing fixture, avoiding “sudo rm -Rf” b/c it’s too scary.
+        sudo rm -f "$img"/foo/*
+        sudo rmdir "$img"/foo || true
+        sudo rm -f "$img"/home/file-in-home
+        sudo rmdir "$img"/home/directory-in-home || true
+        sudo rmdir "$img"/home || true
+        rm -Rf --one-file-system "$img"
+    }
+
+    rm-img
+    ch-convert "$ch_tardir"/chtest.* "$img"
+    ls -l "$img"
+    mkdir -m 755 "$img"/foo
+    for i in {1..16}; do  # MKDIRS_OVERMOUNT_ENTRY_MAX + 1
+        touch "${img}/foo/${i}"
+    done
+    sudo chown root:root "$img"/foo "$img"/home
+    sudo chmod 755 "$img"/foo "$img"/home
+    ls -ld "$img"/foo "$img"/home
+    ls -l "$img"/foo "$img"/home
+
+    mkdir -p "$src"
+    touch "$src"/file-in-src
+    mkdir -p "$src"/directory-in-src
+    ls -ld "$src"
+    ls -l "$src"
+
+    # --bind
+    run ch-run -W -b "$src":/foo/bar "$img" -- ls -xw 78 /foo /foo/bar
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warning: mkdir overmount: 16 entries > limit 15, skipping extras'* ]]
+
+    # --home
+    run ch-run --home "$img" -- ls -1 /home
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | wc -l) -eq 3 ]]
+    [[ $output = *directory-in-home* ]]
+    [[ $output = *file-in-home* ]]
+    [[ $output = *"$USER"* ]]
+
+    rm-img
 }
 
 
@@ -794,6 +850,7 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
+
 @test 'ch-run: internal SquashFUSE mounting' {
     scope standard
     [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
@@ -829,6 +886,7 @@ EOF
     [[ $output = *"newroot: ${img}"* ]]
     rm -Rf --one-file-system "$img"
 }
+
 
 @test 'ch-run: internal SquashFUSE errors' {
     scope standard
@@ -872,6 +930,7 @@ EOF
     [[ $output = *"can't open SquashFS: ${sq_tmp}"* ]]
     rm "$sq_tmp"
 }
+
 
 @test 'broken image errors' {
     scope standard
@@ -1020,6 +1079,7 @@ EOF
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 }
 
+
 @test 'syslog' {
     # This test depends on a fairly specific syslog configuration, so just do
     # it on GitHub Actions.
@@ -1033,6 +1093,7 @@ EOF
     echo "$text"
     echo "$text" | grep -F "$expected"
 }
+
 
 @test 'reprint warnings' {
     run ch-run --warnings=0
