@@ -96,6 +96,11 @@ mounting SquashFS images with FUSE.
     bind-mounted into it. If this is specified, no such temporary files are
     created and the image’s files are exposed.
 
+  :code:`-q`, :code:`--quiet`
+    Be quieter; can be repeated. Incompatible with :code:`-v` and suppresses
+    :code:`--debug` regardless of option order. See the :ref:`FAQ entry on
+    verbosity <faq_verbosity>` for details.
+
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory. Equivalent to the same option for
     :code:`ch-image(1)`.
@@ -130,7 +135,8 @@ mounting SquashFS images with FUSE.
     Unset environment variables whose names match :code:`GLOB`.
 
   :code:`-v`, :code:`--verbose`
-    Be more verbose (can be repeated).
+    Print extra chatter; can be repeated. See the :ref:`FAQ entry on verbosity
+    <faq_verbosity>` for details.
 
   :code:`-w`, :code:`--write`
     Mount image read-write (by default, the image is mounted read-only).

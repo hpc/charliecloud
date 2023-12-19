@@ -509,6 +509,10 @@ void run_user_command(char *argv[], const char *initial_dir)
    VERBOSE("executing: %s", argv_to_string(argv));
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
+   if (verbose < LL_INFO)
+      T_ (freopen("/dev/null", "w", stdout));
+   if (verbose < LL_WARNING)
+      T_ (freopen("/dev/null", "w", stderr));
    execvp(argv[0], argv);  // only returns if error
    Tf (0, "can't execve(2): %s", argv[0]);
 }

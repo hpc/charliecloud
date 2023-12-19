@@ -1211,7 +1211,7 @@ indicates printed, ❌ suppressed).
      - ✅
      - [1]
      - [1]
-     - [1]
+     - [1] [2]
      - ❌
      - ❌
    * - warning
@@ -1245,6 +1245,9 @@ Notes:
    levels. For example, sometimes it’s passed through by default (e.g.,
    :code:`RUN`) and sometimes it’s captured for internal use (e.g., many
    :code:`git(1)` invocations).
+
+2. In the case of :code:`ch-run`, the user command is considered a subprocess,
+   e.g. :code:`ch-run -q example -- echo foo` will produce no output.
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
 ..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq

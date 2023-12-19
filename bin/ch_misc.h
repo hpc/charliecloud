@@ -94,7 +94,8 @@ struct env_delta {
    } arg;
 };
 
-enum log_level { LL_FATAL =   -2,  // minimum number of -v to print the msg
+enum log_level { LL_FATAL =   -3,  // minimum number of -v to print the msg
+                 LL_STDERR =  -2,  // currently unused, here for consistency with ch-image
                  LL_WARNING = -1,
                  LL_INFO =     0,
                  LL_VERBOSE =  1,

@@ -60,6 +60,7 @@ const struct argp_option options[] = {
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
+   { "quiet",         'q', 0,      0, "print less output (can be repeated)"},
 #ifdef HAVE_SECCOMP
    { "seccomp",       -14, 0,      0,
                            "fake success for some syscalls with seccomp(2)"},
@@ -515,6 +516,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       if (!path_exists(arg, NULL, false))
          WARNING("storage directory not found: %s", arg);
       break;
+   case 'q':  // --quiet
+      Te(verbose <= 0, "--quiet incompatible with --verbose");
+      verbose--;
+      Te(verbose >= -3, "--quiet can be specified at most thrice");
+      break;
    case 't':  // --private-tmp
       args->c.private_tmp = true;
       break;
@@ -528,6 +534,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       exit(EXIT_SUCCESS);
       break;
    case 'v':  // --verbose
+      Te(verbose >= 0, "--verbose incompatible with --quiet");
       verbose++;
       Te(verbose <= 3, "--verbose can be specified at most thrice");
       break;
