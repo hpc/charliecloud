@@ -41,7 +41,7 @@ STDLIB_MODULES = (  {     m.name
                       if  re.search(r"/python3.\d+", m.module_finder.path) }
                   | set(sys.builtin_module_names))
 
-CH_MODULES = {     f[:-3]
+CH_MODULES = {     f.removesuffix(".py")
                for f in os.listdir(os.path.dirname(path))
                if  (f.endswith(".py") and f != "charliecloud.py") }
 
