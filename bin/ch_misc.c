@@ -406,6 +406,20 @@ void log_ids(const char *func, int line)
    }
 }
 
+void logging_print(bool fail) {
+   printf("bar\n");
+   TRACE("trace");
+   DEBUG("debug");
+   VERBOSE("verbose");
+   INFO("info");
+   WARNING("warning");
+   if (fail) {
+      FATAL("the program failed inexplicably");
+   } else {
+      exit(0);
+   }
+}
+
 /* Create directories in path under base. Exit with an error if anything goes
    wrong. For example, mkdirs("/foo", "/bar/baz") will create directories
    /foo/bar and /foo/bar/baz if they don't already exist, but /foo must exist

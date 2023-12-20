@@ -57,6 +57,7 @@ const struct argp_option options[] = {
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
+   { "logging",        -17, "FAIL", OPTION_ARG_OPTIONAL, "fooooooo" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
@@ -471,6 +472,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       for (int i = 1; i <= parse_int(arg, false, "--warnings"); i++)
          WARNING("this is warning %d!", i);
       exit(0);
+      break;
+   case -17: // --logging
+         if (arg == NULL) {
+            logging_print(false);
+         } else {
+            logging_print((!strcmp(arg, "fail")));
+         }
       break;
    case -15: // --set-env0
       parse_set_env(args, arg, '\0');
