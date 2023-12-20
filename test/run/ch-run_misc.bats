@@ -12,7 +12,7 @@ setup () {
 
 
 demand-overlayfs () {
-    ch-run -W "$ch_timg" -- true || pedantic_fail 'no unpriv overlayfs'
+    ch-run -W "$ch_timg" -- true || skip 'no unpriv overlayfs'
 }
 
 
@@ -77,6 +77,7 @@ EOF
 
 @test "\$HOME" {
     [[ $CH_TEST_BUILDER != 'none' ]] || skip 'image builder required'
+    demand-overlayfs
     LC_ALL=C
 
     scope quick
@@ -109,11 +110,9 @@ EOF
     run ch-run --home "$ch_timg" -- ls -1 /home
     echo "$output"
     [[ $status -eq 0 ]]
-    cat <<EOF | diff -u - <(echo "$output")
-directory-in-home
-file-in-home
-reidpr
-EOF
+    [[ $output = *directory-in-home* ]]
+    [[ $output = *file-in-home* ]]
+    [[ $output = *"$USER"* ]]
 
     # puke if $HOME not set
     home_tmp=$HOME

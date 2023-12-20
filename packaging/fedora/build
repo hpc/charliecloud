@@ -97,8 +97,7 @@ rpmbuild root:      %(rpmbuild)s
 
    # Build tarball.
    print("# building source tarball")
-   # FIXME: Why does this need --home?
-   cmd(CH_RUN, "--home", "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
+   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "./autogen.sh")
    cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "./configure")
