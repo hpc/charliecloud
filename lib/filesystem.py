@@ -952,18 +952,18 @@ class Path(os.PathLike):
                   % (self, x.filename, x.strerror))
 
    def setxattr(self, name, value):
-      if (ch.save_xattrs):
+      if (ch.xattrs_save):
          try:
             os.setxattr(self, name, value, follow_symlinks=False)
          except OSError as x:
             if (x.errno == errno.ENOTSUP):  # no OSError subclass
                ch.WARNING("xattrs not supported on %s, setting --no-xattr"
                           % self.mountpoint())
-               ch.save_xattrs = False
+               ch.xattrs_save = False
             else:
                ch.FATAL("can’t set xattr: %s: %s: %s"
                         % (self, name, x.strerror))
-      if (not ch.save_xattrs):  # not “else” because maybe changed in “if”
+      if (not ch.xattrs_save):  # not “else” because maybe changed in “if”
          ch.DEBUG("xattrs disabled, ignoring: %s: %s" % (self, name))
          return
 

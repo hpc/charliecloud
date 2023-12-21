@@ -124,7 +124,7 @@ def main():
               "help": "allow concurrent storage directory access (risky!)" }],
            [["--no-xattrs"],
             { "action": "store_true",
-              "help": "disable build cache support for xattrs and ACLs (overrides CH_XATTRS)" }],
+              "help": "disable build cache support for xattrs and ACLs (overrides $CH_XATTRS)" }],
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],

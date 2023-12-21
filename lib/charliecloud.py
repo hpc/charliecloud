@@ -657,7 +657,7 @@ def exit(code):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, log_level, trace_fatal, save_xattrs
+   global log_festoon, log_fp, log_level, trace_fatal, xattrs_save
    incomp_opts = 0
    for (x,y) in CLI_INCOMPATIBLE_OPTS:
       if (getattr(cli, x) and getattr(cli, y)):
@@ -666,7 +666,7 @@ def init(cli):
          incomp_opts += 1
    if (incomp_opts > 0):
       FATAL("%d incompatible option pair(s)" % incomp_opts)
-   save_xattrs = ((cli.xattrs) or (("CH_XATTRS" in os.environ) and (not cli.no_xattrs)))
+   xattrs_save = ((cli.xattrs) or (("CH_XATTRS" in os.environ) and (not cli.no_xattrs)))
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
    log_level = Log_Level(cli.verbose - cli.quiet)
    assert (-3 <= log_level.value <= 3)
@@ -681,7 +681,7 @@ def init(cli):
    atexit.register(color_reset, log_fp)
    VERBOSE("version: %s" % version.VERSION)
    VERBOSE("verbose level: %d (%s))" % (log_level.value, log_level.name))
-   VERBOSE("save xattrs: %s" % str(save_xattrs))
+   VERBOSE("save xattrs: %s" % str(xattrs_save))
    # signal handling
    signal.signal(signal.SIGINT, sigterm)
    signal.signal(signal.SIGTERM, sigterm)

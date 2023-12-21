@@ -29,7 +29,7 @@ def main(cli):
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
       ch.exit(0)
-   if (cli.xattrs or ("CH_XATRS" in os.environ)):
+   if (ch.xattrs_save):
       ch.WARNING("--xattrs unsupported for “ch-image pull” (see FAQ)")
    dst_img = im.Image(dst_ref)
    ch.INFO("pulling image:    %s" % src_ref)

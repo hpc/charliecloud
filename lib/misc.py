@@ -99,7 +99,7 @@ def gestalt_logging(cli):
 def import_(cli):
    if (not os.path.exists(cli.path)):
       ch.FATAL("can’t copy: not found: %s" % cli.path)
-   if (cli.xattrs or ("CH_XATTRS" in os.environ)):
+   if (ch.xattrs_save):
       ch.WARNING("--xattrs unsupported by “ch-image import” (see FAQ)")
    pathstr = im.Reference.ref_to_pathstr(cli.image_ref)
    if (cli.bucache == ch.Build_Mode.ENABLED):

@@ -275,7 +275,7 @@ class File_Metadata:
       self.hardlink_to = None
       self.large_name = None
       self.xattrs = dict()
-      if ch.save_xattrs:
+      if ch.xattrs_save:
          for xattr in ch.ossafe("can’t list xattrs: %s" % self.path_abs,
                                 os.listxattr, self.path_abs,
                                 follow_symlinks=False):

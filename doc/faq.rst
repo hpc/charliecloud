@@ -1253,19 +1253,20 @@ How do I handle extended attributes in Charliecloud?
 
 As noted in section :ref:`ch-image_build-cache`, Charliecloud doesn’t support
 extended attributes (xattrs) by default. Support for xattrs  can be enabled for
-:code:`ch-image` and :code:`ch-convert` by specifying the :code:`--xattrs`
-option. This will make :code:`ch-image` save and restore xattrs via the build
-cache, and will make :code:`ch-convert` preserve xattrs on conversion. Important
-caveats include:
+:code:`ch-image` and :code:`ch-convert` by specifying :code:`--xattrs` or
+setting :code:`$CH_XATTRS`. This will make :code:`ch-image` save and restore
+xattrs via the build cache, and will make :code:`ch-convert` preserve xattrs on
+conversion. Important caveats include:
 
 1. :code:`ch-image` and :code:`ch-convert` cannot read xattrs in privileged
    namespaces (e.g. :code:`trusted` and :code:`security`). Extended attributes
    in these namespaces will never be saved or restored via the cache, and will
    never be preserved when converting between image formats.
 
-2. :code:`ch-image import` cannot handle xattrs. This is a limitation of the Python
-   `tarfile <https://docs.python.org/3/library/tarfile.html>`_ library, which as of
-   version 3.12.1 doesn’t support xattrs.
+2. :code:`ch-image import` cannot handle xattrs. This is a limitation of the
+   Python `tarfile <https://docs.python.org/3/library/tarfile.html>`_ library,
+   which as of version 3.12.1 doesn’t support xattrs (see CPython issue `#113293
+   <https://github.com/python/cpython/issues/113293>`_).
 
 3. :code:`ch-convert -o ch-image` uses :code:`ch-image import` under the hood.
    This in conjunction with (2) means that :code:`ch-convert` cannot preserve
