@@ -407,7 +407,6 @@ void log_ids(const char *func, int line)
 }
 
 void logging_print(bool fail) {
-   printf("bar\n");
    TRACE("trace");
    DEBUG("debug");
    VERBOSE("verbose");
