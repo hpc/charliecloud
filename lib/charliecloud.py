@@ -103,7 +103,7 @@ ARCH_MAP = { "armv5l":    "arm/v5",
 ARCH_MAP_FALLBACK = { "arm/v7": ("arm",),
                       "arm64/v8": ("arm64",) }
 
-# Incompatible option for the ch-image command line
+# Incompatible option pairs for the ch-image command line
 CLI_INCOMPATIBLE_OPTS = [("quiet", "verbose"),
                          ("xattrs", "no_xattrs")]
 
