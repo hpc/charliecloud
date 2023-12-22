@@ -90,12 +90,13 @@ def args_parse():
    args_.func = abs  # needs to have __module__ attribute
    args_.no_cache = None
    args_.no_lock = False
+   args_.no_xattrs = False
    args_.password_many = False
    args_.profile = False
    args_.quiet = False
    args_.storage = None
    args_.tls_no_verify = False
-   args_.no_xattrs = False
+   args_.xattrs = False
    ch.init(args_)
 
    if len(sys.argv) < 2:

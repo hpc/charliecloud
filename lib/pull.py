@@ -1,4 +1,5 @@
 import json
+import os
 import os.path
 
 import charliecloud as ch
@@ -28,6 +29,8 @@ def main(cli):
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
       ch.exit(0)
+   if (ch.xattrs_save):
+      ch.WARNING("--xattrs unsupported for “ch-image pull” (see FAQ)")
    dst_img = im.Image(dst_ref)
    ch.INFO("pulling image:    %s" % src_ref)
    if (src_ref != dst_ref):

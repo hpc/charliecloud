@@ -114,7 +114,7 @@ _image_common_opts="-a --arch --always-download --auth --cache
                     --cache-large --dependencies -h --help
                     --no-cache --no-lock --no-xattrs --profile
                     --rebuild --password-many -q --quiet -s --storage
-                    --tls-no-verify -v --verbose --version"
+                    --tls-no-verify -v --verbose --version --xattrs"
 
 _image_subcommands="build build-cache delete gestalt
                     import list pull push reset undelete"
