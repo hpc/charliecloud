@@ -483,7 +483,7 @@ void mkdir_overmount(const char *path, const char *scratch)
          // Linux should always have the d_type field (if not, this won’t
          // compile), but on some common filesystems (e.g. NFS?) it does not
          // return a meaningful value, so we have to fall back to lstat(2).
-         if (entries[i]->d_type == DT_UNKNOWN)
+         if (entries[i]->d_type != DT_UNKNOWN)
             st.st_mode = DTTOIF(entries[i]->d_type);
          else
             Zf (lstat(src, &st), "can't stat", src);
