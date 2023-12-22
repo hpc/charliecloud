@@ -101,8 +101,8 @@ rpmbuild root:      %(rpmbuild)s
    # pip3 expects $HOME, here /root, to be writeable for its cache. If not,
    # the warning is that the directory “is not owned by the current user”,
    # which is not true. The warning further claims that “*caching* wheels has
-   # been disabled”, but in fact wheels are disabled entirely, so autogen.sh
-   # fails with “embedded Lark is broken”. Thanks pip!
+   # been disabled” (emphasis added), but in fact wheels are disabled
+   # entirely, so autogen.sh fails with “embedded Lark is broken”. Thanks pip!
    cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-b", "%s:/root" % rpm_pips,
                "-c", "/mnt/0", args.image, "--", "./autogen.sh")
    cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,

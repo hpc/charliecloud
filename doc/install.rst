@@ -200,7 +200,7 @@ is you and does not meet your needs, please get in touch with us and we will
 help.
 
 Avoid potentially troublesome informational tests: :code:`--disable-impolite-checks`
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :code:`configure` performs a lot of checks that do not inform decisions but
 are simply informational, for the report at the end. These checks replicate

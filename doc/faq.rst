@@ -358,9 +358,6 @@ create a new directory there::
 Recall that bind-mounting to a path that does not exist in a read-only image
 fails::
 
-  $ ls -R /tmp/foo
-  /tmp/foo:
-  file-in-foo
   $ ch-run -b /tmp/foo:/mnt/foo /var/tmp/image -- ls /mnt
   ch-run[40498]: error: can't mkdir: /var/tmp/image/mnt/foo: Read-only file system (ch_misc.c:582 30)
 
@@ -375,8 +372,8 @@ on the container. Then we can make any mount points we need. Right?
 
 Wait — why could we create a subdirectory of (container path) :code:`/` but
 not :code:`/mnt`? This is because the latter, which is at host path
-:code:`/var/tmp/image/mnt`, is not writeable by us, despite the overlaid
-writeable tmpfs.
+:code:`/var/tmp/image/mnt`, is not writeable by us: the overlayfs propagates
+the directory’s no-write permissions.
 
 Despite this, we can in fact use paths that do not yet exist for bind-mount destinations::
 
@@ -387,7 +384,7 @@ Despite this, we can in fact use paths that do not yet exist for bind-mount dest
 
 What’s happening is bind-mount trickery. :code:`ch-run` creates a side
 directory on the overlaid tmpfs, bind-mounts the existing contents of (host
-path) :code:`/var/tmp/images/mnt` onto newly-created mount points in this new
+path) :code:`/var/tmp/images/mnt` to newly-created mount points in this new
 directory (up to a limit, hence the warning and :code:`0` is missing), and
 then bind-mounts this new (writeable!) directory on top of
 :code:`/var/tmp/images/mnt`. *Now* we can
