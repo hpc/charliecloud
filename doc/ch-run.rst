@@ -29,16 +29,18 @@ mounting SquashFS images with FUSE.
     not specified is to use the same path as the host; i.e., the default is
     :code:`--bind=SRC:SRC`. Can be repeated.
 
-    If :code:`--write` or :code:`--write-fake` are given and :code:`DST` does
-    not exist, it will be created as an empty directory. However, :code:`DST`
-    must be entirely within the image itself; :code:`DST` cannot enter a
+    With a read-only image (the default), :code:`DST` must exist. However, if
+    :code:`--write` or :code:`--write-fake` are given, :code:`DST` will be
+    created as an empty directory (possibly with the tmpfs overmount trick
+    described in :ref:`faq_mkdir-ro`). In this case, :code:`DST` must be
+    entirely within the image itself, i.e., :code:`DST` cannot enter a
     previous bind mount. For example, :code:`--bind /foo:/tmp/foo` will fail
     because :code:`/tmp` is shared with the host via bind-mount (unless
     :code:`$TMPDIR` is set to something else or :code:`--private-tmp` is
     given).
 
-    Most images do have ten directories :code:`/mnt/[0-9]` already available
-    as mount points.
+    Most images have ten directories :code:`/mnt/[0-9]` already available as
+    mount points.
 
     Symlinks in :code:`DST` are followed, and absolute links can have
     surprising behavior. Bind-mounting happens after namespace setup but
@@ -67,8 +69,8 @@ mounting SquashFS images with FUSE.
 
   :code:`--home`
     Bind-mount your host home directory (i.e., :code:`$HOME`) at guest
-    :code:`/home/$USER` (hiding any image content that exists at that path)
-    Implies :code:`--write-fake`.
+    :code:`/home/$USER`, hiding any existing image content at that path.
+    Implies :code:`--write-fake` so the mount point can be created if needed.
 
   :code:`-j`, :code:`--join`
     Use the same container (namespaces) as peer :code:`ch-run` invocations.
@@ -149,8 +151,9 @@ mounting SquashFS images with FUSE.
     specification acceptable to :code:`tmpfs`, e.g. :code:`4m` for 4MiB or
     :code:`50%` for half of physical memory. If this option is specified
     without :code:`SIZE`, the default is :code:`12%`. Note (1) this limit is a
-    maximum — only actually stored files consume virtual memory, and
-    (2) :code:`SIZE` larger than memory can be requested without error.
+    maximum — only actually stored files consume virtual memory — and
+    (2) :code:`SIZE` larger than memory can be requested without error (the
+    failure happens later if the actual contents become too large).
 
     This requires kernel support and there are some caveats. See section
     “:ref:`ch-run_overlay`” below for details.

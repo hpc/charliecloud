@@ -333,6 +333,81 @@ References:
 * http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442
 * http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328
 
+.. _faq_mkdir-ro:
+
+:code:`--bind` creates mount points within un-writeable directories!
+--------------------------------------------------------------------
+
+Consider this image::
+
+  $ ls /var/tmp/image
+  bin  dev  home  media  opt   root  sbin  sys  usr
+  ch   etc  lib   mnt    proc  run   srv   tmp  var
+  $ ls -ld /var/tmp/image/mnt
+  drwxr-xr-x 18 root root 360 Dec 20 16:23 /var/tmp/image/mnt
+  $ ls /var/tmp/image/mnt
+  0  1  2  3  4  5  6  7  8  9  a  b  c  d  e  f
+
+That is, :code:`/mnt` is owned by root, un-writeable by us even considering
+the prior question, and contains sixteen subdirectories. Indeed, we cannot
+create a new directory there::
+
+  $ mkdir /var/tmp/image/mnt/foo
+  mkdir: cannot create directory ‘/var/tmp/image/mnt/foo’: Permission denied
+
+Recall that bind-mounting to a path that does not exist in a read-only image
+fails::
+
+  $ ls -R /tmp/foo
+  /tmp/foo:
+  file-in-foo
+  $ ch-run -b /tmp/foo:/mnt/foo /var/tmp/image -- ls /mnt
+  ch-run[40498]: error: can't mkdir: /var/tmp/image/mnt/foo: Read-only file system (ch_misc.c:582 30)
+
+That’s fine; we’ll just use :code:`--write-fake` to create a writeable overlay
+on the container. Then we can make any mount points we need. Right?
+
+::
+
+   $ ch-run -W /var/tmp/image -- mkdir /bar
+   $ ch-run -W /var/tmp/image -- mkdir /mnt/foo
+   mkdir: can't create directory '/mnt/foo': Permission denied
+
+Wait — why could we create a subdirectory of (container path) :code:`/` but
+not :code:`/mnt`? This is because the latter, which is at host path
+:code:`/var/tmp/image/mnt`, is not writeable by us, despite the overlaid
+writeable tmpfs.
+
+Despite this, we can in fact use paths that do not yet exist for bind-mount destinations::
+
+  $ ch-run -W -b /tmp/foo:/mnt/foo /var/tmp/image -- ls /mnt
+  ch-run[40751]: warning: mkdir overmount: 16 entries > limit 15, skipping extras: /mnt/merged/mnt (ch_misc.c:474)
+  1    3    5    7    9    b    d    f
+  2    4    6    8    a    c    e    foo
+
+What’s happening is bind-mount trickery. :code:`ch-run` creates a side
+directory on the overlaid tmpfs, bind-mounts the existing contents of (host
+path) :code:`/var/tmp/images/mnt` onto newly-created mount points in this new
+directory (up to a limit, hence the warning and :code:`0` is missing), and
+then bind-mounts this new (writeable!) directory on top of
+:code:`/var/tmp/images/mnt`. *Now* we can
+:code:`mkdir("/var/tmp/images/mnt/foo")`.
+
+This is visible by examining :code:`/proc/mounts`::
+
+  $ ch-run -W -b /tmp/foo:/mnt/foo /var/tmp/image -- cat /proc/mounts | fgrep /mnt
+  ch-run[81642]: warning: mkdir overmount: 16 entries > limit 15, skipping extras: /mnt/merged/mnt (ch_misc.c:474)
+  none / overlay rw,relatime,lowerdir=/var/tmp/image,upperdir=/mnt/upper,workdir=/mnt/work,volatile,userxattr 0 0
+  none /mnt tmpfs rw,relatime,size=3943804k,uid=1000,gid=1000,inode64 0 0
+  none /mnt/f overlay rw,relatime,lowerdir=/var/tmp/image,upperdir=/mnt/upper,workdir=/mnt/work,volatile,userxattr 0 0
+  none /mnt/e overlay rw,relatime,lowerdir=/var/tmp/image,upperdir=/mnt/upper,workdir=/mnt/work,volatile,userxattr 0 0
+  [...]
+  none /mnt/1 overlay rw,relatime,lowerdir=/var/tmp/image,upperdir=/mnt/upper,workdir=/mnt/work,volatile,userxattr 0 0
+  tmpfs /mnt/foo tmpfs rw,relatime,size=8388608k,inode64 0 0
+
+(The overlaid tmpfs is mounted on *host* :code:`/mnt` during container
+assembly, which is why it appears in mount options.)
+
 Why does :code:`ping` not work?
 -------------------------------
 
@@ -1247,4 +1322,4 @@ Notes:
    :code:`git(1)` invocations).
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
-..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq drwxr
