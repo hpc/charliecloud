@@ -1089,3 +1089,53 @@ EOF
     [[ $(echo "$output" | grep -Fc 'this is warning 100!') -eq 1 ]]
 
 }
+
+@test 'ch-run --quiet' {
+    # test --logging-test
+    run ch-run --logging-test
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'info'* ]]
+    [[ $output = *'warning: warning'* ]]
+
+    # quiet level 1
+    run ch-run -q --logging-test
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'info'* ]]
+    [[ $output = *'warning: warning'* ]]
+
+    # quiet level 2
+    run ch-run -qq --logging-test
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *'warning: warning'* ]]
+
+    # subprocess failure at quiet level 2
+    run ch-run -qq "$ch_timg" -- doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: can't execve(2): doesnotexist: No such file or directory"* ]]
+
+    # quiet level 3
+    run ch-run -qqq --logging-test
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *"warning: warning"* ]]
+
+    # subprocess failure at quiet level 3
+    run ch-run -qqq "$ch_timg" -- doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output != *"error: can't execve(2): doesnotexist: No such file or directory"* ]]
+
+    # failure at quiet level 3
+    run ch-run -qqq --logging-test=fail
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *'warning: warning'* ]]
+    [[ $output = *'error: the program failed inexplicably'* ]]
+}
