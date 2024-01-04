@@ -15,6 +15,17 @@ import pkgutil
 import re
 import sys
 
+# This script depends on Python 3.9 for (1) str.removesuffix, which is easy to
+# work around, and (2) attribute ast.AST.end_lineno, which is not. I’m not
+# sure how to address this in a tidy way -- ideally the test would skip, but
+# how do we know at the shell level whether we have a good Python? -- but
+# simply succeeding if Python is too old is very easy. We have enough Python
+# ≥3.9 testing happening that I think it’s unlikely we’ll miss something.
+if (sys.version_info < (3, 9)):
+   print("Python is too old for this script: %s" % sys.version)
+   print("exiting successfully")
+   sys.exit(0)
+
 path = sys.argv[1]
 print("analyzing %s" % path)
 

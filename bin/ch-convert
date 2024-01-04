@@ -473,6 +473,9 @@ chimage_out_validate () {
     if [ -d "$img" ] && [ -n "$no_clobber" ]; then
         FATAL "exists in ch-image storage, not deleting per --no-clobber: ${1}"
     fi
+    if [ -n "$xattrs" ]; then
+        WARNING "--xattrs unsupported for out format \"ch-image\""
+    fi
 }
 
 # Validate that $1 can be used as an input directory.
@@ -820,6 +823,14 @@ tmpdir_setup () {
     tmpdir=$(mktemp -d --tmpdir="$tmpdir" ch-convert.XXXXXX)
 }
 
+# Error out if “--xattrs” and “--no-xattrs” are specified in the same command
+# line.
+xattr_opt_err () {
+    if [ -n "$xattrs" ] && [ -n "$no_xattrs" ]; then
+        FATAL "\"--xattrs\" incompatible with \"--no-xattrs\""
+    fi
+}
+
 
 ## main ######################################################################
 
@@ -841,6 +852,7 @@ while true; do
                 ;;
             --no-xattrs)
                 no_xattrs=yes
+                xattr_opt_err
                 ;;
             -o|--out-fmt)
                 shift
@@ -857,6 +869,10 @@ while true; do
                 shift
                 tmpdir=$1
                 ;;
+            --xattrs)
+                xattrs=yes
+                xattr_opt_err
+                ;;
             *)
                 break
                 ;;
@@ -867,12 +883,15 @@ done
 if [ "$#" -ne 2 ]; then
     usage
 fi
-if [ -n "$no_xattrs" ]; then
-    tar_xattr_args=
-    squash_xattr_arg=
-else
+# This bizarre bit of syntax comes from https://unix.stackexchange.com/a/28782
+if [ -n "$xattrs" ] || { [ -n "$CH_XATTRS" ] && [ -z "$no_xattrs" ]; }; then
+    echo "preserving xattrs..."
     tar_xattr_args='--xattrs-include=user.* --xattrs-include=system.*'
     squash_xattr_arg=-xattrs
+else
+    echo "discarding xattrs..."
+    tar_xattr_args=
+    squash_xattr_arg=
 fi
 in_desc=$1
 out_desc=$2

@@ -17,6 +17,9 @@ fi
 # Set environment variable for ch-image --debug flag
 export CH_IMAGE_DEBUG=true
 
+# Set environment variable for ch-convert and ch-image --xattrs flag
+export CH_XATTRS=true
+
 ### Functions we need right away
 
 fatal () {
