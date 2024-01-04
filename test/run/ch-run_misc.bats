@@ -259,7 +259,8 @@ EOF
 
     rm-img () {
         # Remove existing fixture, avoiding “sudo rm -Rf” b/c it’s too scary.
-        sudo rm -f "$img"/foo/*
+        sudo rm -f "$img"/foo/file-in-foo
+        sudo rmdir "$img"/foo/directory-in-foo || true
         sudo rmdir "$img"/foo || true
         sudo rm -f "$img"/home/file-in-home
         sudo rmdir "$img"/home/directory-in-home || true
@@ -270,10 +271,9 @@ EOF
     rm-img
     ch-convert "$ch_tardir"/chtest.* "$img"
     ls -l "$img"
-    mkdir -m 755 "$img"/foo
-    for i in {1..16}; do  # MKDIRS_OVERMOUNT_ENTRY_MAX + 1
-        touch "${img}/foo/${i}"
-    done
+    mkdir "$img"/foo
+    touch "$img"/foo/file-in-foo
+    mkdir "$img"/foo/directory-in-foo
     sudo chown root:root "$img"/foo "$img"/home
     sudo chmod 755 "$img"/foo "$img"/home
     ls -ld "$img"/foo "$img"/home
@@ -286,13 +286,12 @@ EOF
     ls -l "$src"
 
     # --bind
-    run ch-run -W -b "$src":/foo/bar "$img" -- ls -xw 78 /foo /foo/bar
+    run ch-run -W -b "$src":/foo/bar "$img" -- ls -lahR /foo
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *'warning: mkdir overmount: 16 entries > limit 15, skipping extras'* ]]
 
     # --home
-    run ch-run --home "$img" -- ls -1 /home
+    run ch-run --home "$img" -- ls -lah /home
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $(echo "$output" | wc -l) -eq 3 ]]

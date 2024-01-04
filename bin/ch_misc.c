@@ -22,13 +22,6 @@
 
 /** Macros **/
 
-/* When making a directory writeable with mkdirs_overlay(), this is the
-   maximum number of entries to bind-mount. It seems Linux can handle a very
-   large number of mounts [1] but I don’t want to explode /proc/mounts beyond
-   comprehensibility.
-   [1]: https://serverfault.com/questions/102588 */
-#define MKDIRS_OVERMOUNT_ENTRY_MAX 15
-
 /* FNM_EXTMATCH is a GNU extension to support extended globs in fnmatch(3).
    If not available, define as 0 to ignore this flag. */
 #ifndef HAVE_FNM_EXTMATCH
@@ -65,7 +58,7 @@ size_t warnings_offset = 0;
 
 /** Function prototypes (private) **/
 
-void mkdir_overlay(const char *path, const char *overscratch);
+void mkdir_overmount(const char *path, const char *scratch);
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap);
 
@@ -450,69 +443,52 @@ void log_ids(const char *func, int line)
 }
 
 /* Create the directory at path, despite its parent not allowing write access,
-   by overmounting a new, writeable directory with the existing contents of
-   the old directory bind-mounted in. The new directory lives initially in
-   scratch, which must not be used for any other purpose. No cleanup is done
-   here, so a disposable tmpfs is best. If anything goes wrong, exit with an
-   error message. */
+   by overmounting a new, writeable directory atop it. We preserve the old
+   contents by bind-mounting the old directory as a subdirectory, then setting
+   up a symlink ranch.
+
+   The new directory lives initially in scratch, which must not be used for
+   any other purpose. No cleanup is done here, so a disposable tmpfs is best.
+   If anything goes wrong, exit with an error message. */
 void mkdir_overmount(const char *path, const char *scratch)
 {
-   char *parent, *path2, *over;
+   char *parent, *path2, *over, *path_dst;
+   char *orig_dir = ".orig";  // resisted calling this .weirdal
    int entry_ct;
    struct dirent **entries;
 
-   VERBOSE("making writeable via overmount trick: %s", path);
+   VERBOSE("making writeable via symlink ranch: %s", path);
    path2 = strdup(path);
    parent = dirname(path2);
    T_ (1 <= asprintf(&over, "%s/%d", scratch, dir_ls_count(scratch) + 1));
+   path_dst = path_join(over, orig_dir);
 
-   // bind-mount existing contents
+   // bind-mounts
    Z_ (mkdir(over, 0755));
-   entry_ct = dir_ls(parent, &entries);
+   Z_ (mkdir(path_dst, 0755));
+   Zf (mount(parent, path_dst, NULL, MS_REC|MS_BIND, NULL),
+       "can't bind-mount: %s -> %s", path, path_dst);
+   Zf (mount(over, parent, NULL, MS_REC|MS_BIND, NULL),
+       "can't bind-mount: %s- > %s", over, parent);
+
+   // symlink ranch
+   entry_ct = dir_ls(path_dst, &entries);
    DEBUG("existing entries: %d", entry_ct);
-   if (entry_ct > MKDIRS_OVERMOUNT_ENTRY_MAX)
-      WARNING("mkdir overmount: %d entries > limit %d, skipping extras: %s",
-              entry_ct, MKDIRS_OVERMOUNT_ENTRY_MAX, parent);
    for (int i = 0; i < entry_ct; i++) {
-      if (i < MKDIRS_OVERMOUNT_ENTRY_MAX) {
-         char * src = path_join(parent, entries[i]->d_name);
-         char * dst = path_join(over, entries[i]->d_name);
-         struct stat st;
-         DEBUG("bind-mount %d: %s -> %s", i, src, dst);
+      char * src = path_join(parent, entries[i]->d_name);
+      char * dst = path_join(orig_dir, entries[i]->d_name);
 
-         // Linux should always have the d_type field (if not, this won’t
-         // compile), but on some common filesystems (e.g. NFS?) it does not
-         // return a meaningful value, so we have to fall back to lstat(2).
-         if (entries[i]->d_type != DT_UNKNOWN)
-            st.st_mode = DTTOIF(entries[i]->d_type);
-         else
-            Zf (lstat(src, &st), "can't stat", src);
+      Zf (symlink(dst, src), "can't symlink: %s -> %s", src, dst);
 
-         // Create the mount point.
-         if (S_ISDIR(st.st_mode)) {
-            Z_ (mkdir(dst, 0755));
-         } else {
-            // FIXME: not actually tested with non-regular-files
-            int fd = open(dst, O_WRONLY|O_CREAT|O_EXCL, 0600);
-            Zf (fd == -1, "can't open: %s", dst);
-            Zf (close(fd), "can't close: %s", dst);
-         }
-
-         Zf (mount(src, dst, NULL, MS_REC|MS_BIND, NULL),
-             "can't bind-mount: %s -> %s", src, dst);
-
-         free(src);
-         free(dst);
-      }
+      free(src);
+      free(dst);
       free(entries[i]);
    }
    free(entries);
 
-   DEBUG("overmounting: %s -> %s", over, parent);
-   Zf (mount(over, parent, NULL, MS_REC|MS_BIND, NULL),
-       "can't bind-mount: %s- > %s", over, parent);
    Zf (mkdir(path, 0755), "can't mkdir even after overmount: %s", path);
 
+   free(path_dst);
    free(over);
    free(path2);
 }
