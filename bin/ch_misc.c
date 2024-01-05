@@ -467,7 +467,7 @@ void mkdir_overmount(const char *path, const char *scratch)
    Z_ (mkdir(over, 0755));
    Z_ (mkdir(path_dst, 0755));
    Zf (mount(parent, path_dst, NULL, MS_REC|MS_BIND, NULL),
-       "can't bind-mount: %s -> %s", path, path_dst);
+       "can't bind-mount: %s -> %s", parent, path_dst);
    Zf (mount(over, parent, NULL, MS_REC|MS_BIND, NULL),
        "can't bind-mount: %s- > %s", over, parent);
 
