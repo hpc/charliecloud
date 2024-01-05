@@ -27,6 +27,9 @@ char *JOIN_CT_ENV[] =  { "OMPI_COMM_WORLD_LOCAL_SIZE",
 char *JOIN_TAG_ENV[] = { "SLURM_STEP_ID",
                          NULL };
 
+/* Default overlaid tmpfs size. */
+char *WRITE_FAKE_DEFAULT = "12%";
+
 
 /** Command line options **/
 
@@ -75,7 +78,9 @@ const struct argp_option options[] = {
    { "verbose",       'v', 0,      0, "be more verbose (can be repeated)" },
    { "version",       'V', 0,      0, "print version and exit" },
    { "warnings",      -16, "NUM",  0, "log NUM warnings and exit" },
-   { "write",         'w', 0,      0, "mount image read-write"},
+   { "write",         'w', 0,      0, "mount image read-write (avoid)"},
+   { "write-fake",    'W', "SIZE", OPTION_ARG_OPTIONAL,
+                           "overlay read-write tmpfs on top of image" },
    { 0 }
 };
 
@@ -155,6 +160,7 @@ int main(int argc, char *argv[])
                                .join_ct = 0,
                                .join_pid = 0,
                                .join_tag = NULL,
+                               .overlay_size = NULL,
                                .private_passwd = false,
                                .private_tmp = false,
                                .type = IMG_NONE,
@@ -173,7 +179,7 @@ int main(int argc, char *argv[])
       argp_help_fmt_set = true;
    else {
       argp_help_fmt_set = false;
-      Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=25,no-dup-args-note", 0));
+      Z_ (setenv("ARGP_HELP_FMT", "opt-doc-col=27,no-dup-args-note", 0));
    }
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
@@ -457,6 +463,10 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case -12: // --home
       Tf (args->c.host_home = getenv("HOME"), "--home failed: $HOME not set");
+      if (args->c.overlay_size == NULL) {
+         VERBOSE("--home specified; also setting --write-fake");
+         args->c.overlay_size = WRITE_FAKE_DEFAULT;
+      }
       break;
    case -13: // --unsafe
       args->unsafe = true;
@@ -533,6 +543,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case 'w':  // --write
       args->c.writable = true;
+      break;
+   case 'W':  // --write-fake
+      args->c.overlay_size = arg != NULL ? arg : WRITE_FAKE_DEFAULT;
       break;
    case ARGP_KEY_NO_ARGS:
       argp_state_help(state, stderr, (  ARGP_HELP_SHORT_USAGE

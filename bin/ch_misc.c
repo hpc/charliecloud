@@ -2,6 +2,8 @@
 
 #define _GNU_SOURCE
 #include <ctype.h>
+#include <dirent.h>
+#include <fcntl.h>
 #include <fnmatch.h>
 #include <libgen.h>
 #include <stdarg.h>
@@ -56,6 +58,7 @@ size_t warnings_offset = 0;
 
 /** Function prototypes (private) **/
 
+void mkdir_overmount(const char *path, const char *scratch);
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap);
 
@@ -189,6 +192,39 @@ char *cat(const char *a, const char *b)
        b = "";
    T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
    return ret;
+}
+
+/* Like scandir(3), but (1) filter excludes “.” and “..”, (2) results are not
+   sorted, and (3) cannot fail (exits with an error instead). */
+int dir_ls(const char *path, struct dirent ***namelist)
+{
+   int entry_ct;
+
+   entry_ct = scandir(path, namelist, dir_ls_filter, NULL);
+   Tf (entry_ct >= 0, "can't scan dir", path);
+   return entry_ct;
+}
+
+/* Return the number of entries in directory path, not including “.” and “..”;
+   i.e., the empty directory returns 0 despite them. */
+int dir_ls_count(const char *path)
+{
+   int ct;
+   struct dirent **namelist;
+
+   ct = dir_ls(path, &namelist);
+   for (size_t i = 0; i < ct; i++)
+      free(namelist[i]);
+   free(namelist);
+
+   return ct;
+}
+
+/* scandir(3) filter that excludes “.” and “..”: Return 0 if e->d_name is one
+   of those strings, else 1. */
+int dir_ls_filter(const struct dirent *e)
+{
+   return !(!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."));
 }
 
 /* Read the file listing environment variables at path, with records separated
@@ -406,13 +442,69 @@ void log_ids(const char *func, int line)
    }
 }
 
+/* Create the directory at path, despite its parent not allowing write access,
+   by overmounting a new, writeable directory atop it. We preserve the old
+   contents by bind-mounting the old directory as a subdirectory, then setting
+   up a symlink ranch.
+
+   The new directory lives initially in scratch, which must not be used for
+   any other purpose. No cleanup is done here, so a disposable tmpfs is best.
+   If anything goes wrong, exit with an error message. */
+void mkdir_overmount(const char *path, const char *scratch)
+{
+   char *parent, *path2, *over, *path_dst;
+   char *orig_dir = ".orig";  // resisted calling this .weirdal
+   int entry_ct;
+   struct dirent **entries;
+
+   VERBOSE("making writeable via symlink ranch: %s", path);
+   path2 = strdup(path);
+   parent = dirname(path2);
+   T_ (1 <= asprintf(&over, "%s/%d", scratch, dir_ls_count(scratch) + 1));
+   path_dst = path_join(over, orig_dir);
+
+   // bind-mounts
+   Z_ (mkdir(over, 0755));
+   Z_ (mkdir(path_dst, 0755));
+   Zf (mount(parent, path_dst, NULL, MS_REC|MS_BIND, NULL),
+       "can't bind-mount: %s -> %s", path, path_dst);
+   Zf (mount(over, parent, NULL, MS_REC|MS_BIND, NULL),
+       "can't bind-mount: %s- > %s", over, parent);
+
+   // symlink ranch
+   entry_ct = dir_ls(path_dst, &entries);
+   DEBUG("existing entries: %d", entry_ct);
+   for (int i = 0; i < entry_ct; i++) {
+      char * src = path_join(parent, entries[i]->d_name);
+      char * dst = path_join(orig_dir, entries[i]->d_name);
+
+      Zf (symlink(dst, src), "can't symlink: %s -> %s", src, dst);
+
+      free(src);
+      free(dst);
+      free(entries[i]);
+   }
+   free(entries);
+
+   Zf (mkdir(path, 0755), "can't mkdir even after overmount: %s", path);
+
+   free(path_dst);
+   free(over);
+   free(path2);
+}
+
 /* Create directories in path under base. Exit with an error if anything goes
    wrong. For example, mkdirs("/foo", "/bar/baz") will create directories
    /foo/bar and /foo/bar/baz if they don't already exist, but /foo must exist
    already. Symlinks are followed. path must remain under base, i.e. you can't
    use symlinks or ".." to climb out. denylist is a null-terminated array of
-   paths under which no directories may be created, or NULL if none. */
-void mkdirs(const char *base, const char *path, char **denylist)
+   paths under which no directories may be created, or NULL if none.
+
+   Can defeat an un-writeable directory by overmounting a new writeable
+   directory atop it. To enable this behavior, pass the path to an appropriate
+   scratch directory in scratch. */
+void mkdirs(const char *base, const char *path, char **denylist,
+            const char *scratch)
 {
    char *basec, *component, *next, *nextc, *pathw, *saveptr;
    char *denylist_null[] = { NULL };
@@ -434,6 +526,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
    component = strtok_r(pathw, "/", &saveptr);
    nextc = basec;
+   next = NULL;
    while (component != NULL) {
       next = cat(nextc, "/");
       next = cat(next, component);  // canonical except for last component
@@ -458,7 +551,12 @@ void mkdirs(const char *base, const char *path, char **denylist)
             Ze (path_subdir_p(denylist[i], next),
                 "can't mkdir: %s under existing bind-mount %s",
                 next, denylist[i]);
-         Zf (mkdir(next, 0777), "can't mkdir: %s", next);
+         if (mkdir(next, 0755)) {
+            if (scratch && (errno == EACCES || errno == EPERM))
+               mkdir_overmount(next, scratch);
+            else
+               Tf (0, "can't mkdir: %s", next);
+         }
          nextc = next;  // canonical b/c we just created last component as dir
          TRACE("mkdirs: created: %s", nextc)
       }
@@ -557,6 +655,21 @@ bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
    return false;
 }
 
+/* Concatenate paths a and b, then return the result. */
+char *path_join(const char *a, const char *b)
+{
+   char *ret;
+
+   T_ (a != NULL);
+   T_ (strlen(a) > 0);
+   T_ (b != NULL);
+   T_ (strlen(b) > 0);
+
+   T_ (asprintf(&ret, "%s/%s", a, b) == strlen(a) + strlen(b) + 1);
+
+   return ret;
+}
+
 /* Return the mount flags of the file system containing path, suitable for
    passing to mount(2).
 
@@ -605,9 +718,11 @@ void path_split(const char *path, char **dir, char **base)
    char *path2;
 
    T_ (path2 = strdup(path));
-   *dir = dirname(path2);
+   T_ (*dir = strdup(dirname(path2)));
+   free(path2);
    T_ (path2 = strdup(path));
-   *base = basename(path2);
+   T_ (*base = strdup(basename(path2)));
+   free(path2);
 }
 
 /* Return true if path is a subdirectory of base, false otherwise. Acts on the

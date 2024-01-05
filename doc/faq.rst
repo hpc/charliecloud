@@ -333,6 +333,84 @@ References:
 * http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442
 * http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328
 
+.. _faq_mkdir-ro:
+
+:code:`--bind` creates mount points within un-writeable directories!
+--------------------------------------------------------------------
+
+Consider this image::
+
+  $ ls /var/tmp/image
+  bin  dev  home  media  opt   root  sbin  sys  usr
+  ch   etc  lib   mnt    proc  run   srv   tmp  var
+  $ ls -ld /var/tmp/image/mnt
+  drwxr-xr-x 4 root root 80 Jan  5 09:52 /var/tmp/image/mnt
+  $ ls /var/tmp/image/mnt
+  bar  foo
+
+That is, :code:`/mnt` is owned by root, un-writeable by us even considering
+the prior question, and contains two subdirectories. Indeed, we cannot create
+a new directory there::
+
+  $ mkdir /var/tmp/image/mnt/baz
+  mkdir: cannot create directory ‘/var/tmp/image/mnt/baz’: Permission denied
+
+Recall that bind-mounting to a path that does not exist in a read-only image
+fails::
+
+  $ ch-run -b /tmp/baz:/mnt/baz /var/tmp/image -- ls /mnt
+  ch-run[40498]: error: can't mkdir: /var/tmp/image/mnt/baz: Read-only file system (ch_misc.c:582 30)
+
+That’s fine; we’ll just use :code:`--write-fake` to create a writeable overlay
+on the container. Then we can make any mount points we need. Right?
+
+::
+
+  $ ch-run -W /var/tmp/image -- mkdir /qux      # succeeds
+  $ ch-run -W /var/tmp/image -- mkdir /mnt/baz  # fails
+  mkdir: can't create directory '/mnt/baz': Permission denied
+
+Wait — why could we create a subdirectory of (container path) :code:`/` but
+not a subdirectory of :code:`/mnt`? This is because the latter, which is at
+host path :code:`/var/tmp/image/mnt`, is not writeable by us: the overlayfs
+propagates the directory’s no-write permissions. Despite this, we can in fact
+use paths that do not yet exist for bind-mount destinations::
+
+  $ ch-run -W -b /tmp/baz:/mnt/baz /var/tmp/image -- ls /mnt
+  bar  baz  foo
+
+What’s happening is bind-mount trickery and a symlink ranch. :code:`ch-run`
+creates a new directory on the overlaid tmpfs, bind-mounts the old (host path)
+:code:`/var/tmp/images/mnt` to a subdirectory of it, symlinks the old
+contents, and finally overmounts the old, un-writeable directory with the new
+one::
+
+  $ ch-run -W -b /tmp/baz:/mnt/baz /var/tmp/image -- ls -la /mnt
+  drwxr-x---    4 reidpr   reidpr         120 Jan  5 17:11 .
+  drwx------    1 reidpr   reidpr          40 Jan  5 17:11 ..
+  drwxr-xr-x    4 nobody   nogroup         80 Jan  5 16:52 .orig
+  lrwxrwxrwx    1 reidpr   reidpr           9 Jan  5 17:11 bar -> .orig/bar
+  drwxr-x---    2 reidpr   reidpr          40 Jan  3 23:49 baz
+  lrwxrwxrwx    1 reidpr   reidpr           9 Jan  5 17:11 foo -> .orig/foo
+  $ ch-run -W -b /tmp/baz:/mnt/baz /var/tmp/image -- cat /proc/mounts | fgrep ' /mnt'
+  none /mnt tmpfs rw,relatime,size=3943804k,uid=1000,gid=1000,inode64 0 0
+  none /mnt/.orig overlay rw,relatime,lowerdir=/var/tmp/image,upperdir=/mnt/upper,workdir=/mnt/work,volatile,userxattr 0 0
+  tmpfs /mnt/baz tmpfs rw,relatime,size=8388608k,inode64 0 0
+
+This new directory is writeable, and :code:`mkdir(2)` succeeds. (The overlaid
+tmpfs is mounted on *host* :code:`/mnt` during container assembly, which is
+why it appears in mount options.)
+
+There are differences from the original directory, of course. Most notably:
+
+  * The ranched symlinks can be deleted by the user within the container,
+    contrary to the old directory’s read-only permissions.
+
+  * The contents of the “ranched” directory become symlinks rather than their
+    original file type.
+
+Software that cares about these things may break.
+
 Why does :code:`ping` not work?
 -------------------------------
 
@@ -1280,4 +1358,5 @@ conversion. Important caveats include:
    <https://kernelnewbies.org/Linux_6.6#TMPFSe>`_ (Oct 2023).
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
-..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq drwxr
+..  LocalWords:  drwx

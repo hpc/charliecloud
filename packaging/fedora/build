@@ -72,7 +72,8 @@ rpmbuild root:      %(rpmbuild)s
    # Create rpmbuild root
    rpm_sources = args.rpmbuild + '/SOURCES'
    rpm_specs   = args.rpmbuild + '/SPECS'
-   for d in (rpm_sources, rpm_specs):
+   rpm_pips    = args.rpmbuild + '/pip'
+   for d in (rpm_sources, rpm_specs, rpm_pips):
       print("# mkdir -p %s" % d)
       try:
          os.makedirs(d)
@@ -97,9 +98,13 @@ rpmbuild root:      %(rpmbuild)s
 
    # Build tarball.
    print("# building source tarball")
-   # FIXME: Why does this need --home?
-   cmd(CH_RUN, "--home", "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
-       "--", "./autogen.sh")
+   # pip3 expects $HOME, here /root, to be writeable for its cache. If not,
+   # the warning is that the directory “is not owned by the current user”,
+   # which is not true. The warning further claims that “*caching* wheels has
+   # been disabled” (emphasis added), but in fact wheels are disabled
+   # entirely, so autogen.sh fails with “embedded Lark is broken”. Thanks pip!
+   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-b", "%s:/root" % rpm_pips,
+               "-c", "/mnt/0", args.image, "--", "./autogen.sh")
    cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "./configure")
    cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,

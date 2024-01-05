@@ -5,9 +5,10 @@
    libraries that ch_core requires. */
 
 #define _GNU_SOURCE
+#include <dirent.h>
 #include <errno.h>
-#include <sys/stat.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
 
 /** Macros **/
@@ -117,6 +118,9 @@ char *argv_to_string(char **argv);
 int buf_strings_count(char *str, size_t s);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
+int dir_ls(const char *path, struct dirent ***namelist);
+int dir_ls_count(const char *path);
+int dir_ls_filter(const struct dirent *e);
 struct env_var *env_file_read(const char *path, int delim);
 void env_set(const char *name, const char *value, const bool expand);
 void env_unset(const char *glob);
@@ -124,12 +128,14 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
 void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
-void mkdirs(const char *base, const char *path, char **denylist);
+void mkdirs(const char *base, const char *path, char **denylist,
+            const char *scratch);
 void msg(enum log_level level, const char *file, int line, int errno_,
          const char *fmt, ...);
 noreturn void msg_fatal(const char *file, int line, int errno_,
                         const char *fmt, ...);
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink);
+char *path_join(const char *a, const char *b);
 unsigned long path_mount_flags(const char *path);
 void path_split(const char *path, char **dir, char **base);
 bool path_subdir_p(const char *base, const char *path);
