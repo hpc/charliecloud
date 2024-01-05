@@ -1,14 +1,5 @@
 load common
 
-@test 'prepare images directory' {
-    scope quick
-    mkdir -p "${ch_imgdir}/bind1"
-    touch "${ch_imgdir}/bind1/file1"
-    mkdir -p "${ch_imgdir}/bind2"
-    touch "${ch_imgdir}/bind2/file2"
-    mkdir -p "${ch_imgdir}/mounts"
-}
-
 @test 'permissions test directories exist' {
     scope standard
     [[ $CH_TEST_PERMDIRS = skip ]] && skip 'user request'

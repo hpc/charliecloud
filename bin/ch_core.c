@@ -174,9 +174,9 @@ char **bind_mount_paths = NULL;
 /** Function prototypes (private) **/
 
 void bind_mount(const char *src, const char *dst, enum bind_dep,
-                const char *newroot, unsigned long flags);
+                const char *newroot, unsigned long flags, const char *scratch);
 void bind_mounts(const struct bind *binds, const char *newroot,
-                 unsigned long flags);
+                 unsigned long flags, const char * scratch);
 void enter_udss(struct container *c);
 #ifdef HAVE_SECCOMP
 void iw(struct sock_fprog *p, int i,
@@ -197,7 +197,7 @@ void tmpfs_mount(const char *dst, const char *newroot, const char *data);
 
 /* Bind-mount the given path into the container image. */
 void bind_mount(const char *src, const char *dst, enum bind_dep dep,
-                const char *newroot, unsigned long flags)
+                const char *newroot, unsigned long flags, const char *scratch)
 {
    char *dst_fullc, *newrootc;
    char *dst_full = cat(newroot, dst);
@@ -218,7 +218,7 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
       case BD_OPTIONAL:
          return;
       case BD_MAKE_DST:
-         mkdirs(newroot, dst, bind_mount_paths);
+         mkdirs(newroot, dst, bind_mount_paths, scratch);
          break;
       }
 
@@ -235,10 +235,11 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
 
 /* Bind-mount a null-terminated array of struct bind objects. */
 void bind_mounts(const struct bind *binds, const char *newroot,
-                 unsigned long flags)
+                 unsigned long flags, const char * scratch)
 {
    for (int i = 0; binds[i].src != NULL; i++)
-      bind_mount(binds[i].src, binds[i].dst, binds[i].dep, newroot, flags);
+      bind_mount(binds[i].src, binds[i].dst, binds[i].dep,
+                 newroot, flags, scratch);
 }
 
 /* Set up new namespaces or join existing namespaces. */
@@ -269,25 +270,63 @@ void containerize(struct container *c)
 
 }
 
-/* Enter the UDSS. After this, we are inside the UDSS.
+/* Enter the new root (UDSS). On entry, the namespaces are set up, and this
+   does the mounting and filesystem setup.
 
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in bin/ch-checkns.c. */
 void enter_udss(struct container *c)
 {
-   char *newroot_parent, *newroot_base;
+   char *nr_parent, *nr_base, *mkdir_scratch;
 
    LOG_IDS;
+   mkdir_scratch = NULL;
+   path_split(c->newroot, &nr_parent, &nr_base);
 
-   path_split(c->newroot, &newroot_parent, &newroot_base);
-
-   // Claim new root for this namespace. We do need both calls to avoid
-   // pivot_root(2) failing with EBUSY later.
-   bind_mount(c->newroot, c->newroot, BD_REQUIRED, "/", MS_PRIVATE);
-   bind_mount(newroot_parent, newroot_parent, BD_REQUIRED, "/", MS_PRIVATE);
+   // Claim new root for this namespace. Despite MS_REC in bind_mount(), we do
+   // need both calls to avoid pivot_root(2) failing with EBUSY later.
+   DEBUG("claiming new root for this namespace")
+   bind_mount(c->newroot, c->newroot, BD_REQUIRED, "/", MS_PRIVATE, NULL);
+   bind_mount(nr_parent, nr_parent, BD_REQUIRED, "/", MS_PRIVATE, NULL);
+   // Re-mount new root read-only unless --write or already read-only.
+   if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
+      unsigned long flags =   path_mount_flags(c->newroot)
+                            | MS_REMOUNT  // Re-mount ...
+                            | MS_BIND     // only this mount point ...
+                            | MS_RDONLY;  // read-only.
+      Z_ (mount(NULL, c->newroot, NULL, flags, NULL));
+   }
+   // Overlay a tmpfs if --write-fake. See for useful details:
+   // https://www.kernel.org/doc/html/v5.11/filesystems/tmpfs.html
+   // https://www.kernel.org/doc/html/v5.11/filesystems/overlayfs.html
+   if (c->overlay_size != NULL) {
+      VERBOSE("overlaying tmpfs for --write-fake (%s)", c->overlay_size);
+      char *options;
+      T_ (1 <= asprintf(&options, "size=%s", c->overlay_size));
+      Zf (mount(NULL, "/mnt", "tmpfs", 0, options),  // host should have /mnt
+          "cannot mount tmpfs for overlay");
+      free(options);
+      Z_ (mkdir("/mnt/upper", 0700));
+      Z_ (mkdir("/mnt/work", 0700));
+      Z_ (mkdir("/mnt/merged", 0700));
+      mkdir_scratch = "/mnt/mkdir_overmount";
+      Z_ (mkdir(mkdir_scratch, 0700));
+      T_ (1 <= asprintf(&options, "lowerdir=%s,upperdir=%s,workdir=%s,"
+                                  "index=on,userxattr,volatile",
+                                  c->newroot, "/mnt/upper", "/mnt/work"));
+      // update newroot
+      c->newroot = "/mnt/merged";
+      free(nr_parent);
+      free(nr_base);
+      path_split(c->newroot, &nr_parent, &nr_base);
+      Zf (mount(NULL, c->newroot, "overlay", 0, options), "can't overlay");
+      VERBOSE("newroot updated: %s", c->newroot);
+      free(options);
+   }
+   DEBUG("starting bind-mounts");
    // Bind-mount default files and directories.
-   bind_mounts(BINDS_DEFAULT, c->newroot, MS_RDONLY);
+   bind_mounts(BINDS_DEFAULT, c->newroot, MS_RDONLY, NULL);
    // /etc/passwd and /etc/group.
    if (!c->private_passwd)
       setup_passwd(c);
@@ -295,41 +334,29 @@ void enter_udss(struct container *c)
    if (c->private_tmp) {
       tmpfs_mount("/tmp", c->newroot, NULL);
    } else {
-      bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
+      bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0, NULL);
    }
-   // Container /home.
+   // Bind-mount user’s home directory at /home/$USER if requested.
    if (c->host_home) {
-      char *newhome;
-      // Mount tmpfs on guest /home because guest root may be read-only.
-      tmpfs_mount("/home", c->newroot, "size=4m");
-      // Bind-mount user's home directory at /home/$USER.
-      newhome = cat("/home/", username);
-      Z_ (mkdir(cat(c->newroot, newhome), 0755));
-      bind_mount(c->host_home, newhome, BD_REQUIRED, c->newroot, 0);
-   }
-   // Re-mount new root read-only unless --write or already read-only.
-   if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
-      unsigned long flags =   path_mount_flags(c->newroot)
-                            | MS_REMOUNT  // Re-mount ...
-                            | MS_BIND     // only this mount point ...
-                            | MS_RDONLY;  // read-only.
-      Zf (mount(NULL, c->newroot, NULL, flags, NULL),
-          "can't re-mount image read-only (is it on NFS?)");
+      T_ (c->overlay_size != NULL);
+      bind_mount(c->host_home, cat("/home/", username),
+                 BD_MAKE_DST, c->newroot, 0, mkdir_scratch);
    }
    // Bind-mount user-specified directories.
-   bind_mounts(c->binds, c->newroot, 0);
-   // Overmount / to avoid EINVAL if it's a rootfs.
-   Z_ (chdir(newroot_parent));
-   Z_ (mount(newroot_parent, "/", NULL, MS_MOVE, NULL));
+   bind_mounts(c->binds, c->newroot, 0, mkdir_scratch);
+   // Overmount / to avoid EINVAL if it’s a rootfs.
+   Z_ (chdir(nr_parent));
+   Z_ (mount(nr_parent, "/", NULL, MS_MOVE, NULL));
    Z_ (chroot("."));
-   c->newroot = cat("/", newroot_base);
-   // Pivot into the new root. Use /dev because it's available even in
+   // Pivot into the new root. Use /dev because it’s available even in
    // extremely minimal images.
+   c->newroot = cat("/", nr_base);
    Zf (chdir(c->newroot), "can't chdir into new root");
-   Zf (syscall(SYS_pivot_root, c->newroot, cat(c->newroot, "/dev")),
+   Zf (syscall(SYS_pivot_root, c->newroot, path_join(c->newroot, "dev")),
        "can't pivot_root(2)");
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
+   DEBUG("pivot_root(2) dance successful")
 }
 
 /* Return image type of path, or exit with error if not a valid type. */
@@ -704,7 +731,7 @@ void setup_passwd(const struct container *c)
       }
    }
    Z_ (close(fd));
-   bind_mount(path, "/etc/passwd", BD_REQUIRED, c->newroot, 0);
+   bind_mount(path, "/etc/passwd", BD_REQUIRED, c->newroot, 0, NULL);
    Z_ (unlink(path));
 
    // /etc/group
@@ -727,7 +754,7 @@ void setup_passwd(const struct container *c)
       }
    }
    Z_ (close(fd));
-   bind_mount(path, "/etc/group", BD_REQUIRED, c->newroot, 0);
+   bind_mount(path, "/etc/group", BD_REQUIRED, c->newroot, 0, NULL);
    Z_ (unlink(path));
 }
 

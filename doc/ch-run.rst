@@ -29,15 +29,18 @@ mounting SquashFS images with FUSE.
     not specified is to use the same path as the host; i.e., the default is
     :code:`--bind=SRC:SRC`. Can be repeated.
 
-    If :code:`--write` is given and :code:`DST` does not exist, it will be
-    created as an empty directory. However, :code:`DST` must be entirely
-    within the image itself; :code:`DST` cannot enter a previous bind mount.
-    For example, :code:`--bind /foo:/tmp/foo` will fail because :code:`/tmp`
-    is shared with the host via bind-mount (unless :code:`$TMPDIR` is set to
-    something else or :code:`--private-tmp` is given).
+    With a read-only image (the default), :code:`DST` must exist. However, if
+    :code:`--write` or :code:`--write-fake` are given, :code:`DST` will be
+    created as an empty directory (possibly with the tmpfs overmount trick
+    described in :ref:`faq_mkdir-ro`). In this case, :code:`DST` must be
+    entirely within the image itself, i.e., :code:`DST` cannot enter a
+    previous bind mount. For example, :code:`--bind /foo:/tmp/foo` will fail
+    because :code:`/tmp` is shared with the host via bind-mount (unless
+    :code:`$TMPDIR` is set to something else or :code:`--private-tmp` is
+    given).
 
-    Most images do have ten directories :code:`/mnt/[0-9]` already available
-    as mount points.
+    Most images have ten directories :code:`/mnt/[0-9]` already available as
+    mount points.
 
     Symlinks in :code:`DST` are followed, and absolute links can have
     surprising behavior. Bind-mounting happens after namespace setup but
@@ -66,10 +69,8 @@ mounting SquashFS images with FUSE.
 
   :code:`--home`
     Bind-mount your host home directory (i.e., :code:`$HOME`) at guest
-    :code:`/home/$USER`. This is accomplished by over-mounting a new
-    :code:`tmpfs` at :code:`/home`, which hides any image content under that
-    path. By default, neither of these things happens and the image’s
-    :code:`/home` is exposed unaltered.
+    :code:`/home/$USER`, hiding any existing image content at that path.
+    Implies :code:`--write-fake` so the mount point can be created if needed.
 
   :code:`-j`, :code:`--join`
     Use the same container (namespaces) as peer :code:`ch-run` invocations.
@@ -139,7 +140,29 @@ mounting SquashFS images with FUSE.
     <faq_verbosity>` for details.
 
   :code:`-w`, :code:`--write`
-    Mount image read-write (by default, the image is mounted read-only).
+    Mount image read-write. By default, the image is mounted read-only. *This
+    option should be avoided for most use cases,* because (1) changing images
+    live (as opposed to prescriptively with a Dockerfile) destroys their
+    provenance and (2) SquashFS images, which is the best-practice format on
+    parallel filesystems, must be read-only. It is better to use
+    :code:`--write-fake` (for disposable data) or bind-mount host directories
+    (for retained data).
+
+  :code:`-W`, :code:`--write-fake[=SIZE]`
+    Overlay a writeable tmpfs on top of the image. This makes the image
+    *appear* read-write, but it actually remains read-only and unchanged. All
+    data “written” to the image are discarded when the container exits.
+
+    The size of the writeable filesystem :code:`SIZE` is any size
+    specification acceptable to :code:`tmpfs`, e.g. :code:`4m` for 4MiB or
+    :code:`50%` for half of physical memory. If this option is specified
+    without :code:`SIZE`, the default is :code:`12%`. Note (1) this limit is a
+    maximum — only actually stored files consume virtual memory — and
+    (2) :code:`SIZE` larger than memory can be requested without error (the
+    failure happens later if the actual contents become too large).
+
+    This requires kernel support and there are some caveats. See section
+    “:ref:`ch-run_overlay`” below for details.
 
   :code:`-?`, :code:`--help`
     Print help and exit.
@@ -315,6 +338,35 @@ Caveats:
 
 * Many of the arguments given to the race losers, such as the image path and
   :code:`--bind`, will be ignored in favor of what was given to the winner.
+
+.. _ch-run_overlay:
+
+Writeable overlay with :code:`--write-fake`
+===========================================
+
+If you need the image to stay read-only but appear writeable, you may be able
+to use :code:`--write-fake` to overlay a writeable tmpfs atop the image. This
+requires kernel support. Specifically:
+
+1. To use the feature at all, you need unprivileged overlayfs support. This is
+   available in `upstream 5.11
+   <https://kernelnewbies.org/Linux_5.11#Unprivileged_Overlayfs_mounts>`_
+   (February 2021), but distributions vary considerably. If you don’t have
+   this, the container will fail to start with error “operation not
+   permitted”.
+
+2. For a fully functional overlay, you need a tmpfs that supports xattrs in
+   the :code:`user` namespace. This is available in `upstream 6.6
+   <https://kernelnewbies.org/Linux_6.6#TMPFS>`_ (October 2023). If you don’t
+   have this, most things will work fine, but some operations will fail with
+   “I/O error”, for example creating a directory with the same path as a
+   previously deleted directory. There will also be syslog noise about xattr
+   problems.
+
+   (overlayfs can also use xattrs in the :code:`trusted` namespace, but this
+   requires :code:`CAP_SYS_ADMIN` `on the host
+   <https://elixir.bootlin.com/linux/v5.11/source/kernel/capability.c#L447>`_
+   and thus is not helpful for unprivileged containers.)
 
 
 Environment variables
@@ -702,4 +754,4 @@ status is 1 regardless of the signal value.
 .. include:: ./see_also.rst
 
 ..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH
-..  LocalWords:  noprofile norc SHLVL PWD
+..  LocalWords:  noprofile norc SHLVL PWD kernelnewbies extglob

@@ -120,7 +120,7 @@ void sq_fork(struct container *c)
       T_ (asprintf(&subdir, "/%s.ch/mnt", username) > 0);
       c->newroot = cat("/var/tmp", subdir);
       VERBOSE("using default mount point: %s", c->newroot);
-      mkdirs("/var/tmp", subdir, NULL);
+      mkdirs("/var/tmp", subdir, NULL, NULL);
    }
 
    // Verify mount point exists and is a directory. (SquashFS file path

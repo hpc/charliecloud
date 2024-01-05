@@ -91,9 +91,9 @@ chmod -R u+rw,ug-s img
 
 ## Install our test stuff.
 
-# Sentinel file for --bind test
-echo "tmpfs and host home are not overmounted" \
-  > img/home/overmount-me
+# Fixtures for --bind tests
+mkdir img/home/directory-in-home
+touch img/home/file-in-home
 
 # Test programs.
 cp -r "$srcdir" img/test
