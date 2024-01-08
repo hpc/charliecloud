@@ -1228,7 +1228,7 @@ class Rsync_G(Copy):
    def __init__(self, *args):
       super().__init__(*args)
       self.from_ = None  # not supported yet
-      line_no = self.tree.line
+      line_no = self.tree.meta.line
       st = self.tree.child("option_plus")
       self.plus_option = "l" if st is None else st.terminal("OPTION_LETTER")
       options_done = False
