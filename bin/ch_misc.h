@@ -130,7 +130,6 @@ void list_append(void **ar, void *new, size_t size);
 void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
 void logging_print(bool fail);
-void mkdirs(const char *base, const char *path, char **denylist);
 void mkdirs(const char *base, const char *path, char **denylist,
             const char *scratch);
 void msg(enum log_level level, const char *file, int line, int errno_,
