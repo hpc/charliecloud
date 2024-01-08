@@ -129,7 +129,7 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
 void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
-void logging_print(bool fail);
+void test_logging(bool fail);
 void mkdirs(const char *base, const char *path, char **denylist,
             const char *scratch);
 void msg(enum log_level level, const char *file, int line, int errno_,

@@ -442,17 +442,15 @@ void log_ids(const char *func, int line)
    }
 }
 
-void logging_print(bool fail) {
+void test_logging(bool fail) {
    TRACE("trace");
    DEBUG("debug");
    VERBOSE("verbose");
    INFO("info");
    WARNING("warning");
-   if (fail) {
-      FATAL("the program failed inexplicably");
-   } else {
-      exit(0);
-   }
+   if (fail)
+      FATAL("the program failed inexplicably (“log-fail” specified)");
+   exit(0);
 }
 
 /* Create the directory at path, despite its parent not allowing write access,
