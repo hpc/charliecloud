@@ -220,7 +220,7 @@ jobs:
 
       - name: build/install from Git
         run: |
-          ./autogen.sh
+          ./autogen.sh --rm-lark
           # Remove Autotools to make sure everything works without them.
           sudo apt-get remove autoconf automake
           # Configure and verify output.
