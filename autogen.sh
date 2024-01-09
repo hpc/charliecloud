@@ -70,9 +70,14 @@ rm -Rf Makefile.in \
        bin/config.h.in \
        build-aux \
        configure
-# Remove Lark, but only if requested.
+# Remove Lark if requested or the installed version does not match.
+lark_found=$( shopt -s nullglob; \
+              echo lib/lark*.dist-info | sed -E 's/^.*-([0-9.]+)\..*$/\1/' )
+if [[ $lark_found && $lark_found != $lark_version ]]; then
+    lark_shovel=yes
+fi
 if [[ $lark_shovel ]]; then
-    rm -Rfv lib/lark lib/lark-stubs lib/lark*.dist-info lib/lark*.egg-info
+    rm -Rf lib/lark lib/lark-stubs lib/lark*.dist-info lib/lark*.egg-info
 fi
 
 # Create configure and friends.
