@@ -60,7 +60,7 @@ const struct argp_option options[] = {
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
-   { "test",  -17, "TEST", 0, "do test TEST" },
+   { "test",          -17, "TEST", 0, "do test TEST" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
@@ -487,13 +487,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       exit(0);
       break;
    case -17: // --test
-      if (!strcmp(arg, "log")) {
+      if (!strcmp(arg, "log"))
          test_logging(false);
-      } else if (!strcmp(arg, "log-fail")) {
+      else if (!strcmp(arg, "log-fail"))
          test_logging(true);
-      } else {
+      else
          FATAL("invalid --test argument: %s; see source code", arg);
-      }
       break;
    case 'b': {  // --bind
          char *src, *dst;

@@ -449,7 +449,7 @@ void test_logging(bool fail) {
    INFO("info");
    WARNING("warning");
    if (fail)
-      FATAL("the program failed inexplicably (“log-fail” specified)");
+      FATAL("the program failed inexplicably (\"log-fail\" specified)");
    exit(0);
 }
 
