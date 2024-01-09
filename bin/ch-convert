@@ -474,7 +474,7 @@ chimage_out_validate () {
         FATAL "exists in ch-image storage, not deleting per --no-clobber: ${1}"
     fi
     if [ -n "$xattrs" ]; then
-        WARNING "--xattrs unsupported for out format \"ch-image\""
+        WARNING -- "--xattrs unsupported for out format \"ch-image\""
     fi
 }
 
