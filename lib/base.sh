@@ -22,8 +22,7 @@ log_level=0
 # Implementing the suggestion in SC2059 would instead result in something like
 #
 #   >>> VERBOSE "foo %s" "bar"
-#   foo %s
-#   bar
+#   foo %sbar
 
 DEBUG () {
     if [ "$log_level" -ge 2 ]; then
