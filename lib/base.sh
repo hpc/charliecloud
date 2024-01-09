@@ -15,32 +15,36 @@ log_level=0
 
 DEBUG () {
     if [ "$log_level" -ge 2 ]; then
-        # shellcheck disable=SC2059
-        printf "$@" 1>&2
+        printf '%s' "$@" 1>&2
         printf '\n' 1>&2
     fi
 }
 
 FATAL () {
     printf 'error: ' 1>&2
-    # shellcheck disable=SC2059
-    printf "$@" 1>&2
+    printf '%s' "$@" 1>&2
     printf '\n' 1>&2
     exit 1
 }
 
 INFO () {
     if [ "$log_level" -ge 0 ]; then
-        # shellcheck disable=SC2059
-        printf "$@" 1>&2
+        printf '%s' "$@" 1>&2
         printf '\n' 1>&2
     fi
 }
 
 VERBOSE () {
     if [ "$log_level" -ge 1 ]; then
-        # shellcheck disable=SC2059
-        printf "$@" 1>&2
+        printf '%s' "$@" 1>&2
+        printf '\n' 1>&2
+    fi
+}
+
+WARNING () {
+    if [ "$log_level" -ge -1 ]; then
+        printf 'warning: ' 1>&2
+        printf '%s' "$@" 1>&2
         printf '\n' 1>&2
     fi
 }
