@@ -1289,7 +1289,7 @@ indicates printed, ❌ suppressed).
      - ✅
      - [1]
      - [1]
-     - [1]
+     - [1] [2]
      - ❌
      - ❌
    * - warning
@@ -1324,6 +1324,10 @@ Notes:
    :code:`RUN`) and sometimes it’s captured for internal use (e.g., many
    :code:`git(1)` invocations).
 
+
+2. In the case of :code:`ch-run`, the user command is considered a subprocess,
+   e.g. :code:`ch-run -q example -- echo foo` will produce no output.
+
 .. _faq_xattrs:
 
 How do I handle extended attributes in Charliecloud?
@@ -1356,6 +1360,7 @@ conversion. Important caveats include:
 5. Support for xattrs varies among filesystems, e.g. tmpfs didn’t support xattrs
    in the :code:`user` namespace prior to Linux kernel `upstream 6.6
    <https://kernelnewbies.org/Linux_6.6#TMPFSe>`_ (Oct 2023).
+
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
 ..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq drwxr

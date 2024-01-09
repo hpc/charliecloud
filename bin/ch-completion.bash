@@ -258,7 +258,6 @@ _ch_image_complete () {
         __ltrim_colon_completions "$cur"
         ;;
     undelete)
-        # FIXME: Update with “ch-image undelete --list” once #1551 drops
         COMPREPLY=( $(compgen -W "$(_ch_undelete_list "$strg_dir")" -- "$cur") )
         ;;
     '')
@@ -281,7 +280,7 @@ _ch_image_complete () {
 
 _run_opts="-b --bind -c --cd --env-no-expand --feature -g --gid
            --home -j --join --join-pid --join-ct --join-tag -m
-           --mount --no-passwd -s --storage --seccomp -t
+           --mount --no-passwd -q --quiet -s --storage --seccomp -t
            --private-tmp --set-env -u --uid --unsafe --unset-env
            -v --verbose -w --write -? --help --usage -V --version"
 

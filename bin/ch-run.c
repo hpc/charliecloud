@@ -60,9 +60,11 @@ const struct argp_option options[] = {
    { "join-pid",       -5, "PID",  0, "join a namespace using a PID" },
    { "join-ct",        -3, "N",    0, "number of join peers (implies --join)" },
    { "join-tag",       -4, "TAG",  0, "label for peer group (implies --join)" },
+   { "test",          -17, "TEST", 0, "do test TEST" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
+   { "quiet",         'q', 0,      0, "print less output (can be repeated)"},
 #ifdef HAVE_SECCOMP
    { "seccomp",       -14, 0,      0,
                            "fake success for some syscalls with seccomp(2)"},
@@ -476,13 +478,21 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->seccomp_p = true;
       break;
 #endif
+   case -15: // --set-env0
+      parse_set_env(args, arg, '\0');
+      break;
    case -16: // --warnings
       for (int i = 1; i <= parse_int(arg, false, "--warnings"); i++)
          WARNING("this is warning %d!", i);
       exit(0);
       break;
-   case -15: // --set-env0
-      parse_set_env(args, arg, '\0');
+   case -17: // --test
+      if (!strcmp(arg, "log"))
+         test_logging(false);
+      else if (!strcmp(arg, "log-fail"))
+         test_logging(true);
+      else
+         FATAL("invalid --test argument: %s; see source code", arg);
       break;
    case 'b': {  // --bind
          char *src, *dst;
@@ -525,6 +535,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       if (!path_exists(arg, NULL, false))
          WARNING("storage directory not found: %s", arg);
       break;
+   case 'q':  // --quiet
+      Te(verbose <= 0, "--quiet incompatible with --verbose");
+      verbose--;
+      Te(verbose >= -3, "--quiet can be specified at most thrice");
+      break;
    case 't':  // --private-tmp
       args->c.private_tmp = true;
       break;
@@ -538,6 +553,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       exit(EXIT_SUCCESS);
       break;
    case 'v':  // --verbose
+      Te(verbose >= 0, "--verbose incompatible with --quiet");
       verbose++;
       Te(verbose <= 3, "--verbose can be specified at most thrice");
       break;
