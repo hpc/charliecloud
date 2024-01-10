@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-lark_version=1.1.8
+lark_version=1.1.9
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in

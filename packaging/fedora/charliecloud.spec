@@ -42,7 +42,7 @@ Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
-Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.8
+Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
 
 %description builder
 This package provides ch-image, Charliecloud's completely unprivileged container
@@ -151,7 +151,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_prefix}/lib/%{name}/force.py
 %{_prefix}/lib/%{name}/image.py
 %{_prefix}/lib/%{name}/lark
-%{_prefix}/lib/%{name}/lark-1.1.8.dist-info
+%{_prefix}/lib/%{name}/lark-1.1.9.dist-info
 %{_prefix}/lib/%{name}/misc.py
 %{_prefix}/lib/%{name}/pull.py
 %{_prefix}/lib/%{name}/push.py
