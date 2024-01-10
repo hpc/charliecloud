@@ -955,6 +955,6 @@ FROM almalinux:8
 RUN dnf install -y --releasever=/ --installroot=/foo filesystem
 EOF
 
-    ch-image build -f "$df" $BATS_TMPDIR
+    ch-image build -f "$df" "$BATS_TMPDIR"
     ch-image reset
 }
