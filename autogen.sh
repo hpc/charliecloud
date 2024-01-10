@@ -73,7 +73,7 @@ rm -Rf Makefile.in \
 # Remove Lark if requested or the installed version does not match.
 lark_found=$( shopt -s nullglob; \
               echo lib/lark*.dist-info | sed -E 's/^.*-([0-9.]+)\..*$/\1/' )
-if [[ $lark_found && $lark_found != $lark_version ]]; then
+if [[ $lark_found && $lark_found != "$lark_version" ]]; then
     lark_shovel=yes
 fi
 if [[ $lark_shovel ]]; then
