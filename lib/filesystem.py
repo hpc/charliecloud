@@ -662,17 +662,20 @@ class Path(os.PathLike):
       ch.ossafe("can’t chdir(2): %s" % self, os.chdir, self)
       return self.__class__(old)
 
-   def chmod_min(self, st=None):
+   def chmod_min(self, st_old=None):
       """Set my permissions to at least 0o700 for directories and 0o400
-         otherwise. If given, st is a stat object for self, to avoid another
-         stat(2) call. Return the new file mode (permissions and file type).
+         otherwise.
 
          For symlinks, do nothing, because we don’t want to follow symlinks
          and follow_symlinks=False (or os.lchmod) is not supported on some
          (all?) Linux. (Also, symlink permissions are ignored on Linux, so it
-         doesn’t matter anyway.)"""
-      if (st is None):
-         st = self.stat(False)
+         doesn’t matter anyway.)
+
+         If given, st_old is a stat_result object for self, to avoid another
+         stat(2) call. In this case, also return the resulting stat_result
+         object, which is st itself if nothing was modified, or a new
+         stat_result object if the mode was changed."""
+      st = self.stat(False) if not st else st_old
       if (stat.S_ISLNK(st.st_mode)):
          return st.st_mode
       perms_old = stat.S_IMODE(st.st_mode)
@@ -681,7 +684,24 @@ class Path(os.PathLike):
          ch.VERBOSE("fixing permissions: %s: %03o -> %03o"
                  % (self, perms_old, perms_new))
          ch.ossafe("can’t chmod: %s" % self, os.chmod, self, perms_new)
-      return (st.st_mode | perms_new)
+      if (st_old):
+         # stat_result is a deeply weird object (a “structsec” rather than a
+         # named tuple), including multiple values for the same field when
+         # accessed by index vs. name. I did figure out how to create a
+         # modified copy, which is the commented code below, but it seems too
+         # brittle and scary, so just re-stat(2) the modified metadata.
+         #
+         #   st_list = list(st_old)
+         #   st_dict = { k:getattr(a, k) for k in dir(a) if k[:3] == "st_" }
+         #   st_list[0] |= perms_new
+         #   st_dict["st_mode"] |= perms_new
+         #   st_new = os.stat_result(st_list, st_dict)
+         #   assert (st_new[0] == st_new.st_mode)
+         #   return st_new
+         if (perms_new == perms_old):
+            return st_old
+         else:
+            return self.stat(False)
 
    def copy(self, dst):
       """Copy file myself to dst, including metadata, overwriting dst if it

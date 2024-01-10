@@ -351,9 +351,10 @@ class File_Metadata:
          # skip Git stuff at image root
          fm.dont_restore = True
          return fm
-      # Ensure minimum permissions. Some tools like to make files with mode
-      # 000, because root ignores the permissions bits.
-      fm.path_abs.chmod_min(fm.st)
+      # Ensure minimum permissions. Some tools like to make files without
+      # necessary owner permissions, because root ignores the permissions bits
+      # (CAP_DAC_OVERRIDE). See e.g. #1765.
+      fm.st = fm.path_abs.chmod_min(fm.st)
       # Validate file type and recurse if needed. (Don’t use os.walk() because
       # it’s iterative, and our algorithm is better expressed recursively.)
       if   (   stat.S_ISREG(fm.mode)
