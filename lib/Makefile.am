@@ -21,7 +21,7 @@ mylib_DATA = contributors.bash \
              version.sh \
              version.txt
 
-# Bundled Lark (currently version 1.1.8); Automake does not support wildcards
+# Bundled Lark (currently version 1.1.9); Automake does not support wildcards
 # [1], so list the files. Note it's version-specific. Hopefully if a new
 # version of Lark adds a file and we omit it here by mistake, the tests will
 # catch it. To get this list:
@@ -31,13 +31,13 @@ mylib_DATA = contributors.bash \
 # Then, copy-n-paste & remove the last backslash. PROOFREAD YOUR DIFF!!!
 
 LARK = \
-lark-1.1.8.dist-info/INSTALLER \
-lark-1.1.8.dist-info/LICENSE \
-lark-1.1.8.dist-info/METADATA \
-lark-1.1.8.dist-info/RECORD \
-lark-1.1.8.dist-info/WHEEL \
-lark-1.1.8.dist-info/entry_points.txt \
-lark-1.1.8.dist-info/top_level.txt \
+lark-1.1.9.dist-info/INSTALLER \
+lark-1.1.9.dist-info/LICENSE \
+lark-1.1.9.dist-info/METADATA \
+lark-1.1.9.dist-info/RECORD \
+lark-1.1.9.dist-info/WHEEL \
+lark-1.1.9.dist-info/entry_points.txt \
+lark-1.1.9.dist-info/top_level.txt \
 lark/__init__.py \
 lark/ast_utils.py \
 lark/common.py \
