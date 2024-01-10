@@ -152,7 +152,6 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_prefix}/lib/%{name}/image.py
 %{_prefix}/lib/%{name}/lark
 %{_prefix}/lib/%{name}/lark-1.1.8.dist-info
-%{_prefix}/lib/%{name}/lark-stubs
 %{_prefix}/lib/%{name}/misc.py
 %{_prefix}/lib/%{name}/pull.py
 %{_prefix}/lib/%{name}/push.py

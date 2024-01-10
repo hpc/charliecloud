@@ -96,6 +96,11 @@ if [[ -z $clean ]]; then
         # Also remove Lark’s installer stuff.
         rm lib/lark/__pyinstaller/*.py
         rmdir lib/lark/__pyinstaller
+        # Some versions of pip install this file, while others don’t [1]. We
+        # don’t care about it, so remove it to avoid Make errors if it’s
+        # listed in Makefile.am and then an older pip is used to build.
+        # [1]: https://github.com/pypa/pip/pull/8026
+        rm -f lib/lark-${lark_version}.dist-info/REQUESTED
     fi
     if [[    -e lib/lark \
           && ! -e lib/lark-${lark_version}.dist-info/INSTALLER ]]; then

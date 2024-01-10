@@ -35,7 +35,6 @@ lark-1.1.8.dist-info/INSTALLER \
 lark-1.1.8.dist-info/LICENSE \
 lark-1.1.8.dist-info/METADATA \
 lark-1.1.8.dist-info/RECORD \
-lark-1.1.8.dist-info/REQUESTED \
 lark-1.1.8.dist-info/WHEEL \
 lark-1.1.8.dist-info/entry_points.txt \
 lark-1.1.8.dist-info/top_level.txt \
