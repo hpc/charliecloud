@@ -675,9 +675,9 @@ class Path(os.PathLike):
          stat(2) call. In this case, also return the resulting stat_result
          object, which is st itself if nothing was modified, or a new
          stat_result object if the mode was changed."""
-      st = self.stat(False) if not st else st_old
+      st = self.stat(False) if not st_old else st_old
       if (stat.S_ISLNK(st.st_mode)):
-         return st.st_mode
+         return st_old
       perms_old = stat.S_IMODE(st.st_mode)
       perms_new = perms_old | (0o700 if stat.S_ISDIR(st.st_mode) else 0o400)
       if (perms_new != perms_old):

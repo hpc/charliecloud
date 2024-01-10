@@ -263,13 +263,12 @@ class File_Metadata:
    #   st ............ Stat object for the file. Absent after un-pickling.
 
    def __init__(self, image_root, path):
+      # Note: Constructor not called during unpickle.
       self.image_root = image_root
       self.path = path
       self.path_abs = image_root // path
       self.st = self.path_abs.stat(False)
-      # Note: Constructor not called during unpickle.
-      for attr in ("atime_ns", "mtime_ns", "mode", "size"):
-         setattr(self, attr, getattr(self.st, "st_" + attr))
+      self.stat_cache_update()
       self.children = dict()
       self.dont_restore = False
       self.hardlink_to = None
@@ -355,6 +354,7 @@ class File_Metadata:
       # necessary owner permissions, because root ignores the permissions bits
       # (CAP_DAC_OVERRIDE). See e.g. #1765.
       fm.st = fm.path_abs.chmod_min(fm.st)
+      fm.stat_cache_update()
       # Validate file type and recurse if needed. (Don’t use os.walk() because
       # it’s iterative, and our algorithm is better expressed recursively.)
       if   (   stat.S_ISREG(fm.mode)
@@ -548,6 +548,10 @@ class File_Metadata:
    def pickle(self):
       (self.image_root // PICKLE_PATH) \
          .file_write(pickle.dumps(self, protocol=4))
+
+   def stat_cache_update(self):
+      for attr in ("atime_ns", "mtime_ns", "mode", "size"):
+         setattr(self, attr, getattr(self.st, "st_" + attr))
 
    def str_for_log(self):
       # Truncate reported time to seconds.
