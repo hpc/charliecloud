@@ -43,7 +43,7 @@ Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
-Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.8
+Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 0.11.3
 
 %description builder
 This package provides ch-image, Charliecloud's completely unprivileged container
