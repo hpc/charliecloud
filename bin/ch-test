@@ -784,7 +784,7 @@ if [[ ! -f ${ch_base}/VERSION ]]; then
 else
     # build dir
     CHTEST_INSTALLED=
-    if [[ -d ${ch_base}/.git ]]; then
+    if [[ -e ${ch_base}/.git ]]; then
         CHTEST_GITWD=yes
     else
         CHTEST_GITWD=
