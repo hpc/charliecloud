@@ -102,6 +102,140 @@ if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
 fi
 
 
+## ch-convert ##
+
+# Valid formats
+_convert_fmts="ch-image dir docker podman squash tar"
+
+# Options for ch-convert that accept args
+_convert_arg_opts="-i --in-fmt -o --out-fmt -s --storage --tmp"
+
+# All options for ch-convert
+_convert_opts="-h --help -n --dry-run --no-clobber --no-xattrs -v --verbose
+               $_convert_arg_opts"
+
+
+# Completion function for ch-convert
+#
+_ch_convert_complete () {
+    local prev
+    local cur
+    local fmt_in
+    local fmt_out
+    local words
+    local opts_end=-1
+    local strg_dir
+    local extras
+    _get_comp_words_by_ref -n : cur prev words cword
+
+    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
+    _ch_convert_parse "$strg_dir" "$cword" fmt_in fmt_out opts_end "${words[@]}"
+
+    # Populate debug log
+    _DEBUG "\$ ${words[*]}"
+    _DEBUG " storage: dir: $strg_dir"
+    _DEBUG " current: $cur"
+    _DEBUG " previous: $prev"
+    _DEBUG " input format: $fmt_in"
+    _DEBUG " output format: $fmt_out"
+    if [[ $opts_end != -1 ]]; then
+        _DEBUG " input image: ${words[$opts_end]}"
+    fi
+
+    # Command line options
+    _DEBUG "OPTS_END: $opts_end"
+    _DEBUG "CWORD: $cword"
+    if [[ ($opts_end == -1) || ($cword -lt $opts_end) ]]; then
+        _DEBUG "GOT HERE"
+        case "$prev" in
+        -i|--in-fmt)
+            COMPREPLY=( $(compgen -W "$(echo "${_convert_fmts//$fmt_out/}")" -- "$cur") )
+            return 0
+            ;;
+        -o|--out-fmt)
+            COMPREPLY=( $(compgen -W "$(echo "${_convert_fmts//$fmt_in/}")" -- "$cur") )
+            return 0
+            ;;
+        -s|--storage|--tmp)
+            # See comment about overzealous completion for the “--storage” option
+            # under “_ch_convert_complete”.
+            if [[ -n "$cur" ]]; then
+                compopt -o nospace
+                COMPREPLY=( $(compgen -d -S / -- "$cur") )
+            fi
+            return 0
+            ;;
+        *)
+            # Not an option that requires an arg.
+            COMPREPLY=( $(compgen -W "$_convert_opts" -- "$cur") )
+            ;;
+        esac
+    fi
+
+    if [[ ($opts_end == -1) ]]; then
+        # Input image not yet specified, complete potential input images.
+        case "$fmt_in" in
+        ch-image)
+            # FIXME: Make this bit less terrible, more DRY.
+            COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
+            if [[ -n "$(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur")" ]]; then
+                compopt -o nospace
+            fi
+            ;;
+        dir)
+            # FIXME: Make this bit less terrible, more DRY.
+            COMPREPLY+=( $(compgen -d -- "$cur") )
+            if [[ -n "$(compgen -d -- "$cur")" ]]; then
+                compopt -o nospace
+            fi
+            ;;
+        squash)
+            # FIXME: Make this bit less terrible, more DRY.
+            COMPREPLY+=( $(_compgen_filepaths -X "!*.sqfs" "$cur") )
+            if [[ -n "$(_compgen_filepaths -X "!*.sqfs" "$cur")" ]]; then
+                compopt -o nospace
+            fi
+            ;;
+        tar)
+            # FIXME: Make this bit less terrible, more DRY.
+            COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
+            if [[ -n "$(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur")" ]]; then
+                compopt -o nospace
+            fi
+            ;;
+        docker|podman)
+            # We don’t attempt to complete in this case.
+            return 0
+            ;;
+        "")
+            # No in fmt specified, could be anything
+            COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
+            COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
+            # Only use the “nospace” option when a valid path completion exists
+            # to avoid the inconvenience of unnecessarily making users type in
+            # their own spaces all the time.
+            #
+            # FIXME: Make this conditional less bad
+            if [[ (-n "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")") && (! -f "$(_sanitized_tilde_expand "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")")" ) ]]; then
+                compopt -o nospace
+            fi
+            return 0
+            ;;
+        esac
+    elif [[ ($cword -gt $opts_end) ]]; then
+        # Input image has been specified and current word appears after it in
+        # the command line. Assume we’re completing output image. If output
+        # format COULD be dir, tar, or squash, complete valid directory paths.
+        if ! _is_subword "$fmt_out" "ch-image docker podman"; then
+            compopt -o nospace
+            COMPREPLY+=( $(compgen -d -S / -- "$cur") )
+        fi
+        return 0
+    fi
+
+    return 0
+}
+
 ## ch-image ##
 
 # Subcommands and options for ch-image
@@ -383,7 +517,7 @@ _ch_run_complete () {
     if [[ -z $cli_image ]]; then
         # No image found in command line, complete dirs, tarfiles, and sqfs
         # archives
-        COMPREPLY=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
+        COMPREPLY=( $(_compgen_filepaths -X "!*.tar.* !*.tgz !*.sqfs" "$cur") )
         # Complete images in storage. Note we don't use “ch-image list” here
         # because it can initialize an empty storage directory and we don't want
         # this script to have any such side effects.
@@ -391,9 +525,7 @@ _ch_run_complete () {
         __ltrim_colon_completions "$cur"
     fi
 
-    # Only use the “nospace” option when a valid path completion exists to avoid
-    # the inconvenience of unnecessarily making users type in their own spaces
-    # all the time.
+    # See comment above previous use of this statement for explanation.
     if [[ -n "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")" ]]; then
         compopt -o nospace
     fi
@@ -405,6 +537,7 @@ _ch_run_complete () {
 
 ## Helper functions ##
 
+# Add debugging stuff to log file if CH_COMPLETION_DEBUG is
 _DEBUG () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         echo "$@" >> /tmp/ch-completion.log
@@ -413,8 +546,97 @@ _DEBUG () {
 
 # Disable completion.
 ch-completion-disable () {
+    complete -r ch-convert
     complete -r ch-image
     complete -r ch-run
+}
+
+# Parser for ch-convert command line. Takes 6 arguments:
+#
+#   1.) A string representing the path to the storage directory.
+#
+#   2.) The current position (measured in words) of the cursor in the array
+#       representing the command line (index starting at 0).
+#
+#   3.) An out parameter. If “_ch_convert_parse” is able to determine the format
+#       of the input image, it will pass that format back to the caller as a
+#       string using this out parameter. There are two ways that “_ch_convert_parse”
+#       can determine the input image format:
+#           i.) If “-i” or “--in-fmt” is specified and is followed by a valid
+#               image format, the out parameter will be set to a that format.
+#               E.g. “ch-image”.
+#           ii.) If the parser detects that an input image has been specified,
+#                it will try to determine the format of that image. This does
+#                not work for Docker or Podman images, and never will.
+#
+#   4.) Another out parameter. If the user has specified an output image format
+#       using “-o” or “--out-fmt”, the parser will use this out parameter to
+#       pass that format back to the caller.
+#
+#   5.) A string representing the expanded command line array (i.e.
+#       "${array[@]}").
+#
+# FIXME: Explain what an out parameter is here instead of comment above “ch-run”
+# parser??
+#
+_ch_convert_parse () {
+    local images
+    images=$(_ch_list_images "$1")
+    local cword="$2"
+    local -n in_fmt=$3
+    local -n out_fmt=$4
+    local -n end_opts=$5
+    shift 5
+    local words=("$@")
+    local ct=1
+
+    while (($ct < ${#words[@]})); do
+        case ${words[$ct-1]} in
+        -i|--in-fmt)
+            if _is_subword "${words[$ct]}" "$_convert_fmts"; then
+                in_fmt="${words[$ct]}"
+            fi
+            ;;
+        -o|--out-fmt)
+            if _is_subword "${words[$ct]}" "$_convert_fmts"; then
+                out_fmt="${words[$ct]}"
+            fi
+            ;;
+        esac
+
+        if (! _is_subword "${words[$ct-1]}" "$_convert_arg_opts"); then
+            _DEBUG "${words[$ct-1]} is NOT in \"$_convert_arg_opts\""
+        fi
+
+        if (! _is_subword "${words[$ct-1]}" "$_convert_arg_opts") \
+          &&  [[ ("${words[$ct]}" != "-"*) && ($ct != $cword) ]]; then
+            # First non-opt arg found, assuming it’s the input image
+            end_opts=$ct
+            local word
+            word="$(_sanitized_tilde_expand "${words[$ct]}")"
+            if [[ -z "$in_fmt" ]]; then
+                # If the parser hasn’t been told the image format yet, try to
+                # figure out the format of the input image.
+
+                # FIXME: What if multiple conditions are satisfied by different
+                #        images, e.g. if “foo” is in ch-image storage but
+                #        “./foo” is also a directory image??
+                if [[ -d "$word" ]]; then
+                    in_fmt="dir"
+                elif _is_subword "${words[$ct]}" "$images"; then
+                    in_fmt="ch-image"
+                elif [[ -f "$word" ]]; then
+                    if [[ ("${words[$ct]}" == *".tgz") || ("${words[$ct]}" == *".tar."*) ]]; then
+                        in_fmt="tar"
+                    elif [[ "${words[$ct]}" == *".sqfs" ]]; then
+                        in_fmt="squash"
+                    fi
+                fi
+            fi
+        fi
+
+        ((ct++))
+    done
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
@@ -612,6 +834,25 @@ _compgen_filepaths() {
     compgen -d -S / -- "$cur"
 }
 
+# Return 0 if "$1" is a word in space-separated sequence of words "$2", e.g.
+#
+#   >>> _is_subword "foo" "foo bar baz"
+#   0
+#   >>> _is_subword "foo" "foobar baz"
+#   1
+#
+_is_subword () {
+    local subword=$1
+    shift 1
+    #shellcheck disable=SC2068
+    for word in $@; do
+        if [[ "$word" == "$subword" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 # Expand tilde in quoted strings to the correct home path, if applicable, while
 # sanitizing to prevent code injection (see https://stackoverflow.com/a/38037679).
 #
@@ -637,5 +878,6 @@ _sanitized_tilde_expand () {
     echo "$1"
 }
 
+complete -F _ch_convert_complete ch-convert
 complete -F _ch_image_complete ch-image
 complete -F _ch_run_complete ch-run
