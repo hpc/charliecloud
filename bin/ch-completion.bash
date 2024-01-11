@@ -176,32 +176,25 @@ _ch_convert_complete () {
         # Input image not yet specified, complete potential input images.
         case "$fmt_in" in
         ch-image)
-            # FIXME: Make this bit less terrible, more DRY.
             COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
+            # FIXME: Why is this conditional here??
             if [[ -n "$(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur")" ]]; then
                 compopt -o nospace
             fi
             ;;
         dir)
-            # FIXME: Make this bit less terrible, more DRY.
             COMPREPLY+=( $(compgen -d -- "$cur") )
             if [[ -n "$(compgen -d -- "$cur")" ]]; then
                 compopt -o nospace
             fi
             ;;
         squash)
-            # FIXME: Make this bit less terrible, more DRY.
             COMPREPLY+=( $(_compgen_filepaths -X "!*.sqfs" "$cur") )
-            if [[ -n "$(_compgen_filepaths -X "!*.sqfs" "$cur")" ]]; then
-                compopt -o nospace
-            fi
+            _space_filepath -X "!*.sqfs" "$cur"
             ;;
         tar)
-            # FIXME: Make this bit less terrible, more DRY.
             COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
-            if [[ -n "$(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur")" ]]; then
-                compopt -o nospace
-            fi
+            _space_filepath -X "!*.tar.* !*tgz" "$cur"
             ;;
         docker|podman)
             # We don’t attempt to complete in this case.
@@ -211,14 +204,7 @@ _ch_convert_complete () {
             # No in fmt specified, could be anything
             COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
             COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
-            # Only use the “nospace” option when a valid path completion exists
-            # to avoid the inconvenience of unnecessarily making users type in
-            # their own spaces all the time.
-            #
-            # FIXME: Make this conditional less bad
-            if [[ (-n "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")") && (! -f "$(_sanitized_tilde_expand "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")")" ) ]]; then
-                compopt -o nospace
-            fi
+            _space_filepath -X "!*.tar.* !*tgz !*.sqfs" "$cur"
             return 0
             ;;
         esac
@@ -320,13 +306,14 @@ _ch_image_complete () {
         # $cur should be an argument. Otherwise, default to CONTEXT or any
         # valid option (common or subcommand-specific).
         -f|--file)
-            compopt -o nospace
+            #compopt -o nospace
+            #COMPREPLY=( $(_compgen_filepaths -X "!Dockerfile* !*.df" "$cur") )
             COMPREPLY=( $(_compgen_filepaths "$cur") )
+            _space_filepath "$cur"
             return 0
             ;;
         -t)
-            # We can’t autocomplete a tag, so we're not even gonna allow
-            # autocomplete after this option.
+            # We can’t autocomplete a tag, so we're not even gonna try.
             COMPREPLY=()
             return 0
             ;;
@@ -517,7 +504,7 @@ _ch_run_complete () {
     if [[ -z $cli_image ]]; then
         # No image found in command line, complete dirs, tarfiles, and sqfs
         # archives
-        COMPREPLY=( $(_compgen_filepaths -X "!*.tar.* !*.tgz !*.sqfs" "$cur") )
+        COMPREPLY=( $(_compgen_filepaths -X "!*.sqfs" "$cur") )
         # Complete images in storage. Note we don't use “ch-image list” here
         # because it can initialize an empty storage directory and we don't want
         # this script to have any such side effects.
@@ -526,9 +513,8 @@ _ch_run_complete () {
     fi
 
     # See comment above previous use of this statement for explanation.
-    if [[ -n "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")" ]]; then
-        compopt -o nospace
-    fi
+    # FIXME: Update this comment ^
+    _space_filepath -X "!*.sqfs" "$cur"
 
     COMPREPLY+=( $(compgen -W "$_run_opts $extras" -- "$cur") )
     return 0
@@ -799,7 +785,7 @@ _ch_undelete_list () {
 # to be excluded from file completion using the compgen option of the same
 # name (source: https://stackoverflow.com/a/40227233, see also:
 # https://devdocs.io/bash/programmable-completion-builtins#index-compgen)
-_compgen_filepaths() {
+_compgen_filepaths () {
     local filterpats=("")
     if [[ "$1" == "-X" && 1 -lt ${#@} ]]; then
         # Read a string into an array:
@@ -827,7 +813,8 @@ _compgen_filepaths() {
     do
         grep -v -F -f <(compgen -d -P ^ -S '$' -X "$pat" -- "$cur") \
             <(compgen -f -P ^ -S '$' -X "$pat" -- "$cur") |
-            sed -e 's/^\^//' -e 's/\$$/ /'
+            sed -e 's/^\^//' -e 's/\$$/ /' \
+                -e 's/ $//g'               # remove trailing space
     done
 
     # Directories with trailing slashes:
@@ -851,6 +838,17 @@ _is_subword () {
         fi
     done
     return 1
+}
+
+# Wrapper for some tricky logic that determines whether or not to add a space at
+# the end.
+_space_filepath () {
+    local files
+    files="$(_compgen_filepaths "$1" "$2" "$3")"
+    if [[ (-n "$files") \
+         && (! -f "$(_sanitized_tilde_expand $files)") ]]; then
+        compopt -o nospace
+    fi
 }
 
 # Expand tilde in quoted strings to the correct home path, if applicable, while
