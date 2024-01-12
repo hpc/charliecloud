@@ -1,8 +1,8 @@
 # Completion script for Charliecloud
 
-# This ShellCheck error pops up whenever we do “COMPREPLY=( $(compgen [...]) )”.
-# This seems to be standard for implementations of bash completion, and we didn't
-# like the suggested alternatives, so we disable it here.
+# SC2207 pops up whenever we do “COMPREPLY=( $(compgen [...]) )”. This seems to
+# be standard for implementations of bash completion, and we didn't like the
+# suggested alternatives, so we disable it here.
 # shellcheck disable=SC2207
 
 # SC2034 complains about modifying variables by reference in
@@ -149,11 +149,11 @@ _ch_convert_complete () {
         _DEBUG "GOT HERE"
         case "$prev" in
         -i|--in-fmt)
-            COMPREPLY=( $(compgen -W "$(echo "${_convert_fmts//$fmt_out/}")" -- "$cur") )
+            COMPREPLY=( $(compgen -W "${_convert_fmts//$fmt_out/}" -- "$cur") )
             return 0
             ;;
         -o|--out-fmt)
-            COMPREPLY=( $(compgen -W "$(echo "${_convert_fmts//$fmt_in/}")" -- "$cur") )
+            COMPREPLY=( $(compgen -W "${_convert_fmts//$fmt_in/}" -- "$cur") )
             return 0
             ;;
         -s|--storage|--tmp)
@@ -576,7 +576,7 @@ _ch_convert_parse () {
     local words=("$@")
     local ct=1
 
-    while (($ct < ${#words[@]})); do
+    while ((ct < ${#words[@]})); do
         case ${words[$ct-1]} in
         -i|--in-fmt)
             if _is_subword "${words[$ct]}" "$_convert_fmts"; then
@@ -590,12 +590,8 @@ _ch_convert_parse () {
             ;;
         esac
 
-        if (! _is_subword "${words[$ct-1]}" "$_convert_arg_opts"); then
-            _DEBUG "${words[$ct-1]} is NOT in \"$_convert_arg_opts\""
-        fi
-
         if (! _is_subword "${words[$ct-1]}" "$_convert_arg_opts") \
-          &&  [[ ("${words[$ct]}" != "-"*) && ($ct != $cword) ]]; then
+          &&  [[ ("${words[$ct]}" != "-"*) && ($ct -ne $cword) ]]; then
             # First non-opt arg found, assuming it’s the input image
             end_opts=$ct
             local word
@@ -667,7 +663,7 @@ _ch_image_subcmd_get () {
     local ct=1
 
     while ((ct < ${#wrds[@]})); do
-        if [[ $ct != "$cword" ]]; then
+        if [[ $ct -ne $cword ]]; then
             for subcmd_i in $_image_subcommands; do
                 if [[ "${wrds[$ct]}" == "$subcmd_i" ]]; then
                     subcmd="$subcmd_i"
@@ -846,7 +842,7 @@ _space_filepath () {
     local files
     files="$(_compgen_filepaths "$1" "$2" "$3")"
     if [[ (-n "$files") \
-         && (! -f "$(_sanitized_tilde_expand $files)") ]]; then
+         && (! -f "$(_sanitized_tilde_expand "$files")") ]]; then
         compopt -o nospace
     fi
 }
