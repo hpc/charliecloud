@@ -71,6 +71,11 @@ struct bind BINDS_DEFAULT[] = {
    { 0 }
 };
 
+/* Special values for seccomp tables. These must be negative to avoid clashing
+   with real syscall numbers (note zero is often a valid syscal number). */
+#define NR_NON -1  // syscall does not exist on architecture
+#define NR_END -2  // end of table
+
 /* Architectures that we support for seccomp. Order matches the
    corresponding table below.
 
@@ -90,7 +95,7 @@ int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
                         AUDIT_ARCH_PPC64LE,   // PPC
                         AUDIT_ARCH_S390X,     // s390x
                         AUDIT_ARCH_X86_64,    // x86-64
-                        -1 };
+                        NR_END };
 #endif
 
 /* System call numbers that we fake with seccomp (by doing nothing and
@@ -102,8 +107,6 @@ int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
    I haven’t figured out how to gather these system call numbers
    automatically, so they are compiled from [1, 2, 3]. See also [4] for a more
    general reference.
-
-   Zero means the syscall does not exist on that architecture.
 
    NOTE: The total number of faked syscalls (i.e., non-zero entries below)
    must be somewhat less than 256. I haven’t computed the exact limit. There
@@ -120,36 +123,38 @@ int FAKE_SYSCALL_NRS[][6] = {
    // arm64   arm32   x86     PPC64   s390x   x86-64
    // ------  ------  ------  ------  ------  ------
    {      91,    185,    185,    184,    185,    126 },  // capset
-   {       0,    182,    182,    181,    212,     92 },  // chown
-   {       0,    212,    212,      0,      0,      0 },  // chown32
+   {  NR_NON,    182,    182,    181,    212,     92 },  // chown
+   {  NR_NON,    212,    212, NR_NON, NR_NON, NR_NON },  // chown32
    {      55,     95,     95,     95,    207,     93 },  // fchown
-   {       0,    207,    207,      0,      0,      0 },  // fchown32
+   {  NR_NON,    207,    207, NR_NON, NR_NON, NR_NON },  // fchown32
    {      54,    325,    298,    289,    291,    260 },  // fchownat
-   {       0,     16,     16,     16,    198,     94 },  // lchown
-   {       0,    198,    198,      0,      0,      0 },  // lchown32
+   {  NR_NON,     16,     16,     16,    198,     94 },  // lchown
+   {  NR_NON,    198,    198, NR_NON, NR_NON, NR_NON },  // lchown32
    {     104,    347,    283,    268,    277,    246 },  // kexec_load
-   {       0,     14,     14,     14,     14,    133 },  // mknod
-   {      33,    324,    297,    288,    290,    259 },  // mknodat
    {     152,    139,    139,    139,    216,    123 },  // setfsgid
-   {       0,    216,    216,      0,      0,      0 },  // setfsgid32
+   {  NR_NON,    216,    216, NR_NON, NR_NON, NR_NON },  // setfsgid32
    {     151,    138,    138,    138,    215,    122 },  // setfsuid
-   {       0,    215,    215,      0,      0,      0 },  // setfsuid32
+   {  NR_NON,    215,    215, NR_NON, NR_NON, NR_NON },  // setfsuid32
    {     144,     46,     46,     46,    214,    106 },  // setgid
-   {       0,    214,    214,      0,      0,      0 },  // setgid32
+   {  NR_NON,    214,    214, NR_NON, NR_NON, NR_NON },  // setgid32
    {     159,     81,     81,     81,    206,    116 },  // setgroups
-   {       0,    206,    206,      0,      0,      0 },  // setgroups32
+   {  NR_NON,    206,    206, NR_NON, NR_NON, NR_NON },  // setgroups32
    {     143,     71,     71,     71,    204,    114 },  // setregid
-   {       0,    204,    204,      0,      0,      0 },  // setregid32
+   {  NR_NON,    204,    204, NR_NON, NR_NON, NR_NON },  // setregid32
    {     149,    170,    170,    169,    210,    119 },  // setresgid
-   {       0,    210,    210,      0,      0,      0 },  // setresgid32
+   {  NR_NON,    210,    210, NR_NON, NR_NON, NR_NON },  // setresgid32
    {     147,    164,    164,    164,    208,    117 },  // setresuid
-   {       0,    208,    208,      0,      0,      0 },  // setresuid32
+   {  NR_NON,    208,    208, NR_NON, NR_NON, NR_NON },  // setresuid32
    {     145,     70,     70,     70,    203,    113 },  // setreuid
-   {       0,    203,    203,      0,      0,      0 },  // setreuid32
+   {  NR_NON,    203,    203, NR_NON, NR_NON, NR_NON },  // setreuid32
    {     146,     23,     23,     23,    213,    105 },  // setuid
-   {       0,    213,    213,      0,      0,      0 },  // setuid32
-   { -1 }, // end
+   {  NR_NON,    213,    213, NR_NON, NR_NON, NR_NON },  // setuid32
+   { NR_END }, // end
 };
+int FAKE_MKNOD_NRS[] =
+   {  NR_NON,     14,     14,     14,     14,    133 };
+int FAKE_MKNODAT_NRS[] =
+   {      33,    324,    297,    288,    290,    259 };
 #endif
 
 
@@ -557,40 +562,53 @@ void seccomp_install(void)
    int arch_ct = sizeof(SECCOMP_ARCHS)/sizeof(SECCOMP_ARCHS[0]) - 1;
    int syscall_cts[arch_ct];
    struct sock_fprog p = { 0 };
-   int ii, idx_allow, idx_fake, idx_next_arch;
+   int ii, idx_allow, idx_fake, idx_mknod, idx_mknodat, idx_next_arch;
+   // Lengths of certain instruction groups. These are all obtained manually
+   // by counting below, violating DRY. We could automate these counts, but it
+   // seemed like the cost of extra buffers and code to do that would exceed
+   // that of maintaining the manual counts.
+   int ct_jump_start = 4;  // ld arch & syscall nr, arch test, end-of-arch jump
+   int ct_mknod_jump = 2;  // jump table handling for mknod(2) and mknodat(2)
+   int ct_mknod = 2;       // mknod(2) handling
+   int ct_mknodat = 6;     // mknodat(2) handling
 
-   // Count how many syscalls we are going to fake. We need this to compute
-   // the right offsets for all the jumps.
-   for (int ai = 0; SECCOMP_ARCHS[ai] != -1; ai++) {
-      p.len += 4;  // arch test, end-of-arch jump, load arch & syscall nr
+   // Count how many syscalls we are going to fake in the standard way. We
+   // need this to compute the right offsets for all the jumps.
+   for (int ai = 0; SECCOMP_ARCHS[ai] != NR_END; ai++) {
+      p.len += ct_jump_start + ct_mknod_jump;
       syscall_cts[ai] = 0;
-      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != -1; si++) {
-         bool syscall_p = FAKE_SYSCALL_NRS[si][ai] > 0;
+      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != NR_END; si++) {
+         bool syscall_p = FAKE_SYSCALL_NRS[si][ai] != NR_NON;
          syscall_cts[ai] += syscall_p;
          p.len += syscall_p;  // syscall jump table entry
       }
-      DEBUG("seccomp: %x: %d", SECCOMP_ARCHS[ai], syscall_cts[ai]);
+      DEBUG("seccomp: arch %x: found %d syscalls",
+            SECCOMP_ARCHS[ai], syscall_cts[ai]);
    }
 
    // Initialize program buffer.
-   p.len += 2;  // return instructions (allow and fake success)
+   p.len += (  1             // return allow
+             + 1             // return fake success
+             + ct_mknod      // mknod(2) handling
+             + ct_mknodat);  // mknodat(2) handling
    DEBUG("seccomp(2) program has %d instructions", p.len);
-   T_ (p.len <= 258);  // avoid jumps > 255
    T_ (p.filter = calloc(p.len, sizeof(struct sock_filter)));
 
    // Return call addresses. Allow needs to come first because we’ll jump to
    // it for unknown architectures.
-   idx_allow = p.len - 2;
-   idx_fake = p.len - 1;
+   idx_allow =   p.len - 2 - ct_mknod - ct_mknodat;
+   idx_fake =    p.len - 1 - ct_mknod - ct_mknodat;
+   idx_mknod =   p.len     - ct_mknod - ct_mknodat;
+   idx_mknodat = p.len                - ct_mknodat;
 
    // Build a jump table for each architecture. The gist is: if architecture
    // matches, fall through into the jump table, otherwise jump to the next
    // architecture (or ALLOW for the last architecture).
    ii = 0;
    idx_next_arch = -1;  // avoid warning on some compilers
-   for (int ai = 0; SECCOMP_ARCHS[ai] != -1; ai++) {
+   for (int ai = 0; SECCOMP_ARCHS[ai] != NR_END; ai++) {
       int jump;
-      idx_next_arch = ii + syscall_cts[ai] + 4;
+      idx_next_arch = ii + syscall_cts[ai] + ct_jump_start + ct_mknod_jump;
       // load arch into accumulator
       iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
          offsetof(struct seccomp_data, arch), 0, 0);
@@ -602,30 +620,65 @@ void seccomp_install(void)
       iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
          offsetof(struct seccomp_data, nr), 0, 0);
       // jump table of syscalls
-      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != -1; si++) {
+      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != NR_END; si++) {
          int nr = FAKE_SYSCALL_NRS[si][ai];
-         if (nr > 0) {
+         if (nr != NR_NON) {
             jump = idx_fake - ii - 1;
             T_ (jump <= 255);
             iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, nr, jump, 0);
          }
       }
-      // jump to allow (distance limit of 255 does not apply to JA)
-      iw(&p, ii, BPF_JMP|BPF_JA, idx_allow - ii - 1, 0, 0);
-      ii++;
+      // jump to mknod(2) handling (add even if syscall not implemented to
+      // make the instruction counts simpler)
+      jump = idx_mknod - ii - 1;
+      T_ (jump <= 255);
+      iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, FAKE_MKNOD_NRS[ai], jump, 0);
+      // jump to mknodat(2) handling
+      jump = idx_mknodat - ii - 1;
+      T_ (jump <= 255);
+      iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, FAKE_MKNODAT_NRS[ai], jump, 0);
+      // unfiltered syscall, jump to allow (limit of 255 doesn’t apply to JA)
+      jump = idx_allow - ii - 1;
+      iw(&p, ii++, BPF_JMP|BPF_JA, jump, 0, 0);
    }
    T_ (idx_next_arch == idx_allow);
 
    // Returns. (Note that if we wanted a non-zero errno, we’d bitwise-or with
    // SECCOMP_RET_ERRNO. But because fake success is errno == 0, we don’t need
    // a no-op “| 0”.)
-   iw(&p, idx_allow, BPF_RET|BPF_K, SECCOMP_RET_ALLOW, 0, 0);
-   iw(&p, idx_fake, BPF_RET|BPF_K, SECCOMP_RET_ERRNO, 0, 0);
+   T_ (ii == idx_allow);
+   iw(&p, ii++, BPF_RET|BPF_K, SECCOMP_RET_ALLOW, 0, 0);
+   T_ (ii == idx_fake);
+   iw(&p, ii++, BPF_RET|BPF_K, SECCOMP_RET_ERRNO, 0, 0);
+
+   // mknod(2) handling. This just loads the file mode and jumps to the right
+   // place in the mknodat(2) handling.
+   T_ (ii == idx_mknod);
+   // load mode argument into accumulator
+   iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+                offsetof(struct seccomp_data, args[1]), 0, 0);
+   // jump to mode test
+   iw(&p, ii++, BPF_JMP|BPF_JA, 1, 0, 0);
+
+   // mknodat(2) handling.
+   T_ (ii == idx_mknodat);
+   // load mode argument into accumulator
+   iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+                offsetof(struct seccomp_data, args[2]), 0, 0);
+   // jump to fake return if trying to create a device.
+   iw(&p, ii++, BPF_ALU|BPF_AND|BPF_K, S_IFMT, 0, 0);   // file type only
+   iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, S_IFCHR, 2, 0);
+   iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, S_IFBLK, 1, 0);
+   // returns
+   iw(&p, ii++, BPF_RET|BPF_K, SECCOMP_RET_ALLOW, 0, 0);
+   iw(&p, ii++, BPF_RET|BPF_K, SECCOMP_RET_ERRNO, 0, 0);
 
    // Install filter. Use prctl(2) rather than seccomp(2) for slightly greater
    // compatibility (Linux 3.5 rather than 3.17) and because there is a glibc
    // wrapper.
+   T_ (ii == p.len);  // next instruction now one past the end of the buffer
    Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p));
+   DEBUG("note: see FAQ to disassemble the above")
 
    // Test filter. This will fail if the kernel executes the call (because we
    // are not really privileged and the arguments are bogus) or succeed if
