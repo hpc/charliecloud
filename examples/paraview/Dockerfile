@@ -2,7 +2,12 @@
 FROM openmpi
 WORKDIR /usr/local/src
 
-RUN dnf install -y --setopt=install_weak_deps=false \
+# WARNING: Somehow this installs Python 3.11 (from AppStream) in addition to
+# the existing Python 3.6 (from BaseOS)? The various shenanigans below
+# convince ParaView to build against Python 3.11, but I don’t like it.
+
+RUN dnf remove -y python36-devel \
+ && dnf install -y --setopt=install_weak_deps=false \
                 cmake \
                 expat-devel \
                 llvm \
@@ -11,12 +16,14 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 mesa-libGL-devel \
                 mesa-libOSMesa \
                 mesa-libOSMesa-devel \
-                python3 \
-                python3-devel \
+                python3.11-devel \
+                python3.11-pip \
                 python3-mako \
-                python3-pip \
-                zlib-devel \
  && dnf clean all
+
+RUN update-alternatives --config python3 || printf '\n'
+RUN update-alternatives --set python3 /usr/bin/python3.11
+RUN /usr/bin/python3 --version
 
 RUN pip3 install --no-binary=mpi4py \
     cython \
