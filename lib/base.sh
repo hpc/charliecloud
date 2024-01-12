@@ -13,6 +13,17 @@ ch_lib=${ch_bin}/../lib
 # Python code.
 log_level=0
 
+# Logging functions. Note that we disable SC2059 because we want these functions
+# to behave exactly like printf(1), e.g. we want
+#
+#   >>> VERBOSE "foo %s" "bar"
+#   foo bar
+#
+# Implementing the suggestion in SC2059 would instead result in something like
+#
+#   >>> VERBOSE "foo %s" "bar"
+#   foo %sbar
+
 DEBUG () {
     if [ "$log_level" -ge 2 ]; then
         # shellcheck disable=SC2059
@@ -39,6 +50,15 @@ INFO () {
 
 VERBOSE () {
     if [ "$log_level" -ge 1 ]; then
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
+}
+
+WARNING () {
+    if [ "$log_level" -ge -1 ]; then
+        printf 'warning: ' 1>&2
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
