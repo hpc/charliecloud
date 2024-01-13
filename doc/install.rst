@@ -93,9 +93,6 @@ be built.
 Dependency selection: :code:`--with-FOO`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Some dependencies can be specified as follows. Note only some of these support
-:code:`--with-FOO=no`, as listed.
-
 :code:`--with-libsquashfuse={yes,no,PATH}`
   Whether to link with :code:`libsquashfuse`. Options:
 
@@ -128,6 +125,35 @@ Some dependencies can be specified as follows. Note only some of these support
 :code:`--with-sphinx-python=PATH`
   Path to Python used by :code:`sphinx-build`. Default: shebang of
   :code:`sphinx-build`.
+
+Some dependencies can be specified as follows. Note only some of these support
+:code:`--with-FOO=no`, as listed.
+
+Optional bind selection: :code:`--bind-FOO`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+By default, :code:`ch-run` binds the minimal number mount points needed to run.
+You can add more files with:
+
+:code:`--bind-path={PATH[:PREFIX}`
+  Add file from path to to ch-run optional default run-time binds.
+
+    * Path to host file. Optionally bind at prefix if set; otherwise,
+      :code:`/usr/local/lib`
+
+:code:`--bind-libfabric={PATH[:PREFIX]}`
+  Add host libfabric to ch-run optional default run-time binds.
+
+   * Path to host :code:`libfabric.so`. Optionally bind at prefix if set;
+     otherwise :code:`/usr/local/lib`.
+
+:code:`--bind-fi-provider={PATH[:PREFIX]}`
+  Add host libfabric shared fabric provider to ch-run optional default run-time
+  binds.
+
+   * Path to host libfabric shared provider, with :code:`*-fi.so` suffix.
+     Optionally bind at prefix if set;
+     otherwise :code:`/usr/local/lib/libfabric`.
 
 Less strict build: :code:`--enable-buggy-build`
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
