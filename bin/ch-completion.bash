@@ -143,8 +143,6 @@ _ch_convert_complete () {
     fi
 
     # Command line options
-    _DEBUG "OPTS_END: $opts_end"
-    _DEBUG "CWORD: $cword"
     if [[ ($opts_end == -1) || ($cword -lt $opts_end) ]]; then
         _DEBUG "GOT HERE"
         case "$prev" in
