@@ -944,3 +944,17 @@ EOF
     [[ $output = *'1* FROM alpine:3.16'* ]]
     [[ $output = *'2. RUN.S true'* ]]
 }
+
+
+@test "dnf --installroot" {  # issue #1765
+    export CH_IMAGE_STORAGE=$BATS_TMPDIR/dnf_installroot
+    df=$BATS_TMPDIR/dnf_installroot.df
+
+    cat > "$df" <<EOF
+FROM almalinux:8
+RUN dnf install -y --releasever=/ --installroot=/foo filesystem
+EOF
+
+    ch-image build -f "$df" "$BATS_TMPDIR"
+    ch-image reset
+}
