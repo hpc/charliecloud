@@ -46,8 +46,14 @@ How do I learn more?
   detail the motivation for Charliecloud and the technology upon which it is
   based: https://www.usenix.org/publications/login/fall2017/priedhorsky
 
-* A more technical resource is our Supercomputing 2017 paper:
-  https://dl.acm.org/citation.cfm?id=3126925
+* A more technical resource is our Supercomputing 2017 paper: https://doi.org/10.1145/3126908.3126925
+
+* Our approach to deploying scientific applications in HPC using Charliecloud’s layer-free, Git-based container 
+  build cache: https://doi.org/10.1145/3624062.3624585
+
+* A performance comparison between three HPC-specific container technologies against a bare metal implementation: https://ieeexplore.ieee.org/document/8950978
+
+* Demonstration of how low-privilege containers solve the increasing demand of software flexibility: https://doi.org/10.6084/m9.figshare.14396099
 
 Who is responsible?
 -------------------
@@ -92,8 +98,8 @@ list above.
 
 We are friendly and welcoming of diversity on all dimensions.
 
-How do I cite Charliecloud?
----------------------------
+How do I credit Charliecloud?
+-----------------------------
 
 If Charliecloud helped your research, or it was useful to you in any other
 context where bibliographic citations are appropriate, please cite the
@@ -105,6 +111,28 @@ following open-access paper:
 
 *Note:* This paper contains out-of-date number for the size of Charliecloud’s
 code. Please instead use the current number in the FAQ.
+
+If you would like to acknowledge any of the papers in the *How do I learn more?* section, 
+you can find their citations below:
+
+* Reid Priedhorsky and Tim Randles. “Linux Containers for Fun and Profit in HPC”, 2017. In 
+  *Proc. USENIX ;login: Fall 2017, Vol. 42, No. 3*. 
+  https://www.usenix.org/system/files/login/articles/login_fall17_03_priedhorsky.pdf.
+
+* Reid Priedhorsky and Tim Randles. "Charliecloud: unprivileged containers for user-defined 
+  software stacks in HPC", 2017. In *Proc. Supercomputing*. DOI: `10.1145/3126908.3126925 <https://doi.org/10.1145/3126908.3126925>`_.
+
+* Alfred Torrez, Tim Randles, and Reid Priedhorsky. "HPC container 
+  runtimes have minimal or no performance impact", 2019. In *Proc. CANOPIE HPC Workshop @ SC*. 
+  DOI: `10.1109/CANOPIE-HPC49598.2019.00010 <https://ieeexplore.ieee.org/document/8950978>`_.
+
+* Reid Priedhorsky, R. Shane Canon, Timothy Randles, and Andrew J. Younge. "Minimizing privilege 
+  for building HPC containers", 2021. In *Proc. Supercomputing*.
+  DOI: `10.6084/m9.figshare.14396099 <https://doi.org/10.6084/m9.figshare.14396099>`_.
+
+* Reid Priedhorsky, Jordan Ogas, Claude H. (Rusty) Davis IV, Z. Noah Hounshel, Ashlyn Lee, 
+  Benjamin Stormer, and R. Shane Goff. "Charliecloud’s layer-free, Git-based container 
+  build cache", 2023. In *Proc. Supercomputing*. DOI: `10.1145/3624062.3624585 <https://doi.org/10.1145/3624062.3624585>`_.
 
 Copyright and license
 ---------------------
