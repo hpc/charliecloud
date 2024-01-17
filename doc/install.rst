@@ -510,10 +510,10 @@ Command line completion
 =======================
 
 Charliecloud offers experimental Bash command line completion for
-:code:`ch-image`. This feature lets users have incomplete command line
-arguments auto-filled by pressing Tab. We expect that in the future, this will
-become more robust and available for more shells and more Charliecloud
-commands.
+:code:`ch-run`, :code:`ch-image`, and :code:`ch-convert`. This feature lets
+users have incomplete command line arguments auto-filled by pressing Tab. We
+expect that in the future, this will become more robust and available for more
+shells and more Charliecloud commands.
 
 To enable it, once :code:`ch-completion.bash` is in your path, source it::
 
