@@ -1155,7 +1155,7 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 3, 4, 5, 6}):  # initialize/upgrade
+      elif (v_found in {None, 4, 5, 6}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
          self.root.mkdir()
@@ -1199,7 +1199,7 @@ class Storage:
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
                   % (v_found, self.root),
-                  'you can delete and re-initialize with “ch-image reset”')
+                  "you can delete and re-initialize with “ch-image reset”")
       self.validate_strict()
       self.cleanup()
 
@@ -1291,15 +1291,15 @@ class Storage:
                      % (msg_prefix, img), ch.BUG_REPORT_PLZ)
 
    def version_read(self):
-      if (os.path.isfile(self.version_file)):
-          # WARNING: version_file might not be Path
-         text = self.version_file.file_read_all()
-         try:
-            return int(text)
-         except ValueError:
-            ch.FATAL('malformed storage version: "%s"' % text)
-      else:
+      # While support for storage v1 was dropped some time ago, let’s at least
+      # retain the ability to recognize it.
+      if (not os.path.isfile(self.version_file)):
          return 1
+      text = self.version_file.file_read_all()
+      try:
+         return int(text)
+      except ValueError:
+         ch.FATAL('malformed storage version: "%s"' % text)
 
 
 class TarFile(tarfile.TarFile):
