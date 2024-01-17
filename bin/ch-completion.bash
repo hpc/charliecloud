@@ -157,8 +157,10 @@ _ch_convert_complete () {
             return 0
             ;;
         -s|--storage|--tmp)
-            # See comment about overzealous completion for the “--storage” option
-            # under “_ch_convert_complete”.
+            # Avoid overzealous completion. E.g. if there’s only one subdir of the
+            # current dir, this command completes to that dir even if $cur is empty
+            # (i.e. the user hasn’t yet typed anything), which seems confusing for
+            # the user.
             if [[ -n "$cur" ]]; then
                 compopt -o nospace
                 COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -177,10 +179,7 @@ _ch_convert_complete () {
         case "$fmt_in" in
         ch-image)
             COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
-            # FIXME: Why is this conditional here??
-            if [[ -n "$(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur")" ]]; then
-                compopt -o nospace
-            fi
+            __ltrim_colon_completions "$cur"
             ;;
         dir)
             COMPREPLY+=( $(compgen -d -- "$cur") )
@@ -287,10 +286,8 @@ _ch_image_complete () {
         return 0
         ;;
     -s|--storage)
-        # Avoid overzealous completion. E.g. if there’s only one subdir of the
-        # current dir, this command completes to that dir even if $cur is empty
-        # (i.e. the user hasn’t yet typed anything), which seems confusing for
-        # the user.
+        # See comment about overzealous completion for the “--storage” option
+        # under “_ch_convert_complete”.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -306,8 +303,6 @@ _ch_image_complete () {
         # $cur should be an argument. Otherwise, default to CONTEXT or any
         # valid option (common or subcommand-specific).
         -f|--file)
-            #compopt -o nospace
-            #COMPREPLY=( $(_compgen_filepaths -X "!Dockerfile* !*.df" "$cur") )
             COMPREPLY=( $(_compgen_filepaths "$cur") )
             _space_filepath "$cur"
             return 0
@@ -379,7 +374,6 @@ _ch_image_complete () {
         __ltrim_colon_completions "$cur"
         ;;
     undelete)
-        # FIXME: Update with “ch-image undelete --list” once #1551 drops
         COMPREPLY=( $(compgen -W "$(_ch_undelete_list "$strg_dir")" -- "$cur") )
         ;;
     '')
@@ -512,10 +506,7 @@ _ch_run_complete () {
         __ltrim_colon_completions "$cur"
     fi
 
-    # See comment above previous use of this statement for explanation.
-    # FIXME: Update this comment ^
     _space_filepath -X "!*.sqfs" "$cur"
-
     COMPREPLY+=( $(compgen -W "$_run_opts $extras" -- "$cur") )
     return 0
 }
@@ -523,7 +514,7 @@ _ch_run_complete () {
 
 ## Helper functions ##
 
-# Add debugging stuff to log file if CH_COMPLETION_DEBUG is
+# Add debugging text to log file if CH_COMPLETION_DEBUG is specified.
 _DEBUG () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         echo "$@" >> /tmp/ch-completion.log
@@ -544,10 +535,10 @@ ch-completion-disable () {
 #   2.) The current position (measured in words) of the cursor in the array
 #       representing the command line (index starting at 0).
 #
-#   3.) An out parameter. If “_ch_convert_parse” is able to determine the format
-#       of the input image, it will pass that format back to the caller as a
-#       string using this out parameter. There are two ways that “_ch_convert_parse”
-#       can determine the input image format:
+#   3.) An out parameter (explanation below). If “_ch_convert_parse” is able to
+#       determine the format of the input image, it will pass that format back
+#       to the caller as a string using this out parameter. There are two ways
+#       that “_ch_convert_parse” can determine the input image format:
 #           i.) If “-i” or “--in-fmt” is specified and is followed by a valid
 #               image format, the out parameter will be set to a that format.
 #               E.g. “ch-image”.
@@ -562,8 +553,13 @@ ch-completion-disable () {
 #   5.) A string representing the expanded command line array (i.e.
 #       "${array[@]}").
 #
-# FIXME: Explain what an out parameter is here instead of comment above “ch-run”
-# parser??
+# “Out parameter” here refers to a variable that is meant to pass information
+# from this function to its caller (here the “_ch_chonvert_complete” function).
+# Out parameters should be passed to a bash function as the unquoted names of
+# variables (e.g. “var” instead of “$var” or “"$var"”) within the caller’s
+# scope. Passing the variables to the function in this way allows it to change
+# their values, and for those changes to persist in the scope that called the
+# function (this is what makes them “out parameters”).
 #
 _ch_convert_parse () {
     local images
@@ -597,16 +593,17 @@ _ch_convert_parse () {
             local word
             word="$(_sanitized_tilde_expand "${words[$ct]}")"
             if [[ -z "$in_fmt" ]]; then
-                # If the parser hasn’t been told the image format yet, try to
-                # figure out the format of the input image.
-
-                # FIXME: What if multiple conditions are satisfied by different
-                #        images, e.g. if “foo” is in ch-image storage but
-                #        “./foo” is also a directory image??
-                if [[ -d "$word" ]]; then
-                    in_fmt="dir"
-                elif _is_subword "${words[$ct]}" "$images"; then
+                # If the parser hasn’t been told the input image format yet, try
+                # to figure it out from available information.
+                if _is_subword "${words[$ct]}" "$images"; then
+                    # Check for storage images first because this is what
+                    # ch-convert seems to default to in the case of a name
+                    # collision between different image formats (e.g. if “foo”
+                    # is an image in storage and “./foo/” is in the working
+                    # directory).
                     in_fmt="ch-image"
+                elif [[ -d "$word" ]]; then
+                    in_fmt="dir"
                 elif [[ -f "$word" ]]; then
                     if [[ ("${words[$ct]}" == *".tgz") || ("${words[$ct]}" == *".tar."*) ]]; then
                         in_fmt="tar"
@@ -684,12 +681,13 @@ _ch_image_subcmd_get () {
 #   2.) The current position (measured in words) of the cursor in the array
 #       representing the command line (index starting at 0).
 #
-#   3.) An out parameter (explanation below). If “_ch_run_image_finder” finds
-#       the name of an image in storage (e.g. “alpine:latest”) or something that
-#       looks like an image path (i.e. a directory, tarball or file named like a
-#       squash archive) in the command line, the value of the variable will be
-#       updated to the image name or path. If neither are found, the function
-#       will not modify the value of this variable.
+#   3.) An out parameter (see explanation above “_ch_convert_parse”). If
+#       “_ch_run_image_finder” finds the name of an image in storage (e.g.
+#       “alpine:latest”) or something that looks like an image path (i.e. a
+#       directory, tarball or file named like a squash archive) in the command
+#       line, the value of the variable will be updated to the image name or
+#       path. If neither are found, the function will not modify the value of
+#       this variable.
 #
 #   4.) Another out parameter. If this function finds “--” in the current
 #       command line and it doesn't seem like the user is trying to complete
@@ -703,14 +701,6 @@ _ch_image_subcmd_get () {
 #
 #   5.) A string representing the expanded command line array (i.e.
 #       "${array[@]}").
-#
-# “Out parameter” here means a variable that is meant to pass information from
-# this function to its caller (the “_ch_run_complete” function). Out parameters
-# should be passed to “_ch_run_image_finder” as the unquoted names of variables
-# (e.g. “var” instead of “$var” or “"$var"”). Passing the variables to
-# “_ch_run_image_finder” in this way allows it to change their values, and for
-# those changes to persist in the scope that called the function (this is what
-# makes them “out parameters”).
 #
 _ch_run_image_finder () {
     # The essential purpose of this function is to try to find an image in the
@@ -837,7 +827,12 @@ _is_subword () {
 }
 
 # Wrapper for some tricky logic that determines whether or not to add a space at
-# the end.
+# the end of a path completion. For the sake of convenience we want to avoid
+# adding a space at the end if the completion is a directory path, because we
+# don’t know if the user is looking for the completed directory or one of its
+# subpaths (we may be able to figure this out in some cases, but I’m not gonna
+# worry about that now). We *do* want to add a space at the end if the
+# completion is the path to a file.
 _space_filepath () {
     local files
     files="$(_compgen_filepaths "$1" "$2" "$3")"
