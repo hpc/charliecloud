@@ -74,6 +74,9 @@ paraview/cone.nranks.vtk \
 paraview/cone.png \
 paraview/cone.py \
 paraview/cone.serial.vtk \
+seccomp/Dockerfile \
+seccomp/mknods.c \
+seccomp/test.bats \
 spack/Dockerfile \
 spark/Dockerfile \
 spark/slurm.sh
