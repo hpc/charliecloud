@@ -47,7 +47,7 @@ How do I learn more?
   based: https://www.usenix.org/publications/login/fall2017/priedhorsky
 
 * If you are interested in more technical papers about Charliecloud, please refer to
-  the :ref:`Publications`: section below.
+  the `Publications`_ section below.
 
 Who is responsible?
 -------------------
