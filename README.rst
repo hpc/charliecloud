@@ -46,14 +46,8 @@ How do I learn more?
   detail the motivation for Charliecloud and the technology upon which it is
   based: https://www.usenix.org/publications/login/fall2017/priedhorsky
 
-* A more technical resource is our Supercomputing 2017 paper: https://doi.org/10.1145/3126908.3126925
-
-* Our approach to deploying scientific applications in HPC using Charliecloud’s layer-free, Git-based container 
-  build cache: https://doi.org/10.1145/3624062.3624585
-
-* A performance comparison between three HPC-specific container technologies against a bare metal implementation: https://ieeexplore.ieee.org/document/8950978
-
-* Demonstration of how low-privilege containers solve the increasing demand of software flexibility: https://doi.org/10.6084/m9.figshare.14396099
+* If you are interested in more technical papers about Charliecloud, please refer to
+  the :ref:`Publications <Publications>`: section below.
 
 Who is responsible?
 -------------------
@@ -98,7 +92,9 @@ list above.
 
 We are friendly and welcoming of diversity on all dimensions.
 
-How do I credit Charliecloud?
+.. _Publications:
+
+Publications
 -----------------------------
 
 If Charliecloud helped your research, or it was useful to you in any other
@@ -133,6 +129,17 @@ you can find their citations below:
 * Reid Priedhorsky, Jordan Ogas, Claude H. (Rusty) Davis IV, Z. Noah Hounshel, Ashlyn Lee, 
   Benjamin Stormer, and R. Shane Goff. "Charliecloud’s layer-free, Git-based container 
   build cache", 2023. In *Proc. Supercomputing*. DOI: `10.1145/3624062.3624585 <https://doi.org/10.1145/3624062.3624585>`_.
+
+
+
+* A more technical resource is our Supercomputing 2017 paper: https://doi.org/10.1145/3126908.3126925
+
+* Our approach to deploying scientific applications in HPC using Charliecloud’s layer-free, Git-based container 
+  build cache: https://doi.org/10.1145/3624062.3624585
+
+* A performance comparison between three HPC-specific container technologies against a bare metal implementation: https://ieeexplore.ieee.org/document/8950978
+
+* Demonstration of how low-privilege containers solve the increasing demand of software flexibility: https://doi.org/10.6084/m9.figshare.14396099
 
 Copyright and license
 ---------------------
