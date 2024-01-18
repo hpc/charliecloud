@@ -880,7 +880,7 @@ def variables_sub(s, variables):
       m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
       if (m is not None):
          FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
-      s = re.sub(r"(?<!\\)\$({%s}|%s(\W|$))" % (k, k), v, s)
+      s = re.sub(r"(?<!\\)\$({%s}|%s(?=\W|$))" % (k, k), v, s)
    return s
 
 def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
