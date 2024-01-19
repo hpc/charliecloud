@@ -67,6 +67,7 @@ Options:
   --print-lib      print inferred destination for shared libraries
   --no-ldconfig    don’t run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
+  -q, --quiet      make the program more quiet, can be repeated
   -v, --verbose    list the injected files
   --version        print version and exit
 
@@ -92,29 +93,12 @@ print_fi_dest=
 print_lib_dest=
 no_ldconfig=
 
-debug () {
-    if [ "$verbose" = 'yes' ]; then
-        printf '[ debug ] %s\n' "$1" 1>&2
-    fi
-}
-
 debug_indent () {
-    if [ "$verbose" = 'yes' ]; then
-        printf '[ debug ]    %s\n' "$1" 1>&2
-    fi
+    DEBUG '    %s\n' "$1"
 }
 
 ensure_nonempty () {
-    [ "$2" ] || fatal "$1 must not be empty"
-}
-
-fatal () {
-    printf 'error: ch-fromhost: %s\n' "$1" 1>&2
-    exit 1
-}
-
-info () {
-    printf 'ch-fromhost: %s\n' "$1" 1>&2
+    [ "$2" ] || FATAL "$1 must not be empty"
 }
 
 is_bin () {
@@ -144,11 +128,11 @@ enqueue_file () {
     old_ifs="$IFS"
     IFS="$newline"
     d="${dest:-$2}"
-    debug "enqueue file(s)"
+    DEBUG "enqueue file(s)"
     for f in $1; do
         case $f in
             *:*)
-                fatal "paths can't contain colon: ${f}"
+                FATAL "paths can't contain colon: ${f}"
                 ;;
         esac
         if is_so "$f"; then
@@ -230,21 +214,21 @@ while [ $# -gt 0 ]; do
     case $opt in
         -c|--cmd)
             ensure_nonempty --cmd "$1"
-            out=$($1) || fatal "command failed: $1"
+            out=$($1) || FATAL "command failed: $1"
             enqueue_file "$out"
             shift
             ;;
         --cray-cxi)
             warn_fi_var
             if [ -z "$CH_FROMHOST_OFI_CXI" ]; then
-                fatal "CH_FROMHOST_OFI_CXI is not set"
+                FATAL "CH_FROMHOST_OFI_CXI is not set"
             fi
             enqueue_file "$CH_FROMHOST_OFI_CXI"
             ;;
         --cray-gni)
             warn_fi_var
             if [ -z "$CH_FROMHOST_OFI_GNI" ]; then
-                fatal "CH_FROMHOST_OFI_GNI is not set"
+                FATAL "CH_FROMHOST_OFI_GNI is not set"
             fi
             enqueue_file "$CH_FROMHOST_OFI_GNI"
             ;;
@@ -255,7 +239,7 @@ while [ $# -gt 0 ]; do
             ;;
         -f|--file)
             ensure_nonempty --file "$1"
-            out=$(cat "$1") || fatal "cannot read file: ${1}"
+            out=$(cat "$1") || FATAL "cannot read file: ${1}"
             enqueue_file "$out"
             shift
             ;;
@@ -279,7 +263,7 @@ while [ $# -gt 0 ]; do
             ;;
         --nvidia)
                out=$(nvidia-container-cli list --binaries --libraries) \
-            || fatal "nvidia-container-cli failed; does this host have GPUs?"
+            || FATAL "nvidia-container-cli failed; does this host have GPUs?"
             enqueue_file "$out"
             ;;
         -p|--path)
@@ -287,34 +271,31 @@ while [ $# -gt 0 ]; do
             enqueue_file "$1"
             shift
             ;;
-        -v|--verbose)
-            verbose=yes
-            ;;
         -*)
-            info "invalid option: ${opt}"
+            INFO "invalid option: ${opt}"
             usage
             ;;
         *)
             ensure_nonempty "image path" "${opt}"
-            [ -z "$image" ] || fatal "duplicate image: ${opt}"
-            [ -d "$opt" ] || fatal "image not a directory: ${opt}"
+            [ -z "$image" ] || FATAL "duplicate image: ${opt}"
+            [ -d "$opt" ] || FATAL "image not a directory: ${opt}"
             image="$opt"
             ;;
     esac
 done
 
 if [ -n "$FI_PROVIDER_PATH" ] && [ -n "$fi_prov_found" ] && [ -z "$dest" ]; then
-    fatal "FI_PROVIDER_PATH set; missing --dest"
+    FATAL "FI_PROVIDER_PATH set; missing --dest"
 fi
 
-[ "$image" ] || fatal "no image specified"
+[ "$image" ] || FATAL "no image specified"
 
 if [ -n "$cray_fi_found" ]; then
     # There is no Slingshot provider CXI; to leverage slingshot we need to
     # replace the image libfabric.so with Cray's.
-    debug "searching image for inferred libfabric destiation"
+    DEBUG "searching image for inferred libfabric destiation"
     img_libfabric=$(find "$image" -name  "libfabric.so")
-    [ -n "$img_libfabric" ] || fatal "libfabric.so not found in $image"
+    [ -n "$img_libfabric" ] || FATAL "libfabric.so not found in $image"
     debug_indent "found $img_libfabric"
     if [ "$(echo "$img_libfabric" | wc -l)" -ne 1 ]; then
         warn 'found more than one libfabric.so'
@@ -324,7 +305,7 @@ if [ -n "$cray_fi_found" ]; then
 
     # Since cray's libfabric isn't a standard provider, to use slingshot we must
     # also add any missing linked libraries from the host.
-    debug "adding cray libfabric libraries"
+    DEBUG "adding cray libfabric libraries"
     ldds=$(ldd "$host_libfabric" 2>&1 | grep lib | awk '{print $3}' | sort -u)
     for l in $ldds; do
         # Do not replace any libraries found in the image, experimentation has
@@ -348,7 +329,7 @@ if [ -n "$lib_found" ]; then
     # We want to put the libraries in the first directory that ldconfig
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
-    debug "asking ldconfig for inferred shared library destination"
+    DEBUG "asking ldconfig for inferred shared library destination"
     # "ldconfig -Nv" gives some pointless warnings on stderr even if
     # successful; we don't want to show those to users. However, we don't want
     # to simply pipe stderr to /dev/null because this hides real errors. Thus,
@@ -357,9 +338,9 @@ if [ -n "$lib_found" ]; then
     lib_dest=$( { "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv \
                   2>&1 1>&3 3>&- | grep -Ev '(^|dynamic linker, ignoring|given more than once)$' ; } \
                 3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
-    [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
-    [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
-    debug "inferred shared library destination: ${image}/${lib_dest}"
+    [ -n "$lib_dest" ] || FATAL 'empty path from ldconfig'
+    [ -z "${lib_dest%%/*}" ] || FATAL "bad path from ldconfig: ${lib_dest}"
+    DEBUG "inferred shared library destination: ${image}/${lib_dest}"
 fi
 
 if [ -n "$fi_prov_found" ]; then
@@ -374,7 +355,7 @@ if [ -n "$fi_prov_found" ]; then
     # 'libfabric' directory at the path where libfabric.so is found. If it does
     # not exist, create it. Warn if FI_PROVIDER_PATH or FI_PROVIDER is found
     # in the the image's /ch/environment file.
-    debug "searching ${image} for libfabric shared provider destination"
+    DEBUG "searching ${image} for libfabric shared provider destination"
     ch_env_p=$(grep -E '^FI_PROVIDER_PATH=' "${image}/ch/environment") \
              || true # avoid -e exit
     ch_env_p=${ch_env_p##*=}
@@ -387,7 +368,7 @@ if [ -n "$fi_prov_found" ]; then
     fi_prov_dest=$(dirname "/${img_libfabric_path}")
     fi_prov_dest="${fi_prov_dest}/libfabric"
     queue_mkdir "$fi_prov_dest"
-    debug "inferred provider destination: $fi_prov_dest"
+    DEBUG "inferred provider destination: $fi_prov_dest"
 fi
 
 if [ -n "$print_lib_dest" ]; then
@@ -439,9 +420,9 @@ if [ -f /etc/opt/cray/release/cle-release ]; then
     fi
 fi
 
-[ "$inject_files" ] || fatal "empty file list"
+[ "$inject_files" ] || FATAL "empty file list"
 
-debug "injecting into image: ${image}"
+DEBUG "injecting into image: ${image}"
 
 old_ifs="$IFS"
 IFS="$newline"
@@ -502,28 +483,28 @@ for file in $inject_files; do
         infer=" (inferred)"
     fi
     debug_indent "${f} -> ${d}${infer}"
-    [ "$d" ] || fatal "no destination for: ${f}"
-    [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
-    [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
+    [ "$d" ] || FATAL "no destination for: ${f}"
+    [ -z "${d%%/*}" ] || FATAL "not an absolute path: ${d}"
+    [ -d "${image}${d}" ] || FATAL "not a directory: ${image}${d}"
     if [ ! -w "${image}${d}" ]; then
         # Some images unpack with unwriteable directories; fix. This seems
         # like a bit of a kludge to me, so I'd like to remove this special
         # case in the future if possible. (#323)
-        info "${image}${d} not writeable; fixing"
-        chmod u+w "${image}${d}" || fatal "can't chmod u+w: ${image}${d}"
+        INFO "${image}${d} not writeable; fixing"
+        chmod u+w "${image}${d}" || FATAL "can't chmod u+w: ${image}${d}"
     fi
        cp --dereference --preserve=all "$f" "${image}${d}" \
-    || fatal "cannot inject: ${f}"
+    || FATAL "cannot inject: ${f}"
 done
 IFS="$old_ifs"
 
 if       [ -z "$no_ldconfig" ] \
     && { [ "$lib_found" ] || [ "$fi_prov_found" ] || [ "$cray_fi_found" ] ;} then
-    debug "running ldconfig"
+    DEBUG "running ldconfig"
     debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
-    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || fatal 'ldconfig error'
+    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || FATAL 'ldconfig error'
     if [ -n "$fi_prov_found" ] || [ -n "$cray_fi_found" ]; then
-        debug "validating ldconfig cache"
+        DEBUG "validating ldconfig cache"
         for file in $inject_files; do
             f="$(basename "${file%%:*}")"
             f=$("${ch_bin}/ch-run" "$image" -- find / \
@@ -535,11 +516,11 @@ if       [ -z "$no_ldconfig" ] \
                                                -not \( -path /etc/opt/cray -prune \) \
                                                -name  "$f")
             if [ "$("${ch_bin}/ch-run" "$image" -- ldd "$f" | grep -c 'not found ')" -ne 0 ]; then
-                fatal "ldconfig: '${ch_bin}/ch-run $image -- ldd $f' failed"
+                FATAL "ldconfig: '${ch_bin}/ch-run $image -- ldd $f' failed"
             fi
         done
     fi
 else
-    debug "not running ldconfig"
+    DEBUG "not running ldconfig"
 fi
 echo 'done'
