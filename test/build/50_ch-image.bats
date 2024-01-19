@@ -958,3 +958,24 @@ EOF
     ch-image build -f "$df" "$BATS_TMPDIR"
     ch-image reset
 }
+
+
+@test "curly braces in Dockerfile" {  # issues #1751 and #1794
+    df=$BATS_TMPDIR/curly.df
+
+    cat > "$df" <<'EOF'
+ARG i=qux
+ARG img=alpine
+# “FROM alpine:3.17” for search when updating (see next line).
+ARG ver=3.17
+FROM ${img}:${ver}
+ENV A=foo
+ENV A_B=/bar
+WORKDIR ${A_B}/baz
+RUN env | egrep '^PWD='
+EOF
+    run ch-image build --rebuild -f "$df" "$BATS_TMPDIR"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'PWD=/bar/baz'* ]]
+}

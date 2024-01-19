@@ -155,7 +155,7 @@ OPTION_VALUE: /[^= \t\n]+/
 OPTION_VAR: /[a-z]+/
 
 image_ref: IMAGE_REF
-IMAGE_REF: /[A-Za-z0-9$:._\/-]+/
+IMAGE_REF: /[${}A-Za-z0-9:._\/-]+/  // variable substitution chars ${} added
 """ + GRAMMAR_COMMON
 
 # Grammar for image references.
