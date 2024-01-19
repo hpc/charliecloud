@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>10. Frequently asked questions (FAQ) &mdash; Charliecloud 0.35 documentation</title>
+  <title>10. Frequently asked questions (FAQ) &mdash; Charliecloud 0.36 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="11. Best practices" href="best_practices.html" />
@@ -27,15 +26,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Charliecloud
-            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.35
+                0.36
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -71,12 +74,13 @@
 <li class="toctree-l2"><a class="reference internal" href="#unexpected-behavior">10.3. Unexpected behavior</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#what-do-the-version-numbers-mean">10.3.1. What do the version numbers mean?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#uid-0-lets-me-read-files-i-cant-otherwise">10.3.2. <code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#why-does-ping-not-work">10.3.3. Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0">10.3.4. Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#ch-convert-from-docker-incorrect-image-sizes">10.3.5. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> from Docker incorrect image sizes</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#my-password-that-contains-digits-doesnt-work-in-virtualbox-console">10.3.6. My password that contains digits doesn’t work in VirtualBox console</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#mode-bits-permission-bits-are-lost">10.3.7. Mode bits (permission bits) are lost</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#why-is-my-wildcard-in-ch-run-not-working">10.3.8. Why is my wildcard in <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> not working?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#bind-creates-mount-points-within-un-writeable-directories">10.3.3. <code class="code docutils literal notranslate"><span class="pre">--bind</span></code> creates mount points within un-writeable directories!</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#why-does-ping-not-work">10.3.4. Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0">10.3.5. Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#ch-convert-from-docker-incorrect-image-sizes">10.3.6. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> from Docker incorrect image sizes</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#my-password-that-contains-digits-doesnt-work-in-virtualbox-console">10.3.7. My password that contains digits doesn’t work in VirtualBox console</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#mode-bits-permission-bits-are-lost">10.3.8. Mode bits (permission bits) are lost</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#why-is-my-wildcard-in-ch-run-not-working">10.3.9. Why is my wildcard in <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> not working?</a></li>
 </ul>
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#how-do-i">10.4. How do I ...</a><ul>
@@ -104,6 +108,7 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#how-can-i-use-tarball-base-images-from-e-g-linuxcontainers-org">10.4.10. How can I use tarball base images from e.g. linuxcontainers.org?</a></li>
 <li class="toctree-l3"><a class="reference internal" href="#how-can-i-control-charlieclouds-quietness-or-verbosity">10.4.11. How can I control Charliecloud’s quietness or verbosity?</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#how-do-i-handle-extended-attributes-in-charliecloud">10.4.12. How do I handle extended attributes in Charliecloud?</a></li>
 </ul>
 </li>
 </ul>
@@ -125,8 +130,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">10. </span>Frequently asked questions (FAQ)</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">10. </span>Frequently asked questions (FAQ)</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -136,132 +141,130 @@
            <div itemprop="articleBody">
              
   <section id="frequently-asked-questions-faq">
-<h1><span class="section-number">10. </span>Frequently asked questions (FAQ)<a class="headerlink" href="#frequently-asked-questions-faq" title="Permalink to this headline">¶</a></h1>
-<div class="contents local topic" id="contents">
+<h1><span class="section-number">10. </span>Frequently asked questions (FAQ)<a class="headerlink" href="#frequently-asked-questions-faq" title="Permalink to this heading">¶</a></h1>
+<nav class="contents local" id="contents">
 <ul class="simple">
-<li><p><a class="reference internal" href="#about-the-project" id="id3">About the project</a></p>
+<li><p><a class="reference internal" href="#about-the-project" id="id4">About the project</a></p>
 <ul>
-<li><p><a class="reference internal" href="#where-did-the-name-charliecloud-come-from" id="id4">Where did the name Charliecloud come from?</a></p></li>
-<li><p><a class="reference internal" href="#how-do-you-spell-charliecloud" id="id5">How do you spell Charliecloud?</a></p></li>
-<li><p><a class="reference internal" href="#how-large-is-charliecloud" id="id6">How large is Charliecloud?</a></p></li>
+<li><p><a class="reference internal" href="#where-did-the-name-charliecloud-come-from" id="id5">Where did the name Charliecloud come from?</a></p></li>
+<li><p><a class="reference internal" href="#how-do-you-spell-charliecloud" id="id6">How do you spell Charliecloud?</a></p></li>
+<li><p><a class="reference internal" href="#how-large-is-charliecloud" id="id7">How large is Charliecloud?</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#errors" id="id7">Errors</a></p>
+<li><p><a class="reference internal" href="#errors" id="id8">Errors</a></p>
 <ul>
-<li><p><a class="reference internal" href="#how-do-i-read-the-ch-run-error-messages" id="id8">How do I read the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages?</a></p></li>
-<li><p><a class="reference internal" href="#ch-run-fails-with-cant-re-mount-image-read-only" id="id9"><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></p></li>
-<li><p><a class="reference internal" href="#ch-image-fails-with-certificate-verify-failed" id="id10"><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> fails with “certificate verify failed”</a></p></li>
-<li><p><a class="reference internal" href="#storage-directory-seems-invalid" id="id11">“storage directory seems invalid”</a></p></li>
-<li><p><a class="reference internal" href="#transport-endpoint-is-not-connected" id="id12">“Transport endpoint is not connected”</a></p></li>
-<li><p><a class="reference internal" href="#fatal-home-not-set-from-git-or-similar" id="id13">“fatal: <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> not set” from Git, or similar</a></p></li>
-<li><p><a class="reference internal" href="#ch-run-fails-with-cant-execve-2-permission-denied" id="id14"><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t execve(2): permission denied”</a></p></li>
+<li><p><a class="reference internal" href="#how-do-i-read-the-ch-run-error-messages" id="id9">How do I read the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages?</a></p></li>
+<li><p><a class="reference internal" href="#ch-run-fails-with-cant-re-mount-image-read-only" id="id10"><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a></p></li>
+<li><p><a class="reference internal" href="#ch-image-fails-with-certificate-verify-failed" id="id11"><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> fails with “certificate verify failed”</a></p></li>
+<li><p><a class="reference internal" href="#storage-directory-seems-invalid" id="id12">“storage directory seems invalid”</a></p></li>
+<li><p><a class="reference internal" href="#transport-endpoint-is-not-connected" id="id13">“Transport endpoint is not connected”</a></p></li>
+<li><p><a class="reference internal" href="#fatal-home-not-set-from-git-or-similar" id="id14">“fatal: <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> not set” from Git, or similar</a></p></li>
+<li><p><a class="reference internal" href="#ch-run-fails-with-cant-execve-2-permission-denied" id="id15"><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t execve(2): permission denied”</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#unexpected-behavior" id="id15">Unexpected behavior</a></p>
+<li><p><a class="reference internal" href="#unexpected-behavior" id="id16">Unexpected behavior</a></p>
 <ul>
-<li><p><a class="reference internal" href="#what-do-the-version-numbers-mean" id="id16">What do the version numbers mean?</a></p></li>
-<li><p><a class="reference internal" href="#uid-0-lets-me-read-files-i-cant-otherwise" id="id17"><code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></p></li>
-<li><p><a class="reference internal" href="#why-does-ping-not-work" id="id18">Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></p></li>
-<li><p><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0" id="id19">Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></p></li>
-<li><p><a class="reference internal" href="#ch-convert-from-docker-incorrect-image-sizes" id="id20"><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> from Docker incorrect image sizes</a></p></li>
-<li><p><a class="reference internal" href="#my-password-that-contains-digits-doesnt-work-in-virtualbox-console" id="id21">My password that contains digits doesn’t work in VirtualBox console</a></p></li>
-<li><p><a class="reference internal" href="#mode-bits-permission-bits-are-lost" id="id22">Mode bits (permission bits) are lost</a></p></li>
-<li><p><a class="reference internal" href="#why-is-my-wildcard-in-ch-run-not-working" id="id23">Why is my wildcard in <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> not working?</a></p></li>
+<li><p><a class="reference internal" href="#what-do-the-version-numbers-mean" id="id17">What do the version numbers mean?</a></p></li>
+<li><p><a class="reference internal" href="#uid-0-lets-me-read-files-i-cant-otherwise" id="id18"><code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a></p></li>
+<li><p><a class="reference internal" href="#bind-creates-mount-points-within-un-writeable-directories" id="id19"><code class="code docutils literal notranslate"><span class="pre">--bind</span></code> creates mount points within un-writeable directories!</a></p></li>
+<li><p><a class="reference internal" href="#why-does-ping-not-work" id="id20">Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a></p></li>
+<li><p><a class="reference internal" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0" id="id21">Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a></p></li>
+<li><p><a class="reference internal" href="#ch-convert-from-docker-incorrect-image-sizes" id="id22"><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> from Docker incorrect image sizes</a></p></li>
+<li><p><a class="reference internal" href="#my-password-that-contains-digits-doesnt-work-in-virtualbox-console" id="id23">My password that contains digits doesn’t work in VirtualBox console</a></p></li>
+<li><p><a class="reference internal" href="#mode-bits-permission-bits-are-lost" id="id24">Mode bits (permission bits) are lost</a></p></li>
+<li><p><a class="reference internal" href="#why-is-my-wildcard-in-ch-run-not-working" id="id25">Why is my wildcard in <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> not working?</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#how-do-i" id="id24">How do I ...</a></p>
+<li><p><a class="reference internal" href="#how-do-i" id="id26">How do I ...</a></p>
 <ul>
-<li><p><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id25">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></p></li>
-<li><p><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id26">OpenMPI Charliecloud jobs don’t work</a></p>
+<li><p><a class="reference internal" href="#my-app-needs-to-write-to-var-log-run-etc" id="id27">My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a></p></li>
+<li><p><a class="reference internal" href="#openmpi-charliecloud-jobs-dont-work" id="id28">OpenMPI Charliecloud jobs don’t work</a></p>
 <ul>
-<li><p><a class="reference internal" href="#mpirun-cant-launch-jobs" id="id27"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></p></li>
-<li><p><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails" id="id28">Communication between ranks on the same node fails</a></p></li>
-<li><p><a class="reference internal" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" id="id29">I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a></p></li>
+<li><p><a class="reference internal" href="#mpirun-cant-launch-jobs" id="id29"><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a></p></li>
+<li><p><a class="reference internal" href="#communication-between-ranks-on-the-same-node-fails" id="id30">Communication between ranks on the same node fails</a></p></li>
+<li><p><a class="reference internal" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" id="id31">I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#how-do-i-run-x11-apps" id="id30">How do I run X11 apps?</a></p></li>
-<li><p><a class="reference internal" href="#how-do-i-specify-an-image-reference" id="id31">How do I specify an image reference?</a></p></li>
-<li><p><a class="reference internal" href="#can-i-build-or-pull-images-using-a-tool-charliecloud-doesnt-know-about" id="id32">Can I build or pull images using a tool Charliecloud doesn’t know about?</a></p></li>
-<li><p><a class="reference internal" href="#how-do-i-authenticate-with-ssh-during-ch-image-build" id="id33">How do I authenticate with SSH during <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> build?</a></p></li>
-<li><p><a class="reference internal" href="#ssh-stops-ch-image-build-with-interactive-queries" id="id34">SSH stops <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> build with interactive queries</a></p></li>
-<li><p><a class="reference internal" href="#how-do-i-use-docker-to-build-charliecloud-images" id="id35">How do I use Docker to build Charliecloud images?</a></p>
+<li><p><a class="reference internal" href="#how-do-i-run-x11-apps" id="id32">How do I run X11 apps?</a></p></li>
+<li><p><a class="reference internal" href="#how-do-i-specify-an-image-reference" id="id33">How do I specify an image reference?</a></p></li>
+<li><p><a class="reference internal" href="#can-i-build-or-pull-images-using-a-tool-charliecloud-doesnt-know-about" id="id34">Can I build or pull images using a tool Charliecloud doesn’t know about?</a></p></li>
+<li><p><a class="reference internal" href="#how-do-i-authenticate-with-ssh-during-ch-image-build" id="id35">How do I authenticate with SSH during <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> build?</a></p></li>
+<li><p><a class="reference internal" href="#ssh-stops-ch-image-build-with-interactive-queries" id="id36">SSH stops <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> build with interactive queries</a></p></li>
+<li><p><a class="reference internal" href="#how-do-i-use-docker-to-build-charliecloud-images" id="id37">How do I use Docker to build Charliecloud images?</a></p>
 <ul>
-<li><p><a class="reference internal" href="#security-implications-of-docker" id="id36">Security implications of Docker</a></p></li>
-<li><p><a class="reference internal" href="#configuring-for-a-proxy" id="id37">Configuring for a proxy</a></p></li>
+<li><p><a class="reference internal" href="#security-implications-of-docker" id="id38">Security implications of Docker</a></p></li>
+<li><p><a class="reference internal" href="#configuring-for-a-proxy" id="id39">Configuring for a proxy</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#how-can-i-build-images-for-a-foreign-architecture" id="id38">How can I build images for a foreign architecture?</a></p>
+<li><p><a class="reference internal" href="#how-can-i-build-images-for-a-foreign-architecture" id="id40">How can I build images for a foreign architecture?</a></p>
 <ul>
-<li><p><a class="reference internal" href="#qemu" id="id39">QEMU</a></p></li>
-<li><p><a class="reference internal" href="#proot" id="id40">PRoot</a></p></li>
+<li><p><a class="reference internal" href="#qemu" id="id41">QEMU</a></p></li>
+<li><p><a class="reference internal" href="#proot" id="id42">PRoot</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#how-can-i-use-tarball-base-images-from-e-g-linuxcontainers-org" id="id41">How can I use tarball base images from e.g. linuxcontainers.org?</a></p></li>
-<li><p><a class="reference internal" href="#how-can-i-control-charlieclouds-quietness-or-verbosity" id="id42">How can I control Charliecloud’s quietness or verbosity?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-use-tarball-base-images-from-e-g-linuxcontainers-org" id="id43">How can I use tarball base images from e.g. linuxcontainers.org?</a></p></li>
+<li><p><a class="reference internal" href="#how-can-i-control-charlieclouds-quietness-or-verbosity" id="id44">How can I control Charliecloud’s quietness or verbosity?</a></p></li>
+<li><p><a class="reference internal" href="#how-do-i-handle-extended-attributes-in-charliecloud" id="id45">How do I handle extended attributes in Charliecloud?</a></p></li>
 </ul>
 </li>
 </ul>
-</div>
+</nav>
 <section id="about-the-project">
-<h2><a class="toc-backref" href="#id3"><span class="section-number">10.1. </span>About the project</a><a class="headerlink" href="#about-the-project" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">10.1. </span>About the project</a><a class="headerlink" href="#about-the-project" title="Permalink to this heading">¶</a></h2>
 <section id="where-did-the-name-charliecloud-come-from">
-<h3><a class="toc-backref" href="#id4"><span class="section-number">10.1.1. </span>Where did the name Charliecloud come from?</a><a class="headerlink" href="#where-did-the-name-charliecloud-come-from" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">10.1.1. </span>Where did the name Charliecloud come from?</a><a class="headerlink" href="#where-did-the-name-charliecloud-come-from" title="Permalink to this heading">¶</a></h3>
 <p><em>Charlie</em> — Charles F. McMillan was director of Los Alamos National Laboratory
 from June 2011 until December 2017, i.e., at the time Charliecloud was started
 in early 2014. He is universally referred to as “Charlie” here.</p>
 <p><em>cloud</em> — Charliecloud provides cloud-like flexibility for HPC systems.</p>
 </section>
 <section id="how-do-you-spell-charliecloud">
-<h3><a class="toc-backref" href="#id5"><span class="section-number">10.1.2. </span>How do you spell Charliecloud?</a><a class="headerlink" href="#how-do-you-spell-charliecloud" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">10.1.2. </span>How do you spell Charliecloud?</a><a class="headerlink" href="#how-do-you-spell-charliecloud" title="Permalink to this heading">¶</a></h3>
 <p>We try to be consistent with <em>Charliecloud</em> — one word, no camel case. That
 is, <em>Charlie Cloud</em> and <em>CharlieCloud</em> are both incorrect.</p>
 </section>
 <section id="how-large-is-charliecloud">
-<h3><a class="toc-backref" href="#id6"><span class="section-number">10.1.3. </span>How large is Charliecloud?</a><a class="headerlink" href="#how-large-is-charliecloud" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">10.1.3. </span>How large is Charliecloud?</a><a class="headerlink" href="#how-large-is-charliecloud" title="Permalink to this heading">¶</a></h3>
 <p>We pride ourselves on keeping Charliecloud lightweight and simple. The lines
-of code as of version 0.35 is:</p>
+of code as of version 0.36 is:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
 <tbody>
 <tr class="row-odd"><td><p>Program itself</p></td>
-<td><p>8463</p></td>
+<td><p>8924</p></td>
 </tr>
 <tr class="row-even"><td><p>Test suite &amp; examples</p></td>
-<td><p>11563</p></td>
+<td><p>11941</p></td>
 </tr>
 <tr class="row-odd"><td><p>Documentation</p></td>
-<td><p>6070</p></td>
+<td><p>6311</p></td>
 </tr>
 <tr class="row-even"><td><p>Build system</p></td>
-<td><p>1222</p></td>
+<td><p>1289</p></td>
 </tr>
 <tr class="row-odd"><td><p>Packaging</p></td>
 <td><p>628</p></td>
 </tr>
 <tr class="row-even"><td><p>Miscellaneous</p></td>
-<td><p>502</p></td>
+<td><p>506</p></td>
 </tr>
 <tr class="row-odd"><td><p>Total</p></td>
-<td><p>28448</p></td>
+<td><p>29599</p></td>
 </tr>
 </tbody>
 </table>
 <p>These include code only, excluding blank lines and comments. They were counted
-using <a class="reference external" href="https://github.com/AlDanial/cloc">cloc</a> version 1.86.
+using <a class="reference external" href="https://github.com/AlDanial/cloc">cloc</a> version 1.96.
 We typically quote the “Program itself” number when describing the size of
 Charliecloud. (Please do not quote the size in Priedhorsky and Randles 2017,
 as that number is very out of date.)</p>
 </section>
 </section>
 <section id="errors">
-<h2><a class="toc-backref" href="#id7"><span class="section-number">10.2. </span>Errors</a><a class="headerlink" href="#errors" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">10.2. </span>Errors</a><a class="headerlink" href="#errors" title="Permalink to this heading">¶</a></h2>
 <section id="how-do-i-read-the-ch-run-error-messages">
-<h3><a class="toc-backref" href="#id8"><span class="section-number">10.2.1. </span>How do I read the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages?</a><a class="headerlink" href="#how-do-i-read-the-ch-run-error-messages" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">10.2.1. </span>How do I read the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages?</a><a class="headerlink" href="#how-do-i-read-the-ch-run-error-messages" title="Permalink to this heading">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> error messages look like this:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run foo -- <span class="nb">echo</span> hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>foo<span class="w"> </span>--<span class="w"> </span><span class="nb">echo</span><span class="w"> </span>hello
 <span class="go">ch-run[25750]: can’t find image: foo: No such file or directory (ch-run.c:107 2)</span>
 </pre></div>
 </div>
@@ -294,7 +297,7 @@ list of possibilities).</p></li>
 to be machine-readable.</p>
 </section>
 <section id="ch-run-fails-with-cant-re-mount-image-read-only">
-<h3><a class="toc-backref" href="#id9"><span class="section-number">10.2.2. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a><a class="headerlink" href="#ch-run-fails-with-cant-re-mount-image-read-only" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">10.2.2. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t re-mount image read-only”</a><a class="headerlink" href="#ch-run-fails-with-cant-re-mount-image-read-only" title="Permalink to this heading">¶</a></h3>
 <p>Normally, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> re-mounts the image directory read-only within the
 container. This fails if the image resides on certain filesystems, such as NFS
 (see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/9">issue #9</a>). There are
@@ -312,7 +315,7 @@ writing).</p></li>
 </ol>
 </section>
 <section id="ch-image-fails-with-certificate-verify-failed">
-<h3><a class="toc-backref" href="#id10"><span class="section-number">10.2.3. </span><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> fails with “certificate verify failed”</a><a class="headerlink" href="#ch-image-fails-with-certificate-verify-failed" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">10.2.3. </span><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> fails with “certificate verify failed”</a><a class="headerlink" href="#ch-image-fails-with-certificate-verify-failed" title="Permalink to this heading">¶</a></h3>
 <p>When <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> interacts with a remote registry (e.g., via <code class="code docutils literal notranslate"><span class="pre">push</span></code>
 or <code class="code docutils literal notranslate"><span class="pre">pull</span></code> subcommands), it will verify the registry’s HTTPS certificate.
 If this fails, <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> will exit with the error “certificate verify
@@ -326,8 +329,8 @@ ignoring the bundle installed by the OS.</p>
 environment variable <code class="code docutils literal notranslate"><span class="pre">REQUESTS_CA_BUNDLE</span></code> to the bundle path. (See <a class="reference external" href="https://docs.python-requests.org/en/master/user/advanced/#ssl-cert-verification">the
 Requests documentation</a>
 for details.) For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">REQUESTS_CA_BUNDLE</span><span class="o">=</span>/usr/local/share/ca-certificates/registry.crt
-<span class="gp">$</span> ch-image pull registry.example.com/image:tag
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">REQUESTS_CA_BUNDLE</span><span class="o">=</span>/usr/local/share/ca-certificates/registry.crt
+<span class="gp">$ </span>ch-image<span class="w"> </span>pull<span class="w"> </span>registry.example.com/image:tag
 </pre></div>
 </div>
 <p>Alternatively, certificate verification can be disabled entirely with the
@@ -335,7 +338,7 @@ for details.) For example:</p>
 they have other means to be confident in the registry’s identity.</p>
 </section>
 <section id="storage-directory-seems-invalid">
-<h3><a class="toc-backref" href="#id11"><span class="section-number">10.2.4. </span>“storage directory seems invalid”</a><a class="headerlink" href="#storage-directory-seems-invalid" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12" role="doc-backlink"><span class="section-number">10.2.4. </span>“storage directory seems invalid”</a><a class="headerlink" href="#storage-directory-seems-invalid" title="Permalink to this heading">¶</a></h3>
 <p>Charliecloud uses its <em>storage directory</em> (<code class="code docutils literal notranslate"><span class="pre">/var/tmp/$USER.ch</span></code> by
 default) for various internal uses. As such, Charliecloud needs complete
 control over this directory’s contents. This error happens when the storage
@@ -348,7 +351,7 @@ setting <code class="code docutils literal notranslate"><span class="pre">CH_IMA
 but do not create the final directory <code class="code docutils literal notranslate"><span class="pre">charlie</span></code>.</p>
 </section>
 <section id="transport-endpoint-is-not-connected">
-<h3><a class="toc-backref" href="#id12"><span class="section-number">10.2.5. </span>“Transport endpoint is not connected”</a><a class="headerlink" href="#transport-endpoint-is-not-connected" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13" role="doc-backlink"><span class="section-number">10.2.5. </span>“Transport endpoint is not connected”</a><a class="headerlink" href="#transport-endpoint-is-not-connected" title="Permalink to this heading">¶</a></h3>
 <p>This error likely means that the SquashFS mount process has exited or been
 killed and you’re attempting to access the mount location. This is most often
 seen when a parallel launcher like <code class="code docutils literal notranslate"><span class="pre">srun</span></code> is used to run the mount
@@ -359,13 +362,13 @@ Charliecloud issue
 <a class="reference external" href="https://github.com/hpc/charliecloud/issues/230">#230</a>.</p>
 </section>
 <section id="fatal-home-not-set-from-git-or-similar">
-<h3><a class="toc-backref" href="#id13"><span class="section-number">10.2.6. </span>“fatal: <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> not set” from Git, or similar</a><a class="headerlink" href="#fatal-home-not-set-from-git-or-similar" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id14" role="doc-backlink"><span class="section-number">10.2.6. </span>“fatal: <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code> not set” from Git, or similar</a><a class="headerlink" href="#fatal-home-not-set-from-git-or-similar" title="Permalink to this heading">¶</a></h3>
 <p>For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat Dockerfile
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat<span class="w"> </span>Dockerfile
 <span class="go">FROM alpine:3.17</span>
 <span class="go">RUN apk add git</span>
 <span class="go">RUN git config --global http.sslVerify false</span>
-<span class="gp">$</span> ch-image build -t foo -f Dockerfile .
+<span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w"> </span>.
 <span class="go">  1 FROM alpine:3.17</span>
 <span class="go">  2 RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;apk add git&#39;]</span>
 <span class="go">[...]</span>
@@ -395,21 +398,21 @@ system level, not the user level. In the example above, this means changing
 handling.</p>
 </section>
 <section id="ch-run-fails-with-cant-execve-2-permission-denied">
-<h3><a class="toc-backref" href="#id14"><span class="section-number">10.2.7. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t execve(2): permission denied”</a><a class="headerlink" href="#ch-run-fails-with-cant-execve-2-permission-denied" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15" role="doc-backlink"><span class="section-number">10.2.7. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> fails with “can’t execve(2): permission denied”</a><a class="headerlink" href="#ch-run-fails-with-cant-execve-2-permission-denied" title="Permalink to this heading">¶</a></h3>
 <p>For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/hello -- /bin/echo foo
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>/var/tmp/hello<span class="w"> </span>--<span class="w"> </span>/bin/echo<span class="w"> </span>foo
 <span class="go">ch-run[154334]: error: can’t execve(2): /bin/echo: Permission denied (ch_core.c:387 13)</span>
 </pre></div>
 </div>
 <p>But <code class="code docutils literal notranslate"><span class="pre">/bin/echo</span></code> <em>does</em> have execute permission:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -lh /var/tmp/hello/bin/echo
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>-lh<span class="w"> </span>/var/tmp/hello/bin/echo
 <span class="go">-rwxr-xr-x 1 charlie charlie 51 Oct  8  2021 /var/tmp/hello/bin/echo</span>
 </pre></div>
 </div>
 <p>In this case, the error indicates the container image is on a filesystem
 mounted with <code class="code docutils literal notranslate"><span class="pre">noexec</span></code>. To verify this, you can use e.g.
 <code class="code docutils literal notranslate"><span class="pre">findmnt(8)</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> findmnt
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>findmnt
 <span class="go">TARGET      SOURCE  FSTYPE  OPTIONS</span>
 <span class="go">[...]</span>
 <span class="go">└─/var/tmp  tmpfs   tmpfs   rw,noexec,relatime,size=8675309k</span>
@@ -430,9 +433,9 @@ storage directory).</p></li>
 </section>
 </section>
 <section id="unexpected-behavior">
-<h2><a class="toc-backref" href="#id15"><span class="section-number">10.3. </span>Unexpected behavior</a><a class="headerlink" href="#unexpected-behavior" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id16" role="doc-backlink"><span class="section-number">10.3. </span>Unexpected behavior</a><a class="headerlink" href="#unexpected-behavior" title="Permalink to this heading">¶</a></h2>
 <section id="what-do-the-version-numbers-mean">
-<h3><a class="toc-backref" href="#id16"><span class="section-number">10.3.1. </span>What do the version numbers mean?</a><a class="headerlink" href="#what-do-the-version-numbers-mean" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17" role="doc-backlink"><span class="section-number">10.3.1. </span>What do the version numbers mean?</a><a class="headerlink" href="#what-do-the-version-numbers-mean" title="Permalink to this heading">¶</a></h3>
 <p>Released versions of Charliecloud have a pretty standard version number, e.g.
 0.9.7.</p>
 <p>Work leading up to a released version also has version numbers, to satisfy
@@ -466,20 +469,20 @@ branches, plus un-committed changes.</p></li>
 </div></blockquote>
 </section>
 <section id="uid-0-lets-me-read-files-i-cant-otherwise">
-<h3><a class="toc-backref" href="#id17"><span class="section-number">10.3.2. </span><code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a><a class="headerlink" href="#uid-0-lets-me-read-files-i-cant-otherwise" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id18" role="doc-backlink"><span class="section-number">10.3.2. </span><code class="code docutils literal notranslate"><span class="pre">--uid</span> <span class="pre">0</span></code> lets me read files I can’t otherwise!</a><a class="headerlink" href="#uid-0-lets-me-read-files-i-cant-otherwise" title="Permalink to this heading">¶</a></h3>
 <p>Some permission bits can give a surprising result with a container UID of 0.
 For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> whoami
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>whoami
 <span class="go">reidpr</span>
-<span class="gp">$</span> <span class="nb">echo</span> surprise &gt; ~/cantreadme
-<span class="gp">$</span> chmod <span class="m">000</span> ~/cantreadme
-<span class="gp">$</span> ls -l ~/cantreadme
+<span class="gp">$ </span><span class="nb">echo</span><span class="w"> </span>surprise<span class="w"> </span>&gt;<span class="w"> </span>~/cantreadme
+<span class="gp">$ </span>chmod<span class="w"> </span><span class="m">000</span><span class="w"> </span>~/cantreadme
+<span class="gp">$ </span>ls<span class="w"> </span>-l<span class="w"> </span>~/cantreadme
 <span class="go">---------- 1 reidpr reidpr 9 Oct  3 15:03 /home/reidpr/cantreadme</span>
-<span class="gp">$</span> cat ~/cantreadme
+<span class="gp">$ </span>cat<span class="w"> </span>~/cantreadme
 <span class="go">cat: /home/reidpr/cantreadme: Permission denied</span>
-<span class="gp">$</span> ch-run /var/tmp/hello cat ~/cantreadme
+<span class="gp">$ </span>ch-run<span class="w"> </span>/var/tmp/hello<span class="w"> </span>cat<span class="w"> </span>~/cantreadme
 <span class="go">cat: /home/reidpr/cantreadme: Permission denied</span>
-<span class="gp">$</span> ch-run --uid <span class="m">0</span> /var/tmp/hello cat ~/cantreadme
+<span class="gp">$ </span>ch-run<span class="w"> </span>--uid<span class="w"> </span><span class="m">0</span><span class="w"> </span>/var/tmp/hello<span class="w"> </span>cat<span class="w"> </span>~/cantreadme
 <span class="go">surprise</span>
 </pre></div>
 </div>
@@ -518,14 +521,87 @@ inside and outside the container remains equivalent.</p>
 <li><p><a class="reference external" href="http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328">http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328</a></p></li>
 </ul>
 </section>
+<section id="bind-creates-mount-points-within-un-writeable-directories">
+<span id="faq-mkdir-ro"></span><h3><a class="toc-backref" href="#id19" role="doc-backlink"><span class="section-number">10.3.3. </span><code class="code docutils literal notranslate"><span class="pre">--bind</span></code> creates mount points within un-writeable directories!</a><a class="headerlink" href="#bind-creates-mount-points-within-un-writeable-directories" title="Permalink to this heading">¶</a></h3>
+<p>Consider this image:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>/var/tmp/image
+<span class="go">bin  dev  home  media  opt   root  sbin  sys  usr</span>
+<span class="go">ch   etc  lib   mnt    proc  run   srv   tmp  var</span>
+<span class="gp">$ </span>ls<span class="w"> </span>-ld<span class="w"> </span>/var/tmp/image/mnt
+<span class="go">drwxr-xr-x 4 root root 80 Jan  5 09:52 /var/tmp/image/mnt</span>
+<span class="gp">$ </span>ls<span class="w"> </span>/var/tmp/image/mnt
+<span class="go">bar  foo</span>
+</pre></div>
+</div>
+<p>That is, <code class="code docutils literal notranslate"><span class="pre">/mnt</span></code> is owned by root, un-writeable by us even considering
+the prior question, and contains two subdirectories. Indeed, we cannot create
+a new directory there:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir<span class="w"> </span>/var/tmp/image/mnt/baz
+<span class="go">mkdir: cannot create directory ‘/var/tmp/image/mnt/baz’: Permission denied</span>
+</pre></div>
+</div>
+<p>Recall that bind-mounting to a path that does not exist in a read-only image
+fails:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>-b<span class="w"> </span>/tmp/baz:/mnt/baz<span class="w"> </span>/var/tmp/image<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>/mnt
+<span class="go">ch-run[40498]: error: can&#39;t mkdir: /var/tmp/image/mnt/baz: Read-only file system (ch_misc.c:582 30)</span>
+</pre></div>
+</div>
+<p>That’s fine; we’ll just use <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code> to create a writeable overlay
+on the container. Then we can make any mount points we need. Right?</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>-W<span class="w"> </span>/var/tmp/image<span class="w"> </span>--<span class="w"> </span>mkdir<span class="w"> </span>/qux<span class="w">      </span><span class="c1"># succeeds</span>
+<span class="gp">$ </span>ch-run<span class="w"> </span>-W<span class="w"> </span>/var/tmp/image<span class="w"> </span>--<span class="w"> </span>mkdir<span class="w"> </span>/mnt/baz<span class="w">  </span><span class="c1"># fails</span>
+<span class="go">mkdir: can&#39;t create directory &#39;/mnt/baz&#39;: Permission denied</span>
+</pre></div>
+</div>
+<p>Wait — why could we create a subdirectory of (container path) <code class="code docutils literal notranslate"><span class="pre">/</span></code> but
+not a subdirectory of <code class="code docutils literal notranslate"><span class="pre">/mnt</span></code>? This is because the latter, which is at
+host path <code class="code docutils literal notranslate"><span class="pre">/var/tmp/image/mnt</span></code>, is not writeable by us: the overlayfs
+propagates the directory’s no-write permissions. Despite this, we can in fact
+use paths that do not yet exist for bind-mount destinations:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>-W<span class="w"> </span>-b<span class="w"> </span>/tmp/baz:/mnt/baz<span class="w"> </span>/var/tmp/image<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>/mnt
+<span class="go">bar  baz  foo</span>
+</pre></div>
+</div>
+<p>What’s happening is bind-mount trickery and a symlink ranch. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>
+creates a new directory on the overlaid tmpfs, bind-mounts the old (host path)
+<code class="code docutils literal notranslate"><span class="pre">/var/tmp/images/mnt</span></code> to a subdirectory of it, symlinks the old
+contents, and finally overmounts the old, un-writeable directory with the new
+one:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>-W<span class="w"> </span>-b<span class="w"> </span>/tmp/baz:/mnt/baz<span class="w"> </span>/var/tmp/image<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>-la<span class="w"> </span>/mnt
+<span class="go">drwxr-x---    4 reidpr   reidpr         120 Jan  5 17:11 .</span>
+<span class="go">drwx------    1 reidpr   reidpr          40 Jan  5 17:11 ..</span>
+<span class="go">drwxr-xr-x    4 nobody   nogroup         80 Jan  5 16:52 .orig</span>
+<span class="go">lrwxrwxrwx    1 reidpr   reidpr           9 Jan  5 17:11 bar -&gt; .orig/bar</span>
+<span class="go">drwxr-x---    2 reidpr   reidpr          40 Jan  3 23:49 baz</span>
+<span class="go">lrwxrwxrwx    1 reidpr   reidpr           9 Jan  5 17:11 foo -&gt; .orig/foo</span>
+<span class="gp">$ </span>ch-run<span class="w"> </span>-W<span class="w"> </span>-b<span class="w"> </span>/tmp/baz:/mnt/baz<span class="w"> </span>/var/tmp/image<span class="w"> </span>--<span class="w"> </span>cat<span class="w"> </span>/proc/mounts<span class="w"> </span><span class="p">|</span><span class="w"> </span>fgrep<span class="w"> </span><span class="s1">&#39; /mnt&#39;</span>
+<span class="go">none /mnt tmpfs rw,relatime,size=3943804k,uid=1000,gid=1000,inode64 0 0</span>
+<span class="go">none /mnt/.orig overlay rw,relatime,lowerdir=/var/tmp/image,upperdir=/mnt/upper,workdir=/mnt/work,volatile,userxattr 0 0</span>
+<span class="go">tmpfs /mnt/baz tmpfs rw,relatime,size=8388608k,inode64 0 0</span>
+</pre></div>
+</div>
+<p>This new directory is writeable, and <code class="code docutils literal notranslate"><span class="pre">mkdir(2)</span></code> succeeds. (The overlaid
+tmpfs is mounted on <em>host</em> <code class="code docutils literal notranslate"><span class="pre">/mnt</span></code> during container assembly, which is
+why it appears in mount options.)</p>
+<p>There are differences from the original directory, of course. Most notably:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p>The ranched symlinks can be deleted by the user within the container,
+contrary to the old directory’s read-only permissions.</p></li>
+<li><p>The contents of the “ranched” directory become symlinks rather than their
+original file type.</p></li>
+</ul>
+</div></blockquote>
+<p>Software that cares about these things may break.</p>
+</section>
 <section id="why-does-ping-not-work">
-<h3><a class="toc-backref" href="#id18"><span class="section-number">10.3.3. </span>Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a><a class="headerlink" href="#why-does-ping-not-work" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20" role="doc-backlink"><span class="section-number">10.3.4. </span>Why does <code class="code docutils literal notranslate"><span class="pre">ping</span></code> not work?</a><a class="headerlink" href="#why-does-ping-not-work" title="Permalink to this heading">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">ping</span></code> fails with “permission denied” or similar under Charliecloud,
 even if you’re UID 0 inside the container:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run <span class="nv">$IMG</span> -- ping <span class="m">8</span>.8.8.8
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span><span class="nv">$IMG</span><span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">8</span>.8.8.8
 <span class="go">PING 8.8.8.8 (8.8.8.8): 56 data bytes</span>
 <span class="go">ping: permission denied (are you root?)</span>
-<span class="gp">$</span> ch-run --uid<span class="o">=</span><span class="m">0</span> <span class="nv">$IMG</span> -- ping <span class="m">8</span>.8.8.8
+<span class="gp">$ </span>ch-run<span class="w"> </span>--uid<span class="o">=</span><span class="m">0</span><span class="w"> </span><span class="nv">$IMG</span><span class="w"> </span>--<span class="w"> </span>ping<span class="w"> </span><span class="m">8</span>.8.8.8
 <span class="go">PING 8.8.8.8 (8.8.8.8): 56 data bytes</span>
 <span class="go">ping: permission denied (are you root?)</span>
 </pre></div>
@@ -545,7 +621,7 @@ and <code class="code docutils literal notranslate"><span class="pre">ping</span
 testing connectivity using <code class="code docutils literal notranslate"><span class="pre">ping</span></code> first.</p>
 </section>
 <section id="why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0">
-<h3><a class="toc-backref" href="#id19"><span class="section-number">10.3.4. </span>Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a><a class="headerlink" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id21" role="doc-backlink"><span class="section-number">10.3.5. </span>Why is MATLAB trying and failing to change the group of <code class="code docutils literal notranslate"><span class="pre">/dev/pts/0</span></code>?</a><a class="headerlink" href="#why-is-matlab-trying-and-failing-to-change-the-group-of-dev-pts-0" title="Permalink to this heading">¶</a></h3>
 <p>MATLAB and some other programs want pseudo-TTY (PTY) files to be group-owned
 by <code class="code docutils literal notranslate"><span class="pre">tty</span></code>. If it’s not, Matlab will attempt to <code class="code docutils literal notranslate"><span class="pre">chown(2)</span></code> the file,
 which fails inside a container.</p>
@@ -570,10 +646,10 @@ the call is mapped to <code class="code docutils literal notranslate"><span clas
 happy.</p>
 </section>
 <section id="ch-convert-from-docker-incorrect-image-sizes">
-<h3><a class="toc-backref" href="#id20"><span class="section-number">10.3.5. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> from Docker incorrect image sizes</a><a class="headerlink" href="#ch-convert-from-docker-incorrect-image-sizes" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22" role="doc-backlink"><span class="section-number">10.3.6. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> from Docker incorrect image sizes</a><a class="headerlink" href="#ch-convert-from-docker-incorrect-image-sizes" title="Permalink to this heading">¶</a></h3>
 <p>When converting from Docker, <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> often finishes before the
 progress bar is complete. For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert -i docker foo /var/tmp/foo.tar.gz
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-convert<span class="w"> </span>-i<span class="w"> </span>docker<span class="w"> </span>foo<span class="w"> </span>/var/tmp/foo.tar.gz
 <span class="go">input:   docker    foo</span>
 <span class="go">output:  tar       /var/tmp/foo.tar.gz</span>
 <span class="go">exporting ...</span>
@@ -582,26 +658,26 @@ progress bar is complete. For example:</p>
 </pre></div>
 </div>
 <p>In this case, the <code class="code docutils literal notranslate"><span class="pre">.tar.gz</span></code> contains 392 MB uncompressed:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> zcat /var/tmp/foo.tar.gz <span class="p">|</span> wc
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>zcat<span class="w"> </span>/var/tmp/foo.tar.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc
 <span class="go">2740966 14631550 392145408</span>
 </pre></div>
 </div>
 <p>But Docker thinks the image is 597 MB:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker image inspect foo <span class="p">|</span> fgrep -i size
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>sudo<span class="w"> </span>docker<span class="w"> </span>image<span class="w"> </span>inspect<span class="w"> </span>foo<span class="w"> </span><span class="p">|</span><span class="w"> </span>fgrep<span class="w"> </span>-i<span class="w"> </span>size
 <span class="go">        &quot;Size&quot;: 596952928,</span>
 <span class="go">        &quot;VirtualSize&quot;: 596952928,</span>
 </pre></div>
 </div>
 <p>We’ve also seen cases where the Docker-reported size is an <em>under</em>estimate:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert -i docker bar /var/tmp/bar.tar.gz
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-convert<span class="w"> </span>-i<span class="w"> </span>docker<span class="w"> </span>bar<span class="w"> </span>/var/tmp/bar.tar.gz
 <span class="go">input:   docker    bar</span>
 <span class="go">output:  tar       /var/tmp/bar.tar.gz</span>
 <span class="go">exporting ...</span>
 <span class="go"> 423MiB 0:00:22 [============================================&gt;] 102%</span>
 <span class="go">[...]</span>
-<span class="gp">$</span> zcat /var/tmp/bar.tar.gz <span class="p">|</span> wc
+<span class="gp">$ </span>zcat<span class="w"> </span>/var/tmp/bar.tar.gz<span class="w"> </span><span class="p">|</span><span class="w"> </span>wc
 <span class="go">4181186 20317858 444212736</span>
-<span class="gp">$</span> sudo docker image inspect bar <span class="p">|</span> fgrep -i size
+<span class="gp">$ </span>sudo<span class="w"> </span>docker<span class="w"> </span>image<span class="w"> </span>inspect<span class="w"> </span>bar<span class="w"> </span><span class="p">|</span><span class="w"> </span>fgrep<span class="w"> </span>-i<span class="w"> </span>size
 <span class="go">        &quot;Size&quot;: 433812403,</span>
 <span class="go">        &quot;VirtualSize&quot;: 433812403,</span>
 </pre></div>
@@ -611,7 +687,7 @@ the layers rather than the unpacked image. We do not currently have a fix; see
 <a class="reference external" href="https://github.com/hpc/charliecloud/issues/165">issue #165</a>.</p>
 </section>
 <section id="my-password-that-contains-digits-doesnt-work-in-virtualbox-console">
-<h3><a class="toc-backref" href="#id21"><span class="section-number">10.3.6. </span>My password that contains digits doesn’t work in VirtualBox console</a><a class="headerlink" href="#my-password-that-contains-digits-doesnt-work-in-virtualbox-console" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id23" role="doc-backlink"><span class="section-number">10.3.7. </span>My password that contains digits doesn’t work in VirtualBox console</a><a class="headerlink" href="#my-password-that-contains-digits-doesnt-work-in-virtualbox-console" title="Permalink to this heading">¶</a></h3>
 <p>VirtualBox has confusing Num Lock behavior. Thus, you may be typing arrows,
 page up/down, etc. instead of digits, without noticing because console
 password fields give no feedback, not even whether a character has been typed.</p>
@@ -619,7 +695,7 @@ password fields give no feedback, not even whether a character has been typed.</
 virtual machine.</p>
 </section>
 <section id="mode-bits-permission-bits-are-lost">
-<h3><a class="toc-backref" href="#id22"><span class="section-number">10.3.7. </span>Mode bits (permission bits) are lost</a><a class="headerlink" href="#mode-bits-permission-bits-are-lost" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id24" role="doc-backlink"><span class="section-number">10.3.8. </span>Mode bits (permission bits) are lost</a><a class="headerlink" href="#mode-bits-permission-bits-are-lost" title="Permalink to this heading">¶</a></h3>
 <p>Charliecloud preserves only some mode bits, specifically user, group, and
 world permissions, and the <a class="reference external" href="https://man7.org/linux/man-pages/man1/chmod.1.html#RESTRICTED_DELETION_FLAG_OR_STICKY_BIT">restricted deletion flag</a>
 on directories; i.e. 777 on files and 1777 on directories.</p>
@@ -634,28 +710,28 @@ files.</p>
 behavior. The specified behavior is that they may be zeroed at any time.</p>
 </section>
 <section id="why-is-my-wildcard-in-ch-run-not-working">
-<h3><a class="toc-backref" href="#id23"><span class="section-number">10.3.8. </span>Why is my wildcard in <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> not working?</a><a class="headerlink" href="#why-is-my-wildcard-in-ch-run-not-working" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25" role="doc-backlink"><span class="section-number">10.3.9. </span>Why is my wildcard in <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> not working?</a><a class="headerlink" href="#why-is-my-wildcard-in-ch-run-not-working" title="Permalink to this heading">¶</a></h3>
 <p>Be aware that wildcards in the <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> command are interpreted by the
 host, not the container, unless protected. One workaround is to use a
 sub-shell. For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls /usr/bin/oldfind
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>/usr/bin/oldfind
 <span class="go">ls: cannot access &#39;/usr/bin/oldfind&#39;: No such file or directory</span>
-<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldfind
+<span class="gp">$ </span>ch-run<span class="w"> </span>/var/tmp/hello.sqfs<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>/usr/bin/oldfind
 <span class="go">/usr/bin/oldfind</span>
-<span class="gp">$</span> ls /usr/bin/oldf*
+<span class="gp">$ </span>ls<span class="w"> </span>/usr/bin/oldf*
 <span class="go">ls: cannot access &#39;/usr/bin/oldf*&#39;: No such file or directory</span>
-<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- ls /usr/bin/oldf*
+<span class="gp">$ </span>ch-run<span class="w"> </span>/var/tmp/hello.sqfs<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>/usr/bin/oldf*
 <span class="go">ls: cannot access /usr/bin/oldf*: No such file or directory</span>
-<span class="gp">$</span> ch-run /var/tmp/hello.sqfs -- sh -c <span class="s1">&#39;ls /usr/bin/oldf*&#39;</span>
+<span class="gp">$ </span>ch-run<span class="w"> </span>/var/tmp/hello.sqfs<span class="w"> </span>--<span class="w"> </span>sh<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;ls /usr/bin/oldf*&#39;</span>
 <span class="go">/usr/bin/oldfind</span>
 </pre></div>
 </div>
 </section>
 </section>
 <section id="how-do-i">
-<h2><a class="toc-backref" href="#id24"><span class="section-number">10.4. </span>How do I ...</a><a class="headerlink" href="#how-do-i" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id26" role="doc-backlink"><span class="section-number">10.4. </span>How do I ...</a><a class="headerlink" href="#how-do-i" title="Permalink to this heading">¶</a></h2>
 <section id="my-app-needs-to-write-to-var-log-run-etc">
-<h3><a class="toc-backref" href="#id25"><span class="section-number">10.4.1. </span>My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27" role="doc-backlink"><span class="section-number">10.4.1. </span>My app needs to write to <code class="code docutils literal notranslate"><span class="pre">/var/log</span></code>, <code class="code docutils literal notranslate"><span class="pre">/run</span></code>, etc.</a><a class="headerlink" href="#my-app-needs-to-write-to-var-log-run-etc" title="Permalink to this heading">¶</a></h3>
 <p>Because the image is mounted read-only by default, log files, caches, and
 other stuff cannot be written anywhere in the image. You have three options:</p>
 <ol class="arabic simple">
@@ -669,12 +745,12 @@ containers do not try to write to the same files.</p></li>
 </ol>
 </section>
 <section id="openmpi-charliecloud-jobs-dont-work">
-<h3><a class="toc-backref" href="#id26"><span class="section-number">10.4.2. </span>OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id28" role="doc-backlink"><span class="section-number">10.4.2. </span>OpenMPI Charliecloud jobs don’t work</a><a class="headerlink" href="#openmpi-charliecloud-jobs-dont-work" title="Permalink to this heading">¶</a></h3>
 <p>MPI can be finicky. This section documents some of the problems we’ve seen.</p>
 <section id="mpirun-cant-launch-jobs">
-<h4><a class="toc-backref" href="#id27"><span class="section-number">10.4.2.1. </span><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id29" role="doc-backlink"><span class="section-number">10.4.2.1. </span><code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> can’t launch jobs</a><a class="headerlink" href="#mpirun-cant-launch-jobs" title="Permalink to this heading">¶</a></h4>
 <p>For example, you might see:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mpirun -np <span class="m">1</span> ch-run /var/tmp/mpihello-openmpi -- /hello/hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mpirun<span class="w"> </span>-np<span class="w"> </span><span class="m">1</span><span class="w"> </span>ch-run<span class="w"> </span>/var/tmp/mpihello-openmpi<span class="w"> </span>--<span class="w"> </span>/hello/hello
 <span class="go">App launch reported: 2 (out of 2) daemons - 0 (out of 1) procs</span>
 <span class="go">[cn001:27101] PMIX ERROR: BAD-PARAM in file src/dstore/pmix_esh.c at line 996</span>
 </pre></div>
@@ -684,7 +760,7 @@ builds inside and outside the container — but in our experience launching with
 <code class="code docutils literal notranslate"><span class="pre">srun</span></code> often works when <code class="code docutils literal notranslate"><span class="pre">mpirun</span></code> doesn’t, so try that.</p>
 </section>
 <section id="communication-between-ranks-on-the-same-node-fails">
-<span id="faq-join"></span><h4><a class="toc-backref" href="#id28"><span class="section-number">10.4.2.2. </span>Communication between ranks on the same node fails</a><a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this headline">¶</a></h4>
+<span id="faq-join"></span><h4><a class="toc-backref" href="#id30" role="doc-backlink"><span class="section-number">10.4.2.2. </span>Communication between ranks on the same node fails</a><a class="headerlink" href="#communication-between-ranks-on-the-same-node-fails" title="Permalink to this heading">¶</a></h4>
 <p>OpenMPI has many ways to transfer messages between ranks. If the ranks are on
 the same node, it is faster to do these transfers using shared memory rather
 than involving the network stack. There are two ways to use shared memory.</p>
@@ -702,8 +778,8 @@ example, the <code class="code docutils literal notranslate"><span class="pre">v
 <p>The problem in Charliecloud is that the second approach does not work by
 default.</p>
 <p>We can demonstrate the problem with LAMMPS molecular dynamics application:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun --cpus-per-task <span class="m">1</span> ch-run /var/tmp/lammps_mpi -- <span class="se">\</span>
-  lmp_mpi -log none -in /lammps/examples/melt/in.melt
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>srun<span class="w"> </span>--cpus-per-task<span class="w"> </span><span class="m">1</span><span class="w"> </span>ch-run<span class="w"> </span>/var/tmp/lammps_mpi<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>lmp_mpi<span class="w"> </span>-log<span class="w"> </span>none<span class="w"> </span>-in<span class="w"> </span>/lammps/examples/melt/in.melt
 <span class="go">[cn002:21512] Read -1, expected 6144, errno = 1</span>
 <span class="go">[cn001:23947] Read -1, expected 6144, errno = 1</span>
 <span class="go">[cn002:21517] Read -1, expected 9792, errno = 1</span>
@@ -733,7 +809,7 @@ details.</p></li>
 <li><p>You can also sometimes turn off single-copy. For example, for <code class="code docutils literal notranslate"><span class="pre">vader</span></code>,
 set the MCA variable <code class="code docutils literal notranslate"><span class="pre">btl_vader_single_copy_mechanism</span></code> to
 <code class="code docutils literal notranslate"><span class="pre">none</span></code>, e.g. with an environment variable:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">OMPI_MCA_btl_vader_single_copy_mechanism</span><span class="o">=</span>none
 </pre></div>
 </div>
 <p><code class="code docutils literal notranslate"><span class="pre">psm2</span></code> does not let you turn off CMA, but it does fall back to
@@ -747,9 +823,9 @@ benchmarks.</p></li>
 </ul>
 </section>
 <section id="i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun">
-<h4><a class="toc-backref" href="#id29"><span class="section-number">10.4.2.3. </span>I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a><a class="headerlink" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id31" role="doc-backlink"><span class="section-number">10.4.2.3. </span>I get a bunch of independent rank-0 processes when launching with <code class="code docutils literal notranslate"><span class="pre">srun</span></code></a><a class="headerlink" href="#i-get-a-bunch-of-independent-rank-0-processes-when-launching-with-srun" title="Permalink to this heading">¶</a></h4>
 <p>For example, you might be seeing this:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-run /var/tmp/mpihello-openmpi -- /hello/hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>srun<span class="w"> </span>ch-run<span class="w"> </span>/var/tmp/mpihello-openmpi<span class="w"> </span>--<span class="w"> </span>/hello/hello
 <span class="go">0: init ok cn036.localdomain, 1 ranks, userns 4026554634</span>
 <span class="go">0: send/receive ok</span>
 <span class="go">0: finalize ok</span>
@@ -768,7 +844,7 @@ the host’s Slurm, we need it to provide something for the containerized
 processes for such coordination. OpenMPI must be compiled to use what that
 Slurm has to offer, and Slurm must be told to offer it. What works for us is a
 something called “PMIx”. You can see if your Slurm supports it with:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun --mpi<span class="o">=</span>list
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>srun<span class="w"> </span>--mpi<span class="o">=</span>list
 <span class="go">  cray_shasta</span>
 <span class="go">  none</span>
 <span class="go">  pmi2</span>
@@ -779,7 +855,7 @@ something called “PMIx”. You can see if your Slurm supports it with:</p>
 enable Slurm’s PMIx support, or (b) rebuild your container MPI against an PMI
 in the list. If it is in the list, but you’re seeing this problem, that means
 it is not the default, and you need to tell Slurm you want it. Try:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun --mpi<span class="o">=</span>pmix ch-run /var/tmp/mpihello-openmpi -- /hello/hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>srun<span class="w"> </span>--mpi<span class="o">=</span>pmix<span class="w"> </span>ch-run<span class="w"> </span>/var/tmp/mpihello-openmpi<span class="w"> </span>--<span class="w"> </span>/hello/hello
 <span class="go">0: init ok wc035.localdomain, 2 ranks, userns 4026554634</span>
 <span class="go">1: init ok wc036.localdomain, 2 ranks, userns 4026554634</span>
 <span class="go">0: send/receive ok</span>
@@ -789,15 +865,15 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 </section>
 </section>
 <section id="how-do-i-run-x11-apps">
-<h3><a class="toc-backref" href="#id30"><span class="section-number">10.4.3. </span>How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id32" role="doc-backlink"><span class="section-number">10.4.3. </span>How do I run X11 apps?</a><a class="headerlink" href="#how-do-i-run-x11-apps" title="Permalink to this heading">¶</a></h3>
 <p>X11 applications should “just work”. For example, try this Dockerfile:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">debian:stretch</span>
-<span class="k">RUN</span>    apt-get update <span class="se">\</span>
-    <span class="o">&amp;&amp;</span> apt-get install -y xterm
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">debian:stretch</span>
+<span class="k">RUN</span><span class="w">    </span>apt-get<span class="w"> </span>update<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="o">&amp;&amp;</span><span class="w"> </span>apt-get<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>xterm
 </pre></div>
 </div>
 <p>Build it and unpack it to <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code>. Then:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /scratch/ch/xterm -- xterm
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>/scratch/ch/xterm<span class="w"> </span>--<span class="w"> </span>xterm
 </pre></div>
 </div>
 <p>should pop an xterm.</p>
@@ -805,7 +881,7 @@ it is not the default, and you need to tell Slurm you want it. Try:</p>
 figure out why.</p>
 </section>
 <section id="how-do-i-specify-an-image-reference">
-<h3><a class="toc-backref" href="#id31"><span class="section-number">10.4.4. </span>How do I specify an image reference?</a><a class="headerlink" href="#how-do-i-specify-an-image-reference" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id33" role="doc-backlink"><span class="section-number">10.4.4. </span>How do I specify an image reference?</a><a class="headerlink" href="#how-do-i-specify-an-image-reference" title="Permalink to this heading">¶</a></h3>
 <p>You must specify an image for many use cases, including <code class="code docutils literal notranslate"><span class="pre">FROM</span></code>
 instructions, the source of an image pull (e.g. <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">pull</span></code> or
 <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code>), the destination of an image push, and adding image tags.
@@ -893,7 +969,7 @@ from Docker Hub.</p></li>
 <p>See <code class="code docutils literal notranslate"><span class="pre">charliecloud.py</span></code> for a specific grammar that implements this.</p>
 </section>
 <section id="can-i-build-or-pull-images-using-a-tool-charliecloud-doesnt-know-about">
-<h3><a class="toc-backref" href="#id32"><span class="section-number">10.4.5. </span>Can I build or pull images using a tool Charliecloud doesn’t know about?</a><a class="headerlink" href="#can-i-build-or-pull-images-using-a-tool-charliecloud-doesnt-know-about" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id34" role="doc-backlink"><span class="section-number">10.4.5. </span>Can I build or pull images using a tool Charliecloud doesn’t know about?</a><a class="headerlink" href="#can-i-build-or-pull-images-using-a-tool-charliecloud-doesnt-know-about" title="Permalink to this heading">¶</a></h3>
 <p>Yes. Charliecloud deals in well-known UNIX formats like directories, tarballs,
 and SquashFS images. So, once you get your image into some format Charliecloud
 likes, you can enter the workflow.</p>
@@ -901,27 +977,27 @@ likes, you can enter the workflow.</p>
 pull images to OCI format, and <a class="reference external" href="https://umo.ci">umoci</a> can flatten an OCI
 image to a directory. Thus, you can use the following commands to run an
 Alpine 3.9 image pulled from Docker hub:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> skopeo copy docker://alpine:3.17 oci:/tmp/oci:img
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>skopeo<span class="w"> </span>copy<span class="w"> </span>docker://alpine:3.17<span class="w"> </span>oci:/tmp/oci:img
 <span class="go">[...]</span>
-<span class="gp">$</span> ls /tmp/oci
+<span class="gp">$ </span>ls<span class="w"> </span>/tmp/oci
 <span class="go">blobs  index.json  oci-layout</span>
-<span class="gp">$</span> umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.17
+<span class="gp">$ </span>umoci<span class="w"> </span>unpack<span class="w"> </span>--rootless<span class="w"> </span>--image<span class="w"> </span>/tmp/oci:img<span class="w"> </span>/tmp/alpine:3.17
 <span class="go">[...]</span>
-<span class="gp">$</span> ls /tmp/alpine:3.17
+<span class="gp">$ </span>ls<span class="w"> </span>/tmp/alpine:3.17
 <span class="go">config.json</span>
 <span class="go">rootfs</span>
 <span class="go">sha256_2ca27acab3a0f4057852d9a8b775791ad8ff62fbedfc99529754549d33965941.mtree</span>
 <span class="go">umoci.json</span>
-<span class="gp">$</span> ls /tmp/alpine:3.17/rootfs
+<span class="gp">$ </span>ls<span class="w"> </span>/tmp/alpine:3.17/rootfs
 <span class="go">bin  etc   lib    mnt  proc  run   srv  tmp  var</span>
 <span class="go">dev  home  media  opt  root  sbin  sys  usr</span>
-<span class="gp">$</span> ch-run /tmp/alpine:3.17/rootfs -- cat /etc/alpine-release
+<span class="gp">$ </span>ch-run<span class="w"> </span>/tmp/alpine:3.17/rootfs<span class="w"> </span>--<span class="w"> </span>cat<span class="w"> </span>/etc/alpine-release
 <span class="go">3.9.5</span>
 </pre></div>
 </div>
 </section>
 <section id="how-do-i-authenticate-with-ssh-during-ch-image-build">
-<h3><a class="toc-backref" href="#id33"><span class="section-number">10.4.6. </span>How do I authenticate with SSH during <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> build?</a><a class="headerlink" href="#how-do-i-authenticate-with-ssh-during-ch-image-build" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id35" role="doc-backlink"><span class="section-number">10.4.6. </span>How do I authenticate with SSH during <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> build?</a><a class="headerlink" href="#how-do-i-authenticate-with-ssh-during-ch-image-build" title="Permalink to this heading">¶</a></h3>
 <p>The simplest approach is to run the <a class="reference external" href="https://man.openbsd.org/ssh-agent">SSH agent</a> on the host. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> then
 leverages this with two steps:</p>
 <blockquote>
@@ -937,19 +1013,19 @@ SSH agent’s listening socket usually resides.</p></li>
 authenticate without further intervention.</p>
 <p>For example, after making <code class="code docutils literal notranslate"><span class="pre">ssh-agent</span></code> available on the host, which is OS
 and site-specific:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">echo</span> <span class="nv">$SSH_AUTH_SOCK</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">echo</span><span class="w"> </span><span class="nv">$SSH_AUTH_SOCK</span>
 <span class="go">/tmp/ssh-rHsFFqwwqh/agent.49041</span>
-<span class="gp">$</span> ssh-add
+<span class="gp">$ </span>ssh-add
 <span class="go">Enter passphrase for /home/charlie/.ssh/id_rsa:</span>
 <span class="go">Identity added: /home/charlie/.ssh/id_rsa (/home/charlie/.ssh/id_rsa)</span>
-<span class="gp">$</span> ssh-add -l
+<span class="gp">$ </span>ssh-add<span class="w"> </span>-l
 <span class="go">4096 SHA256:aN4n2JeMah2ekwhyHnb0Ug9bYMASmY+5uGg6MrieaQ /home/charlie/.ssh/id_rsa (RSA)</span>
-<span class="gp">$</span> cat ./Dockerfile
+<span class="gp">$ </span>cat<span class="w"> </span>./Dockerfile
 <span class="go">FROM alpine:latest</span>
 <span class="go">RUN apk add openssh</span>
 <span class="go">RUN echo $SSH_AUTH_SOCK</span>
 <span class="go">RUN ssh git@github.com</span>
-<span class="gp">$</span> ch-image build -t foo -f ./Dockerfile .
+<span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo<span class="w"> </span>-f<span class="w"> </span>./Dockerfile<span class="w"> </span>.
 <span class="go">[...]</span>
 <span class="go">  3 RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;echo $SSH_AUTH_SOCK&#39;]</span>
 <span class="go">  /tmp/ssh-rHsFFqwwqh/agent.49041</span>
@@ -964,14 +1040,14 @@ e.g. with <code class="code docutils literal notranslate"><span class="pre">scp(
 realistic example.</p>
 </section>
 <section id="ssh-stops-ch-image-build-with-interactive-queries">
-<h3><a class="toc-backref" href="#id34"><span class="section-number">10.4.7. </span>SSH stops <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> build with interactive queries</a><a class="headerlink" href="#ssh-stops-ch-image-build-with-interactive-queries" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id36" role="doc-backlink"><span class="section-number">10.4.7. </span>SSH stops <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> build with interactive queries</a><a class="headerlink" href="#ssh-stops-ch-image-build-with-interactive-queries" title="Permalink to this heading">¶</a></h3>
 <p>This often occurs during an SSH-based Git clone. For example:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">alpine:latest</span>
-<span class="k">RUN</span> apk add git openssh
-<span class="k">RUN</span> git clone git@github.com:hpc/charliecloud.git
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">alpine:latest</span>
+<span class="k">RUN</span><span class="w"> </span>apk<span class="w"> </span>add<span class="w"> </span>git<span class="w"> </span>openssh
+<span class="k">RUN</span><span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:hpc/charliecloud.git
 </pre></div>
 </div>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t foo -f ./Dockerfile .
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo<span class="w"> </span>-f<span class="w"> </span>./Dockerfile<span class="w"> </span>.
 <span class="go">[...]</span>
 <span class="go">3 RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;git clone git@github.com:hpc/charliecloud.git&#39;]</span>
 <span class="go">Cloning into &#39;charliecloud&#39;...</span>
@@ -990,9 +1066,9 @@ instructions can’t see anything in your home directory.</p>
 <div><ol class="arabic">
 <li><p>Change to anonymous HTTPS clone, if available. Most public repositories
 will support this. For example:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">alpine:latest</span>
-<span class="k">RUN</span> apk add git
-<span class="k">RUN</span> git clone https://github.com/hpc/charliecloud.git
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">alpine:latest</span>
+<span class="k">RUN</span><span class="w"> </span>apk<span class="w"> </span>add<span class="w"> </span>git
+<span class="k">RUN</span><span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/hpc/charliecloud.git
 </pre></div>
 </div>
 </li>
@@ -1003,11 +1079,11 @@ address and the fingerprint. The build also remains interactive.</p></li>
 Note this can be rather hairy, because the SSH config language is quite
 flexible and the first instance of a directive is the one used. However,
 often the changes can be simply appended:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">alpine:latest</span>
-<span class="k">RUN</span> apk add git openssh
-<span class="k">RUN</span> <span class="nb">printf</span> <span class="s1">&#39;StrictHostKeyChecking=no\nUserKnownHostsFile=/dev/null\n&#39;</span> <span class="se">\</span>
-    &gt;&gt; /etc/ssh/ssh_config
-<span class="k">RUN</span> git clone git@github.com:hpc/charliecloud.git
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">alpine:latest</span>
+<span class="k">RUN</span><span class="w"> </span>apk<span class="w"> </span>add<span class="w"> </span>git<span class="w"> </span>openssh
+<span class="k">RUN</span><span class="w"> </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;StrictHostKeyChecking=no\nUserKnownHostsFile=/dev/null\n&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>&gt;&gt;<span class="w"> </span>/etc/ssh/ssh_config
+<span class="k">RUN</span><span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:hpc/charliecloud.git
 </pre></div>
 </div>
 <p>Check your institutional policy on whether this is permissible, though
@@ -1018,18 +1094,18 @@ verify the host fingerprints anyway.</p>
 <li><p>Turn off host key checking on the SSH command line. (See caveats in the
 previous item.) The wrapping tool should provide a way to configure this
 command line. For example, for Git:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">alpine:latest</span>
-<span class="k">RUN</span> apk add git openssh
-<span class="k">ARG</span> <span class="nv">GIT_SSH_COMMAND</span><span class="o">=</span><span class="s2">&quot;ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null&quot;</span>
-<span class="k">RUN</span> git clone git@github.com:hpc/charliecloud.git
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">alpine:latest</span>
+<span class="k">RUN</span><span class="w"> </span>apk<span class="w"> </span>add<span class="w"> </span>git<span class="w"> </span>openssh
+<span class="k">ARG</span><span class="w"> </span><span class="nv">GIT_SSH_COMMAND</span><span class="o">=</span><span class="s2">&quot;ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null&quot;</span>
+<span class="k">RUN</span><span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:hpc/charliecloud.git
 </pre></div>
 </div>
 </li>
 <li><p>Add the remote host to the system known hosts file, e.g.:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">alpine:latest</span>
-<span class="k">RUN</span> apk add git openssh
-<span class="k">RUN</span> <span class="nb">echo</span> <span class="s1">&#39;github.com,140.82.112.4 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==&#39;</span> &gt;&gt; /etc/ssh/ssh_known_hosts
-<span class="k">RUN</span> git clone git@github.com:hpc/charliecloud.git
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">alpine:latest</span>
+<span class="k">RUN</span><span class="w"> </span>apk<span class="w"> </span>add<span class="w"> </span>git<span class="w"> </span>openssh
+<span class="k">RUN</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;github.com,140.82.112.4 ssh-rsa AAAAB3NzaC1yc2EAAAABIwAAAQEAq2A7hRGmdnm9tUDbO9IDSwBK6TbQa+PXYPCPy6rbTrTtw7PHkccKrpp0yVhp5HdEIcKr6pLlVDBfOLX9QUsyCOV0wzfjIJNlGEYsdlLJizHhbn2mUjvSAHQqZETYP81eFzLQNnPHt4EVVUh7VfDESU84KezmD5QlWpXLmvU31/yMf+Se8xhHTvKSCZIFImWwoG6mbUoWf9nzpIoaSjB+weqqUUmpaaasXVal72J+UX2B+2RPW3RcT0eOzQgqlJL3RKrTJvdsjE3JEAvGq3lGHSZXy28G3skua2SmVi/w4yCE6gbODqnTWlg7+wC604ydGXA8VJiS5ap43JXiUFFAaQ==&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/etc/ssh/ssh_known_hosts
+<span class="k">RUN</span><span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:hpc/charliecloud.git
 </pre></div>
 </div>
 <p>This records connection details in both the Dockerfile and the image.</p>
@@ -1040,14 +1116,14 @@ command line. For example, for Git:</p>
 SSH” or “SSH in cron jobs”.</p>
 </section>
 <section id="how-do-i-use-docker-to-build-charliecloud-images">
-<span id="faq-building-with-docker"></span><h3><a class="toc-backref" href="#id35"><span class="section-number">10.4.8. </span>How do I use Docker to build Charliecloud images?</a><a class="headerlink" href="#how-do-i-use-docker-to-build-charliecloud-images" title="Permalink to this headline">¶</a></h3>
+<span id="faq-building-with-docker"></span><h3><a class="toc-backref" href="#id37" role="doc-backlink"><span class="section-number">10.4.8. </span>How do I use Docker to build Charliecloud images?</a><a class="headerlink" href="#how-do-i-use-docker-to-build-charliecloud-images" title="Permalink to this heading">¶</a></h3>
 <p>The short version is to run Docker commands like <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code> and
 <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">pull</span></code> like usual, and then use <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> to copy the
 image from Docker storage to a SquashFS archive, tarball, or directory. If you
 are behind an HTTP proxy, that requires some extra setup for Docker; see
 below.</p>
 <section id="security-implications-of-docker">
-<h4><a class="toc-backref" href="#id36"><span class="section-number">10.4.8.1. </span>Security implications of Docker</a><a class="headerlink" href="#security-implications-of-docker" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id38" role="doc-backlink"><span class="section-number">10.4.8.1. </span>Security implications of Docker</a><a class="headerlink" href="#security-implications-of-docker" title="Permalink to this heading">¶</a></h4>
 <p>Because Docker (a) makes installing random crap from the internet simple and
 (b) is easy to deploy insecurely, you should take care. Some of the
 implications are below. This list should not be considered comprehensive nor a
@@ -1065,18 +1141,18 @@ being poor hygiene, this can be an escalation path, e.g. if you bind-mount
 host directories.</p>
 </li>
 <li><p><strong>Docker alters your network configuration.</strong> To see what it did:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ifconfig    <span class="c1"># note docker0 interface</span>
-<span class="gp">$</span> brctl show  <span class="c1"># note docker0 bridge</span>
-<span class="gp">$</span> route -n
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ifconfig<span class="w">    </span><span class="c1"># note docker0 interface</span>
+<span class="gp">$ </span>brctl<span class="w"> </span>show<span class="w">  </span><span class="c1"># note docker0 bridge</span>
+<span class="gp">$ </span>route<span class="w"> </span>-n
 </pre></div>
 </div>
 </li>
 <li><p><strong>Docker installs services.</strong> If you don’t want the Docker service starting
 automatically at boot, e.g.:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> systemctl is-enabled docker
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>systemctl<span class="w"> </span>is-enabled<span class="w"> </span>docker
 <span class="go">enabled</span>
-<span class="gp">$</span> systemctl disable docker
-<span class="gp">$</span> systemctl is-enabled docker
+<span class="gp">$ </span>systemctl<span class="w"> </span>disable<span class="w"> </span>docker
+<span class="gp">$ </span>systemctl<span class="w"> </span>is-enabled<span class="w"> </span>docker
 <span class="go">disabled</span>
 </pre></div>
 </div>
@@ -1084,12 +1160,12 @@ automatically at boot, e.g.:</p>
 </ul>
 </section>
 <section id="configuring-for-a-proxy">
-<h4><a class="toc-backref" href="#id37"><span class="section-number">10.4.8.2. </span>Configuring for a proxy</a><a class="headerlink" href="#configuring-for-a-proxy" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id39" role="doc-backlink"><span class="section-number">10.4.8.2. </span>Configuring for a proxy</a><a class="headerlink" href="#configuring-for-a-proxy" title="Permalink to this heading">¶</a></h4>
 <p>By default, Docker does not work if you are behind a proxy, and it fails in
 two different ways.</p>
 <p>The first problem is that Docker itself must be told to use a proxy. This
 manifests as:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker run hello-world
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>sudo<span class="w"> </span>docker<span class="w"> </span>run<span class="w"> </span>hello-world
 <span class="go">Unable to find image &#39;hello-world:latest&#39; locally</span>
 <span class="go">Pulling repository hello-world</span>
 <span class="go">Get https://index.docker.io/v1/repositories/library/hello-world/images: dial tcp 54.152.161.54:443: connection refused</span>
@@ -1104,30 +1180,30 @@ failing to build because they can’t download stuff from the internet.</p>
 <p>One fix is to configure your <code class="code docutils literal notranslate"><span class="pre">.bashrc</span></code> or equivalent to:</p>
 <ol class="arabic">
 <li><p>Set the proxy environment variables:</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span> <span class="nv">HTTP_PROXY</span><span class="o">=</span>http://proxy.example.com:8088
-<span class="nb">export</span> <span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$HTTP_PROXY</span>
-<span class="nb">export</span> <span class="nv">HTTPS_PROXY</span><span class="o">=</span><span class="nv">$HTTP_PROXY</span>
-<span class="nb">export</span> <span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$HTTP_PROXY</span>
-<span class="nb">export</span> <span class="nv">NO_PROXY</span><span class="o">=</span><span class="s1">&#39;localhost,127.0.0.1,.example.com&#39;</span>
-<span class="nb">export</span> <span class="nv">no_proxy</span><span class="o">=</span><span class="nv">$NO_PROXY</span>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">export</span><span class="w"> </span><span class="nv">HTTP_PROXY</span><span class="o">=</span>http://proxy.example.com:8088
+<span class="nb">export</span><span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="nv">$HTTP_PROXY</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">HTTPS_PROXY</span><span class="o">=</span><span class="nv">$HTTP_PROXY</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="nv">$HTTP_PROXY</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">NO_PROXY</span><span class="o">=</span><span class="s1">&#39;localhost,127.0.0.1,.example.com&#39;</span>
+<span class="nb">export</span><span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="nv">$NO_PROXY</span>
 </pre></div>
 </div>
 </li>
 <li><p>Configure a <code class="code docutils literal notranslate"><span class="pre">docker</span> <span class="pre">build</span></code> wrapper:</p>
 <div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># Run &quot;docker build&quot; with specified arguments, adding proxy variables if</span>
 <span class="c1"># set. Assumes &quot;sudo&quot; is needed to run &quot;docker&quot;.</span>
-<span class="k">function</span> docker-build <span class="o">()</span> <span class="o">{</span>
-    <span class="k">if</span> <span class="o">[[</span> -z <span class="nv">$HTTP_PROXY</span> <span class="o">]]</span><span class="p">;</span> <span class="k">then</span>
-        sudo docker build <span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span>
-    <span class="k">else</span>
-        sudo docker build --build-arg <span class="nv">HTTP_PROXY</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HTTP_PROXY</span><span class="s2">&quot;</span> <span class="se">\</span>
-                          --build-arg <span class="nv">HTTPS_PROXY</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HTTPS_PROXY</span><span class="s2">&quot;</span> <span class="se">\</span>
-                          --build-arg <span class="nv">NO_PROXY</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$NO_PROXY</span><span class="s2">&quot;</span> <span class="se">\</span>
-                          --build-arg <span class="nv">http_proxy</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$http_proxy</span><span class="s2">&quot;</span> <span class="se">\</span>
-                          --build-arg <span class="nv">https_proxy</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$https_proxy</span><span class="s2">&quot;</span> <span class="se">\</span>
-                          --build-arg <span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$no_proxy</span><span class="s2">&quot;</span> <span class="se">\</span>
-                          <span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span>
-    <span class="k">fi</span>
+<span class="k">function</span><span class="w"> </span>docker-build<span class="w"> </span><span class="o">()</span><span class="w"> </span><span class="o">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span>-z<span class="w"> </span><span class="nv">$HTTP_PROXY</span><span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span>
+<span class="w">        </span>sudo<span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span><span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span>
+<span class="w">    </span><span class="k">else</span>
+<span class="w">        </span>sudo<span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>--build-arg<span class="w"> </span><span class="nv">HTTP_PROXY</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HTTP_PROXY</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span>--build-arg<span class="w"> </span><span class="nv">HTTPS_PROXY</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$HTTPS_PROXY</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span>--build-arg<span class="w"> </span><span class="nv">NO_PROXY</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$NO_PROXY</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span>--build-arg<span class="w"> </span><span class="nv">http_proxy</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$http_proxy</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span>--build-arg<span class="w"> </span><span class="nv">https_proxy</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$https_proxy</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span>--build-arg<span class="w"> </span><span class="nv">no_proxy</span><span class="o">=</span><span class="s2">&quot;</span><span class="nv">$no_proxy</span><span class="s2">&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                          </span><span class="s2">&quot;</span><span class="nv">$@</span><span class="s2">&quot;</span>
+<span class="w">    </span><span class="k">fi</span>
 <span class="o">}</span>
 </pre></div>
 </div>
@@ -1136,9 +1212,9 @@ failing to build because they can’t download stuff from the internet.</p>
 </section>
 </section>
 <section id="how-can-i-build-images-for-a-foreign-architecture">
-<h3><a class="toc-backref" href="#id38"><span class="section-number">10.4.9. </span>How can I build images for a foreign architecture?</a><a class="headerlink" href="#how-can-i-build-images-for-a-foreign-architecture" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id40" role="doc-backlink"><span class="section-number">10.4.9. </span>How can I build images for a foreign architecture?</a><a class="headerlink" href="#how-can-i-build-images-for-a-foreign-architecture" title="Permalink to this heading">¶</a></h3>
 <section id="qemu">
-<h4><a class="toc-backref" href="#id39"><span class="section-number">10.4.9.1. </span>QEMU</a><a class="headerlink" href="#qemu" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id41" role="doc-backlink"><span class="section-number">10.4.9.1. </span>QEMU</a><a class="headerlink" href="#qemu" title="Permalink to this heading">¶</a></h4>
 <p>Suppose you want to build Charliecloud containers on a system which has a
 different architecture from the target system.</p>
 <p>It’s straightforward as long as you can install suitable packages on the build
@@ -1158,19 +1234,19 @@ by architecture except by any name you give them, e.g., a base image like
 <code class="code docutils literal notranslate"><span class="pre">debian:11</span></code> pulled with <code class="code docutils literal notranslate"><span class="pre">--arch</span> <span class="pre">ppc64le</span></code> will overwrite a native
 x86 one.</p>
 <p>For example, to build a ppc64le image on a Debian Buster amd64 host:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> uname -m
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>uname<span class="w"> </span>-m
 <span class="go">x86_64</span>
-<span class="gp">$</span> sudo apt install qemu-user-static
-<span class="gp">$</span> ch-image pull --arch ppc64le alpine:3.17
-<span class="gp">$</span> <span class="nb">printf</span> <span class="s1">&#39;FROM alpine:3.17\nRUN apk add coreutils\n&#39;</span> <span class="p">|</span> ch-image build -t foo -
-<span class="gp">$</span> ch-convert alpine:3.17 /var/tmp/foo
-<span class="gp">$</span> ch-run /var/tmp/foo -- uname -m
+<span class="gp">$ </span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>qemu-user-static
+<span class="gp">$ </span>ch-image<span class="w"> </span>pull<span class="w"> </span>--arch<span class="w"> </span>ppc64le<span class="w"> </span>alpine:3.17
+<span class="gp">$ </span><span class="nb">printf</span><span class="w"> </span><span class="s1">&#39;FROM alpine:3.17\nRUN apk add coreutils\n&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo<span class="w"> </span>-
+<span class="gp">$ </span>ch-convert<span class="w"> </span>alpine:3.17<span class="w"> </span>/var/tmp/foo
+<span class="gp">$ </span>ch-run<span class="w"> </span>/var/tmp/foo<span class="w"> </span>--<span class="w"> </span>uname<span class="w"> </span>-m
 <span class="go">ppc64le</span>
 </pre></div>
 </div>
 </section>
 <section id="proot">
-<h4><a class="toc-backref" href="#id40"><span class="section-number">10.4.9.2. </span>PRoot</a><a class="headerlink" href="#proot" title="Permalink to this headline">¶</a></h4>
+<h4><a class="toc-backref" href="#id42" role="doc-backlink"><span class="section-number">10.4.9.2. </span>PRoot</a><a class="headerlink" href="#proot" title="Permalink to this heading">¶</a></h4>
 <p>Another way to build a foreign image, which works even without <code class="code docutils literal notranslate"><span class="pre">sudo</span></code> to
 install <code class="code docutils literal notranslate"><span class="pre">qemu-*-static</span></code>, is to populate a chroot for it with the <a class="reference external" href="https://proot-me.github.io/">PRoot</a> tool, whose <code class="code docutils literal notranslate"><span class="pre">-q</span></code> option allows
 specifying a <code class="code docutils literal notranslate"><span class="pre">qemu-*-static</span></code> binary (perhaps obtained by unpacking a
@@ -1178,7 +1254,7 @@ distribution package).</p>
 </section>
 </section>
 <section id="how-can-i-use-tarball-base-images-from-e-g-linuxcontainers-org">
-<h3><a class="toc-backref" href="#id41"><span class="section-number">10.4.10. </span>How can I use tarball base images from e.g. linuxcontainers.org?</a><a class="headerlink" href="#how-can-i-use-tarball-base-images-from-e-g-linuxcontainers-org" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id43" role="doc-backlink"><span class="section-number">10.4.10. </span>How can I use tarball base images from e.g. linuxcontainers.org?</a><a class="headerlink" href="#how-can-i-use-tarball-base-images-from-e-g-linuxcontainers-org" title="Permalink to this heading">¶</a></h3>
 <p>If you can’t find an image repository from which to pull for the distribution
 and architecture of interest, it is worth looking at the extensive collection
 of rootfs archives <a class="reference external" href="https://uk.lxd.images.canonical.com/images/">maintained by linuxcontainers.org</a>. They are meant for LXC, but
@@ -1186,13 +1262,13 @@ are fine as a basis for Charliecloud.</p>
 <p>For example, this would leave a <code class="code docutils literal notranslate"><span class="pre">ppc64le/alpine:3.17</span></code> image du jour in
 the registry for use in a Dockerfile <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> line. Note that
 linuxcontainers.org uses the opposite order for “le” in the architecture name.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
-<span class="gp">$</span> ch-image import rootfs.tar.xz ppc64le/alpine:3.17
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>wget<span class="w"> </span>https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
+<span class="gp">$ </span>ch-image<span class="w"> </span>import<span class="w"> </span>rootfs.tar.xz<span class="w"> </span>ppc64le/alpine:3.17
 </pre></div>
 </div>
 </section>
 <section id="how-can-i-control-charlieclouds-quietness-or-verbosity">
-<span id="faq-verbosity"></span><h3><a class="toc-backref" href="#id42"><span class="section-number">10.4.11. </span>How can I control Charliecloud’s quietness or verbosity?</a><a class="headerlink" href="#how-can-i-control-charlieclouds-quietness-or-verbosity" title="Permalink to this headline">¶</a></h3>
+<span id="faq-verbosity"></span><h3><a class="toc-backref" href="#id44" role="doc-backlink"><span class="section-number">10.4.11. </span>How can I control Charliecloud’s quietness or verbosity?</a><a class="headerlink" href="#how-can-i-control-charlieclouds-quietness-or-verbosity" title="Permalink to this heading">¶</a></h3>
 <p>Charliecloud logs various chatter about what is going on to standard error.
 This is distinct from <em>output</em>, e.g., <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">list</span></code> prints the list of
 images to standard output. We use reasonably standard log levels:</p>
@@ -1243,16 +1319,6 @@ are completely silenced no matter what goes wrong!)</p></li>
 <p>This table list which logging is printed at which verbosity levels (✅
 indicates printed, ❌ suppressed).</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-<col style="width: 13%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"></th>
 <th class="head"><p><code class="code docutils literal notranslate"><span class="pre">-vvv</span></code></p></th>
@@ -1315,7 +1381,7 @@ indicates printed, ❌ suppressed).</p>
 <td><p>✅</p></td>
 <td><p>[1]</p></td>
 <td><p>[1]</p></td>
-<td><p>[1]</p></td>
+<td><p>[1] [2]</p></td>
 <td><p>❌</p></td>
 <td><p>❌</p></td>
 </tr>
@@ -1354,6 +1420,33 @@ indicates printed, ❌ suppressed).</p>
 levels. For example, sometimes it’s passed through by default (e.g.,
 <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>) and sometimes it’s captured for internal use (e.g., many
 <code class="code docutils literal notranslate"><span class="pre">git(1)</span></code> invocations).</p></li>
+<li><p>In the case of <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>, the user command is considered a subprocess,
+e.g. <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-q</span> <span class="pre">example</span> <span class="pre">--</span> <span class="pre">echo</span> <span class="pre">foo</span></code> will produce no output.</p></li>
+</ol>
+</section>
+<section id="how-do-i-handle-extended-attributes-in-charliecloud">
+<span id="faq-xattrs"></span><h3><a class="toc-backref" href="#id45" role="doc-backlink"><span class="section-number">10.4.12. </span>How do I handle extended attributes in Charliecloud?</a><a class="headerlink" href="#how-do-i-handle-extended-attributes-in-charliecloud" title="Permalink to this heading">¶</a></h3>
+<p>As noted in section <a class="reference internal" href="ch-image.html#ch-image-build-cache"><span class="std std-ref">Build cache</span></a>, Charliecloud doesn’t support
+extended attributes (xattrs) by default. Support for xattrs  can be enabled for
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> and <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> by specifying <code class="code docutils literal notranslate"><span class="pre">--xattrs</span></code> or
+setting <code class="code docutils literal notranslate"><span class="pre">$CH_XATTRS</span></code>. This will make <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> save and restore
+xattrs via the build cache, and will make <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> preserve xattrs on
+conversion. Important caveats include:</p>
+<ol class="arabic simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> and <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> cannot read xattrs in privileged
+namespaces (e.g. <code class="code docutils literal notranslate"><span class="pre">trusted</span></code> and <code class="code docutils literal notranslate"><span class="pre">security</span></code>). Extended attributes
+in these namespaces will never be saved or restored via the cache, and will
+never be preserved when converting between image formats.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">import</span></code> cannot handle xattrs. This is a limitation of the
+Python <a class="reference external" href="https://docs.python.org/3/library/tarfile.html">tarfile</a> library,
+which as of version 3.12.1 doesn’t support xattrs (see CPython issue <a class="reference external" href="https://github.com/python/cpython/issues/113293">#113293</a>).</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">ch-convert</span> <span class="pre">-o</span> <span class="pre">ch-image</span></code> uses <code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">import</span></code> under the hood.
+This in conjunction with (2) means that <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> cannot preserve
+xattrs when converting to the <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> format.</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">ch-image</span> <span class="pre">pull</span></code> uses the tarfile library, so xattrs will be lost when
+pulling from a registry.</p></li>
+<li><p>Support for xattrs varies among filesystems, e.g. tmpfs didn’t support xattrs
+in the <code class="code docutils literal notranslate"><span class="pre">user</span></code> namespace prior to Linux kernel <a class="reference external" href="https://kernelnewbies.org/Linux_6.6#TMPFSe">upstream 6.6</a> (Oct 2023).</p></li>
 </ol>
 </section>
 </section>

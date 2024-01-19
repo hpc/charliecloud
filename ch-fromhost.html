@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>5. ch-fromhost &mdash; Charliecloud 0.35 documentation</title>
+  <title>5. ch-fromhost &mdash; Charliecloud 0.36 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="6. ch-image" href="ch-image.html" />
@@ -27,15 +26,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Charliecloud
-            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.35
+                0.36
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -93,8 +96,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">5. </span><code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">5. </span><code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -104,16 +107,16 @@
            <div itemprop="articleBody">
              
   <section id="ch-fromhost">
-<h1><span class="section-number">5. </span><code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code><a class="headerlink" href="#ch-fromhost" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">5. </span><code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code><a class="headerlink" href="#ch-fromhost" title="Permalink to this heading">¶</a></h1>
 <p>Inject files from the host into an image directory, with various magic.</p>
 <section id="synopsis">
-<h2><span class="section-number">5.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost <span class="o">[</span>OPTION ...<span class="o">]</span> <span class="o">[</span>FILE_OPTION ...<span class="o">]</span> IMGDIR
+<h2><span class="section-number">5.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span><span class="o">[</span>OPTION<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="o">[</span>FILE_OPTION<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>IMGDIR
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">5.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This command is experimental. Features may be incomplete and/or buggy.
@@ -133,7 +136,7 @@ Injection is currently implemented using a simple file copy, but that may
 change in the future.</p>
 <p>Arbitrary file and libfabric injection are handled differently.</p>
 <section id="arbitrary-files">
-<h3><span class="section-number">5.2.1. </span>Arbitrary files<a class="headerlink" href="#arbitrary-files" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">5.2.1. </span>Arbitrary files<a class="headerlink" href="#arbitrary-files" title="Permalink to this heading">¶</a></h3>
 <p>Arbitrary file paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> or
 <code class="code docutils literal notranslate"><span class="pre">/sbin</span></code> are assumed to be executables and placed in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code>
 within the container. Paths that are not loadable libfabric providers and
@@ -145,7 +148,7 @@ directory specified by <code class="code docutils literal notranslate"><span cla
 container (using <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>) after injection.</p>
 </section>
 <section id="libfabric">
-<h3><span class="section-number">5.2.2. </span>Libfabric<a class="headerlink" href="#libfabric" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">5.2.2. </span>Libfabric<a class="headerlink" href="#libfabric" title="Permalink to this heading">¶</a></h3>
 <p>MPI implementations have numerous ways of communicating messages over
 interconnects. We use libfabric (OFI), an OpenFabric framework that
 exports fabric communication services to applications, to manage these
@@ -168,9 +171,9 @@ be overwritten with the host’s. See details and quirks below.</p>
 </section>
 </section>
 <section id="options">
-<h2><span class="section-number">5.3. </span>Options<a class="headerlink" href="#options" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.3. </span>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
 <section id="to-specify-which-files-to-inject">
-<h3><span class="section-number">5.3.1. </span>To specify which files to inject<a class="headerlink" href="#to-specify-which-files-to-inject" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">5.3.1. </span>To specify which files to inject<a class="headerlink" href="#to-specify-which-files-to-inject" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">-c</span></code>, <code class="code docutils literal notranslate"><span class="pre">--cmd</span> <span class="pre">CMD</span></code></dt><dd><p>Inject files listed in the standard output of command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code>.</p>
@@ -196,7 +199,7 @@ to find executables and libraries to inject.</p>
 <p>These can be repeated, and at least one must be specified.</p>
 </section>
 <section id="to-specify-the-destination-within-the-image">
-<h3><span class="section-number">5.3.2. </span>To specify the destination within the image<a class="headerlink" href="#to-specify-the-destination-within-the-image" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">5.3.2. </span>To specify the destination within the image<a class="headerlink" href="#to-specify-the-destination-within-the-image" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">-d</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dest</span> <span class="pre">DST</span></code></dt><dd><p>Place files specified later in directory <code class="code docutils literal notranslate"><span class="pre">IMGDIR/DST</span></code>, overriding the
@@ -208,7 +211,7 @@ repeated to place files in varying destinations.</p>
 </div></blockquote>
 </section>
 <section id="additional-arguments">
-<h3><span class="section-number">5.3.3. </span>Additional arguments<a class="headerlink" href="#additional-arguments" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">5.3.3. </span>Additional arguments<a class="headerlink" href="#additional-arguments" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">--fi-path</span></code></dt><dd><p>Print the guest destination path for libfabric providers and replacement.</p>
@@ -230,7 +233,7 @@ libraries.</p>
 </section>
 </section>
 <section id="when-to-use-ch-fromhost">
-<h2><span class="section-number">5.4. </span>When to use <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code><a class="headerlink" href="#when-to-use-ch-fromhost" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.4. </span>When to use <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code><a class="headerlink" href="#when-to-use-ch-fromhost" title="Permalink to this heading">¶</a></h2>
 <p>This command does a lot of heuristic magic; while it <em>can</em> copy arbitrary
 files into an image, this usage is discouraged and prone to error. Here are
 some use cases and the recommended approach:</p>
@@ -254,7 +257,7 @@ can package your functionality with a tidy option like <code class="code docutil
 </ol>
 </section>
 <section id="libfabric-usage-and-quirks">
-<h2><span class="section-number">5.5. </span>Libfabric usage and quirks<a class="headerlink" href="#libfabric-usage-and-quirks" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.5. </span>Libfabric usage and quirks<a class="headerlink" href="#libfabric-usage-and-quirks" title="Permalink to this heading">¶</a></h2>
 <p>The implementation of libfabric provider injection and replacement is
 experimental and has a couple quirks.</p>
 <ol class="arabic">
@@ -317,7 +320,7 @@ the necessary support.</p></li>
 code better.</p>
 </section>
 <section id="notes">
-<h2><span class="section-number">5.6. </span>Notes<a class="headerlink" href="#notes" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.6. </span>Notes<a class="headerlink" href="#notes" title="Permalink to this heading">¶</a></h2>
 <p>Symbolic links are dereferenced, i.e., the files pointed to are injected, not
 the links themselves.</p>
 <p>As a corollary, do not include symlinks to shared libraries. These will be
@@ -342,19 +345,19 @@ notion of a half-started container.</p></li>
 script for nVidia GPUs, they would not solve the problem for other situations.</p>
 </section>
 <section id="bugs">
-<h2><span class="section-number">5.7. </span>Bugs<a class="headerlink" href="#bugs" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.7. </span>Bugs<a class="headerlink" href="#bugs" title="Permalink to this heading">¶</a></h2>
 <p>File paths may not contain colons or newlines.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> tends to print <code class="code docutils literal notranslate"><span class="pre">stat</span></code> errors; these are typically
 non-fatal and occur when trying to probe common library paths. See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/732">issue #732</a>.</p>
 </section>
 <section id="examples">
-<h2><span class="section-number">5.8. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.8. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
 <section id="id1">
-<h3><span class="section-number">5.8.1. </span>libfabric<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">5.8.1. </span>libfabric<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
 <p>Cray Slingshot CXI injection.</p>
 <p>Replace image libabfric, i.e., <code class="code docutils literal notranslate"><span class="pre">libfabric.so</span></code>, with Cray host’s
 libfabric at host path <code class="code docutils literal notranslate"><span class="pre">/opt/cray-libfabric/lib64/libfabric.so</span></code>.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost -v --path /opt/cray-libfabric/lib64/libfabric.so /tmp/ompi
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>-v<span class="w"> </span>--path<span class="w"> </span>/opt/cray-libfabric/lib64/libfabric.so<span class="w"> </span>/tmp/ompi
 <span class="go">[ debug ] queueing files</span>
 <span class="go">[ debug ]    cray libfabric: /opt/cray-libfabric/lib64/libfabric.so</span>
 <span class="go">[ debug ] searching image for inferred libfabric destiation</span>
@@ -396,12 +399,12 @@ libfabric at host path <code class="code docutils literal notranslate"><span cla
 </div>
 <p>Same as above, except also inject Cray’s <code class="code docutils literal notranslate"><span class="pre">fi_info</span></code> to verify Slingshot
 provider access.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost -v --path /opt/cray/libfabric/1.15.0.0/lib64/libfabric.so <span class="se">\</span>
-              -d /usr/local/bin <span class="se">\</span>
-              --path /opt/cray/libfabric/1.15.0.0/lib64/libfabric.so <span class="se">\</span>
-              /tmp/ompi
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>-v<span class="w"> </span>--path<span class="w"> </span>/opt/cray/libfabric/1.15.0.0/lib64/libfabric.so<span class="w"> </span><span class="se">\</span>
+<span class="w">              </span>-d<span class="w"> </span>/usr/local/bin<span class="w"> </span><span class="se">\</span>
+<span class="w">              </span>--path<span class="w"> </span>/opt/cray/libfabric/1.15.0.0/lib64/libfabric.so<span class="w"> </span><span class="se">\</span>
+<span class="w">              </span>/tmp/ompi
 <span class="go">[...]</span>
-<span class="gp">$</span> ch-run /tmp/ompi/ -- fi_info -p cxi
+<span class="gp">$ </span>ch-run<span class="w"> </span>/tmp/ompi/<span class="w"> </span>--<span class="w"> </span>fi_info<span class="w"> </span>-p<span class="w"> </span>cxi
 <span class="go">provider: cxi</span>
 <span class="go">  fabric: cxi</span>
 <span class="go">  [...]</span>
@@ -412,7 +415,7 @@ provider access.</p>
 <p>Cray GNI shared provider injection.</p>
 <p>Add Cray host built GNI provider <code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code> to the image and verify
 with <code class="code docutils literal notranslate"><span class="pre">fi_info</span></code>.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost -v --path /home/ofi/libgnix-fi.so /tmp/ompi
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>-v<span class="w"> </span>--path<span class="w"> </span>/home/ofi/libgnix-fi.so<span class="w"> </span>/tmp/ompi
 <span class="go">[ debug ] queueing files</span>
 <span class="go">[ debug ]    libfabric shared provider: /home/ofi/libgnix-fi.so</span>
 <span class="go">[ debug ] searching /tmp/ompi for libfabric shared provider destination</span>
@@ -441,7 +444,7 @@ with <code class="code docutils literal notranslate"><span class="pre">fi_info</
 <span class="go">[ debug ] validating ldconfig cache</span>
 <span class="go">done</span>
 
-<span class="gp">$</span> ch-run /tmp/ompi -- fi_info -p gni
+<span class="gp">$ </span>ch-run<span class="w"> </span>/tmp/ompi<span class="w"> </span>--<span class="w"> </span>fi_info<span class="w"> </span>-p<span class="w"> </span>gni
 <span class="go">provider: gni</span>
 <span class="go">  fabric: gni</span>
 <span class="go">  [...]</span>
@@ -451,40 +454,40 @@ with <code class="code docutils literal notranslate"><span class="pre">fi_info</
 </div>
 </section>
 <section id="arbitrary">
-<h3><span class="section-number">5.8.2. </span>Arbitrary<a class="headerlink" href="#arbitrary" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">5.8.2. </span>Arbitrary<a class="headerlink" href="#arbitrary" title="Permalink to this heading">¶</a></h3>
 <p>Place shared library <code class="code docutils literal notranslate"><span class="pre">/usr/lib64/libfoo.so</span></code> at path
 <code class="code docutils literal notranslate"><span class="pre">/usr/lib/libfoo.so</span></code> (assuming <code class="code docutils literal notranslate"><span class="pre">/usr/lib</span></code> is the first directory
 searched by the dynamic loader in the image), within the image
 <code class="code docutils literal notranslate"><span class="pre">/var/tmp/baz</span></code> and executable <code class="code docutils literal notranslate"><span class="pre">/bin/bar</span></code> at path
 <code class="code docutils literal notranslate"><span class="pre">/usr/bin/bar</span></code>. Then, create appropriate symlinks to <code class="code docutils literal notranslate"><span class="pre">libfoo</span></code> and
 update the <code class="code docutils literal notranslate"><span class="pre">ld.so</span></code> cache.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat qux.txt
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat<span class="w"> </span>qux.txt
 <span class="go">/bin/bar</span>
 <span class="go">/usr/lib64/libfoo.so</span>
-<span class="gp">$</span> ch-fromhost --file qux.txt /var/tmp/baz
+<span class="gp">$ </span>ch-fromhost<span class="w"> </span>--file<span class="w"> </span>qux.txt<span class="w"> </span>/var/tmp/baz
 </pre></div>
 </div>
 <p>Same as above:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --cmd <span class="s1">&#39;cat qux.txt&#39;</span> /var/tmp/baz
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>--cmd<span class="w"> </span><span class="s1">&#39;cat qux.txt&#39;</span><span class="w"> </span>/var/tmp/baz
 </pre></div>
 </div>
 <p>Same as above:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --path /bin/bar --path /usr/lib64/libfoo.so /var/tmp/baz
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>--path<span class="w"> </span>/bin/bar<span class="w"> </span>--path<span class="w"> </span>/usr/lib64/libfoo.so<span class="w"> </span>/var/tmp/baz
 </pre></div>
 </div>
 <p>Same as above, but place the files into <code class="code docutils literal notranslate"><span class="pre">/corge</span></code> instead (and the shared
 library will not be found by <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code>):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --dest /corge --file qux.txt /var/tmp/baz
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>--dest<span class="w"> </span>/corge<span class="w"> </span>--file<span class="w"> </span>qux.txt<span class="w"> </span>/var/tmp/baz
 </pre></div>
 </div>
 <p>Same as above, and also place file <code class="code docutils literal notranslate"><span class="pre">/etc/quux</span></code> at <code class="code docutils literal notranslate"><span class="pre">/etc/quux</span></code>
 within the container:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --file qux.txt --dest /etc --path /etc/quux /var/tmp/baz
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>--file<span class="w"> </span>qux.txt<span class="w"> </span>--dest<span class="w"> </span>/etc<span class="w"> </span>--path<span class="w"> </span>/etc/quux<span class="w"> </span>/var/tmp/baz
 </pre></div>
 </div>
 <p>Inject the executables and libraries recommended by nVidia into the image, and
 then run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-fromhost --nvidia /var/tmp/baz
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>--nvidia<span class="w"> </span>/var/tmp/baz
 <span class="go">asking ldconfig for shared library destination</span>
 <span class="go">/sbin/ldconfig: Can’t stat /libx32: No such file or directory</span>
 <span class="go">/sbin/ldconfig: Can’t stat /usr/libx32: No such file or directory</span>
@@ -506,7 +509,7 @@ then run <code class="code docutils literal notranslate"><span class="pre">ldcon
 </section>
 </section>
 <section id="acknowledgements">
-<h2><span class="section-number">5.9. </span>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">5.9. </span>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this heading">¶</a></h2>
 <p>This command was inspired by the similar <a class="reference external" href="http://www.nersc.gov/research-and-development/user-defined-images/">Shifter</a> feature
 that allows Shifter containers to use the Cray Aries network. We particularly
 appreciate the help provided by Shane Canon and Doug Jacobsen during our

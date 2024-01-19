@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>12. Contributor’s guide &mdash; Charliecloud 0.35 documentation</title>
+  <title>12. Contributor’s guide &mdash; Charliecloud 0.36 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
     <link rel="prev" title="11. Best practices" href="best_practices.html" /> 
@@ -26,15 +25,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Charliecloud
-            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.35
+                0.36
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -103,9 +106,17 @@
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files">12.4.4. Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#c-code">12.4.5. C code</a><ul>
-<li class="toctree-l4"><a class="reference internal" href="#const">12.4.5.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code></a></li>
-<li class="toctree-l4"><a class="reference internal" href="#lists">12.4.5.2. Lists</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#statement-ordering-within-source-files">12.4.5. Statement ordering within source files</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#python">12.4.5.1. Python</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#python-code">12.4.6. Python code</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#indentation-width">12.4.6.1. Indentation width</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#c-code">12.4.7. C code</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#const">12.4.7.1. <code class="code docutils literal notranslate"><span class="pre">const</span></code></a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lists">12.4.7.2. Lists</a></li>
 </ul>
 </li>
 </ul>
@@ -128,6 +139,7 @@
 </li>
 <li class="toctree-l2"><a class="reference internal" href="#miscellaneous-notes">12.6. Miscellaneous notes</a><ul>
 <li class="toctree-l3"><a class="reference internal" href="#updating-bundled-lark-parser">12.6.1. Updating bundled Lark parser</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#debugging-seccomp-2-bpf">12.6.2. Debugging <code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code> BPF</a></li>
 </ul>
 </li>
 </ul>
@@ -147,8 +159,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">12. </span>Contributor’s guide</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">12. </span>Contributor’s guide</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -158,12 +170,12 @@
            <div itemprop="articleBody">
              
   <section id="contributors-guide">
-<h1><span class="section-number">12. </span>Contributor’s guide<a class="headerlink" href="#contributors-guide" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">12. </span>Contributor’s guide<a class="headerlink" href="#contributors-guide" title="Permalink to this heading">¶</a></h1>
 <p>This section is notes on contributing to Charliecloud development. Currently,
 it is messy and incomplete. Patches welcome!</p>
 <p>It documents public stuff only. If you are on the core team at LANL, also
 consult the internal documentation and other resources.</p>
-<div class="contents local topic" id="contents">
+<nav class="contents local" id="contents">
 <ul class="simple">
 <li><p><a class="reference internal" href="#workflow" id="id2">Workflow</a></p>
 <ul>
@@ -196,22 +208,25 @@ consult the internal documentation and other resources.</p>
 <li><p><a class="reference internal" href="#documentation" id="id20">Documentation</a></p></li>
 <li><p><a class="reference internal" href="#dependency-policy" id="id21">Dependency policy</a></p></li>
 <li><p><a class="reference internal" href="#variable-conventions-in-shell-scripts-and-bats-files" id="id22">Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a></p></li>
-<li><p><a class="reference internal" href="#c-code" id="id23">C code</a></p></li>
+<li><p><a class="reference internal" href="#statement-ordering-within-source-files" id="id23">Statement ordering within source files</a></p></li>
+<li><p><a class="reference internal" href="#python-code" id="id24">Python code</a></p></li>
+<li><p><a class="reference internal" href="#c-code" id="id25">C code</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#oci-technical-notes" id="id24">OCI technical notes</a></p>
+<li><p><a class="reference internal" href="#oci-technical-notes" id="id26">OCI technical notes</a></p>
 <ul>
-<li><p><a class="reference internal" href="#ch-run-oci" id="id25">ch-run-oci</a></p></li>
-<li><p><a class="reference internal" href="#ch-image" id="id26">ch-image</a></p></li>
+<li><p><a class="reference internal" href="#ch-run-oci" id="id27">ch-run-oci</a></p></li>
+<li><p><a class="reference internal" href="#ch-image" id="id28">ch-image</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#miscellaneous-notes" id="id27">Miscellaneous notes</a></p>
+<li><p><a class="reference internal" href="#miscellaneous-notes" id="id29">Miscellaneous notes</a></p>
 <ul>
-<li><p><a class="reference internal" href="#updating-bundled-lark-parser" id="id28">Updating bundled Lark parser</a></p></li>
+<li><p><a class="reference internal" href="#updating-bundled-lark-parser" id="id30">Updating bundled Lark parser</a></p></li>
+<li><p><a class="reference internal" href="#debugging-seccomp-2-bpf" id="id31">Debugging <code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code> BPF</a></p></li>
 </ul>
 </li>
 </ul>
-</div>
+</nav>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>We’re interested in and will consider all good-faith contributions. While
@@ -220,7 +235,7 @@ they are not required. We’ll either clean it up for you or walk you through
 any necessary changes.</p>
 </div>
 <section id="workflow">
-<h2><a class="toc-backref" href="#id2"><span class="section-number">12.1. </span>Workflow</a><a class="headerlink" href="#workflow" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id2" role="doc-backlink"><span class="section-number">12.1. </span>Workflow</a><a class="headerlink" href="#workflow" title="Permalink to this heading">¶</a></h2>
 <p>We try to keep procedures and the Git branching model simple. Right now, we’re
 pretty similar to Scott Chacon’s “<a class="reference external" href="http://scottchacon.com/2011/08/31/github-flow.html">GitHub Flow</a>”: Master is stable;
 work on short-lived topic branches; use pull requests to ask for merging; keep issues organized with tags and milestones.</p>
@@ -241,7 +256,7 @@ recorded in the issue.</p></li>
 they are comfortable with, making sure to follow LANL policy and taking into
 account the probable desires of the recipient as well.</p>
 <section id="milestones">
-<h3><a class="toc-backref" href="#id3"><span class="section-number">12.1.1. </span>Milestones</a><a class="headerlink" href="#milestones" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">12.1.1. </span>Milestones</a><a class="headerlink" href="#milestones" title="Permalink to this heading">¶</a></h3>
 <p>We use milestones to organize what we plan to do next and what happened in a
 given release. There are two groups of milestones:</p>
 <ul class="simple">
@@ -259,7 +274,7 @@ issue ends up in <code class="code docutils literal notranslate"><span class="pr
 should not be assigned to a person.</p>
 </section>
 <section id="peer-review">
-<h3><a class="toc-backref" href="#id4"><span class="section-number">12.1.2. </span>Peer review</a><a class="headerlink" href="#peer-review" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">12.1.2. </span>Peer review</a><a class="headerlink" href="#peer-review" title="Permalink to this heading">¶</a></h3>
 <p><strong>Issues and pull requests.</strong> The standard workflow is to introduce a change
 in an issue, get consensus on what to do, and then create a <em>draft</em> <a class="reference external" href="https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project">pull
 request</a>
@@ -317,7 +332,7 @@ the PR author gets only a single notification instead of one for every comment
 you make, and it’s clear when they branch is theirs again.</p>
 </section>
 <section id="branching-and-merging">
-<h3><a class="toc-backref" href="#id5"><span class="section-number">12.1.3. </span>Branching and merging</a><a class="headerlink" href="#branching-and-merging" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">12.1.3. </span>Branching and merging</a><a class="headerlink" href="#branching-and-merging" title="Permalink to this heading">¶</a></h3>
 <p><strong>Don’t commit directly to master.</strong> Even the project lead doesn’t do this.
 While it may appear that some trivial fixes are being committed to the master
 directly, what’s really happening is that these are prototyped on a branch and
@@ -361,7 +376,7 @@ conflicts before asking for merge.</p>
 <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">branch</span> <span class="pre">-d</span></code> (or <code class="code docutils literal notranslate"><span class="pre">-D</span></code>) and <code class="code docutils literal notranslate"><span class="pre">git</span> <span class="pre">fetch</span> <span class="pre">--prune</span> <span class="pre">--all</span></code>.</p>
 </section>
 <section id="miscellaneous-issue-and-pull-request-notes">
-<h3><a class="toc-backref" href="#id6"><span class="section-number">12.1.4. </span>Miscellaneous issue and pull request notes</a><a class="headerlink" href="#miscellaneous-issue-and-pull-request-notes" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">12.1.4. </span>Miscellaneous issue and pull request notes</a><a class="headerlink" href="#miscellaneous-issue-and-pull-request-notes" title="Permalink to this heading">¶</a></h3>
 <p><strong>Acknowledging issues.</strong> Issues and PRs submitted from outside should be
 acknowledged promptly, including adding or correcting tags.</p>
 <p><strong>Closing issues.</strong> We close issues when we’ve taken the requested action,
@@ -375,7 +390,7 @@ rot. We try to either merge or reject PRs in a timely manner.</p>
 arises, for example a <code class="code docutils literal notranslate"><span class="pre">worksforme</span></code> issue with new reproduction steps.</p>
 </section>
 <section id="continuous-integration-testing">
-<h3><a class="toc-backref" href="#id7"><span class="section-number">12.1.5. </span>Continuous integration testing</a><a class="headerlink" href="#continuous-integration-testing" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">12.1.5. </span>Continuous integration testing</a><a class="headerlink" href="#continuous-integration-testing" title="Permalink to this heading">¶</a></h3>
 <p><strong>Quality of testing.</strong> Tagged versions currently get more testing for various
 reasons. We are working to improve testing for normal commits on master, but
 full parity is probably unlikely.</p>
@@ -393,7 +408,7 @@ base images that have actually changed (the ones that haven’t will be
 re-tagged).</p>
 </section>
 <section id="issue-labeling">
-<h3><a class="toc-backref" href="#id8"><span class="section-number">12.1.6. </span>Issue labeling</a><a class="headerlink" href="#issue-labeling" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">12.1.6. </span>Issue labeling</a><a class="headerlink" href="#issue-labeling" title="Permalink to this heading">¶</a></h3>
 <p>We use the following labels (a.k.a. tags) to organize issues. Each issue (or
 stand-alone PR) should have label(s) from every category, with the exception
 of disposition which only applies to closed issues.</p>
@@ -407,7 +422,7 @@ should add or adjust labels as needed.</p>
 previous schemes, and we have not re-labeled closed issues.</p>
 </div>
 <section id="what-kind-of-change-is-it">
-<h4><span class="section-number">12.1.6.1. </span>What kind of change is it?<a class="headerlink" href="#what-kind-of-change-is-it" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.1. </span>What kind of change is it?<a class="headerlink" href="#what-kind-of-change-is-it" title="Permalink to this heading">¶</a></h4>
 <p>Choose <em>one type</em> from:</p>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">bug</span></code></dt><dd><p>Something doesn’t work; e.g., it doesn’t work as intended or it was
@@ -427,7 +442,7 @@ are more cleanup-oriented.</p>
 </dl>
 </section>
 <section id="how-important-urgent-is-it">
-<h4><span class="section-number">12.1.6.2. </span>How important/urgent is it?<a class="headerlink" href="#how-important-urgent-is-it" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.2. </span>How important/urgent is it?<a class="headerlink" href="#how-important-urgent-is-it" title="Permalink to this heading">¶</a></h4>
 <p>Choose <em>one priority</em> from:</p>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">high</span></code></dt><dd><p>High priority.</p>
@@ -461,7 +476,7 @@ open. Related to this, issues do often move between priority levels. In
 particular, if you think we picked the wrong priority level, please say so.</p>
 </section>
 <section id="what-part-of-charliecloud-is-affected">
-<h4><span class="section-number">12.1.6.3. </span>What part of Charliecloud is affected?<a class="headerlink" href="#what-part-of-charliecloud-is-affected" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.3. </span>What part of Charliecloud is affected?<a class="headerlink" href="#what-part-of-charliecloud-is-affected" title="Permalink to this heading">¶</a></h4>
 <p>Choose <em>one or more components</em> from:</p>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">runtime</span></code></dt><dd><p>The container runtime itself; largely <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
@@ -485,7 +500,7 @@ with image building.)</p>
 </dl>
 </section>
 <section id="special-considerations">
-<h4><span class="section-number">12.1.6.4. </span>Special considerations<a class="headerlink" href="#special-considerations" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.4. </span>Special considerations<a class="headerlink" href="#special-considerations" title="Permalink to this heading">¶</a></h4>
 <p>Choose <em>one or more extras</em> from:</p>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">blocked</span></code></dt><dd><p>We can’t do this yet because something else needs to happen first. If that
@@ -504,7 +519,7 @@ project organization.</p>
 </dl>
 </section>
 <section id="why-was-it-closed">
-<h4><span class="section-number">12.1.6.5. </span>Why was it closed?<a class="headerlink" href="#why-was-it-closed" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.5. </span>Why was it closed?<a class="headerlink" href="#why-was-it-closed" title="Permalink to this heading">¶</a></h4>
 <p>If the issue was resolved (i.e., bug fixed or enhancement/refactoring
 implemented), there is no disposition tag. Otherwise, to explain why not,
 choose <em>one disposition</em> from:</p>
@@ -541,7 +556,7 @@ bugs should be left open in hopes of new insight arising.</p>
 </dl>
 </section>
 <section id="deprecated-labels">
-<h4><span class="section-number">12.1.6.6. </span>Deprecated labels<a class="headerlink" href="#deprecated-labels" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.1.6.6. </span>Deprecated labels<a class="headerlink" href="#deprecated-labels" title="Permalink to this heading">¶</a></h4>
 <p>You might see these on old issues, but they are no longer in use.</p>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">help</span> <span class="pre">wanted</span></code>: This tended to get stale and wasn’t generating any
@@ -554,37 +569,37 @@ to be a discussion, we’ll be happy to convert it to you.)</p></li>
 </section>
 </section>
 <section id="test-suite">
-<h2><a class="toc-backref" href="#id9"><span class="section-number">12.2. </span>Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">12.2. </span>Test suite</a><a class="headerlink" href="#test-suite" title="Permalink to this heading">¶</a></h2>
 <section id="timing-the-tests">
-<h3><a class="toc-backref" href="#id10"><span class="section-number">12.2.1. </span>Timing the tests</a><a class="headerlink" href="#timing-the-tests" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">12.2.1. </span>Timing the tests</a><a class="headerlink" href="#timing-the-tests" title="Permalink to this heading">¶</a></h3>
 <p>The <code class="code docutils literal notranslate"><span class="pre">ts</span></code> utility from <code class="code docutils literal notranslate"><span class="pre">moreutils</span></code> is quite handy. The following
 prepends each line with the elapsed time since the previous line:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-test -s quick <span class="p">|</span> ts -i <span class="s1">&#39;%M:%.S&#39;</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-test<span class="w"> </span>-s<span class="w"> </span>quick<span class="w"> </span><span class="p">|</span><span class="w"> </span>ts<span class="w"> </span>-i<span class="w"> </span><span class="s1">&#39;%M:%.S&#39;</span>
 </pre></div>
 </div>
 <p>Note: a skipped test isn’t free; I see ~0.15 seconds to do a skip.</p>
 </section>
 <section id="ch-test-complains-about-inconsistent-versions">
-<h3><a class="toc-backref" href="#id11"><span class="section-number">12.2.2. </span><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a><a class="headerlink" href="#ch-test-complains-about-inconsistent-versions" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">12.2.2. </span><code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> complains about inconsistent versions</a><a class="headerlink" href="#ch-test-complains-about-inconsistent-versions" title="Permalink to this heading">¶</a></h3>
 <p>There are multiple ways to ask Charliecloud for its version number. These
 should all give the same result. If they don’t, <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code> will fail.
 Typically, something needs to be rebuilt. Recall that <code class="code docutils literal notranslate"><span class="pre">configure</span></code>
 contains the version number as a constant, so a common way to get into this
 situation is to change Git branches without rebuilding it.</p>
 <p>Charliecloud is small enough to just rebuild everything with:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ./autogen.sh <span class="o">&amp;&amp;</span> ./configure <span class="o">&amp;&amp;</span> make clean <span class="o">&amp;&amp;</span> make
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>./autogen.sh<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./configure<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make
 </pre></div>
 </div>
 </section>
 <section id="special-images">
-<h3><a class="toc-backref" href="#id12"><span class="section-number">12.2.3. </span>Special images</a><a class="headerlink" href="#special-images" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id12" role="doc-backlink"><span class="section-number">12.2.3. </span>Special images</a><a class="headerlink" href="#special-images" title="Permalink to this heading">¶</a></h3>
 <p>For images not needed after completion of a test, tag them <code class="code docutils literal notranslate"><span class="pre">tmpimg</span></code>.
 This leaves only one extra image at the end of the test suite.</p>
 </section>
 <section id="writing-a-test-image-using-the-standard-workflow">
-<h3><a class="toc-backref" href="#id13"><span class="section-number">12.2.4. </span>Writing a test image using the standard workflow</a><a class="headerlink" href="#writing-a-test-image-using-the-standard-workflow" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id13" role="doc-backlink"><span class="section-number">12.2.4. </span>Writing a test image using the standard workflow</a><a class="headerlink" href="#writing-a-test-image-using-the-standard-workflow" title="Permalink to this heading">¶</a></h3>
 <section id="summary">
-<h4><span class="section-number">12.2.4.1. </span>Summary<a class="headerlink" href="#summary" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.2.4.1. </span>Summary<a class="headerlink" href="#summary" title="Permalink to this heading">¶</a></h4>
 <p>The Charliecloud test suite has a workflow that can build images by two
 methods:</p>
 <ol class="arabic simple">
@@ -620,7 +635,7 @@ suite. <code class="code docutils literal notranslate"><span class="pre">ch-test
 already been built by a Dockerfile, which is often more straightforward.</p>
 </section>
 <section id="how-to-specify-when-to-include-and-exclude-a-test-image">
-<h4><span class="section-number">12.2.4.2. </span>How to specify when to include and exclude a test image<a class="headerlink" href="#how-to-specify-when-to-include-and-exclude-a-test-image" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.2.4.2. </span>How to specify when to include and exclude a test image<a class="headerlink" href="#how-to-specify-when-to-include-and-exclude-a-test-image" title="Permalink to this heading">¶</a></h4>
 <p>Each of these image build files must specify its scope for building and
 running, which must be greater than or equal than the scope of all tests in
 any corresponding <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files. Exactly one of the following strings
@@ -649,11 +664,11 @@ included.</p>
 </div></blockquote>
 </section>
 <section id="how-to-write-a-dockerfile-recipe">
-<h4><span class="section-number">12.2.4.3. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe<a class="headerlink" href="#how-to-write-a-dockerfile-recipe" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.2.4.3. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Dockerfile</span></code> recipe<a class="headerlink" href="#how-to-write-a-dockerfile-recipe" title="Permalink to this heading">¶</a></h4>
 <p>It’s a standard Dockerfile.</p>
 </section>
 <section id="how-to-write-a-build-recipe">
-<h4><span class="section-number">12.2.4.4. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe<a class="headerlink" href="#how-to-write-a-build-recipe" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.2.4.4. </span>How to write a <code class="code docutils literal notranslate"><span class="pre">Build</span></code> recipe<a class="headerlink" href="#how-to-write-a-build-recipe" title="Permalink to this heading">¶</a></h4>
 <p>This is an arbitrary script or program that builds the image. It gets three
 command line arguments:</p>
 <blockquote>
@@ -709,7 +724,7 @@ takes care of this).</p></li>
 </section>
 </section>
 <section id="building-rpms">
-<h2><a class="toc-backref" href="#id14"><span class="section-number">12.3. </span>Building RPMs</a><a class="headerlink" href="#building-rpms" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id14" role="doc-backlink"><span class="section-number">12.3. </span>Building RPMs</a><a class="headerlink" href="#building-rpms" title="Permalink to this heading">¶</a></h2>
 <p>We maintain <code class="code docutils literal notranslate"><span class="pre">.spec</span></code> files and infrastructure for building RPMs in the
 Charliecloud source code. This is for two purposes:</p>
 <blockquote>
@@ -722,7 +737,7 @@ Charliecloud source code. This is for two purposes:</p>
 <p>This section describes how to build the RPMs and the pain we’ve hopefully
 abstracted away.</p>
 <section id="dependencies">
-<h3><a class="toc-backref" href="#id15"><span class="section-number">12.3.1. </span>Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id15" role="doc-backlink"><span class="section-number">12.3.1. </span>Dependencies</a><a class="headerlink" href="#dependencies" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><ul class="simple">
 <li><p>charliecloud</p></li>
@@ -748,7 +763,7 @@ python version names for the listed packages in RHEL 8 and derivatives):
 </div></blockquote>
 </section>
 <section id="rpmbuild-wrapper-script">
-<h3><a class="toc-backref" href="#id16"><span class="section-number">12.3.2. </span><code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a><a class="headerlink" href="#rpmbuild-wrapper-script" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id16" role="doc-backlink"><span class="section-number">12.3.2. </span><code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code> wrapper script</a><a class="headerlink" href="#rpmbuild-wrapper-script" title="Permalink to this heading">¶</a></h3>
 <p>While building the Charliecloud RPMs is not too weird, we provide a script to
 streamline it. The purpose is to (a) make it easy to build versions not
 matching the working directory, (b) use an arbitrary <code class="code docutils literal notranslate"><span class="pre">rpmbuild</span></code>
@@ -756,7 +771,7 @@ directory, and (c) build in a Charliecloud container for non-RPM-based
 environments.</p>
 <p>The script must be run from the root of a Charliecloud Git working directory.</p>
 <p>Usage:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> packaging/fedora/build <span class="o">[</span>OPTIONS<span class="o">]</span> IMAGE VERSION
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>packaging/fedora/build<span class="w"> </span><span class="o">[</span>OPTIONS<span class="o">]</span><span class="w"> </span>IMAGE<span class="w"> </span>VERSION
 </pre></div>
 </div>
 <p>Options:</p>
@@ -772,22 +787,22 @@ environment.</p></li>
 with the test suite, on any system, and leave the results in
 <code class="code docutils literal notranslate"><span class="pre">~/rpmbuild/RPMS</span></code> (note the test suite would also build the
 necessary image directory):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-image build -f ./examples/Dockerfile.centos_7ch ./examples
-<span class="gp">$</span> bin/ch-convert centos_7ch <span class="nv">$CH_TEST_IMGDIR</span>/centos_7ch
-<span class="gp">$</span> packaging/fedora/build <span class="nv">$CH_TEST_IMGDIR</span>/centos_7ch <span class="m">0</span>.9.7-1
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bin/ch-image<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>./examples/Dockerfile.centos_7ch<span class="w"> </span>./examples
+<span class="gp">$ </span>bin/ch-convert<span class="w"> </span>centos_7ch<span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/centos_7ch
+<span class="gp">$ </span>packaging/fedora/build<span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/centos_7ch<span class="w"> </span><span class="m">0</span>.9.7-1
 </pre></div>
 </div>
 <p>To build a pre-release RPM of Git HEAD using the CentOS 7 image:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> bin/ch-image build -f ./examples/Dockerfile.centos_7ch ./examples
-<span class="gp">$</span> bin/ch-convert centos_7ch <span class="nv">$CH_TEST_IMGDIR</span>/centos_7ch
-<span class="gp">$</span> packaging/fedora/build <span class="si">${</span><span class="nv">CH_TEST_IMGDIR</span><span class="si">}</span>/centos_7ch HEAD
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>bin/ch-image<span class="w"> </span>build<span class="w"> </span>-f<span class="w"> </span>./examples/Dockerfile.centos_7ch<span class="w"> </span>./examples
+<span class="gp">$ </span>bin/ch-convert<span class="w"> </span>centos_7ch<span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/centos_7ch
+<span class="gp">$ </span>packaging/fedora/build<span class="w"> </span><span class="si">${</span><span class="nv">CH_TEST_IMGDIR</span><span class="si">}</span>/centos_7ch<span class="w"> </span>HEAD
 </pre></div>
 </div>
 </section>
 <section id="gotchas-and-quirks">
-<h3><a class="toc-backref" href="#id17"><span class="section-number">12.3.3. </span>Gotchas and quirks</a><a class="headerlink" href="#gotchas-and-quirks" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id17" role="doc-backlink"><span class="section-number">12.3.3. </span>Gotchas and quirks</a><a class="headerlink" href="#gotchas-and-quirks" title="Permalink to this heading">¶</a></h3>
 <section id="rpm-versions-and-releases">
-<h4><span class="section-number">12.3.3.1. </span>RPM versions and releases<a class="headerlink" href="#rpm-versions-and-releases" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.3.3.1. </span>RPM versions and releases<a class="headerlink" href="#rpm-versions-and-releases" title="Permalink to this heading">¶</a></h4>
 <p>If <code class="code docutils literal notranslate"><span class="pre">VERSION</span></code> is <code class="code docutils literal notranslate"><span class="pre">HEAD</span></code>, then the RPM version will be the content
 of <code class="code docutils literal notranslate"><span class="pre">VERSION.full</span></code> for that commit, including Git gobbledygook, and the
 RPM release will be <code class="code docutils literal notranslate"><span class="pre">0</span></code>. Note that such RPMs cannot be reliably upgraded
@@ -798,7 +813,7 @@ by a hyphen and the desired RPM release, e.g. <code class="code docutils literal
 supported.</p>
 </section>
 <section id="packaged-source-code-and-rpm-build-config-come-from-different-commits">
-<h4><span class="section-number">12.3.3.2. </span>Packaged source code and RPM build config come from different commits<a class="headerlink" href="#packaged-source-code-and-rpm-build-config-come-from-different-commits" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.3.3.2. </span>Packaged source code and RPM build config come from different commits<a class="headerlink" href="#packaged-source-code-and-rpm-build-config-come-from-different-commits" title="Permalink to this heading">¶</a></h4>
 <p>The spec file, <code class="code docutils literal notranslate"><span class="pre">build</span></code> script, <code class="code docutils literal notranslate"><span class="pre">.rpmlintrc</span></code>, etc. come from the
 working directory, but the package source is from the specified commit. This
 is what enables us to make additional RPM releases for a given Charliecloud
@@ -807,7 +822,7 @@ release (e.g. 0.9.7-2).</p>
 commit, and it’s not possible to create an RPM of uncommitted source code.</p>
 </section>
 <section id="changelog-maintenance">
-<h4><span class="section-number">12.3.3.3. </span>Changelog maintenance<a class="headerlink" href="#changelog-maintenance" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.3.3.3. </span>Changelog maintenance<a class="headerlink" href="#changelog-maintenance" title="Permalink to this heading">¶</a></h4>
 <p>The spec file contains a manually maintained changelog. Add a new entry for
 each new RPM release; do not include the Charliecloud release notes.</p>
 <p>For released versions, <code class="code docutils literal notranslate"><span class="pre">build</span></code> verifies that the most recent changelog
@@ -819,7 +834,7 @@ with the appropriate version stating that it’s a pre-release RPM.</p>
 </section>
 </section>
 <section id="style-hints">
-<span id="build-ova"></span><h2><a class="toc-backref" href="#id18"><span class="section-number">12.4. </span>Style hints</a><a class="headerlink" href="#style-hints" title="Permalink to this headline">¶</a></h2>
+<span id="build-ova"></span><h2><a class="toc-backref" href="#id18" role="doc-backlink"><span class="section-number">12.4. </span>Style hints</a><a class="headerlink" href="#style-hints" title="Permalink to this heading">¶</a></h2>
 <p>We haven’t written down a comprehensive style guide. Generally, follow the
 style of the surrounding code, think in rectangles rather than lines of code
 or text, and avoid CamelCase.</p>
@@ -827,7 +842,7 @@ or text, and avoid CamelCase.</p>
 complains (or even updates this section based on your patch!). He tries to be
 nice about it.</p>
 <section id="writing-english">
-<h3><a class="toc-backref" href="#id19"><span class="section-number">12.4.1. </span>Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id19" role="doc-backlink"><span class="section-number">12.4.1. </span>Writing English</a><a class="headerlink" href="#writing-english" title="Permalink to this heading">¶</a></h3>
 <ul>
 <li><p>When describing what something does (e.g., your PR or a command), use the
 <a class="reference external" href="https://chris.beams.io/posts/git-commit/#imperative">imperative mood</a>,
@@ -854,7 +869,7 @@ filled with false positives.</p></li>
 </ul>
 </section>
 <section id="documentation">
-<h3><a class="toc-backref" href="#id20"><span class="section-number">12.4.2. </span>Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id20" role="doc-backlink"><span class="section-number">12.4.2. </span>Documentation</a><a class="headerlink" href="#documentation" title="Permalink to this heading">¶</a></h3>
 <p>Heading underline characters:</p>
 <blockquote>
 <div><ol class="arabic simple">
@@ -866,12 +881,12 @@ filled with false positives.</p></li>
 </div></blockquote>
 </section>
 <section id="dependency-policy">
-<span id="id1"></span><h3><a class="toc-backref" href="#id21"><span class="section-number">12.4.3. </span>Dependency policy</a><a class="headerlink" href="#dependency-policy" title="Permalink to this headline">¶</a></h3>
+<span id="id1"></span><h3><a class="toc-backref" href="#id21" role="doc-backlink"><span class="section-number">12.4.3. </span>Dependency policy</a><a class="headerlink" href="#dependency-policy" title="Permalink to this heading">¶</a></h3>
 <p>Specific dependencies (prerequisites) are stated elsewhere in the
 documentation. This section describes our policy on which dependencies are
 acceptable.</p>
 <section id="generally">
-<h4><span class="section-number">12.4.3.1. </span>Generally<a class="headerlink" href="#generally" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.4.3.1. </span>Generally<a class="headerlink" href="#generally" title="Permalink to this heading">¶</a></h4>
 <p>All dependencies must be stated and justified in the documentation.</p>
 <p>We want Charliecloud to run on as many systems as practical, so we work hard
 to keep dependencies minimal. However, because Charliecloud depends on new-ish
@@ -900,7 +915,7 @@ enough to support Charliecloud. You might need to install additional packages
 (but not from third-party repositories).</p>
 </section>
 <section id="curl-vs-wget">
-<h4><span class="section-number">12.4.3.2. </span><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code><a class="headerlink" href="#curl-vs-wget" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.4.3.2. </span><code class="code docutils literal notranslate"><span class="pre">curl</span></code> vs. <code class="code docutils literal notranslate"><span class="pre">wget</span></code><a class="headerlink" href="#curl-vs-wget" title="Permalink to this heading">¶</a></h4>
 <p>For URL downloading in shell code, including Dockerfiles, use <code class="code docutils literal notranslate"><span class="pre">wget</span> <span class="pre">-nv</span></code>.</p>
 <p>Both work fine for our purposes, and we need to use one or the other
 consistently. According to Debian’s popularity contest, 99.88% of reporting
@@ -911,7 +926,7 @@ other hand, <code class="code docutils literal notranslate"><span class="pre">cu
 </section>
 </section>
 <section id="variable-conventions-in-shell-scripts-and-bats-files">
-<h3><a class="toc-backref" href="#id22"><span class="section-number">12.4.4. </span>Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id22" role="doc-backlink"><span class="section-number">12.4.4. </span>Variable conventions in shell scripts and <code class="code docutils literal notranslate"><span class="pre">.bats</span></code> files</a><a class="headerlink" href="#variable-conventions-in-shell-scripts-and-bats-files" title="Permalink to this heading">¶</a></h3>
 <ul>
 <li><p>Separate words with underscores.</p></li>
 <li><p>User-configured environment variables: all uppercase, <code class="code docutils literal notranslate"><span class="pre">CH_TEST_</span></code>
@@ -945,16 +960,84 @@ foo=&quot;${bar}/baz&quot;  # no
 </li>
 </ul>
 </section>
+<section id="statement-ordering-within-source-files">
+<h3><a class="toc-backref" href="#id23" role="doc-backlink"><span class="section-number">12.4.5. </span>Statement ordering within source files</a><a class="headerlink" href="#statement-ordering-within-source-files" title="Permalink to this heading">¶</a></h3>
+<p>In general, we order things alphabetically.</p>
+<section id="python">
+<h4><span class="section-number">12.4.5.1. </span>Python<a class="headerlink" href="#python" title="Permalink to this heading">¶</a></h4>
+<p>The module as a whole, and each class, comprise a sequence of ordering units
+separated by section header comments surrounded by two or more hashes, e.g.
+<code class="code docutils literal notranslate"><span class="pre">##</span> <span class="pre">Globals</span> <span class="pre">##</span></code>. Sections with the following names must be in this order
+(omissions are fine). Other section names may appear in any order. There is
+also an unnamed zeroth section.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Enums</p></li>
+<li><p>Constants</p></li>
+<li><p>Globals</p></li>
+<li><p>Exceptions</p></li>
+<li><p>Main</p></li>
+<li><p>Functions</p></li>
+<li><p>Supporting classes</p></li>
+<li><p>Core classes</p></li>
+<li><p>Classes</p></li>
+</ol>
+</div></blockquote>
+<p>Within each section, statements occur in the following order.</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>imports</p>
+<ol class="arabic simple">
+<li><p>standard library</p></li>
+<li><p>external imports not in the standard library</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">import</span> <span class="pre">charliecloud</span></code></p></li>
+<li><p>other Charliecloud imports</p></li>
+</ol>
+</li>
+<li><p>assignments</p></li>
+<li><p>class definitions</p></li>
+<li><p>function definitions</p>
+<ol class="arabic simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">__init__</span></code></p></li>
+<li><p>static methods</p></li>
+<li><p>class methods</p></li>
+<li><p>other double-underscore methods (e.g. <code class="code docutils literal notranslate"><span class="pre">__str__</span></code>)</p></li>
+<li><p>properties</p></li>
+<li><p>“normal” functions (instance methods)</p></li>
+</ol>
+</li>
+</ol>
+</div></blockquote>
+<p>Within each group of statements above, identifiers must occur in alphabetical
+order. Exceptions:</p>
+<blockquote>
+<div><ol class="arabic simple">
+<li><p>Classes must appear after their base class.</p></li>
+<li><p>Assignments may appear in any order.</p></li>
+</ol>
+</div></blockquote>
+<p>Statement types not listed above may appear in any order.</p>
+<p>A statement that must be out of order is exempted with a comment on its first
+line containing 👻, because a ghost says “OOO”, i.e. “out of order”.</p>
+</section>
+</section>
+<section id="python-code">
+<h3><a class="toc-backref" href="#id24" role="doc-backlink"><span class="section-number">12.4.6. </span>Python code</a><a class="headerlink" href="#python-code" title="Permalink to this heading">¶</a></h3>
+<section id="indentation-width">
+<h4><span class="section-number">12.4.6.1. </span>Indentation width<a class="headerlink" href="#indentation-width" title="Permalink to this heading">¶</a></h4>
+<p>3 spaces per level. No tab characters.</p>
+</section>
+</section>
 <section id="c-code">
-<h3><a class="toc-backref" href="#id23"><span class="section-number">12.4.5. </span>C code</a><a class="headerlink" href="#c-code" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id25" role="doc-backlink"><span class="section-number">12.4.7. </span>C code</a><a class="headerlink" href="#c-code" title="Permalink to this heading">¶</a></h3>
 <section id="const">
-<h4><span class="section-number">12.4.5.1. </span><code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.4.7.1. </span><code class="code docutils literal notranslate"><span class="pre">const</span></code><a class="headerlink" href="#const" title="Permalink to this heading">¶</a></h4>
 <p>The <code class="code docutils literal notranslate"><span class="pre">const</span></code> keyword is used to indicate that variables are read-only. It
 has a variety of uses; in Charliecloud, we use it for <a class="reference external" href="https://softwareengineering.stackexchange.com/a/204720">function pointer
 arguments</a> to state
 whether or not the object pointed to will be altered by the function. For
 example:</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span> <span class="n">foo</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">in</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">out</span><span class="p">)</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">void</span><span class="w"> </span><span class="n">foo</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">in</span><span class="p">,</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="n">out</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>is a function that will not alter the string pointed to by <code class="code docutils literal notranslate"><span class="pre">in</span></code> but may
@@ -971,31 +1054,31 @@ to point to it), because so far those are all out-arguments and C has
 pointers and <code class="code docutils literal notranslate"><span class="pre">const</span></code>.</p>
 </section>
 <section id="lists">
-<h4><span class="section-number">12.4.5.2. </span>Lists<a class="headerlink" href="#lists" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.4.7.2. </span>Lists<a class="headerlink" href="#lists" title="Permalink to this heading">¶</a></h4>
 <p>The general convention is to use an array of elements terminated by an element
 containing all zeros (i.e., every byte is zero). While this precludes zero
 elements within the list, it makes it easy to iterate:</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="nc">foo</span> <span class="p">{</span> <span class="kt">int</span> <span class="n">a</span><span class="p">;</span> <span class="kt">float</span> <span class="n">b</span><span class="p">;</span> <span class="p">};</span>
-<span class="k">struct</span> <span class="nc">foo</span> <span class="o">*</span><span class="n">bar</span> <span class="o">=</span> <span class="p">...;</span>
-<span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">bar</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">a</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span><span class="o">++</span><span class="p">)</span>
-   <span class="n">do_stuff</span><span class="p">(</span><span class="n">bar</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">;</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">b</span><span class="p">;</span><span class="w"> </span><span class="p">};</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="w"> </span><span class="o">*</span><span class="n">bar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">...;</span>
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">bar</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">a</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"> </span><span class="n">i</span><span class="o">++</span><span class="p">)</span>
+<span class="w">   </span><span class="n">do_stuff</span><span class="p">(</span><span class="n">bar</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
 </pre></div>
 </div>
 <p>Note that the conditional checks that only one field of the struct (<code class="code docutils literal notranslate"><span class="pre">a</span></code>)
 is zero; this loop leverages knowledge of this specific data structure that
 checking only <code class="code docutils literal notranslate"><span class="pre">a</span></code> is sufficient.</p>
 <p>Lists can be set either as literals:</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="nc">foo</span> <span class="n">bar</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="p">{</span><span class="mi">1</span><span class="p">,</span> <span class="mf">2.0</span><span class="p">},</span> <span class="p">{</span><span class="mi">3</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">},</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">}</span> <span class="p">};</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="w"> </span><span class="n">bar</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="p">{</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="mf">2.0</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mf">4.0</span><span class="p">},</span><span class="w"> </span><span class="p">{</span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="mf">0.0</span><span class="p">}</span><span class="w"> </span><span class="p">};</span>
 </pre></div>
 </div>
 <p>or built up from scratch on the heap; the contents of this list are
 equivalent (note the C99 trick to avoid create a <code class="code docutils literal notranslate"><span class="pre">struct</span> <span class="pre">foo</span></code> variable):</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span> <span class="nc">foo</span> <span class="n">baz</span><span class="p">;</span>
-<span class="k">struct</span> <span class="nc">foo</span> <span class="o">*</span><span class="n">qux</span> <span class="o">=</span> <span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="nc">foo</span><span class="p">),</span> <span class="mi">0</span><span class="p">);</span>
-<span class="n">baz</span><span class="p">.</span><span class="n">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-<span class="n">baz</span><span class="p">.</span><span class="n">b</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">;</span>
-<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">qux</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">baz</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="nc">foo</span><span class="p">));</span>
-<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">qux</span><span class="p">,</span> <span class="o">&amp;</span><span class="p">((</span><span class="k">struct</span> <span class="nc">foo</span><span class="p">){</span><span class="mi">3</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">}),</span> <span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span> <span class="nc">foo</span><span class="p">));</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="w"> </span><span class="n">baz</span><span class="p">;</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="w"> </span><span class="o">*</span><span class="n">qux</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="n">baz</span><span class="p">.</span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="n">baz</span><span class="p">.</span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">2.0</span><span class="p">;</span>
+<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">qux</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">baz</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="p">));</span>
+<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="o">&amp;</span><span class="n">qux</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="p">((</span><span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="p">){</span><span class="mi">3</span><span class="p">,</span><span class="w"> </span><span class="mf">4.0</span><span class="p">}),</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">foo</span><span class="p">));</span>
 </pre></div>
 </div>
 <p>This form of list should be used unless some API requires something else.</p>
@@ -1004,21 +1087,21 @@ equivalent (note the C99 trick to avoid create a <code class="code docutils lite
 <p>Taking the address of an array in C yields the address of the first element,
 which is the same thing. For example, consider this list of strings, i.e.
 pointers to <code class="code docutils literal notranslate"><span class="pre">char</span></code>:</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="n">foo</span><span class="p">[]</span> <span class="o">=</span> <span class="s">&quot;hello&quot;</span><span class="p">;</span>
-<span class="kt">char</span> <span class="o">**</span><span class="n">list</span> <span class="o">=</span> <span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="n">list</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">foo</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">));</span>  <span class="c1">// error!</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span><span class="w"> </span><span class="n">foo</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;hello&quot;</span><span class="p">;</span>
+<span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">foo</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">));</span><span class="w">  </span><span class="c1">// error!</span>
 </pre></div>
 </div>
 <p>Because <code class="code docutils literal notranslate"><span class="pre">foo</span> <span class="pre">==</span> <span class="pre">&amp;foo</span></code>, this will add to the list not a pointer to
 <code class="code docutils literal notranslate"><span class="pre">foo</span></code> but the <em>contents</em> of <code class="code docutils literal notranslate"><span class="pre">foo</span></code>, i.e. (on a machine with
 64-bit pointers) <code class="code docutils literal notranslate"><span class="pre">'h'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'e'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'l'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'l'</span></code>,
-<code class="code docutils literal notranslate"><span class="pre">'o'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'\0'</span></code> followed by two bytes of whatever follows
+<code class="code docutils literal notranslate"><span class="pre">'o'</span></code>, <code class="code docutils literal notranslate"><span class="pre">'0'</span></code> followed by two bytes of whatever follows
 <code class="code docutils literal notranslate"><span class="pre">foo</span></code> in memory.</p>
 <p>This would work because <code class="code docutils literal notranslate"><span class="pre">bar</span> <span class="pre">!=</span> <span class="pre">&amp;bar</span></code>:</p>
-<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span> <span class="n">foo</span><span class="p">[]</span> <span class="o">=</span> <span class="s">&quot;hello&quot;</span><span class="p">;</span>
-<span class="kt">char</span> <span class="n">bar</span> <span class="o">=</span> <span class="n">foo</span><span class="p">;</span>
-<span class="kt">char</span> <span class="o">**</span><span class="n">list</span> <span class="o">=</span> <span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
-<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span> <span class="o">**</span><span class="p">)</span><span class="n">list</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">bar</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="p">));</span>  <span class="c1">// OK</span>
+<div class="highlight-c notranslate"><div class="highlight"><pre><span></span><span class="kt">char</span><span class="w"> </span><span class="n">foo</span><span class="p">[]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s">&quot;hello&quot;</span><span class="p">;</span>
+<span class="kt">char</span><span class="w"> </span><span class="n">bar</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">foo</span><span class="p">;</span>
+<span class="kt">char</span><span class="w"> </span><span class="o">**</span><span class="n">list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">list_new</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">),</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span>
+<span class="n">list_append</span><span class="p">((</span><span class="kt">void</span><span class="w"> </span><span class="o">**</span><span class="p">)</span><span class="n">list</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">bar</span><span class="p">,</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">));</span><span class="w">  </span><span class="c1">// OK</span>
 </pre></div>
 </div>
 </div>
@@ -1026,20 +1109,20 @@ pointers to <code class="code docutils literal notranslate"><span class="pre">ch
 </section>
 </section>
 <section id="oci-technical-notes">
-<h2><a class="toc-backref" href="#id24"><span class="section-number">12.5. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id26" role="doc-backlink"><span class="section-number">12.5. </span>OCI technical notes</a><a class="headerlink" href="#oci-technical-notes" title="Permalink to this heading">¶</a></h2>
 <p>This section describes our analysis of the Open Container Initiative (OCI)
 specification and implications for our implementations of <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>, and
 <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code>. Anything relevant for users goes in the respective man
 page; here is for technical details. The main goals are to guide Charliecloud
 development and provide and opportunity for peer-review of our work.</p>
 <section id="ch-run-oci">
-<h3><a class="toc-backref" href="#id25"><span class="section-number">12.5.1. </span>ch-run-oci</a><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id27" role="doc-backlink"><span class="section-number">12.5.1. </span>ch-run-oci</a><a class="headerlink" href="#ch-run-oci" title="Permalink to this heading">¶</a></h3>
 <p>Currently, <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> is only tested with Buildah. These notes
 describe what we are seeing from Buildah’s runtime expectations.</p>
 <section id="gotchas">
-<h4><span class="section-number">12.5.1.1. </span>Gotchas<a class="headerlink" href="#gotchas" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.1. </span>Gotchas<a class="headerlink" href="#gotchas" title="Permalink to this heading">¶</a></h4>
 <section id="namespaces">
-<h5><span class="section-number">12.5.1.1.1. </span>Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h5>
+<h5><span class="section-number">12.5.1.1.1. </span>Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this heading">¶</a></h5>
 <p>Buildah sets up its own user and mount namespaces before invoking the runtime,
 though it does not change the root directory. We do not understand why. In
 particular, this means that you cannot see the container root filesystem it
@@ -1054,13 +1137,13 @@ provides without joining those namespaces. To do so:</p>
 </ol>
 </section>
 <section id="supervisor-process-and-maintaining-state">
-<h5><span class="section-number">12.5.1.1.2. </span>Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this headline">¶</a></h5>
+<h5><span class="section-number">12.5.1.1.2. </span>Supervisor process and maintaining state<a class="headerlink" href="#supervisor-process-and-maintaining-state" title="Permalink to this heading">¶</a></h5>
 <p>OCI (and thus Buildah) expects a process that exists throughout the life of
 the container. This conflicts with Charliecloud’s lack of a supervisor process.</p>
 </section>
 </section>
 <section id="bundle-directory">
-<h4><span class="section-number">12.5.1.2. </span>Bundle directory<a class="headerlink" href="#bundle-directory" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.2. </span>Bundle directory<a class="headerlink" href="#bundle-directory" title="Permalink to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>OCI documentation (very incomplete): <a class="reference external" href="https://github.com/opencontainers/runtime-spec/blob/master/bundle.md">https://github.com/opencontainers/runtime-spec/blob/master/bundle.md</a></p></li>
 </ul>
@@ -1072,8 +1155,8 @@ inferred from the container ID (see the man page). This lets us store state in
 the bundle directory instead of maintaining a second location for container
 state.</p>
 <p>Example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">#</span> <span class="nb">cd</span> /tmp/buildah265508516
-<span class="gp">#</span> ls -lR . <span class="p">|</span> head -40
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp"># </span><span class="nb">cd</span><span class="w"> </span>/tmp/buildah265508516
+<span class="gp"># </span>ls<span class="w"> </span>-lR<span class="w"> </span>.<span class="w"> </span><span class="p">|</span><span class="w"> </span>head<span class="w"> </span>-40
 <span class="go">.:</span>
 <span class="go">total 12</span>
 <span class="go">-rw------- 1 root root 3138 Apr 25 16:39 config.json</span>
@@ -1110,7 +1193,7 @@ No other new filesystems are mounted within the namespaces.</p></li>
 </ol>
 </section>
 <section id="config-json">
-<h4><span class="section-number">12.5.1.3. </span><code class="code docutils literal notranslate"><span class="pre">config.json</span></code><a class="headerlink" href="#config-json" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.3. </span><code class="code docutils literal notranslate"><span class="pre">config.json</span></code><a class="headerlink" href="#config-json" title="Permalink to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>OCI documentation:</p>
 <ul>
@@ -1128,108 +1211,108 @@ in this example. These are all unsupported, either by ignoring them or
 throwing an error. The <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> man page documents comprehensively
 what OCI features are and are not supported.</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-  <span class="s2">&quot;ociVersion&quot;</span><span class="o">:</span> <span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;ociVersion&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;1.0.0&quot;</span><span class="p">,</span>
 </pre></div>
 </div>
 <p>We validate that this is “1.0.0”.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;root&quot;</span><span class="o">:</span> <span class="p">{</span>
-  <span class="s2">&quot;path&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/mnt/rootfs&quot;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;root&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="s2">&quot;path&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/tmp/buildah115496812/mnt/rootfs&quot;</span>
 <span class="p">},</span>
 </pre></div>
 </div>
 <p>Path to root filesystem; maps to <code class="code docutils literal notranslate"><span class="pre">NEWROOT</span></code>. If key <code class="code docutils literal notranslate"><span class="pre">readonly</span></code> is
 <code class="code docutils literal notranslate"><span class="pre">false</span></code> or absent, add <code class="code docutils literal notranslate"><span class="pre">--write</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;mounts&quot;</span><span class="o">:</span> <span class="p">[</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;strictatime&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;mode=755&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;size=65536k&quot;</span>
-    <span class="p">]</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/mqueue&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nosuid&quot;</span>
-    <span class="p">]</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/pts&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;devpts&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;pts&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;newinstance&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;ptmxmode=0666&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;mode=0620&quot;</span>
-    <span class="p">]</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/dev/shm&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;shm&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;mode=1777&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;size=65536k&quot;</span>
-    <span class="p">]</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;proc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nosuid&quot;</span>
-    <span class="p">]</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;rbind&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;private&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;ro&quot;</span>
-    <span class="p">]</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/etc/hosts&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/hosts&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;rbind&quot;</span>
-    <span class="p">]</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;destination&quot;</span><span class="o">:</span> <span class="s2">&quot;/etc/resolv.conf&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;bind&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;source&quot;</span><span class="o">:</span> <span class="s2">&quot;/tmp/buildah115496812/resolv.conf&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;options&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;rbind&quot;</span>
-    <span class="p">]</span>
-  <span class="p">}</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;mounts&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;destination&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;source&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/dev&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;options&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;private&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;strictatime&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;mode=755&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;size=65536k&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;destination&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/dev/mqueue&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;source&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;mqueue&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;options&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;private&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nosuid&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;destination&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/dev/pts&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;devpts&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;source&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;pts&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;options&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;private&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;newinstance&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;ptmxmode=0666&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;mode=0620&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;destination&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/dev/shm&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;tmpfs&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;source&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;shm&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;options&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;private&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;mode=1777&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;size=65536k&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;destination&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;proc&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;source&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/proc&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;options&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;private&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nosuid&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;destination&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;source&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/sys&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;options&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;rbind&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;private&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nodev&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;noexec&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;nosuid&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;ro&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;destination&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/etc/hosts&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;source&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/tmp/buildah115496812/hosts&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;options&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;rbind&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;destination&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/etc/resolv.conf&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;bind&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;source&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/tmp/buildah115496812/resolv.conf&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;options&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;rbind&quot;</span>
+<span class="w">    </span><span class="p">]</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">],</span>
 </pre></div>
 </div>
@@ -1240,8 +1323,8 @@ including stuff that won’t work in an unprivileged user namespace (e.g.,
 filesystems backed by a block device).</p>
 <p>The things that matter seem to be the same as Charliecloud defaults.
 Therefore, for now we just ignore mounts.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;process&quot;</span><span class="o">:</span> <span class="p">{</span>
-  <span class="s2">&quot;terminal&quot;</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;process&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="s2">&quot;terminal&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span><span class="p">,</span>
 </pre></div>
 </div>
 <p>This says that Buildah wants a pseudoterminal allocated. Charliecloud does not
@@ -1249,27 +1332,27 @@ currently support that, so we error in this case.</p>
 <p>However, Buildah can be persuaded to set this <code class="code docutils literal notranslate"><span class="pre">false</span></code> if you redirect
 its standard input from <code class="code docutils literal notranslate"><span class="pre">/dev/null</span></code>, which is the current workaround.
 Things work fine.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;cwd&quot;</span><span class="o">:</span> <span class="s2">&quot;/&quot;</span><span class="p">,</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;cwd&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/&quot;</span><span class="p">,</span>
 </pre></div>
 </div>
 <p>Maps to <code class="code docutils literal notranslate"><span class="pre">--cd</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;args&quot;</span><span class="o">:</span> <span class="p">[</span>
-  <span class="s2">&quot;/bin/sh&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;-c&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;apk add --no-cache bc&quot;</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;args&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="s2">&quot;/bin/sh&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;-c&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;apk add --no-cache bc&quot;</span>
 <span class="p">],</span>
 </pre></div>
 </div>
-<p>Maps to <code class="code docutils literal notranslate"><span class="pre">CMD</span> <span class="pre">[ARG</span> <span class="pre">...]</span></code>. Note that we do not run <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> via the
-shell, so there aren’t worries about shell parsing.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;env&quot;</span><span class="o">:</span> <span class="p">[</span>
-  <span class="s2">&quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;https_proxy=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;no_proxy=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;HTTP_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;HTTPS_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;NO_PROXY=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;http_proxy=http://proxyout.lanl.gov:8080&quot;</span>
+<p>Maps to <code class="code docutils literal notranslate"><span class="pre">COMMAND</span> <span class="pre">[ARG</span> <span class="pre">...]</span></code>. Note that we do not run <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> via
+the shell, so there aren’t worries about shell parsing.</p>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;env&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="s2">&quot;PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;https_proxy=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;no_proxy=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;HTTP_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;HTTPS_PROXY=http://proxyout.lanl.gov:8080&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;NO_PROXY=localhost,127.0.0.1,.lanl.gov&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;http_proxy=http://proxyout.lanl.gov:8080&quot;</span>
 <span class="p">],</span>
 </pre></div>
 </div>
@@ -1278,101 +1361,101 @@ complete environment or whether it should be added to some default
 environment.</p>
 <p>We treat it as a complete environment, i.e., place the variables in a file and
 then <code class="code docutils literal notranslate"><span class="pre">--unset-env='*'</span> <span class="pre">--set-env=FILE</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;rlimits&quot;</span><span class="o">:</span> <span class="p">[</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;RLIMIT_NOFILE&quot;</span><span class="p">,</span>
-    <span class="s2">&quot;hard&quot;</span><span class="o">:</span> <span class="mf">1048576</span><span class="p">,</span>
-    <span class="s2">&quot;soft&quot;</span><span class="o">:</span> <span class="mf">1048576</span>
-  <span class="p">}</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;rlimits&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RLIMIT_NOFILE&quot;</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;hard&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1048576</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;soft&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1048576</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">]</span>
 </pre></div>
 </div>
 <p>Process limits Buildah wants us to set with <code class="code docutils literal notranslate"><span class="pre">setrlimit(2)</span></code>. Ignored.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;capabilities&quot;</span><span class="o">:</span> <span class="p">{</span>
-  <span class="p">...</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;capabilities&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="p">...</span>
 <span class="p">},</span>
 </pre></div>
 </div>
 <p>Long list of capabilities that Buildah wants. Ignored. (Charliecloud provides
 security by remaining an unprivileged process.)</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;user&quot;</span><span class="o">:</span> <span class="p">{</span>
-    <span class="s2">&quot;uid&quot;</span><span class="o">:</span> <span class="mf">0</span><span class="p">,</span>
-    <span class="s2">&quot;gid&quot;</span><span class="o">:</span> <span class="mf">0</span>
-  <span class="p">},</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="s2">&quot;user&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;uid&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;gid&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span>
+<span class="w">  </span><span class="p">},</span>
 <span class="p">},</span>
 </pre></div>
 </div>
 <p>Maps to <code class="code docutils literal notranslate"><span class="pre">--uid=0</span> <span class="pre">--gid=0</span></code>.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;linux&quot;</span><span class="o">:</span> <span class="p">{</span>
-  <span class="s2">&quot;namespaces&quot;</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;pid&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;ipc&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;mount&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;user&quot;</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;linux&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="s2">&quot;namespaces&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;pid&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;ipc&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;mount&quot;</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;user&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
 </pre></div>
 </div>
 <p>Namespaces that Buildah wants. Ignored; Charliecloud just does user and mount.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;uidMappings&quot;</span><span class="o">:</span> <span class="p">[</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mf">0</span><span class="p">,</span>
-    <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mf">0</span><span class="p">,</span>
-    <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mf">1</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mf">1</span><span class="p">,</span>
-    <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mf">1</span><span class="p">,</span>
-    <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mf">65536</span>
-  <span class="p">}</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;uidMappings&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;hostID&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;containerID&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;size&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;hostID&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;containerID&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;size&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">65536</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">],</span>
-<span class="s2">&quot;gidMappings&quot;</span><span class="o">:</span> <span class="p">[</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mf">0</span><span class="p">,</span>
-    <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mf">0</span><span class="p">,</span>
-    <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mf">1</span>
-  <span class="p">},</span>
-  <span class="p">{</span>
-    <span class="s2">&quot;hostID&quot;</span><span class="o">:</span> <span class="mf">1</span><span class="p">,</span>
-    <span class="s2">&quot;containerID&quot;</span><span class="o">:</span> <span class="mf">1</span><span class="p">,</span>
-    <span class="s2">&quot;size&quot;</span><span class="o">:</span> <span class="mf">65536</span>
-  <span class="p">}</span>
+<span class="s2">&quot;gidMappings&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;hostID&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;containerID&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">0</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;size&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;hostID&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;containerID&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">1</span><span class="p">,</span>
+<span class="w">    </span><span class="s2">&quot;size&quot;</span><span class="o">:</span><span class="w"> </span><span class="mf">65536</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">],</span>
 </pre></div>
 </div>
 <p>Describes the identity map between the namespace and host. Buildah wants it
 much larger than Charliecloud’s single entry and asks for container root to be
 host root, which we can’t do. Ignored.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;maskedPaths&quot;</span><span class="o">:</span> <span class="p">[</span>
-  <span class="s2">&quot;/proc/acpi&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;/proc/kcore&quot;</span><span class="p">,</span>
-  <span class="p">...</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="s2">&quot;maskedPaths&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="s2">&quot;/proc/acpi&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;/proc/kcore&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">...</span>
 <span class="p">],</span>
-<span class="s2">&quot;readonlyPaths&quot;</span><span class="o">:</span> <span class="p">[</span>
-  <span class="s2">&quot;/proc/asound&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;/proc/bus&quot;</span><span class="p">,</span>
-  <span class="p">...</span>
+<span class="s2">&quot;readonlyPaths&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">  </span><span class="s2">&quot;/proc/asound&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;/proc/bus&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="p">...</span>
 <span class="p">]</span>
 </pre></div>
 </div>
 <p>Spec says to “mask over the provided paths ... so they cannot be read” and
 “sed the provided paths as readonly”. Ignored. (Unprivileged user namespace
 protects us.)</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="p">}</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="p">}</span>
 <span class="p">}</span>
 </pre></div>
 </div>
 <p>End of example.</p>
 </section>
 <section id="state">
-<h4><span class="section-number">12.5.1.4. </span>State<a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.4. </span>State<a class="headerlink" href="#state" title="Permalink to this heading">¶</a></h4>
 <p>The OCI spec does not say how the JSON document describing state should be
 given to the caller. Buildah is happy to get it on the runtime’s standard
 output.</p>
@@ -1382,7 +1465,7 @@ essentially a no-op, and annotations are not supported, so the
 <code class="code docutils literal notranslate"><span class="pre">annotations</span></code> key will never be given.</p>
 </section>
 <section id="additional-sources">
-<h4><span class="section-number">12.5.1.5. </span>Additional sources<a class="headerlink" href="#additional-sources" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.1.5. </span>Additional sources<a class="headerlink" href="#additional-sources" title="Permalink to this heading">¶</a></h4>
 <ul class="simple">
 <li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah.md">https://github.com/containers/buildah/blob/master/docs/buildah.md</a></p></li>
 <li><p><code class="code docutils literal notranslate"><span class="pre">buildah</span> <span class="pre">bud</span></code> man page: <a class="reference external" href="https://github.com/containers/buildah/blob/master/docs/buildah-bud.md">https://github.com/containers/buildah/blob/master/docs/buildah-bud.md</a></p></li>
@@ -1392,16 +1475,16 @@ essentially a no-op, and annotations are not supported, so the
 </section>
 </section>
 <section id="ch-image">
-<h3><a class="toc-backref" href="#id26"><span class="section-number">12.5.2. </span>ch-image</a><a class="headerlink" href="#ch-image" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id28" role="doc-backlink"><span class="section-number">12.5.2. </span>ch-image</a><a class="headerlink" href="#ch-image" title="Permalink to this heading">¶</a></h3>
 <section id="pull">
-<h4><span class="section-number">12.5.2.1. </span>pull<a class="headerlink" href="#pull" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.2.1. </span>pull<a class="headerlink" href="#pull" title="Permalink to this heading">¶</a></h4>
 <p>Images pulled from registries come with OCI metadata, i.e. a “config blob”.
 This is stored verbatim in <code class="code docutils literal notranslate"><span class="pre">/ch/config.pulled.json</span></code> for debugging.
 Charliecloud metadata, which includes a translated subset of the OCI config,
 is kept up to date in <code class="code docutils literal notranslate"><span class="pre">/ch/metadata.json</span></code>.</p>
 </section>
 <section id="push">
-<h4><span class="section-number">12.5.2.2. </span>push<a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">12.5.2.2. </span>push<a class="headerlink" href="#push" title="Permalink to this heading">¶</a></h4>
 <p>Image registries expect a config blob at push time. This blob consists of both
 OCI runtime and image specification information.</p>
 <ul class="simple">
@@ -1417,116 +1500,116 @@ necessary to satisfy general image registry requirements.</p>
 <p>The pushed config is created on the fly, referencing the image’s metadata
 and layer tar hash. For example, including commentary:</p>
 <div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
-  <span class="s2">&quot;architecture&quot;</span><span class="o">:</span> <span class="s2">&quot;amd64&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;charliecloud_version&quot;</span><span class="o">:</span> <span class="s2">&quot;0.26&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;comment&quot;</span><span class="o">:</span> <span class="s2">&quot;pushed with Charliecloud&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;config&quot;</span><span class="o">:</span> <span class="p">{},</span>
-  <span class="s2">&quot;container_config&quot;</span><span class="o">:</span> <span class="p">{},</span>
-  <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-12-10T20:39:56Z&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;os&quot;</span><span class="o">:</span> <span class="s2">&quot;linux&quot;</span><span class="p">,</span>
-  <span class="s2">&quot;rootfs&quot;</span><span class="o">:</span> <span class="p">{</span>
-    <span class="s2">&quot;diff_ids&quot;</span><span class="o">:</span> <span class="p">[</span>
-      <span class="s2">&quot;sha256:607c737779a53d3a04cbd6e59cae1259ce54081d9bafb4a7ab0bc863add22be8&quot;</span>
-    <span class="p">],</span>
-    <span class="s2">&quot;type&quot;</span><span class="o">:</span> <span class="s2">&quot;layers&quot;</span>
-  <span class="p">},</span>
-  <span class="s2">&quot;weirdal&quot;</span><span class="o">:</span> <span class="s2">&quot;yankovic&quot;</span>
+<span class="w">  </span><span class="s2">&quot;architecture&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;amd64&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;charliecloud_version&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;0.26&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;comment&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;pushed with Charliecloud&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;config&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">  </span><span class="s2">&quot;container_config&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{},</span>
+<span class="w">  </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-12-10T20:39:56Z&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;os&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;linux&quot;</span><span class="p">,</span>
+<span class="w">  </span><span class="s2">&quot;rootfs&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="s2">&quot;diff_ids&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">      </span><span class="s2">&quot;sha256:607c737779a53d3a04cbd6e59cae1259ce54081d9bafb4a7ab0bc863add22be8&quot;</span>
+<span class="w">    </span><span class="p">],</span>
+<span class="w">    </span><span class="s2">&quot;type&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;layers&quot;</span>
+<span class="w">  </span><span class="p">},</span>
+<span class="w">  </span><span class="s2">&quot;weirdal&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;yankovic&quot;</span>
 </pre></div>
 </div>
 <p>The fields above are expected by the registry at push time, with the exception
 of <code class="code docutils literal notranslate"><span class="pre">charliecloud_version</span></code> and <code class="code docutils literal notranslate"><span class="pre">weirdal</span></code>, which are Charliecloud
 extensions.</p>
-<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span>  <span class="s2">&quot;history&quot;</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-17T02:20:51.334553938Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;/bin/sh -c #(nop) ADD file:cb5ed7070880d4c0177fbe6dd278adb7926e38cd73e6abd582fd8d67e4bbf06c in / &quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-17T02:20:51.921052716Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;/bin/sh -c #(nop)  CMD [\&quot;bash\&quot;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:08Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;FROM debian:buster&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:19Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;apt-get update     &amp;&amp; apt-get install -y        bzip2        wget     &amp;&amp; rm -rf /var/lib/apt/lists/*&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:19Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;WORKDIR /usr/local/src&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:19Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;ARG MC_VERSION=&#39;latest&#39;&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:19Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;ARG MC_FILE=&#39;Miniconda3-latest-Linux-x86_64.sh&#39;&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:21Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;wget -nv https://repo.anaconda.com/miniconda/$MC_FILE&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:33Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;bash $MC_FILE -bf -p /usr/local&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:33Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;rm -Rf $MC_FILE&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:33Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;which conda &amp;&amp; conda --version&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:34Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;conda config --set auto_update_conda False&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:14:34Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;conda config --add channels conda-forge&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:15:07Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;conda install --yes obspy&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:15:07Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;WORKDIR /&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:15:08Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;wget -nv http://examples.obspy.org/RJOB_061005_072159.ehz.new&#39;]&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:15:08Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;COPY [&#39;hello.py&#39;] -&gt; &#39;.&#39;&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span> <span class="kc">true</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;created&quot;</span><span class="o">:</span> <span class="s2">&quot;2021-11-30T20:15:08Z&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;created_by&quot;</span><span class="o">:</span> <span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;chmod 755 ./hello.py&#39;]&quot;</span>
-    <span class="p">}</span>
-  <span class="p">],</span>
+<div class="highlight-javascript notranslate"><div class="highlight"><pre><span></span><span class="w">  </span><span class="s2">&quot;history&quot;</span><span class="o">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-17T02:20:51.334553938Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/bin/sh -c #(nop) ADD file:cb5ed7070880d4c0177fbe6dd278adb7926e38cd73e6abd582fd8d67e4bbf06c in / &quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-17T02:20:51.921052716Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;/bin/sh -c #(nop)  CMD [\&quot;bash\&quot;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:08Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;FROM debian:buster&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:19Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;apt-get update     &amp;&amp; apt-get install -y        bzip2        wget     &amp;&amp; rm -rf /var/lib/apt/lists/*&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:19Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;WORKDIR /usr/local/src&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:19Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;ARG MC_VERSION=&#39;latest&#39;&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:19Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;ARG MC_FILE=&#39;Miniconda3-latest-Linux-x86_64.sh&#39;&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:21Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;wget -nv https://repo.anaconda.com/miniconda/$MC_FILE&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:33Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;bash $MC_FILE -bf -p /usr/local&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:33Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;rm -Rf $MC_FILE&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:33Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;which conda &amp;&amp; conda --version&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:34Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;conda config --set auto_update_conda False&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:14:34Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;conda config --add channels conda-forge&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:15:07Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;conda install --yes obspy&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:15:07Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;WORKDIR /&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:15:08Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;wget -nv http://examples.obspy.org/RJOB_061005_072159.ehz.new&#39;]&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:15:08Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;COPY [&#39;hello.py&#39;] -&gt; &#39;.&#39;&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;empty_layer&quot;</span><span class="o">:</span><span class="w"> </span><span class="kc">true</span>
+<span class="w">    </span><span class="p">},</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="s2">&quot;created&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;2021-11-30T20:15:08Z&quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="s2">&quot;created_by&quot;</span><span class="o">:</span><span class="w"> </span><span class="s2">&quot;RUN [&#39;/bin/sh&#39;, &#39;-c&#39;, &#39;chmod 755 ./hello.py&#39;]&quot;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">],</span>
 <span class="p">}</span>
 </pre></div>
 </div>
@@ -1538,17 +1621,58 @@ non-empty history entries match the number of pushed layers.</p>
 </section>
 </section>
 <section id="miscellaneous-notes">
-<h2><a class="toc-backref" href="#id27"><span class="section-number">12.6. </span>Miscellaneous notes</a><a class="headerlink" href="#miscellaneous-notes" title="Permalink to this headline">¶</a></h2>
+<h2><a class="toc-backref" href="#id29" role="doc-backlink"><span class="section-number">12.6. </span>Miscellaneous notes</a><a class="headerlink" href="#miscellaneous-notes" title="Permalink to this heading">¶</a></h2>
 <section id="updating-bundled-lark-parser">
-<h3><a class="toc-backref" href="#id28"><span class="section-number">12.6.1. </span>Updating bundled Lark parser</a><a class="headerlink" href="#updating-bundled-lark-parser" title="Permalink to this headline">¶</a></h3>
+<h3><a class="toc-backref" href="#id30" role="doc-backlink"><span class="section-number">12.6.1. </span>Updating bundled Lark parser</a><a class="headerlink" href="#updating-bundled-lark-parser" title="Permalink to this heading">¶</a></h3>
 <p>In order to change the version of the bundled lark parser you must modify
-multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
+multiple files. To find them, e.g. for version 1.1.9 (the regex is hairy to
 catch both dot notation and tuples, but not the list of filenames in
 <code class="code docutils literal notranslate"><span class="pre">lib/Makefile.am</span></code>):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> misc/grep -E <span class="s1">&#39;0(\.|, )11(\.|, )3($|\s|\))&#39;</span>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>misc/grep<span class="w"> </span>-E<span class="w"> </span><span class="s1">&#39;1(\.|, )1(\.|, )9($|\s|\))&#39;</span>
 </pre></div>
 </div>
 <p>What to do in each location should either be obvious or commented.</p>
+</section>
+<section id="debugging-seccomp-2-bpf">
+<h3><a class="toc-backref" href="#id31" role="doc-backlink"><span class="section-number">12.6.2. </span>Debugging <code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code> BPF</a><a class="headerlink" href="#debugging-seccomp-2-bpf" title="Permalink to this heading">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--seccomp</span> <span class="pre">-vv</span></code> will log the BPF instructions as they are
+computed, but it’s all in raw hex and hard to interpret, e.g.:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>--seccomp<span class="w"> </span>-vv<span class="w"> </span>alpine:3.19<span class="w"> </span>--<span class="w"> </span><span class="nb">true</span>
+<span class="go">[...]</span>
+<span class="go">ch-run[62763]: seccomp: arch c00000b7: found 13 syscalls (ch_core.c:582)</span>
+<span class="go">ch-run[62763]: seccomp: arch 40000028: found 27 syscalls (ch_core.c:582)</span>
+<span class="go">[...]</span>
+<span class="go">ch-run[62763]: seccomp(2) program has 156 instructions (ch_core.c:591)</span>
+<span class="go">ch-run[62763]:    0: { op=20 k=       4 jt=  0 jf=  0 } (ch_core.c:423)</span>
+<span class="go">ch-run[62763]:    1: { op=15 k=c00000b7 jt=  0 jf= 17 } (ch_core.c:423)</span>
+<span class="go">ch-run[62763]:    2: { op=20 k=       0 jt=  0 jf=  0 } (ch_core.c:423)</span>
+<span class="go">ch-run[62763]:    3: { op=15 k=      5b jt=145 jf=  0 } (ch_core.c:423)</span>
+<span class="go">[...]</span>
+<span class="go">ch-run[62763]:  154: { op= 6 k=7fff0000 jt=  0 jf=  0 } (ch_core.c:423)</span>
+<span class="go">ch-run[62763]:  155: { op= 6 k=   50000 jt=  0 jf=  0 } (ch_core.c:423)</span>
+<span class="go">ch-run[62763]: note: see FAQ to disassemble the above (ch_core.c:676)</span>
+<span class="go">ch-run[62763]: executing: true (ch_core.c:538)</span>
+</pre></div>
+</div>
+<p>You can instead use <a class="reference external" href="https://github.com/david942j/seccomp-tools">seccomp-tools</a> to disassemble and pretty-print
+the BPF code in a far easier format, e.g.:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>sudo<span class="w"> </span>apt<span class="w"> </span>install<span class="w"> </span>ruby-dev
+<span class="gp">$ </span>gem<span class="w"> </span>install<span class="w"> </span>--user-install<span class="w"> </span>seccomp-tools
+<span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">PATH</span><span class="o">=</span>~/.gem/ruby/3.1.0/bin:<span class="nv">$PATH</span>
+<span class="gp">$ </span>seccomp-tools<span class="w"> </span>dump<span class="w"> </span>-c<span class="w"> </span><span class="s1">&#39;ch-run --seccomp alpine:3.19 -- true&#39;</span>
+<span class="go"> line  CODE  JT   JF      K</span>
+<span class="go">=================================</span>
+<span class="go"> 0000: 0x20 0x00 0x00 0x00000004  A = arch</span>
+<span class="go"> 0001: 0x15 0x00 0x11 0xc00000b7  if (A != ARCH_AARCH64) goto 0019</span>
+<span class="go"> 0002: 0x20 0x00 0x00 0x00000000  A = sys_number</span>
+<span class="go"> 0003: 0x15 0x91 0x00 0x0000005b  if (A == aarch64.capset) goto 0149</span>
+<span class="go">[...]</span>
+<span class="go"> 0154: 0x06 0x00 0x00 0x7fff0000  return ALLOW</span>
+<span class="go"> 0155: 0x06 0x00 0x00 0x00050000  return ERRNO(0)</span>
+</pre></div>
+</div>
+<p>Note that the disassembly is not perfect; e.g. if an architecture is not in
+your kernel headers, the system call name is wrong.</p>
 </section>
 </section>
 </section>

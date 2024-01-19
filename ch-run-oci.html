@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>8. ch-run-oci &mdash; Charliecloud 0.35 documentation</title>
+  <title>8. ch-run-oci &mdash; Charliecloud 0.36 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="9. ch-test" href="ch-test.html" />
@@ -27,15 +26,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Charliecloud
-            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.35
+                0.36
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -83,8 +86,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -94,16 +97,16 @@
            <div itemprop="articleBody">
              
   <section id="ch-run-oci">
-<h1><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code><a class="headerlink" href="#ch-run-oci" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code><a class="headerlink" href="#ch-run-oci" title="Permalink to this heading">¶</a></h1>
 <p>OCI wrapper for <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
 <section id="synopsis">
-<h2><span class="section-number">8.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci OPERATION <span class="o">[</span>ARG ...<span class="o">]</span>
+<h2><span class="section-number">8.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>OPERATION<span class="w"> </span><span class="o">[</span>ARG<span class="w"> </span>...<span class="o">]</span>
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">8.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">8.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This command is experimental. Features may be incomplete and/or buggy. The
@@ -143,7 +146,7 @@ Guide.</p>
 versions are offered.</p>
 </section>
 <section id="operations">
-<h2><span class="section-number">8.3. </span>Operations<a class="headerlink" href="#operations" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">8.3. </span>Operations<a class="headerlink" href="#operations" title="Permalink to this heading">¶</a></h2>
 <p>All OCI operations are accepted, but some are no-ops or merely scaffolding to
 satisfy the caller. For comparison, see also:</p>
 <ul class="simple">
@@ -151,8 +154,8 @@ satisfy the caller. For comparison, see also:</p>
 <li><p>The <a class="reference external" href="https://github.com/opencontainers/runc/tree/master/man">runc man pages</a></p></li>
 </ul>
 <section id="create">
-<h3><span class="section-number">8.3.1. </span><code class="code docutils literal notranslate"><span class="pre">create</span></code><a class="headerlink" href="#create" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci create --bundle DIR --pid-file FILE <span class="o">[</span>--no-new-keyring<span class="o">]</span> CONTAINER_ID
+<h3><span class="section-number">8.3.1. </span><code class="code docutils literal notranslate"><span class="pre">create</span></code><a class="headerlink" href="#create" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>create<span class="w"> </span>--bundle<span class="w"> </span>DIR<span class="w"> </span>--pid-file<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--no-new-keyring<span class="o">]</span><span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
 <p>Create a container. Charliecloud does not have separate create and start
@@ -186,30 +189,30 @@ requesting a pseudoterminal.</p>
 </div></blockquote>
 </section>
 <section id="delete">
-<h3><span class="section-number">8.3.2. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci delete CONTAINER_ID
+<h3><span class="section-number">8.3.2. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>delete<span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
 <p>Clean up the OCI-related scaffolding for specified container.</p>
 </section>
 <section id="kill">
-<h3><span class="section-number">8.3.3. </span><code class="code docutils literal notranslate"><span class="pre">kill</span></code><a class="headerlink" href="#kill" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci <span class="nb">kill</span> CONTAINER_ID
+<h3><span class="section-number">8.3.3. </span><code class="code docutils literal notranslate"><span class="pre">kill</span></code><a class="headerlink" href="#kill" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span><span class="nb">kill</span><span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
 <p>No-op.</p>
 </section>
 <section id="start">
-<h3><span class="section-number">8.3.4. </span><code class="code docutils literal notranslate"><span class="pre">start</span></code><a class="headerlink" href="#start" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci start CONTAINER_ID
+<h3><span class="section-number">8.3.4. </span><code class="code docutils literal notranslate"><span class="pre">start</span></code><a class="headerlink" href="#start" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>start<span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
 <p>Eexecute the user command specified at create time in a Charliecloud
 container.</p>
 </section>
 <section id="state">
-<h3><span class="section-number">8.3.5. </span><code class="code docutils literal notranslate"><span class="pre">state</span></code><a class="headerlink" href="#state" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run-oci state CONTAINER_ID
+<h3><span class="section-number">8.3.5. </span><code class="code docutils literal notranslate"><span class="pre">state</span></code><a class="headerlink" href="#state" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>state<span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
 <p>Print the state of the given container on standard output as an OCI compliant
@@ -217,7 +220,7 @@ JSON document.</p>
 </section>
 </section>
 <section id="unsupported-oci-features">
-<h2><span class="section-number">8.4. </span>Unsupported OCI features<a class="headerlink" href="#unsupported-oci-features" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">8.4. </span>Unsupported OCI features<a class="headerlink" href="#unsupported-oci-features" title="Permalink to this heading">¶</a></h2>
 <p>As noted above, various OCI features are not supported by Charliecloud. We
 have tried to guess which features would be essential to callers;
 <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> fails with an error if these are requested. Otherwise, the
@@ -258,13 +261,16 @@ EGID</p></li>
 </div></blockquote>
 </section>
 <section id="environment-variables">
-<h2><span class="section-number">8.5. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">8.5. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">¶</a></h2>
 <dl>
 <dt><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FILE</span></code></dt><dd><p>If set, append log chatter to this file, rather than standard error. This is
 useful for debugging situations where standard error is consumed or lost.</p>
 <p>Also sets verbose mode if not already set (equivalent to <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code>).</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FESTOON</span></code></dt><dd><p>If set, prepend PID and timestamp to logged chatter.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">CH_XATTRS</span></code></dt><dd><p>If set, save xattrs in the build cache and restore them when rebuilding from
+the cache (equivalent to <code class="code docutils literal notranslate"><span class="pre">--xattrs</span></code>).</p>
 </dd>
 </dl>
 <p><code class="code docutils literal notranslate"><span class="pre">CH_RUN_OCI_HANG</span></code></p>

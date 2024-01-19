@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>6. ch-image &mdash; Charliecloud 0.35 documentation</title>
+  <title>6. ch-image &mdash; Charliecloud 0.36 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="7. ch-run" href="ch-run.html" />
@@ -27,15 +26,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Charliecloud
-            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.35
+                0.36
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -140,8 +143,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">6. </span><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">6. </span><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -151,26 +154,26 @@
            <div itemprop="articleBody">
              
   <section id="ch-image">
-<h1><span class="section-number">6. </span><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code><a class="headerlink" href="#ch-image" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">6. </span><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code><a class="headerlink" href="#ch-image" title="Permalink to this heading">¶</a></h1>
 <p>Build and manage images; completely unprivileged.</p>
 <section id="synopsis">
-<h2><span class="section-number">6.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build <span class="o">[</span>-t TAG<span class="o">]</span> <span class="o">[</span>-f DOCKERFILE<span class="o">]</span> <span class="o">[</span>...<span class="o">]</span> CONTEXT
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build-cache <span class="o">[</span>...<span class="o">]</span>
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> delete IMAGE_GLOB <span class="o">[</span>IMAGE_GLOB ...<span class="o">]</span>
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> gestalt <span class="o">[</span>SELECTOR<span class="o">]</span>
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> import PATH IMAGE_REF
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> list <span class="o">[</span>-l<span class="o">]</span> <span class="o">[</span>IMAGE_REF<span class="o">]</span>
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> pull <span class="o">[</span>...<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> push <span class="o">[</span>--image DIR<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> reset
-<span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> undelete IMAGE_REF
-<span class="gp">$</span> ch-image <span class="o">{</span> --help <span class="p">|</span> --version <span class="p">|</span> --dependencies <span class="o">}</span>
+<h2><span class="section-number">6.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>build<span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TAG<span class="o">]</span><span class="w"> </span><span class="o">[</span>-f<span class="w"> </span>DOCKERFILE<span class="o">]</span><span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>CONTEXT
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>build-cache<span class="w"> </span><span class="o">[</span>...<span class="o">]</span>
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>delete<span class="w"> </span>IMAGE_GLOB<span class="w"> </span><span class="o">[</span>IMAGE_GLOB<span class="w"> </span>...<span class="o">]</span>
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>gestalt<span class="w"> </span><span class="o">[</span>SELECTOR<span class="o">]</span>
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>import<span class="w"> </span>PATH<span class="w"> </span>IMAGE_REF
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>list<span class="w"> </span><span class="o">[</span>-l<span class="o">]</span><span class="w"> </span><span class="o">[</span>IMAGE_REF<span class="o">]</span>
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>pull<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>IMAGE_REF<span class="w"> </span><span class="o">[</span>DEST_REF<span class="o">]</span>
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>push<span class="w"> </span><span class="o">[</span>--image<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span>IMAGE_REF<span class="w"> </span><span class="o">[</span>DEST_REF<span class="o">]</span>
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>reset
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>undelete<span class="w"> </span>IMAGE_REF
+<span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">{</span><span class="w"> </span>--help<span class="w"> </span><span class="p">|</span><span class="w"> </span>--version<span class="w"> </span><span class="p">|</span><span class="w"> </span>--dependencies<span class="w"> </span><span class="o">}</span>
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">6.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is a tool for building and manipulating container images, but
 not running them (for that you want <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>). It is completely
 unprivileged, with no setuid/setgid/setcap helpers. Many operations can use
@@ -225,7 +228,9 @@ instead.</p>
 <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> instances as you want against the same storage directory,
 which risks corruption but may be OK for some workloads.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--no-xattrs</span></code></dt><dd><p>Ignore xattrs and ACLs.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-xattrs</span></code></dt><dd><p>Enforce default handling of xattrs, i.e. do not save them in the build cache
+or restore them on rebuild. This is the default, but the option is provided
+to override the <code class="code docutils literal notranslate"><span class="pre">$CH_XATTRS</span></code> environment variable.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--password-many</span></code></dt><dd><p>Re-prompt the user every time a registry password is needed.</p>
 </dd>
@@ -250,11 +255,14 @@ unless you understand the risks.)</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Print extra chatter; can be repeated. See the <a class="reference internal" href="faq.html#faq-verbosity"><span class="std std-ref">FAQ entry on verbosity</span></a> for details.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--xattrs</span></code></dt><dd><p>Save xattrs and ACLs in the build cache, and restore them when rebuilding
+from the cache.</p>
+</dd>
 </dl>
 </div></blockquote>
 </section>
 <section id="architecture">
-<h2><span class="section-number">6.3. </span>Architecture<a class="headerlink" href="#architecture" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.3. </span>Architecture<a class="headerlink" href="#architecture" title="Permalink to this heading">¶</a></h2>
 <p>Charliecloud provides the option <code class="code docutils literal notranslate"><span class="pre">--arch</span> <span class="pre">ARCH</span></code> to specify the
 architecture for architecture-aware registry operations. The argument
 <code class="code docutils literal notranslate"><span class="pre">ARCH</span></code> can be: (1) <code class="code docutils literal notranslate"><span class="pre">yolo</span></code>, to bypass architecture-aware code and
@@ -288,7 +296,7 @@ transparently.</p></li>
 </ol>
 </section>
 <section id="authentication">
-<h2><span class="section-number">6.4. </span>Authentication<a class="headerlink" href="#authentication" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.4. </span>Authentication<a class="headerlink" href="#authentication" title="Permalink to this heading">¶</a></h2>
 <p>Charliecloud does not have configuration files; thus, it has no separate
 <code class="code docutils literal notranslate"><span class="pre">login</span></code> subcommand to store secrets. Instead, Charliecloud will prompt
 for a username and password when authentication is needed. Note that some
@@ -347,7 +355,7 @@ exist.</p>
 </div>
 </section>
 <section id="storage-directory">
-<h2><span class="section-number">6.5. </span>Storage directory<a class="headerlink" href="#storage-directory" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.5. </span>Storage directory<a class="headerlink" href="#storage-directory" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> maintains state using normal files and directories located in
 its <em>storage directory</em>; contents include various caches and temporary images
 used for building.</p>
@@ -394,9 +402,9 @@ will likely have strong opinions.</p>
 </div>
 </section>
 <section id="build-cache">
-<span id="ch-image-build-cache"></span><h2><span class="section-number">6.6. </span>Build cache<a class="headerlink" href="#build-cache" title="Permalink to this headline">¶</a></h2>
+<span id="ch-image-build-cache"></span><h2><span class="section-number">6.6. </span>Build cache<a class="headerlink" href="#build-cache" title="Permalink to this heading">¶</a></h2>
 <section id="overview">
-<h3><span class="section-number">6.6.1. </span>Overview<a class="headerlink" href="#overview" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.6.1. </span>Overview<a class="headerlink" href="#overview" title="Permalink to this heading">¶</a></h3>
 <p>Subcommands that create images, such as <code class="code docutils literal notranslate"><span class="pre">build</span></code> and <code class="code docutils literal notranslate"><span class="pre">pull</span></code>, can
 use a build cache to speed repeated operations. That is, an image is created
 by starting from the empty image and executing a sequence of instructions,
@@ -410,11 +418,14 @@ Git’s various storage limitations, so things like file metadata and Git
 repositories within the image should work. <strong>Important exception</strong>: No files
 named <code class="code docutils literal notranslate"><span class="pre">.git*</span></code> or other Git metadata are permitted in the image’s root
 directory.</p>
-<p><a class="reference external" href="https://man7.org/linux/man-pages/man7/xattr.7.html">Extended attributes</a> (xattrs)
-belonging to unprivileged namespaces (e.g. <code class="code docutils literal notranslate"><span class="pre">user</span></code>) are also saved and
-restored by the cache by default. Notably, extended attributes in privileged
-namespaces (e.g. <code class="code docutils literal notranslate"><span class="pre">trusted</span></code>) cannot be read by <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> and will be
-lost without warning.</p>
+<p><a class="reference external" href="https://man7.org/linux/man-pages/man7/xattr.7.html">Extended attributes</a>
+(xattrs) are ignored by the build cache by default. Cache support for xattrs
+belonging to unprivileged xattr namespaces (e.g. <code class="code docutils literal notranslate"><span class="pre">user</span></code>) can be enabled by
+specifying the <code class="code docutils literal notranslate"><span class="pre">--xattrs</span></code> option or by setting the <code class="code docutils literal notranslate"><span class="pre">CH_XATTRS</span></code>
+environment variable. If <code class="code docutils literal notranslate"><span class="pre">CH_XATTRS</span></code> is set, you override it with
+<code class="code docutils literal notranslate"><span class="pre">--no-xattrs</span></code>. <strong>Note that extended attributes in privileged xattr
+namespaces (e.g. :code:‘trusted‘) cannot be read by :code:‘ch-image‘ and will
+always be lost without warning.</strong></p>
 <p>The cache has three modes: <em>enabled</em>, <em>disabled</em>, and a hybrid mode called
 <em>rebuild</em> where the cache is fully enabled for <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instructions, but
 all other operations re-execute and re-cache their results. The purpose of
@@ -427,7 +438,7 @@ image.</p>
 appropriate Git is installed, otherwise <em>disabled</em>.</p>
 </section>
 <section id="compared-to-other-implementations">
-<h3><span class="section-number">6.6.2. </span>Compared to other implementations<a class="headerlink" href="#compared-to-other-implementations" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.6.2. </span>Compared to other implementations<a class="headerlink" href="#compared-to-other-implementations" title="Permalink to this heading">¶</a></h3>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This section is a lightly edited excerpt from our paper “<a class="reference external" href="https://arxiv.org/abs/2309.00166">Charliecloud’s
@@ -478,7 +489,7 @@ Microsoft’s large-repository accelerator <a class="reference external" href="h
 <p>That is, we believe our results show that the Git-based build cache is highly competitive with the layered approach, with no obvious inferiority so far and hints that it may be superior on important dimensions. We have ongoing work to explore these questions in more detail.</p>
 </section>
 <section id="de-duplication-and-garbage-collection">
-<h3><span class="section-number">6.6.3. </span>De-duplication and garbage collection<a class="headerlink" href="#de-duplication-and-garbage-collection" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.6.3. </span>De-duplication and garbage collection<a class="headerlink" href="#de-duplication-and-garbage-collection" title="Permalink to this heading">¶</a></h3>
 <p>Charliecloud’s build cache takes advantage of Git’s file de-duplication
 features. This operates across the entire build cache, i.e., files are
 de-duplicated no matter where in the cache they are found or the relationship
@@ -523,7 +534,7 @@ files. In both cases, garbage uses all available cores.</p>
 use, and <code class="code docutils literal notranslate"><span class="pre">-v</span></code> can be added for more detail.</p>
 </section>
 <section id="large-file-threshold">
-<span id="ch-image-bu-large"></span><h3><span class="section-number">6.6.4. </span>Large file threshold<a class="headerlink" href="#large-file-threshold" title="Permalink to this headline">¶</a></h3>
+<span id="ch-image-bu-large"></span><h3><span class="section-number">6.6.4. </span>Large file threshold<a class="headerlink" href="#large-file-threshold" title="Permalink to this heading">¶</a></h3>
 <p>Because Git uses content-addressed storage, upon commit, it must read in full
 all files modified by an instruction. This I/O cost can be a significant
 fraction of build time for some images. To mitigate this, regular files larger
@@ -554,16 +565,16 @@ large.</p>
 <p>(Note that Git has an unrelated setting called <code class="code docutils literal notranslate"><span class="pre">core.bigFileThreshold</span></code>.)</p>
 </section>
 <section id="example">
-<h3><span class="section-number">6.6.5. </span>Example<a class="headerlink" href="#example" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.6.5. </span>Example<a class="headerlink" href="#example" title="Permalink to this heading">¶</a></h3>
 <p>Suppose we have this Dockerfile:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat a.df
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat<span class="w"> </span>a.df
 <span class="go">FROM alpine:3.17</span>
 <span class="go">RUN echo foo</span>
 <span class="go">RUN echo bar</span>
 </pre></div>
 </div>
 <p>On our first build, we get:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t foo -f a.df .
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo<span class="w"> </span>-f<span class="w"> </span>a.df<span class="w"> </span>.
 <span class="go">  1. FROM alpine:3.17</span>
 <span class="go">[ ... pull chatter omitted ... ]</span>
 <span class="go">  2. RUN echo foo</span>
@@ -578,7 +589,7 @@ large.</p>
 instruction was executed. You can also see this by the output of the two
 <code class="code docutils literal notranslate"><span class="pre">echo</span></code> commands.</p>
 <p>But on our second build, we get:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t foo -f a.df .
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo<span class="w"> </span>-f<span class="w"> </span>a.df<span class="w"> </span>.
 <span class="go">  1* FROM alpine:3.17</span>
 <span class="go">  2* RUN echo foo</span>
 <span class="go">  3* RUN echo bar</span>
@@ -594,11 +605,11 @@ Even for such a small and short Dockerfile, this build is noticeably faster
 than the first.</p>
 <p>We can also try a second, slightly different Dockerfile. Note that the first
 three instructions are the same, but the third is different:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat c.df
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat<span class="w"> </span>c.df
 <span class="go">FROM alpine:3.17</span>
 <span class="go">RUN echo foo</span>
 <span class="go">RUN echo qux</span>
-<span class="gp">$</span> ch-image build -t c -f c.df .
+<span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>c<span class="w"> </span>-f<span class="w"> </span>c.df<span class="w"> </span>.
 <span class="go">  1* FROM alpine:3.17</span>
 <span class="go">  2* RUN echo foo</span>
 <span class="go">  3. RUN echo qux</span>
@@ -610,7 +621,7 @@ three instructions are the same, but the third is different:</p>
 <p>Here, the first two instructions are hits from the first Dockerfile, but the
 third is a miss, so Charliecloud retrieves that state and continues building.</p>
 <p>We can also inspect the cache:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build-cache --tree
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>build-cache<span class="w"> </span>--tree
 <span class="go">*  (c) RUN echo qux</span>
 <span class="go">| *  (a) RUN echo bar</span>
 <span class="go">|/</span>
@@ -633,16 +644,16 @@ common instruction <code class="code docutils literal notranslate"><span class="
 </section>
 </section>
 <section id="build">
-<h2><span class="section-number">6.7. </span><code class="code docutils literal notranslate"><span class="pre">build</span></code><a class="headerlink" href="#build" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.7. </span><code class="code docutils literal notranslate"><span class="pre">build</span></code><a class="headerlink" href="#build" title="Permalink to this heading">¶</a></h2>
 <p>Build an image from a Dockerfile and put it in the storage directory.</p>
 <section id="id2">
-<h3><span class="section-number">6.7.1. </span>Synopsis<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build <span class="o">[</span>-t TAG<span class="o">]</span> <span class="o">[</span>-f DOCKERFILE<span class="o">]</span> <span class="o">[</span>...<span class="o">]</span> CONTEXT
+<h3><span class="section-number">6.7.1. </span>Synopsis<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>build<span class="w"> </span><span class="o">[</span>-t<span class="w"> </span>TAG<span class="o">]</span><span class="w"> </span><span class="o">[</span>-f<span class="w"> </span>DOCKERFILE<span class="o">]</span><span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>CONTEXT
 </pre></div>
 </div>
 </section>
 <section id="id3">
-<h3><span class="section-number">6.7.2. </span>Description<a class="headerlink" href="#id3" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.7.2. </span>Description<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
 <p>See below for differences with other Dockerfile interpreters. Charliecloud
 supports an extended instruction (<code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code>), a few other instructions
 behave slightly differently, and a few are ignored.</p>
@@ -724,9 +735,9 @@ transformation,</p></li>
 instructions.</p>
 </section>
 <section id="privilege-model">
-<h3><span class="section-number">6.7.3. </span>Privilege model<a class="headerlink" href="#privilege-model" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.7.3. </span>Privilege model<a class="headerlink" href="#privilege-model" title="Permalink to this heading">¶</a></h3>
 <section id="id4">
-<h4><span class="section-number">6.7.3.1. </span>Overview<a class="headerlink" href="#id4" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.3.1. </span>Overview<a class="headerlink" href="#id4" title="Permalink to this heading">¶</a></h4>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is a <em>fully</em> unprivileged image builder. It does not use any
 setuid or setcap helper programs, and it does not use configuration files
 <code class="code docutils literal notranslate"><span class="pre">/etc/subuid</span></code> or <code class="code docutils literal notranslate"><span class="pre">/etc/subgid</span></code>. This contrasts with the “rootless”
@@ -765,7 +776,7 @@ involve lying to the containerized process about privileged system calls, but
 at very different levels of complexity.</p>
 </section>
 <section id="root-emulation-mode-fakeroot">
-<h4><span class="section-number">6.7.3.2. </span>Root emulation mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code><a class="headerlink" href="#root-emulation-mode-fakeroot" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.3.2. </span>Root emulation mode <code class="code docutils literal notranslate"><span class="pre">fakeroot</span></code><a class="headerlink" href="#root-emulation-mode-fakeroot" title="Permalink to this heading">¶</a></h4>
 <p>This mode uses <code class="code docutils literal notranslate"><span class="pre">fakeroot(1)</span></code> to maintain an elaborate web of deceit that
 is internally consistent. This program intercepts both privileged system calls
 (e.g., <code class="code docutils literal notranslate"><span class="pre">setuid(2)</span></code>) as well as other system calls whose return values
@@ -810,14 +821,16 @@ know.</p>
 </div>
 </section>
 <section id="root-emulation-mode-seccomp-default">
-<h4><span class="section-number">6.7.3.3. </span>Root emulation mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)<a class="headerlink" href="#root-emulation-mode-seccomp-default" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.3.3. </span>Root emulation mode <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> (default)<a class="headerlink" href="#root-emulation-mode-seccomp-default" title="Permalink to this heading">¶</a></h4>
 <p>This mode uses the kernel’s <code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code> system call filtering to
 intercept certain privileged system calls, do absolutely nothing, and return
 success to the program.</p>
-<p>The quashed system calls are: <code class="code docutils literal notranslate"><span class="pre">capset(2)</span></code>; <code class="code docutils literal notranslate"><span class="pre">chown(2)</span></code> and friends;
-<code class="code docutils literal notranslate"><span class="pre">mknod(2)</span></code> and <code class="code docutils literal notranslate"><span class="pre">mknodat(2)</span></code>; and <code class="code docutils literal notranslate"><span class="pre">setuid(2)</span></code>,
-<code class="code docutils literal notranslate"><span class="pre">setgid(2)</span></code>, and <code class="code docutils literal notranslate"><span class="pre">setgroups(2)</span></code> along with the other system calls
-that change user or group.</p>
+<p>Some system calls are quashed regardless of their arguments:
+<code class="code docutils literal notranslate"><span class="pre">capset(2)</span></code>; <code class="code docutils literal notranslate"><span class="pre">chown(2)</span></code> and friends; <code class="code docutils literal notranslate"><span class="pre">kexec_load(2)</span></code> (used
+to validate the filter itself); ; and <code class="code docutils literal notranslate"><span class="pre">setuid(2)</span></code>, <code class="code docutils literal notranslate"><span class="pre">setgid(2)</span></code>,
+and <code class="code docutils literal notranslate"><span class="pre">setgroups(2)</span></code> along with the other system calls that change user or
+group. <code class="code docutils literal notranslate"><span class="pre">mknod(2)</span></code> and <code class="code docutils literal notranslate"><span class="pre">mknodat(2)</span></code> are quashed if they try to
+create a device file (e.g., creating FIFOs works normally).</p>
 <p>The advantages of this approach is that it’s much simpler, it’s faster, it’s
 completely agnostic to libc, and it’s mostly agnostic to distribution. The
 disadvantage is that it’s a very lazy liar; even the most cursory consistency
@@ -838,14 +851,14 @@ shell syntax, they can cause unwanted modifications. For example, <code class="c
 <span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">apt-get</span></code> will be run as <code class="code docutils literal notranslate"><span class="pre">/bin/sh</span> <span class="pre">-c</span> <span class="pre">&quot;apt-get</span> <span class="pre">-o</span>
 <span class="pre">APT::Sandbox::User=root</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">apt-get</span> <span class="pre">-o</span> <span class="pre">APT::Sandbox::User=root&quot;</span></code>. One
 workaround is to add escape syntax transparent to the shell; e.g., <code class="code docutils literal notranslate"><span class="pre">RUN</span>
-<span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">a\pt-get</span></code>.</p>
+<span class="pre">apt-get</span> <span class="pre">install</span> <span class="pre">-y</span> <span class="pre">apt-get</span></code>.</p>
 <p>This mode executes <em>all</em> <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> instructions with the <code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code>
 filter and has no knowledge of which instructions actually used the
 intercepted system calls. Therefore, the printed “instructions modified”
 number is only a count of instructions with a hook applied as described above.</p>
 </section>
 <section id="run-logging">
-<h4><span class="section-number">6.7.3.4. </span><code class="code docutils literal notranslate"><span class="pre">RUN</span></code>  logging<a class="headerlink" href="#run-logging" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.3.4. </span><code class="code docutils literal notranslate"><span class="pre">RUN</span></code>  logging<a class="headerlink" href="#run-logging" title="Permalink to this heading">¶</a></h4>
 <p>In terminal output, image metadata, and the build cache, the <code class="code docutils literal notranslate"><span class="pre">RUN</span></code>
 instruction is always logged as <code class="code docutils literal notranslate"><span class="pre">RUN.S</span></code>, <code class="code docutils literal notranslate"><span class="pre">RUN.F</span></code>, or <code class="code docutils literal notranslate"><span class="pre">RUN.N</span></code>.
 The letter appended to the instruction reflects the root emulation mode used
@@ -855,7 +868,7 @@ indicates that neither form of root emulation was used (<code class="code docuti
 </section>
 </section>
 <section id="compatibility-and-behavior-differences">
-<h3><span class="section-number">6.7.4. </span>Compatibility and behavior differences<a class="headerlink" href="#compatibility-and-behavior-differences" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.7.4. </span>Compatibility and behavior differences<a class="headerlink" href="#compatibility-and-behavior-differences" title="Permalink to this heading">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> is an independent implementation and shares no code with
 other Dockerfile interpreters. It uses a formal Dockerfile parsing grammar
 developed from the <a class="reference external" href="https://docs.docker.com/engine/reference/builder/">Dockerfile reference documentation</a> and miscellaneous other
@@ -878,7 +891,7 @@ on GitHub.</p>
 assessments and open questions. This helps us prioritize new features and
 revise our thinking about what is needed for HPC containers.</p>
 <section id="context-directory">
-<h4><span class="section-number">6.7.4.1. </span>Context directory<a class="headerlink" href="#context-directory" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.1. </span>Context directory<a class="headerlink" href="#context-directory" title="Permalink to this heading">¶</a></h4>
 <p>The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
 directly from storage like any other local process would (i.e., it is
@@ -886,7 +899,7 @@ reasonable use <code class="code docutils literal notranslate"><span class="pre"
 access anything outside the context directory.</p>
 </section>
 <section id="variable-substitution">
-<h4><span class="section-number">6.7.4.2. </span>Variable substitution<a class="headerlink" href="#variable-substitution" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.2. </span>Variable substitution<a class="headerlink" href="#variable-substitution" title="Permalink to this heading">¶</a></h4>
 <p>Variable substitution happens for <em>all</em> instructions, not just the ones listed
 in the Dockerfile reference.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">ARG</span></code> and <code class="code docutils literal notranslate"><span class="pre">ENV</span></code> cause cache misses upon <em>definition</em>, in contrast
@@ -923,25 +936,25 @@ environment:</p>
 </div>
 </section>
 <section id="arg">
-<h4><span class="section-number">6.7.4.3. </span><code class="code docutils literal notranslate"><span class="pre">ARG</span></code><a class="headerlink" href="#arg" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.3. </span><code class="code docutils literal notranslate"><span class="pre">ARG</span></code><a class="headerlink" href="#arg" title="Permalink to this heading">¶</a></h4>
 <p>Variables set with <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> are available anywhere in the Dockerfile,
 unlike Docker, where they only work in <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instructions, and possibly
 in other <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> before the first <code class="code docutils literal notranslate"><span class="pre">FROM</span></code>.</p>
 </section>
 <section id="from">
-<h4><span class="section-number">6.7.4.4. </span><code class="code docutils literal notranslate"><span class="pre">FROM</span></code><a class="headerlink" href="#from" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.4. </span><code class="code docutils literal notranslate"><span class="pre">FROM</span></code><a class="headerlink" href="#from" title="Permalink to this heading">¶</a></h4>
 <p>The <code class="code docutils literal notranslate"><span class="pre">FROM</span></code> instruction accepts option <code class="code docutils literal notranslate"><span class="pre">--arg=NAME=VALUE</span></code>, which
 serves the same purpose as the <code class="code docutils literal notranslate"><span class="pre">ARG</span></code> instruction. It can be repeated.</p>
 </section>
 <section id="label">
-<h4><span class="section-number">6.7.4.5. </span><code class="code docutils literal notranslate"><span class="pre">LABEL</span></code><a class="headerlink" href="#label" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.5. </span><code class="code docutils literal notranslate"><span class="pre">LABEL</span></code><a class="headerlink" href="#label" title="Permalink to this heading">¶</a></h4>
 <p>The <code class="code docutils literal notranslate"><span class="pre">LABEL</span></code> instruction accepts <code class="code docutils literal notranslate"><span class="pre">key=value</span></code> pairs to
 add metadata for an image. Unlike Docker, multiline values are not supported;
 see issue <a class="reference external" href="https://github.com/hpc/charliecloud/issues/1512">#1512</a>.
 Can be repeated.</p>
 </section>
 <section id="copy">
-<h4><span class="section-number">6.7.4.6. </span><code class="code docutils literal notranslate"><span class="pre">COPY</span></code><a class="headerlink" href="#copy" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.6. </span><code class="code docutils literal notranslate"><span class="pre">COPY</span></code><a class="headerlink" href="#copy" title="Permalink to this heading">¶</a></h4>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>The behavior described here matches Docker’s <a class="reference external" href="https://docs.docker.com/engine/deprecated/#legacy-builder-for-linux-images">now-deprecated legacy
@@ -999,7 +1012,7 @@ unprivileged build.</p></li>
 </ul>
 </section>
 <section id="features-we-do-not-plan-to-support">
-<h4><span class="section-number">6.7.4.7. </span>Features we do not plan to support<a class="headerlink" href="#features-we-do-not-plan-to-support" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.4.7. </span>Features we do not plan to support<a class="headerlink" href="#features-we-do-not-plan-to-support" title="Permalink to this heading">¶</a></h4>
 <ul class="simple">
 <li><p>Parser directives are not supported. We have not identified a need for any
 of them.</p></li>
@@ -1021,13 +1034,13 @@ Docker has.</p></li>
 </section>
 </section>
 <section id="rsync-dockerfile-extension">
-<span id="ch-image-rsync"></span><h3><span class="section-number">6.7.5. </span><code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> (Dockerfile extension)<a class="headerlink" href="#rsync-dockerfile-extension" title="Permalink to this headline">¶</a></h3>
+<span id="ch-image-rsync"></span><h3><span class="section-number">6.7.5. </span><code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> (Dockerfile extension)<a class="headerlink" href="#rsync-dockerfile-extension" title="Permalink to this heading">¶</a></h3>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>This instruction is experimental and may change or be removed.</p>
 </div>
 <section id="id6">
-<h4><span class="section-number">6.7.5.1. </span>Overview<a class="headerlink" href="#id6" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.5.1. </span>Overview<a class="headerlink" href="#id6" title="Permalink to this heading">¶</a></h4>
 <p>Copying files is often simple but has numerous difficult corner cases, e.g.
 when dealing with symbolic or hard links. The standard instruction
 <code class="code docutils literal notranslate"><span class="pre">COPY</span></code> deals with many of these corner cases differently from other UNIX
@@ -1048,7 +1061,7 @@ Importantly, <code class="code docutils literal notranslate"><span class="pre">C
 about what to do with symlinks.</p>
 </section>
 <section id="arguments">
-<h4><span class="section-number">6.7.5.2. </span>Arguments<a class="headerlink" href="#arguments" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.5.2. </span>Arguments<a class="headerlink" href="#arguments" title="Permalink to this heading">¶</a></h4>
 <p><code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> takes the same arguments as <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code>, so refer to its
 <a class="reference external" href="https://man7.org/linux/man-pages/man1/rsync.1.html">man page</a> for a
 detailed explanation of all the options (with possible emphasis on its
@@ -1063,14 +1076,14 @@ directory, while absolute destinations refer to the image’s root.</p>
 absolute paths refer to the image root, and <code class="code docutils literal notranslate"><span class="pre">-</span></code> (standard input) is an
 error.</p>
 <p>For example,</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">WORKDIR</span><span class="s"> /foo</span>
-<span class="k">RSYNC</span> --foo src1 src2 dst
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">WORKDIR</span><span class="w"> </span><span class="s">/foo</span>
+RSYNC<span class="w"> </span>--foo<span class="w"> </span>src1<span class="w"> </span>src2<span class="w"> </span>dst
 </pre></div>
 </div>
 <p>is translated to (the equivalent of):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> mkdir -p /foo
-<span class="gp">$</span> rsync -@<span class="o">=</span>-1 -AHSXpr --info<span class="o">=</span>progress2 -l --safe-links <span class="se">\</span>
-        --foo /context/src1 /context/src2 /storage/imgroot/foo/dst2
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>mkdir<span class="w"> </span>-p<span class="w"> </span>/foo
+<span class="gp">$ </span>rsync<span class="w"> </span>-@<span class="o">=</span>-1<span class="w"> </span>-AHSXpr<span class="w"> </span>--info<span class="o">=</span>progress2<span class="w"> </span>-l<span class="w"> </span>--safe-links<span class="w"> </span><span class="se">\</span>
+<span class="w">        </span>--foo<span class="w"> </span>/context/src1<span class="w"> </span>/context/src2<span class="w"> </span>/storage/imgroot/foo/dst2
 </pre></div>
 </div>
 <p>Note the extensive default arguments to <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code>. <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> takes
@@ -1137,7 +1150,7 @@ its command line processing. Currently, this configuration is respected for
 </div>
 </section>
 <section id="disallowed-rsync-1-features">
-<h4><span class="section-number">6.7.5.3. </span>Disallowed <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> features<a class="headerlink" href="#disallowed-rsync-1-features" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.5.3. </span>Disallowed <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> features<a class="headerlink" href="#disallowed-rsync-1-features" title="Permalink to this heading">¶</a></h4>
 <p>A small number of <code class="code docutils literal notranslate"><span class="pre">rsync(1)</span></code> features are actively disallowed:</p>
 <blockquote>
 <div><ol class="arabic">
@@ -1173,7 +1186,7 @@ internally in the future.</p>
 undesirable behavior. We have not characterized this problem.</p>
 </section>
 <section id="id7">
-<h4><span class="section-number">6.7.5.4. </span>Build cache<a class="headerlink" href="#id7" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.5.4. </span>Build cache<a class="headerlink" href="#id7" title="Permalink to this heading">¶</a></h4>
 <p>The instruction is a cache hit if the metadata of all source files is
 unchanged (specifically: filename, file type and permissions, xattrs, size,
 and last modified time). Unlike Docker, Charliecloud does not use file
@@ -1187,13 +1200,13 @@ of whether anything would be transferred (e.g., <code class="code docutils liter
 change in the future.</p>
 </section>
 <section id="examples-and-tutorial">
-<h4><span class="section-number">6.7.5.5. </span>Examples and tutorial<a class="headerlink" href="#examples-and-tutorial" title="Permalink to this headline">¶</a></h4>
+<h4><span class="section-number">6.7.5.5. </span>Examples and tutorial<a class="headerlink" href="#examples-and-tutorial" title="Permalink to this heading">¶</a></h4>
 <p>All of these examples use the same input, whose content will be introduced
 gradually, using edited output of <code class="code docutils literal notranslate"><span class="pre">ls</span> <span class="pre">-oghR</span></code> (which is like <code class="code docutils literal notranslate"><span class="pre">ls</span>
 <span class="pre">-lhR</span></code> but omits user and group). Examples assume a umask of <code class="code docutils literal notranslate"><span class="pre">0007</span></code>. The
 Dockerfile instructions listed also assume a preceding:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">alpine:3.17</span>
-<span class="k">RUN</span> mkdir /dst
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">alpine:3.17</span>
+<span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>/dst
 </pre></div>
 </div>
 <p>i.e., a simple base image containing a top-level directory <code class="code docutils literal notranslate"><span class="pre">dst</span></code>.</p>
@@ -1216,11 +1229,11 @@ have strange permissions.</p>
 </div>
 <p>The simplest form of <code class="code docutils literal notranslate"><span class="pre">RSYNC</span></code> is to copy a single file into a specified
 directory:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1/file-basic1 /dst
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/basic1/file-basic1<span class="w"> </span>/dst
 </pre></div>
 </div>
 <p>resulting in:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ls -oghR dst
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ls<span class="w"> </span>-oghR<span class="w"> </span>dst
 <span class="go">dst:</span>
 <span class="go">-rw----r-- 1 12 Oct 11 13:26 file-basic1</span>
 </pre></div>
@@ -1231,7 +1244,7 @@ is the file size.</p>
 <p>One can also rename the destination by specifying a new file name, and with
 <code class="code docutils literal notranslate"><span class="pre">+z</span></code>, not copy metadata (from here on the <code class="code docutils literal notranslate"><span class="pre">ls</span></code> command is omitted
 for brevity):</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> +z /basic1/file-basic1 /dst/file-basic1_nom
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>+z<span class="w"> </span>/basic1/file-basic1<span class="w"> </span>/dst/file-basic1_nom
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1240,7 +1253,7 @@ for brevity):</p>
 </div>
 <p>A trailing slash on the destination creates a new directory and places the
 source file within:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1/file-basic1 /dst/new/
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/basic1/file-basic1<span class="w"> </span>/dst/new/
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1251,7 +1264,7 @@ source file within:</p>
 </pre></div>
 </div>
 <p>With multiple source files, the destination trailing slash is optional:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1/file-basic1 /basic2/file-basic2 /dst/newB
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/basic1/file-basic1<span class="w"> </span>/basic2/file-basic2<span class="w"> </span>/dst/newB
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1265,7 +1278,7 @@ source file within:</p>
 <p>For directory sources, the presence or absence of a trailing slash is highly
 significant. Without one, the directory itself is placed in the destination
 (recall that this would rename a source <em>file</em>):</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1 /dst/basic1_new
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/basic1<span class="w"> </span>/dst/basic1_new
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1281,7 +1294,7 @@ significant. Without one, the directory itself is placed in the destination
 <p>A source trailing slash means copy the <em>contents of</em> a directory rather than
 the directory itself. Importantly, however, the directory’s metadata is copied
 to the destination directory.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /basic1/ /dst/basic1_renamed
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/basic1/<span class="w"> </span>/dst/basic1_renamed
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1292,14 +1305,14 @@ to the destination directory.</p>
 </pre></div>
 </div>
 <p>One gotcha is that <code class="code docutils literal notranslate"><span class="pre">RSYNC</span> <span class="pre">+z</span></code> is a no-op if the source is a directory:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> +z /basic1 /dst/basic1_newC
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>+z<span class="w"> </span>/basic1<span class="w"> </span>/dst/basic1_newC
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
 </pre></div>
 </div>
 <p>At least <code class="code docutils literal notranslate"><span class="pre">-r</span></code> is needed with <code class="code docutils literal notranslate"><span class="pre">+z</span></code> in this case:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> +z -r /basic1/ /dst/basic1_newD
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>+z<span class="w"> </span>-r<span class="w"> </span>/basic1/<span class="w"> </span>/dst/basic1_newD
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1312,8 +1325,8 @@ to the destination directory.</p>
 <p>Multiple source directories can be specified, including with wildcards. This
 example also illustrates that copies files are by default merged with content
 already existing in the image.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir /dst/dstC <span class="o">&amp;&amp;</span> <span class="nb">echo</span> file-dstC &gt; /dst/dstC/file-dstC
-<span class="k">RSYNC</span> /basic* /dst/dstC
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>/dst/dstC<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>file-dstC<span class="w"> </span>&gt;<span class="w"> </span>/dst/dstC/file-dstC
+RSYNC<span class="w"> </span>/basic*<span class="w"> </span>/dst/dstC
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1332,8 +1345,8 @@ already existing in the image.</p>
 </pre></div>
 </div>
 <p>Trailing slashes can be specified independently for each source:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir /dst/dstF <span class="o">&amp;&amp;</span> <span class="nb">echo</span> file-dstF &gt; /dst/dstF/file-dstF
-<span class="k">RSYNC</span> /basic1 /basic2/ /dst/dstF
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>/dst/dstF<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>file-dstF<span class="w"> </span>&gt;<span class="w"> </span>/dst/dstF/file-dstF
+RSYNC<span class="w"> </span>/basic1<span class="w"> </span>/basic2/<span class="w"> </span>/dst/dstF
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1350,7 +1363,7 @@ already existing in the image.</p>
 </div>
 <p>Bare <code class="code docutils literal notranslate"><span class="pre">/</span></code> (i.e., the entire context directory) is considered to have a
 trailing slash:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> / /dst
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/<span class="w"> </span>/dst
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1367,8 +1380,8 @@ trailing slash:</p>
 <p>To <em>replace</em> (rather than merge with) existing content, use <code class="code docutils literal notranslate"><span class="pre">--delete</span></code>.
 Note also that wildcards can be combined with trailing slashes and that the
 directory gets the metadata of the <em>first</em> slashed directory.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir /dst/dstG <span class="o">&amp;&amp;</span> <span class="nb">echo</span> file-dstG &gt; /dst/dstG/file-dstG
-<span class="k">RSYNC</span> --delete /basic*/ /dst/dstG
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>/dst/dstG<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span>file-dstG<span class="w"> </span>&gt;<span class="w"> </span>/dst/dstG/file-dstG
+RSYNC<span class="w"> </span>--delete<span class="w"> </span>/basic*/<span class="w"> </span>/dst/dstG
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1429,7 +1442,7 @@ absolute path to the parent of the context directory is replaced with
 </div>
 <p>By default, safe symlinks are preserved while unsafe symlinks are silently
 ignored:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /sym1 /dst
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/sym1<span class="w"> </span>/dst
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1484,7 +1497,7 @@ context, and are thus unsafe.</p></li>
 <p>The top-of-transfer can be changed to <code class="code docutils literal notranslate"><span class="pre">sym1</span></code> with a trailing slash. This
 also adds <code class="code docutils literal notranslate"><span class="pre">sym1</span></code> to the destination so the resulting directory structure
 is the same.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /sym1/ /dst/sym1
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/sym1/<span class="w"> </span>/dst/sym1
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1504,7 +1517,7 @@ is the same.</p>
 targets.</p>
 <p>Another common use case is to follow unsafe symlinks and copy their targets in
 place of the links. This is accomplished with <code class="code docutils literal notranslate"><span class="pre">+u</span></code>:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> +u /sym1/ /dst/sym1
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>+u<span class="w"> </span>/sym1/<span class="w"> </span>/dst/sym1
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1545,7 +1558,7 @@ other container builders where <code class="code docutils literal notranslate"><
 outside the context.</p>
 </div>
 <p>The sources themselves, if symlinks, do not get special treatment:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RSYNC</span> /sym1/file-sym1_direct /sym1/file-sym1_upover /dst
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span>RSYNC<span class="w"> </span>/sym1/file-sym1_direct<span class="w"> </span>/sym1/file-sym1_upover<span class="w"> </span>/dst
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1557,8 +1570,8 @@ named explicitly in the instruction, because it is an unsafe symlink.</p>
 <p>If the <em>destination</em> is a symlink to a file, and the source is a file, the
 link is replaced and the target is unchanged. (If the source is a directory,
 that is an error.)</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> touch /dst/file-dst <span class="o">&amp;&amp;</span> ln -s file-dst /dst/file-dst_direct
-<span class="k">RSYNC</span> /file-top /dst/file-dst_direct
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>touch<span class="w"> </span>/dst/file-dst<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ln<span class="w"> </span>-s<span class="w"> </span>file-dst<span class="w"> </span>/dst/file-dst_direct
+RSYNC<span class="w"> </span>/file-top<span class="w"> </span>/dst/file-dst_direct
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1567,8 +1580,8 @@ that is an error.)</p>
 </pre></div>
 </div>
 <p>If the destination is a symlink to a directory, the link is followed:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> mkdir /dst/dir-dst <span class="o">&amp;&amp;</span> ln -s dir-dst /dst/dir-dst_direct
-<span class="k">RSYNC</span> /file-top /dst/dir-dst_direct
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>/dst/dir-dst<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ln<span class="w"> </span>-s<span class="w"> </span>dir-dst<span class="w"> </span>/dst/dir-dst_direct
+RSYNC<span class="w"> </span>/file-top<span class="w"> </span>/dst/dir-dst_direct
 </pre></div>
 </div>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="go">dst:</span>
@@ -1582,29 +1595,29 @@ that is an error.)</p>
 </section>
 </section>
 <section id="examples">
-<h3><span class="section-number">6.7.6. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.7.6. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h3>
 <p>Build image <code class="code docutils literal notranslate"><span class="pre">bar</span></code> using <code class="code docutils literal notranslate"><span class="pre">./foo/bar/Dockerfile</span></code> and context
 directory <code class="code docutils literal notranslate"><span class="pre">./foo/bar</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build -t bar -f ./foo/bar/Dockerfile ./foo/bar
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>bar<span class="w"> </span>-f<span class="w"> </span>./foo/bar/Dockerfile<span class="w"> </span>./foo/bar
 <span class="go">[...]</span>
 <span class="go">grown in 4 instructions: bar</span>
 </pre></div>
 </div>
 <p>Same, but infer the image name and Dockerfile from the context directory
 path:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build ./foo/bar
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>./foo/bar
 <span class="go">[...]</span>
 <span class="go">grown in 4 instructions: bar</span>
 </pre></div>
 </div>
 <p>Build using humongous vendor compilers you want to bind-mount instead of
 installing into the image:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image build --bind /opt/bigvendor:/opt .
-<span class="gp">$</span> cat Dockerfile
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>--bind<span class="w"> </span>/opt/bigvendor:/opt<span class="w"> </span>.
+<span class="gp">$ </span>cat<span class="w"> </span>Dockerfile
 <span class="go">FROM centos:7</span>
 
 <span class="go">RUN /opt/bin/cc hello.c</span>
-<span class="gp">#</span>COPY /opt/lib/*.so /usr/local/lib   <span class="c1"># fail: COPY doesn’t bind mount</span>
+<span class="gp">#</span>COPY<span class="w"> </span>/opt/lib/*.so<span class="w"> </span>/usr/local/lib<span class="w">   </span><span class="c1"># fail: COPY doesn’t bind mount</span>
 <span class="go">RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround</span>
 <span class="go">RUN ldconfig</span>
 </pre></div>
@@ -1612,8 +1625,8 @@ installing into the image:</p>
 </section>
 </section>
 <section id="id8">
-<h2><span class="section-number">6.8. </span><code class="code docutils literal notranslate"><span class="pre">build-cache</span></code><a class="headerlink" href="#id8" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> build-cache <span class="o">[</span>...<span class="o">]</span>
+<h2><span class="section-number">6.8. </span><code class="code docutils literal notranslate"><span class="pre">build-cache</span></code><a class="headerlink" href="#id8" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>build-cache<span class="w"> </span><span class="o">[</span>...<span class="o">]</span>
 </pre></div>
 </div>
 <p>Print basic information about the cache. If <code class="code docutils literal notranslate"><span class="pre">-v</span></code> is given, also print
@@ -1642,8 +1655,8 @@ feature. If <code class="code docutils literal notranslate"><span class="pre">-v
 </div></blockquote>
 </section>
 <section id="delete">
-<h2><span class="section-number">6.9. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> delete IMAGE_GLOB <span class="o">[</span>IMAGE_GLOB ... <span class="o">]</span>
+<h2><span class="section-number">6.9. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>delete<span class="w"> </span>IMAGE_GLOB<span class="w"> </span><span class="o">[</span>IMAGE_GLOB<span class="w"> </span>...<span class="w"> </span><span class="o">]</span>
 </pre></div>
 </div>
 <p>Delete the image(s) described by each <code class="code docutils literal notranslate"><span class="pre">IMAGE_GLOB</span></code> from the storage
@@ -1662,8 +1675,8 @@ also desires to interpret them and will do so incorrectly.</p>
 </div>
 </section>
 <section id="gestalt">
-<h2><span class="section-number">6.10. </span><code class="code docutils literal notranslate"><span class="pre">gestalt</span></code><a class="headerlink" href="#gestalt" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> gestalt <span class="o">[</span>SELECTOR<span class="o">]</span>
+<h2><span class="section-number">6.10. </span><code class="code docutils literal notranslate"><span class="pre">gestalt</span></code><a class="headerlink" href="#gestalt" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>gestalt<span class="w"> </span><span class="o">[</span>SELECTOR<span class="o">]</span>
 </pre></div>
 </div>
 <p>Provide information about the <a class="reference external" href="https://apple.fandom.com/wiki/Gestalt">configuration and available features</a> of <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>. End users
@@ -1685,17 +1698,17 @@ successfully.</p></li>
 </div></blockquote>
 </section>
 <section id="list">
-<h2><span class="section-number">6.11. </span><code class="code docutils literal notranslate"><span class="pre">list</span></code><a class="headerlink" href="#list" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.11. </span><code class="code docutils literal notranslate"><span class="pre">list</span></code><a class="headerlink" href="#list" title="Permalink to this heading">¶</a></h2>
 <p>Print information about images. If no argument given, list the images in
 builder storage.</p>
 <section id="id9">
-<h3><span class="section-number">6.11.1. </span>Synopsis<a class="headerlink" href="#id9" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> list <span class="o">[</span>-l<span class="o">]</span> <span class="o">[</span>IMAGE_REF<span class="o">]</span>
+<h3><span class="section-number">6.11.1. </span>Synopsis<a class="headerlink" href="#id9" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>list<span class="w"> </span><span class="o">[</span>-l<span class="o">]</span><span class="w"> </span><span class="o">[</span>IMAGE_REF<span class="o">]</span>
 </pre></div>
 </div>
 </section>
 <section id="id10">
-<h3><span class="section-number">6.11.2. </span>Description<a class="headerlink" href="#id10" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.11.2. </span>Description<a class="headerlink" href="#id10" title="Permalink to this heading">¶</a></h3>
 <p>Optional argument:</p>
 <blockquote>
 <div><dl class="simple">
@@ -1710,16 +1723,16 @@ the remote registry, if any.</p>
 </div></blockquote>
 </section>
 <section id="id11">
-<h3><span class="section-number">6.11.3. </span>Examples<a class="headerlink" href="#id11" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.11.3. </span>Examples<a class="headerlink" href="#id11" title="Permalink to this heading">¶</a></h3>
 <p>List images in builder storage:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>list
 <span class="go">alpine:3.17 (amd64)</span>
 <span class="go">alpine:latest (amd64)</span>
 <span class="go">debian:buster (amd64)</span>
 </pre></div>
 </div>
 <p>Print details about Debian Buster image:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image list debian:buster
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>list<span class="w"> </span>debian:buster
 <span class="go">details of image:    debian:buster</span>
 <span class="go">in local storage:    no</span>
 <span class="go">full remote ref:     registry-1.docker.io:443/library/debian:buster</span>
@@ -1738,8 +1751,8 @@ listed beside each available architecture. Importantly, this feature does
 </section>
 </section>
 <section id="import">
-<h2><span class="section-number">6.12. </span><code class="code docutils literal notranslate"><span class="pre">import</span></code><a class="headerlink" href="#import" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> import PATH IMAGE_REF
+<h2><span class="section-number">6.12. </span><code class="code docutils literal notranslate"><span class="pre">import</span></code><a class="headerlink" href="#import" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>import<span class="w"> </span>PATH<span class="w"> </span>IMAGE_REF
 </pre></div>
 </div>
 <p>Copy the image at <code class="code docutils literal notranslate"><span class="pre">PATH</span></code> into builder storage with name
@@ -1761,18 +1774,18 @@ will still hit, even if the new image is different.</p>
 </div>
 </section>
 <section id="pull">
-<h2><span class="section-number">6.13. </span><code class="code docutils literal notranslate"><span class="pre">pull</span></code><a class="headerlink" href="#pull" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.13. </span><code class="code docutils literal notranslate"><span class="pre">pull</span></code><a class="headerlink" href="#pull" title="Permalink to this heading">¶</a></h2>
 <p>Pull the image described by the image reference <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from a
 repository to the local filesystem.</p>
 <section id="id12">
-<h3><span class="section-number">6.13.1. </span>Synopsis<a class="headerlink" href="#id12" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> pull <span class="o">[</span>...<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
+<h3><span class="section-number">6.13.1. </span>Synopsis<a class="headerlink" href="#id12" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>pull<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>IMAGE_REF<span class="w"> </span><span class="o">[</span>DEST_REF<span class="o">]</span>
 </pre></div>
 </div>
 <p>See the FAQ for the gory details on specifying image references.</p>
 </section>
 <section id="id13">
-<h3><span class="section-number">6.13.2. </span>Description<a class="headerlink" href="#id13" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.13.2. </span>Description<a class="headerlink" href="#id13" title="Permalink to this heading">¶</a></h3>
 <p>Destination:</p>
 <blockquote>
 <div><dl class="simple">
@@ -1818,10 +1831,10 @@ image if they don’t exist, but no other action is taken.</p></li>
 metadata. A warning is printed in this case.</p>
 </section>
 <section id="id14">
-<h3><span class="section-number">6.13.3. </span>Examples<a class="headerlink" href="#id14" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.13.3. </span>Examples<a class="headerlink" href="#id14" title="Permalink to this heading">¶</a></h3>
 <p>Download the Debian Buster image matching the host’s architecture and place it
 in the storage directory:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> uname -m
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>uname<span class="w"> </span>-m
 <span class="go">aarch32</span>
 <span class="go">pulling image:    debian:buster</span>
 <span class="go">requesting arch:  arm64/v8</span>
@@ -1839,7 +1852,7 @@ in the storage directory:</p>
 </pre></div>
 </div>
 <p>Same, specifying the architecture explicitly:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image --arch<span class="o">=</span>arm/v7 pull debian:buster
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>--arch<span class="o">=</span>arm/v7<span class="w"> </span>pull<span class="w"> </span>debian:buster
 <span class="go">pulling image:    debian:buster</span>
 <span class="go">requesting arch:  arm/v7</span>
 <span class="go">manifest list: downloading</span>
@@ -1857,18 +1870,18 @@ in the storage directory:</p>
 </section>
 </section>
 <section id="push">
-<h2><span class="section-number">6.14. </span><code class="code docutils literal notranslate"><span class="pre">push</span></code><a class="headerlink" href="#push" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.14. </span><code class="code docutils literal notranslate"><span class="pre">push</span></code><a class="headerlink" href="#push" title="Permalink to this heading">¶</a></h2>
 <p>Push the image described by the image reference <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> from the
 local filesystem to a repository.</p>
 <section id="id15">
-<h3><span class="section-number">6.14.1. </span>Synopsis<a class="headerlink" href="#id15" title="Permalink to this headline">¶</a></h3>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> push <span class="o">[</span>--image DIR<span class="o">]</span> IMAGE_REF <span class="o">[</span>DEST_REF<span class="o">]</span>
+<h3><span class="section-number">6.14.1. </span>Synopsis<a class="headerlink" href="#id15" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>push<span class="w"> </span><span class="o">[</span>--image<span class="w"> </span>DIR<span class="o">]</span><span class="w"> </span>IMAGE_REF<span class="w"> </span><span class="o">[</span>DEST_REF<span class="o">]</span>
 </pre></div>
 </div>
 <p>See the FAQ for the gory details on specifying image references.</p>
 </section>
 <section id="id16">
-<h3><span class="section-number">6.14.2. </span>Description<a class="headerlink" href="#id16" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.14.2. </span>Description<a class="headerlink" href="#id16" title="Permalink to this heading">¶</a></h3>
 <p>Destination:</p>
 <blockquote>
 <div><dl class="simple">
@@ -1893,11 +1906,11 @@ setuid/setgid bits are removed, to avoid surprises if the image is pulled by a
 privileged container implementation.</p>
 </section>
 <section id="id17">
-<h3><span class="section-number">6.14.3. </span>Examples<a class="headerlink" href="#id17" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">6.14.3. </span>Examples<a class="headerlink" href="#id17" title="Permalink to this heading">¶</a></h3>
 <p>Push a local image to the registry <code class="code docutils literal notranslate"><span class="pre">example.com:5000</span></code> at path
 <code class="code docutils literal notranslate"><span class="pre">/foo/bar</span></code> with tag <code class="code docutils literal notranslate"><span class="pre">latest</span></code>. Note that in this form, the local
 image must be named to match that remote reference.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push example.com:5000/foo/bar:latest
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>push<span class="w"> </span>example.com:5000/foo/bar:latest
 <span class="go">pushing image:   example.com:5000/foo/bar:latest</span>
 <span class="go">layer 1/1: gathering</span>
 <span class="go">layer 1/1: preparing</span>
@@ -1914,7 +1927,7 @@ image must be named to match that remote reference.</p>
 </div>
 <p>Same, except use local image <code class="code docutils literal notranslate"><span class="pre">alpine:3.17</span></code>. In this form, the local image
 name does not have to match the destination reference.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push alpine:3.17 example.com:5000/foo/bar:latest
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>push<span class="w"> </span>alpine:3.17<span class="w"> </span>example.com:5000/foo/bar:latest
 <span class="go">pushing image:   alpine:3.17</span>
 <span class="go">destination:     example.com:5000/foo/bar:latest</span>
 <span class="go">layer 1/1: gathering</span>
@@ -1933,7 +1946,7 @@ name does not have to match the destination reference.</p>
 <p>Same, except use unpacked image located at <code class="code docutils literal notranslate"><span class="pre">/var/tmp/image</span></code> rather than
 an image in <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> storage. (Also, the sole layer is already present
 in the remote registry, so we don’t upload it again.)</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image push --image /var/tmp/image example.com:5000/foo/bar:latest
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span>push<span class="w"> </span>--image<span class="w"> </span>/var/tmp/image<span class="w"> </span>example.com:5000/foo/bar:latest
 <span class="go">pushing image:   example.com:5000/foo/bar:latest</span>
 <span class="go">image path:      /var/tmp/image</span>
 <span class="go">layer 1/1: gathering</span>
@@ -1952,15 +1965,15 @@ in the remote registry, so we don’t upload it again.)</p>
 </section>
 </section>
 <section id="reset">
-<h2><span class="section-number">6.15. </span><code class="code docutils literal notranslate"><span class="pre">reset</span></code><a class="headerlink" href="#reset" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> reset
+<h2><span class="section-number">6.15. </span><code class="code docutils literal notranslate"><span class="pre">reset</span></code><a class="headerlink" href="#reset" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>reset
 </pre></div>
 </div>
 <p>Delete all images and cache from ch-image builder storage.</p>
 </section>
 <section id="undelete">
-<h2><span class="section-number">6.16. </span><code class="code docutils literal notranslate"><span class="pre">undelete</span></code><a class="headerlink" href="#undelete" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-image <span class="o">[</span>...<span class="o">]</span> undelete IMAGE_REF
+<h2><span class="section-number">6.16. </span><code class="code docutils literal notranslate"><span class="pre">undelete</span></code><a class="headerlink" href="#undelete" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-image<span class="w"> </span><span class="o">[</span>...<span class="o">]</span><span class="w"> </span>undelete<span class="w"> </span>IMAGE_REF
 </pre></div>
 </div>
 <p>If <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> has been deleted but is in the build cache, recover it
@@ -1968,7 +1981,7 @@ from the cache. Only available when the cache is enabled, and will not
 overwrite <code class="code docutils literal notranslate"><span class="pre">IMAGE_REF</span></code> if it exists.</p>
 </section>
 <section id="environment-variables">
-<h2><span class="section-number">6.17. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">6.17. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">¶</a></h2>
 <dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_USERNAME</span></code>, <code class="code docutils literal notranslate"><span class="pre">CH_IMAGE_PASSWORD</span></code></dt><dd><p>Username and password for registry authentication. <strong>See important caveats
 in section “Authentication” above.</strong></p>
@@ -1980,6 +1993,9 @@ useful for debugging situations where standard error is consumed or lost.</p>
 <p>Also sets verbose mode if not already set (equivalent to <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code>).</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FESTOON</span></code></dt><dd><p>If set, prepend PID and timestamp to logged chatter.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">CH_XATTRS</span></code></dt><dd><p>If set, save xattrs in the build cache and restore them when rebuilding from
+the cache (equivalent to <code class="code docutils literal notranslate"><span class="pre">--xattrs</span></code>).</p>
 </dd>
 </dl>
 </section>

@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>4. ch-convert &mdash; Charliecloud 0.35 documentation</title>
+  <title>4. ch-convert &mdash; Charliecloud 0.36 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="5. ch-fromhost" href="ch-fromhost.html" />
@@ -27,15 +26,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Charliecloud
-            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.35
+                0.36
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -76,8 +79,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -87,16 +90,16 @@
            <div itemprop="articleBody">
              
   <section id="ch-convert">
-<h1><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code><a class="headerlink" href="#ch-convert" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code><a class="headerlink" href="#ch-convert" title="Permalink to this heading">¶</a></h1>
 <p>Convert an image from one format to another.</p>
 <section id="synopsis">
-<h2><span class="section-number">4.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert <span class="o">[</span>-i FMT<span class="o">]</span> <span class="o">[</span>-o FMT<span class="o">]</span> <span class="o">[</span>OPTION ...<span class="o">]</span> IN OUT
+<h2><span class="section-number">4.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-convert<span class="w"> </span><span class="o">[</span>-i<span class="w"> </span>FMT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>FMT<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTION<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>IN<span class="w"> </span>OUT
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">4.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">4.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
 <p>Copy image <code class="code docutils literal notranslate"><span class="pre">IN</span></code> to <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> and convert its format. Replace
 <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> if it already exists, unless <code class="code docutils literal notranslate"><span class="pre">--no-clobber</span></code> is specified. It
 is an error if <code class="code docutils literal notranslate"><span class="pre">IN</span></code> and <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> have the same format; use the
@@ -123,9 +126,12 @@ inference.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-clobber</span></code></dt><dd><p>Error if <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> already exists, rather than replacing it.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--no-xattrs</span></code></dt><dd><p>Ignore xattrs and ACLs when converting.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--no-xattrs</span></code></dt><dd><p>Ignore xattrs and ACLs when converting. Overrides <code class="code docutils literal notranslate"><span class="pre">$CH_XATTRS</span></code>.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-o</span></code>, <code class="code docutils literal notranslate"><span class="pre">--out-fmt</span> <span class="pre">FMT</span></code></dt><dd><p>Output image format is <code class="code docutils literal notranslate"><span class="pre">FMT</span></code>; inferred if omitted.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-q</span></code>, <code class="code docutils literal notranslate"><span class="pre">--quiet</span></code></dt><dd><p>Be quieter; can be repeated. Incompatible with <code class="code docutils literal notranslate"><span class="pre">-v</span></code>. See the <a class="reference internal" href="faq.html#faq-verbosity"><span class="std std-ref">FAQ
+entry on verbosity</span></a> for details.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-s</span></code>, <code class="code docutils literal notranslate"><span class="pre">--storage</span> <span class="pre">DIR</span></code></dt><dd><p>Set the storage directory. Equivalent to the same option for <code class="code docutils literal notranslate"><span class="pre">ch-image(1)</span></code>
 and <code class="code docutils literal notranslate"><span class="pre">ch-run(1)</span></code>.</p>
@@ -139,11 +145,13 @@ the image, depending on the input and output formats. Default:
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Print extra chatter. Can be repeated.</p>
 </dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--xattrs</span></code></dt><dd><p>Preserve xattrs and ACLs when converting.</p>
+</dd>
 </dl>
 </div></blockquote>
 </section>
 <section id="image-formats">
-<h2><span class="section-number">4.3. </span>Image formats<a class="headerlink" href="#image-formats" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">4.3. </span>Image formats<a class="headerlink" href="#image-formats" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> knows about these values of <code class="code docutils literal notranslate"><span class="pre">FMT</span></code>:</p>
 <blockquote>
 <div><dl>
@@ -181,7 +189,7 @@ to <code class="code docutils literal notranslate"><span class="pre">tar(1)</spa
 or pull images.</p>
 </section>
 <section id="format-inference">
-<h2><span class="section-number">4.4. </span>Format inference<a class="headerlink" href="#format-inference" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">4.4. </span>Format inference<a class="headerlink" href="#format-inference" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> tries to save typing by guessing formats when they are
 reasonably clear. This is done against filenames, rather than file contents,
 so the rules are the same for output descriptors that do not yet exist.</p>
@@ -202,22 +210,22 @@ explicit dot: Directory.</p></li>
 </div></blockquote>
 </section>
 <section id="examples">
-<h2><span class="section-number">4.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">4.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
 <p>Typical build-to-run sequence for image <code class="code docutils literal notranslate"><span class="pre">foo/bar</span></code> using <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s
 internal SquashFUSE code, inferring the output format:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> sudo docker build -t foo/bar -f Dockerfile .
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>sudo<span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo/bar<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w"> </span>.
 <span class="go">[...]</span>
-<span class="gp">$</span> ch-convert foo/bar:latest /var/tmp/foobar.sqfs
+<span class="gp">$ </span>ch-convert<span class="w"> </span>foo/bar:latest<span class="w"> </span>/var/tmp/foobar.sqfs
 <span class="go">input:   docker    foo/bar:latest</span>
 <span class="go">output:  squashfs  /var/tmp/foobar.sqfs</span>
 <span class="go">copying ...</span>
 <span class="go">done</span>
-<span class="gp">$</span> ch-run /var/tmp/foobar.sqfs -- <span class="nb">echo</span> hello
+<span class="gp">$ </span>ch-run<span class="w"> </span>/var/tmp/foobar.sqfs<span class="w"> </span>--<span class="w"> </span><span class="nb">echo</span><span class="w"> </span>hello
 <span class="go">hello</span>
 </pre></div>
 </div>
 <p>Same conversion, but no format inference:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-convert -i ch-image -o squash foo/bar:latest /var/tmp/foobar.sqfs
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-convert<span class="w"> </span>-i<span class="w"> </span>ch-image<span class="w"> </span>-o<span class="w"> </span>squash<span class="w"> </span>foo/bar:latest<span class="w"> </span>/var/tmp/foobar.sqfs
 <span class="go">input:   docker    foo/bar:latest</span>
 <span class="go">output:  squashfs  /var/tmp/foobar.sqfs</span>
 <span class="go">copying ...</span>

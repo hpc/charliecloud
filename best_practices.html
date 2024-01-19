@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>11. Best practices &mdash; Charliecloud 0.35 documentation</title>
+  <title>11. Best practices &mdash; Charliecloud 0.36 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="12. Contributor’s guide" href="dev.html" />
@@ -27,15 +26,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Charliecloud
-            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.35
+                0.36
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -84,8 +87,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">11. </span>Best practices</li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">11. </span>Best practices</li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -95,9 +98,9 @@
            <div itemprop="articleBody">
              
   <section id="best-practices">
-<h1><span class="section-number">11. </span>Best practices<a class="headerlink" href="#best-practices" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">11. </span>Best practices<a class="headerlink" href="#best-practices" title="Permalink to this heading">¶</a></h1>
 <section id="other-best-practices-information">
-<h2><span class="section-number">11.1. </span>Other best practices information<a class="headerlink" href="#other-best-practices-information" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">11.1. </span>Other best practices information<a class="headerlink" href="#other-best-practices-information" title="Permalink to this heading">¶</a></h2>
 <p>This isn’t the last word. Also consider:</p>
 <ul class="simple">
 <li><p>Many of Docker’s <a class="reference external" href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices">Best practices for writing Dockerfiles</a>
@@ -111,10 +114,10 @@ NIST Special Publication 800-190; Souppaya, Morello, and Scarfone 2017.</p></li>
 </ul>
 </section>
 <section id="filesystems">
-<h2><span class="section-number">11.2. </span>Filesystems<a class="headerlink" href="#filesystems" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">11.2. </span>Filesystems<a class="headerlink" href="#filesystems" title="Permalink to this heading">¶</a></h2>
 <p>There are two performance gotchas to be aware of for Charliecloud.</p>
 <section id="metadata-traffic">
-<h3><span class="section-number">11.2.1. </span>Metadata traffic<a class="headerlink" href="#metadata-traffic" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.2.1. </span>Metadata traffic<a class="headerlink" href="#metadata-traffic" title="Permalink to this heading">¶</a></h3>
 <p>Directory-format container images and the Charliecloud storage directory often
 contain, and thus Charliecloud must manipulate, a very large number of files.
 For example, after running the test suite, the storage directory contains
@@ -130,7 +133,7 @@ metadata traffic. Images in this format are suitable for any filesystem,
 including Lustre.</p>
 </section>
 <section id="file-copy-performance">
-<span id="best-practices-file-copy"></span><h3><span class="section-number">11.2.2. </span>File copy performance<a class="headerlink" href="#file-copy-performance" title="Permalink to this headline">¶</a></h3>
+<span id="best-practices-file-copy"></span><h3><span class="section-number">11.2.2. </span>File copy performance<a class="headerlink" href="#file-copy-performance" title="Permalink to this heading">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> does a lot of file copying. The bulk of this is manipulating
 images in the storage directory. Importantly, this includes <a class="reference internal" href="ch-image.html#ch-image-bu-large"><span class="std std-ref">large files</span></a> stored by the build cache outside its Git repository,
 though this feature is disabled by default.</p>
@@ -170,12 +173,6 @@ in-kernel filesystems or specific filesystem release nodes, e.g. <a class="refer
 supported, ❌ unsupported. We recommend using a filesystem that supports
 reflink and also (if applicable) server-side copy.</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 38%" />
-<col style="width: 20%" />
-<col style="width: 20%" />
-<col style="width: 22%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"></th>
 <th class="head"><p>in-kernel</p></th>
@@ -251,7 +248,7 @@ Charliecloud does not currently attempt it.</p></li>
 </section>
 </section>
 <section id="installing-your-own-software">
-<h2><span class="section-number">11.3. </span>Installing your own software<a class="headerlink" href="#installing-your-own-software" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">11.3. </span>Installing your own software<a class="headerlink" href="#installing-your-own-software" title="Permalink to this heading">¶</a></h2>
 <p>This section covers four situations for making software available inside a
 Charliecloud container:</p>
 <blockquote>
@@ -268,14 +265,14 @@ Charliecloud container:</p>
 trustworthy image on Docker Hub you can use as a base?</p>
 </div>
 <section id="third-party-software-via-package-manager">
-<h3><span class="section-number">11.3.1. </span>Third-party software via package manager<a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.3.1. </span>Third-party software via package manager<a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this heading">¶</a></h3>
 <p>This approach is the simplest and fastest way to install stuff in your image.
 The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile does this to install the package
 <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> openssh-clients <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf clean all
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">RUN</span><span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span>openssh-clients<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>dnf<span class="w"> </span>clean<span class="w"> </span>all
 
-<span class="k">COPY</span> . hello
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>hello
 </pre></div>
 </div>
 <p>You can use distribution package managers such as <code class="code docutils literal notranslate"><span class="pre">dnf</span></code>, as demonstrated
@@ -290,13 +287,13 @@ ironed out yet. If you encounter problems, please do file a bug!</p>
 </div>
 </section>
 <section id="third-party-software-compiled-from-source">
-<h3><span class="section-number">11.3.2. </span>Third-party software compiled from source<a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.3.2. </span>Third-party software compiled from source<a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this heading">¶</a></h3>
 <p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example does
 this with two chained Dockerfiles. First, we build a basic AlmaLinux image
 (<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.almalinux_8ch</span></code>):</p>
 <blockquote>
-<div><div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">almalinux:8</span>
+<div><div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">almalinux:8</span>
 
 <span class="c"># This image has three purposes: (1) demonstrate we can build a AlmaLinux 8</span>
 <span class="c"># image, (2) provide a build environment for Charliecloud EPEL 8 RPMs, and (3)</span>
@@ -315,40 +312,40 @@ this with two chained Dockerfiles. First, we build a basic AlmaLinux image
 <span class="c">#</span>
 <span class="c"># FIXME: This instruction seems to be running afoul of #1679. I’ve re-wrapped</span>
 <span class="c"># it to have fewer continuations in hopes we trigger that less.</span>
-<span class="k">RUN</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-                epel-release <span class="se">\</span>
-                <span class="s1">&#39;dnf-command(config-manager)&#39;</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf config-manager --enable powertools <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf install -y --setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span> <span class="se">\</span>
-                dnf-plugin-ovl <span class="se">\</span>
-                autoconf automake gcc git libarchive libpng-devel make python3 python3-devel python3-lark-parser python3-requests python3-sphinx python3-sphinx_rtd_theme rpm-build rpmlint rsync squashfs-tools squashfuse wget which <span class="se">\</span>
- <span class="o">&amp;&amp;</span> dnf clean all
+<span class="k">RUN</span><span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>epel-release<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span><span class="s1">&#39;dnf-command(config-manager)&#39;</span><span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>dnf<span class="w"> </span>config-manager<span class="w"> </span>--enable<span class="w"> </span>powertools<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>dnf<span class="w"> </span>install<span class="w"> </span>-y<span class="w"> </span>--setopt<span class="o">=</span><span class="nv">install_weak_deps</span><span class="o">=</span><span class="nb">false</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>dnf-plugin-ovl<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>autoconf<span class="w"> </span>automake<span class="w"> </span>gcc<span class="w"> </span>git<span class="w"> </span>libarchive<span class="w"> </span>libpng-devel<span class="w"> </span>make<span class="w"> </span>python3<span class="w"> </span>python3-devel<span class="w"> </span>python3-lark-parser<span class="w"> </span>python3-requests<span class="w"> </span>python3-sphinx<span class="w"> </span>python3-sphinx_rtd_theme<span class="w"> </span>rpm-build<span class="w"> </span>rpmlint<span class="w"> </span>rsync<span class="w"> </span>squashfs-tools<span class="w"> </span>squashfuse<span class="w"> </span>wget<span class="w"> </span>which<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>dnf<span class="w"> </span>clean<span class="w"> </span>all
 
 <span class="c"># Need wheel to install bundled Lark, and the RPM version doesn’t work.</span>
-<span class="k">RUN</span> pip3 install wheel
+<span class="k">RUN</span><span class="w"> </span>pip3<span class="w"> </span>install<span class="w"> </span>wheel
 
 <span class="c"># AlmaLinux&#39;s linker doesn’t search these paths by default; add them because we</span>
 <span class="c"># will install stuff later into /usr/local.</span>
-<span class="k">RUN</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib&quot;</span> &gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;/usr/local/lib64&quot;</span> &gt;&gt; /etc/ld.so.conf.d/usrlocal.conf <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ldconfig
+<span class="k">RUN</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;/usr/local/lib&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>/etc/ld.so.conf.d/usrlocal.conf<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;/usr/local/lib64&quot;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/etc/ld.so.conf.d/usrlocal.conf<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>ldconfig
 
 <span class="c"># Install ImageMagick</span>
 <span class="c"># The latest, 7.1.0, fails to install with a cryptic libtool error. ¯\_(ツ)_/¯</span>
-<span class="k">ARG</span> <span class="nv">MAGICK_VERSION</span><span class="o">=</span><span class="m">7</span>.0.11-14
-<span class="k">RUN</span> wget -nv -O ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
-    <span class="s2">&quot;https://github.com/ImageMagick/ImageMagick/archive/refs/tags/</span><span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span><span class="s2">.tar.gz&quot;</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> tar xf ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">cd</span> ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
- <span class="o">&amp;&amp;</span> make -j <span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -Rf ../ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>
+<span class="k">ARG</span><span class="w"> </span><span class="nv">MAGICK_VERSION</span><span class="o">=</span><span class="m">7</span>.0.11-14
+<span class="k">RUN</span><span class="w"> </span>wget<span class="w"> </span>-nv<span class="w"> </span>-O<span class="w"> </span>ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="s2">&quot;https://github.com/ImageMagick/ImageMagick/archive/refs/tags/</span><span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span><span class="s2">.tar.gz&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>tar<span class="w"> </span>xf<span class="w"> </span>ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./configure<span class="w"> </span>--prefix<span class="o">=</span>/usr/local<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>-j<span class="w"> </span><span class="k">$(</span>getconf<span class="w"> </span>_NPROCESSORS_ONLN<span class="k">)</span><span class="w"> </span>install<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-Rf<span class="w"> </span>../ImageMagick-<span class="si">${</span><span class="nv">MAGICK_VERSION</span><span class="si">}</span>
 
 <span class="c"># Add mount points for files and directories for paraview and obspy comparison</span>
 <span class="c"># tests.</span>
-<span class="k">RUN</span> mkdir /diff <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;example bind mount file&quot;</span> &gt; /a.png <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nb">echo</span> <span class="s2">&quot;example bind mount file&quot;</span> &gt; /b.png
+<span class="k">RUN</span><span class="w"> </span>mkdir<span class="w"> </span>/diff<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;example bind mount file&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>/a.png<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s2">&quot;example bind mount file&quot;</span><span class="w"> </span>&gt;<span class="w"> </span>/b.png
 </pre></div>
 </div>
 </div></blockquote>
@@ -356,7 +353,7 @@ this with two chained Dockerfiles. First, we build a basic AlmaLinux image
 This is a complex Dockerfile that compiles several dependencies in addition to
 OpenMPI. For the purposes of this documentation, you can skip most of it, but
 we felt it would be useful to show a real example.</p>
-<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span> <span class="s">libfabric</span>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">FROM</span><span class="w"> </span><span class="s">libfabric</span>
 
 <span class="c"># See Dockerfile.libfabric for MPI goals and details.</span>
 
@@ -372,33 +369,33 @@ we felt it would be useful to show a real example.</p>
 <span class="c">#     PMIx) but prevent OpenMPI from invoking srun itself from within the</span>
 <span class="c">#     container, where srun is not installed (the error messages from this are</span>
 <span class="c">#     inscrutable).</span>
-<span class="k">ARG</span> <span class="nv">MPI_URL</span><span class="o">=</span>https://www.open-mpi.org/software/ompi/v4.1/downloads
-<span class="k">ARG</span> <span class="nv">MPI_VERSION</span><span class="o">=</span><span class="m">4</span>.1.4
-<span class="k">RUN</span> wget -nv <span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz <span class="se">\</span>
- <span class="o">&amp;&amp;</span> tar xf openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
-<span class="k">RUN</span> <span class="nb">cd</span> openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span> <span class="se">\</span>
- <span class="o">&amp;&amp;</span> <span class="nv">CFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-    <span class="nv">CXXFLAGS</span><span class="o">=</span>-O3 <span class="se">\</span>
-    <span class="nv">FLUX_PMI_CFLAGS</span><span class="o">=</span>-I/usr/local/include/flux/core,-L/usr/local/lib/flux <span class="se">\</span>
-    <span class="nv">FLUX_PMI_LIBS</span><span class="o">=</span>-lpmi <span class="se">\</span>
-    ./configure --prefix<span class="o">=</span>/usr/local <span class="se">\</span>
-                --sysconfdir<span class="o">=</span>/mnt/0 <span class="se">\</span>
-                --with-pmix<span class="o">=</span>/usr/local <span class="se">\</span>
-                --with-pmi<span class="o">=</span>/usr/local <span class="se">\</span>
-                --with-flux-pmi-library <span class="se">\</span>
-                --with-libfabric<span class="o">=</span>/usr/local <span class="se">\</span>
-                --disable-pty-support <span class="se">\</span>
-                --enable-mca-no-build<span class="o">=</span>btl-openib,plm-slurm <span class="se">\</span>
- <span class="o">&amp;&amp;</span> make -j<span class="k">$(</span>getconf _NPROCESSORS_ONLN<span class="k">)</span> install <span class="se">\</span>
- <span class="o">&amp;&amp;</span> rm -Rf ../openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
-<span class="k">RUN</span> ldconfig
+<span class="k">ARG</span><span class="w"> </span><span class="nv">MPI_URL</span><span class="o">=</span>https://www.open-mpi.org/software/ompi/v4.1/downloads
+<span class="k">ARG</span><span class="w"> </span><span class="nv">MPI_VERSION</span><span class="o">=</span><span class="m">4</span>.1.4
+<span class="k">RUN</span><span class="w"> </span>wget<span class="w"> </span>-nv<span class="w"> </span><span class="si">${</span><span class="nv">MPI_URL</span><span class="si">}</span>/openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>tar<span class="w"> </span>xf<span class="w"> </span>openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>.tar.gz
+<span class="k">RUN</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span><span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nv">CFLAGS</span><span class="o">=</span>-O3<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">CXXFLAGS</span><span class="o">=</span>-O3<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">FLUX_PMI_CFLAGS</span><span class="o">=</span>-I/usr/local/include/flux/core,-L/usr/local/lib/flux<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="nv">FLUX_PMI_LIBS</span><span class="o">=</span>-lpmi<span class="w"> </span><span class="se">\</span>
+<span class="w">    </span>./configure<span class="w"> </span>--prefix<span class="o">=</span>/usr/local<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--sysconfdir<span class="o">=</span>/mnt/0<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--with-pmix<span class="o">=</span>/usr/local<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--with-pmi<span class="o">=</span>/usr/local<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--with-flux-pmi-library<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--with-libfabric<span class="o">=</span>/usr/local<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--disable-pty-support<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--enable-mca-no-build<span class="o">=</span>btl-openib,plm-slurm<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>-j<span class="k">$(</span>getconf<span class="w"> </span>_NPROCESSORS_ONLN<span class="k">)</span><span class="w"> </span>install<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-Rf<span class="w"> </span>../openmpi-<span class="si">${</span><span class="nv">MPI_VERSION</span><span class="si">}</span>*
+<span class="k">RUN</span><span class="w"> </span>ldconfig
 
 <span class="c"># OpenMPI expects this program to exist, even if it’s not used. Default is</span>
 <span class="c"># “ssh : rsh”, but that’s not installed.</span>
-<span class="k">RUN</span> <span class="nb">echo</span> <span class="s1">&#39;plm_rsh_agent = false&#39;</span> &gt;&gt; /mnt/0/openmpi-mca-params.conf
+<span class="k">RUN</span><span class="w"> </span><span class="nb">echo</span><span class="w"> </span><span class="s1">&#39;plm_rsh_agent = false&#39;</span><span class="w"> </span>&gt;&gt;<span class="w"> </span>/mnt/0/openmpi-mca-params.conf
 
 <span class="c"># Silence spurious pmix error. https://github.com/open-mpi/ompi/issues/7516.</span>
-<span class="k">ENV</span> <span class="nv">PMIX_MCA_gds</span><span class="o">=</span><span class="nb">hash</span>
+<span class="k">ENV</span><span class="w"> </span><span class="nv">PMIX_MCA_gds</span><span class="o">=</span><span class="nb">hash</span>
 </pre></div>
 </div>
 <p>So what is going on here?</p>
@@ -420,7 +417,7 @@ resulting Charliecloud image (<code class="code docutils literal notranslate"><s
 </ol>
 </section>
 <section id="your-software-stored-in-the-image">
-<h3><span class="section-number">11.3.3. </span>Your software stored in the image<a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.3.3. </span>Your software stored in the image<a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this heading">¶</a></h3>
 <p>This method covers software provided by you that is included in the image.
 This is recommended when your software is relatively stable or is not easily
 available to users of your image, for example a library rather than simulation
@@ -430,12 +427,12 @@ source, but you use the <code class="code docutils literal notranslate"><span cl
 host filesystem (rather than the network via HTTP) to the image. For example,
 <code class="code docutils literal notranslate"><span class="pre">examples/mpihello/Dockerfile.openmpi</span></code> uses this approach:</p>
 <div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="c"># ch-test-scope: full</span>
-<span class="k">FROM</span> <span class="s">openmpi</span>
+<span class="k">FROM</span><span class="w"> </span><span class="s">openmpi</span>
 
 <span class="c"># This example</span>
-<span class="k">COPY</span> . /hello
-<span class="k">WORKDIR</span><span class="s"> /hello</span>
-<span class="k">RUN</span> make clean <span class="o">&amp;&amp;</span> make
+<span class="k">COPY</span><span class="w"> </span>.<span class="w"> </span>/hello
+<span class="k">WORKDIR</span><span class="w"> </span><span class="s">/hello</span>
+<span class="k">RUN</span><span class="w"> </span>make<span class="w"> </span>clean<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make
 </pre></div>
 </div>
 <p>These Dockerfile instructions:</p>
@@ -457,7 +454,7 @@ build files, since they would be inappropriate inside the container.</p></li>
 </ol>
 <p>Once the image is built, we can see the results. (Install the image into
 <code class="code docutils literal notranslate"><span class="pre">/var/tmp</span></code> as outlined in the tutorial, if you haven’t already.)</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /var/tmp/mpihello-openmpi.sqfs -- ls -lh /hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>/var/tmp/mpihello-openmpi.sqfs<span class="w"> </span>--<span class="w"> </span>ls<span class="w"> </span>-lh<span class="w"> </span>/hello
 <span class="go">total 32K</span>
 <span class="go">-rw-rw---- 1 charlie charlie  908 Oct  4 15:52 Dockerfile</span>
 <span class="go">-rw-rw---- 1 charlie charlie  157 Aug  5 22:37 Makefile</span>
@@ -469,23 +466,23 @@ build files, since they would be inappropriate inside the container.</p></li>
 </div>
 </section>
 <section id="your-software-stored-on-the-host">
-<h3><span class="section-number">11.3.4. </span>Your software stored on the host<a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">11.3.4. </span>Your software stored on the host<a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this heading">¶</a></h3>
 <p>This method leaves your software on the host but compiles it in the image.
 This is recommended when your software is volatile or each image user needs a
 different version, for example a simulation code under active development.</p>
 <p>The general approach is to bind-mount the appropriate directory and then run
 the build inside the container. We can re-use the <code class="code docutils literal notranslate"><span class="pre">mpihello</span></code> image to
 demonstrate this.</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">cd</span> examples/mpihello
-<span class="gp">$</span> ls -l
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">cd</span><span class="w"> </span>examples/mpihello
+<span class="gp">$ </span>ls<span class="w"> </span>-l
 <span class="go">total 20</span>
 <span class="go">-rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile</span>
 <span class="go">-rw-rw---- 1 charlie charlie 1431 Aug  5 16:37 hello.c</span>
 <span class="go">-rw-rw---- 1 charlie charlie  157 Aug  5 16:37 Makefile</span>
 <span class="go">-rw-rw---- 1 charlie charlie 1172 Aug  5 16:37 README</span>
-<span class="gp">$</span> ch-run -b .:/mnt/0 --cd /mnt/0 /var/tmp/mpihello.sqfs -- <span class="se">\</span>
-  make mpicc -std<span class="o">=</span>gnu11 -Wall hello.c -o hello
-<span class="gp">$</span> ls -l
+<span class="gp">$ </span>ch-run<span class="w"> </span>-b<span class="w"> </span>.:/mnt/0<span class="w"> </span>--cd<span class="w"> </span>/mnt/0<span class="w"> </span>/var/tmp/mpihello.sqfs<span class="w"> </span>--<span class="w"> </span><span class="se">\</span>
+<span class="w">  </span>make<span class="w"> </span>mpicc<span class="w"> </span>-std<span class="o">=</span>gnu11<span class="w"> </span>-Wall<span class="w"> </span>hello.c<span class="w"> </span>-o<span class="w"> </span>hello
+<span class="gp">$ </span>ls<span class="w"> </span>-l
 <span class="go">total 32</span>
 <span class="go">-rw-rw---- 1 charlie charlie  908 Oct  4 09:52 Dockerfile</span>
 <span class="go">-rwxrwx--- 1 charlie charlie 9632 Oct  4 10:43 hello</span>

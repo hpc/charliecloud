@@ -1,21 +1,20 @@
 <!DOCTYPE html>
 <html class="writer-html5" lang="en" >
 <head>
-  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>7. ch-run &mdash; Charliecloud 0.35 documentation</title>
+  <title>7. ch-run &mdash; Charliecloud 0.36 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
-  <!--[if lt IE 9]>
-    <script src="_static/js/html5shiv.min.js"></script>
-  <![endif]-->
   
         <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
         <script src="_static/jquery.js"></script>
         <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
         <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
     <link rel="next" title="8. ch-run-oci" href="ch-run-oci.html" />
@@ -27,15 +26,19 @@
     <nav data-toggle="wy-nav-shift" class="wy-nav-side">
       <div class="wy-side-scroll">
         <div class="wy-side-nav-search" >
-            <a href="index.html" class="icon icon-home"> Charliecloud
-            <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.35
+                0.36
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
-    <input type="text" name="q" placeholder="Search docs" />
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
     <input type="hidden" name="check_keywords" value="yes" />
     <input type="hidden" name="area" value="default" />
   </form>
@@ -54,15 +57,16 @@
 <li class="toctree-l2"><a class="reference internal" href="#image-format">7.3. Image format</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#host-files-and-directories-available-in-container-via-bind-mounts">7.4. Host files and directories available in container via bind mounts</a></li>
 <li class="toctree-l2"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">7.5. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#environment-variables">7.6. Environment variables</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#default-behavior">7.6.1. Default behavior</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#setting-variables-with-set-env-or-set-env0">7.6.2. Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#removing-variables-with-unset-env">7.6.3. Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#writeable-overlay-with-write-fake">7.6. Writeable overlay with <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-variables">7.7. Environment variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#default-behavior">7.7.1. Default behavior</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setting-variables-with-set-env-or-set-env0">7.7.2. Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#removing-variables-with-unset-env">7.7.3. Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">7.7. Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#syslog">7.8. Syslog</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#exit-status">7.9. Exit status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">7.8. Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#syslog">7.9. Syslog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#exit-status">7.10. Exit status</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
@@ -85,8 +89,8 @@
         <div class="rst-content">
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
-      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
-      <li><span class="section-number">7. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">7. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -96,17 +100,17 @@
            <div itemprop="articleBody">
              
   <section id="ch-run">
-<h1><span class="section-number">7. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code><a class="headerlink" href="#ch-run" title="Permalink to this headline">¶</a></h1>
+<h1><span class="section-number">7. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code><a class="headerlink" href="#ch-run" title="Permalink to this heading">¶</a></h1>
 <p>Run a command in a Charliecloud container.</p>
 <section id="synopsis">
-<h2><span class="section-number">7.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this headline">¶</a></h2>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run <span class="o">[</span>OPTION...<span class="o">]</span> IMAGE -- CMD <span class="o">[</span>ARG...<span class="o">]</span>
+<h2><span class="section-number">7.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span><span class="o">[</span>OPTION...<span class="o">]</span><span class="w"> </span>IMAGE<span class="w"> </span>--<span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARG...<span class="o">]</span>
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">7.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this headline">¶</a></h2>
-<p>Run command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code> in a fully unprivileged Charliecloud container using
+<h2><span class="section-number">7.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p>Run command <code class="code docutils literal notranslate"><span class="pre">COMMAND</span></code> in a fully unprivileged Charliecloud container using
 the image specified by <code class="code docutils literal notranslate"><span class="pre">IMAGE</span></code>, which can be: (1) a path to a directory,
 (2) the name of an image in <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> storage (e.g.
 <code class="code docutils literal notranslate"><span class="pre">example.com:5050/foo</span></code>) or, if the proper support is enabled, a SquashFS
@@ -117,14 +121,17 @@ mounting SquashFS images with FUSE.</p>
 <dt><code class="code docutils literal notranslate"><span class="pre">-b</span></code>, <code class="code docutils literal notranslate"><span class="pre">--bind=SRC[:DST]</span></code></dt><dd><p>Bind-mount <code class="code docutils literal notranslate"><span class="pre">SRC</span></code> at guest <code class="code docutils literal notranslate"><span class="pre">DST</span></code>. The default destination if
 not specified is to use the same path as the host; i.e., the default is
 <code class="code docutils literal notranslate"><span class="pre">--bind=SRC:SRC</span></code>. Can be repeated.</p>
-<p>If <code class="code docutils literal notranslate"><span class="pre">--write</span></code> is given and <code class="code docutils literal notranslate"><span class="pre">DST</span></code> does not exist, it will be
-created as an empty directory. However, <code class="code docutils literal notranslate"><span class="pre">DST</span></code> must be entirely
-within the image itself; <code class="code docutils literal notranslate"><span class="pre">DST</span></code> cannot enter a previous bind mount.
-For example, <code class="code docutils literal notranslate"><span class="pre">--bind</span> <span class="pre">/foo:/tmp/foo</span></code> will fail because <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code>
-is shared with the host via bind-mount (unless <code class="code docutils literal notranslate"><span class="pre">$TMPDIR</span></code> is set to
-something else or <code class="code docutils literal notranslate"><span class="pre">--private-tmp</span></code> is given).</p>
-<p>Most images do have ten directories <code class="code docutils literal notranslate"><span class="pre">/mnt/[0-9]</span></code> already available
-as mount points.</p>
+<p>With a read-only image (the default), <code class="code docutils literal notranslate"><span class="pre">DST</span></code> must exist. However, if
+<code class="code docutils literal notranslate"><span class="pre">--write</span></code> or <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code> are given, <code class="code docutils literal notranslate"><span class="pre">DST</span></code> will be
+created as an empty directory (possibly with the tmpfs overmount trick
+described in <a class="reference internal" href="faq.html#faq-mkdir-ro"><span class="std std-ref">--bind creates mount points within un-writeable directories!</span></a>). In this case, <code class="code docutils literal notranslate"><span class="pre">DST</span></code> must be
+entirely within the image itself, i.e., <code class="code docutils literal notranslate"><span class="pre">DST</span></code> cannot enter a
+previous bind mount. For example, <code class="code docutils literal notranslate"><span class="pre">--bind</span> <span class="pre">/foo:/tmp/foo</span></code> will fail
+because <code class="code docutils literal notranslate"><span class="pre">/tmp</span></code> is shared with the host via bind-mount (unless
+<code class="code docutils literal notranslate"><span class="pre">$TMPDIR</span></code> is set to something else or <code class="code docutils literal notranslate"><span class="pre">--private-tmp</span></code> is
+given).</p>
+<p>Most images have ten directories <code class="code docutils literal notranslate"><span class="pre">/mnt/[0-9]</span></code> already available as
+mount points.</p>
 <p>Symlinks in <code class="code docutils literal notranslate"><span class="pre">DST</span></code> are followed, and absolute links can have
 surprising behavior. Bind-mounting happens after namespace setup but
 before pivoting into the container image, so absolute links use the host
@@ -147,10 +154,8 @@ absolute symlinks in this case, to avoid directory creation surprises.</p>
 <dt><code class="code docutils literal notranslate"><span class="pre">-g</span></code>, <code class="code docutils literal notranslate"><span class="pre">--gid=GID</span></code></dt><dd><p>Run as group <code class="code docutils literal notranslate"><span class="pre">GID</span></code> within container.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--home</span></code></dt><dd><p>Bind-mount your host home directory (i.e., <code class="code docutils literal notranslate"><span class="pre">$HOME</span></code>) at guest
-<code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>. This is accomplished by over-mounting a new
-<code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code> at <code class="code docutils literal notranslate"><span class="pre">/home</span></code>, which hides any image content under that
-path. By default, neither of these things happens and the image’s
-<code class="code docutils literal notranslate"><span class="pre">/home</span></code> is exposed unaltered.</p>
+<code class="code docutils literal notranslate"><span class="pre">/home/$USER</span></code>, hiding any existing image content at that path.
+Implies <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code> so the mount point can be created if needed.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-j</span></code>, <code class="code docutils literal notranslate"><span class="pre">--join</span></code></dt><dd><p>Use the same container (namespaces) as peer <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations.</p>
 </dd>
@@ -170,6 +175,9 @@ be created if needed.</p>
 created according to the UID and GID maps for the container and
 bind-mounted into it. If this is specified, no such temporary files are
 created and the image’s files are exposed.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-q</span></code>, <code class="code docutils literal notranslate"><span class="pre">--quiet</span></code></dt><dd><p>Be quieter; can be repeated. Incompatible with <code class="code docutils literal notranslate"><span class="pre">-v</span></code>. See the
+<a class="reference internal" href="faq.html#faq-verbosity"><span class="std std-ref">How can I control Charliecloud’s quietness or verbosity?</span></a> for details.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-s</span></code>, <code class="code docutils literal notranslate"><span class="pre">--storage</span> <span class="pre">DIR</span></code></dt><dd><p>Set the storage directory. Equivalent to the same option for
 <code class="code docutils literal notranslate"><span class="pre">ch-image(1)</span></code>.</p>
@@ -196,9 +204,28 @@ away from this option.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--unset-env=GLOB</span></code></dt><dd><p>Unset environment variables whose names match <code class="code docutils literal notranslate"><span class="pre">GLOB</span></code>.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Be more verbose (can be repeated).</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Print extra chatter; can be repeated. See the <a class="reference internal" href="faq.html#faq-verbosity"><span class="std std-ref">FAQ entry on verbosity</span></a> for details.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">-w</span></code>, <code class="code docutils literal notranslate"><span class="pre">--write</span></code></dt><dd><p>Mount image read-write (by default, the image is mounted read-only).</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">-w</span></code>, <code class="code docutils literal notranslate"><span class="pre">--write</span></code></dt><dd><p>Mount image read-write. By default, the image is mounted read-only. <em>This
+option should be avoided for most use cases,</em> because (1) changing images
+live (as opposed to prescriptively with a Dockerfile) destroys their
+provenance and (2) SquashFS images, which is the best-practice format on
+parallel filesystems, must be read-only. It is better to use
+<code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code> (for disposable data) or bind-mount host directories
+(for retained data).</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">-W</span></code>, <code class="code docutils literal notranslate"><span class="pre">--write-fake[=SIZE]</span></code></dt><dd><p>Overlay a writeable tmpfs on top of the image. This makes the image
+<em>appear</em> read-write, but it actually remains read-only and unchanged. All
+data “written” to the image are discarded when the container exits.</p>
+<p>The size of the writeable filesystem <code class="code docutils literal notranslate"><span class="pre">SIZE</span></code> is any size
+specification acceptable to <code class="code docutils literal notranslate"><span class="pre">tmpfs</span></code>, e.g. <code class="code docutils literal notranslate"><span class="pre">4m</span></code> for 4MiB or
+<code class="code docutils literal notranslate"><span class="pre">50%</span></code> for half of physical memory. If this option is specified
+without <code class="code docutils literal notranslate"><span class="pre">SIZE</span></code>, the default is <code class="code docutils literal notranslate"><span class="pre">12%</span></code>. Note (1) this limit is a
+maximum — only actually stored files consume virtual memory — and
+(2) <code class="code docutils literal notranslate"><span class="pre">SIZE</span></code> larger than memory can be requested without error (the
+failure happens later if the actual contents become too large).</p>
+<p>This requires kernel support and there are some caveats. See section
+“<a class="reference internal" href="#ch-run-overlay"><span class="std std-ref">Writeable overlay with --write-fake</span></a>” below for details.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-?</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt><dd><p>Print help and exit.</p>
 </dd>
@@ -218,7 +245,7 @@ precaution to reduce the attack surface should bugs in these system calls or
 elsewhere arise.</p>
 </section>
 <section id="image-format">
-<h2><span class="section-number">7.3. </span>Image format<a class="headerlink" href="#image-format" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.3. </span>Image format<a class="headerlink" href="#image-format" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> supports two different image formats.</p>
 <p>The first is a simple directory that contains a Linux filesystem tree. This
 can be accomplished by:</p>
@@ -248,16 +275,16 @@ value-add over the standard, unwrapped commands.</p>
 <div class="admonition warning">
 <p class="admonition-title">Warning</p>
 <p>Currently, Charliecloud unmounts the SquashFS filesystem when user command
-<code class="code docutils literal notranslate"><span class="pre">CMD</span></code>’s process exits. It does not monitor any of its child
+<code class="code docutils literal notranslate"><span class="pre">COMMAND</span></code>’s process exits. It does not monitor any of its child
 processes. Therefore, if the user command spawns child processes and then
 exits before them (e.g., some daemons), those children will have the image
 unmounted from underneath them. In this case, the workaround is to
-mount/unmount using external tools. We expect to remove this limitation in
-a future version.</p>
+mount/unmount using external tools. We expect to remove this limitation in a
+future version.</p>
 </div>
 </section>
 <section id="host-files-and-directories-available-in-container-via-bind-mounts">
-<h2><span class="section-number">7.4. </span>Host files and directories available in container via bind mounts<a class="headerlink" href="#host-files-and-directories-available-in-container-via-bind-mounts" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.4. </span>Host files and directories available in container via bind mounts<a class="headerlink" href="#host-files-and-directories-available-in-container-via-bind-mounts" title="Permalink to this heading">¶</a></h2>
 <p>In addition to any directories specified by the user with <code class="code docutils literal notranslate"><span class="pre">--bind</span></code>,
 <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> has standard host files and directories that are bind-mounted
 in as well.</p>
@@ -304,7 +331,7 @@ and group names need to be customized for each container run.</p></li>
 </div></blockquote>
 </section>
 <section id="multiple-processes-in-the-same-container-with-join">
-<h2><span class="section-number">7.5. </span>Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code><a class="headerlink" href="#multiple-processes-in-the-same-container-with-join" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.5. </span>Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code><a class="headerlink" href="#multiple-processes-in-the-same-container-with-join" title="Permalink to this heading">¶</a></h2>
 <p>By default, different <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations use different user and mount
 namespaces (i.e., different containers). While this has no impact on sharing
 most resources between invocations, there are a few important exceptions.
@@ -358,8 +385,31 @@ as files in <code class="code docutils literal notranslate"><span class="pre">/d
 <code class="code docutils literal notranslate"><span class="pre">--bind</span></code>, will be ignored in favor of what was given to the winner.</p></li>
 </ul>
 </section>
+<section id="writeable-overlay-with-write-fake">
+<span id="ch-run-overlay"></span><h2><span class="section-number">7.6. </span>Writeable overlay with <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code><a class="headerlink" href="#writeable-overlay-with-write-fake" title="Permalink to this heading">¶</a></h2>
+<p>If you need the image to stay read-only but appear writeable, you may be able
+to use <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code> to overlay a writeable tmpfs atop the image. This
+requires kernel support. Specifically:</p>
+<ol class="arabic">
+<li><p>To use the feature at all, you need unprivileged overlayfs support. This is
+available in <a class="reference external" href="https://kernelnewbies.org/Linux_5.11#Unprivileged_Overlayfs_mounts">upstream 5.11</a>
+(February 2021), but distributions vary considerably. If you don’t have
+this, the container will fail to start with error “operation not
+permitted”.</p></li>
+<li><p>For a fully functional overlay, you need a tmpfs that supports xattrs in
+the <code class="code docutils literal notranslate"><span class="pre">user</span></code> namespace. This is available in <a class="reference external" href="https://kernelnewbies.org/Linux_6.6#TMPFS">upstream 6.6</a> (October 2023). If you don’t
+have this, most things will work fine, but some operations will fail with
+“I/O error”, for example creating a directory with the same path as a
+previously deleted directory. There will also be syslog noise about xattr
+problems.</p>
+<p>(overlayfs can also use xattrs in the <code class="code docutils literal notranslate"><span class="pre">trusted</span></code> namespace, but this
+requires <code class="code docutils literal notranslate"><span class="pre">CAP_SYS_ADMIN</span></code> <a class="reference external" href="https://elixir.bootlin.com/linux/v5.11/source/kernel/capability.c#L447">on the host</a>
+and thus is not helpful for unprivileged containers.)</p>
+</li>
+</ol>
+</section>
 <section id="environment-variables">
-<h2><span class="section-number">7.6. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.7. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> leaves environment variables unchanged, i.e. the host
 environment is passed through unaltered, except:</p>
 <ul class="simple">
@@ -377,7 +427,7 @@ environment is passed through unaltered, except:</p>
 e.g. to add/remove multiple variable sets or add only some variables in a
 file.</p>
 <section id="default-behavior">
-<h3><span class="section-number">7.6.1. </span>Default behavior<a class="headerlink" href="#default-behavior" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">7.7.1. </span>Default behavior<a class="headerlink" href="#default-behavior" title="Permalink to this heading">¶</a></h3>
 <p>By default, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> makes the following environment variable changes:</p>
 <dl>
 <dt><code class="code docutils literal notranslate"><span class="pre">$CH_RUNNING</span></code></dt><dd><p>Set to <code class="code docutils literal notranslate"><span class="pre">Weird</span> <span class="pre">Al</span> <span class="pre">Yankovic</span></code>. While a process can figure out that it’s
@@ -416,7 +466,7 @@ given.</p>
 </dl>
 </section>
 <section id="setting-variables-with-set-env-or-set-env0">
-<h3><span class="section-number">7.6.2. </span>Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code><a class="headerlink" href="#setting-variables-with-set-env-or-set-env0" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">7.7.2. </span>Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code><a class="headerlink" href="#setting-variables-with-set-env-or-set-env0" title="Permalink to this heading">¶</a></h3>
 <p>The purpose of these two options is to set environment variables within the
 container. Values given replace any already in the environment (i.e.,
 inherited from the host shell) or set by earlier uses of the options. These
@@ -425,7 +475,7 @@ flags take an optional argument with two possible forms:</p>
 <li><p><strong>If the argument contains an equals sign</strong> (<code class="code docutils literal notranslate"><span class="pre">=</span></code>, ASCII 61), that
 sets an environment variable directly. For example, to set <code class="code docutils literal notranslate"><span class="pre">FOO</span></code> to
 the string value <code class="code docutils literal notranslate"><span class="pre">bar</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --set-env<span class="o">=</span><span class="nv">FOO</span><span class="o">=</span>bar ...
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>--set-env<span class="o">=</span><span class="nv">FOO</span><span class="o">=</span>bar<span class="w"> </span>...
 </pre></div>
 </div>
 <p>Single straight quotes around the value (<code class="code docutils literal notranslate"><span class="pre">'</span></code>, ASCII 39) are stripped,
@@ -433,7 +483,7 @@ though be aware that both single and double quotes are also interpreted by
 the shell. For example, this example is similar to the prior one; the
 double quotes are removed by the shell and the single quotes are removed by
 <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --set-env<span class="o">=</span><span class="s2">&quot;&#39;BAZ=qux&#39;&quot;</span> ...
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>--set-env<span class="o">=</span><span class="s2">&quot;&#39;BAZ=qux&#39;&quot;</span><span class="w"> </span>...
 </pre></div>
 </div>
 </li>
@@ -441,16 +491,16 @@ double quotes are removed by the shell and the single quotes are removed by
 file containing zero or more variables using the same syntax as above
 (except with no prior shell processing).</p>
 <p>With <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>, this file contains a sequence of assignments
-separated by newline (<code class="code docutils literal notranslate"><span class="pre">\n</span></code> or ASCII 10); with <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code>, the
-assignments are separated by the null byte (i.e., <code class="code docutils literal notranslate"><span class="pre">\0</span></code> or ASCII 0).
+separated by newline (<code class="code docutils literal notranslate"><span class="pre">n</span></code> or ASCII 10); with <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code>, the
+assignments are separated by the null byte (i.e., <code class="code docutils literal notranslate"><span class="pre">0</span></code> or ASCII 0).
 Empty assignments are ignored, and no comments are interpreted. (This
 syntax is designed to accept the output of <code class="code docutils literal notranslate"><span class="pre">printenv</span></code> and be easily
 produced by other simple mechanisms.) The file need not be seekable.</p>
 <p>For example:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat /tmp/env.txt
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat<span class="w"> </span>/tmp/env.txt
 <span class="go">FOO=bar</span>
 <span class="go">BAZ=&#39;qux&#39;</span>
-<span class="gp">$</span> ch-run --set-env<span class="o">=</span>/tmp/env.txt ...
+<span class="gp">$ </span>ch-run<span class="w"> </span>--set-env<span class="o">=</span>/tmp/env.txt<span class="w"> </span>...
 </pre></div>
 </div>
 <p>For directory images only (because the file is read before containerizing),
@@ -459,14 +509,14 @@ guest paths can be given by prepending the image path.</p>
 <li><p><strong>If there is no argument</strong>, the file <code class="code docutils literal notranslate"><span class="pre">/ch/environment</span></code> within the
 image is used. This file is commonly populated by <code class="code docutils literal notranslate"><span class="pre">ENV</span></code> instructions
 in the Dockerfile. For example, equivalently to form 2:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> cat Dockerfile
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>cat<span class="w"> </span>Dockerfile
 <span class="go">[...]</span>
 <span class="go">ENV FOO=bar</span>
 <span class="go">ENV BAZ=qux</span>
 <span class="go">[...]</span>
-<span class="gp">$</span> ch-image build -t foo .
-<span class="gp">$</span> ch-convert foo /var/tmp/foo.sqfs
-<span class="gp">$</span> ch-run --set-env /var/tmp/foo.sqfs -- ...
+<span class="gp">$ </span>ch-image<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo<span class="w"> </span>.
+<span class="gp">$ </span>ch-convert<span class="w"> </span>foo<span class="w"> </span>/var/tmp/foo.sqfs
+<span class="gp">$ </span>ch-run<span class="w"> </span>--set-env<span class="w"> </span>/var/tmp/foo.sqfs<span class="w"> </span>--<span class="w"> </span>...
 </pre></div>
 </div>
 <p>(Note the image path is interpreted correctly, not as the <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>
@@ -488,27 +538,22 @@ expansions is to avoid surprising behavior such as an empty element in
 <p>For example, to set <code class="code docutils literal notranslate"><span class="pre">HOSTPATH</span></code> to the search path in the current shell
 (this is expanded by <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>, though letting the shell do it happens to
 be equivalent):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --set-env<span class="o">=</span><span class="s1">&#39;HOSTPATH=$PATH&#39;</span> ...
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>--set-env<span class="o">=</span><span class="s1">&#39;HOSTPATH=$PATH&#39;</span><span class="w"> </span>...
 </pre></div>
 </div>
 <p>To prepend <code class="code docutils literal notranslate"><span class="pre">/opt/bin</span></code> to this current search path:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --set-env<span class="o">=</span><span class="s1">&#39;PATH=/opt/bin:$PATH&#39;</span> ...
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>--set-env<span class="o">=</span><span class="s1">&#39;PATH=/opt/bin:$PATH&#39;</span><span class="w"> </span>...
 </pre></div>
 </div>
 <p>To prepend <code class="code docutils literal notranslate"><span class="pre">/opt/bin</span></code> to the search path set by the Dockerfile, as
 retrieved from guest file <code class="code docutils literal notranslate"><span class="pre">/ch/environment</span></code> (here we really cannot let
 the shell expand <code class="code docutils literal notranslate"><span class="pre">$PATH</span></code>):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --set-env --set-env<span class="o">=</span><span class="s1">&#39;PATH=/opt/bin:$PATH&#39;</span> ...
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>--set-env<span class="w"> </span>--set-env<span class="o">=</span><span class="s1">&#39;PATH=/opt/bin:$PATH&#39;</span><span class="w"> </span>...
 </pre></div>
 </div>
 <p>Examples of valid assignment, assuming that environment variable <code class="code docutils literal notranslate"><span class="pre">BAR</span></code>
 is set to <code class="code docutils literal notranslate"><span class="pre">bar</span></code> and <code class="code docutils literal notranslate"><span class="pre">UNSET</span></code> is unset or set to the empty string:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 33%" />
-<col style="width: 33%" />
-<col style="width: 33%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Assignment</p></th>
 <th class="head"><p>Name</p></th>
@@ -568,10 +613,6 @@ is set to <code class="code docutils literal notranslate"><span class="pre">bar<
 </table>
 <p>Example invalid assignments:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Assignment</p></th>
 <th class="head"><p>Problem</p></th>
@@ -588,12 +629,6 @@ is set to <code class="code docutils literal notranslate"><span class="pre">bar<
 </table>
 <p>Example valid assignments that are probably not what you want:</p>
 <table class="docutils align-default">
-<colgroup>
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-</colgroup>
 <thead>
 <tr class="row-odd"><th class="head"><p>Assignment</p></th>
 <th class="head"><p>Name</p></th>
@@ -612,9 +647,9 @@ is set to <code class="code docutils literal notranslate"><span class="pre">bar<
 <td><p><code class="code docutils literal notranslate"><span class="pre">bar</span> <span class="pre">#</span> <span class="pre">baz</span></code></p></td>
 <td><p>comments not supported</p></td>
 </tr>
-<tr class="row-even"><td><p><code class="code docutils literal notranslate"><span class="pre">FOO=bar\tbaz</span></code></p></td>
+<tr class="row-even"><td><p><code class="code docutils literal notranslate"><span class="pre">FOO=bartbaz</span></code></p></td>
 <td><p><code class="code docutils literal notranslate"><span class="pre">FOO</span></code></p></td>
-<td><p><code class="code docutils literal notranslate"><span class="pre">bar\tbaz</span></code></p></td>
+<td><p><code class="code docutils literal notranslate"><span class="pre">bartbaz</span></code></p></td>
 <td><p>backslashes are not special</p></td>
 </tr>
 <tr class="row-odd"><td><p><code class="code docutils literal notranslate"><span class="pre">​</span> <span class="pre">FOO=bar</span></code></p></td>
@@ -641,7 +676,7 @@ is set to <code class="code docutils literal notranslate"><span class="pre">bar<
 </table>
 </section>
 <section id="removing-variables-with-unset-env">
-<h3><span class="section-number">7.6.3. </span>Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code><a class="headerlink" href="#removing-variables-with-unset-env" title="Permalink to this headline">¶</a></h3>
+<h3><span class="section-number">7.7.3. </span>Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code><a class="headerlink" href="#removing-variables-with-unset-env" title="Permalink to this heading">¶</a></h3>
 <p>The purpose of <code class="code docutils literal notranslate"><span class="pre">--unset-env=GLOB</span></code> is to remove unwanted environment
 variables. The argument <code class="code docutils literal notranslate"><span class="pre">GLOB</span></code> is a glob pattern (<a class="reference external" href="http://man7.org/linux/man-pages/man3/fnmatch.3.html">dialect</a> <code class="code docutils literal notranslate"><span class="pre">fnmatch(3)</span></code>
 with the <code class="code docutils literal notranslate"><span class="pre">FNM_EXTMATCH</span></code> flag where supported); all variables with
@@ -654,22 +689,22 @@ surprises.</p>
 </div>
 <p><code class="code docutils literal notranslate"><span class="pre">GLOB</span></code> must be a non-empty string.</p>
 <p>Example 1: Remove the single environment variable <code class="code docutils literal notranslate"><span class="pre">FOO</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">FOO</span><span class="o">=</span>bar
-<span class="gp">$</span> env <span class="p">|</span> fgrep FOO
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">FOO</span><span class="o">=</span>bar
+<span class="gp">$ </span>env<span class="w"> </span><span class="p">|</span><span class="w"> </span>fgrep<span class="w"> </span>FOO
 <span class="go">FOO=bar</span>
-<span class="gp">$</span> ch-run --unset-env<span class="o">=</span>FOO <span class="nv">$CH_TEST_IMGDIR</span>/chtest -- env <span class="p">|</span> fgrep FOO
+<span class="gp">$ </span>ch-run<span class="w"> </span>--unset-env<span class="o">=</span>FOO<span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/chtest<span class="w"> </span>--<span class="w"> </span>env<span class="w"> </span><span class="p">|</span><span class="w"> </span>fgrep<span class="w"> </span>FOO
 <span class="gp">$</span>
 </pre></div>
 </div>
 <p>Example 2: Hide from a container the fact that it’s running in a Slurm
 allocation, by removing all variables beginning with <code class="code docutils literal notranslate"><span class="pre">SLURM</span></code>. You might
 want to do this to test an MPI program with one rank and no launcher:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> salloc -N1
-<span class="gp">$</span> env <span class="p">|</span> egrep <span class="s1">&#39;^SLURM&#39;</span> <span class="p">|</span> wc
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>salloc<span class="w"> </span>-N1
+<span class="gp">$ </span>env<span class="w"> </span><span class="p">|</span><span class="w"> </span>egrep<span class="w"> </span><span class="s1">&#39;^SLURM&#39;</span><span class="w"> </span><span class="p">|</span><span class="w"> </span>wc
 <span class="go">   44      44    1092</span>
-<span class="gp">$</span> ch-run <span class="nv">$CH_TEST_IMGDIR</span>/mpihello-openmpi -- /hello/hello
+<span class="gp">$ </span>ch-run<span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/mpihello-openmpi<span class="w"> </span>--<span class="w"> </span>/hello/hello
 <span class="go">[... long error message ...]</span>
-<span class="gp">$</span> ch-run --unset-env<span class="o">=</span><span class="s1">&#39;SLURM*&#39;</span> <span class="nv">$CH_TEST_IMGDIR</span>/mpihello-openmpi -- /hello/hello
+<span class="gp">$ </span>ch-run<span class="w"> </span>--unset-env<span class="o">=</span><span class="s1">&#39;SLURM*&#39;</span><span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/mpihello-openmpi<span class="w"> </span>--<span class="w"> </span>/hello/hello
 <span class="go">0: MPI version:</span>
 <span class="go">Open MPI v3.1.3, package: Open MPI root@c897a83f6f92 Distribution, ident: 3.1.3, repo rev: v3.1.3, Oct 29, 2018</span>
 <span class="go">0: init ok cn001.localdomain, 1 ranks, userns 4026532530</span>
@@ -678,16 +713,16 @@ want to do this to test an MPI program with one rank and no launcher:</p>
 </pre></div>
 </div>
 <p>Example 3: Clear the environment completely (remove all variables):</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --unset-env<span class="o">=</span><span class="s1">&#39;*&#39;</span> <span class="nv">$CH_TEST_IMGDIR</span>/chtest -- env
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>--unset-env<span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/chtest<span class="w"> </span>--<span class="w"> </span>env
 <span class="gp">$</span>
 </pre></div>
 </div>
 <p>Example 4: Remove all environment variables <em>except</em> for those prefixed with
 either <code class="code docutils literal notranslate"><span class="pre">WANTED_</span></code> or <code class="code docutils literal notranslate"><span class="pre">ALSO_WANTED_</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> <span class="nb">export</span> <span class="nv">WANTED_1</span><span class="o">=</span>yes
-<span class="gp">$</span> <span class="nb">export</span> <span class="nv">ALSO_WANTED_2</span><span class="o">=</span>yes
-<span class="gp">$</span> <span class="nb">export</span> <span class="nv">NOT_WANTED_1</span><span class="o">=</span>no
-<span class="gp">$</span> ch-run --unset-env<span class="o">=</span><span class="s1">&#39;!(WANTED_*|ALSO_WANTED_*)&#39;</span> <span class="nv">$CH_TEST_IMGDIR</span>/chtest -- env
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">WANTED_1</span><span class="o">=</span>yes
+<span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">ALSO_WANTED_2</span><span class="o">=</span>yes
+<span class="gp">$ </span><span class="nb">export</span><span class="w"> </span><span class="nv">NOT_WANTED_1</span><span class="o">=</span>no
+<span class="gp">$ </span>ch-run<span class="w"> </span>--unset-env<span class="o">=</span><span class="s1">&#39;!(WANTED_*|ALSO_WANTED_*)&#39;</span><span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/chtest<span class="w"> </span>--<span class="w"> </span>env
 <span class="go">WANTED_1=yes</span>
 <span class="go">ALSO_WANTED_2=yes</span>
 <span class="gp">$</span>
@@ -695,7 +730,7 @@ either <code class="code docutils literal notranslate"><span class="pre">WANTED_
 </div>
 <p>Note that some programs, such as shells, set some environment variables even
 if started with no init files:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run --unset-env<span class="o">=</span><span class="s1">&#39;*&#39;</span> <span class="nv">$CH_TEST_IMGDIR</span>/debian_9ch -- bash --noprofile --norc -c env
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>--unset-env<span class="o">=</span><span class="s1">&#39;*&#39;</span><span class="w"> </span><span class="nv">$CH_TEST_IMGDIR</span>/debian_9ch<span class="w"> </span>--<span class="w"> </span>bash<span class="w"> </span>--noprofile<span class="w"> </span>--norc<span class="w"> </span>-c<span class="w"> </span>env
 <span class="go">SHLVL=1</span>
 <span class="go">PWD=/</span>
 <span class="go">_=/usr/bin/env</span>
@@ -705,20 +740,20 @@ if started with no init files:</p>
 </section>
 </section>
 <section id="examples">
-<h2><span class="section-number">7.7. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.8. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
 <p>Run the command <code class="code docutils literal notranslate"><span class="pre">echo</span> <span class="pre">hello</span></code> inside a Charliecloud container using the
 unpacked image at <code class="code docutils literal notranslate"><span class="pre">/data/foo</span></code>:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> ch-run /data/foo -- <span class="nb">echo</span> hello
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>/data/foo<span class="w"> </span>--<span class="w"> </span><span class="nb">echo</span><span class="w"> </span>hello
 <span class="go">hello</span>
 </pre></div>
 </div>
 <p>Run an MPI job that can use CMA to communicate:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$</span> srun ch-run --join /data/foo -- bar
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>srun<span class="w"> </span>ch-run<span class="w"> </span>--join<span class="w"> </span>/data/foo<span class="w"> </span>--<span class="w"> </span>bar
 </pre></div>
 </div>
 </section>
 <section id="syslog">
-<h2><span class="section-number">7.8. </span>Syslog<a class="headerlink" href="#syslog" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.9. </span>Syslog<a class="headerlink" href="#syslog" title="Permalink to this heading">¶</a></h2>
 <p>By default, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> logs its command line to <a class="reference external" href="https://en.wikipedia.org/wiki/Syslog">syslog</a>. (This can be disabled by configuring
 with <code class="code docutils literal notranslate"><span class="pre">--disable-syslog</span></code>.) This includes: (1) the invoking real UID, (2)
 the number of command line arguments, and (3) the arguments, separated by
@@ -736,7 +771,7 @@ allowing each argument to be recovered byte-for-byte.</p>
 <div><ul class="simple">
 <li><p>If an argument contains only printable ASCII bytes that are not
 whitespace, shell metacharacters, double quote (<code class="code docutils literal notranslate"><span class="pre">&quot;</span></code>, ASCII 34
-decimal), or backslash (<code class="code docutils literal notranslate"><span class="pre">\​</span></code>, ASCII 92), then log it unchanged.</p></li>
+decimal), or backslash (<code class="code docutils literal notranslate"><span class="pre">​</span></code>, ASCII 92), then log it unchanged.</p></li>
 <li><p>Otherwise, (a) enclose the argument in double quotes and
 (b) backslash-escape double quotes, backslashes, and characters
 interpreted by Bash (including POSIX shells) within double quotes.</p></li>
@@ -750,7 +785,7 @@ the shell. The zero byte, ASCII NUL, cannot appear in arguments because it
 would terminate the string.</p>
 </section>
 <section id="exit-status">
-<h2><span class="section-number">7.9. </span>Exit status<a class="headerlink" href="#exit-status" title="Permalink to this headline">¶</a></h2>
+<h2><span class="section-number">7.10. </span>Exit status<a class="headerlink" href="#exit-status" title="Permalink to this heading">¶</a></h2>
 <p>If there is an error during containerization, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> exits with status
 non-zero. If the user command is started successfully, the exit status is that
 of the user command, with one exception: if the image is an internally mounted
