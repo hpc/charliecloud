@@ -98,7 +98,7 @@ debug_indent () {
 }
 
 ensure_nonempty () {
-    [ "$2" ] || FATAL "$1 must not be empty"
+    [ "$2" ] || FATAL -- "$1 must not be empty"
 }
 
 is_bin () {
@@ -207,81 +207,85 @@ warn_fi_var () {
     fi
 }
 
-parse_basic_args "$@"
+if [ "$#" -eq 0 ]; then
+        usage 1
+fi
 
 while [ $# -gt 0 ]; do
     opt=$1; shift
-    case $opt in
-        -c|--cmd)
-            ensure_nonempty --cmd "$1"
-            out=$($1) || FATAL "command failed: $1"
-            enqueue_file "$out"
-            shift
-            ;;
-        --cray-cxi)
-            warn_fi_var
-            if [ -z "$CH_FROMHOST_OFI_CXI" ]; then
-                FATAL "CH_FROMHOST_OFI_CXI is not set"
-            fi
-            enqueue_file "$CH_FROMHOST_OFI_CXI"
-            ;;
-        --cray-gni)
-            warn_fi_var
-            if [ -z "$CH_FROMHOST_OFI_GNI" ]; then
-                FATAL "CH_FROMHOST_OFI_GNI is not set"
-            fi
-            enqueue_file "$CH_FROMHOST_OFI_GNI"
-            ;;
-        -d|--dest)
-            ensure_nonempty --dest "$1"
-            dest=$1
-            shift
-            ;;
-        -f|--file)
-            ensure_nonempty --file "$1"
-            out=$(cat "$1") || FATAL "cannot read file: ${1}"
-            enqueue_file "$out"
-            shift
-            ;;
-        # Note: Specifying any of the --print-* options along with one of the
-        # file specification options will result in all the file gathering and
-        # checking work being discarded.
-        --print-cray-fi)
-            cray_fi_found=yes
-            print_cray_fi_dest=yes
-            ;;
-        --print-fi)
-            fi_prov_found=yes
-            print_fi_dest=yes
-            ;;
-        --print-lib)
-            lib_found=yes
-            print_lib_dest=yes
-            ;;
-        --no-ldconfig)
-            no_ldconfig=yes
-            ;;
-        --nvidia)
-               out=$(nvidia-container-cli list --binaries --libraries) \
-            || FATAL "nvidia-container-cli failed; does this host have GPUs?"
-            enqueue_file "$out"
-            ;;
-        -p|--path)
-            ensure_nonempty --path "$1"
-            enqueue_file "$1"
-            shift
-            ;;
-        -*)
-            INFO "invalid option: ${opt}"
-            usage
-            ;;
-        *)
-            ensure_nonempty "image path" "${opt}"
-            [ -z "$image" ] || FATAL "duplicate image: ${opt}"
-            [ -d "$opt" ] || FATAL "image not a directory: ${opt}"
-            image="$opt"
-            ;;
-    esac
+    if ! parse_basic_arg "$opt"; then
+        case $opt in
+            -c|--cmd)
+                ensure_nonempty --cmd "$1"
+                out=$($1) || FATAL "command failed: $1"
+                enqueue_file "$out"
+                shift
+                ;;
+            --cray-cxi)
+                warn_fi_var
+                if [ -z "$CH_FROMHOST_OFI_CXI" ]; then
+                    FATAL "CH_FROMHOST_OFI_CXI is not set"
+                fi
+                enqueue_file "$CH_FROMHOST_OFI_CXI"
+                ;;
+            --cray-gni)
+                warn_fi_var
+                if [ -z "$CH_FROMHOST_OFI_GNI" ]; then
+                    FATAL "CH_FROMHOST_OFI_GNI is not set"
+                fi
+                enqueue_file "$CH_FROMHOST_OFI_GNI"
+                ;;
+            -d|--dest)
+                ensure_nonempty --dest "$1"
+                dest=$1
+                shift
+                ;;
+            -f|--file)
+                ensure_nonempty --file "$1"
+                out=$(cat "$1") || FATAL "cannot read file: ${1}"
+                enqueue_file "$out"
+                shift
+                ;;
+            # Note: Specifying any of the --print-* options along with one of
+            # the file specification options will result in all the file
+            # gathering and checking work being discarded.
+            --print-cray-fi)
+                cray_fi_found=yes
+                print_cray_fi_dest=yes
+                ;;
+            --print-fi)
+                fi_prov_found=yes
+                print_fi_dest=yes
+                ;;
+            --print-lib)
+                lib_found=yes
+                print_lib_dest=yes
+                ;;
+            --no-ldconfig)
+                no_ldconfig=yes
+                ;;
+            --nvidia)
+                    out=$(nvidia-container-cli list --binaries --libraries) \
+                || FATAL "nvidia-container-cli failed; does this host have GPUs?"
+                enqueue_file "$out"
+                ;;
+            -p|--path)
+                ensure_nonempty --path "$1"
+                enqueue_file "$1"
+                shift
+                ;;
+            -*)
+                INFO "invalid option: ${opt}"
+                usage
+                ;;
+            *)
+                ensure_nonempty "image path" "${opt}"
+                [ -z "$image" ] || FATAL "duplicate image: ${opt}"
+                [ -d "$opt" ] || FATAL "image not a directory: ${opt}"
+                image="$opt"
+                ;;
+        esac
+    fi
 done
 
 if [ -n "$FI_PROVIDER_PATH" ] && [ -n "$fi_prov_found" ] && [ -z "$dest" ]; then
