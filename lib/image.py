@@ -75,7 +75,7 @@ _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 _WSH: /[ \t]/+                   // sequence of horizontal whitespace
 _LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
 _WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
-_NEWLINES: ( _WSH? "\n" )+       // sequence of newlines
+_NEWLINES: ( _WS? "\n" )+       // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
@@ -120,7 +120,7 @@ env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref ( _WS from_alias )? _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 label: "LABEL"i _WS ( label_space | label_equalses ) _NEWLINES
