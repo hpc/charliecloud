@@ -75,7 +75,7 @@ _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 _WSH: /[ \t]/+                   // sequence of horizontal whitespace
 _LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
 _WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
-_NEWLINES: ( _WS? "\n" )+       // sequence of newlines
+_NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
