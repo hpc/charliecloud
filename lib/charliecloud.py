@@ -158,6 +158,9 @@ dlcache_p = None
 profiling = False
 profile = None
 
+# Width of terminal.
+term_width = shutil.get_terminal_size(fallback=(sys.maxsize, -1))[0]
+
 
 ## Exceptions ##
 

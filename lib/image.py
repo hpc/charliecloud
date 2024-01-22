@@ -181,6 +181,9 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 # Top-level directories we create if not present.
 STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
 
+# Width of token name when truncating text to fit on screen.
+WIDTH_TOKEN_MAX = 10
+
 
 ## Classes ##
 
@@ -862,6 +865,29 @@ fields:
 
 
 class Tree(lark.tree.Tree):
+
+   def _pretty(self, level, istr):
+      # Re-implement with less space optimization and more debugging info.
+      # See: https://github.com/lark-parser/lark/blob/262ab71/lark/tree.py#L78
+      pfx = "%4d %3d%s" % (self.meta.line, self.meta.column, istr*(level+1))
+      yield (pfx + self._pretty_label() + "\n")
+      for c in self.children:
+         if (isinstance(c, Tree)):
+            yield from c._pretty(level + 1, istr)
+         else:
+            text = c
+            type_ = c.type
+            width = len(pfx) + len(istr) + len(text) + len(type_) + 2
+            over = width - ch.term_width
+            if (len(type_) > WIDTH_TOKEN_MAX):
+               # trim token (unconditionally for consistent alignment)
+               token_rm = len(type_) - WIDTH_TOKEN_MAX
+               type_ = type_[:-token_rm]
+               over -= token_rm
+            if (over > 0):
+               # trim text (if needed)
+               text = text[:-(over + 3)] + "..."
+            yield "%s%s %s %s\n" % (pfx, istr, type_, text)
 
    def child(self, cname):
       """Locate a descendant subtree named cname using breadth-first search
