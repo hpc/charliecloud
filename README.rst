@@ -46,8 +46,8 @@ How do I learn more?
   detail the motivation for Charliecloud and the technology upon which it is
   based: https://www.usenix.org/publications/login/fall2017/priedhorsky
 
-* If you are interested in more technical papers about Charliecloud, please refer to
-  the *Publications* section below.
+* For technical papers about Charliecloud, refer to the *Technical
+  publications* section below.
 
 Who is responsible?
 -------------------
@@ -92,8 +92,8 @@ list above.
 
 We are friendly and welcoming of diversity on all dimensions.
 
-Publications
-------------
+Technical publications
+----------------------
 
 If Charliecloud helped your research, or it was useful to you in any other
 context where bibliographic citations are appropriate, please cite the
@@ -106,35 +106,34 @@ following open-access paper:
 *Note:* This paper contains out-of-date number for the size of Charliecloud’s
 code. Please instead use the current number in the FAQ.
 
-Additionally, here are some other technical resources that may be beneficial:
+Other publications:
 
-* User-defined software stacks show how a lighweight approach based on Linux containers is
-  most suitable for HPC centers.
+* We compare the performance of three HPC-specific container technologies
+  against bare metal, finding no concerns about performance degradation.
 
-    Reid Priedhorsky and Tim Randles. “Linux Containers for Fun and Profit in HPC”, 2017. In 
-    *Proc. USENIX ;login: Fall 2017, Vol. 42, No. 3*. 
-    https://www.usenix.org/system/files/login/articles/login_fall17_03_priedhorsky.pdf.
+    Alfred Torrez, Tim Randles, and Reid Priedhorsky. “HPC container runtimes
+    have minimal or no performance impact”, 2019. In *Proc. CANOPIE HPC
+    Workshop @ SC*. DOI: `10.1109/CANOPIE-HPC49598.2019.00010
+    <https://ieeexplore.ieee.org/document/8950978>`_.
 
-* An experiment comparing the performance of three HPC-specific technologies against a bare metal implementation
-  results in no concern about performance degradation.
+* A demonstration of how low-privilege containers solve increasing demand for
+  software flexibility.
 
-    Alfred Torrez, Tim Randles, and Reid Priedhorsky. "HPC container 
-    runtimes have minimal or no performance impact", 2019. In *Proc. CANOPIE HPC Workshop @ SC*. 
-    DOI: `10.1109/CANOPIE-HPC49598.2019.00010 <https://ieeexplore.ieee.org/document/8950978>`_.
+    Reid Priedhorsky, R. Shane Canon, Timothy Randles, and Andrew J. Younge.
+    “Minimizing privilege for building HPC containers”, 2021. In *Proc.
+    Supercomputing*. DOI: `10.6084/m9.figshare.14396099
+    <https://doi.org/10.6084/m9.figshare.14396099>`_.
 
-* A demonstration of how low-privilege containers solve the increasing demand of software flexibility.
+* Charliecloud’s build cache performs competitively with the standard
+  many-layered union filesystem approach and has structural advantages
+  including a better diff format, lower cache overhead, and better file
+  de-duplication.
 
-    Reid Priedhorsky, R. Shane Canon, Timothy Randles, and Andrew J. Younge. "Minimizing privilege 
-    for building HPC containers", 2021. In *Proc. Supercomputing*.
-    DOI: `10.6084/m9.figshare.14396099 <https://doi.org/10.6084/m9.figshare.14396099>`_.
-
-* Charliecloud's layer-free, Git-based container build cache outperforms the standard approach of 
-  using a many-layered union system when it comes to a better diff format, lower cache overhead, 
-  and better file de-duplication.
-
-    Reid Priedhorsky, Jordan Ogas, Claude H. (Rusty) Davis IV, Z. Noah Hounshel, Ashlyn Lee, 
-    Benjamin Stormer, and R. Shane Goff. "Charliecloud’s layer-free, Git-based container 
-    build cache", 2023. In *Proc. Supercomputing*. DOI: `10.1145/3624062.3624585 <https://doi.org/10.1145/3624062.3624585>`_.
+    Reid Priedhorsky, Jordan Ogas, Claude H. (Rusty) Davis IV, Z. Noah
+    Hounshel, Ashlyn Lee, Benjamin Stormer, and R. Shane Goff. "Charliecloud’s
+    layer-free, Git-based container build cache", 2023. In *Proc.
+    Supercomputing*. DOI: `10.1145/3624062.3624585
+    <https://doi.org/10.1145/3624062.3624585>`_.
 
 Copyright and license
 ---------------------
@@ -164,4 +163,4 @@ should be clearly marked, so as not to confuse it with the version available
 from LANL.
 
 
-..  LocalWords:  USENIX's CNA Meisam
+..  LocalWords:  USENIX's CNA Meisam figshare
