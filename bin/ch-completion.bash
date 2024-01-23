@@ -6,7 +6,7 @@
 # shellcheck disable=SC2207
 
 # SC2034 complains about modifying variables by reference in
-# _ch_run_image_finder. Disable it.
+# _ch_run_parse. Disable it.
 # shellcheck disable=SC2034
 
 # Resources for understanding this script:
@@ -140,11 +140,12 @@ _ch_convert_complete () {
     _DEBUG " output format: $fmt_out"
     if [[ $opts_end != -1 ]]; then
         _DEBUG " input image: ${words[$opts_end]}"
+    else
+        _DEBUG " input image:"
     fi
 
     # Command line options
     if [[ ($opts_end == -1) || ($cword -lt $opts_end) ]]; then
-        _DEBUG "GOT HERE"
         case "$prev" in
         -i|--in-fmt)
             COMPREPLY=( $(compgen -W "${_convert_fmts//$fmt_out/}" -- "$cur") )
@@ -184,6 +185,7 @@ _ch_convert_complete () {
             if [[ -n "$(compgen -d -- "$cur")" ]]; then
                 compopt -o nospace
             fi
+            return 0
             ;;
         squash)
             COMPREPLY+=( $(_compgen_filepaths -X "!*.sqfs" "$cur") )
@@ -416,7 +418,7 @@ _ch_run_complete () {
     strg_dir=$(_ch_find_storage "${words[@]::$cword}" "${words[@]:$cword+1:${#array[@]}-1}")
     local cli_image
     local cmd_index=-1
-   _ch_run_image_finder "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
+   _ch_run_parse "$strg_dir" "$cword" cli_image cmd_index "${words[@]}"
 
     # Populate debug log
     _DEBUG "\$ ${words[*]}"
@@ -680,7 +682,7 @@ _ch_image_subcmd_get () {
 #       representing the command line (index starting at 0).
 #
 #   3.) An out parameter (see explanation above “_ch_convert_parse”). If
-#       “_ch_run_image_finder” finds the name of an image in storage (e.g.
+#       “_ch_run_parse” finds the name of an image in storage (e.g.
 #       “alpine:latest”) or something that looks like an image path (i.e. a
 #       directory, tarball or file named like a squash archive) in the command
 #       line, the value of the variable will be updated to the image name or
@@ -689,8 +691,8 @@ _ch_image_subcmd_get () {
 #
 #   4.) Another out parameter. If this function finds “--” in the current
 #       command line and it doesn't seem like the user is trying to complete
-#       that “--” to an option, “_ch_run_image_finder” will assume that this is
-#       the point beyond which the user specifies commands to be run inside the
+#       that “--” to an option, “_ch_run_parse” will assume that this is the
+#       point beyond which the user specifies commands to be run inside the
 #       container and will give the variable the index value of the “--”. Our
 #       criterion for deciding that the user isn't trying to complete “--” to an
 #       option is that the current index of the cursor in the word array
@@ -700,7 +702,7 @@ _ch_image_subcmd_get () {
 #   5.) A string representing the expanded command line array (i.e.
 #       "${array[@]}").
 #
-_ch_run_image_finder () {
+_ch_run_parse () {
     # The essential purpose of this function is to try to find an image in the
     # current command line. If it finds one, it passes the “name” of the image
     # back to the caller in the form of an out parameter (see above). If it
@@ -744,11 +746,9 @@ _ch_run_image_finder () {
             fi
             # Check for refs to images in storage.
             if [[ -z $cli_img ]]; then
-                for img in $images; do
-                    if [[ ${wrds[$ct]} == "$img" ]]; then
-                        cli_img="${wrds[$ct]}"
-                    fi
-                done
+                if _is_subword "${wrds[$ct]}" "$images"; then
+                    cli_img="${wrds[$ct]}"
+                fi
             fi
         fi
         ((ct++))
