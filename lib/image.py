@@ -561,6 +561,7 @@ class Image:
             # Correct absolute paths.
             if (m.name.is_absolute()):
                m.name = m.name.relative_to("/")
+               abs_ct += 1
             # Record top-level directory.
             if (len(m.name.parts) > 1 or m.isdir()):
                top_dirs.add(m.name.first)

@@ -20,6 +20,7 @@ import subprocess
 import sys
 import time
 import traceback
+import warnings
 
 
 # List of dependency problems. This variable needs to be created before we
@@ -149,7 +150,7 @@ log_fp = sys.stderr       # File object to print logs to.
 trace_fatal = False       # Add abbreviated traceback to fatal error hint.
 
 # Warnings to be re-printed when program exits
-warnings = list()
+warns = list()
 
 # True if the download cache is enabled.
 dlcache_p = None
@@ -497,7 +498,7 @@ def VERBOSE(msg, hint=None, **kwargs):
 def WARNING(msg, hint=None, msg_save=True, **kwargs):
    if (log_level > Log_Level.STDERR):
       if (msg_save):
-         warnings.append(msg)
+         warns.append(msg)
       log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
@@ -717,6 +718,12 @@ def init(cli):
    else:
       rg.auth_p = False
    VERBOSE("registry authentication: %s" % rg.auth_p)
+   # Red Hat Python warns about tar bugs, citing CVE-2007-4559.
+   # We mitigate this already, so suppress the noise. (#1818)
+   warnings.filterwarnings("ignore", module=r"^tarfile$",
+                           message=(  "^The default behavior of tarfile"
+                                    + " extraction has been changed to disallow"
+                                    + " common exploits"))
    # misc
    global password_many, profiling
    password_many = cli.password_many
@@ -933,7 +940,7 @@ def walk(*args, **kwargs):
              [fs.Path(filename) for filename in filenames])
 
 def warnings_dump():
-   if (len(warnings) > 0):
-      WARNING("reprinting %d warning(s)" % len(warnings), msg_save=False)
-   for msg in warnings:
+   if (len(warns) > 0):
+      WARNING("reprinting %d warning(s)" % len(warns), msg_save=False)
+   for msg in warns:
       WARNING(msg, msg_save=False)
