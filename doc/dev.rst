@@ -51,9 +51,10 @@ account the probable desires of the recipient as well.
 Milestones
 ----------
 
-We use milestones to organize upcoming releases and record what they contain
+We use milestones to organize upcoming releases and record what they contain.
 We put an issue in when it has actually landed in that release or we are
-likely to delay that release until it does. Sometimes milestones have dates when we are feeling aspirational.
+likely to delay that release until it does. Sometimes milestones have dates
+when we are feeling aspirational.
 
 Issue assignment
 ----------------
@@ -138,14 +139,13 @@ Review outcomes:
 
 * *Approve*: The reviewer believes the branch is ready to proceed (further
   work if draft, merging if ready for review). Importantly, the review can
-  included include comments/questions/changes *but* the reviewer believes
-  these don’t need re-review (i.e., the PR author can deal with them
-  independently).
+  include comments/questions/changes *but* the reviewer believes these don’t
+  need re-review (i.e., the PR author can deal with them independently).
 
 *Use multi-comment reviews.* Review comments should all be packaged up into a
 single review; click *Start a review* rather than *Add single comment*. Then
 the PR author gets only a single notification instead of one for every comment
-you make, and it’s clear when they branch is theirs again.
+you make, and it’s clear when the branch is theirs again.
 
 *Special case 1:* Often, the review consists of code changes, and the reviewer
 will want you to assess those changes. GitHub doesn’t let you request review
