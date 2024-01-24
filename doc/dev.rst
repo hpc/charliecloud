@@ -123,11 +123,10 @@ not be when you want it considered for merging! — do this:
    included in your review request.
 
 In both cases, the person from whom you requested review now owns the branch,
-and you should stop work on it unless and until you get it back. However, do
-not hesitate to pester your reviewer if you haven’t heard back promptly, say
-within 24 hours.
-
-
+and you should stop work on it unless and until you get it back (modulo other
+communication, of course). This is so they can make tidy commits if needed
+without collision. However, do not hesitate to pester your reviewer if you
+haven’t heard back promptly, say within 24 hours.
 
 Review outcomes:
 
