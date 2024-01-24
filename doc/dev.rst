@@ -24,7 +24,7 @@ Workflow
 
 We try to keep procedures and the Git branching model simple. Right now, we’re
 pretty similar to Scott Chacon’s “`GitHub Flow
-<http://scottchacon.com/2011/08/31/github-flow.html>`_”: Master is stable;
+<https://scottchacon.com/2011/08/31/github-flow>`_”: Master is stable;
 work on short-lived topic branches; use pull requests to ask for merging; keep issues organized with tags and milestones.
 
 The standard workflow is:
@@ -42,41 +42,27 @@ The standard workflow is:
 
   6. Review/iterate.
 
-  7. Project lead merges.
-
-Core team members may deliberate in public on GitHub or internally, whichever
-they are comfortable with, making sure to follow LANL policy and taking into
-account the probable desires of the recipient as well.
-
-Milestones
-----------
-
-We use milestones to organize upcoming releases and record what they contain.
-We put an issue in when it has actually landed in that release or we are
-likely to delay that release until it does. Sometimes milestones have dates
-when we are feeling aspirational.
-
-Issue assignment
-----------------
-
-If an issue is assigned to a person, that means they are actively leading the
-work on it or will do so in the near future. Typically this happens when the
-issue ends up in :code:`next`. Issues in a status of "I’ll get to this later"
-should not be assigned to a person.
+  7. Project lead merges with “squash and merge”.
 
 Code review
 -----------
 
-**Issues and pull requests.** The typical workflow is to introduce a change in
-an issue, get consensus on what to do, and then create a `pull request
-<https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_ (PR) for
-the implementation. The issue, not the PR, should be tagged and milestoned so
-a given change shows up only once in the various views.
+**Issues and pull requests.** The typical workflow is:
 
-If consensus is obtained through other means (e.g., in-person discussion or
-simply being an obviously necessary change), then open a PR directly. In this
-case, the PR itself should be tagged and milestoned, since there is no issue.
-This is called a “stand-alone PR”.
+#. Propose a change in an issue.
+
+#. Get consensus on what to do, whether in the issue or elsewhere.
+
+#. Create a `pull request
+   <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_ (PR)
+   for the implementation.
+
+#. Iterate the PR until consensus is reached to either merge or abandon.
+
+#. Merge or close the PR accordingly.
+
+The issue, not the PR, should be tagged and milestoned so a given change shows
+up only once in the various views.
 
 GitHub PRs have two states, which are often poorly labeled. These states and
 our interpretations are:
@@ -89,6 +75,12 @@ our interpretations are:
 
 * *Draft*. This means not ready for merge even if tests and review pass.
   (GitLab would indicate this with a :code:`WIP:` prefix in the title.)
+
+**Stand-alone PRs.** If consensus is obtained through other means, e.g.
+out-of-band discussion, then a stand-alone PR is appropriate (i.e., don’t
+create an issue just for the sake of having an issue to link to a PR). A
+stand-alone PR should be tagged and milestoned, since there is no issue. Note
+that stand-alone PRs are generally not a good way to *propose* something.
 
 **Address a single concern.** When practical, issues and PRs should address
 completely one self-contained change. If there are multiple concerns, make
@@ -125,8 +117,10 @@ not be when you want it considered for merging! — do this:
 In both cases, the person from whom you requested review now owns the branch,
 and you should stop work on it unless and until you get it back (modulo other
 communication, of course). This is so they can make tidy commits if needed
-without collision. However, do not hesitate to pester your reviewer if you
-haven’t heard back promptly, say within 24 hours.
+without collision.
+
+It is good practice to communicate with your reviewer directly to set
+expectations on review urgency.
 
 Review outcomes:
 
@@ -146,6 +140,14 @@ single review; click *Start a review* rather than *Add single comment*. Then
 the PR author gets only a single notification instead of one for every comment
 you make, and it’s clear when the branch is theirs again.
 
+*Selecting a reviewer.* Generally, you want to find a reviewer with time to do
+the review and appropriate expertise. Feel free to ask if you’re not sure.
+Note that the project lead must approve any PRs before merge, so they are
+typically a reasonable choice if you don’t have someone else in mind.
+
+External contributions do not need to select a reviewer. The team will notice
+the PR and wrangle its review.
+
 *Special case 1:* Often, the review consists of code changes, and the reviewer
 will want you to assess those changes. GitHub doesn’t let you request review
 from the PR submitter, so this must be done with a comment, either online or
@@ -164,6 +166,25 @@ directly, what really happened is that these were prototyped on a branch and
 then fast-forward merged after the tests pass. (Note we no longer do this.)
 
 **Merging to master.** Only the project lead should do this.
+
+**Branch naming convention.** Name the branch with a *brief* summary of the
+issue being fixed — just a couple words — with words separated by hyphens,
+then an underscore and the issue number being addressed. For example, issue
+`#1773 <https://github.com/hpc/charliecloud/issues/1773>`_ is titled
+“:code:`ch-image build`: :code:`--force=fakeroot` outputs to stderr despite
+:code:`-q`”; the corresponding branch (for `PR #1812
+<https://github.com/hpc/charliecloud/pull/1812>`_) is called
+:code:`fakeroot-quiet-rhel_1773`. Something even shorter, such as
+:code:`fakeroot_1773`, would have been fine too.
+
+Stand-alone PRs do the same, just without an issue number. For example, `PR
+#1804 <https://github.com/hpc/charliecloud/pull/1804>`_ is titled “add tab
+completion to :code:`ch-convert`” and the branch is
+:code:`convert-completion`.
+
+It’s okay if the branch name misses a little. For example, if you discover
+during work on a PR that you should close a second issue in the same PR, it’s
+not necessary to add the second issue number to the branch name.
 
 **Branch merge procedure.** Generally, branches are merged in the GitHub web
 interface with the *Squash and merge* button, which is :code:`git merge
@@ -1630,4 +1651,4 @@ your kernel headers, the system call name is wrong.
 
 ..  LocalWords:  milestoned gh nv cht Chacon’s scottchacon mis cantfix tmpimg
 ..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
-..  LocalWords:  abd bbf LOGFILE logfile rtd Enums WIP rpmlintrc
+..  LocalWords:  abd bbf LOGFILE logfile rtd Enums WIP rpmlintrc rhel
