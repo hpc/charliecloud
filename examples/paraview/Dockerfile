@@ -1,4 +1,4 @@
-# ch-test-scope: skip  #1810
+# ch-test-scope: full
 FROM openmpi
 WORKDIR /usr/local/src
 
