@@ -13,10 +13,10 @@ consult the internal documentation and other resources.
 
 .. note::
 
-   We’re interested in and will consider all good-faith contributions. While
+   We are interested in and will consider all good-faith contributions. While
    it does make things easier and faster if you follow the guidelines here,
-   they are not required. We’ll either clean it up for you or walk you through
-   any necessary changes.
+   *they are not required*. We’ll either clean it up for you or walk you
+   through any necessary changes.
 
 
 Workflow
@@ -24,7 +24,7 @@ Workflow
 
 We try to keep procedures and the Git branching model simple. Right now, we’re
 pretty similar to Scott Chacon’s “`GitHub Flow
-<http://scottchacon.com/2011/08/31/github-flow.html>`_”: Master is stable;
+<https://scottchacon.com/2011/08/31/github-flow>`_”: Master is stable;
 work on short-lived topic branches; use pull requests to ask for merging; keep issues organized with tags and milestones.
 
 The standard workflow is:
@@ -42,89 +42,111 @@ The standard workflow is:
 
   6. Review/iterate.
 
-  7. Project lead merges.
+  7. Project lead merges with “squash and merge”.
 
-Core team members may deliberate in public on GitHub or internally, whichever
-they are comfortable with, making sure to follow LANL policy and taking into
-account the probable desires of the recipient as well.
-
-Milestones
-----------
-
-We use milestones to organize what we plan to do next and what happened in a
-given release. There are two groups of milestones:
-
-* :code:`next` contains the issues that we plan to complete soon but have not
-  yet landed on a specific release. Generally, we avoid putting PRs in here
-  because of their ticking clocks.
-
-* Each release has a milestone. These are dated with the target date for that
-  release. We put an issue in when it has actually landed in that release or
-  we are willing to delay that release until it does. We put a PR in when we
-  think it’s reasonably likely to be merged for that release.
-
-If an issue is assigned to a person, that means they are actively leading the
-work on it or will do so in the near future. Typically this happens when the
-issue ends up in :code:`next`. Issues in a status of "I’ll get to this later"
-should not be assigned to a person.
-
-Peer review
+Code review
 -----------
 
-**Issues and pull requests.** The standard workflow is to introduce a change
-in an issue, get consensus on what to do, and then create a *draft* `pull
-request <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_
-(PR) for the implementation.
+**Issues and pull requests.** The typical workflow is:
+
+#. Propose a change in an issue.
+
+#. Get consensus on what to do, whether in the issue or elsewhere.
+
+#. Create a `pull request
+   <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_ (PR)
+   for the implementation.
+
+#. Iterate the PR until consensus is reached to either merge or abandon.
+
+#. Merge or close the PR accordingly.
 
 The issue, not the PR, should be tagged and milestoned so a given change shows
 up only once in the various views.
 
-If consensus is obtained through other means (e.g., in-person discussion),
-then open a PR directly. In this case, the PR should be tagged and milestoned,
-since there is no issue.
+GitHub PRs have two states, which are often poorly labeled. These states and
+our interpretations are:
 
-**Address a single concern.** When possible, issues and PRs should address
+* *Ready for review* (the green *Create pull request* button). This means that
+  the PR is ready to be merged once tests and code review pass. In-progress
+  PRs headed in that direction should also be in this state (i.e., the trigger
+  for review and possible merge is the review request, not a draft to
+  ready-for-review transition).
+
+* *Draft*. This means not ready for merge even if tests and review pass.
+  (GitLab would indicate this with a :code:`WIP:` prefix in the title.)
+
+**Stand-alone PRs.** If consensus is obtained through other means, e.g.
+out-of-band discussion, then a stand-alone PR is appropriate (i.e., don’t
+create an issue just for the sake of having an issue to link to a PR). A
+stand-alone PR should be tagged and milestoned, since there is no issue. Note
+that stand-alone PRs are generally not a good way to *propose* something.
+
+**Address a single concern.** When practical, issues and PRs should address
 completely one self-contained change. If there are multiple concerns, make
 separate issues and/or PRs. For example, PRs should not tidy unrelated code,
 and non-essential complications should be split into a follow-on issue.
+However, sometimes one PR addresses several related issues, which is fine.
 
 **Documentation and tests first.** The best practice for significant changes
 is to draft documentation and/or tests first, get feedback on that, and then
 implement the code. Reviews of the form "you need a completely different
 approach" are no fun.
 
-**Tests must pass.** PRs will not be merged until they pass the tests. While
-this most saliently includes CI, the tests should also pass on your
-development box as well as all relevant clusters (if appropriate for the
-changes).
+**CI must pass.** PRs will usually not be merged until they pass CI, with
+exceptions if the failures are clearly unconnected and we are confident they
+aren’t masking a real issue. If appropriate, tests should also pass on
+relevant supercomputers.
 
-**No close keywords in PRs.** While GitHub will interpret issue-closing
-keywords (variations on `"closes", "fixes", and "resolves"
+**Use close keywords in PRs.** Use the issue-closing keywords (variations on
+`"closes", "fixes", and "resolves"
 <https://help.github.com/en/articles/closing-issues-using-keywords>`_) in PR
-descriptions, don’t use this feature, because often the specific issues a PR
-closes change over time, and we don’t want to have to edit the description to
-deal with that. We also want this information in only one place (the commit
-log). Instead, use “addresses”, and we’ll edit the keywords into the commit
-message(s) at merge time if needed.
+descriptions to link it to the relevant issue(s). If this changes, edit the
+description to add/remove issues.
 
-**PR review procedure.** When your draft PR is ready for review — which may or
-may not be when you want it considered for merging! — do one or both of:
+**PR review procedure.** When your PR is ready for review — which may or may
+not be when you want it considered for merging! — do this:
 
-* Request review from the person(s) you want to look at it. If you think it
-  may be ready for merge, that should include the project lead. The purpose of
-  requesting review is so the person is notified you need their help.
+#. Request review from the person(s) you want to look at it. The purpose of
+   requesting review is so the person is notified you need their help.
 
-* If you think it may be ready to merge (even if you’re not sure), then also
-  mark the PR "ready to review". The purpose of this is so the project lead
-  can see which PRs are ready to consider for merging (green icon) and which
-  are not (gray icon). If the project lead decides it’s ready, they will
-  merge; otherwise, they’ll change it back to draft.
+#. If you think it’s ready to merge (even if you’re not sure), ensure the PR
+   is (1) marked “ready for review” (green icon), and (2) the project lead is
+   included in your review request.
 
 In both cases, the person from whom you requested review now owns the branch,
-and you should stop work on it unless and until you get it back.
+and you should stop work on it unless and until you get it back (modulo other
+communication, of course). This is so they can make tidy commits if needed
+without collision.
 
-Do not hesitate to pester your reviewer if you haven’t heard back promptly,
-say within 24 hours.
+It is good practice to communicate with your reviewer directly to set
+expectations on review urgency.
+
+Review outcomes:
+
+* *Request changes*: The reviewer believes there are changes needed, *and* the
+  PR needs re-review after these are done.
+
+* *Comment*: The reviewer has questions or comments, *and* the PR needs
+  re-review after these are addressed.
+
+* *Approve*: The reviewer believes the branch is ready to proceed (further
+  work if draft, merging if ready for review). Importantly, the review can
+  include comments/questions/changes *but* the reviewer believes these don’t
+  need re-review (i.e., the PR author can deal with them independently).
+
+*Use multi-comment reviews.* Review comments should all be packaged up into a
+single review; click *Start a review* rather than *Add single comment*. Then
+the PR author gets only a single notification instead of one for every comment
+you make, and it’s clear when the branch is theirs again.
+
+*Selecting a reviewer.* Generally, you want to find a reviewer with time to do
+the review and appropriate expertise. Feel free to ask if you’re not sure.
+Note that the project lead must approve any PRs before merge, so they are
+typically a reasonable choice if you don’t have someone else in mind.
+
+External contributions do not need to select a reviewer. The team will notice
+the PR and wrangle its review.
 
 *Special case 1:* Often, the review consists of code changes, and the reviewer
 will want you to assess those changes. GitHub doesn’t let you request review
@@ -135,45 +157,51 @@ offline.
 so this needs to be done with a comment too. Generally you should ask the
 original bug reporter to review, to make sure it solves their problem.
 
-**Use multi-comment reviews.** Review comments should all be packaged up into
-a single review; click *Start a review* rather than *Add single comment*. Then
-the PR author gets only a single notification instead of one for every comment
-you make, and it’s clear when they branch is theirs again.
-
 Branching and merging
 ---------------------
 
 **Don’t commit directly to master.** Even the project lead doesn’t do this.
 While it may appear that some trivial fixes are being committed to the master
-directly, what’s really happening is that these are prototyped on a branch and
-then fast-forward merged after the tests pass.
+directly, what really happened is that these were prototyped on a branch and
+then fast-forward merged after the tests pass. (Note we no longer do this.)
 
 **Merging to master.** Only the project lead should do this.
+
+**Branch naming convention.** Name the branch with a *brief* summary of the
+issue being fixed — just a couple words — with words separated by hyphens,
+then an underscore and the issue number being addressed. For example, issue
+`#1773 <https://github.com/hpc/charliecloud/issues/1773>`_ is titled
+“:code:`ch-image build`: :code:`--force=fakeroot` outputs to stderr despite
+:code:`-q`”; the corresponding branch (for `PR #1812
+<https://github.com/hpc/charliecloud/pull/1812>`_) is called
+:code:`fakeroot-quiet-rhel_1773`. Something even shorter, such as
+:code:`fakeroot_1773`, would have been fine too.
+
+Stand-alone PRs do the same, just without an issue number. For example, `PR
+#1804 <https://github.com/hpc/charliecloud/pull/1804>`_ is titled “add tab
+completion to :code:`ch-convert`” and the branch is
+:code:`convert-completion`.
+
+It’s okay if the branch name misses a little. For example, if you discover
+during work on a PR that you should close a second issue in the same PR, it’s
+not necessary to add the second issue number to the branch name.
 
 **Branch merge procedure.** Generally, branches are merged in the GitHub web
 interface with the *Squash and merge* button, which is :code:`git merge
 --squash` under the hood. This squashes the branch into a single commit on
-master. Commit message example::
+master.
 
-  PR #268 from @j-ogas: remove ch-docker-run (closes #258)
+Commit message must be the PR number followed by the PR title, e.g.:
 
-If the branch closes multiple issues and it’s reasonable to separate those
-issues into independent commits, then the branch is rebased, interactively
-squashed, and force-pushed into a tidy history with close instructions, then
-merged in the web interface with *Create a merge commit*. Example history and
-commit messages::
+  PR #268: remove ch-docker-run
 
-  * 18aa2b8 merge PR #254 from @j-ogas and me: Dockerfile.openmpi: use snapshot
-  |\
-  | * 79fa89a upgrade to ibverbs 20.0-1 (closes #250)
-  | * 385ce16 Dockerfile.debian9: use snapshot.debian.org (closes #249)
-  |/
-  * 322df2f ...
+The commit message should not mention issue numbers; let the PR itself do
+that.
 
 The reason to prefer merge via web interface is that GitHub often doesn’t
 notice merges done on the command line.
 
-After merge, the branch is deleted via the web interface.
+After merge, delete the branch via the web interface.
 
 **Branch history tidiness.** Commit frequently at semantically relevant times,
 and keep in mind that this history will probably be squashed per above. It is
@@ -187,10 +215,10 @@ rebasing. This lets you resolve conflicts once rather than multiple times as
 rebase works through a stack of commits.
 
 Note that PRs with merge conflicts will generally not be merged. Resolve
-conflicts before asking for merge.
+conflicts before asking for review.
 
-**Remove obsolete branches.** Keep your repo free of old branches with
-:code:`git branch -d` (or :code:`-D`) and :code:`git fetch --prune --all`.
+**Remove obsolete branches.** Keep your repo free of old branches with the
+script :code:`misc/branches-tidy`.
 
 Miscellaneous issue and pull request notes
 ------------------------------------------
@@ -204,14 +232,14 @@ issue is obsolete. It is OK for “stale” issues to sit around indefinitely
 awaiting this. Unlike many projects, we do not automatically close issues just
 because they’re old.
 
-**Closing PR.** Stale PRs, on the other hand, are to be avoided due to bit
+**Closing PRs.** Stale PRs, on the other hand, are to be avoided due to bit
 rot. We try to either merge or reject PRs in a timely manner.
 
 **Re-opening issues.** Closed issues can be re-opened if new information
 arises, for example a :code:`worksforme` issue with new reproduction steps.
 
-Continuous integration testing
-------------------------------
+Continuous integration (CI) testing
+-----------------------------------
 
 **Quality of testing.** Tagged versions currently get more testing for various
 reasons. We are working to improve testing for normal commits on master, but
@@ -220,12 +248,10 @@ full parity is probably unlikely.
 **Cycles budget.** The resource is there for your use, so take advantage of
 it, but be mindful of the various costs of this compute time.
 
-Things you can do include testing locally first, cancelling jobs you know will
+Things you can do include focused local testing, cancelling jobs you know will
 fail or that won’t give you additional information, and not pushing every
-commit (CI tests only the most recent commit in a pushed group).
-
-**Iterating.** When trying to make CI happy, force-push or squash-merge. Don’t
-submit a PR with half a dozen "fix CI" commits.
+commit (CI tests only the most recent commit in a pushed group). Avoid making
+commits merely to trigger CI.
 
 **Purging Docker cache.** :code:`misc/docker-clean.sh` can be used to purge
 your Docker cache, either by removing all tags or deleting all containers and
@@ -237,13 +263,14 @@ Issue labeling
 --------------
 
 We use the following labels (a.k.a. tags) to organize issues. Each issue (or
-stand-alone PR) should have label(s) from every category, with the exception
-of disposition which only applies to closed issues.
+stand-alone PR) should have label(s) from each category, with the exception of
+disposition which only applies to closed issues. Labels are periodically
+validated using a script.
 
-Charliecloud team members should label their own issues. Members of the
-general public are more than welcome to label their issues if they like, but
-in practice this is rare, which is fine. Whoever triages the incoming issue
-should add or adjust labels as needed.
+Charliecloud team members should label their own issues. The general public
+are more than welcome to label their issues if they like, but in practice this
+is rare, which is fine. Whoever triages the incoming issue should add or
+adjust labels as needed.
 
 .. note::
 
@@ -404,6 +431,11 @@ choose *one disposition* from:
   reproducer later should definitely be re-opened. For some bugs, it really
   feels like they should be reproducible but we’re missing it somehow; such
   bugs should be left open in hopes of new insight arising.
+
+.. note::
+
+   We do not use the GitHub “closed as not planned” feature, so everything is
+   “closed as completed” even if the reason is one of the above.
 
 Deprecated labels
 ~~~~~~~~~~~~~~~~~
@@ -607,13 +639,15 @@ abstracted away.
 Dependencies
 ------------
 
-  * charliecloud
+  * Charliecloud
   * Python 3.6+
-  * Either:
+  * either:
 
-    * the provided example :code:`centos_7ch` or :code:`almalinux_8ch` images
+    * the provided example :code:`centos_7ch` or :code:`almalinux_8ch` images,
+      or
     * a RHEL/CentOS 7 or newer container image with (note there are different
       python version names for the listed packages in RHEL 8 and derivatives):
+
       * autoconf
       * automake
       * gcc
@@ -778,17 +812,14 @@ essentials. Exceptions, to be used judiciously:
     additional dependencies that are reasonably expected on most systems where
     the convenience would be used.
 
-  * Features that only work if some other software is present (example: the
-    Docker wrapper scripts) can add dependencies of that other software.
+  * Features that only work if some other software is present can add
+    dependencies of that other software (e.g., :code:`ch-convert` depends on
+    Docker to convert to/from Docker image storage).
 
 The test suite is tricky, because we need a test framework and to set up
 complex test fixtures. We have not yet figured out how to do this at
 reasonable expense with dependencies as tight as run- and build-time, so there
 are systems that do support Charliecloud but cannot run the test suite.
-
-Building the documentation needs Sphinx features that have not made their way
-into common distributions (i.e., RHEL), so we use recent versions of Sphinx
-and provide a source distribution with pre-built documentation.
 
 Building the RPMs should work on RPM-based distributions with a kernel new
 enough to support Charliecloud. You might need to install additional packages
@@ -831,14 +862,6 @@ Variable conventions in shell scripts and :code:`.bats` files
     "$foo"        # yes
     "$foo/bar"    # no
     "${foo}"      # no
-
-* Quote the entire string instead of just the variable when practical:
-
-  .. code-block:: none
-
-    "${foo}/bar"  # yes
-    "${foo}"/bar  # no
-    "$foo"/bar    # no
 
 * Don’t quote variable assignments or other places where not needed (e.g.,
   case statements). E.g.:
@@ -911,7 +934,8 @@ Python code
 Indentation width
 ~~~~~~~~~~~~~~~~~
 
-3 spaces per level. No tab characters.
+`3 spaces <https://peps.python.org/pep-0008/#indentation>`_ per level. No tab
+characters.
 
 
 C code
@@ -1588,7 +1612,7 @@ Debugging :code:`seccomp(2)` BPF
 :code:`ch-run --seccomp -vv` will log the BPF instructions as they are
 computed, but it’s all in raw hex and hard to interpret, e.g.::
 
-  $ ch-run --seccomp -vv alpine:3.19 -- true
+  $ ch-run --seccomp -vv alpine:3.17 -- true
   [...]
   ch-run[62763]: seccomp: arch c00000b7: found 13 syscalls (ch_core.c:582)
   ch-run[62763]: seccomp: arch 40000028: found 27 syscalls (ch_core.c:582)
@@ -1627,4 +1651,4 @@ your kernel headers, the system call name is wrong.
 
 ..  LocalWords:  milestoned gh nv cht Chacon’s scottchacon mis cantfix tmpimg
 ..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
-..  LocalWords:  abd bbf LOGFILE logfile rtd Enums
+..  LocalWords:  abd bbf LOGFILE logfile rtd Enums WIP rpmlintrc rhel
