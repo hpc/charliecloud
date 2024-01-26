@@ -1100,6 +1100,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+
 @test "${tag}: multistage COPY" {
     # Multi-stage build with no instructions in the first stage.
     df_no=$(cat <<'EOF'
@@ -1502,6 +1503,7 @@ EOF
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg/var/lib/rpm/__db.001 ]]
 }
 
+
 @test "${tag}: restore ACLs, xattrs" {  # issue #1287
     # Check if test needs to be skipped
     touch "$BATS_TMPDIR/tmpfs_test"
@@ -1537,4 +1539,40 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"user:$USER:r--"* ]]
+}
+
+
+@test "${tag}: orphaned worktrees" {  # PR #1824
+    img_metadata=$CH_IMAGE_STORAGE/img/tmpimg/ch
+    img_to_git=$img_metadata/git
+    git_worktrees=$CH_IMAGE_STORAGE/bucache/worktrees
+    git_to_img=$git_worktrees/tmpimg
+
+    # pull image, should be unlinked
+    ch-image pull --no-cache scratch tmpimg
+    ch-image build-cache  # rm leftover $git_to_img if it exists
+    ls -lh "$img_metadata" "$git_worktrees"
+    [[ ! -e "$img_to_git" ]]
+    [[ ! -e "$git_to_img" ]]
+
+    # add fake link
+    touch "$img_to_git"
+    ls -lh "$img_metadata" "$git_worktrees"
+    [[   -e "$img_to_git" ]]
+    [[ ! -e "$git_to_img" ]]
+
+    # ch-image should warn and fix instead of crashing
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'image erroneously marked cached, fixing'* ]]
+
+    # warning should now be gone and the state be good
+    ls -lh "$img_metadata" "$git_worktrees"
+    [[ ! -e "$img_to_git" ]]
+    [[ ! -e "$git_to_img" ]]
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'image erroneously marked cached, fixing'* ]]
 }
