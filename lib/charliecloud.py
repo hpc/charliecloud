@@ -464,6 +464,10 @@ class Timer:
 
 ## Supporting functions ##
 
+def CHILL(msg, hint=None, **kwargs):
+   # For temporary debugging only. See contributors’ guide.
+   log(msg, hint, None, "38;5;207m", "", **kwargs)  # hot pink
+
 def DEBUG(msg, hint=None, **kwargs):
    if (log_level >= Log_Level.DEBUG):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
