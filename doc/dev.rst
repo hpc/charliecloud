@@ -1040,11 +1040,11 @@ Debugging
 Python :code:`printf(3)`-style debugging
 ----------------------------------------
 
-Consider :code:`ch.CHILL()`. This uses the same mechanism as the standard
+Consider :code:`ch.ILLERI()`. This uses the same mechanism as the standard
 logging functions (:code:`ch.INFO()`, :code:`ch.VERBOSE()`, etc.) but it
 (1) cannot be suppressed and (2) uses a color that stands out.
 
-All :code:`ch.CHILL()` calls must be removed before a PR can be merged.
+All :code:`ch.ILLERI()` calls must be removed before a PR can be merged.
 
 :code:`seccomp(2)` BPF
 ----------------------
@@ -1665,4 +1665,4 @@ What to do in each location should either be obvious or commented.
 
 ..  LocalWords:  milestoned gh nv cht Chacon’s scottchacon mis cantfix tmpimg
 ..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
-..  LocalWords:  abd bbf LOGFILE logfile rtd Enums WIP rpmlintrc rhel
+..  LocalWords:  abd bbf LOGFILE logfile rtd Enums WIP rpmlintrc rhel ILLERI
