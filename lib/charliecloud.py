@@ -482,6 +482,10 @@ def FATAL(msg, hint=None, **kwargs):
       tr = None
    raise Fatal_Error(msg, hint, tr, **kwargs)
 
+def ILLERI(msg, hint=None, **kwargs):
+   # For temporary debugging only. See contributors’ guide.
+   log(msg, hint, None, "38;5;207m", "", **kwargs)  # hot pink
+
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
    if (log_level >= Log_Level.INFO):
