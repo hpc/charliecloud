@@ -205,7 +205,7 @@ So what is going on here?
    #. Download and untar. Note the use of the variable :code:`MAGICK_VERSION`
       and versions easier.
 
-   #. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
+   #. Build and install. Note the :code:`getconf` trick to guess at an
       appropriate parallel build.
 
    #. Clean up, in order to reduce the size of the build cache as well as the
