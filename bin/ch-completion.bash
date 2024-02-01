@@ -29,11 +29,11 @@
 
 ## SYNTAX GLOSSARY ##
 #
-# This script uses syntax that may be confusing for bash newbies and those who
-# are rusty.
-#
-# Source:
-# https://www.gnu.org/software/bash/manual/html_node/Shell-Parameter-Expansion.html
+# Bash has some pretty unusual syntax, and this script has no shortage of
+# strange Bash-isms. I’m including this syntax glossary with the hope that it’ll
+# make this code more readable for Bash newbies and those who are rusty. For more
+# info, see the gnu.org “Bash parameter expansion” page linked above, which is also
+# the source for this glossary.
 #
 # ${array[i]}
 #   Gives the ith element of “array”. Note that bash arrays are indexed at
@@ -72,9 +72,26 @@
 #     a b c
 #     $ echo ${foo[@]:1:3}
 #     b c d
+#
+# ${parameter/pattern/string}
+#   This is a form of pattern replacement in which “parameter” is expanded and
+#   the first instance of “pattern” is replaced with “string”.
+#
+# ${parameter//pattern/string}
+#   Similar to “${parameter/pattern/string}” above, except every instance of
+#   “pattern” in the expanded parameter is replaced by “string” instead of only
+#   the first.
+#
 
-# According to this (https://stackoverflow.com/a/50281697) post, bash 4.3 alpha
-# added the feature used in this script to pass a variable by ref.
+# FIXME: Evaluate every instance of pattern substitution and figure out if you want
+#        “/” or “//” (i.e. first instance versus *every* instance).
+
+
+## Setup ##
+
+# According to this post (https://stackoverflow.com/a/50281697), Bash 4.3 alpha
+# added the feature that enables the use of out parameters for functions (or
+# passing variables by reference), which is an integral feature of this script.
 bash_vmin=4.3.0
 
 # Check Bash version
@@ -96,10 +113,16 @@ if [[ -z "$(declare -f -F _get_comp_words_by_ref)" ]]; then
     fi
 fi
 
+# https://stackoverflow.com/a/246128
+_ch_completion_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+_ch_completion_version="$("$_ch_completion_dir"/../misc/version)"
+
 # Debugging log
 if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
     printf "completion log\n\n" >> /tmp/ch-completion.log
 fi
+
+_ch_completable_executables="ch-image ch-run ch-convert"
 
 
 ## ch-convert ##
@@ -521,11 +544,57 @@ _DEBUG () {
     fi
 }
 
-# Disable completion.
-ch-completion-disable () {
-    complete -r ch-convert
-    complete -r ch-image
-    complete -r ch-run
+_version_ok_ch_completion () {
+    if [[ "$($1 --version 2>&1)" == "$_ch_completion_version" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
+# Utility function for Charliecloud tab completion that’s available to users.
+ch-completion () {
+    while true; do
+        case $1 in
+            --disable)
+                complete -r ch-convert
+                complete -r ch-image
+                complete -r ch-run
+                ;;
+            --version)
+                printf "%s\n" "$_ch_completion_version"
+                ;;
+            --version-ok)
+                if _version_ok_ch_completion "ch-image"; then
+                    printf "version ok\n" 1>&2
+                    return 0
+                else
+                    printf "ch-image:      %s\n" "$(ch-image --version)" 1>&2
+                    printf "ch-completion: %s\n" "$_ch_completion_version" 1>&2
+                    printf "version incompatible!\n" 1>&2
+                    return 1
+                fi
+                ;;
+            *)
+                break
+                ;;
+        esac
+        shift
+    done
+}
+
+_completion_opts="--disable --version --version-ok"
+
+# Yes, the untility function needs completion too...
+#
+_ch_completion_complete () {
+    local cur
+    local prev
+    local words
+    _get_comp_words_by_ref -n : cur prev words
+
+    COMPREPLY=( $(compgen -W "$_completion_opts" -- $cur) )
+
 }
 
 # Parser for ch-convert command line. Takes 6 arguments:
@@ -865,6 +934,7 @@ _sanitized_tilde_expand () {
     echo "$1"
 }
 
+complete -F _ch_completion_complete ch-completion
 complete -F _ch_convert_complete ch-convert
 complete -F _ch_image_complete ch-image
 complete -F _ch_run_complete ch-run
