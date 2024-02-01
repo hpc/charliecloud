@@ -210,7 +210,7 @@ def main(cli_):
       ch.VERBOSE(x)  # noise about what was expected in the grammar
       ch.FATAL("can’t parse: %s:%d,%d\n\n%s"
                % (cli.file, x.line, x.column, x.get_context(text, 39)))
-   ch.VERBOSE(tree.pretty())
+   ch.VERBOSE(tree.pretty()[:-1])  # rm trailing newline
 
    # Sometimes we exit after parsing.
    if (cli.parse_only):

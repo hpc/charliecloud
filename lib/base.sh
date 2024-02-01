@@ -104,15 +104,6 @@ parse_basic_arg () {
     return 1  # not a basic arg
 }
 
-parse_basic_args () {
-    if [ "$#" -eq 0 ]; then
-        usage 1
-    fi
-    for i in "$@"; do
-        parse_basic_arg "$i" || true
-    done
-}
-
 # Redirect standard streams (or not) depending on “quiet” level. See table in
 # FAQ.
 quiet () {
