@@ -41,7 +41,7 @@ image_ct = None
 
 ## Imports not in standard library ##
 
-# See charliecloud.py for the messy import of this.
+# See image.py for the messy import of this.
 lark = im.lark
 
 
@@ -210,7 +210,7 @@ def main(cli_):
       ch.VERBOSE(x)  # noise about what was expected in the grammar
       ch.FATAL("can’t parse: %s:%d,%d\n\n%s"
                % (cli.file, x.line, x.column, x.get_context(text, 39)))
-   ch.VERBOSE(tree.pretty())
+   ch.VERBOSE(tree.pretty()[:-1])  # rm trailing newline
 
    # Sometimes we exit after parsing.
    if (cli.parse_only):
@@ -1228,7 +1228,7 @@ class Rsync_G(Copy):
    def __init__(self, *args):
       super().__init__(*args)
       self.from_ = None  # not supported yet
-      line_no = self.tree.line
+      line_no = self.tree.meta.line
       st = self.tree.child("option_plus")
       self.plus_option = "l" if st is None else st.terminal("OPTION_LETTER")
       options_done = False

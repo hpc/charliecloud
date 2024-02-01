@@ -77,6 +77,10 @@ else
     oldtars=$(printf '%s ' "$@")  # https://www.shellcheck.net/wiki/SC2124
 fi
 
+summary=''
+pass_ct=0
+fail_ct=0
+
 
 ### Main loop
 
@@ -113,9 +117,31 @@ for oldtar in $oldtars; do
     ch-image pull archlinux:latest
 
     INFO "testing"
-    ch-test -b ch-image --pedantic=no -s "$scope" all
+    if (ch-test -b ch-image --pedantic=no -s "$scope" all); then
+        pass_ct=$((pass_ct + 1))
+        summary+="😁  ${oldtar}: PASS"$'\n'
+    else
+        fail_ct=$((fail_ct + 1))
+        summary+="🤦  ${oldtar}: FAIL"$'\n'
+    fi
+
 
     INFO "deleting: $storage"
     rm -Rf --one-file-system "$storage"
     [[ ! -d $storage ]]
 done
+
+cat <<EOF
+
+🌻🌻🌻  Summary  🌻🌻🌻
+
+${summary}
+pass: ${pass_ct}
+fail: ${fail_ct}
+EOF
+
+if [[ $fail_ct -gt 0 ]]; then
+    echo
+    fatal_msg 'one or more old storage test suites failed'
+    exit 1
+fi

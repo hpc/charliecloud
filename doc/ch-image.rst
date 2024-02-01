@@ -788,11 +788,12 @@ This mode uses the kernel’s :code:`seccomp(2)` system call filtering to
 intercept certain privileged system calls, do absolutely nothing, and return
 success to the program.
 
-The quashed system calls are: :code:`capset(2)`; :code:`chown(2)` and friends;
-:code:`kexec_load(2)` (used to validate the filter itself); :code:`mknod(2)`
-and :code:`mknodat(2)`; and :code:`setuid(2)`, :code:`setgid(2)`, and
-:code:`setgroups(2)` along with the other system calls that change user or
-group.
+Some system calls are quashed regardless of their arguments:
+:code:`capset(2)`; :code:`chown(2)` and friends; :code:`kexec_load(2)` (used
+to validate the filter itself); ; and :code:`setuid(2)`, :code:`setgid(2)`,
+and :code:`setgroups(2)` along with the other system calls that change user or
+group. :code:`mknod(2)` and :code:`mknodat(2)` are quashed if they try to
+create a device file (e.g., creating FIFOs works normally).
 
 The advantages of this approach is that it’s much simpler, it’s faster, it’s
 completely agnostic to libc, and it’s mostly agnostic to distribution. The

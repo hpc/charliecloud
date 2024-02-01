@@ -263,13 +263,12 @@ class File_Metadata:
    #   st ............ Stat object for the file. Absent after un-pickling.
 
    def __init__(self, image_root, path):
+      # Note: Constructor not called during unpickle.
       self.image_root = image_root
       self.path = path
       self.path_abs = image_root // path
       self.st = self.path_abs.stat(False)
-      # Note: Constructor not called during unpickle.
-      for attr in ("atime_ns", "mtime_ns", "mode", "size"):
-         setattr(self, attr, getattr(self.st, "st_" + attr))
+      self.stat_cache_update()
       self.children = dict()
       self.dont_restore = False
       self.hardlink_to = None
@@ -351,9 +350,11 @@ class File_Metadata:
          # skip Git stuff at image root
          fm.dont_restore = True
          return fm
-      # Ensure minimum permissions. Some tools like to make files with mode
-      # 000, because root ignores the permissions bits.
-      fm.path_abs.chmod_min(fm.st)
+      # Ensure minimum permissions. Some tools like to make files without
+      # necessary owner permissions, because root ignores the permissions bits
+      # (CAP_DAC_OVERRIDE). See e.g. #1765.
+      fm.st = fm.path_abs.chmod_min(fm.st)
+      fm.stat_cache_update()
       # Validate file type and recurse if needed. (Don’t use os.walk() because
       # it’s iterative, and our algorithm is better expressed recursively.)
       if   (   stat.S_ISREG(fm.mode)
@@ -547,6 +548,10 @@ class File_Metadata:
    def pickle(self):
       (self.image_root // PICKLE_PATH) \
          .file_write(pickle.dumps(self, protocol=4))
+
+   def stat_cache_update(self):
+      for attr in ("atime_ns", "mtime_ns", "mode", "size"):
+         setattr(self, attr, getattr(self.st, "st_" + attr))
 
    def str_for_log(self):
       # Truncate reported time to seconds.
@@ -1319,6 +1324,15 @@ class Enabled_Cache:
                                              // "*" // im.GIT_DIR)) }
       wt_gits =    { fs.Path(i).name
                      for i in glob.iglob("%s/worktrees/*" % self.root) }
+      # Unlink images that think they are in Git but are not. This should not
+      # happen, but it does, and I wasn’t able to figure out how it happened.
+      wt_gits_orphaned = wt_actuals - wt_gits
+      for img_dir in wt_gits_orphaned:
+         link = ch.storage.unpack_base // img_dir // im.GIT_DIR
+         ch.WARNING("image erroneously marked cached, fixing: %s" % link,
+                    ch.BUG_REPORT_PLZ)
+         link.unlink()
+      wt_actuals -= wt_gits_orphaned
       # Delete worktree data for images that no longer exist or aren’t
       # Git-enabled any more.
       wt_gits_deleted = wt_gits - wt_actuals
@@ -1326,7 +1340,12 @@ class Enabled_Cache:
          (ch.storage.build_cache // "worktrees" // wt).rmtree()
       ch.VERBOSE("deleted %d stale worktree metadatas" % len(wt_gits_deleted))
       wt_gits -= wt_gits_deleted
-      assert (wt_gits == wt_actuals)
+      # Validate that the pointers are in sync now.
+      if (wt_gits != wt_actuals):
+         ch.ERROR("found images -> cache links: %s" % " ".join(wt_actuals))
+         ch.ERROR("found cache -> images links: %s" % " ".join(wt_gits))
+         ch.FATAL("build cache is desynchronized, cannot proceed",
+                  ch.BUG_REPORT_PLZ)
       # If storage directory moved, repair all the paths.
       if (len(wt_gits) > 0):
          wt_dir_stored = fs.Path((   ch.storage.build_cache

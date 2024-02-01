@@ -1,8 +1,8 @@
 # Completion script for Charliecloud
 
-# This ShellCheck error pops up whenever we do “COMPREPLY=( $(compgen [...]) )”.
-# This seems to be standard for implementations of bash completion, and we didn't
-# like the suggested alternatives, so we disable it here.
+# SC2207 pops up whenever we do “COMPREPLY=( $(compgen [...]) )”. This seems to
+# be standard for implementations of bash completion, and we didn't like the
+# suggested alternatives, so we disable it here.
 # shellcheck disable=SC2207
 
 # SC2034 complains about modifying variables by reference in
@@ -102,6 +102,123 @@ if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
 fi
 
 
+## ch-convert ##
+
+# Valid formats
+_convert_fmts="ch-image dir docker podman squash tar"
+
+# Options for ch-convert that accept args
+_convert_arg_opts="-i --in-fmt -o --out-fmt -s --storage --tmp"
+
+# All options for ch-convert
+_convert_opts="-h --help -n --dry-run --no-clobber --no-xattrs -v --verbose
+               $_convert_arg_opts"
+
+
+# Completion function for ch-convert
+#
+_ch_convert_complete () {
+    local prev
+    local cur
+    local fmt_in
+    local fmt_out
+    local words
+    local opts_end=-1
+    local strg_dir
+    local extras
+    _get_comp_words_by_ref -n : cur prev words cword
+
+    strg_dir=$(_ch_find_storage "${words[@]::${#words[@]}-1}")
+    _ch_convert_parse "$strg_dir" "$cword" fmt_in fmt_out opts_end "${words[@]}"
+
+    # Populate debug log
+    _DEBUG "\$ ${words[*]}"
+    _DEBUG " storage: dir: $strg_dir"
+    _DEBUG " current: $cur"
+    _DEBUG " previous: $prev"
+    _DEBUG " input format: $fmt_in"
+    _DEBUG " output format: $fmt_out"
+    if [[ $opts_end != -1 ]]; then
+        _DEBUG " input image: ${words[$opts_end]}"
+    fi
+
+    # Command line options
+    if [[ ($opts_end == -1) || ($cword -lt $opts_end) ]]; then
+        _DEBUG "GOT HERE"
+        case "$prev" in
+        -i|--in-fmt)
+            COMPREPLY=( $(compgen -W "${_convert_fmts//$fmt_out/}" -- "$cur") )
+            return 0
+            ;;
+        -o|--out-fmt)
+            COMPREPLY=( $(compgen -W "${_convert_fmts//$fmt_in/}" -- "$cur") )
+            return 0
+            ;;
+        -s|--storage|--tmp)
+            # Avoid overzealous completion. E.g. if there’s only one subdir of the
+            # current dir, this command completes to that dir even if $cur is empty
+            # (i.e. the user hasn’t yet typed anything), which seems confusing for
+            # the user.
+            if [[ -n "$cur" ]]; then
+                compopt -o nospace
+                COMPREPLY=( $(compgen -d -S / -- "$cur") )
+            fi
+            return 0
+            ;;
+        *)
+            # Not an option that requires an arg.
+            COMPREPLY=( $(compgen -W "$_convert_opts" -- "$cur") )
+            ;;
+        esac
+    fi
+
+    if [[ ($opts_end == -1) ]]; then
+        # Input image not yet specified, complete potential input images.
+        case "$fmt_in" in
+        ch-image)
+            COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
+            __ltrim_colon_completions "$cur"
+            ;;
+        dir)
+            COMPREPLY+=( $(compgen -d -- "$cur") )
+            if [[ -n "$(compgen -d -- "$cur")" ]]; then
+                compopt -o nospace
+            fi
+            ;;
+        squash)
+            COMPREPLY+=( $(_compgen_filepaths -X "!*.sqfs" "$cur") )
+            _space_filepath -X "!*.sqfs" "$cur"
+            ;;
+        tar)
+            COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz" "$cur") )
+            _space_filepath -X "!*.tar.* !*tgz" "$cur"
+            ;;
+        docker|podman)
+            # We don’t attempt to complete in this case.
+            return 0
+            ;;
+        "")
+            # No in fmt specified, could be anything
+            COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
+            COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
+            _space_filepath -X "!*.tar.* !*tgz !*.sqfs" "$cur"
+            return 0
+            ;;
+        esac
+    elif [[ ($cword -gt $opts_end) ]]; then
+        # Input image has been specified and current word appears after it in
+        # the command line. Assume we’re completing output image. If output
+        # format COULD be dir, tar, or squash, complete valid directory paths.
+        if ! _is_subword "$fmt_out" "ch-image docker podman"; then
+            compopt -o nospace
+            COMPREPLY+=( $(compgen -d -S / -- "$cur") )
+        fi
+        return 0
+    fi
+
+    return 0
+}
+
 ## ch-image ##
 
 # Subcommands and options for ch-image
@@ -167,10 +284,8 @@ _ch_image_complete () {
         return 0
         ;;
     -s|--storage)
-        # Avoid overzealous completion. E.g. if there’s only one subdir of the
-        # current dir, this command completes to that dir even if $cur is empty
-        # (i.e. the user hasn’t yet typed anything), which seems confusing for
-        # the user.
+        # See comment about overzealous completion for the “--storage” option
+        # under “_ch_convert_complete”.
         if [[ -n "$cur" ]]; then
             compopt -o nospace
             COMPREPLY=( $(compgen -d -S / -- "$cur") )
@@ -186,13 +301,12 @@ _ch_image_complete () {
         # $cur should be an argument. Otherwise, default to CONTEXT or any
         # valid option (common or subcommand-specific).
         -f|--file)
-            compopt -o nospace
             COMPREPLY=( $(_compgen_filepaths "$cur") )
+            _space_filepath "$cur"
             return 0
             ;;
         -t)
-            # We can’t autocomplete a tag, so we're not even gonna allow
-            # autocomplete after this option.
+            # We can’t autocomplete a tag, so we're not even gonna try.
             COMPREPLY=()
             return 0
             ;;
@@ -382,7 +496,7 @@ _ch_run_complete () {
     if [[ -z $cli_image ]]; then
         # No image found in command line, complete dirs, tarfiles, and sqfs
         # archives
-        COMPREPLY=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
+        COMPREPLY=( $(_compgen_filepaths -X "!*.sqfs" "$cur") )
         # Complete images in storage. Note we don't use “ch-image list” here
         # because it can initialize an empty storage directory and we don't want
         # this script to have any such side effects.
@@ -390,13 +504,7 @@ _ch_run_complete () {
         __ltrim_colon_completions "$cur"
     fi
 
-    # Only use the “nospace” option when a valid path completion exists to avoid
-    # the inconvenience of unnecessarily making users type in their own spaces
-    # all the time.
-    if [[ -n "$(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur")" ]]; then
-        compopt -o nospace
-    fi
-
+    _space_filepath -X "!*.sqfs" "$cur"
     COMPREPLY+=( $(compgen -W "$_run_opts $extras" -- "$cur") )
     return 0
 }
@@ -404,6 +512,7 @@ _ch_run_complete () {
 
 ## Helper functions ##
 
+# Add debugging text to log file if CH_COMPLETION_DEBUG is specified.
 _DEBUG () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         echo "$@" >> /tmp/ch-completion.log
@@ -412,8 +521,99 @@ _DEBUG () {
 
 # Disable completion.
 ch-completion-disable () {
+    complete -r ch-convert
     complete -r ch-image
     complete -r ch-run
+}
+
+# Parser for ch-convert command line. Takes 6 arguments:
+#
+#   1.) A string representing the path to the storage directory.
+#
+#   2.) The current position (measured in words) of the cursor in the array
+#       representing the command line (index starting at 0).
+#
+#   3.) An out parameter (explanation below). If “_ch_convert_parse” is able to
+#       determine the format of the input image, it will pass that format back
+#       to the caller as a string using this out parameter. There are two ways
+#       that “_ch_convert_parse” can determine the input image format:
+#           i.) If “-i” or “--in-fmt” is specified and is followed by a valid
+#               image format, the out parameter will be set to a that format.
+#               E.g. “ch-image”.
+#           ii.) If the parser detects that an input image has been specified,
+#                it will try to determine the format of that image. This does
+#                not work for Docker or Podman images, and never will.
+#
+#   4.) Another out parameter. If the user has specified an output image format
+#       using “-o” or “--out-fmt”, the parser will use this out parameter to
+#       pass that format back to the caller.
+#
+#   5.) A string representing the expanded command line array (i.e.
+#       "${array[@]}").
+#
+# “Out parameter” here refers to a variable that is meant to pass information
+# from this function to its caller (here the “_ch_chonvert_complete” function).
+# Out parameters should be passed to a bash function as the unquoted names of
+# variables (e.g. “var” instead of “$var” or “"$var"”) within the caller’s
+# scope. Passing the variables to the function in this way allows it to change
+# their values, and for those changes to persist in the scope that called the
+# function (this is what makes them “out parameters”).
+#
+_ch_convert_parse () {
+    local images
+    images=$(_ch_list_images "$1")
+    local cword="$2"
+    local -n in_fmt=$3
+    local -n out_fmt=$4
+    local -n end_opts=$5
+    shift 5
+    local words=("$@")
+    local ct=1
+
+    while ((ct < ${#words[@]})); do
+        case ${words[$ct-1]} in
+        -i|--in-fmt)
+            if _is_subword "${words[$ct]}" "$_convert_fmts"; then
+                in_fmt="${words[$ct]}"
+            fi
+            ;;
+        -o|--out-fmt)
+            if _is_subword "${words[$ct]}" "$_convert_fmts"; then
+                out_fmt="${words[$ct]}"
+            fi
+            ;;
+        esac
+
+        if (! _is_subword "${words[$ct-1]}" "$_convert_arg_opts") \
+          &&  [[ ("${words[$ct]}" != "-"*) && ($ct -ne $cword) ]]; then
+            # First non-opt arg found, assuming it’s the input image
+            end_opts=$ct
+            local word
+            word="$(_sanitized_tilde_expand "${words[$ct]}")"
+            if [[ -z "$in_fmt" ]]; then
+                # If the parser hasn’t been told the input image format yet, try
+                # to figure it out from available information.
+                if _is_subword "${words[$ct]}" "$images"; then
+                    # Check for storage images first because this is what
+                    # ch-convert seems to default to in the case of a name
+                    # collision between different image formats (e.g. if “foo”
+                    # is an image in storage and “./foo/” is in the working
+                    # directory).
+                    in_fmt="ch-image"
+                elif [[ -d "$word" ]]; then
+                    in_fmt="dir"
+                elif [[ -f "$word" ]]; then
+                    if [[ ("${words[$ct]}" == *".tgz") || ("${words[$ct]}" == *".tar."*) ]]; then
+                        in_fmt="tar"
+                    elif [[ "${words[$ct]}" == *".sqfs" ]]; then
+                        in_fmt="squash"
+                    fi
+                fi
+            fi
+        fi
+
+        ((ct++))
+    done
 }
 
 # Figure out which storage directory to use (including cli-specified storage).
@@ -458,7 +658,7 @@ _ch_image_subcmd_get () {
     local ct=1
 
     while ((ct < ${#wrds[@]})); do
-        if [[ $ct != "$cword" ]]; then
+        if [[ $ct -ne $cword ]]; then
             for subcmd_i in $_image_subcommands; do
                 if [[ "${wrds[$ct]}" == "$subcmd_i" ]]; then
                     subcmd="$subcmd_i"
@@ -479,12 +679,13 @@ _ch_image_subcmd_get () {
 #   2.) The current position (measured in words) of the cursor in the array
 #       representing the command line (index starting at 0).
 #
-#   3.) An out parameter (explanation below). If “_ch_run_image_finder” finds
-#       the name of an image in storage (e.g. “alpine:latest”) or something that
-#       looks like an image path (i.e. a directory, tarball or file named like a
-#       squash archive) in the command line, the value of the variable will be
-#       updated to the image name or path. If neither are found, the function
-#       will not modify the value of this variable.
+#   3.) An out parameter (see explanation above “_ch_convert_parse”). If
+#       “_ch_run_image_finder” finds the name of an image in storage (e.g.
+#       “alpine:latest”) or something that looks like an image path (i.e. a
+#       directory, tarball or file named like a squash archive) in the command
+#       line, the value of the variable will be updated to the image name or
+#       path. If neither are found, the function will not modify the value of
+#       this variable.
 #
 #   4.) Another out parameter. If this function finds “--” in the current
 #       command line and it doesn't seem like the user is trying to complete
@@ -498,14 +699,6 @@ _ch_image_subcmd_get () {
 #
 #   5.) A string representing the expanded command line array (i.e.
 #       "${array[@]}").
-#
-# “Out parameter” here means a variable that is meant to pass information from
-# this function to its caller (the “_ch_run_complete” function). Out parameters
-# should be passed to “_ch_run_image_finder” as the unquoted names of variables
-# (e.g. “var” instead of “$var” or “"$var"”). Passing the variables to
-# “_ch_run_image_finder” in this way allows it to change their values, and for
-# those changes to persist in the scope that called the function (this is what
-# makes them “out parameters”).
 #
 _ch_run_image_finder () {
     # The essential purpose of this function is to try to find an image in the
@@ -576,7 +769,7 @@ _ch_undelete_list () {
 # to be excluded from file completion using the compgen option of the same
 # name (source: https://stackoverflow.com/a/40227233, see also:
 # https://devdocs.io/bash/programmable-completion-builtins#index-compgen)
-_compgen_filepaths() {
+_compgen_filepaths () {
     local filterpats=("")
     if [[ "$1" == "-X" && 1 -lt ${#@} ]]; then
         # Read a string into an array:
@@ -604,11 +797,47 @@ _compgen_filepaths() {
     do
         grep -v -F -f <(compgen -d -P ^ -S '$' -X "$pat" -- "$cur") \
             <(compgen -f -P ^ -S '$' -X "$pat" -- "$cur") |
-            sed -e 's/^\^//' -e 's/\$$/ /'
+            sed -e 's/^\^//' -e 's/\$$/ /' \
+                -e 's/ $//g'               # remove trailing space
     done
 
     # Directories with trailing slashes:
     compgen -d -S / -- "$cur"
+}
+
+# Return 0 if "$1" is a word in space-separated sequence of words "$2", e.g.
+#
+#   >>> _is_subword "foo" "foo bar baz"
+#   0
+#   >>> _is_subword "foo" "foobar baz"
+#   1
+#
+_is_subword () {
+    local subword=$1
+    shift 1
+    #shellcheck disable=SC2068
+    for word in $@; do
+        if [[ "$word" == "$subword" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+# Wrapper for some tricky logic that determines whether or not to add a space at
+# the end of a path completion. For the sake of convenience we want to avoid
+# adding a space at the end if the completion is a directory path, because we
+# don’t know if the user is looking for the completed directory or one of its
+# subpaths (we may be able to figure this out in some cases, but I’m not gonna
+# worry about that now). We *do* want to add a space at the end if the
+# completion is the path to a file.
+_space_filepath () {
+    local files
+    files="$(_compgen_filepaths "$1" "$2" "$3")"
+    if [[ (-n "$files") \
+         && (! -f "$(_sanitized_tilde_expand "$files")") ]]; then
+        compopt -o nospace
+    fi
 }
 
 # Expand tilde in quoted strings to the correct home path, if applicable, while
@@ -636,5 +865,6 @@ _sanitized_tilde_expand () {
     echo "$1"
 }
 
+complete -F _ch_convert_complete ch-convert
 complete -F _ch_image_complete ch-image
 complete -F _ch_run_complete ch-run

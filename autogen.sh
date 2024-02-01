@@ -1,7 +1,7 @@
 #!/bin/bash
 
 set -e
-lark_version=0.11.3
+lark_version=1.1.9
 
 while [[ "$#" -gt 0 ]]; do
     case $1 in
@@ -70,9 +70,14 @@ rm -Rf Makefile.in \
        bin/config.h.in \
        build-aux \
        configure
-# Remove Lark, but only if requested.
+# Remove Lark if requested or the installed version does not match.
+lark_found=$( shopt -s nullglob; \
+              echo lib/lark*.dist-info | sed -E 's/^.*-([0-9.]+)\..*$/\1/' )
+if [[ $lark_found && $lark_found != "$lark_version" ]]; then
+    lark_shovel=yes
+fi
 if [[ $lark_shovel ]]; then
-    rm -Rfv lib/lark lib/lark-stubs lib/lark*.dist-info lib/lark*.egg-info
+    rm -Rf lib/lark lib/lark-stubs lib/lark*.dist-info lib/lark*.egg-info
 fi
 
 # Create configure and friends.
@@ -91,6 +96,11 @@ if [[ -z $clean ]]; then
         # Also remove Lark’s installer stuff.
         rm lib/lark/__pyinstaller/*.py
         rmdir lib/lark/__pyinstaller
+        # Some versions of pip install this file, while others don’t [1]. We
+        # don’t care about it, so remove it to avoid Make errors if it’s
+        # listed in Makefile.am and then an older pip is used to build.
+        # [1]: https://github.com/pypa/pip/pull/8026
+        rm -f lib/lark-${lark_version}.dist-info/REQUESTED
     fi
     if [[    -e lib/lark \
           && ! -e lib/lark-${lark_version}.dist-info/INSTALLER ]]; then

@@ -46,8 +46,8 @@ How do I learn more?
   detail the motivation for Charliecloud and the technology upon which it is
   based: https://www.usenix.org/publications/login/fall2017/priedhorsky
 
-* A more technical resource is our Supercomputing 2017 paper:
-  https://dl.acm.org/citation.cfm?id=3126925
+* For technical papers about Charliecloud, refer to the *Technical
+  publications* section below.
 
 Who is responsible?
 -------------------
@@ -92,8 +92,8 @@ list above.
 
 We are friendly and welcoming of diversity on all dimensions.
 
-How do I cite Charliecloud?
----------------------------
+Technical publications
+----------------------
 
 If Charliecloud helped your research, or it was useful to you in any other
 context where bibliographic citations are appropriate, please cite the
@@ -105,6 +105,35 @@ following open-access paper:
 
 *Note:* This paper contains out-of-date number for the size of Charliecloud’s
 code. Please instead use the current number in the FAQ.
+
+Other publications:
+
+* We compare the performance of three HPC-specific container technologies
+  against bare metal, finding no concerns about performance degradation.
+
+    Alfred Torrez, Tim Randles, and Reid Priedhorsky. “HPC container runtimes
+    have minimal or no performance impact”, 2019. In *Proc. CANOPIE HPC
+    Workshop @ SC*. DOI: `10.1109/CANOPIE-HPC49598.2019.00010
+    <https://ieeexplore.ieee.org/document/8950978>`_.
+
+* A demonstration of how low-privilege containers solve increasing demand for
+  software flexibility.
+
+    Reid Priedhorsky, R. Shane Canon, Timothy Randles, and Andrew J. Younge.
+    “Minimizing privilege for building HPC containers”, 2021. In *Proc.
+    Supercomputing*. DOI: `10.6084/m9.figshare.14396099
+    <https://doi.org/10.6084/m9.figshare.14396099>`_.
+
+* Charliecloud’s build cache performs competitively with the standard
+  many-layered union filesystem approach and has structural advantages
+  including a better diff format, lower cache overhead, and better file
+  de-duplication.
+
+    Reid Priedhorsky, Jordan Ogas, Claude H. (Rusty) Davis IV, Z. Noah
+    Hounshel, Ashlyn Lee, Benjamin Stormer, and R. Shane Goff. "Charliecloud’s
+    layer-free, Git-based container build cache", 2023. In *Proc.
+    Supercomputing*. DOI: `10.1145/3624062.3624585
+    <https://doi.org/10.1145/3624062.3624585>`_.
 
 Copyright and license
 ---------------------
@@ -134,4 +163,4 @@ should be clearly marked, so as not to confuse it with the version available
 from LANL.
 
 
-..  LocalWords:  USENIX's CNA Meisam
+..  LocalWords:  USENIX's CNA Meisam figshare

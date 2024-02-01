@@ -75,7 +75,7 @@ _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 _WSH: /[ \t]/+                   // sequence of horizontal whitespace
 _LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
 _WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
-_NEWLINES: ( _WSH? "\n" )+       // sequence of newlines
+_NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
@@ -120,7 +120,7 @@ env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref ( _WS from_alias )? _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
 
 label: "LABEL"i _WS ( label_space | label_equalses ) _NEWLINES
@@ -155,7 +155,7 @@ OPTION_VALUE: /[^= \t\n]+/
 OPTION_VAR: /[a-z]+/
 
 image_ref: IMAGE_REF
-IMAGE_REF: /[A-Za-z0-9$:._\/-]+/
+IMAGE_REF: /[${}A-Za-z0-9:._\/-]+/  // variable substitution chars ${} added
 """ + GRAMMAR_COMMON
 
 # Grammar for image references.
@@ -180,6 +180,9 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 
 # Top-level directories we create if not present.
 STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
+
+# Width of token name when truncating text to fit on screen.
+WIDTH_TOKEN_MAX = 10
 
 
 ## Classes ##
@@ -558,6 +561,7 @@ class Image:
             # Correct absolute paths.
             if (m.name.is_absolute()):
                m.name = m.name.relative_to("/")
+               abs_ct += 1
             # Record top-level directory.
             if (len(m.name.parts) > 1 or m.isdir()):
                top_dirs.add(m.name.first)
@@ -862,6 +866,29 @@ fields:
 
 
 class Tree(lark.tree.Tree):
+
+   def _pretty(self, level, istr):
+      # Re-implement with less space optimization and more debugging info.
+      # See: https://github.com/lark-parser/lark/blob/262ab71/lark/tree.py#L78
+      pfx = "%4d %3d%s" % (self.meta.line, self.meta.column, istr*(level+1))
+      yield (pfx + self._pretty_label() + "\n")
+      for c in self.children:
+         if (isinstance(c, Tree)):
+            yield from c._pretty(level + 1, istr)
+         else:
+            text = c
+            type_ = c.type
+            width = len(pfx) + len(istr) + len(text) + len(type_) + 2
+            over = width - ch.term_width
+            if (len(type_) > WIDTH_TOKEN_MAX):
+               # trim token (unconditionally for consistent alignment)
+               token_rm = len(type_) - WIDTH_TOKEN_MAX
+               type_ = type_[:-token_rm]
+               over -= token_rm
+            if (over > 0):
+               # trim text (if needed)
+               text = text[:-(over + 3)] + "..."
+            yield "%s%s %s %s\n" % (pfx, istr, type_, text)
 
    def child(self, cname):
       """Locate a descendant subtree named cname using breadth-first search

@@ -1,4 +1,4 @@
-# ch-test-scope: skip  # issue #1779
+# ch-test-scope: full
 FROM almalinux:8
 
 # Note: Spack is a bit of an odd duck testing wise. Because it’s a package

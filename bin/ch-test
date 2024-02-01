@@ -363,6 +363,7 @@ scope_to_digit () {
             ;;
         *)
             fatal "scope '$scope' invalid"
+            ;;
     esac
 }
 
@@ -516,9 +517,12 @@ test_make_check_image () {
     builder_exclude=$(cat "$img" | grep -F 'ch-test-builder-exclude: ' \
                                  | sed 's/.*: //' | awk '{print $1}')
 
-    img_scope_int=$(scope_to_digit "$(cat "$img" | grep -F 'ch-test-scope' \
-                                                 | sed 's/.*: //' \
-                                                 | awk '{print $1}')")
+    img_scope_str=$(cat "$img" | grep -F 'ch-test-scope' \
+                               | sed 's/.*: //' \
+                               | awk '{print $1}')
+    [[ -n $img_scope_str ]] || fatal "no scope: $img"
+    img_scope_int=$(scope_to_digit "$img_scope_str")
+    [[ -n $img_scope_int ]] || exit 1  # set -e not working, why?
 
     sudo_required=$(cat "$img" | grep -F 'ch-test-need-sudo')
 
@@ -787,7 +791,7 @@ if [[ ! -f ${ch_base}/VERSION ]]; then
 else
     # build dir
     CHTEST_INSTALLED=
-    if [[ -d ${ch_base}/.git ]]; then
+    if [[ -e ${ch_base}/.git ]]; then
         CHTEST_GITWD=yes
     else
         CHTEST_GITWD=
