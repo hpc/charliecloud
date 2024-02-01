@@ -93,10 +93,6 @@ print_fi_dest=
 print_lib_dest=
 no_ldconfig=
 
-debug_indent () {
-    DEBUG '    %s\n' "$1"
-}
-
 ensure_nonempty () {
     [ "$2" ] || FATAL -- "$1 must not be empty"
 }
@@ -128,7 +124,7 @@ enqueue_file () {
     old_ifs="$IFS"
     IFS="$newline"
     d="${dest:-$2}"
-    DEBUG "enqueue file(s)"
+    VERBOSE "enqueue file(s)"
     for f in $1; do
         case $f in
             *:*)
@@ -139,16 +135,16 @@ enqueue_file () {
             case $f in
             *libfabric.so)
                 if ldd "$f" | grep libcxi > /dev/null 2>&1; then
-                    debug_indent "cray libfabric: ${f}"
+                    DEBUG "cray libfabric: ${f}"
                     cray_fi_found=yes
                     host_libfabric=$f
                 else
-                    debug_indent "libfabric: ${f}"
+                    DEBUG "libfabric: ${f}"
                     lib_found=yes
                 fi
                 ;;
             *-fi.so)
-                debug_indent "libfabric shared provider: ${f}"
+                DEBUG "libfabric shared provider: ${f}"
                 fi_prov_found=yes
                 # Providers, like Cray's libgnix-fi.so, link against paths that
                 # need to be bind-mounted at run-time. Some of these paths need
@@ -165,7 +161,7 @@ enqueue_file () {
                 done
                 ;;
             *)
-                debug_indent "shared library: ${f}"
+                DEBUG "shared library: ${f}"
                 lib_found=yes
                 ;;
             esac
@@ -297,10 +293,10 @@ fi
 if [ -n "$cray_fi_found" ]; then
     # There is no Slingshot provider CXI; to leverage slingshot we need to
     # replace the image libfabric.so with Cray's.
-    DEBUG "searching image for inferred libfabric destiation"
+    VERBOSE "searching image for inferred libfabric destiation"
     img_libfabric=$(find "$image" -name  "libfabric.so")
     [ -n "$img_libfabric" ] || FATAL "libfabric.so not found in $image"
-    debug_indent "found $img_libfabric"
+    DEBUG "found $img_libfabric"
     if [ "$(echo "$img_libfabric" | wc -l)" -ne 1 ]; then
         warn 'found more than one libfabric.so'
     fi
@@ -309,7 +305,7 @@ if [ -n "$cray_fi_found" ]; then
 
     # Since cray's libfabric isn't a standard provider, to use slingshot we must
     # also add any missing linked libraries from the host.
-    DEBUG "adding cray libfabric libraries"
+    VERBOSE "adding cray libfabric libraries"
     ldds=$(ldd "$host_libfabric" 2>&1 | grep lib | awk '{print $3}' | sort -u)
     for l in $ldds; do
         # Do not replace any libraries found in the image, experimentation has
@@ -317,7 +313,7 @@ if [ -n "$cray_fi_found" ]; then
         # both MPICH and OpenMPI examples work with this conservative approach.
         file_found=$(find "${image}" -name "$(basename "$l")")
         if [ -n "$file_found" ]; then
-            debug_indent "skipping $l"
+            DEBUG "skipping $l"
             continue
         fi
         enqueue_file "$l"
@@ -333,7 +329,7 @@ if [ -n "$lib_found" ]; then
     # We want to put the libraries in the first directory that ldconfig
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
-    DEBUG "asking ldconfig for inferred shared library destination"
+    VERBOSE "asking ldconfig for inferred shared library destination"
     # "ldconfig -Nv" gives some pointless warnings on stderr even if
     # successful; we don't want to show those to users. However, we don't want
     # to simply pipe stderr to /dev/null because this hides real errors. Thus,
@@ -344,7 +340,7 @@ if [ -n "$lib_found" ]; then
                 3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
     [ -n "$lib_dest" ] || FATAL 'empty path from ldconfig'
     [ -z "${lib_dest%%/*}" ] || FATAL "bad path from ldconfig: ${lib_dest}"
-    DEBUG "inferred shared library destination: ${image}/${lib_dest}"
+    VERBOSE "inferred shared library destination: ${image}/${lib_dest}"
 fi
 
 if [ -n "$fi_prov_found" ]; then
@@ -359,7 +355,7 @@ if [ -n "$fi_prov_found" ]; then
     # 'libfabric' directory at the path where libfabric.so is found. If it does
     # not exist, create it. Warn if FI_PROVIDER_PATH or FI_PROVIDER is found
     # in the the image's /ch/environment file.
-    DEBUG "searching ${image} for libfabric shared provider destination"
+    VERBOSE "searching ${image} for libfabric shared provider destination"
     ch_env_p=$(grep -E '^FI_PROVIDER_PATH=' "${image}/ch/environment") \
              || true # avoid -e exit
     ch_env_p=${ch_env_p##*=}
@@ -368,11 +364,11 @@ if [ -n "$fi_prov_found" ]; then
     fi
     img_libfabric=$(find "$image" -name 'libfabric.so')
     img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
-    debug_indent "found: ${image}${img_libfabric_path}"
+    DEBUG "found: ${image}${img_libfabric_path}"
     fi_prov_dest=$(dirname "/${img_libfabric_path}")
     fi_prov_dest="${fi_prov_dest}/libfabric"
     queue_mkdir "$fi_prov_dest"
-    DEBUG "inferred provider destination: $fi_prov_dest"
+    VERBOSE "inferred provider destination: $fi_prov_dest"
 fi
 
 if [ -n "$print_lib_dest" ]; then
@@ -426,38 +422,38 @@ fi
 
 [ "$inject_files" ] || FATAL "empty file list"
 
-DEBUG "injecting into image: ${image}"
+VERBOSE "injecting into image: ${image}"
 
 old_ifs="$IFS"
 IFS="$newline"
 
 # Process unlink list.
 for u in $inject_unlinks; do
-    debug_indent "rm -f ${image}${u}"
+    DEBUG "deleting: ${image}${u}"
     rm -f "${image}${u}"
 done
 
 # Process bind-mount destination targets.
 for d in $inject_mkdirs; do
-    debug_indent "mkdir -p ${image}${d}"
+    DEBUG "mkdir: ${image}${d}"
     mkdir -p "${image}${d}"
 done
 
 # Process ldconfig targets.
 if [ "$fi_prov_found" ] || [ "$cray_fi_found" ]; then
     if [ ! -f "${image}/etc/ld.so.conf" ]; then
-        debug_indent "touch ${image}/etc/ld.so.conf"
+        DEBUG "creating empty ld.so.conf"
         touch "${image}/etc/ld.so.conf"
     fi
     if ! grep -F 'include ld.so.conf.d/*.conf' "${image}/etc/ld.so.conf" > /dev/null 2>&1; then
-        debug_indent "echo 'include ld.so.conf.d/*.conf' >> ${image}/etc/ld.so.conf"
+        DEBUG "ld.so.conf: adding 'include ld.so.conf.d/*.conf'"
         echo 'include ld.so.conf.d/*.conf' >> "${image}/etc/ld.so.conf"
     fi
     # Prepare image ch-ofi.conf.
     printf '' > "${image}/etc/ld.so.conf.d/ch-ofi.conf"
     # add ofi dso provider ld library dirs.
     for c in $ld_conf; do
-        debug_indent "echo '$c' >> ${image}/etc/ld.so.conf.d/ch-ofi.conf"
+        DEBUG "ld.so.conf: adding %{c}"
         echo "$c" >> "${image}/etc/ld.so.conf.d/ch-ofi.conf"
     done
 fi
@@ -486,7 +482,7 @@ for file in $inject_files; do
         esac
         infer=" (inferred)"
     fi
-    debug_indent "${f} -> ${d}${infer}"
+    VERBOSE "${f} -> ${d}${infer}"
     [ "$d" ] || FATAL "no destination for: ${f}"
     [ -z "${d%%/*}" ] || FATAL "not an absolute path: ${d}"
     [ -d "${image}${d}" ] || FATAL "not a directory: ${image}${d}"
@@ -504,11 +500,10 @@ IFS="$old_ifs"
 
 if       [ -z "$no_ldconfig" ] \
     && { [ "$lib_found" ] || [ "$fi_prov_found" ] || [ "$cray_fi_found" ] ;} then
-    DEBUG "running ldconfig"
-    debug_indent "${ch_bin}/ch-run -w $image -- /sbin/ldconfig"
+    VERBOSE "running ldconfig"
     "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null || FATAL 'ldconfig error'
     if [ -n "$fi_prov_found" ] || [ -n "$cray_fi_found" ]; then
-        DEBUG "validating ldconfig cache"
+        VERBOSE "validating ldconfig cache"
         for file in $inject_files; do
             f="$(basename "${file%%:*}")"
             f=$("${ch_bin}/ch-run" "$image" -- find / \
@@ -525,6 +520,6 @@ if       [ -z "$no_ldconfig" ] \
         done
     fi
 else
-    DEBUG "not running ldconfig"
+    VERBOSE "not running ldconfig"
 fi
 echo 'done'
