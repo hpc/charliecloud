@@ -140,7 +140,7 @@ pass: ${pass_ct}
 fail: ${fail_ct}
 EOF
 
-if [[ $fail_ct > 0 ]]; then
+if [[ $fail_ct -gt 0 ]]; then
     echo
     fatal_msg 'one or more old storage test suites failed'
     exit 1
