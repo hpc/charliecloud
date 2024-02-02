@@ -62,8 +62,8 @@ Destination within image:
 
 Options:
 
-  --print-fi       print inferred destination for libfabric provider(s)
   --print-cray-fi  print inferred destination for libfabric replacement
+  --print-fi       print inferred destination for libfabric provider(s)
   --print-lib      print inferred destination for shared libraries
   --no-ldconfig    don’t run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
