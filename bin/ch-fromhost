@@ -330,13 +330,18 @@ if [ -n "$lib_found" ]; then
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
     VERBOSE "asking ldconfig for inferred shared library destination"
-    # "ldconfig -Nv" gives some pointless warnings on stderr even if
-    # successful; we don't want to show those to users. However, we don't want
-    # to simply pipe stderr to /dev/null because this hides real errors. Thus,
-    # use the following abomination to pipe stdout and stderr to *separate
-    # grep commands*. See: https://stackoverflow.com/a/31151808
+    # "ldconfig -Nv" gives pointless warnings on stderr even if successful; we
+    # don't want to show those to users (unless -vv or higher). However, we
+    # don't want to simply pipe stderr to /dev/null because this hides real
+    # errors. Thus, use the following abomination to pipe stdout and stderr to
+    # *separate grep commands*. See: https://stackoverflow.com/a/31151808
+    if [ "$log_level" -lt 2 ]; then  # VERBOSE or lower
+        stderr_filter='(^|dynamic linker, ignoring|given more than once|No such file or directory)$'
+    else                             # DEBUG or higher
+        stderr_filter=weird_al_yankovic_will_not_appear_in_ldconfig_output
+    fi
     lib_dest=$( { "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv \
-                  2>&1 1>&3 3>&- | grep -Ev '(^|dynamic linker, ignoring|given more than once)$' ; } \
+                  2>&1 1>&3 3>&- | grep -Ev "$stderr_filter" ; } \
                 3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
     [ -n "$lib_dest" ] || FATAL 'empty path from ldconfig'
     [ -z "${lib_dest%%/*}" ] || FATAL "bad path from ldconfig: ${lib_dest}"
