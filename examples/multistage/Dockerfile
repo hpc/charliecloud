@@ -16,9 +16,18 @@ RUN dnf install -y \
 WORKDIR /usr/local/src
 
 # GNU Hello. Install using DESTDIR to make copying below easier.
-RUN wget -nv https://ftpmirror.gnu.org/gnu/hello/hello-2.10.tar.gz
-RUN tar xf hello-2.10.tar.gz \
- && cd hello-2.10 \
+#
+# This downloads from a specific mirror [1] that smelled reliable because both
+# ftp.gnu.org itself and the mirror alias ftpmirror.gnu.org are unreliable.
+# Specifically, ftpmirror.gnu.org frequently ends up a tripadvisor.com, which
+# is frequently HTTP 500.
+#
+# [1]: https://www.gnu.org/prep/ftp.html
+ARG gnu_mirror=mirrors.kernel.org/gnu
+ARG version=2.12.1
+RUN wget -nv https://${gnu_mirror}/hello/hello-${version}.tar.gz
+RUN tar xf hello-${version}.tar.gz \
+ && cd hello-${version} \
  && ./configure \
  && make -j $(getconf _NPROCESSORS_ONLN) \
  && make install DESTDIR=/hello
