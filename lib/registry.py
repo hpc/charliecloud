@@ -1,10 +1,10 @@
 import getpass
+import hashlib
 import io
 import os
 import re
 import types
 import urllib
-import hashlib
 
 import charliecloud as ch
 
