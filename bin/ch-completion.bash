@@ -9,6 +9,13 @@
 # _ch_run_parse. Disable it.
 # shellcheck disable=SC2034
 
+# Permissions for this file:
+#
+# This file needs to be sourced, not executed. Because of this, the execute bit
+# for the file shoud remain unset for all permission groups.
+#
+# (sourcing versus executing: https://superuser.com/a/176788)
+
 # Resources for understanding this script:
 #
 #   * Everything bash:
@@ -117,10 +124,10 @@ fi
 _ch_completion_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
 _ch_completion_version="$("$_ch_completion_dir"/../misc/version)"
 
-# Debugging log
-if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
-    printf "completion log\n\n" >> /tmp/ch-completion.log
-fi
+_ch_completion_log="/tmp/ch-completion.log"
+
+# Record file being sourced.
+_DEBUG "ch-completion.bash sourced\n"
 
 _ch_completable_executables="ch-image ch-run ch-convert"
 
@@ -227,6 +234,7 @@ _ch_convert_complete () {
             COMPREPLY+=( $(_compgen_filepaths -X "!*.tar.* !*tgz !*.sqfs" "$cur") )
             COMPREPLY+=( $(compgen -W "$(_ch_list_images "$strg_dir")" -- "$cur") )
             _space_filepath -X "!*.tar.* !*tgz !*.sqfs" "$cur"
+            __ltrim_colon_completions "$cur"
             return 0
             ;;
         esac
@@ -537,10 +545,22 @@ _ch_run_complete () {
 
 ## Helper functions ##
 
+_ch_completion_help="Usage: ch-completion [ OPTION ]
+
+Utility function for Charliecloud tab completion.
+
+    --disable     disable tab completion for all Charliecloud executables
+    --help        show this help message
+    --version     check tab completion script version
+    --version-ok  check version compatibility between tab completion and Charliecloud
+                  executables
+"
+
 # Add debugging text to log file if CH_COMPLETION_DEBUG is specified.
 _DEBUG () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
-        echo "$@" >> /tmp/ch-completion.log
+        #echo "$@" >> "$_ch_completion_log"
+        printf "$@\n" >> "$_ch_completion_log"
     fi
 }
 
@@ -561,8 +581,12 @@ ch-completion () {
                 complete -r ch-image
                 complete -r ch-run
                 ;;
+            --help)
+                printf "%s" "$_ch_completion_help" 1>&2
+                return 0
+                ;;
             --version)
-                printf "%s\n" "$_ch_completion_version"
+                printf "%s\n" "$_ch_completion_version" 1>&2
                 ;;
             --version-ok)
                 if _version_ok_ch_completion "ch-image"; then
@@ -583,18 +607,16 @@ ch-completion () {
     done
 }
 
-_completion_opts="--disable --version --version-ok"
+_completion_opts="--disable --help --version --version-ok"
 
 # Yes, the untility function needs completion too...
 #
 _ch_completion_complete () {
     local cur
-    local prev
-    local words
-    _get_comp_words_by_ref -n : cur prev words
+    _get_comp_words_by_ref -n : cur
 
-    COMPREPLY=( $(compgen -W "$_completion_opts" -- $cur) )
-
+    COMPREPLY=( $(compgen -W "$_completion_opts" -- "$cur") )
+    return 0
 }
 
 # Parser for ch-convert command line. Takes 6 arguments:

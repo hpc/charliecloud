@@ -49,8 +49,8 @@ def check_man():
    os.chdir(CH_BASE + "/bin")
 
    execs = { f for f in os.listdir(".")
-             if (os.path.isfile(f) and os.stat(f).st_mode & 0o111) }
-   helps = { x: help_get(x) for x in execs }
+             if (os.path.isfile(f) and (os.stat(f).st_mode & 0o111 or f == "ch-completion.bash")) }
+   helps = { x: "ch-completion" if x == "ch-completion.bash" else help_get(x) for x in execs }
 
    os.chdir(CH_BASE + "/doc")
 
