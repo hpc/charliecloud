@@ -1,11 +1,11 @@
---- charliecloud-0.32/configure    2023-03-24 18:49:49.000000000 -0400
-+++ charliecloud-0.32.patch/configure    2023-04-03 09:55:31.756259159 -0400
-@@ -5880,7 +5880,7 @@
- else
+--- a/configure	2024-02-09 11:26:45.647046362 -0500
++++ b/configure	2024-02-09 11:30:18.613833446 -0500
+@@ -7137,7 +7137,7 @@
+ else $as_nop
    rpath_libsquashfuse=
  fi
 -       CH_RUN_LIBS="-lsquashfuse_ll -lfuse3 $rpath_libsquashfuse $CH_RUN_LIBS"
 +       CH_RUN_LIBS="-lsquashfuse_ll -lfuse3 $CH_RUN_LIBS"
- else
+ else $as_nop
    have_libsquashfuse=no
  fi

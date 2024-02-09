@@ -16,13 +16,12 @@ Summary:       Lightweight user-defined software stacks for high-performance com
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires: gcc rsync bash
-Requires:      squashfuse squashfs-tools findutils
+BuildRequires: gcc rsync bash findutils
 Patch0:        el7-pkgdir.patch
-%if 0%{?fedora} > 36
-BuildRequires: fuse3 fuse3-libs fuse3-devel squashfuse-devel
-Requires:      fuse3-libs squashfuse
-Patch1:        no-rpath.patch
+%if 0%{?fedora} > 36 || 0%{?rhel} > 8
+Requires:      fuse3 squashfuse
+BuildRequires: fuse3-libs fuse3-devel squashfuse-devel
+Patch1:        no-squashfuse-rpath.patch
 %endif
 
 %description
@@ -39,18 +38,16 @@ For more information: https://hpc.github.io/charliecloud
 %package builder
 Summary:       Charliecloud container image building tools
 License:       ASL 2.0 and MIT
-BuildArch:     noarch
 BuildRequires: python3-devel
 BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-requests
-Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 0.11.3
-%if 0%{?fedora} > 34 || 0%{?rhel} > 8
-Requires:        git >= 2.28.1
+%if 1%{?el7}
+Requires:      git >= 2.28.1
 %endif
-%{?el8:Requires: git >= 2.28.1}
-%{?el9:Requires: git >= 2.28.1}
+Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
+%{?el7:BuildArch: noarch}
 
 %description builder
 This package provides ch-image, Charliecloud's completely unprivileged container
@@ -81,12 +78,10 @@ Test fixtures for %{name}.
 %setup -q
 
 %if 0%{?el7}
-# el7 mock builds use "%patchN".
 %patch0 -p1
 %endif
 
 %if 0%{?fedora} > 36
-# fedora/rhel use "%patch N".
 %patch 1 -p1
 %endif
 
@@ -97,6 +92,9 @@ CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
+%if 0%{?fedora} > 34 || 0%{?rhel} > 8
+           --with-libsquashfusei=/usr \
+%endif
 %if 0%{?el7}
            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
@@ -186,5 +184,5 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_mandir}/man1/ch-test.1*
 
 %changelog
-* Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
-- Add new charliecloud package.
+-* Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
+-- Add new charliecloud package.
