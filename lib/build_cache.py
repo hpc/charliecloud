@@ -907,7 +907,7 @@ class Enabled_Cache:
             i += 1
          text = "\n".join(lines)
          text = re.sub(r"^(D|M [0-7]+ [0-9a-f]+) \.(git|weirdal_)ignore$",
-                       "#\g<0>", text, flags=re.MULTILINE)
+                       r"#\g<0>", text, flags=re.MULTILINE)
          #fs.Path("/tmp/new").file_write(text)
          self.git(["fast-import", "--force"], input=text)
          self.git(["reflog", "expire", "--all", "--expire=now"])

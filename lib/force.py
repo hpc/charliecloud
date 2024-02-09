@@ -184,7 +184,7 @@ FAKEROOT_DEFAULT_CONFIGS = {
      "match": ("/etc/redhat-release", r"release 7\."),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -e; "
-                "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
+                r"if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
                 "yum install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-7.noarch.rpm; "
                 "yum install -y fakeroot; "
                 "yum remove -y epel-release; "
@@ -199,7 +199,7 @@ FAKEROOT_DEFAULT_CONFIGS = {
      "match":  ("/etc/redhat-release", r"release (?![0-7]\.)"),
      "init": [ ("command -v fakeroot > /dev/null",
                 "set -e; "
-                "if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
+                r"if ! grep -Eq '\[epel\]' /etc/yum.conf /etc/yum.repos.d/*; then "
                 # Macro %rhel from *-release* RPM, e.g. redhat-release-server
                 # or centos-linux-release; thus reliable.
                 "dnf install -y https://dl.fedoraproject.org/pub/epel/epel-release-latest-$(rpm -E %rhel).noarch.rpm; "
