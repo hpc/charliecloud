@@ -43,11 +43,10 @@ BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-requests
-%if 1%{?el7}
+%if 1%{?el7} && 1%{?rhel} < 8
 Requires:      git >= 2.28.1
 %endif
 Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
-%{?el7:BuildArch: noarch}
 
 %description builder
 This package provides ch-image, Charliecloud's completely unprivileged container
@@ -65,14 +64,16 @@ Requires:      python%{python3_pkgversion}-sphinx_rtd_theme
 %description doc
 Html and man page documentation for %{name}.
 
+%if 1%{el7}
 %package   test
 Summary:   Charliecloud test suite
 License:   ASL 2.0
-Requires:  %{name} %{name}-builder /usr/bin/bats
+Requires:  %{name} %{name}-builder bats
 Obsoletes: %{name}-test < %{version}-%{release}
 
 %description test
 Test fixtures for %{name}.
+%endif
 
 %prep
 %setup -q
@@ -178,10 +179,12 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_pkgdocdir}/html
 %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
+%if 1%{el7}
 %files test
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}
 %{_mandir}/man1/ch-test.1*
+%endif
 
 %changelog
 * Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@

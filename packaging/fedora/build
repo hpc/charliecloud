@@ -85,10 +85,6 @@ rpmbuild root:      %(rpmbuild)s
                       '--', 'rpmbuild', '--eval', '%{?dist}')
    rpms_dist = rpms_dist.split('.')[-1]
 
-   # FIXME: el8 doesn’t have bats; skip for now.
-   if (rpms_dist == 'el8'):
-        PACKAGES.remove('charliecloud-test')
-
    # Get a clean Git checkout of the desired version. We do this by making a
    # temporary clone so as not to mess up the WD.
    git_tmp = rpm_sources + '/charliecloud'
@@ -175,7 +171,7 @@ rpmbuild root:      %(rpmbuild)s
    rpms_arch      = "%s/%s" % (rpms_src, ARCH)
    rpms_noarch    = "%s/noarch" % rpms_src
    rpms = {'charliecloud':           [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
-           'charliecloud-builder':   [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
+           'charliecloud-builder':   [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
            'charliecloud-debuginfo': [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)],
            'charliecloud-doc':       [rpms_noarch, '%s.noarch.rpm' % rpms_dist],
            'charliecloud-test':      [rpms_arch,   '%s.%s.rpm'     % (rpms_dist, ARCH)]}
@@ -189,6 +185,10 @@ rpmbuild root:      %(rpmbuild)s
                      "-b", "%s:/usr/local/src" % args.rpmbuild,
                      args.image, "--"]
 
+   # 0.36+ no longer support bats 0.4.0; remove the test package from epel7
+   if (rpms_dist == 'el7'):
+      PACKAGES.remove("charliecloud-test")
+
    # Build RPMs.
    cmd(container, "rpmbuild", rpmbuild_args, "--version")
    cmd(container, "rpmbuild", rpmbuild_args, "-ba", "%s/%s" % (rpm_specs, spec))
@@ -198,9 +198,9 @@ rpmbuild root:      %(rpmbuild)s
    # Install RPMs.
    if (args.install):
       print("# uninstalling (most errors can be ignored)")
-      cmd_ok(container, "rpm", "--erase", PACKAGES)
-      print("# installing")
       for p in PACKAGES:
+         cmd_ok(container, "rpm", "--erase", "--nodeps", p)
+         print("# installing")
          rpm_path = rpms[p][0]
          rpm_ext  = rpms[p][-1]
          file = '%s/%s-%s.%s' % (rpm_path, p, rpm_vr, rpm_ext)

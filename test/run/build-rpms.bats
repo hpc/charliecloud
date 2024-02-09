@@ -33,7 +33,6 @@ setup () {
     [[ $output = *'charliecloud-builder'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
     [[ $output = *'charliecloud-doc'* ]]
-    [[ $output = *'charliecloud-test-'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud"
     echo "$output"
     [[ $status -eq 0 ]]
@@ -50,12 +49,6 @@ setup () {
     [[ $status -eq 0 ]]
     [[ $output = *'/usr/lib/debug/usr/bin/ch-run.debug'* ]]
     [[ $output = *'/usr/lib/debug/usr/libexec/charliecloud/test/sotest/lib/libsotest.so.1.0.debug'* ]]
-    run ch-run "$img" -- rpm -ql "charliecloud-test"
-    echo "$output"
-    [[ $status -eq 0 ]]
-    [[ $output = *'/usr/bin/ch-test'* ]]
-    [[ $output = *'/usr/libexec/charliecloud/test/Build.centos7xz'* ]]
-    [[ $output = *'/usr/libexec/charliecloud/test/sotest/lib/libsotest.so.1.0'* ]]
     run ch-run "$img" -- rpm -ql "charliecloud-doc"
     echo "$output"
     [[ $output = *'/usr/share/doc/charliecloud-'*'/html'* ]]
@@ -77,7 +70,6 @@ setup () {
     [[ $output = *'charliecloud-'* ]]
     [[ $output = *'charliecloud-debuginfo-'* ]]
     [[ $output = *'charliecloud-doc'* ]]
-    [[ $output = *'charliecloud-test-'* ]]
 
     # All gone?
     run ch-run "$img" -- rpm -qa "charliecloud*"
