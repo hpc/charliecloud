@@ -10,16 +10,20 @@
 %{?el7:%global __python %__python3}
 
 Name:          charliecloud
-Version:       0.26
-Release:       1%{?dist}
+Version:       0.32
+Release:       2%{?dist}
 Summary:       Lightweight user-defined software stacks for high-performance computing
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
 BuildRequires: gcc rsync bash
-Requires:      squashfuse squashfs-tools
-Patch1:        el7-pkgdir.patch
-Patch2:        printf.patch
+Requires:      squashfuse squashfs-tools findutils
+Patch0:        el7-pkgdir.patch
+%if 0%{?fedora} > 36 || 0%{?rhel} > 8
+BuildRequires: fuse3 fuse3-libs fuse3-devel squashfuse-devel
+Requires:      fuse3-libs squashfuse
+Patch1:        no-rpath.patch
+%endif
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -35,15 +39,18 @@ For more information: https://hpc.github.io/charliecloud
 %package builder
 Summary:       Charliecloud container image building tools
 License:       ASL 2.0 and MIT
-BuildArch:     noarch
 BuildRequires: python3-devel
-BuildRequires: python%{python3_pkgversion}-lark-parser
 BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
-Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
 Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 0.11.3
+%if 0%{?fedora} > 34 || 0%{?rhel} > 8
+Requires:        git >= 2.28.1
+%endif
+%{?el7:BuildArch: noarch}
+%{?el8:Requires: git >= 2.28.1}
+%{?el9:Requires: git >= 2.28.1}
 
 %description builder
 This package provides ch-image, Charliecloud's completely unprivileged container
@@ -74,10 +81,12 @@ Test fixtures for %{name}.
 %setup -q
 
 %if 0%{?el7}
-%patch1 -p1
+%patch0 -p1
 %endif
 
-%patch2 -p1
+%if 0%{?fedora} > 36
+%patch 1 -p1
+%endif
 
 %build
 # Use old inlining behavior, see:
@@ -148,14 +157,18 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-image
 %{_mandir}/man1/ch-image.1*
 %{_prefix}/lib/%{name}/build.py
+%{_prefix}/lib/%{name}/build_cache.py
 %{_prefix}/lib/%{name}/charliecloud.py
-%{_prefix}/lib/%{name}/fakeroot.py
+%{_prefix}/lib/%{name}/filesystem.py
+%{_prefix}/lib/%{name}/force.py
+%{_prefix}/lib/%{name}/image.py
 %{_prefix}/lib/%{name}/lark
 %{_prefix}/lib/%{name}/lark-1.1.8.dist-info
 %{_prefix}/lib/%{name}/lark-stubs
 %{_prefix}/lib/%{name}/misc.py
 %{_prefix}/lib/%{name}/pull.py
 %{_prefix}/lib/%{name}/push.py
+%{_prefix}/lib/%{name}/registry.py
 %{_prefix}/lib/%{name}/version.py
 %{?el7:%{_prefix}/lib/%{name}/__pycache__}
 
@@ -171,7 +184,24 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_mandir}/man1/ch-test.1*
 
 %changelog
-* Mon Jan 24 2022 Jordan Ogas <jogas@lanl.gov 0.26-1
+* Mon Apr 03 2023 Jordan Ogas <jogas@lanl.gov> 0.32-2
+- fix macro conditionals
+
+* Fri Mar 31 2023 Jordan Ogas <jogas@lanl.gov> 0.32-1
+- edit el7 patch: update ch-test path
+- add patch: prevent rpath of standard path
+- update builder package files
+- add dependency: findutils
+- add conditional dependencies: fuse3, squashfuse-devel, & git
+- new version 0.32
+
+* Wed Jan 18 2023 Fedora Release Engineering <releng@fedoraproject.org> - 0.26-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
+
+* Wed Jul 20 2022 Fedora Release Engineering <releng@fedoraproject.org> - 0.26-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_37_Mass_Rebuild
+
+* Mon Jan 24 2022 Jordan Ogas <jogas@lanl.gov> 0.26-1
 - add printf patch for 32-bit
 - add ch-convert script
 - new version 0.26
@@ -179,7 +209,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 * Wed Jan 19 2022 Fedora Release Engineering <releng@fedoraproject.org> - 0.25-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
 
-* Mon Sep 20 2021 Jordan Ogas <jogas@lanl.gov 0.25-1
+* Mon Sep 20 2021 Jordan Ogas <jogas@lanl.gov> 0.25-1
 - bundle python lark parser
 - new version
 
@@ -355,3 +385,4 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 
 * Thu Mar 14 2019  <jogas@lanl.gov> 0.9.8-1
 - Add initial Fedora/EPEL package
+

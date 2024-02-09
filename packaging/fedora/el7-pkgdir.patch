@@ -1,7 +1,6 @@
-diff -ru charliecloud/bin/ch-test charliecloud-lib/bin/ch-test
---- charliecloud/bin/ch-test	2020-04-07 12:19:37.054609706 -0600
-+++ charliecloud-lib/bin/ch-test	2020-04-15 16:36:55.128831767 -0600
-@@ -662,7 +662,7 @@
+--- charliecloud-0.32/bin/ch-test    2023-03-22 17:36:46.000000000 -0400
++++ charliecloud-0.32.patch/bin/ch-test    2023-04-03 10:51:53.677205658 -0400
+@@ -767,7 +767,7 @@
      CHTEST_INSTALLED=yes
      CHTEST_GITWD=
      CHTEST_DIR=${ch_base}/libexec/charliecloud/test
