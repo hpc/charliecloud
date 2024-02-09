@@ -184,5 +184,5 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_mandir}/man1/ch-test.1*
 
 %changelog
--* Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
--- Add new charliecloud package.
+* Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@
+- Add new charliecloud package.
