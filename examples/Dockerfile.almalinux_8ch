@@ -44,8 +44,6 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 rpm-build \
                 rpmlint \
                 rsync \
-                squashfs-tools \
-                squashfuse \
                 wget \
                 which \
  && dnf clean all

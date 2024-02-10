@@ -17,7 +17,9 @@ License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
 BuildRequires: gcc rsync bash findutils
+%if 0%{?el7}
 Patch0:        el7-pkgdir.patch
+%endif
 %if 0%{?fedora} > 36 || 0%{?rhel} > 8
 Requires:      fuse3 squashfuse
 BuildRequires: fuse3-libs fuse3-devel squashfuse-devel
@@ -43,8 +45,11 @@ BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-requests
-%if 1%{?el7} && 1%{?rhel} < 8
-Requires:      git >= 2.28.1
+# For some reason this expressio is not respected in centos_7ch; thus, we
+# just specify any git.
+%if 1%{?el7}
+Requires:      git
+#Requires:      git >= 2.28.1
 %endif
 Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
 
@@ -64,7 +69,7 @@ Requires:      python%{python3_pkgversion}-sphinx_rtd_theme
 %description doc
 Html and man page documentation for %{name}.
 
-%if 1%{el7}
+%if 1%{?el7}
 %package   test
 Summary:   Charliecloud test suite
 License:   ASL 2.0
@@ -82,7 +87,7 @@ Test fixtures for %{name}.
 %patch0 -p1
 %endif
 
-%if 0%{?fedora} > 36
+%if 0%{?fedora} > 36 || 0%{?rhel} > 8
 %patch 1 -p1
 %endif
 
@@ -93,7 +98,7 @@ CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
-%if 0%{?fedora} > 34 || 0%{?rhel} > 8
+%if 0%{?fedora} > 34 || 0%{?rhel} > 7
            --with-libsquashfusei=/usr \
 %endif
 %if 0%{?el7}
@@ -179,7 +184,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_pkgdocdir}/html
 %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
-%if 1%{el7}
+%if 1%{?el7}
 %files test
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}
