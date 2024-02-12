@@ -20,7 +20,7 @@ BuildRequires: gcc rsync bash findutils
 %if 0%{?el7}
 Patch0:        el7-pkgdir.patch
 %endif
-%if 0%{?fedora} > 36 || 0%{?rhel} > 8
+%if 0%{!?el7} && 0%{!?el8}
 Requires:      fuse3 squashfuse
 BuildRequires: fuse3-libs fuse3-devel squashfuse-devel
 Patch1:        no-squashfuse-rpath.patch
@@ -45,12 +45,13 @@ BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-requests
-# For some reason this expressio is not respected in centos_7ch; thus, we
-# just specify any git.
-%if 1%{?el7}
+
+%if 0%{?el7}
 Requires:      git
-#Requires:      git >= 2.28.1
+%else
+Requires:      git >= 2.28.1
 %endif
+
 Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
 
 %description builder
@@ -69,7 +70,6 @@ Requires:      python%{python3_pkgversion}-sphinx_rtd_theme
 %description doc
 Html and man page documentation for %{name}.
 
-%if 1%{?el7}
 %package   test
 Summary:   Charliecloud test suite
 License:   ASL 2.0
@@ -78,7 +78,6 @@ Obsoletes: %{name}-test < %{version}-%{release}
 
 %description test
 Test fixtures for %{name}.
-%endif
 
 %prep
 %setup -q
@@ -87,7 +86,7 @@ Test fixtures for %{name}.
 %patch0 -p1
 %endif
 
-%if 0%{?fedora} > 36 || 0%{?rhel} > 8
+%if 0%{!?el7}
 %patch 1 -p1
 %endif
 
@@ -95,15 +94,16 @@ Test fixtures for %{name}.
 # Use old inlining behavior, see:
 # https://github.com/hpc/charliecloud/issues/735
 CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
+# FIXME: use --disable test when https://github.com/hpc/charliecloud/issues/1836
+# is resolved.
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
-%if 0%{?fedora} > 34 || 0%{?rhel} > 7
            --with-libsquashfusei=/usr \
-%endif
 %if 0%{?el7}
            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
+           --with-libsquashfusei=/usr \
            --with-sphinx-build=%{_bindir}/sphinx-build
 %endif
 
@@ -139,6 +139,13 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 # Remove bundled license and readme (prefer license and doc macros).
 %{__rm} -f %{buildroot}%{_pkgdocdir}/LICENSE
 %{__rm} -f %{buildroot}%{_pkgdocdir}/README.rst
+
+# FIXME: unnecessary after #1836 is resolved
+%if 0%{?el7}
+%{__rm} -f  %{buildroot}%{_bindir}/ch-test
+%{__rm} -rf %{buildroot}%{_libexecdir}/%{name}
+%{__rm} -f  %{buildroot}%{_mandir}/man1/ch-test.1*
+%endif
 
 %files
 %license LICENSE
@@ -184,8 +191,9 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_pkgdocdir}/html
 %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
-%if 1%{?el7}
 %files test
+%if 0%{?el7}
+%else
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}
 %{_mandir}/man1/ch-test.1*

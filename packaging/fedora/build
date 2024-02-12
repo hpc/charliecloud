@@ -204,7 +204,7 @@ rpmbuild root:      %(rpmbuild)s
          rpm_path = rpms[p][0]
          rpm_ext  = rpms[p][-1]
          file = '%s/%s-%s.%s' % (rpm_path, p, rpm_vr, rpm_ext)
-         cmd(container, "rpm", "--install", file)
+         cmd(container, "rpm", "--install", "--force", file)
       cmd(container, "rpm", "-qa", "charliecloud*")
 
    # Lint RPMs and spec file. Last so problems that don’t result in program

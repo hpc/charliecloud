@@ -1,6 +1,6 @@
---- charliecloud.spec	2024-02-09 17:33:04.983698614 -0700
-+++ upstream.spec	2024-02-09 14:32:41.000000000 -0700
-@@ -10,16 +10,14 @@
+--- packaging/fedora/charliecloud.spec	2024-02-12 11:46:23.034342881 -0700
++++ packaging/fedora/upstream.spec	2024-02-09 14:32:41.000000000 -0700
+@@ -10,17 +10,15 @@
  %{?el7:%global __python %__python3}
  
  Name:          charliecloud
@@ -16,30 +16,29 @@
 -%if 0%{?el7}
  Patch0:        el7-pkgdir.patch
 -%endif
- %if 0%{?fedora} > 36 || 0%{?rhel} > 8
+-%if 0%{!?el7} && 0%{!?el8}
++%if 0%{?fedora} > 36 || 0%{?rhel} > 8
  Requires:      fuse3 squashfuse
  BuildRequires: fuse3-libs fuse3-devel squashfuse-devel
-@@ -45,13 +43,11 @@
+ Patch1:        no-squashfuse-rpath.patch
+@@ -45,14 +43,11 @@
  Requires:      %{name}
  Requires:      python3
  Requires:      python%{python3_pkgversion}-requests
--# For some reason this expressio is not respected in centos_7ch; thus, we
--# just specify any git.
- %if 1%{?el7}
+-
+-%if 0%{?el7}
 -Requires:      git
--#Requires:      git >= 2.28.1
-+Requires:      git >= 2.28.1
+-%else
++%if 1%{?el7}
+ Requires:      git >= 2.28.1
  %endif
+-
  Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
 +%{?el7:BuildArch: noarch}
  
  %description builder
  This package provides ch-image, Charliecloud's completely unprivileged container
-@@ -69,16 +65,14 @@
- %description doc
- Html and man page documentation for %{name}.
- 
--%if 1%{?el7}
+@@ -73,7 +68,7 @@
  %package   test
  Summary:   Charliecloud test suite
  License:   ASL 2.0
@@ -48,35 +47,54 @@
  Obsoletes: %{name}-test < %{version}-%{release}
  
  %description test
- Test fixtures for %{name}.
--%endif
- 
- %prep
- %setup -q
-@@ -87,7 +81,7 @@
+@@ -86,7 +81,7 @@
  %patch0 -p1
  %endif
  
--%if 0%{?fedora} > 36 || 0%{?rhel} > 8
+-%if 0%{!?el7}
 +%if 0%{?fedora} > 36
  %patch 1 -p1
  %endif
  
-@@ -98,7 +92,7 @@
+@@ -94,16 +89,15 @@
+ # Use old inlining behavior, see:
+ # https://github.com/hpc/charliecloud/issues/735
+ CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
+-# FIXME: use --disable test when https://github.com/hpc/charliecloud/issues/1836
+-# is resolved.
  %configure --docdir=%{_pkgdocdir} \
             --libdir=%{_prefix}/lib \
             --with-python=/usr/bin/python3 \
--%if 0%{?fedora} > 34 || 0%{?rhel} > 7
 +%if 0%{?fedora} > 34 || 0%{?rhel} > 8
             --with-libsquashfusei=/usr \
- %endif
++%endif
  %if 0%{?el7}
-@@ -183,13 +177,225 @@
- %{_pkgdocdir}/html
+            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
+ %else
+-           --with-libsquashfusei=/usr \
+            --with-sphinx-build=%{_bindir}/sphinx-build
+ %endif
+ 
+@@ -140,13 +134,6 @@
+ %{__rm} -f %{buildroot}%{_pkgdocdir}/LICENSE
+ %{__rm} -f %{buildroot}%{_pkgdocdir}/README.rst
+ 
+-# FIXME: unnecessary after #1836 is resolved
+-%if 0%{?el7}
+-%{__rm} -f  %{buildroot}%{_bindir}/ch-test
+-%{__rm} -rf %{buildroot}%{_libexecdir}/%{name}
+-%{__rm} -f  %{buildroot}%{_mandir}/man1/ch-test.1*
+-%endif
+-
+ %files
+ %license LICENSE
+ %doc README.rst %{?el7:README.EL7}
+@@ -191,13 +178,224 @@
  %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
  
--%if 1%{?el7}
  %files test
+-%if 0%{?el7}
+-%else
  %{_bindir}/ch-test
  %{_libexecdir}/%{name}
  %{_mandir}/man1/ch-test.1*
