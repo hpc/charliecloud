@@ -21,8 +21,7 @@ Description
 
 :code:`ch-completion.bash` implements tab completion for the charliecloud
 command line. This feature is experimental, but should be stable enough for
-general use. Currently, tab completion is only available for Bash users, though
-support for other shells (e.g. zsh and tcsh) is a planned feature. Tab
+general use. Currently, tab completion is only available for Bash users. Tab
 completion has been implemented for the following executables:
 
 * :code:`ch-image`

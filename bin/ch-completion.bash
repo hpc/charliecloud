@@ -90,9 +90,6 @@
 #   the first.
 #
 
-# FIXME: Evaluate every instance of pattern substitution and figure out if you want
-#        “/” or “//” (i.e. first instance versus *every* instance).
-
 
 ## Setup ##
 
