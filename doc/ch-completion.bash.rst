@@ -5,17 +5,25 @@
 
 .. only:: not man
 
-   Charliecloud command line completion script.
+   Tab completion for the Charliecloud command line.
+
+
+Synopsis
+========
+
+::
+
+    $ source ch-completion.bash
 
 
 Description
 ===========
 
-:code:`ch-completion.bash` provides tab completion for the charliecloud command
-line. This feature is experimental, but should be stable enough for general use.
-Currently, tab completion is only available for Bash users, though support for
-other shells (e.g. zsh and tcsh) is a planned feature. Tab completion has been
-implemented for the following executables:
+:code:`ch-completion.bash` implements tab completion for the charliecloud
+command line. This feature is experimental, but should be stable enough for
+general use. Currently, tab completion is only available for Bash users, though
+support for other shells (e.g. zsh and tcsh) is a planned feature. Tab
+completion has been implemented for the following executables:
 
 * :code:`ch-image`
 * :code:`ch-run`
@@ -35,6 +43,7 @@ Tab completion can be disabled by specifying the :code:`--disable` option of the
 
     $ ch-completion --disable
 
+
 Dependencies
 ============
 
@@ -53,12 +62,15 @@ feature has the following additional dependencies:
 
 Utility funciton for :code:`ch-completion.bash`.
 
+
 Synopsis
 --------
 
+
 ::
-    
+
     $ ch-completion [ OPTIONS ]
+
 
 Description
 -----------
@@ -78,6 +90,7 @@ utilities related to tab completion.
 :code:`--version-ok`
     Verify that tab completion version is consistent with that of
     :code:`ch-image`.
+
 
 Debugging
 =========

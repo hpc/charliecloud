@@ -127,7 +127,9 @@ _ch_completion_version="$("$_ch_completion_dir"/../misc/version)"
 _ch_completion_log="/tmp/ch-completion.log"
 
 # Record file being sourced.
-_DEBUG "ch-completion.bash sourced\n"
+if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
+    printf "ch-completion.bash sourced\n\n" >> "$_ch_completion_log"
+fi
 
 _ch_completable_executables="ch-image ch-run ch-convert"
 
@@ -560,7 +562,7 @@ Utility function for Charliecloud tab completion.
 _DEBUG () {
     if [[ -n "$CH_COMPLETION_DEBUG" ]]; then
         #echo "$@" >> "$_ch_completion_log"
-        printf "$@\n" >> "$_ch_completion_log"
+        printf "%s\n" "$@" >> "$_ch_completion_log"
     fi
 }
 

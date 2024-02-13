@@ -11,6 +11,7 @@ See also
 --------
 
 ch-checkns(1),
+ch-completion.bash(7),
 ch-convert(1),
 ch-fromhost(1),
 ch-image(1),

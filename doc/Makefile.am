@@ -49,7 +49,7 @@ if ENABLE_MAN
 man_MANS = \
 man/charliecloud.7 \
 man/ch-checkns.1 \
-man/ch-completion.bash.1 \
+man/ch-completion.bash.7 \
 man/ch-convert.1 \
 man/ch-fromhost.1 \
 man/ch-image.1 \
