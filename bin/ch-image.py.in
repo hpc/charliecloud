@@ -1,17 +1,19 @@
 #!%PYTHON_SHEBANG%
 
 import argparse
+import ast
+import collections.abc
 import inspect
 import os.path
 import sys
 
 ch_lib = os.path.dirname(os.path.abspath(__file__)) + "/../lib"
 sys.path.insert(0, ch_lib)
-import build_cache as bu
 import charliecloud as ch
 import build
-import misc
+import build_cache as bu
 import filesystem as fs
+import misc
 import pull
 import push
 
@@ -107,6 +109,9 @@ def main():
            [["--auth"],
             { "action": "store_true",
               "help": "authenticated registry access; implied by push" }],
+           [["--break"],
+            { "metavar": "MODULE:LINE",
+              "help": "break into PDB before LINE of MODULE" }],
            [["--cache-large"],
             { "metavar": "SIZE",
               "type": lambda s: ch.positive(s) * 2**20,  # internal unit: bytes
@@ -328,11 +333,82 @@ def main():
    ch.exit(0)
 
 
+## Functions ##
+
+def breakpoint_inject(module_name, line_no):
+   # Inject a PDB breakpoint into the module named module_name before the
+   # statement on line line_no. See: https://stackoverflow.com/a/41858422
+
+   class PDB_Injector(ast.NodeTransformer):
+      def __init__(self, *args, **kwargs):
+         self.inject_ct = 0
+         return super().__init__(*args, **kwargs)
+      def generic_visit(self, parent):
+         # Operate on parent of target statement because we need to inject the
+         # new code into the parent’s body (i.e., as siblings of the target
+         # statement).
+         if (    self.inject_ct == 0
+             and hasattr(parent, "body")
+             and isinstance(parent.body, collections.abc.Sequence)):
+            for (i, child) in enumerate(parent.body):
+               if (    isinstance(child, ast.stmt)
+                   and hasattr(child, "lineno")
+                   and child.lineno == line_no):
+                  ch.WARNING(  "--break: injecting PDB breakpoint: %s:%d (%s)"
+                             % (module_name, line_no, type(child).__name__))
+                  parent.body[i:i] = inject_tree.body
+                  self.inject_ct += 1
+                  break
+         super().generic_visit(parent)
+         return parent
+
+   if (module_name not in sys.modules):
+      ch.FATAL("--break: no module named %s" % module_name)
+   module = sys.modules[module_name]
+   src_text = inspect.getsource(module)
+   src_path = inspect.getsourcefile(module)
+   module_tree = ast.parse(src_text, "%s <re-parsed>" % src_path)
+   inject_tree = ast.parse("import pdb; pdb.set_trace()", "Weird Al Yankovic")
+
+   ijor = PDB_Injector()
+   ijor.visit(module_tree)
+   if (ijor.inject_ct < 1):
+      ch.FATAL("--break: no statement found at %s:%d" % (module_name, line_no))
+   assert (ijor.inject_ct == 1)
+
+   ast.fix_missing_locations(module_tree)
+   exec(compile(module_tree, "%s <re-compiled>" % src_path, "exec"),
+        module.__dict__)
+   # Importantly, tag module with this *after* it’s re-executed.
+   module.__dict__["breakpoint_reexecuted"] = "%s:%d" % (module_name, line_no)
+
+
 ## Bootstrap ##
 
 if (__name__ == "__main__"):
    try:
-      main()
+      # We can’t set thest module globals normally (i.e., module-level code at
+      # the top of this file) because the module might be executed twice.
+      if ("breakpoint_considered" not in globals()):
+         global breakpoint_considered
+         breakpoint_considered = True
+         # A few lines of bespoke CLI parsing so that we can inject
+         # breakpoints into the CLI parsing code itself.
+         for (opt, arg) in zip(sys.argv[1:], sys.argv[2:] + [None]):
+            (opt, _, arg_eq) = opt.partition("=")
+            if (opt == "--break"):
+               if (arg_eq != ""):
+                  arg = arg_eq
+               try:
+                  (module_name, line_no) = arg.split(":")
+                  line_no = int(line_no)
+               except ValueError:
+                  ch.FATAL("--break: can’t parse MODULE:LIST: %s" % arg)
+               breakpoint_inject(module_name, line_no)
+      # If we injected into __main__, we already ran main() when re-executing
+      # this module inside breakpoint_inject().
+      if ("breakpoint_reexecuted" not in globals()):
+         main()
    except ch.Fatal_Error as x:
       ch.warnings_dump()
       ch.ERROR(*x.args, **x.kwargs)
