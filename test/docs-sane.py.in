@@ -27,7 +27,7 @@ import os
 import subprocess
 import sys
 
-# FIXME: Redundant with “man_pages” in conf.py??
+# Dict of files to be documented. Executables are added in “main()”.
 man_targets = {"ch-completion.bash": {"help": "Tab completion for the Charliecloud command line.",
                                       "sec":  7}}
 
@@ -52,41 +52,36 @@ def check_man():
    global man_targets
 
    os.chdir(CH_BASE + "/bin")
-   # FIXME: change this ffs
-   execs = man_targets.keys()
    for f in os.listdir("."):
       if (os.path.isfile(f) and os.stat(f).st_mode & 0o111):
          man_targets[f] = {"help": help_get(f), "sec":  1}
 
-   # FIXME: Just use the dict instead of constructing a separate list
-   helps = { x: man_targets[x]["help"] for x in man_targets.keys() }
-
    os.chdir(CH_BASE + "/doc")
 
    man_rsts = set(glob.glob("ch-*.rst"))
-   man_rsts_expected = { i + ".rst" for i in execs }
+   man_rsts_expected = { i + ".rst" for i in man_targets }
    lose_lots("unexpected .rst", man_rsts - man_rsts_expected)
    lose_lots("missing .rst",    man_rsts_expected - man_rsts)
 
    man_synopses = dict()
-   for man in execs:
+   for man in man_targets:
       m = re.search(r"^\s+(.+)$\n\n\n^Synopsis", open(man + ".rst").read(),
                     re.MULTILINE)
       if (m is not None):
          man_synopses[man] = m[1]
 
-   lose_lots("missing synopsis", execs - set(man_synopses))
+   lose_lots("missing synopsis", set(man_targets) - set(man_synopses))
 
    lose_lots("bad synopsis in man page",
-             {     "%s: %s (expected: %s)" % (p, s, helps[p])
+             {     "%s: %s (expected: %s)" % (p, man_targets[p]["help"])
                for (p, s) in man_synopses.items()
-               if (    p in helps
-                   and summary_unrest(s) != helps[p])
+               if (    p in man_targets
+                   and summary_unrest(s) != man_targets[p]["help"])
                    and "deprecated" not in s.lower() })
 
    sees = { m[0] for m in re.finditer(r"ch-[a-z0-9-.]+\([1-8]\)",
                                       open("charliecloud.rst").read()) }
-   sees_expected = { i + "(%d)" % (man_targets[i]["sec"]) for i in execs }
+   sees_expected = { i + "(%d)" % (man_targets[i]["sec"]) for i in man_targets }
    lose_lots("unexpected see-also in charliecloud.rst", sees - sees_expected)
    lose_lots("missing see-also in charliecloud.rst",    sees_expected - sees)
 
@@ -100,16 +95,16 @@ def check_man():
       if (name != "charliecloud"):
          if (section != man_targets[name]["sec"]):
             lose("conf.py: bad section: %s: %s != %d" % (name, section, man_targets[name]["sec"]))
-         if (name not in helps):
+         if (name not in man_targets):
             lose("conf.py: unexpected man page: %s" % name)
-         elif (desc + "." != helps[name] and "deprecated" not in desc.lower()):
+         elif (desc + "." != man_targets[name]["help"] and "deprecated" not in desc.lower()):
             lose("conf.py: bad summary: %s: %s" % (name, desc))
 
    os.chdir(CH_BASE + "/doc/man")
 
    mans = set(glob.glob("*.[1-8]"))
    # FIXME: Store as str instead of storing as in and converting to str?
-   mans_expected = { i + "." + str(man_targets[i]["sec"]) for i in man_targets}
+   mans_expected = { i + ".%d" % (man_targets[i]["sec"]) for i in man_targets}
    lose_lots("unexpected man", mans - mans_expected - {"charliecloud.7"})
    lose_lots("missing man",    mans_expected - mans)
 
@@ -123,7 +118,7 @@ except NameError:
          code = compile(fp.read(), path, "exec")
          exec(code, globals_)
 
-def help_get(prog, is_file=True):
+def help_get(prog):
    try:
       out = subprocess.check_output(["./" + prog, "--help"],
                                     universal_newlines=True,
