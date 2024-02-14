@@ -19,26 +19,21 @@ Synopsis
 Description
 ===========
 
-:code:`ch-completion.bash` implements tab completion for the charliecloud
-command line. This feature is experimental, but should be stable enough for
-general use. Currently, tab completion is only available for Bash users. Tab
-completion has been implemented for the following executables:
+:code:`ch-completion.bash` provides tab completion for the charliecloud
+command line. Currently, tab completion is available for Bash users for the
+executables :code:`ch-image`, :code:`ch-run`, and :code:`ch-convert`.
 
-* :code:`ch-image`
-* :code:`ch-run`
-* :code:`ch-convert`
-
-Tab completion can be enabled by sourcing :code:`ch-completion.bash` with the
-Charliecloud :code:`bin` directory in your :code:`PATH`:
-
-::
+By default, :code:`ch-completion.bash` is installed in :code:`$PREFIX/bin`
+alongside the Charliecloud executables. Assuming this is in your
+:code:`$PATH`, enable tab completion by sourcing it::
 
     $ source ch-completion.bash
 
-Tab completion can be disabled by specifying the :code:`--disable` option of the
-:code:`ch-completion` function (see :ref:`ch-completion_func`):
+(Note that distributions usually organized completion differently. See your
+distro’s docs if you installed a package.)
 
-::
+Disable completion with the utility function :code:`ch-completion` added to
+your environment when the above is sourced::
 
     $ ch-completion --disable
 
@@ -46,12 +41,14 @@ Tab completion can be disabled by specifying the :code:`--disable` option of the
 Dependencies
 ============
 
-As noted above, tab completion is currently only available for Bash users. The
-feature has the following additional dependencies:
+Tab completion has these additional dependencies:
 
 * Bash ≥ 4.3.0
-* :code:`bash-completion`
 
+* :code:`bash-completion` library (`GitHub
+  <https://github.com/scop/bash-completion>`_, or it probably comes with your
+  distribution, `e.g.
+  <https://packages.debian.org/bullseye/bash-completion>`_)
 
 
 .. _ch-completion_func:
@@ -59,12 +56,10 @@ feature has the following additional dependencies:
 :code:`ch-completion`
 =====================
 
-Utility funciton for :code:`ch-completion.bash`.
-
+Utility function for :code:`ch-completion.bash`.
 
 Synopsis
 --------
-
 
 ::
 
@@ -74,17 +69,18 @@ Synopsis
 Description
 -----------
 
-:code:`ch-completion` is a function available to users that provides various
-utilities related to tab completion.
+:code:`ch-completion` is a function to manage Charliecloud’s tab completion.
+It is added to the environment when completion is sourced. The option(s) given
+specify what to do:
 
 :code:`--disable`
-    Disable tab completion for all executables.
+    Disable tab completion for all Charliecloud executables.
 
 :code:`--help`
     Print help message.
 
 :code:`--version`
-    Print version of tab completion that's currently enabled.
+    Print version of tab completion that’s currently enabled.
 
 :code:`--version-ok`
     Verify that tab completion version is consistent with that of
@@ -94,7 +90,9 @@ utilities related to tab completion.
 Debugging
 =========
 
-:code:`ch-completion.bash` can optionally write debugging info to the log file
-:code:`/tmp/ch-completion.log`. This feature can be enabled by setting the
-environment variable :code:`CH_COMPLETION_DEBUG`. Note that this is primarily
-intended for developers.
+Tab completion can write debugging logs to :code:`/tmp/ch-completion.log`.
+Enable this by setting the environment variable :code:`CH_COMPLETION_DEBUG`.
+(This is primarily intended for developers.)
+
+
+..  LocalWords:  func
