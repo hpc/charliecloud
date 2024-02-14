@@ -2,6 +2,8 @@
 
 #define _GNU_SOURCE
 #include <ctype.h>
+#include <dirent.h>
+#include <fcntl.h>
 #include <fnmatch.h>
 #include <libgen.h>
 #include <stdarg.h>
@@ -41,9 +43,22 @@ char *host_tmp = NULL;
 /* Username of invoking users. Set during command line processing. */
 char *username = NULL;
 
+/* List of warnings to be re-printed on exit. This is a buffer of shared memory
+   allocated by mmap(2), structured as a sequence of null-terminated character
+   strings. Warnings that do not fit in this buffer will be lost, though we
+   allocate enough memory that this is unlikely. See “string_append()” for
+   more details. */
+char *warnings;
+
+/* Current byte offset from start of “warnings” buffer. This gives the address
+   where the next appended string will start. This means that the null
+   terminator of the previous string is warnings_offset - 1. */
+size_t warnings_offset = 0;
+
 
 /** Function prototypes (private) **/
 
+void mkdir_overmount(const char *path, const char *scratch);
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap);
 
@@ -127,6 +142,37 @@ char *argv_to_string(char **argv)
    return s;
 }
 
+/* Iterate through buffer “buf” of size “s” consisting of null-terminated
+   strings and return the number of strings in it. Key assumptions:
+
+      1. The buffer has been initialized to zero, i.e. all bytes that have not
+         been explicitly set are null.
+
+      2. All strings have been appended to the buffer in full without
+         truncation, including their null terminator.
+
+      3. The buffer contains no empty strings.
+
+   These assumptions are consistent with the construction of the “warnings”
+   shared memory buffer, which is the main justification for this function. Note
+   that under these assumptions, the final byte in the buffer is guaranteed to
+   be null. */
+int buf_strings_count(char *buf, size_t size)
+{
+   int count = 0;
+
+   if (buf[0] != '\0') {
+      for (size_t i = 0; i < size; i++)
+         if (buf[i] == '\0') {                     // found string terminator
+            count++;
+            if (i < size - 1 && buf[i+1] == '\0')  // two term. in a row; done
+               break;
+         }
+   }
+
+   return count;
+}
+
 /* Return true if buffer buf of length size is all zeros, false otherwise. */
 bool buf_zero_p(void *buf, size_t size)
 {
@@ -148,10 +194,52 @@ char *cat(const char *a, const char *b)
    return ret;
 }
 
-/* Read the file listing environment variables at path, and return a
-   corresponding list of struct env_var. If there is a problem reading the
-   file, or with any individual variable, exit with error. */
-struct env_var *env_file_read(const char *path)
+/* Like scandir(3), but (1) filter excludes “.” and “..”, (2) results are not
+   sorted, and (3) cannot fail (exits with an error instead). */
+int dir_ls(const char *path, struct dirent ***namelist)
+{
+   int entry_ct;
+
+   entry_ct = scandir(path, namelist, dir_ls_filter, NULL);
+   Tf (entry_ct >= 0, "can't scan dir", path);
+   return entry_ct;
+}
+
+/* Return the number of entries in directory path, not including “.” and “..”;
+   i.e., the empty directory returns 0 despite them. */
+int dir_ls_count(const char *path)
+{
+   int ct;
+   struct dirent **namelist;
+
+   ct = dir_ls(path, &namelist);
+   for (size_t i = 0; i < ct; i++)
+      free(namelist[i]);
+   free(namelist);
+
+   return ct;
+}
+
+/* scandir(3) filter that excludes “.” and “..”: Return 0 if e->d_name is one
+   of those strings, else 1. */
+int dir_ls_filter(const struct dirent *e)
+{
+   return !(!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."));
+}
+
+/* Read the file listing environment variables at path, with records separated
+   by delim, and return a corresponding list of struct env_var. Reads the
+   entire file one time without seeking. If there is a problem reading the
+   file, or with any individual variable, exit with error.
+
+   The purpose of delim is to allow both newline- and zero-delimited files. We
+   did consider using a heuristic to choose the file’s delimiter, but there
+   seemed to be two problems. First, every heuristic we considered had flaws.
+   Second, use of a heuristic would require reading the file twice or seeking.
+   We don’t want to demand non-seekable files (e.g., pipes), and if we read
+   the file into a buffer before parsing, we’d need our own getdelim(3). See
+   issue #1124 for further discussion. */
+struct env_var *env_file_read(const char *path, int delim)
 {
    struct env_var *vars;
    FILE *fp;
@@ -164,7 +252,7 @@ struct env_var *env_file_read(const char *path)
       char *line = NULL;
       size_t line_len = 0;  // don't care but required by getline(3)
       errno = 0;
-      if (-1 == getline(&line, &line_len, fp)) {
+      if (-1 == getdelim(&line, &line_len, delim, fp)) {
          if (errno == 0)    // EOF
             break;
          else
@@ -354,13 +442,80 @@ void log_ids(const char *func, int line)
    }
 }
 
+void test_logging(bool fail) {
+   TRACE("trace");
+   DEBUG("debug");
+   VERBOSE("verbose");
+   INFO("info");
+   WARNING("warning");
+   if (fail)
+      FATAL("the program failed inexplicably (\"log-fail\" specified)");
+   exit(0);
+}
+
+/* Create the directory at path, despite its parent not allowing write access,
+   by overmounting a new, writeable directory atop it. We preserve the old
+   contents by bind-mounting the old directory as a subdirectory, then setting
+   up a symlink ranch.
+
+   The new directory lives initially in scratch, which must not be used for
+   any other purpose. No cleanup is done here, so a disposable tmpfs is best.
+   If anything goes wrong, exit with an error message. */
+void mkdir_overmount(const char *path, const char *scratch)
+{
+   char *parent, *path2, *over, *path_dst;
+   char *orig_dir = ".orig";  // resisted calling this .weirdal
+   int entry_ct;
+   struct dirent **entries;
+
+   VERBOSE("making writeable via symlink ranch: %s", path);
+   path2 = strdup(path);
+   parent = dirname(path2);
+   T_ (1 <= asprintf(&over, "%s/%d", scratch, dir_ls_count(scratch) + 1));
+   path_dst = path_join(over, orig_dir);
+
+   // bind-mounts
+   Z_ (mkdir(over, 0755));
+   Z_ (mkdir(path_dst, 0755));
+   Zf (mount(parent, path_dst, NULL, MS_REC|MS_BIND, NULL),
+       "can't bind-mount: %s -> %s", parent, path_dst);
+   Zf (mount(over, parent, NULL, MS_REC|MS_BIND, NULL),
+       "can't bind-mount: %s- > %s", over, parent);
+
+   // symlink ranch
+   entry_ct = dir_ls(path_dst, &entries);
+   DEBUG("existing entries: %d", entry_ct);
+   for (int i = 0; i < entry_ct; i++) {
+      char * src = path_join(parent, entries[i]->d_name);
+      char * dst = path_join(orig_dir, entries[i]->d_name);
+
+      Zf (symlink(dst, src), "can't symlink: %s -> %s", src, dst);
+
+      free(src);
+      free(dst);
+      free(entries[i]);
+   }
+   free(entries);
+
+   Zf (mkdir(path, 0755), "can't mkdir even after overmount: %s", path);
+
+   free(path_dst);
+   free(over);
+   free(path2);
+}
+
 /* Create directories in path under base. Exit with an error if anything goes
    wrong. For example, mkdirs("/foo", "/bar/baz") will create directories
    /foo/bar and /foo/bar/baz if they don't already exist, but /foo must exist
    already. Symlinks are followed. path must remain under base, i.e. you can't
    use symlinks or ".." to climb out. denylist is a null-terminated array of
-   paths under which no directories may be created, or NULL if none. */
-void mkdirs(const char *base, const char *path, char **denylist)
+   paths under which no directories may be created, or NULL if none.
+
+   Can defeat an un-writeable directory by overmounting a new writeable
+   directory atop it. To enable this behavior, pass the path to an appropriate
+   scratch directory in scratch. */
+void mkdirs(const char *base, const char *path, char **denylist,
+            const char *scratch)
 {
    char *basec, *component, *next, *nextc, *pathw, *saveptr;
    char *denylist_null[] = { NULL };
@@ -371,7 +526,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    if (denylist == NULL)
       denylist = denylist_null;  // literal here causes intermittent segfaults
 
-   basec = realpath_safe(base);
+   basec = realpath_(base, false);
 
    TRACE("mkdirs: base: %s", basec);
    TRACE("mkdirs: path: %s", path);
@@ -382,6 +537,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
    saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
    component = strtok_r(pathw, "/", &saveptr);
    nextc = basec;
+   next = NULL;
    while (component != NULL) {
       next = cat(nextc, "/");
       next = cat(next, component);  // canonical except for last component
@@ -397,7 +553,7 @@ void mkdirs(const char *base, const char *path, char **denylist)
          }
          Tf (S_ISDIR(sb.st_mode) || !component,   // last component not dir OK
              "can't mkdir: exists but not a directory: %s", next);
-         nextc = realpath_safe(next);
+         nextc = realpath_(next, false);
          TRACE("mkdirs: exists, canonical: %s", nextc);
       } else {
          Te (path_subdir_p(basec, next),
@@ -406,7 +562,12 @@ void mkdirs(const char *base, const char *path, char **denylist)
             Ze (path_subdir_p(denylist[i], next),
                 "can't mkdir: %s under existing bind-mount %s",
                 next, denylist[i]);
-         Zf (mkdir(next, 0777), "can't mkdir: %s", next);
+         if (mkdir(next, 0755)) {
+            if (scratch && (errno == EACCES || errno == EPERM))
+               mkdir_overmount(next, scratch);
+            else
+               Tf (0, "can't mkdir: %s", next);
+         }
          nextc = next;  // canonical b/c we just created last component as dir
          TRACE("mkdirs: created: %s", nextc)
       }
@@ -441,18 +602,21 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
+   char *message, *ap_msg;
+
    if (level > verbose)
       return;
 
-   fprintf(stderr, "%s[%d]: ", program_invocation_short_name, getpid());
+   T_ (1 <= asprintf(&message, "%s[%d]: ",
+                     program_invocation_short_name, getpid()));
 
    // Prefix for the more urgent levels.
    switch (level) {
    case LL_FATAL:
-      fprintf(stderr, "error: ");  // "fatal" too morbid for users
+      message = cat(message, "error: ");  // "fatal" too morbid for users
       break;
    case LL_WARNING:
-      fprintf(stderr, "warning: ");
+      message = cat(message, "warning: ");
       break;
    default:
       break;
@@ -462,12 +626,19 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    if (fmt == NULL)
       fmt = "please report this bug";
 
-   vfprintf(stderr, fmt, ap);
-   if (errno_)
-      fprintf(stderr, ": %s (%s:%d %d)\n",
-              strerror(errno_), file, line, errno_);
-   else
-      fprintf(stderr, " (%s:%d)\n", file, line);
+   T_ (1 <= vasprintf(&ap_msg, fmt, ap));
+   if (errno_) {
+      T_ (1 <= asprintf(&message, "%s%s: %s (%s:%d %d)", message, ap_msg,
+                        strerror(errno_), file, line, errno_));
+   } else {
+      T_ (1 <= asprintf(&message, "%s%s (%s:%d)", message, ap_msg, file, line));
+   }
+
+   if (level == LL_WARNING) {
+      warnings_offset += string_append(warnings, message, WARNINGS_SIZE,
+                                       warnings_offset);
+   }
+   fprintf(stderr, "%s\n", message);
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
 }
@@ -475,7 +646,7 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
 /* Return true if the given path exists, false otherwise. On error, exit. If
    statbuf is non-null, store the result of stat(2) there. If follow_symlink
    is true and the last component of path is a symlink, stat(2) the target of
-   the symlnk; otherwise, lstat(2) the link itself. */
+   the symlink; otherwise, lstat(2) the link itself. */
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
 {
    struct stat statbuf_;
@@ -493,6 +664,21 @@ bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
 
    Tf (errno == ENOENT, "can't stat: %s", path);
    return false;
+}
+
+/* Concatenate paths a and b, then return the result. */
+char *path_join(const char *a, const char *b)
+{
+   char *ret;
+
+   T_ (a != NULL);
+   T_ (strlen(a) > 0);
+   T_ (b != NULL);
+   T_ (strlen(b) > 0);
+
+   T_ (asprintf(&ret, "%s/%s", a, b) == strlen(a) + strlen(b) + 1);
+
+   return ret;
 }
 
 /* Return the mount flags of the file system containing path, suitable for
@@ -543,9 +729,11 @@ void path_split(const char *path, char **dir, char **base)
    char *path2;
 
    T_ (path2 = strdup(path));
-   *dir = dirname(path2);
+   T_ (*dir = strdup(dirname(path2)));
+   free(path2);
    T_ (path2 = strdup(path));
-   *base = basename(path2);
+   T_ (*base = strdup(basename(path2)));
+   free(path2);
 }
 
 /* Return true if path is a subdirectory of base, false otherwise. Acts on the
@@ -558,8 +746,15 @@ void path_split(const char *path, char **dir, char **base)
 bool path_subdir_p(const char *base, const char *path)
 {
    int base_len = strlen(base);
+   int path_len = strlen(base);
 
-   if (base_len > strlen(path))
+   // remove trailing slashes
+   while (base[base_len-1] == '/' && base_len >= 1)
+      base_len--;
+   while (path[path_len-1] == '/' && path_len >= 1)
+      path_len--;
+
+   if (base_len > path_len)
       return false;
 
    if (!strcmp(base, "/"))  // below logic breaks if base is root
@@ -569,14 +764,35 @@ bool path_subdir_p(const char *base, const char *path)
            && (path[base_len] == '/' || path[base_len] == 0));
 }
 
-/* Like realpath(3), but exit with error on failure. */
-char *realpath_safe(const char *path)
+/* Like realpath(3), but never returns an error. If the underlying realpath(3)
+   fails or path is NULL, and fail_ok is true, then return a copy of the
+   input; otherwise (i.e., fail_ok is false) exit with error. */
+char *realpath_(const char *path, bool fail_ok)
 {
    char *pathc;
 
+   if (path == NULL)
+      return NULL;
+
    pathc = realpath(path, NULL);
-   Tf (pathc != NULL, "can't canonicalize: %s", path);
+
+   if (pathc == NULL) {
+      if (fail_ok) {
+         T_ (pathc = strdup(path));
+      } else {
+         Tf (false, "can't canonicalize: %s", path);
+      }
+   }
+
    return pathc;
+}
+
+/* Replace all instances of character “old” in “s” with “new”. */
+void replace_char(char *s, char old, char new)
+{
+   for (int i = 0; s[i] != '\0'; i++)
+      if(s[i] == old)
+         s[i] = new;
 }
 
 /* Split string str at first instance of delimiter del. Set *a to the part
@@ -602,4 +818,39 @@ void split(char **a, char **b, const char *str, char del)
 void version(void)
 {
    fprintf(stderr, "%s\n", VERSION);
+}
+
+/* Append null-terminated string “str” to the memory buffer “offset” bytes after
+   from the address pointed to by “addr”. Buffer length is “size” bytes. Return
+   the number of bytes written. If there isn’t enough room for the string, do
+   nothing and return zero. */
+size_t string_append(char *addr, char *str, size_t size, size_t offset)
+{
+   size_t written = strlen(str) + 1;
+
+   if (size > (offset + written - 1))  // there is space
+      memcpy(addr + offset, str, written);
+
+   return written;
+}
+
+/* Reprint messages stored in “warnings” memory buffer. */
+void warnings_reprint(void)
+{
+   size_t offset = 0;
+   int warn_ct = buf_strings_count(warnings, WARNINGS_SIZE);
+
+   if (warn_ct > 0)
+      fprintf(stderr, "%s[%d]: warning: reprinting first %d warning(s)\n",
+              program_invocation_short_name, getpid(), warn_ct);
+
+   while (   warnings[offset] != 0
+          || (offset < (WARNINGS_SIZE - 1) && warnings[offset+1] != 0)) {
+      fputs(warnings + offset, stderr);
+      fputc('\n', stderr);
+      offset += strlen(warnings + offset) + 1;
+   }
+
+   if (fflush(stderr))
+      abort();  // can't print an error b/c already trying to do that
 }

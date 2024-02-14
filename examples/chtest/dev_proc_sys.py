@@ -5,8 +5,8 @@ import sys
 
 # Files in /dev and /sys seem to vary between Linux systems. Thus, try a few
 # candidates and use the first one that exists. What we want is a file with
-# permissions root:root -rw------- that's in a directory readable and
-# executable by unprivileged users, so we know we're testing permissions on
+# permissions root:root -rw------- that’s in a directory readable and
+# executable by unprivileged users, so we know we’re testing permissions on
 # the file rather than any of its containing directories. This may help for
 # finding such a file in /sys:
 #

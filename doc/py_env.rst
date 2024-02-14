@@ -6,3 +6,7 @@
 
 :code:`CH_LOG_FESTOON`
   If set, prepend PID and timestamp to logged chatter.
+
+:code:`CH_XATTRS`
+  If set, save xattrs in the build cache and restore them when rebuilding from
+  the cache (equivalent to :code:`--xattrs`).

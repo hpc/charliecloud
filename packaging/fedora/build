@@ -1,16 +1,16 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python3
 
-# See contributors' guide for documentation of this script.
+# See contributors’ guide for documentation of this script.
 
 from __future__ import print_function
 
 import argparse
 import errno
 import os
-import pipes
 import platform
 import pwd
 import re
+import shlex
 import shutil
 import socket
 import subprocess
@@ -46,31 +46,34 @@ rpmbuild root:      %(rpmbuild)s
 """ % args.__dict__)
 
    # Use the generic base locale, rather than whatever the user has set, as
-   # that's the only one guaranteed to be installed in the containers.
+   # that’s the only one guaranteed to be installed in the containers.
    os.environ["LC_ALL"] = "C"
 
    # What's the real Git version?
    if (args.version == "HEAD"):
       try:
-         # If we're on a branch, we want to build on that branch so the branch
+         # If we’re on a branch, we want to build on that branch so the branch
          # name shows up in the version name.
          commit = subprocess.check_output(["git", "symbolic-ref", "-q",
-                                           "--short", "HEAD"])[:-1]
+                                           "--short", "HEAD"],
+                                           encoding="UTF-8")[:-1]
       except subprocess.CalledProcessError as x:
          if (x.returncode != 1): raise
          # Detached HEAD (e.g. CI) is also fine; use commit hash.
          commit = subprocess.check_output(["git", "rev-parse",
-                                           "--verify", "HEAD"])[:-1]
+                                           "--verify", "HEAD"],
+                                           encoding="UTF-8")[:-1]
       rpm_release = "0"
    else:
       m           = re.search(r"([0-9.]+)-([0-9]+)", args.version)
-      commit      = "v" + m.group(1)
-      rpm_release = m.group(2)
+      commit      = "v" + m[1]
+      rpm_release = m[2]
 
    # Create rpmbuild root
    rpm_sources = args.rpmbuild + '/SOURCES'
    rpm_specs   = args.rpmbuild + '/SPECS'
-   for d in (rpm_sources, rpm_specs):
+   rpm_pips    = args.rpmbuild + '/pip'
+   for d in (rpm_sources, rpm_specs, rpm_pips):
       print("# mkdir -p %s" % d)
       try:
          os.makedirs(d)
@@ -82,7 +85,7 @@ rpmbuild root:      %(rpmbuild)s
                       '--', 'rpmbuild', '--eval', '%{?dist}')
    rpms_dist = rpms_dist.split('.')[-1]
 
-   # FIXME: el8 doesn't have bats; skip for now.
+   # FIXME: el8 doesn’t have bats; skip for now.
    if (rpms_dist == 'el8'):
         PACKAGES.remove('charliecloud-test')
 
@@ -95,8 +98,13 @@ rpmbuild root:      %(rpmbuild)s
 
    # Build tarball.
    print("# building source tarball")
-   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
-       "--", "./autogen.sh")
+   # pip3 expects $HOME, here /root, to be writeable for its cache. If not,
+   # the warning is that the directory “is not owned by the current user”,
+   # which is not true. The warning further claims that “*caching* wheels has
+   # been disabled” (emphasis added), but in fact wheels are disabled
+   # entirely, so autogen.sh fails with “embedded Lark is broken”. Thanks pip!
+   cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-b", "%s:/root" % rpm_pips,
+               "-c", "/mnt/0", args.image, "--", "./autogen.sh")
    cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
        "--", "./configure")
    cmd(CH_RUN, "-b", "%s:/mnt/0" % git_tmp, "-c", "/mnt/0", args.image,
@@ -149,8 +157,8 @@ rpmbuild root:      %(rpmbuild)s
       else:
          # Verify requested version matches changelog.
          m = re.search(r"%changelog\n.+?([0-9.-]+)\n", t)
-         if (m.group(1) != rpm_vr):
-            print("requested version %s != changelog %s" % (rpm_vr, m.group(1)))
+         if (m[1] != rpm_vr):
+            print("requested version %s != changelog %s" % (rpm_vr, m[1]))
             sys.exit(1)
       out.write(t)
 
@@ -158,8 +166,8 @@ rpmbuild root:      %(rpmbuild)s
    container = []
    rpmbuild_args = []
    rpmlint_args = []
-   # Use /usr/local/src because rpmbuild fails with "%{_topdir}/BUILD"
-   # shorter than "/usr/src/debug" (yes, really!) [1,2].
+   # Use /usr/local/src because rpmbuild fails with “%{_topdir}/BUILD”
+   # shorter than “/usr/src/debug” (yes, really!) [1,2].
    #
    # [1]: https://access.redhat.com/solutions/1426113
    # [2]: https://gbenson.net/?p=367
@@ -197,7 +205,7 @@ rpmbuild root:      %(rpmbuild)s
          cmd(container, "rpm", "--install", file)
       cmd(container, "rpm", "-qa", "charliecloud*")
 
-   # Lint RPMs and spec file. Last so problems that don't result in program
+   # Lint RPMs and spec file. Last so problems that don’t result in program
    # returning error are more obvious.
    print("# linting")
    cmd(container, "rpmlint", rpmlint_args, "%s/%s" % (rpm_specs, spec))
@@ -220,7 +228,7 @@ def cmd_ok(*args, **kwargs):
    return (rc == 0)
 
 def cmd_out(*args, **kwargs):
-   out = cmd_real(subprocess.check_output, *args, **kwargs)
+   out = cmd_real(subprocess.check_output, *args, encoding="UTF-8", **kwargs)
    return out.rstrip()  # remove trailing newline
 
 def cmd_real(runf, *args, **kwargs):
@@ -234,7 +242,7 @@ def cmd_real(runf, *args, **kwargs):
    # print and run
    print("$", end="")
    for arg in args2:
-      arg = pipes.quote(arg)
+      arg = shlex.quote(arg)
       print(" " + arg, end="")
    print()
    return runf(args2, **kwargs)

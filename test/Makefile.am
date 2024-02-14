@@ -1,10 +1,11 @@
-testdir = $(pkglibexecdir)/test
+testdir = $(pkglibexecdir)
 
 # These test files require no special handling.
 testfiles = \
 .dockerignore \
-Dockerfile.00_tiny \
 Dockerfile.argenv \
+Dockerfile.quick \
+approved-trailing-whitespace \
 bucache/a.df \
 bucache/a-fail.df \
 bucache/argenv.df \
@@ -13,8 +14,10 @@ bucache/argenv2.df \
 bucache/b.df \
 bucache/c.df \
 bucache/copy.df \
+bucache/difficult.df \
 bucache/force.df \
 bucache/from.df \
+bucache/rsync.df \
 build/10_sanity.bats \
 build/40_pull.bats \
 build/50_ch-image.bats \
@@ -48,8 +51,12 @@ Build.centos7xz \
 Build.docker_pull \
 Build.missing \
 docs-sane \
+doctest \
+doctest-auto \
+force-auto \
 make-perms-test \
-old-storage
+old-storage \
+order-py
 
 # Program and shared library used for testing shared library injection. It's
 # built according to the rules below. In principle, we could use libtool for
@@ -58,22 +65,28 @@ old-storage
 sobuilts = \
 sotest/bin/sotest \
 sotest/lib/libsotest.so.1.0 \
+sotest/lib/libfabric/libsotest-fi.so \
 sotest/libsotest.so \
 sotest/libsotest.so.1 \
 sotest/libsotest.so.1.0 \
 sotest/sotest
 
 CLEANFILES = $(sobuilts) \
-             docs-sane force-auto make-perms-test \
-             build/61_force-auto.bats
+             docs-sane \
+             doctest build/30_doctest-auto.bats \
+             force-auto force-auto.bats \
+             make-perms-test order-py
 
 if ENABLE_TEST
 nobase_test_DATA = $(testfiles)
 nobase_test_SCRIPTS = $(testfiles_exec)
 nobase_nodist_test_SCRIPTS = $(sobuilts)
 if ENABLE_CH_IMAGE  # this means we have Python
-nobase_test_DATA += build/61_force-auto.bats
-build/61_force-auto.bats: force-auto
+nobase_test_DATA += force-auto.bats
+force-auto.bats: force-auto
+	./$< > $@
+nobase_test_DATA += build/30_doctest-auto.bats
+build/30_doctest-auto.bats: doctest-auto
 	./$< > $@
 endif
 # See comment about symlinks in examples/Makefile.am.
@@ -89,29 +102,41 @@ uninstall-hook:
 	rmdir $(DESTDIR)$(testdir)/fixtures || true
 	rmdir $$(find $(pkglibexecdir) -type d | sort -r)
 endif
-EXTRA_DIST = $(testfiles) $(testfiles_exec) \
-             docs-sane.py.in force-auto.py.in make-perms-test.py.in
+EXTRA_DIST = $(testfiles) \
+             $(testfiles_exec) \
+             docs-sane.py.in \
+             doctest.py.in \
+             force-auto.py.in \
+	     make-perms-test.py.in \
+             order-py.py.in
 EXTRA_SCRIPTS = $(sobuilts)
 
 ## Python scripts - need text processing
-docs-sane force-auto make-perms-test: %: %.py.in
+docs-sane doctest force-auto make-perms-test order-py: %: %.py.in
 	rm -f $@
 	sed -E 's|%PYTHON_SHEBANG%|@PYTHON_SHEBANG@|' < $< > $@
 	chmod +rx,-w $@  # respects umask
 
 sotest/sotest: sotest/sotest.c sotest/libsotest.so.1.0 sotest/libsotest.so sotest/libsotest.so.1
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -L./sotest -lsotest $^
+
 sotest/libsotest.so.1.0: sotest/libsotest.c
 	$(CC) -o $@ $(CFLAGS) $(CPPFLAGS) $(LDFLAGS) -shared -fPIC -Wl,-soname,libsotest.so.1 -lc $^
 
 sotest/libsotest.so: sotest/libsotest.so.1.0
 	ln -fTs ./libsotest.so.1.0 $@
+
 sotest/libsotest.so.1: sotest/libsotest.so.1.0
 	ln -fTs ./libsotest.so.1.0 $@
 
 sotest/bin/sotest: sotest/sotest
 	mkdir -p sotest/bin
 	cp -a $^ $@
+
 sotest/lib/libsotest.so.1.0: sotest/libsotest.so.1.0
 	mkdir -p sotest/lib
+	cp -a $^ $@
+
+sotest/lib/libfabric/libsotest-fi.so: sotest/libsotest.so.1.0
+	mkdir -p sotest/lib/libfabric
 	cp -a $^ $@

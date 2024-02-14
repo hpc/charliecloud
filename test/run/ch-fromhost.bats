@@ -3,6 +3,7 @@ load ../common
 setup () {
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'need writeable image'
     [[ $ch_libc = glibc ]] || skip 'glibc only'
+    fi_provider_path=$FI_PROVIDER_PATH
 }
 
 fromhost_clean () {
@@ -13,6 +14,8 @@ fromhost_clean () {
     find "$1" -xdev \(           \
          -name 'libcuda*'        \
       -o -name 'libnvidia*'      \
+      -o -name 'libfabric'       \
+      -o -name libsotest-fi.so   \
       -o -name libsotest.so.1    \
       -o -name libsotest.so.1.0  \
       -o -name sotest            \
@@ -34,12 +37,30 @@ fromhost_ls () {
     find "$1" -xdev -name '*sotest*' -ls
 }
 
+glibc_version_ok () {
+    # glibc 2.34 and later is incompatible with older versions. If you try
+    # to run a container with glibc < 2.34 on a host with glibc ≥ 2.34, you
+    # get an error. This function ensures that host glibc and guest glibc are
+    # compatible (see #1430).
+    host=$(ldd --version | grep -oE '[0-9.]+[^.]$')
+    guest=$(ch-run "$1" -- ldd --version | grep -oE '[0-9.]+[^.]$')
+    # Check version compatibility. If host glibc ≥ 2.34 and guest glibc < 2.34,
+    # skip the test.
+    if [[     $(printf "%s\n2.34" "$host" | sort -V | head -1) = 2.34 \
+	   && $(printf "%s\n2.34" "$guest" | sort -V | head -1) != 2.34 ]]; then
+	skip "host glibc $host ≥ 2.34 > $guest"
+    fi
+}
+
 @test 'ch-fromhost (CentOS)' {
     scope standard
-    prerequisites_ok almalinux8
-    img=${ch_imgdir}/almalinux8
+    prerequisites_ok almalinux_8ch
+    img=${ch_imgdir}/almalinux_8ch
 
-    libpath=$(ch-fromhost --lib-path "$img")
+    # check glibc version compatibility.
+    glibc_version_ok "$img"
+
+    libpath=$(ch-fromhost --print-lib "$img")
     echo "libpath: ${libpath}"
 
     # --file
@@ -91,10 +112,10 @@ fromhost_ls () {
 
     # --no-ldconfig
     ch-fromhost -v --no-ldconfig --file sotest/files_inferrable.txt "$img"
-      test -f "${img}/usr/bin/sotest"
-      test -f "${img}${libpath}/libsotest.so.1.0"
-    ! test -L "${img}${libpath}/libsotest.so.1"
-    ! ( ch-run "$img" -- /sbin/ldconfig -p | grep -F libsotest )
+    [[   -f "${img}/usr/bin/sotest" ]]
+    [[   -f "${img}${libpath}/libsotest.so.1.0" ]]
+    [[ ! -L "${img}${libpath}/libsotest.so.1" ]]
+    ch-run "$img" -- /sbin/ldconfig -p | grep -FL libsotest
     run ch-run "$img" -- sotest
     echo "$output"
     [[ $status -eq 127 ]]
@@ -116,10 +137,13 @@ fromhost_ls () {
 
 @test 'ch-fromhost (Debian)' {
     scope full
-    prerequisites_ok debian9
-    img=${ch_imgdir}/debian9
+    prerequisites_ok debian_9ch
+    img=${ch_imgdir}/debian_9ch
 
-    libpath=$(ch-fromhost --lib-path "$img")
+    # check glibc version compatibility.
+    glibc_version_ok "$img"
+
+    libpath=$(ch-fromhost --print-lib "$img")
     echo "libpath: ${libpath}"
 
     fromhost_clean "$img"
@@ -139,8 +163,8 @@ fromhost_ls () {
 
 @test 'ch-fromhost errors' {
     scope standard
-    prerequisites_ok almalinux8
-    img=${ch_imgdir}/almalinux8
+    prerequisites_ok almalinux_8ch
+    img=${ch_imgdir}/almalinux_8ch
 
     # no image
     run ch-fromhost --path sotest/sotest.c
@@ -283,11 +307,11 @@ fromhost_ls () {
 
     # ldconfig gives no shared library path (#324)
     #
-    # (I don't think this is the best way to get ldconfig to fail, but I
-    # couldn't come up with anything better. E.g., bad ld.so.conf or broken
-    # .so's seem to produce only warnings.)
+    # (I don’t think this is the best way to get ldconfig to fail, but I
+    # couldn’t come up with anything better. E.g., bad ld.so.conf or broken
+    # .so’s seem to produce only warnings.)
     mv "${img}/sbin/ldconfig" "${img}/sbin/ldconfig.foo"
-    run ch-fromhost --lib-path "$img"
+    run ch-fromhost --print-lib "$img"
     mv "${img}/sbin/ldconfig.foo" "${img}/sbin/ldconfig"
     echo "$output"
     [[ $status -eq 1 ]]
@@ -295,22 +319,38 @@ fromhost_ls () {
     fromhost_clean_p "$img"
 }
 
-@test 'ch-fromhost --cray-mpi not on a Cray' {
+@test 'ch-fromhost --path with libfabric' {
     scope full
-    [[ $ch_cray ]] && skip 'host is a Cray'
-    run ch-fromhost --cray-mpi "$ch_timg"
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *'are you on a Cray?'* ]]
-}
+    prerequisites_ok openmpi
+    img=${ch_imgdir}/openmpi
+    unset FI_PROVIDER_PATH
 
-@test 'ch-fromhost --cray-mpi with no MPI installed' {
-    scope full
-    [[ $ch_cray ]] || skip 'host is not a Cray'
-    run ch-fromhost --cray-mpi "$ch_timg"
+    ofidest=$(ch-fromhost --print-fi "$img")
+    echo "provider dest: ${ofidest}"
+
+    # The libsotest-fi.so is a dummy provider intended to exercise ch-fromhost
+    # script logic. Succeed if ch-fromhost finds the container libfabric.so and
+    # injects the libfabric-fi.so dummy executable in the directory /libfabric
+    # where libfabric.so is found.
+    #
+    # Inferred dest from image libfabric.so.
+    img=${ch_imgdir}/openmpi
+    ofi=${CHTEST_DIR}/sotest/lib/libfabric/libsotest-fi.so
+    run ch-fromhost -p "${ofi}" "$img"
     echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't find MPI in image"* ]]
+    [[ $status -eq 0 ]]
+    test -f "${img}/${ofidest}/libsotest-fi.so"
+    fromhost_clean "$img"
+
+    # host FI_PROVIDER_PATH with --dest
+    export FI_PROVIDER_PATH=/usr/lib
+    run ch-fromhost "$img" -d /usr/lib -p "$ofi" -v
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'warn'*'FI_PROVIDER_PATH'* ]]
+    test -f "${img}/usr/lib/libsotest-fi.so"
+    fromhost_clean "$img"
+    export FI_PROVIDER_PATH=$fi_provider_path
 }
 
 @test 'ch-fromhost --nvidia with GPU' {
@@ -320,10 +360,10 @@ fromhost_ls () {
         || skip 'nvidia-container-cli not in PATH'
     img=${ch_imgdir}/nvidia
 
-    # nvidia-container-cli --version (to make sure it's linked correctly)
+    # nvidia-container-cli --version (to make sure it’s linked correctly)
     nvidia-container-cli --version
 
-    # Skip if nvidia-container-cli can't find CUDA.
+    # Skip if nvidia-container-cli can’t find CUDA.
     run nvidia-container-cli list --binaries --libraries
     echo "$output"
     if [[ $status -eq 1 ]]; then
@@ -363,14 +403,14 @@ fromhost_ls () {
     sample=/matrixMulCUBLAS
     # should fail without ch-fromhost --nvidia
     fromhost_clean "$img"
-    run ch-run "$img" -- $sample
+    run ch-run "$img" -- "$sample"
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'CUDA error at'* ]]
     # should succeed with it
     fromhost_clean_p "$img"
     ch-fromhost --nvidia "$img"
-    run ch-run "$img" -- $sample
+    run ch-run "$img" -- "$sample"
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output =~ 'Comparing CUBLAS Matrix Multiply with CPU results: PASS' ]]

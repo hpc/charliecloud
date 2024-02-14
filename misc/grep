@@ -1,31 +1,40 @@
 #!/bin/bash
 
 # The purpose of this script is to make it more convenient to search the
-# project source code. It's a wrapper for grep(1) to exclude directories that
-# yield a ton of false positives, in particular the documentation's JavaScript
+# project source code. It’s a wrapper for grep(1) to exclude directories that
+# yield a ton of false positives, in particular the documentation’s JavaScript
 # index that is one line thousands of characters long. It's tedious to derive
 # the exclusions manually each time.
 #
-# grep(1) has an --exclude-dir option, but I can't get it to work with rooted
+# grep(1) has an --exclude-dir option, but I can’t get it to work with rooted
 # directories, e.g., doc-src/_build vs _build anywhere in the tree, so we use
 # find(1) instead. You may hear complaints about how find is too slow for
-# this, but the project is small enough we don't care.
+# this, but the project is small enough we don’t care.
 
 set -e
 
 cd "$(dirname "$0")"/..
 
-pwd
 find . \(    -path ./.git \
           -o -path ./autom4te.cache \
           -o -path ./doc/doctrees \
+          -o -path ./bin/ch-checkns \
+          -o -path ./bin/ch-image \
+          -o -path ./bin/ch-run \
+          -o -path ./bin/ch-run-oci \
           -o -path ./doc/html \
           -o -path ./doc/man \
+          -o -path ./test/approved-trailing-whitespace \
+          -o -path './lib/lark*' \
+          -o -path '*.patch' \
           -o -name '*.pyc' \
+          -o -name '*.vtk' \
+          -o -name ._.DS_Store \
+          -o -name .DS_Store \
           -o -name configure \
           -o -name 'config.*' \
           -o -name Makefile \
           -o -name Makefile.in \
        \) -prune \
        -o -type f \
-       -exec grep --color=auto -Hn "$@" {} \;
+       -exec grep --color=auto -HIn "$@" {} \;

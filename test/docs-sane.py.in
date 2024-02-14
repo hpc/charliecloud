@@ -11,15 +11,13 @@
 #      b. Every executable FOO in bin has:
 #
 #           - doc/FOO.rst
-#           - doc/FOO_desc.rst
 #           - doc/man/FOO.1
-#           - a section in doc/command-usage.rst
-#           - an entry under "See also" in charliecloud.7
+#           - an entry under “See also” in charliecloud.7
 #
 #      c. There aren't the things in (b) except for the executables (modulo a
 #         few execeptions for the other documentation source files).
 #
-#      d. Summary in "FOO --help" matches the man page and command-usage.rst.
+#      d. Summary in “FOO --help” matches FOO.rst and conf.py.
 
 from __future__ import print_function
 
@@ -57,29 +55,28 @@ def check_man():
    os.chdir(CH_BASE + "/doc")
 
    man_rsts = set(glob.glob("ch-*.rst"))
-   man_rsts_expected = (  { i + ".rst" for i in execs }
-                        | { i + "_desc.rst" for i in execs })
+   man_rsts_expected = { i + ".rst" for i in execs }
    lose_lots("unexpected .rst", man_rsts - man_rsts_expected)
    lose_lots("missing .rst",    man_rsts_expected - man_rsts)
 
-   sect_matches = set(re.finditer(r"\n([a-z0-9-]+)\n\++\n\n([^\n]+)\n",
-                                  open("command-usage.rst").read()))
+   man_synopses = dict()
+   for man in execs:
+      m = re.search(r"^\s+(.+)$\n\n\n^Synopsis", open(man + ".rst").read(),
+                    re.MULTILINE)
+      if (m is not None):
+         man_synopses[man] = m[1]
 
-   sects = { m.group(1) for m in sect_matches }
-   sects_expected = execs
-   lose_lots("unexpected § in command-usage.rst", sects - sects_expected)
-   lose_lots("missing § in command-usage.rst",    sects_expected - sects)
+   lose_lots("missing synopsis", execs - set(man_synopses))
 
-   sect_helps = { m.group(1): m.group(2) for m in sect_matches }
-   lose_lots("bad summary in command-usage.rst",
-             {     "%s: %s" % (p, s)
-               for (p, s) in sect_helps.items()
+   lose_lots("bad synopsis in man page",
+             {     "%s: %s (expected: %s)" % (p, s, helps[p])
+               for (p, s) in man_synopses.items()
                if (    p in helps
                    and summary_unrest(s) != helps[p])
                    and "deprecated" not in s.lower() })
 
-   sees = { m.group(0) for m in re.finditer(r"ch-[a-z0-9-]+\(1\)",
-                                            open("charliecloud.rst").read()) }
+   sees = { m[0] for m in re.finditer(r"ch-[a-z0-9-]+\(1\)",
+                                      open("charliecloud.rst").read()) }
    sees_expected = { i + "(1)" for i in execs }
    lose_lots("unexpected see-also in charliecloud.rst", sees - sees_expected)
    lose_lots("missing see-also in charliecloud.rst",    sees_expected - sees)
@@ -132,7 +129,7 @@ def help_get(prog):
       lose("%s --help: no summary found" % prog)
       return None
    else:
-      return m.group(1)
+      return m[1]
 
 def lose(msg):
    print(msg)

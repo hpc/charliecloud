@@ -1,20 +1,31 @@
 # shellcheck shell=sh
 set -e
 
-# shellcheck disable=SC2034
 ch_bin="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC2034
 ch_base=${ch_bin%/*}
 
-lib="${ch_bin}/../lib/charliecloud"
-. "${lib}/version.sh"
+ch_lib=${ch_bin}/../lib
+. "${ch_lib}/version.sh"
 
 
-# Verbosity level; works the same as the Python code.
-verbose=0
+# Log level. Incremented by “--verbose” and decremented by “--quiet”, as in the
+# Python code.
+log_level=0
+
+# Logging functions. Note that we disable SC2059 because we want these functions
+# to behave exactly like printf(1), e.g. we want
+#
+#   >>> VERBOSE "foo %s" "bar"
+#   foo bar
+#
+# Implementing the suggestion in SC2059 would instead result in something like
+#
+#   >>> VERBOSE "foo %s" "bar"
+#   foo %sbar
 
 DEBUG () {
-    if [ "$verbose" -ge 2 ]; then
+    if [ "$log_level" -ge 2 ]; then
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -30,13 +41,24 @@ FATAL () {
 }
 
 INFO () {
-    # shellcheck disable=SC2059
-    printf "$@" 1>&2
-    printf '\n' 1>&2
+    if [ "$log_level" -ge 0 ]; then
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
 }
 
 VERBOSE () {
-    if [ "$verbose" -ge 1 ]; then
+    if [ "$log_level" -ge 1 ]; then
+        # shellcheck disable=SC2059
+        printf "$@" 1>&2
+        printf '\n' 1>&2
+    fi
+}
+
+WARNING () {
+    if [ "$log_level" -ge -1 ]; then
+        printf 'warning: ' 1>&2
         # shellcheck disable=SC2059
         printf "$@" 1>&2
         printf '\n' 1>&2
@@ -44,7 +66,7 @@ VERBOSE () {
 }
 
 # Return success if path $1 exists, without dereferencing links, failure
-# otherwise. ("test -e" dereferences.)
+# otherwise. (“test -e” dereferences.)
 exist_p () {
     stat "$1" > /dev/null 2>&1
 }
@@ -55,14 +77,24 @@ exist_p () {
 parse_basic_arg () {
     case $1 in
         --_lib-path)  # undocumented
-            echo "$lib"
+            echo "$ch_lib"
             exit 0
             ;;
         --help)
             usage 0   # exits
             ;;
+        -q|--quiet)
+            if [ $log_level -gt 0 ]; then
+                FATAL "incompatible options: --quiet, --verbose"
+            fi
+            log_level=$((log_level-1))
+            return 0
+            ;;
         -v|--verbose)
-            verbose=$((verbose+1))
+            if [ $log_level -lt 0 ]; then
+                FATAL "incompatible options: --quiet, --verbose"
+            fi
+            log_level=$((log_level+1))
             return 0
             ;;
         --version)
@@ -81,6 +113,18 @@ parse_basic_args () {
     done
 }
 
+# Redirect standard streams (or not) depending on “quiet” level. See table in
+# FAQ.
+quiet () {
+    if [ $log_level -lt -2 ]; then
+        "$@" 1>/dev/null 2>/dev/null
+    elif [ $log_level -lt -1 ]; then
+        "$@" 1>/dev/null
+    else
+        "$@"
+    fi
+}
+
 # Convert container registry path to filesystem compatible path.
 #
 # NOTE: This is used both to name user-visible stuff like tarballs as well as
@@ -95,7 +139,6 @@ usage () {
 }
 
 version () {
-    # shellcheck disable=SC2154
     echo 1>&2 "$ch_version"
     exit 0
 }
@@ -108,9 +151,9 @@ version () {
 #   $2: string:   command line argument value (1st priority)
 #   $3: string:   environment variable value (2nd priority)
 #   $4: string:   default value (3rd priority)
-#   $5: boolean:  if true, suppress chatter
-#   $6: int:      width of description (use -1 for natural width)
-#   $7: string:   human readable description for stdout
+#   $5: int:      width of description (use -1 for natural width)
+#   $6: string:   human readable description for stdout
+#   $7: boolean:  if true, suppress chatter
 #
 # FIXME: Shouldn't export the variable, and no Bash indirection available.
 # There are safe eval solution out there, but I was too lazy to deal with it.
@@ -146,9 +189,15 @@ vset () {
     fi
 }
 
-
-# Do we need sudo to run docker?
-if docker info > /dev/null 2>&1; then
+# Is Docker present, and if so, do we need sudo? If docker is a wrapper for
+# podman, “docker info” hangs (#1656), so treat that as not found.
+if    ( ! command -v docker > /dev/null 2>&1 ) \
+   || ( docker --help 2>&1 | grep -Fqi podman ); then
+    docker_ () {
+        echo 'docker not found; unreachable code reached' 1>&1
+        exit 1
+    }
+elif docker info > /dev/null 2>&1; then
     docker_ () {
         docker "$@"
     }
@@ -157,6 +206,14 @@ else
         sudo docker "$@"
     }
 fi
+
+# Wrapper for rootless podman (for consistency w/ docker).
+
+# The only thing we're really concerned with here is the trailing underscore,
+# since we use it to construct function calls.
+podman_ () {
+    podman "$@"
+}
 
 # Use parallel gzip if it's available.
 if command -v pigz > /dev/null 2>&1; then
@@ -169,17 +226,16 @@ else
     }
 fi
 
-# Use pv(1) to show a progress bar, if it's available, otherwise cat(1).
-# WARNING: You must pipe in the file because arguments are ignored if this is
-# cat(1). (We also don't want a progress bar if stdin is not a terminal, but
-# pv takes care of that.)
-if command -v pv > /dev/null 2>&1; then
-    pv_ () {
+# Use pv(1) to show a progress bar, if it’s available and the quiet level is
+# less than one, otherwise cat(1). WARNING: You must pipe in the file because
+# arguments are ignored if this is cat(1). (We also don’t want a progress bar if
+# stdin is not a terminal, but pv takes care of that). Note that we put the if
+# statement in the scope of the function because doing so ensures that it gets
+# evaulated after “quiet” is assigned an appropriate value by “parse_basic_arg”.
+pv_ () {
+    if command -v pv > /dev/null 2>&1 && [ "$log_level" -gt -1 ]; then
         pv -pteb "$@"
-    }
-else
-    pv_ () {
-        # Arguments may be present, but we ignore them.
+    else
         cat
-    }
-fi
+    fi
+}

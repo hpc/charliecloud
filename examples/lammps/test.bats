@@ -1,13 +1,10 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 # LAMMPS does have a test suite, but we do not use it, because it seems too
 # fiddly to get it running properly.
 #
-#   1. Running the command listed in LAMMPS' Jenkins tests [2] fails with a
+#   1. Running the command listed in LAMMPS’ Jenkins tests [2] fails with a
 #      strange error:
 #
 #        $ python run_tests.py tests/test_commands.py tests/test_examples.py
@@ -19,18 +16,18 @@ load "${CHTEST_DIR}/common.bash"
 #            for testname in list(tc):
 #        TypeError: 'Test' object is not iterable
 #
-#      Looking in run_tests.py, this sure looks like a bug (it's expecting a
+#      Looking in run_tests.py, this sure looks like a bug (it’s expecting a
 #      list of Tests, I think, but getting a single Test). But it works in
 #      Jenkins. Who knows.
 #
 #   2. The files test/test_*.py say that the tests can be run with
-#      "nosetests", which they can, after setting several environment
-#      variables. But some of the tests fail for me. I didn't diagnose.
+#      “nosetests”, which they can, after setting several environment
+#      variables. But some of the tests fail for me. I didn’t diagnose.
 #
 # Instead, we simply run some of the example problems in a loop and see if
-# they exit with return code zero. We don't check output.
+# they exit with return code zero. We don’t check output.
 #
-# Note that a lot of the other examples crash. I haven't diagnosed or figured
+# Note that a lot of the other examples crash. I haven’t diagnosed or figured
 # out if we care.
 #
 # We are open to patches if anyone knows how to fix this situation reliably.
@@ -42,6 +39,8 @@ setup () {
     scope full
     prerequisites_ok "$ch_tag"
     multiprocess_ok
+    pmix_or_skip
+    [[ -n "$ch_cray" ]] && export FI_PROVIDER=$cray_prov
 }
 
 lammps_try () {
@@ -58,8 +57,13 @@ lammps_try () {
 
 }
 
-@test "${ch_tag}/crayify image" {
-    crayify_mpi_or_skip "$ch_img"
+@test "${ch_tag}/inject host cray mpi ($cray_prov)" {
+    cray_ofi_or_skip "$ch_img"
+    run ch-run "$ch_img" -- fi_info
+    echo "$output"
+    [[ $output == *"provider: $cray_prov"* ]]
+    [[ $output == *"fabric: $cray_prov"* ]]
+    [[ $status -eq 0 ]]
 }
 
 @test "${ch_tag}/using all cores" {

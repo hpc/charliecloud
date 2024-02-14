@@ -1,0 +1,200 @@
+# ch-test-scope: full
+FROM almalinux_8ch
+
+# A key goal of this Dockerfile is to demonstrate best practices for building
+# OpenMPI and MPICH for use inside a container.
+#
+# This Dockerfile aspires to work close to optimally on clusters with any of the
+# following interconnects:
+#
+#    - Ethernet (TCP/IP)
+#    - InfiniBand (IB)
+#    - Omni-Path (OPA)
+#    - RDMA over Converged Ethernet (RoCE) interconnects
+#    - Gemini/Aries (UGNI) **
+#    - Slingshot (CXI) **
+#
+# with no environment variables, command line arguments, additional
+# configuration files, and minimal runtime manipulation.
+#
+# MPI implementations have numerous ways of communicating messages over
+# interconnects. We use Libfabric (OFI), an OpenFabric framework that
+# exports fabric communication services to applications, to manage these
+# communications with built-in, or loadable, fabric providers.
+#
+#   - https://ofiwg.github.io/libfabric
+#   - https://ofiwg.github.io/libfabric/v1.14.0/man/fi_provider.3.html
+#
+# Using OFI, we can: 1) uniformly manage fabric communications services for both
+# OpenMPI and MPICH; 2) use host-built OFI shared object providers to use
+# proprietary host hardware, e.g., Cray Gemini/Aries; and 3) replace the
+# container’s OFI with that of the hosts to leverage special fabric interfaces,
+# e.g., Cray’s Slingshot CXI.
+#
+# Providers implement the application facing software interfaces needed to
+# access network specific protocols, drivers, and hardware. The built-in
+# providers relevant here are:
+#
+#   Provider  included  reason  Eth  IB  OPA  RoCE  Slingshot   Gemini/Aries
+#   --------  --------  ------  ---  --  ---  ----  ---------   ------------
+#
+#   opx       No        a        N   N   Y    N
+#   psm2      No        b        N   N   Y    N
+#   psm3      Yes       c        Y   N   Y    Y                 X
+#   shm       Yes       d
+#   tcp       Yes                Y*  X   X    X     X           X
+#   verbs     Yes                N   Y   N    Y
+#
+#   cxi       No        f        X                  Y*
+#   ugni      No        f                                       Y*
+#
+#   Y : supported
+#   Y*: best choice for that interconnect
+#   X : supported but sub-optimal
+#     : unclear
+#
+#   a : OPA is covered by psm3.
+#   b : psm3 is preffered over psm2.
+#   c : psm3 provides optimized performance for most verbs and socket devices
+#       Additionally, PSM3.x: 1) fully integrates the OFI provider and
+#       underlying PSM3 protocols/implementation, and 2) exports only OFI APIs.
+#   c : requires cray interconnect and libraries
+#   d : shm enables applications using OFI to be run over shared memory.
+#   f : Requires access to hardware specific libraries at build time; these
+#       providers need to be injected at run-time. See ch-fromhost man page.
+#
+# The full list of OFI providers can be seen here:
+#
+#   - https://github.com/ofiwg/libfabric/blob/main/README.md
+#
+# PMI:
+#
+# We build OpenPMIx, PMI2, and FLUX-PMI.
+
+
+# OS packages needed to build libfabric providers.
+#
+# Note that libpsm2 is x86-64 only so we skip if missing
+RUN dnf install -y --setopt=install_weak_deps=false \
+                automake \
+                brotli \
+                file \
+                flex \
+                gcc \
+                gcc-c++ \
+                gcc-gfortran \
+                git \
+                hwloc \
+                hwloc-devel \
+                hwloc-libs \
+                hwloc-plugins \
+                ibacm \
+                libatomic \
+                libevent-devel \
+                libtool \
+                libibumad \
+                libibumad-devel \
+                librdmacm \
+                librdmacm-devel \
+                libssh \
+                rdma-core \
+                make \
+                numactl-devel \
+                wget \
+ && dnf install -y --setopt=install_weak_deps=false --skip-broken \
+                 libpsm2 \
+                 libpsm2-devel \
+ && dnf clean all
+
+WORKDIR /usr/local/src
+
+# Libfabric (OFI)
+#
+# PSM3 is our preferred provider for OPA, however, it requires libpsm2, which
+# is x86_64 only. Thus, the 'PSM_CONFIG' variable is used to avoid building PSM3
+# on aarch64 machines.
+ARG LIBFABRIC_VERSION=1.15.1
+RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
+              https://github.com/ofiwg/libfabric/ \
+ && cd libfabric \
+ && ./autogen.sh \
+ && if [[ $(uname -m) == x86_64 ]]; then PSM_CONFIG=enable; \
+    else PSM_CONFIG=disable; fi \
+ && ./configure --prefix=/usr/local \
+                --disable-opx \
+                --disable-psm2 \
+                --disable-efa \
+                --disable-rxm \
+                --disable-sockets \
+                "--${PSM_CONFIG}-psm3" \
+                --enable-rxm \
+                --enable-shm \
+                --enable-tcp \
+                --enable-verbs \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../libfabric*
+
+# PMIX.
+#
+# There isn’t a package available with the PMIX libraries we need, so
+# build them.
+#
+# Note: PMIX_VERSION is a variable used by OpenMPI at configure time; we use
+# PMIX_VER to avoid issues.
+ARG PMIX_VER=3.2.4
+RUN git clone https://github.com/openpmix/openpmix.git \
+  && cd openpmix \
+  && git checkout v$PMIX_VER \
+  && ./autogen.pl \
+  && ./configure --prefix=/usr/local \
+                 --with-libevent \
+                 --with-hwloc \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../openpmix*
+
+# FLUX-PMI
+#
+# Flux requires a number of additional packages. We install them here to
+# distinquish between libfabric provider and flux-pmi dependencies.
+ARG FLUX_VERSION=0.45.0
+RUN dnf install -y \
+                czmq \
+                czmq-devel \
+                cppzmq-devel \
+                jansson \
+                jansson-devel \
+                libarchive-devel \
+                libsqlite3x-devel \
+                lua-devel \
+                lz4-devel \
+                ncurses-devel \
+                python3-cffi \
+                python3-jsonschema \
+                python3-yaml \
+                tree \
+ && dnf clean all \
+ && git clone https://github.com/flux-framework/flux-core \
+ && cd flux-core \
+ && git checkout v${FLUX_VERSION} \
+ && ./autogen.sh \
+ && ./configure --prefix=/usr/local \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../flux-core \
+ && echo '/usr/local/lib/flux' >> /etc/ld.so.conf.d/usrlocal.conf \
+ && ldconfig
+
+# PMI2
+#
+# We prefer PMIx, it scales better than PMI2. PMI2 will no longer be supported
+# by OpenMPI starting with version 5.
+#
+ARG SLURM_VERSION=21-08-6-1
+RUN wget https://github.com/SchedMD/slurm/archive/slurm-${SLURM_VERSION}.tar.gz \
+ && tar -xf slurm-${SLURM_VERSION}.tar.gz \
+ && cd slurm-slurm-${SLURM_VERSION} \
+ && ./configure --prefix=/usr/local \
+ && cd contribs/pmi2 \
+ && make -j$(getconf _NPROCESSORS_ONLN) install \
+ && rm -Rf ../../../slurm*
+
+RUN ls -lh /usr/local/lib/flux

@@ -1,4 +1,6 @@
-FROM centos:7
+# Use an almalinux:8 image because it can install some RPMs without --force.
+
+FROM almalinux:8
 WORKDIR /
-RUN yum install -y ed         # doesn't need --force
+RUN dnf install -y ed  # doesn’t need --force
 WORKDIR /usr

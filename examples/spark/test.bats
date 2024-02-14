@@ -1,7 +1,4 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 # Note: If you get output like the following (piping through cat turns off
@@ -22,10 +19,11 @@ load "${CHTEST_DIR}/common.bash"
 setup () {
     scope standard
     prerequisites_ok spark
+    pmix_or_skip
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'issue #1161'
     umask 0077
 
-    # Unset these Java variables so the container doesn't use host paths.
+    # Unset these Java variables so the container doesn’t use host paths.
     unset JAVA_BINDIR JAVA_HOME JAVA_ROOT
 
     spark_dir=${TMP_}/spark  # runs before each test, so no mktemp
@@ -40,7 +38,7 @@ setup () {
         # should be avoided for large scale runs.
         master_host="$(hostname)"
         # Start Spark workers using pdsh. We would really prefer to do this
-        # using srun, but that doesn't work; see issue #230.
+        # using srun, but that doesn’t work; see issue #230.
         command -v pdsh >/dev/null 2>&1 || pedantic_fail "pdsh not in path"
         pernode="pdsh -R ssh -w ${SLURM_NODELIST} -- PATH='${PATH}'"
     else
@@ -132,7 +130,7 @@ EOF
     ch-run -b "$confbind" "$ch_img" -- /opt/spark/sbin/stop-master.sh
     sleep 2
     # Any Spark processes left?
-    # (Use egrep instead of fgrep so we don't match the grep process.)
+    # (Use egrep instead of fgrep so we don’t match the grep process.)
     # shellcheck disable=SC2086
     $pernode ps aux | ( ! grep -E '[o]rg\.apache\.spark\.deploy' )
 }

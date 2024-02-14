@@ -5,9 +5,10 @@
    libraries that ch_core requires. */
 
 #define _GNU_SOURCE
+#include <dirent.h>
 #include <errno.h>
-#include <sys/stat.h>
 #include <stdbool.h>
+#include <sys/stat.h>
 
 
 /** Macros **/
@@ -18,6 +19,10 @@
 /* C99 does not have noreturn or _Noreturn (those are C11), but GCC, Clang,
    and hopefully others support the following extension. */
 #define noreturn __attribute__ ((noreturn))
+
+/* Size of “warnings” buffer, in bytes. We want this to be big enough that we
+   don’t need to worry about running out of room. */
+#define WARNINGS_SIZE (4*1024)
 
 /* Test some value, and if it's not what we expect, exit with a fatal error.
    These are macros so we have access to the file and line number.
@@ -84,14 +89,16 @@ struct env_var {
 struct env_delta {
    enum env_action action;
    union {
+      int delim;             // ENV_SET_DEFAULT
       struct env_var *vars;  // ENV_SET_VARS
       char *glob;            // ENV_UNSET_GLOB
    } arg;
 };
 
-enum log_level { LL_FATAL =   -2,  // minimum number of -v to print the msg
+enum log_level { LL_FATAL =   -3,
+                 LL_STDERR =  -2,
                  LL_WARNING = -1,
-                 LL_INFO =     0,
+                 LL_INFO =     0,  // minimum number of -v to print the msg
                  LL_VERBOSE =  1,
                  LL_DEBUG =    2,
                  LL_TRACE =    3 };
@@ -102,29 +109,41 @@ enum log_level { LL_FATAL =   -2,  // minimum number of -v to print the msg
 extern enum log_level verbose;
 extern char *host_tmp;
 extern char *username;
+extern char *warnings;
+extern size_t warnings_offset;
 
 
 /** Function prototypes **/
 
 char *argv_to_string(char **argv);
+int buf_strings_count(char *str, size_t s);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
-struct env_var *env_file_read(const char *path);
+int dir_ls(const char *path, struct dirent ***namelist);
+int dir_ls_count(const char *path);
+int dir_ls_filter(const struct dirent *e);
+struct env_var *env_file_read(const char *path, int delim);
 void env_set(const char *name, const char *value, const bool expand);
 void env_unset(const char *glob);
 struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
 void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
-void mkdirs(const char *base, const char *path, char **denylist);
+void test_logging(bool fail);
+void mkdirs(const char *base, const char *path, char **denylist,
+            const char *scratch);
 void msg(enum log_level level, const char *file, int line, int errno_,
          const char *fmt, ...);
 noreturn void msg_fatal(const char *file, int line, int errno_,
                         const char *fmt, ...);
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink);
+char *path_join(const char *a, const char *b);
 unsigned long path_mount_flags(const char *path);
 void path_split(const char *path, char **dir, char **base);
 bool path_subdir_p(const char *base, const char *path);
-char *realpath_safe(const char *path);
+char *realpath_(const char *path, bool fail_ok);
+void replace_char(char *str, char old, char new);
 void split(char **a, char **b, const char *str, char del);
 void version(void);
+size_t string_append(char *addr, char *str, size_t size, size_t offset);
+void warnings_reprint(void);

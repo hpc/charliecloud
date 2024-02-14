@@ -71,6 +71,24 @@ joined_ok () {
     done
 }
 
+sleepcat () {
+    # Wait up to $1 seconds for file $2 to appear, then wait one more second,
+    # then cat the file. Return successfully whether or not the file appears
+    # and was catted.
+    timeout=$1
+    path=$2
+    for (( i=0; i < timeout; i++ )); do
+        if [[ -f $path ]]; then
+            sleep 1  # wait for write to complete
+            cat "$path"
+            return 0
+        fi
+        sleep 1
+    done
+    echo "timed out waiting for $path to appear" 1>&2
+    return 0
+}
+
 # Unset environment variables that might be used.
 unset_vars () {
     unset OMPI_COMM_WORLD_LOCAL_SIZE
@@ -132,14 +150,13 @@ unset_vars () {
 
     # first peer (winner)
     ch-run -v --join-ct=2 --join-tag=foo "$ch_timg" -- \
-           /test/printns 5 "${BATS_TMPDIR}/join.1.ns" \
+           /test/printns 10 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
-    sleep 1
+    sleepcat 2 "${BATS_TMPDIR}/join.1.ns"
     cat "${BATS_TMPDIR}/join.1.err"
-    cat "${BATS_TMPDIR}/join.1.ns"
-      grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.1.err"
-      grep -Fq 'join: I won' "${BATS_TMPDIR}/join.1.err"
-    ! grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: I won' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.1.err" && exit 1
 
     # IPC resources present? (glibc and musl naming patterns are different)
     ls -lh /dev/shm
@@ -173,28 +190,26 @@ unset_vars () {
 
     # first peer (winner)
     ch-run -v --join-ct=3 --join-tag=foo "$ch_timg" -- \
-           /test/printns 5 "${BATS_TMPDIR}/join.1.ns" \
+           /test/printns 15 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
-    sleep 1
+    sleepcat 2 "${BATS_TMPDIR}/join.1.ns"
     cat "${BATS_TMPDIR}/join.1.err"
-    cat "${BATS_TMPDIR}/join.1.ns"
-      grep -Fq 'join: 1 3' "${BATS_TMPDIR}/join.1.err"
-      grep -Fq 'join: I won' "${BATS_TMPDIR}/join.1.err"
-      grep -Fq 'join: 2 peers left' "${BATS_TMPDIR}/join.1.err"
-    ! grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: 1 3' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: I won' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: 2 peers left' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.1.err" && exit 1
 
     # second peer (loser, no cleanup)
     ch-run -v --join-ct=3 --join-tag=foo "${ch_timg}" -- \
            /test/printns 0 "${BATS_TMPDIR}/join.2.ns" \
            >& "${BATS_TMPDIR}/join.2.err" &
-    sleep 1
+    sleepcat 6 "${BATS_TMPDIR}/join.2.ns"
     cat "${BATS_TMPDIR}/join.2.err"
-    cat "${BATS_TMPDIR}/join.2.ns"
-      grep -Fq 'join: 1 3' "${BATS_TMPDIR}/join.2.err"
-      grep -Fq 'join: I lost' "${BATS_TMPDIR}/join.2.err"
-      grep -Fq 'joining namespaces of pid' "${BATS_TMPDIR}/join.2.err"
-      grep -Fq 'join: 1 peers left' "${BATS_TMPDIR}/join.2.err"
-    ! grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq 'join: 1 3' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq 'join: I lost' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq 'joining namespaces of pid' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq 'join: 1 peers left' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.2.err" && exit 1
 
     # IPC resources present?
     ls -lh /dev/shm
@@ -205,9 +220,8 @@ unset_vars () {
     ch-run -v --join-ct=3 --join-tag=foo "$ch_timg" -- \
            /test/printns 0 "${BATS_TMPDIR}/join.3.ns" \
            >& "${BATS_TMPDIR}/join.3.err" &
-    sleep 1
+    sleepcat 6 "${BATS_TMPDIR}/join.3.ns"
     cat "${BATS_TMPDIR}/join.3.err"
-    cat "${BATS_TMPDIR}/join.3.ns"
       grep -Fq 'join: 1 3' "${BATS_TMPDIR}/join.3.err"
       grep -Fq 'join: I lost' "${BATS_TMPDIR}/join.2.err"
       grep -Fq 'joining namespaces of pid' "${BATS_TMPDIR}/join.2.err"
@@ -365,9 +379,8 @@ unset_vars () {
     ch-run -v "$ch_timg" -- \
            /test/printns 5 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
-    sleep 2
+    sleepcat 3 "${BATS_TMPDIR}/join.1.ns"
     cat "${BATS_TMPDIR}/join.1.err"
-    cat "${BATS_TMPDIR}/join.1.ns"
     grep -Fq "join: 0 0 (null) 0" "${BATS_TMPDIR}/join.1.err"
 
     # PID of ch-run/printns above.
@@ -376,7 +389,7 @@ unset_vars () {
     echo "found pid: ${pid}"
     [[ -n $pid ]]
 
-    # Second ch-run joins the first's namespaces.
+    # Second ch-run joins the first’s namespaces.
     run ch-run -v --join-pid="$pid" "$ch_timg" -- \
                /test/printns 0 "${BATS_TMPDIR}/join.2.ns"
     echo "$output"
@@ -402,12 +415,11 @@ unset_vars () {
     ch-run -v --join-ct=2 --join-tag=bar "$ch_timg" -- \
            /test/printns 5 "${BATS_TMPDIR}/join.1.ns" \
            >& "${BATS_TMPDIR}/join.1.err" &
-    sleep 2
+    sleepcat 3 "${BATS_TMPDIR}/join.1.ns"
     cat "${BATS_TMPDIR}/join.1.err"
-    cat "${BATS_TMPDIR}/join.1.ns"
-      grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.1.err"
-      grep -Fq 'join: I won' "${BATS_TMPDIR}/join.1.err"
-    ! grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: I won' "${BATS_TMPDIR}/join.1.err"
+    grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.1.err" && exit 1
 
     # PID of first peer.
     pid=$(sed -En 's/^ch-run\[([0-9]+)\]: join: winner initializing.+$/\1/p' \
@@ -417,16 +429,15 @@ unset_vars () {
 
     # Second of two peers (loser).
     ch-run -v --join-ct=2 --join-tag=bar "${ch_timg}" -- \
-           /test/printns 5 "${BATS_TMPDIR}/join.2.ns" \
+           /test/printns 10 "${BATS_TMPDIR}/join.2.ns" \
            >& "${BATS_TMPDIR}/join.2.err" &
-    sleep 2
+    sleepcat 6 "${BATS_TMPDIR}/join.2.ns"
     cat "${BATS_TMPDIR}/join.2.err"
-    cat "${BATS_TMPDIR}/join.2.ns"
-      grep -Fq 'join: 1 2' "${BATS_TMPDIR}/join.2.err"
-      grep -Fq 'join: I lost' "${BATS_TMPDIR}/join.2.err"
-      grep -Fq "joining namespaces of pid ${pid}" "${BATS_TMPDIR}/join.2.err"
-      grep -Fq 'join: 0 peers left' "${BATS_TMPDIR}/join.2.err"
-      grep -Fq 'join: cleaning up IPC' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq  'join: 1 2' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq  'join: I lost' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq  "joining namespaces of pid ${pid}" "${BATS_TMPDIR}/join.2.err"
+    grep -Fq  'join: 0 peers left' "${BATS_TMPDIR}/join.2.err"
+    grep -Fq  'join: cleaning up IPC' "${BATS_TMPDIR}/join.2.err"
 
     # Third ch-run simulates unplanned, joins existing namespaces.
     run ch-run -v --join-pid="$pid" "$ch_timg" -- \
@@ -434,12 +445,12 @@ unset_vars () {
     echo "$output"
     [[ $status -eq 0 ]]
     cat "${BATS_TMPDIR}/join.3.ns"
-      echo "$output" | grep -Fq "join: 0 0 (null) ${pid}"
-      echo "$output" | grep -Fq "joining namespaces of pid ${pid}"
-    ! echo "$output" | grep -Fq 'join: I won'
-    ! echo "$output" | grep -Fq 'join: I lost'
-    ! echo "$output" | grep  -q 'join: .+ peers left'
-    ! echo "$output" | grep -Fq 'join: cleaning up IPC'
+    echo "$output" | grep -Fq  "join: 0 0 (null) ${pid}"
+    echo "$output" | grep -Fq  "joining namespaces of pid ${pid}"
+    echo "$output" | grep -Fq 'join: I won' && exit 1
+    echo "$output" | grep -Fq 'join: I lost' && exit 1
+    echo "$output" | grep  -q 'join: .+ peers left' && exit 1
+    echo "$output" | grep -Fq 'join: cleaning up IPC' && exit 1
 
     # Same namespaces?
     for i in /proc/self/ns/*; do
@@ -452,13 +463,13 @@ unset_vars () {
 
 @test 'ch-run --join-pid: errors' {
 
-    # Can't join namespaces of processes we don't own.
+    # Can’t join namespaces of processes we don’t own.
     run ch-run -v --join-pid=1 "$ch_timg" -- true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"join: can't open /proc/1/ns/user: Permission denied"* ]]
 
-    # Can't join namespaces of processes that don't exist.
+    # Can’t join namespaces of processes that don’t exist.
     pid=2147483647
     run ch-run -v --join-pid="$pid" "$ch_timg" -- true
     echo "$output"

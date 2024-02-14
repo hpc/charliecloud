@@ -1,8 +1,26 @@
-:orphan:
+:code:`ch-checkns`
+++++++++++++++++++
 
-ch-checkns man page
-+++++++++++++++++++
+.. only:: not man
 
-.. include:: ./ch-checkns_desc.rst
+   Check :code:`ch-run` prerequisites, e.g., namespaces and :code:`pivot_root(2)`.
+
+
+Synopsis
+========
+
+::
+
+  $ ch-checkns
+
+Example
+=======
+
+::
+
+  $ ch-checkns
+  ok
+
+
 .. include:: ./bugs.rst
 .. include:: ./see_also.rst

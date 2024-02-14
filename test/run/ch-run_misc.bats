@@ -1,21 +1,36 @@
 load ../common
 
+bind1_dir=$BATS_TMPDIR/bind1
+bind2_dir=$BATS_TMPDIR/bind2
+
+setup () {
+    mkdir -p "$bind1_dir"
+    echo bind1_dir.file1 > "${bind1_dir}/file1"
+    mkdir -p "$bind2_dir"
+    echo bind2_dir.file2 > "${bind2_dir}/file2"
+}
+
+
+demand-overlayfs () {
+    ch-run -W "$ch_timg" -- true || skip 'no unpriv overlayfs'
+}
+
 
 @test 'relative path to image' {  # issue #6
-    scope quick
+    scope full
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
 
 @test 'symlink to image' {  # issue #50
-    scope quick
+    scope full
     ln -sf "$ch_timg" "${BATS_TMPDIR}/symlink-test"
     ch-run "${BATS_TMPDIR}/symlink-test" -- /bin/true
 }
 
 
 @test 'mount image read-only' {
-    scope quick
+    scope standard
     run ch-run "$ch_timg" sh <<EOF
 set -e
 dd if=/dev/zero bs=1 count=1 of=/out
@@ -27,25 +42,10 @@ EOF
 
 
 @test 'mount image read-write' {
-    scope quick
+    scope standard
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
     ch-run -w "$ch_timg" -- sh -c 'echo writable > write'
     ch-run -w "$ch_timg" rm write
-}
-
-
-@test '/usr/bin/ch-ssh' {
-    # Note: --ch-ssh without /usr/bin/ch-ssh is in test "broken image errors".
-    scope quick
-    ls -l "$ch_bin/ch-ssh"
-    ch-run --ch-ssh "$ch_timg" -- ls -l /usr/bin/ch-ssh
-    ch-run --ch-ssh "$ch_timg" -- test -x /usr/bin/ch-ssh
-    # Test bind-mount by comparing size rather than e.g. "ch-ssh --version"
-    # because ch-ssh won't run on Alpine (issue #4).
-    host_size=$(stat -c %s "${ch_bin}/ch-ssh")
-    guest_size=$(ch-run --ch-ssh "$ch_timg" -- stat -c %s /usr/bin/ch-ssh)
-    echo "host: ${host_size}, guest: ${guest_size}"
-    [[ $host_size -eq "$guest_size" ]]
 }
 
 
@@ -60,8 +60,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$CH_RUNNING' {
+@test "\$CH_RUNNING" {
     scope standard
 
     if [[ -v CH_RUNNING ]]; then
@@ -75,43 +74,62 @@ EOF
     [[ $output = 'CH_RUNNING=Weird Al Yankovic' ]]
 }
 
-# shellcheck disable=SC2016
-@test '$HOME' {
+
+@test "\$HOME" {
+    [[ $CH_TEST_BUILDER != 'none' ]] || skip 'image builder required'
+    demand-overlayfs
+    LC_ALL=C
+
     scope quick
     echo "host: $HOME"
     [[ $HOME ]]
     [[ $USER ]]
 
-    # default: set $HOME
+    # default: no change
+    # shellcheck disable=SC2016
+    run ch-run "${ch_imgdir}"/quick -- /bin/sh -c 'echo $HOME'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = "/root" ]]
+
+    # default: no “/root”
     # shellcheck disable=SC2016
     run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = /home/$USER ]]
+    [[ $output = "/" ]]
 
-    # no change if --no-home
+    # set $HOME if --home
     # shellcheck disable=SC2016
-    run ch-run --no-home "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = "$HOME" ]]
+    [[ $output = /home/$USER ]]
+
+    # /home is merged if --home
+    run ch-run --home "$ch_timg" -- ls -1 /home
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *directory-in-home* ]]
+    [[ $output = *file-in-home* ]]
+    [[ $output = *"$USER"* ]]
 
     # puke if $HOME not set
     home_tmp=$HOME
     unset HOME
     # shellcheck disable=SC2016
-    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export HOME="$home_tmp"
     echo "$output"
     [[ $status -eq 1 ]]
     # shellcheck disable=SC2016
-    [[ $output = *'cannot find home directory: is $HOME set?'* ]]
+    [[ $output = *'--home failed: $HOME not set'* ]]
 
     # puke if $USER not set
     user_tmp=$USER
     unset USER
     # shellcheck disable=SC2016
-    run ch-run "$ch_timg" -- /bin/sh -c 'echo $HOME'
+    run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export USER=$user_tmp
     echo "$output"
     [[ $status -eq 1 ]]
@@ -120,8 +138,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: add /bin' {
+@test "\$PATH: add /bin" {
     scope quick
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
@@ -139,7 +156,7 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = "$PATH2" ]]
-    # if /bin isn't in $PATH, former is added to end
+    # if /bin isn’t in $PATH, former is added to end
     PATH2="$ch_bin:/usr/bin"
     echo "$PATH2"
     # shellcheck disable=SC2016
@@ -150,8 +167,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$PATH: unset' {
+@test "\$PATH: unset" {
     scope standard
     old_path=$PATH
     unset PATH
@@ -166,8 +182,7 @@ EOF
 }
 
 
-# shellcheck disable=SC2016
-@test '$TMPDIR' {
+@test "\$TMPDIR" {
     scope standard
     mkdir -p "${BATS_TMPDIR}/tmpdir"
     touch "${BATS_TMPDIR}/tmpdir/file-in-tmpdir"
@@ -202,70 +217,96 @@ EOF
 
 @test 'ch-run --bind' {
     scope quick
-    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
-
-    # set up sources
-    mkdir -p "${ch_timg}/${ch_imgdir}/bind1"
-    mkdir -p "${ch_timg}/${ch_imgdir}/bind2"
-    # remove destinations that will be created
-    rmdir "${ch_timg}/bind3" || true
-    [[ ! -e ${ch_timg}/bind3 ]]
-    rmdir "${ch_timg}/bind4/a" "${ch_timg}/bind4/b" "${ch_timg}/bind4" || true
-    [[ ! -e ${ch_timg}/bind4 ]]
+    demand-overlayfs
 
     # one bind, default destination
-    ch-run -b "${ch_imgdir}/bind1" "$ch_timg" -- cat "${ch_imgdir}/bind1/file1"
+    ch-run -b /mnt "$ch_timg" -- ls -lh /mnt
     # one bind, explicit destination
-    ch-run -b "${ch_imgdir}/bind1:/mnt/9" "$ch_timg" -- cat /mnt/9/file1
+    ch-run -b "${bind1_dir}:/mnt/9" "$ch_timg" -- cat /mnt/9/file1
 
     # one bind, create destination, one level
-    ch-run -w -b "${ch_imgdir}/bind1:/bind3" "$ch_timg" -- cat /bind3/file1
+    ch-run -W -b "${bind1_dir}:/bind3" "$ch_timg" -- cat /bind3/file1
     # one bind, create destination, two levels
-    ch-run -w -b "${ch_imgdir}/bind1:/bind4/a" "$ch_timg" -- cat /bind4/a/file1
-    # one bind, create destination, two levels via symlink
-    [[ -L ${ch_timg}/mnt/bind4 ]]
-    ch-run -w -b "${ch_imgdir}/bind1:/mnt/bind4/b" "$ch_timg" \
-           -- cat /bind4/b/file1
+    ch-run -W -b "${bind1_dir}:/bind4/a" "$ch_timg" -- cat /bind4/a/file1
 
     # two binds, default destination
-    ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2" "$ch_timg" \
-           -- cat "${ch_imgdir}/bind1/file1" "${ch_imgdir}/bind2/file2"
+    ch-run -b /mnt -b /var "$ch_timg" -- ls -lh /mnt /var
     # two binds, explicit destinations
-    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2:/mnt/9" \
-           "$ch_timg" \
+    ch-run -b "${bind1_dir}:/mnt/8" -b "${bind2_dir}:/mnt/9" "$ch_timg" \
            -- cat /mnt/8/file1 /mnt/9/file2
     # two binds, default/explicit
-    ch-run -b "${ch_imgdir}/bind1" -b "${ch_imgdir}/bind2:/mnt/9" "$ch_timg" \
-           -- cat "${ch_imgdir}/bind1/file1" /mnt/9/file2
+    ch-run -b /var -b "${bind2_dir}:/mnt/9" "$ch_timg" \
+           -- ls -lh /var /mnt/9/file2
     # two binds, explicit/default
-    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind2" "$ch_timg" \
-           -- cat /mnt/8/file1 "${ch_imgdir}/bind2/file2"
+    ch-run -b "${bind1_dir}:/mnt/8" -b /var "$ch_timg" \
+           -- ls -lh /mnt/8/file1 /var
 
     # bind one source at two destinations
-    ch-run -b "${ch_imgdir}/bind1:/mnt/8" -b "${ch_imgdir}/bind1:/mnt/9" \
-           "$ch_timg" \
+    ch-run -b "${bind1_dir}:/mnt/8" -b "${bind1_dir}:/mnt/9" "$ch_timg" \
            -- diff -u /mnt/8/file1 /mnt/9/file1
     # bind two sources at one destination
-    ch-run -b "${ch_imgdir}/bind1:/mnt/9" -b "${ch_imgdir}/bind2:/mnt/9" \
-           "$ch_timg" \
+    ch-run -b "${bind1_dir}:/mnt/9" -b "${bind2_dir}:/mnt/9" "$ch_timg" \
            -- sh -c '[ ! -e /mnt/9/file1 ] && cat /mnt/9/file2'
+}
 
-    # omit tmpfs at /home, which shouldn't be empty
-    ch-run --no-home "$ch_timg" -- cat /home/overmount-me
-    # overmount tmpfs at /home
-    ch-run -b "${ch_imgdir}/bind1:/home" "$ch_timg" -- cat /home/file1
-    # bind to /home without overmount
-    ch-run --no-home -b "${ch_imgdir}/bind1:/home" "$ch_timg" \
-           -- cat /home/file1
-    # omit default /home, with unrelated --bind
-    ch-run --no-home -b "${ch_imgdir}/bind1" "$ch_timg" \
-           -- cat "${ch_imgdir}/bind1/file1"
+
+@test 'ch-run --bind with tmpfs overmount' {
+    [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
+    demand-overlayfs
+
+    img=$BATS_TMPDIR/bind-overmount
+    src=$BATS_TMPDIR/bind-overmount-src
+
+    rm-img () {
+        # Remove existing fixture, avoiding “sudo rm -Rf” b/c it’s too scary.
+        sudo rm -f "$img"/foo/file-in-foo
+        sudo rmdir "$img"/foo/directory-in-foo || true
+        sudo rmdir "$img"/foo || true
+        sudo rm -f "$img"/home/file-in-home
+        sudo rmdir "$img"/home/directory-in-home || true
+        sudo rmdir "$img"/home || true
+        rm -Rf --one-file-system "$img"
+    }
+
+    rm-img
+    ch-convert "$ch_tardir"/chtest.* "$img"
+    ls -l "$img"
+    mkdir "$img"/foo
+    touch "$img"/foo/file-in-foo
+    mkdir "$img"/foo/directory-in-foo
+    sudo chown root:root "$img"/foo "$img"/home
+    sudo chmod 755 "$img"/foo "$img"/home
+    ls -ld "$img"/foo "$img"/home
+    ls -l "$img"/foo "$img"/home
+
+    mkdir -p "$src"
+    touch "$src"/file-in-src
+    mkdir -p "$src"/directory-in-src
+    ls -ld "$src"
+    ls -l "$src"
+
+    # --bind
+    run ch-run -W -b "$src":/foo/bar "$img" -- ls -lahR /foo
+    echo "$output"
+    [[ $status -eq 0 ]]
+
+    # --home
+    run ch-run --home "$img" -- ls -lah /home
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | wc -l) -eq 3 ]]
+    [[ $output = *directory-in-home* ]]
+    [[ $output = *file-in-home* ]]
+    [[ $output = *"$USER"* ]]
+
+    rm-img
 }
 
 
 @test 'ch-run --bind errors' {
     scope quick
-    [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'needs writeable image'
+    [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
+    demand-overlayfs
 
     # no argument to --bind
     run ch-run "$ch_timg" -b
@@ -286,124 +327,103 @@ EOF
     [[ $output = *'--bind: no source provided'* ]]
 
     # destination not provided
-    run ch-run -b "${ch_imgdir}/bind1:" "$ch_timg" -- /bin/true
+    run ch-run -b "${bind1_dir}:" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'--bind: no destination provided'* ]]
 
     # destination is /
-    run ch-run -b "${ch_imgdir}/bind1:/" "$ch_timg" -- /bin/true
+    run ch-run -b "${bind1_dir}:/" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"--bind: destination can't be /"* ]]
 
     # destination is relative
-    run ch-run -b "${ch_imgdir}/bind1:foo" "$ch_timg" -- /bin/true
+    run ch-run -b "${bind1_dir}:foo" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"--bind: destination must be absolute"* ]]
 
     # destination climbs out of image, exists
-    run ch-run -b "${ch_imgdir}/bind1:/.." "$ch_timg" -- /bin/true
+    run ch-run -b "${bind1_dir}:/.." "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: ${ch_imgdir} not subdirectory of ${ch_timg}"* ]]
+    [[ $output = *"can't bind: "*"/${USER}.ch not subdirectory of "*"/${USER}.ch/mnt"* ]]
 
     # destination climbs out of image, does not exist
-    run ch-run -b "${ch_imgdir}/bind1:/../doesnotexist/a" "$ch_timg" \
-               -- /bin/true
+    run ch-run -b "${bind1_dir}:/../doesnotexist/a" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: ${ch_imgdir}/doesnotexist not subdirectory of ${ch_timg}"* ]]
+    [[ $output = *"can't mkdir: "*"/${USER}.ch/doesnotexist not subdirectory of "*"/${USER}.ch/mnt"* ]]
     [[ ! -e ${ch_imgdir}/doesnotexist ]]
 
     # source does not exist
-    run ch-run -b "${ch_imgdir}/hoops" "$ch_timg" -- /bin/true
+    run ch-run -b "/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: source not found: ${ch_imgdir}/hoops"* ]]
+    [[ $output = *"can't bind: source not found: /doesnotexist"* ]]
 
-    # destination does not exist
-    run ch-run -b "${ch_imgdir}/bind1:/goops" "$ch_timg" -- /bin/true
+    # destination does not exist and image is not writeable
+    run ch-run -b "${bind1_dir}:/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: ${ch_timg}/goops: Read-only file system"* ]]
+    [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/doesnotexist: Read-only file system"* ]]
 
     # neither source nor destination exist
-    run ch-run -b "${ch_imgdir}/hoops:/goops" "$ch_timg" -- /bin/true
+    run ch-run -b /doesnotexist-out:/doesnotexist-in "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: source not found: ${ch_imgdir}/hoops"* ]]
+    [[ $output = *"can't bind: source not found: /doesnotexist-out"* ]]
 
     # correct bind followed by source does not exist
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/0" -b "${ch_imgdir}/hoops" \
-               "$ch_timg" -- /bin/true
+    run ch-run -b "${bind1_dir}:/mnt/0" -b /doesnotexist "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: source not found: ${ch_imgdir}/hoops"* ]]
+    [[ $output = *"can't bind: source not found: /doesnotexist"* ]]
 
     # correct bind followed by destination does not exist
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/0" -b "${ch_imgdir}/bind2:/goops" \
+    run ch-run -b "${bind1_dir}:/mnt/0" -b "${bind2_dir}:/doesnotexist" \
                "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: ${ch_timg}/goops: Read-only file system"* ]]
+    [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/doesnotexist: Read-only file system"* ]]
 
-    # destination is broken symlink, absolute
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-abs" "$ch_timg" \
-        -- /bin/true
+    # destination is broken symlink
+    run ch-run -b "${bind1_dir}:/mnt/link-b0rken-abs" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: symlink not relative: ${ch_timg}/mnt/link-b0rken-abs"* ]]
-
-    # destination is broken symlink, relative, directly
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-rel" "$ch_timg" \
-        -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: broken symlink: ${ch_timg}/mnt/link-b0rken-rel"* ]]
-    [[ ! -e ${ch_timg}/mnt/doesnotexist ]]
-
-    # destination goes through broken symlink
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-b0rken-rel/a" "$ch_timg" \
-               -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: broken symlink: ${ch_timg}/mnt/link-b0rken-rel"* ]]
-    [[ ! -e ${ch_timg}/mnt/doesnotexist ]]
+    [[ $output = *"can't mkdir: symlink not relative: "*"/${USER}.ch/mnt/mnt/link-b0rken-abs"* ]]
 
     # destination is absolute symlink outside image
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-abs" "$ch_timg" -- /bin/true
+    run ch-run -b "${bind1_dir}:/mnt/link-bad-abs" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: "*" not subdirectory of ${ch_timg}"* ]]
+    [[ $output = *"can't bind: "*" not subdirectory of"* ]]
 
     # destination relative symlink outside image
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/link-bad-rel" "$ch_timg" -- /bin/true
+    run ch-run -b "${bind1_dir}:/mnt/link-bad-rel" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't bind: "*" not subdirectory of ${ch_timg}"* ]]
+    [[ $output = *"can't bind: "*" not subdirectory of"* ]]
 
     # mkdir(2) under existing bind-mount, default, first level
-    run ch-run -b "${ch_imgdir}/bind1:/proc/doesnotexist" "$ch_timg" \
-        -- /bin/true
+    run ch-run -b "${bind1_dir}:/proc/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: ${ch_timg}/proc/doesnotexist under existing bind-mount ${ch_timg}/proc "* ]]
+    [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/proc/doesnotexist under existing bind-mount "*"/${USER}.ch/mnt/proc "* ]]
 
     # mkdir(2) under existing bind-mount, user-supplied, first level
-    run ch-run -b "${ch_imgdir}/bind1:/mnt/0" \
-               -b "${ch_imgdir}/bind2:/mnt/0/foo" "$ch_timg" -- /bin/true
+    run ch-run -b "${bind1_dir}:/mnt/0" \
+               -b "${bind2_dir}:/mnt/0/foo" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: ${ch_timg}/mnt/0/foo under existing bind-mount ${ch_timg}/mnt/0 "* ]]
+    [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/mnt/0/foo under existing bind-mount "*"/${USER}.ch/mnt/mnt/0 "* ]]
 
     # mkdir(2) under existing bind-mount, default, 2nd level
-    run ch-run -b "${ch_imgdir}/bind1:/proc/sys/doesnotexist" "$ch_timg" \
-        -- /bin/true
+    run ch-run -b "${bind1_dir}:/proc/sys/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"can't mkdir: ${ch_timg}/proc/sys/doesnotexist under existing bind-mount ${ch_timg}/proc "* ]]
+    [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/proc/sys/doesnotexist under existing bind-mount "*"/${USER}.ch/mnt/proc "* ]]
 }
 
 
@@ -412,7 +432,7 @@ EOF
 
     # Quirk that is probably too obscure to put in the documentation: The
     # string containing only two straight quotes does not round-trip through
-    # "printenv" or "env", though it does round-trip through Bash "set":
+    # “printenv” or “env”, though it does round-trip through Bash “set”:
     #
     #   $ export foo="''"
     #   $ echo [$foo]
@@ -546,6 +566,34 @@ EOF
 }
 
 
+@test 'ch-run --set-env0' {
+    scope standard
+
+    export SET=foo
+    f_in=${BATS_TMPDIR}/env.bin
+    {
+        printf 'chse_a1=bar\0'
+        printf "chse_a4='bar'\0"
+        #shellcheck disable=SC2016
+        printf 'chse_d7=bar:$SET\0'
+        printf 'chse_g1=foo\nbar\0'
+    } > "$f_in"
+    hd "$f_in" | sed -E 's/^0000//'  # trim a few zeros to make it fit
+
+    output_expected=$(cat <<'EOF'
+('chse_a1', 'bar')
+('chse_a4', 'bar')
+('chse_d7', 'bar:foo')
+('chse_g1', 'foo\nbar')
+EOF
+)
+    run ch-run --set-env0="$f_in" "$ch_timg" -- python3 -c 'import os; [print((k,v)) for (k,v) in sorted(os.environ.items()) if "chse_" in k]'
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$output_expected") <(echo "$output")
+}
+
+
 @test 'ch-run --set-env from Dockerfile' {
     scope standard
     prerequisites_ok argenv
@@ -580,10 +628,10 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"can't open: /ch/environment: No such file or directory"* ]]
 
-    # Note: I'm not sure how to test an error during reading, i.e., getline(3)
-    # rather than fopen(3). Hence no test for "error reading".
+    # Note: I’m not sure how to test an error during reading, i.e., getline(3)
+    # rather than fopen(3). Hence no test for “error reading”.
 
-    # invalid line: missing '='
+    # invalid line: missing “=”
     echo 'FOO bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
@@ -598,11 +646,12 @@ EOF
     [[ $output = *"can't parse variable: empty name: ${f_in}:1"* ]]
 }
 
+
 # shellcheck disable=SC2016
 @test 'ch-run --set-env command line' {
     scope standard
 
-    # missing '''
+    # missing “'”
     # shellcheck disable=SC2086
     run ch-run --set-env=foo='$test:app' --env-no-expand -v "$ch_timg" -- /bin/true
     echo "$output"
@@ -615,6 +664,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
+
 
 @test 'ch-run --unset-env' {
     scope standard
@@ -798,6 +848,7 @@ EOF
     diff -u <(echo "$output_expected") <(echo "$output")
 }
 
+
 @test 'ch-run: internal SquashFUSE mounting' {
     scope standard
     [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
@@ -815,11 +866,12 @@ EOF
 
     # -m option
     mountpt="${BATS_TMPDIR}/sqfs_tmpdir"
+    mountpt_real=$(realpath "$mountpt")
     [[ -e $mountpt ]] || mkdir "$mountpt"
     run ch-run -m "$mountpt" -v "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $output = *"newroot: ${mountpt}"* ]]
+    [[ $output = *"newroot: ${mountpt_real}"* ]]
     rmdir "$mountpt"
 
     # -m with non-sqfs img
@@ -833,6 +885,7 @@ EOF
     rm -Rf --one-file-system "$img"
 }
 
+
 @test 'ch-run: internal SquashFUSE errors' {
     scope standard
     [[ $CH_TEST_PACK_FMT == squash-mount ]] || skip 'squash-mount format only'
@@ -843,7 +896,7 @@ EOF
     [[ $status -ne 0 ]]  # exits with status of 139
     [[ $output = *"mount point can't be empty string"* ]]
 
-    # mount point doesn't exist
+    # mount point doesn’t exist
     run ch-run -m /doesnotexist "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]  # exits with status of 139
@@ -853,14 +906,14 @@ EOF
     run ch-run -m ./fixtures/README "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -ne 0 ]]
-    [[ $output = *'not a directory: ./fixtures/README'* ]]
+    [[ $output = *'not a directory: '*'/fixtures/README'* ]]
 
     # image is file but not sqfs
     run ch-run -vv ./fixtures/README -- /bin/true
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
-    [[ $output = *'unknown image type: ./fixtures/README'* ]]
+    [[ $output = *'unknown image type: '*'/fixtures/README'* ]]
 
     # image is a broken sqfs
     sq_tmp="$BATS_TMPDIR"/b0rken.sqfs
@@ -876,6 +929,7 @@ EOF
     rm "$sq_tmp"
 }
 
+
 @test 'broken image errors' {
     scope standard
     img=${BATS_TMPDIR}/broken-image
@@ -884,7 +938,6 @@ EOF
     # Create an image skeleton.
     dirs=$(echo {dev,proc,sys})
     files=$(echo etc/{group,passwd})
-    # shellcheck disable=SC2116
     files_optional=$(echo etc/{hosts,resolv.conf})
     mkdir -p "$img"
     for d in $dirs; do mkdir -p "${img}/$d"; done
@@ -897,7 +950,7 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
-    # For each required file, we want a correct error if it's missing.
+    # For each required file, we want a correct error if it’s missing.
     for f in $files; do
         echo "required: ${f}"
         rm "${img}/${f}"
@@ -911,7 +964,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each optional file, we want no error if it's missing.
+    # For each optional file, we want no error if it’s missing.
     for f in $files_optional; do
         echo "optional: ${f}"
         rm "${img}/${f}"
@@ -922,7 +975,7 @@ EOF
         [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
     done
 
-    # For all files, we want a correct error if it's not a regular file.
+    # For all files, we want a correct error if it’s not a regular file.
     for f in $files $files_optional; do
         echo "not a regular file: ${f}"
         rm "${img}/${f}"
@@ -937,7 +990,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each directory, we want a correct error if it's missing.
+    # For each directory, we want a correct error if it’s missing.
     for d in $dirs tmp; do
         echo "required: ${d}"
         rmdir "${img}/${d}"
@@ -950,7 +1003,7 @@ EOF
         [[ $output =~ $r ]]
     done
 
-    # For each directory, we want a correct error if it's not a directory.
+    # For each directory, we want a correct error if it’s not a directory.
     for d in $dirs tmp; do
         echo "not a directory: ${d}"
         rmdir "${img}/${d}"
@@ -975,30 +1028,13 @@ EOF
     echo "expected: ${r}"
     [[ $output =~ $r ]]
 
-    # /home without --private-home
-    # FIXME: Not sure how to make the second mount(2) fail.
+    # default shouldn’t care if /home is missing
     rmdir "${img}/home"
     run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
     [[ $status -eq 1 ]]
-    r="can't mount tmpfs at /.+/home: No such file or directory"
-    echo "expected: ${r}"
-    [[ $output =~ $r ]]
-
-    # --no-home shouldn't care if /home is missing
-    rmdir "${img}/home"
-    run ch-run --no-home "$img" -- /bin/true
-    mkdir "${img}/home"  # restore before test fails for idempotency
-    echo "$output"
-    [[ $status -eq 1 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
-
-    # --ch-ssh but no /usr/bin/ch-ssh
-    run ch-run --ch-ssh "$img" -- /bin/true
-    echo "$output"
-    [[ $status -eq 1 ]]
-    [[ $output = *"--ch-ssh: /usr/bin/ch-ssh not in image"* ]]
 
     # Everything should be restored and back to the original error.
     run ch-run "$img" -- /bin/true
@@ -1022,33 +1058,122 @@ EOF
     gid_bad=8675310
 
     # UID
-    run ch-run -v --uid=$uid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --uid="$uid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
 
     # GID
-    run ch-run -v --gid=$gid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --gid="$gid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 
     # both
-    run ch-run -v --uid=$uid_bad --gid=$gid_bad "$ch_timg" -- /bin/true
+    run ch-run -v --uid="$uid_bad" --gid="$gid_bad" "$ch_timg" -- /bin/true
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"UID ${uid_bad} not found; using dummy info"* ]]
     [[ $output = *"GID ${gid_bad} not found; using dummy info"* ]]
 }
 
+
 @test 'syslog' {
     # This test depends on a fairly specific syslog configuration, so just do
     # it on GitHub Actions.
     [[ -n $GITHUB_ACTIONS ]] || skip 'GitHub Actions only'
     [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
-    expected="ch-run: uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
+    expected="uid=$(id -u) args=6: ch-run ${ch_timg} -- echo foo \"b a}\\\$r\""
     echo "$expected"
     #shellcheck disable=SC2016
     ch-run "$ch_timg" -- echo foo  'b a}$r'
-    sudo tail -n 10 /var/log/syslog | grep -F "$expected"
+    text=$(sudo tail -n 10 /var/log/syslog)
+    echo "$text"
+    echo "$text" | grep -F "$expected"
+}
+
+
+@test 'reprint warnings' {
+    run ch-run --warnings=0
+    [[ $status -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 1!') -eq 0 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 2!') -eq 0 ]]
+    [[ "$output" != *'reprinting first'* ]]
+
+    run ch-run --warnings=1
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *'ch-run['*']: warning: reprinting first 1 warning(s)'* ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 1!') -eq 2 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 2!') -eq 0 ]]
+
+    # Warnings list is a statically sized memory buffer. Ensure it works as
+    # intended by printing more warnings than can be saved to this buffer.
+    run ch-run --warnings=100
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output == *'ch-run['*']: warning: reprinting first '*' warning(s)'* ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 1!') -eq 2 ]]
+    [[ $(echo "$output" | grep -Fc 'this is warning 100!') -eq 1 ]]
+
+}
+
+@test 'ch-run --quiet' {
+    # test --logging-test
+    run ch-run --test=log
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'info'* ]]
+    [[ $output = *'warning: warning'* ]]
+
+    # quiet level 1
+    run ch-run -q --test=log
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'info'* ]]
+    [[ $output = *'warning: warning'* ]]
+
+    # quiet level 2
+    run ch-run -qq --test=log
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *'warning: warning'* ]]
+
+    # subprocess failure at quiet level 2
+    run ch-run -qq "$ch_timg" -- doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output = *"error: can't execve(2): doesnotexist: No such file or directory"* ]]
+
+    # quiet level 3
+    run ch-run -qqq --test=log
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *"warning: warning"* ]]
+
+    # subprocess failure at quiet level 3
+    run ch-run -qqq "$ch_timg" -- doesnotexist
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output != *"error: can't execve(2): doesnotexist: No such file or directory"* ]]
+
+    # failure at quiet level 3
+    run ch-run -qqq --test=log-fail
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output != *'info'* ]]
+    [[ $output != *'warning: warning'* ]]
+    [[ $output = *'error: the program failed inexplicably'* ]]
+}
+
+@test 'ch-run --write-fake errors' {
+    demand-overlayfs
+
+    # bad tmpfs size
+    run ch-run --write-fake=foo "$ch_timg" -- true
+    echo "$output"
+    [[ $status -eq 1 ]]
+    [[ $output == *'cannot mount tmpfs for overlay: Invalid argument'* ]]
 }

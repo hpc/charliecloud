@@ -22,7 +22,7 @@ image_ref_parse () {
         echo "fail: return code differs from expected ${retcode_expected}"
         exit 1
     fi
-    diff -u - <(echo "$out")
+    diff -u -I '^hint: https://' -I '^trace:' - <(echo "$out")
 }
 
 
@@ -258,7 +258,7 @@ EOF
 
     storage="${BATS_TMPDIR}/tmp"
     cache=$storage/dlcache
-    export CH_IMAGE_STORAGE=$storage
+    CH_IMAGE_STORAGE=$storage
 
     # OCI manifest; see issue #1184.
     img=charliecloud/ocimanifest:2021-10-12
@@ -285,11 +285,11 @@ EOF
     fi
 
     # These images are selected to be official-ish and small. My rough goal is
-    # to keep them under 10MiB uncompressed, but this isn't working great. It
+    # to keep them under 10MiB uncompressed, but this isn’t working great. It
     # may be worth our while to upload some small test images to these places.
 
     # Docker Hub: https://hub.docker.com/_/alpine
-    ch-image pull registry-1.docker.io/library/alpine:latest
+    ch-image pull registry-1.docker.io/library/alpine:3.17
 
     # quay.io: https://quay.io/repository/quay/busybox
     ch-image pull quay.io/quay/busybox:latest
@@ -300,18 +300,18 @@ EOF
 
     # Google Container Registry:
     # https://console.cloud.google.com/gcr/images/google-containers/GLOBAL
-    # FIXME: "latest" tags do not work, but they do in Docker (issue #896)
+    # FIXME: “latest” tags do not work, but they do in Docker (issue #896)
     # FIXME: arch-aware pull does not work either (issue #1100)
     ch-image pull --arch=yolo gcr.io/google-containers/busybox:1.27
 
     # nVidia NGC: https://ngc.nvidia.com
     # FIXME: 96 MiB unpacked; also kind of slow
-    # Note: Can't pull this image with LC_ALL=C under Python 3.6 (issue #970).
+    # Note: Can’t pull this image with LC_ALL=C under Python 3.6 (issue #970).
     ch-image pull nvcr.io/hpc/foldingathome/fah-gpu:7.6.21
 
     # Red Hat registry: https://catalog.redhat.com/software/containers/explore
     # FIXME: 77 MiB unpacked, should find a smaller public image
-    ch-image pull registry.access.redhat.com/ubi7-minimal:latest
+    ch-image pull registry.access.redhat.com/ubi7/ubi-minimal:latest
 
     # Microsoft Container Registry:
     # https://github.com/microsoft/containerregistry
@@ -320,7 +320,7 @@ EOF
     # Things not here (yet?):
     #
     # 1. Harbor (issue #899): Has a demo repo (https://demo.goharbor.io) that
-    #    you can make an account on, but I couldn't find a public repo, and
+    #    you can make an account on, but I couldn’t find a public repo, and
     #    the demo repo gets reset every two days.
     #
     # 2. Docker registry container (https://hub.docker.com/_/registry): Would
@@ -328,11 +328,11 @@ EOF
     #
     # 3. Amazon public repo (issue #901,
     #    https://aws.amazon.com/blogs/containers/advice-for-customers-dealing-with-docker-hub-rate-limits-and-a-coming-soon-announcement/):
-    #    Does not exist yet; coming "within weeks" of 2020-11-02.
+    #    Does not exist yet; coming “within weeks” of 2020-11-02.
     #
     # 4. Microsoft Azure registry [1] (issue #902): I could not find any
-    #    public images. It seems that public pull is "currently a preview
-    #    feature" as of 2020-11-06 [2].
+    #    public images. It seems that public pull is “currently a preview
+    #    feature” as of 2020-11-06 [2].
     #
     #    [1]: https://azure.microsoft.com/en-us/services/container-registry
     #    [2]: https://docs.microsoft.com/en-us/azure/container-registry/container-registry-faq#how-do-i-enable-anonymous-pull-access
@@ -494,21 +494,25 @@ EOF
 }
 
 @test 'pull by arch' {
-    # Has fat manifest; requested arch exists. There's not much simple to look
-    # for in the output, so just see if it works.
-    ch-image --arch=yolo pull alpine:latest
-    ch-image --arch=host pull alpine:latest
-    ch-image --arch=amd64 pull alpine:latest
-    ch-image --arch=arm64/v8 pull alpine:latest
+    # Has fat manifest; requested arch exists. There’s not much simple to look
+    # for in the output, so just see if it works. NOTE: As a temporary fix for
+    # some test suite problems, I’m changing all instances of alpine:latest here
+    # to alpine:3.15. We really need a more permanent solution for this (see #1485)
+    ch-image --arch=yolo pull alpine:3.15
+    ch-image --arch=host pull alpine:3.15
+    ch-image --arch=amd64 pull alpine:3.15
+    ch-image --arch=arm64/v8 pull alpine:3.15
 
     # Has fat manifest, but requested arch does not exist.
-    run ch-image --arch=doesnotexist pull alpine:latest
+    run ch-image --arch=doesnotexist pull alpine:3.15
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *'requested arch unavailable:'*'available:'* ]]
 
-    # Delete it so we don't try to use a non-matching arch for other testing.
-    ch-image delete alpine:latest || true
+    # Delete it so we don’t try to use a non-matching arch for other testing.
+    # FIXME: After #1485 is closed, revert to alpine:latest or alpine:3.17 and
+    # delete cache along with image.
+    ch-image delete alpine:3.15 || true
 
     # No fat manifest.
     ch-image --arch=yolo pull charliecloud/metadata:2021-01-15
@@ -518,7 +522,7 @@ EOF
         run ch-image --arch=arm64/v8 pull charliecloud/metadata:2021-01-15
         echo "$output"
         [[ $status -eq 1 ]]
-        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo' ]]
+        [[ $output = *'image is architecture-unaware'*'consider --arch=yolo'* ]]
     fi
 }
 

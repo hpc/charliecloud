@@ -1,0 +1,33 @@
+FROM alpine:3.17
+
+WORKDIR /test
+
+# Directory and file with full permissions.
+RUN mkdir dir_all && chmod 4777 dir_all
+RUN touch dir_all/file_all && chmod 4777 dir_all/file_all
+
+# Directory and file with minimal permissions.
+RUN mkdir dir_min && chmod 700 dir_min
+RUN touch dir_min/file_min && chmod 400 dir_min/file_min
+
+# FIFO
+RUN mkfifo fifo_
+
+# Empty directories
+RUN mkdir dir_empty
+RUN mkdir -p dir_empty_empty/dir_empty
+
+# Hard link
+RUN touch hard_target
+RUN ln hard_target hard_src
+
+# Symlink
+RUN touch soft_target
+RUN ln -s soft_target soft_src
+
+# Git repository
+RUN apk add git
+RUN git init gitrepo
+
+# Well-known last instruction so we can check if it’s cached.
+RUN echo last

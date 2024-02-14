@@ -61,7 +61,7 @@ def expected(path):
    if (m is None):
       return '*'
    else:
-      return m.group(1)
+      return m[1]
 
 def test(path):
    filetype = (os.path.isdir(path),
@@ -118,7 +118,7 @@ def try_t_file(path):
    raise Makes_No_Sense()
 
 def try_w_file(path):
-   # The file should exist, but this will create it if it doesn't. We don't
+   # The file should exist, but this will create it if it doesn’t. We don't
    # check for that error condition because we *only* want to touch the OS for
    # open(2) and write(2).
    with open(path, 'wb', buffering=0) as fp:

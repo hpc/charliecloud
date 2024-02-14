@@ -5,19 +5,20 @@ import inspect
 import os.path
 import sys
 
-sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/../lib/charliecloud"))
+ch_lib = os.path.dirname(os.path.abspath(__file__)) + "/../lib"
+sys.path.insert(0, ch_lib)
 import build_cache as bu
 import charliecloud as ch
 import build
 import misc
+import filesystem as fs
 import pull
 import push
 
 
 ## Constants ##
 
-# FIXME: It's currently easy to get the ch-run path from another script, but
+# FIXME: It’s currently easy to get the ch-run path from another script, but
 # hard from something in lib. So, we set it here for now.
 ch.CH_BIN = os.path.dirname(os.path.abspath(
                  inspect.getframeinfo(inspect.currentframe()).filename))
@@ -35,7 +36,7 @@ def main():
       description="Build and manage images; completely unprivileged.",
       epilog="""Storage directory is used for caching and temporary images.
                 Location: first defined of --storage, $CH_IMAGE_STORAGE, and
-                %s.""" % ch.Storage.root_default(),
+                %s.""" % fs.Storage.root_default(),
       sub_title="subcommands",
       sub_metavar="CMD")
 
@@ -55,17 +56,17 @@ def main():
    #      because before the subcommand is preferred.
    #
    #   2. We suppress defaults in the subcommand [1]. Without this, the
-   #      subcommand option value wins even it it's the default. :P Currently,
+   #      subcommand option value wins even it it’s the default. :P Currently,
    #      if specified in both places, the subcommand value wins and the
    #      before value is not considered at all, e.g. "ch-image -vv foo -v"
    #      gives verbosity 1, not 3. This oddity seemed acceptable.
    #
    # Alternate approaches include:
    #
-   #   * Set the main parser as the "parent" of the subcommand parser [2].
+   #   * Set the main parser as the “parent” of the subcommand parser [2].
    #     This may be the documented approach? However, it adds all the
-   #     subcommands to the subparser, which we don't want. A workaround would
-   #     be to create a *third* parser that's the parent of both the main and
+   #     subcommands to the subparser, which we don’t want. A workaround would
+   #     be to create a *third* parser that’s the parent of both the main and
    #     subcommand parsers, but that seems like too much indirection to me.
    #
    #   * A two-stage parse (parse_known_args(), then parse_args() to have the
@@ -106,28 +107,51 @@ def main():
            [["--auth"],
             { "action": "store_true",
               "help": "authenticated registry access; implied by push" }],
+           [["--cache-large"],
+            { "metavar": "SIZE",
+              "type": lambda s: ch.positive(s) * 2**20,  # internal unit: bytes
+              "default": ch.positive(
+                 os.environ.get("CH_IMAGE_CACHE_LARGE", 0)) * 2**20,
+              "help": "large file threshold in MiB" }],
            [["--debug"],
             { "action": "store_true",
               "help": "add short traceback to fatal error hints" }],
            [["--dependencies"],
             { "action": misc.Dependencies,
               "help": "print any missing dependencies and exit" }],
+           [["--no-lock"],
+            { "action": "store_true",
+              "help": "allow concurrent storage directory access (risky!)" }],
+           [["--no-xattrs"],
+            { "action": "store_true",
+              "help": "disable xattrs and ACLs (overrides $CH_XATTRS)" }],
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],
+           [["--profile"],
+            { "action": "store_true",
+              "help": "dump profile to “./profile.{p,txt}”" }],
+           [["-q", "--quiet"],
+            { "action": "count",
+              "default": 0,
+              "help": "print less output (can be repeated)"}],
            [["-s", "--storage"],
             { "metavar": "DIR",
+              "type": fs.Path,
               "help": "set builder internal storage directory to DIR" }],
            [["--tls-no-verify"],
             { "action": "store_true",
-              "help": "don't verify registry certificates (dangerous!)" }],
+              "help": "don’t verify registry certificates (dangerous!)" }],
            [["-v", "--verbose"],
             { "action": "count",
               "default": 0,
               "help": "print extra chatter (can be repeated)" }],
            [["--version"],
             { "action": misc.Version,
-              "help": "print version and exit" }] ] }
+              "help": "print version and exit" }],
+           [["--xattrs"],
+            { "action": "store_true",
+              "help": "enable build cache support for xattrs and ACLs"}] ] }
 
    # Most, but not all, subcommands need to check dependencies before doing
    # anything (the exceptions being basic information commands like
@@ -140,7 +164,7 @@ def main():
    # Helper function to set up a subparser. The star forces the latter two
    # arguments to be called by keyword, for clarity.
    def add_opts(p, dispatch, *, deps_check, stog_init, help_=False):
-      assert (not stog_init or deps_check)  # can't init storage w/o deps
+      assert (not stog_init or deps_check)  # can’t init storage w/o deps
       if (dispatch is not None):
          p.set_defaults(func=dispatch)
          dependencies_check[dispatch] = deps_check
@@ -172,12 +196,14 @@ def main():
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
-   sp.add_argument("--force", action="store_true",
+   sp.add_argument("--force", metavar="MODE", nargs="?", default="seccomp",
+                   type=ch.Force_Mode, const="seccomp",
                    help="inject unprivileged build workarounds")
+   sp.add_argument("--force-cmd", metavar="CMD,ARG1[,ARG2...]",
+                   action="append", default=[],
+                   help="command arg(s) to add under --force=seccomp")
    sp.add_argument("-n", "--dry-run", action="store_true",
-                   help="don't execute instructions")
-   sp.add_argument("--no-force-detect", action="store_true",
-                   help="don't try to detect if --force workarounds would work")
+                   help="don’t execute instructions")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",
@@ -203,7 +229,7 @@ def main():
    # delete
    sp = ap.add_parser("delete", "delete image from internal storage")
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
-   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to delete")
+   sp.add_argument("image_ref", metavar="IMAGE_GLOB", help="image(s) to delete", nargs='+')
 
    # gestalt (has sub-subcommands)
    sp = ap.add_parser("gestalt", "query debugging configuration",
@@ -221,6 +247,11 @@ def main():
    # python-path
    tp = sp.add_parser("python-path", "print path to python interpreter in use")
    add_opts(tp, misc.gestalt_python_path, deps_check=False, stog_init=False)
+   # logging
+   tp = sp.add_parser("logging", "print logging messages at all levels")
+   add_opts(tp, misc.gestalt_logging, deps_check=False, stog_init=False)
+   tp.add_argument("--fail", action="store_true",
+                   help="also generate a fatal error")
 
    # import
    sp = ap.add_parser("import", "copy external image into storage")
@@ -233,6 +264,12 @@ def main():
    # list
    sp = ap.add_parser("list", "print information about image(s)")
    add_opts(sp, misc.list_, deps_check=True, stog_init=True)
+   sp.add_argument("-l", "--long", action="store_true",
+                   help="use long listing format")
+   sp.add_argument("-u", "--undeletable", action="store_true",
+                   help="list images that can be restored with “undelete”")
+   sp.add_argument("--undeleteable", action="store_true", dest="undeletable",
+                   help=argparse.SUPPRESS)
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
 
@@ -252,7 +289,7 @@ def main():
    sp = ap.add_parser("push",
                       "copy image from local filesystem to remote repository")
    add_opts(sp, push.main, deps_check=True, stog_init=True)
-   sp.add_argument("--image", metavar="DIR",
+   sp.add_argument("--image", metavar="DIR", type=fs.Path,
                    help="path to unpacked image (default: opaque path in storage dir)")
    sp.add_argument("source_ref", metavar="IMAGE_REF", help="image to push")
    sp.add_argument("dest_ref", metavar="DEST_REF", nargs="?",
@@ -262,23 +299,41 @@ def main():
    sp = ap.add_parser("reset", "delete everything in ch-image builder storage")
    add_opts(sp, misc.reset, deps_check=True, stog_init=False)
 
+   # undelete
+   sp = ap.add_parser("undelete", "recover image from build cache")
+   add_opts(sp, misc.undelete, deps_check=True, stog_init=True)
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to recover")
+
+   # Monkey patch problematic characters out of stdout and stderr.
+   ch.monkey_write_streams()
+
    # Parse it up!
    if (len(sys.argv) < 2):
        ap.print_help(file=sys.stderr)
-       sys.exit(1)
+       ch.exit(1)
    cli = ap.parse_args()
-   ch.init(cli)
 
-   # Dispatch.
+   # Initialize.
+   ch.init(cli)
    if (dependencies_check[cli.func]):
       ch.dependencies_check()
    if (storage_init[cli.func]):
       ch.storage.init()
       bu.init(cli)
+
+   # Dispatch.
+   ch.profile_start()
    cli.func(cli)
+   ch.warnings_dump()
+   ch.exit(0)
 
 
 ## Bootstrap ##
 
 if (__name__ == "__main__"):
-   main()
+   try:
+      main()
+   except ch.Fatal_Error as x:
+      ch.warnings_dump()
+      ch.ERROR(*x.args, **x.kwargs)
+      ch.exit(1)

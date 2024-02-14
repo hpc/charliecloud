@@ -27,6 +27,29 @@ import sys, os
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
 extensions = ['sphinx.ext.mathjax', 'sphinx.ext.todo']
 todo_include_todos = True
+# Workaround for EPEL, which prohibits pip and doesn’t have
+# sphinx_reredirects. The result will be no redirect, but a lot about the
+# EPEL-built docs is crappy.
+try:
+   import sphinx_reredirects
+   extensions.append('sphinx_reredirects')
+except ImportError:
+   pass
+
+# Monkey-patch RSYNC keyword into Pygments. Ignore any problems. print()
+# statements here show up in the make(1) chatter.
+#
+# See: https://github.com/pygments/pygments/blob/e2cb7c9/pygments/lexers/configs.py#L667
+try:
+   import pygments.lexers.configs as plc
+   import re
+   for (i, tok) in enumerate(plc.DockerLexer.tokens["root"]):
+      m = re.search(r"^(.*COPY.*)\)\)$", tok[0])
+      if (m is not None):
+         re_new = m[1] + "|RSYNC))"
+         plc.DockerLexer.tokens["root"][i] = (re_new, tok[1])
+except Exception:
+   pass
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -42,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Charliecloud'
-copyright = u'2014–2022, Triad National Security, LLC and others'
+copyright = u'2014–2023, Triad National Security, LLC and others'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -113,6 +136,11 @@ except ImportError:
    pass  # error caught elsewhere
 
 highlight_language = 'console'
+
+# Don’t break links to the old command-usage.html. (#1461)
+redirects = {
+   "command-usage": "index.html"
+}
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
@@ -264,9 +292,6 @@ man_pages = [
     "Run a command in a Charliecloud container",
     [], 1),
    ("ch-run-oci", "ch-run-oci", 'OCI wrapper for "ch-run"',
-    [], 1),
-   ("ch-ssh", "ch-ssh",
-    "Run a remote command in a Charliecloud container",
     [], 1),
    ("ch-test", "ch-test",
     "Run some or all of the Charliecloud test suite",

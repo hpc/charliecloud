@@ -1,14 +1,16 @@
 import json
+import os
 import os.path
-import sys
 
 import charliecloud as ch
 import build_cache as bu
+import image as im
+import registry as rg
 
 
 ## Constants ##
 
-# Internal library of manifests, e.g. for "FROM scratch" (issue #1013).
+# Internal library of manifests, e.g. for “FROM scratch” (issue #1013).
 manifests_internal = {
    "scratch": {  # magic empty image
       "schemaVersion": 2,
@@ -18,17 +20,18 @@ manifests_internal = {
 }
 
 
-
 ## Main ##
 
 def main(cli):
    # Set things up.
-   src_ref = ch.Image_Ref(cli.source_ref)
-   dst_ref = src_ref if cli.dest_ref is None else ch.Image_Ref(cli.dest_ref)
+   src_ref = im.Reference(cli.source_ref)
+   dst_ref = src_ref if cli.dest_ref is None else im.Reference(cli.dest_ref)
    if (cli.parse_only):
       print(src_ref.as_verbose_str)
-      sys.exit(0)
-   dst_img = ch.Image(dst_ref)
+      ch.exit(0)
+   if (ch.xattrs_save):
+      ch.WARNING("--xattrs unsupported for “ch-image pull” (see FAQ)")
+   dst_img = im.Image(dst_ref)
    ch.INFO("pulling image:    %s" % src_ref)
    if (src_ref != dst_ref):
       ch.INFO("destination:      %s" % dst_ref)
@@ -43,6 +46,7 @@ class Image_Puller:
 
    __slots__ = ("architectures",  # key: architecture, value: manifest digest
                 "config_hash",
+                "digests",
                 "image",
                 "layer_hashes",
                 "registry",
@@ -52,9 +56,10 @@ class Image_Puller:
    def __init__(self, image, src_ref):
       self.architectures = None
       self.config_hash = None
+      self.digests = dict()
       self.image = image
       self.layer_hashes = None
-      self.registry = ch.Registry_HTTP(src_ref)
+      self.registry = rg.HTTP(src_ref)
       self.sid_input = None
       self.src_ref = src_ref
 
@@ -87,6 +92,7 @@ class Image_Puller:
       "Download image metadata and layers and put them in the download cache."
       # Spec: https://docs.docker.com/registry/spec/manifest-v2-2/
       ch.VERBOSE("downloading image: %s" % self.image)
+      have_skinny = False
       try:
          # fat manifest
          if (ch.arch != "yolo"):
@@ -97,8 +103,11 @@ class Image_Puller:
                            ("available: %s"
                             % " ".join(sorted(self.architectures.keys()))))
             except ch.No_Fatman_Error:
+               # currently, this error is only raised if we’ve downloaded the
+               # skinny manifest.
+               have_skinny = True
                if (ch.arch == "amd64"):
-                  # We're guessing that enough arch-unaware images are amd64 to
+                  # We’re guessing that enough arch-unaware images are amd64 to
                   # barge ahead if requested architecture is amd64.
                   ch.arch = "yolo"
                   ch.WARNING("image is architecture-unaware")
@@ -107,9 +116,13 @@ class Image_Puller:
                   ch.FATAL("image is architecture-unaware",
                            "consider --arch=yolo")
          # manifest
-         self.manifest_load()
+         self.manifest_load(have_skinny)
       except ch.Image_Unavailable_Error:
-         ch.FATAL("unauthorized or not in registry: %s" % self.registry.ref)
+         if (ch.user() == "qwofford"):
+            h = "Quincy, use --auth!!"
+         else:
+            h = "if your registry needs authentication, use --auth"
+         ch.FATAL("unauthorized or not in registry: %s" % self.registry.ref, h)
       # config
       ch.VERBOSE("config path: %s" % self.config_path)
       if (self.config_path is not None):
@@ -157,15 +170,23 @@ class Image_Puller:
       if (str(self.src_ref) in manifests_internal):
          # cheat; internal manifest library matches every architecture
          self.architectures = ch.Arch_Dict({ ch.arch_host: None })
+         # Assume that image has no digest. This is a kludge, but it makes my
+         # solution to issue #1365 work so ¯\_(ツ)_/¯
+         self.digests[ch.arch_host] = "no digest"
          return
       # raises Image_Unavailable_Error if needed
       self.registry.fatman_to_file(self.fatman_path,
                                    "manifest list: downloading")
-      fm = ch.json_from_file(self.fatman_path, "fat manifest")
+      fm = self.fatman_path.json_from_file("fat manifest")
       if ("layers" in fm or "fsLayers" in fm):
-         # FIXME (issue #1101): If it's a v2 manifest we could use it instead
-         # of re-requesting later. Maybe we could here move/copy it over to
-         # the skinny manifest path.
+         # Check for skinny manifest. If not present, create a symlink to the
+         # “fat manifest” with the conventional name for a skinny manifest.
+         # This works because the file we just saved as the “fat manifest” is
+         # actually a misleadingly named skinny manifest. Link is relative to
+         # avoid embedding the storage directory path within the storage
+         # directory (see PR #1657).
+         if (not self.manifest_path.exists()):
+            self.manifest_path.symlink_to(self.fatman_path.name)
          raise ch.No_Fatman_Error()
       if ("errors" in fm):
          # fm is an error blob.
@@ -191,6 +212,7 @@ class Image_Puller:
          if (arch in self.architectures):
             ch.FATAL("manifest list: duplicate architecture: %s" % arch)
          self.architectures[arch] = ch.digest_trim(digest)
+         self.digests[arch] = digest.split(":")[1]
       if (len(self.architectures) == 0):
          ch.WARNING("no valid architectures found")
 
@@ -198,7 +220,31 @@ class Image_Puller:
       "Return the path to tarball for layer layer_hash."
       return ch.storage.download_cache // (layer_hash + ".tar.gz")
 
-   def manifest_load(self):
+   def manifest_digest_by_arch(self):
+      "Return skinny manifest digest for target architecture."
+      fatman  = self.fat_manifest_path.json_from_file()
+      arch    = None
+      digest  = None
+      variant = None
+      try:
+         arch, variant = ch.arch.split("/", maxsplit=1)
+      except ValueError:
+         arch = ch.arch
+      if ("manifests" not in fatman):
+         ch.FATAL("manifest list has no manifests")
+      for k in fatman["manifests"]:
+         if (k.get('platform').get('os') != 'linux'):
+            continue
+         elif (    k.get('platform').get('architecture') == arch
+               and (   variant is None
+                    or k.get('platform').get('variant') == variant)):
+            digest = k.get('digest')
+      if (digest is None):
+         ch.FATAL("arch not found for image: %s" % arch,
+                  'try "ch-image list IMAGE_REF"')
+      return digest
+
+   def manifest_load(self, have_skinny=False):
       """Download the manifest file, parse it, and set self.config_hash and
          self.layer_hashes. If the image does not exist,
          exit with error."""
@@ -208,7 +254,7 @@ class Image_Puller:
       self.layer_hashes = None
       # obtain the manifest
       try:
-         # internal manifest library, e.g. for "FROM scratch"
+         # internal manifest library, e.g. for “FROM scratch”
          manifest = manifests_internal[str(self.src_ref)]
          ch.INFO("manifest: using internal library")
       except KeyError:
@@ -218,10 +264,11 @@ class Image_Puller:
          else:
             digest = self.architectures[ch.arch]
          ch.DEBUG("manifest digest: %s" % digest)
-         self.registry.manifest_to_file(self.manifest_path,
-                                        "manifest: downloading",
-                                        digest=digest)
-         manifest = ch.json_from_file(self.manifest_path, "manifest")
+         if (not have_skinny):
+            self.registry.manifest_to_file(self.manifest_path,
+                                          "manifest: downloading",
+                                          digest=digest)
+         manifest = self.manifest_path.json_from_file("manifest")
       # validate schema version
       try:
          version = manifest['schemaVersion']
@@ -233,7 +280,7 @@ class Image_Puller:
       #
       # FIXME: Manifest version 1 does not list a config blob. It does have
       # things (plural) that look like a config at history/v1Compatibility as
-      # an embedded JSON string :P but I haven't dug into it.
+      # an embedded JSON string :P but I haven’t dug into it.
       if (version == 1):
          ch.VERBOSE("no config; manifest schema version 1")
          self.config_hash = None
@@ -260,36 +307,13 @@ class Image_Puller:
          self.layer_hashes.append(ch.digest_trim(i[key2]))
       if (version == 1):
          self.layer_hashes.reverse()
-      # Remember State_ID input. We can't rely on the manifest existing in
+      # Remember State_ID input. We can’t rely on the manifest existing in
       # serialized form (e.g. for internal manifests), so re-serialize.
       self.sid_input = json.dumps(manifest, sort_keys=True)
 
-   def manifest_digest_by_arch(self):
-      "Return skinny manifest digest for target architecture."
-      fatman  = ch.json_from_file(self.fat_manifest_path)
-      arch    = None
-      digest  = None
-      variant = None
-      try:
-         arch, variant = ch.arch.split("/", maxsplit=1)
-      except ValueError:
-         arch = ch.arch
-      if ("manifests" not in fatman):
-         ch.FATAL("manifest list has no manifests")
-      for k in fatman["manifests"]:
-         if (k.get('platform').get('os') != 'linux'):
-            continue
-         elif (    k.get('platform').get('architecture') == arch
-               and (   variant is None
-                    or k.get('platform').get('variant') == variant)):
-            digest = k.get('digest')
-      if (digest is None):
-         ch.FATAL("arch not found for image: %s" % arch,
-                  'try "ch-image list IMAGE_REF"')
-      return digest
-
    def unpack(self, last_layer=None):
       layer_paths = [self.layer_path(h) for h in self.layer_hashes]
+      bu.cache.unpack_delete(self.image, missing_ok=True)
       self.image.unpack(layer_paths, last_layer)
       self.image.metadata_replace(self.config_path)
       # Check architecture we got. This is limited because image metadata does

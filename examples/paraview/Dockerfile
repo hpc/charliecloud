@@ -1,11 +1,10 @@
-# ch-test-scope: full
+# ch-test-scope: skip  #1810
 FROM openmpi
 WORKDIR /usr/local/src
 
 RUN dnf install -y --setopt=install_weak_deps=false \
                 cmake \
                 expat-devel \
-                libpng-devel \
                 llvm \
                 llvm-devel \
                 mesa-libGL \
@@ -16,11 +15,14 @@ RUN dnf install -y --setopt=install_weak_deps=false \
                 python3-devel \
                 python3-mako \
                 python3-pip \
+                zlib-devel \
  && dnf clean all
 
 RUN pip3 install --no-binary=mpi4py \
     cython \
     mpi4py
+
+WORKDIR /usr/local/src
 
 # ParaView. Use system libpng to work around issues linking with NEON specific
 # symbols on ARM.

@@ -1,7 +1,6 @@
 load ../common
 
 setup () {
-    scope standard
     [[ $CH_TEST_PACK_FMT = *-unpack ]] || skip 'need writeable image'
     [[ $CHTEST_GITWD ]] || skip "not in Git working directory"
     if     ! command -v sphinx-build > /dev/null 2>&1 \
@@ -11,8 +10,9 @@ setup () {
 }
 
 @test 'build/install el7 RPMs' {
-    prerequisites_ok centos7
-    img=${ch_imgdir}/centos7
+    scope full
+    prerequisites_ok centos_7ch
+    img=${ch_imgdir}/centos_7ch
     image_ok "$img"
     rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 
@@ -22,8 +22,9 @@ setup () {
 }
 
 @test 'check el7 RPM files' {
-    prerequisites_ok centos7
-    img=${ch_imgdir}/centos7
+    scope full
+    prerequisites_ok centos_7ch
+    img=${ch_imgdir}/centos_7ch
     # Do installed RPMs look sane?
     run ch-run "$img" -- rpm -qa "charliecloud*"
     echo "$output"
@@ -62,8 +63,9 @@ setup () {
 }
 
 @test 'remove el7 RPMs' {
-    prerequisites_ok centos7
-    img=${ch_imgdir}/centos7
+    scope full
+    prerequisites_ok centos_7ch
+    img=${ch_imgdir}/centos_7ch
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-test \
                                            charliecloud-debuginfo \
@@ -85,10 +87,11 @@ setup () {
 }
 
 @test 'build/install el8 RPMS' {
-    prerequisites_ok almalinux8
-    img=${ch_imgdir}/almalinux8
+    scope standard
+    prerequisites_ok almalinux_8ch
+    img=${ch_imgdir}/almalinux_8ch
     image_ok "$img"
-    rm -rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
+    rm -Rf --one-file-system "${BATS_TMPDIR}/rpmbuild"
 
     # Build and install RPMs into AlmaLinux 8 image.
     (cd .. && packaging/fedora/build --install "$img" \
@@ -96,8 +99,9 @@ setup () {
 }
 
 @test 'check el8 RPM files' {
-    prerequisites_ok almalinux8
-    img=${ch_imgdir}/almalinux8
+    scope standard
+    prerequisites_ok almalinux_8ch
+    img=${ch_imgdir}/almalinux_8ch
     # Do installed RPMs look sane?
     run ch-run "$img" -- rpm -qa "charliecloud*"
     echo "$output"
@@ -128,8 +132,9 @@ setup () {
 }
 
 @test 'remove el8 RPMs' {
-    prerequisites_ok almalinux8
-    img=${ch_imgdir}/almalinux8
+    scope standard
+    prerequisites_ok almalinux_8ch
+    img=${ch_imgdir}/almalinux_8ch
     # Uninstall to avoid interfering with the rest of the test suite.
     run ch-run -w "$img" -- rpm -v --erase charliecloud-debuginfo \
                                            charliecloud-doc \

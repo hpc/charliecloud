@@ -1,3 +1,5 @@
+source common.bash  # for ShellCheck; removed by ch-test
+
 @test 'custom build %(tag)s' {
     scope %(scope)s
     out="${ch_tardir}/%(tag)s"
@@ -16,7 +18,21 @@
             tarball=${tarballs[0]}
             # Convert to SquashFS if needed.
             if [[ $CH_TEST_PACK_FMT = squash* ]]; then
-                ch-convert "$tarball" "${tarball/tar.?z/sqfs}"
+                # With the centos7xz image, we run into permission errors if we
+                # try to use the tar “--xattrs-include” option. Using strace(1),
+                # we determined that with the xattrs option specified, tar first
+                # calls mknodat(2) to create a file with permissions 000, then
+                # openat(2) on the same file, which fails with EACCESS. Without
+                # the xattrs option, the file is created by a call to openat(2)
+                # with the O_CREAT flag (rather than mknodat(2)), so the
+                # permission error is avoided. (See
+                # https://savannah.gnu.org/support/index.php?110903).
+                if [[ $tarball = *centos7xz* ]]; then
+                    xattrs_arg=--no-xattrs
+                else
+                    xattrs_arg=
+                fi
+                ch-convert $xattrs_arg "$tarball" "${tarball/tar.?z/sqfs}"
                 rm "$tarball"
             fi
         elif [[ -d $out ]]; then                             # directory

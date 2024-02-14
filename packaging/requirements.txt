@@ -1,0 +1,12 @@
+# This file contains the list of required python packages for the project in
+# requirements format. NOTE: It is provided on a “best effort” basis and is
+# not supported or maintained by the Charliecloud team. The source of truth
+# for all version dependencies is configure.ac. However, patches to keep it up
+# date are always welcome.
+
+# Users can install all our python dependencies simply by running:
+# > pip install -r requirements.txt
+
+lark-parser
+wheel
+requests>=2.6.0

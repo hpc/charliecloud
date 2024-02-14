@@ -1,0 +1,97 @@
+#!/usr/bin/env python3
+
+# FIXME: pretty colors?
+
+import argparse
+import collections
+import re
+import subprocess
+
+class Branch:
+   __slots__ = ("local", "repo", "remote", "status")
+
+   def __str__(self):
+      s = self.local
+      if (self.remote is not None):
+         s += " → "
+         if (self.repo == repo_max and self.remote == self.local):
+            s += "•"
+         else:
+            s += "%s/%s" % (self.repo, self.remote)
+         if (self.status is not None):
+            s += " [%s]" % self.status
+      return s
+
+def delete(name):
+   subprocess.run(["git", "branch", "-qD", name], check=True)
+
+# globals
+remote_dangling = set()
+remote_matched = set()
+other = set()
+repos = collections.Counter()
+repo_max = None
+delete_ct = 0
+
+p = argparse.ArgumentParser(
+   description = "List summary of Git branches.",
+   epilog = "Dot (•) indicates branch is at most common remote with same name.")
+p.add_argument("-d", "--delete",
+               action="store_true",
+               help="delete dangling branches (remote branch missing)")
+p.add_argument("-r", "--delete-remote",
+               metavar="REMOTE",
+               action="append", default=list(),
+               help="delete branches pointing to REMOTE (can be repeated)")
+args = p.parse_args()
+
+cp = subprocess.run(["git", "branch", "--format",
+                     "%(refname:short) %(upstream:short) %(upstream:track)"],
+                    stdout=subprocess.PIPE, encoding="UTF-8", check=True)
+for m in re.finditer(r"^(\S+)\s((\S+)/(\S+))?\s(\[(.+)\])?$",
+                     cp.stdout, re.MULTILINE):
+   b = Branch()
+   b.local = m[1]
+   b.repo = m[3]
+   b.remote = m[4]
+   b.status = m[6]
+   if (b.remote is None):
+      other.add(b)
+   else:
+      repos[b.repo] += 1
+      if (b.status == "gone"):
+         remote_dangling.add(b)
+      else:
+         remote_matched.add(b)
+
+assert(   len(cp.stdout.splitlines())
+       == len(other) + len(remote_matched) + len(remote_dangling))
+
+(repo_max, repo_max_ct) = repos.most_common(1)[0]
+print("found %d repos; most common: %s (%d)"
+      % (len(repos), repo_max, repo_max_ct))
+
+print("remote dangling (%d):" % len(remote_dangling))
+for b in remote_dangling:
+   print("  %s" % b, end="")
+   if (args.delete):
+      delete(b.local)
+      delete_ct += 1
+      print(" ☠️", end="")
+   print()
+
+print("remote (%d):" % len(remote_matched))
+for b in remote_matched:
+   print("  %s" % b, end="")
+   if (b.repo in args.delete_remote):
+      delete(b.local)
+      delete_ct += 1
+      print(" ☠️", end="")
+   print()
+
+print("other (%d):" % len(other))
+for b in other:
+   print("  %s" % b)
+
+if (delete_ct > 0):
+   print("deleted %d branches" % delete_ct)
