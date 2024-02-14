@@ -563,14 +563,6 @@ _DEBUG () {
     fi
 }
 
-_version_ok_ch_completion () {
-    if [[ "$($1 --version 2>&1)" == "$_ch_completion_version" ]]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
 # Utility function for Charliecloud tab completion that’s available to users.
 ch-completion () {
     while true; do
@@ -723,15 +715,6 @@ _ch_find_storage () {
     fi
 }
 
-# List images in storage directory.
-_ch_list_images () {
-    # “find” throws an error if “img” subdir doesn't exist or is empty, so check
-    # before proceeding.
-    if [[ -d "$1/img" && -n "$(ls -A "$1/img")" ]]; then
-        find "$1/img/"* -maxdepth 0 -printf "%f\n" | sed -e 's|+|:|g' -e 's|%|/|g'
-    fi
-}
-
 # Print the subcommand in an array of words; if there is not one, print an empty
 # string. This feels a bit kludge-y, but it's the best I could come up with.
 # It's worth noting that the double for loop doesn't take that much time, since
@@ -761,6 +744,15 @@ _ch_image_subcmd_get () {
         ((ct++))
     done
     echo "$subcmd"
+}
+
+# List images in storage directory.
+_ch_list_images () {
+    # “find” throws an error if “img” subdir doesn't exist or is empty, so check
+    # before proceeding.
+    if [[ -d "$1/img" && -n "$(ls -A "$1/img")" ]]; then
+        find "$1/img/"* -maxdepth 0 -printf "%f\n" | sed -e 's|+|:|g' -e 's|%|/|g'
+    fi
 }
 
 # Horrible, disgusting function to find an image or image ref in the ch-run
@@ -914,22 +906,6 @@ _is_subword () {
     return 1
 }
 
-# Wrapper for some tricky logic that determines whether or not to add a space at
-# the end of a path completion. For the sake of convenience we want to avoid
-# adding a space at the end if the completion is a directory path, because we
-# don’t know if the user is looking for the completed directory or one of its
-# subpaths (we may be able to figure this out in some cases, but I’m not gonna
-# worry about that now). We *do* want to add a space at the end if the
-# completion is the path to a file.
-_space_filepath () {
-    local files
-    files="$(_compgen_filepaths "$1" "$2" "$3")"
-    if [[ (-n "$files") \
-         && (! -f "$(_sanitized_tilde_expand "$files")") ]]; then
-        compopt -o nospace
-    fi
-}
-
 # Expand tilde in quoted strings to the correct home path, if applicable, while
 # sanitizing to prevent code injection (see https://stackoverflow.com/a/38037679).
 #
@@ -953,6 +929,30 @@ _sanitized_tilde_expand () {
         fi
     fi
     echo "$1"
+}
+
+# Wrapper for some tricky logic that determines whether or not to add a space at
+# the end of a path completion. For the sake of convenience we want to avoid
+# adding a space at the end if the completion is a directory path, because we
+# don’t know if the user is looking for the completed directory or one of its
+# subpaths (we may be able to figure this out in some cases, but I’m not gonna
+# worry about that now). We *do* want to add a space at the end if the
+# completion is the path to a file.
+_space_filepath () {
+    local files
+    files="$(_compgen_filepaths "$1" "$2" "$3")"
+    if [[ (-n "$files") \
+         && (! -f "$(_sanitized_tilde_expand "$files")") ]]; then
+        compopt -o nospace
+    fi
+}
+
+_version_ok_ch_completion () {
+    if [[ "$($1 --version 2>&1)" == "$_ch_completion_version" ]]; then
+        return 0
+    else
+        return 1
+    fi
 }
 
 complete -F _ch_completion_complete ch-completion
