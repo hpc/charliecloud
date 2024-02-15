@@ -401,7 +401,7 @@ class HTTP:
 
       # Check for integrity of downloaded blob by validating its hash digest
       if (digest != m.hexdigest()):
-         ch.FATAL("Incomplete blob download.")
+         ch.FATAL("incomplete blob download")
 
    def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
