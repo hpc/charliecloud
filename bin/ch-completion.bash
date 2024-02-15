@@ -101,6 +101,9 @@ if [[ -f "/tmp/ch-completion.log" && -n "$CH_COMPLETION_DEBUG" ]]; then
     printf "completion log\n\n" >> /tmp/ch-completion.log
 fi
 
+# The directory “ch-completion.bash” is in at the time it gets sourced
+_ch_completion_dir=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
 
 ## ch-convert ##
 
@@ -227,8 +230,8 @@ _ch_convert_complete () {
 _image_build_opts="-b --bind --build-arg -f --file --force
                    --force-cmd -n --dry-run --parse-only -t --tag"
 
-_image_common_opts="-a --arch --always-download --auth --cache
-                    --cache-large --dependencies -h --help
+_image_common_opts="-a --arch --always-download --auth --break
+                    --cache --cache-large --dependencies -h --help
                     --no-cache --no-lock --no-xattrs --profile
                     --rebuild --password-many -q --quiet -s --storage
                     --tls-no-verify -v --verbose --version --xattrs"
@@ -276,6 +279,14 @@ _ch_image_complete () {
     case "$prev" in
     -a|--arch)
         COMPREPLY=( $(compgen -W "host yolo $_archs" -- "$cur") )
+        return 0
+        ;;
+    --break)
+        # “--break” arguments take the form “MODULE:LINE”. Complete “MODULE:”
+        # from python files in lib (we can’t complete line number).
+        COMPREPLY=( $(compgen -S : -W "$(_compgen_py_libfiles)" -- "$cur") )
+        __ltrim_colon_completions
+        compopt -o nospace
         return 0
         ;;
     --cache-large)
@@ -803,6 +814,13 @@ _compgen_filepaths () {
 
     # Directories with trailing slashes:
     compgen -d -S / -- "$cur"
+}
+
+# Wrapper for a horrible pipeline to complete python files in lib.
+_compgen_py_libfiles () {
+    compgen -f "$_ch_completion_dir/../lib/" |
+        grep -o -E ".*\.py" |
+        sed "s|$_ch_completion_dir\/\.\.\/lib\/\(.*\)\.py|\1|"
 }
 
 # Return 0 if "$1" is a word in space-separated sequence of words "$2", e.g.
