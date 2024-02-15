@@ -400,7 +400,7 @@ class HTTP:
       sw.close()
 
       # Check for integrity of downloaded blob by validating its hash digest
-      if (str(digest) != str(m.hexdigest())):
+      if (digest != m.hexdigest()):
          ch.FATAL("Incomplete blob download.")
 
    def blob_upload(self, digest, data, note=""):
