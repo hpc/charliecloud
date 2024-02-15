@@ -126,6 +126,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %license LICENSE
 %doc README.rst %{?el7:README.EL7}
 %{_bindir}/ch-checkns
+%{_bindir}/ch-completion.bash
 %{_bindir}/ch-convert
 %{_bindir}/ch-fromhost
 %{_bindir}/ch-run
