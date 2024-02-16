@@ -359,7 +359,7 @@ def breakpoint_inject(module_name, line_no):
                   parent.body[i:i] = inject_tree.body
                   self.inject_ct += 1
                   break
-         super().generic_visit(parent)
+         super().generic_visit(parent)  # superclass actually visits children
          return parent
 
    if (module_name not in sys.modules):
@@ -371,7 +371,7 @@ def breakpoint_inject(module_name, line_no):
    inject_tree = ast.parse("import pdb; pdb.set_trace()", "Weird Al Yankovic")
 
    ijor = PDB_Injector()
-   ijor.visit(module_tree)
+   ijor.visit(module_tree)  # calls generic_visit() on all nodes
    if (ijor.inject_ct < 1):
       ch.FATAL("--break: no statement found at %s:%d" % (module_name, line_no))
    assert (ijor.inject_ct == 1)
@@ -379,16 +379,34 @@ def breakpoint_inject(module_name, line_no):
    ast.fix_missing_locations(module_tree)
    exec(compile(module_tree, "%s <re-compiled>" % src_path, "exec"),
         module.__dict__)
-   # Importantly, tag module with this *after* it’s re-executed.
+   # Set a global in the target module so it can test if it’s been
+   # re-executed. This means re-execution is *complete*, so it will not be set
+   # in module-level code run during re-execution, but if the original
+   # execution continues *after* re-execution completes (this happens for
+   # __main__), it *will* be set in that code.
    module.__dict__["breakpoint_reexecuted"] = "%s:%d" % (module_name, line_no)
 
 
 ## Bootstrap ##
 
+# This code is more complicated than the standard boilerplace (i.e., “if
+# (__name__ == "__main__"): main()”) for two reasons:
+#
+#   1. The mechanism for fatal errors is to raise ch.Fatal_Error. We catch
+#      this to re-print warnings and print the error message before exiting.
+#      (We used to priont an error message and then sys.exit(1), but this
+#      approach lets us do things like rollback and fixes ordering problems
+#      such as #1486.)
+#
+#   2. There is a big mess of hairy code to let us set PDB breakpoints in this
+#      file (i.e., module __main__) with --break. See PR #1837.
+
 if (__name__ == "__main__"):
    try:
-      # We can’t set the module globals normally (i.e., module-level code at
-      # the top of this file) because the module might be executed twice.
+      # We can’t set these two module globals that support --break normally
+      # (i.e., module-level code at the top of this file) because this module
+      # might be executed twice, and thus any value we set would be
+      # overwritten by the default when the module is re-executed.
       if ("breakpoint_considered" not in globals()):
          global breakpoint_considered
          breakpoint_considered = True
