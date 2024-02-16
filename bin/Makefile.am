@@ -19,14 +19,9 @@ ch_run_LDADD = $(CH_RUN_LIBS)
 
 ## Shell scripts - distributed as-is
 
-# executable
 dist_bin_SCRIPTS = ch-convert \
                    ch-fromhost \
                    ch-test
-
-# not executable (new directory to avoid automake yelling at us)
-binnoexecdir = $(bindir)
-dist_binnoexec_DATA = ch-completion.bash
 
 
 ## Python scripts - need text processing
