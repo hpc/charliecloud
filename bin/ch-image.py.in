@@ -387,7 +387,7 @@ def breakpoint_inject(module_name, line_no):
 
 if (__name__ == "__main__"):
    try:
-      # We can’t set thest module globals normally (i.e., module-level code at
+      # We can’t set the module globals normally (i.e., module-level code at
       # the top of this file) because the module might be executed twice.
       if ("breakpoint_considered" not in globals()):
          global breakpoint_considered
