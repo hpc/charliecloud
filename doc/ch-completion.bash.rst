@@ -23,14 +23,14 @@ Description
 command line. Currently, tab completion is available for Bash users for the
 executables :code:`ch-image`, :code:`ch-run`, and :code:`ch-convert`.
 
-By default, :code:`ch-completion.bash` is installed in :code:`$PREFIX/bin`
-alongside the Charliecloud executables. Assuming this is in your
-:code:`$PATH`, enable tab completion by sourcing it::
+We do not currently install the file if Charliecloud is built from source (see
+`issue #1842 <https://github.com/hpc/charliecloud/issues/1842>`_). In this
+case, source it from the Charliecloud source code::
 
-    $ source ch-completion.bash
+    $ source $CHARLIECLOUD_SOURCE_PATH/bin/ch-completion.bash
 
-(Note that distributions usually organized completion differently. See your
-distro’s docs if you installed a package.)
+If you installed with a distribution package, the procedure is probably nicer.
+See your distro’s docs if you installed a package.)
 
 Disable completion with the utility function :code:`ch-completion` added to
 your environment when the above is sourced::
