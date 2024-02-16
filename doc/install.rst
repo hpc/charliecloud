@@ -506,24 +506,13 @@ Wget is used to demonstrate building an image without a builder (the main test
 image used to exercise Charliecloud itself).
 
 
-Command line completion
-=======================
+Command line tab completion
+===========================
 
-Charliecloud offers experimental Bash command line completion for
-:code:`ch-image`. This feature lets users have incomplete command line
-arguments auto-filled by pressing Tab. We expect that in the future, this will
-become more robust and available for more shells and more Charliecloud
-commands.
-
-To enable it, once :code:`ch-completion.bash` is in your path, source it::
-
-  $ source ch-completion.bash
-
-If it doesn’t work or you just don’t like it, it can be disabled with::
-
-  $ ch-completion-disable
-
-In this case, please do submit a bug report so we can make it better.
+Charliecloud offers experimental tab completion for Bash users. This feature is
+currently implemented for :code:`ch-image`, :code:`ch-run`, and
+:code:`ch-convert`. For details on setting up tab completion, as well as general
+documentation, see :ref:`ch-completion.bash`.
 
 
 ..  LocalWords:  Werror Flameeyes plougher deps libc’s ericonr

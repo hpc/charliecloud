@@ -136,6 +136,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_mandir}/man1/ch-run.1*
 %{_mandir}/man1/ch-run-oci.1*
 %{_mandir}/man7/charliecloud.7*
+%{_mandir}/man7/ch-completion.bash.7*
 %{_prefix}/lib/%{name}/base.sh
 %{_prefix}/lib/%{name}/contributors.bash
 %{_prefix}/lib/%{name}/version.sh

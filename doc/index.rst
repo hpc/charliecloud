@@ -21,6 +21,7 @@ Overview
    install
    tutorial
    ch-checkns
+   ch-completion.bash
    ch-convert
    ch-fromhost
    ch-image
