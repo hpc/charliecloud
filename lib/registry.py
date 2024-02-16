@@ -388,7 +388,7 @@ class HTTP:
       #    requests.head() does not follow redirects, and it seems like a
       #    weird status, so I worry there is a gotcha I haven’t figured out.
       url = self._url_of("blobs", "sha256:%s" % digest)
-      res, m = self.request("HEAD", url, {200,401,404})
+      res = self.request("HEAD", url, {200,401,404})
       return (res.status_code == 200)
 
    def blob_to_file(self, digest, path, msg):
@@ -396,12 +396,8 @@ class HTTP:
       # /v2/library/hello-world/blobs/<layer-hash>
       url = self._url_of("blobs", "sha256:" + digest)
       sw = ch.Progress_Writer(path, msg)
-      res, m = self.request("GET", url, out=sw)
+      res = self.request("GET", url, out=sw, expdigest=digest)
       sw.close()
-
-      # Check for integrity of downloaded blob by validating its hash digest
-      if (digest != m.hexdigest()):
-         ch.FATAL("incomplete blob download")
 
    def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
@@ -421,13 +417,13 @@ class HTTP:
          ch.INFO(msg)
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
-      res, m = self.request("POST", url, {202})
+      res = self.request("POST", url, {202})
       # 3. Upload blob. We do a “monolithic” upload (i.e., send all the
       # content in a single PUT request) as opposed to a “chunked” upload
       # (i.e., send data in multiple PATCH requests followed by a PUT request
       # with no body).
       url = res.headers["Location"]
-      res, m = self.request("PUT", url, {201}, data=data,
+      res = self.request("PUT", url, {201}, data=data,
                          params={ "digest": "sha256:%s" % digest })
       if (isinstance(data, ch.Progress_Reader)):
          data.close()
@@ -476,7 +472,7 @@ class HTTP:
       # when trying to create schema1 manifest”.
       accept = "%s;q=0.5" % ",".join(  list(TYPES_INDEX.values())
                                      + list(TYPES_MANIFEST.values()))
-      res, m = self.request("GET", url, out=pw, statuses={200, 401, 404, 429},
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404, 429},
                          headers={ "Accept" : accept })
       pw.close()
       if (res.status_code == 429):
@@ -508,7 +504,7 @@ class HTTP:
       url = self._url_of("manifests", digest)
       pw = ch.Progress_Writer(path, msg)
       accept = "%s;q=0.5" % ",".join(TYPES_MANIFEST.values())
-      res, m = self.request("GET", url, out=pw, statuses={200, 401, 404},
+      res = self.request("GET", url, out=pw, statuses={200, 401, 404},
                          headers={ "Accept" : accept })
       pw.close()
       if (res.status_code != 200):
@@ -523,7 +519,7 @@ class HTTP:
       self.request("PUT", url, {201}, data=manifest,
                    headers={ "Content-Type": TYPES_MANIFEST["docker2"] })
 
-   def request(self, method, url, statuses={200}, out=None, **kwargs):
+   def request(self, method, url, statuses={200}, out=None, expdigest=None, **kwargs):
       """Request url using method and return the response object. If statuses
          is given, it is set of acceptable response status codes, defaulting
          to {200}; any other response is a fatal error. If out is given,
@@ -552,7 +548,7 @@ class HTTP:
             else:
                ch.FATAL("unhandled authentication failure")
       # Stream response if needed.
-      m = hashlib.sha256()    # store downloaded hash digest to check for blob download integrity
+      m = hashlib.sha256()    # store downloaded hash digest
       if (out is not None and res.status_code == 200):
          try:
             length = int(res.headers["Content-Length"])
@@ -564,8 +560,12 @@ class HTTP:
          for chunk in res.iter_content(ch.HTTP_CHUNK_SIZE):
             out.write(chunk)
             m.update(chunk)
+         # Check for integrity of downloaded blob by validating its hash digest against expected hash digest
+         if (expdigest is not None):
+            if (expdigest != m.hexdigest()):
+               ch.FATAL("incomplete blob download")
       # Done.
-      return res, m
+      return res
 
    def request_raw(self, method, url, statuses, auth=None, **kwargs):
       """Request url using method. statuses is an iterable of acceptable
