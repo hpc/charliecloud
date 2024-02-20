@@ -524,7 +524,7 @@ class HTTP:
          is given, it is set of acceptable response status codes, defaulting
          to {200}; any other response is a fatal error. If out is given,
          response content will be streamed to this Progress_Writer object and
-         must be non-zero length. If hd is given, validate integrity of 
+         must be non-zero length. If hd is given, validate integrity of
          downloaded data using expected hash digest.
 
          Use current session if there is one, or start a new one if not. If
