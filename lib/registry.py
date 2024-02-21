@@ -531,6 +531,7 @@ class HTTP:
          authentication fails (or isn’t initialized), then authenticate harder
          and re-try the request."""
       # Set up.
+      assert (out or hd is None), "digest only checked if streaming"
       self.session_init_maybe()
       ch.VERBOSE("auth: %s" % self.auth)
       if (out is not None):
