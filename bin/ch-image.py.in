@@ -12,6 +12,7 @@ import charliecloud as ch
 import build
 import misc
 import filesystem as fs
+import image as im
 import pull
 import push
 
@@ -272,6 +273,12 @@ def main():
                    help=argparse.SUPPRESS)
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
+
+   # modify
+   sp = ap.add_parser("modify", "foo")
+   add_opts(sp, im.modify, deps_check=True, stog_init=True)
+   sp.add_argument("-o", "--out", metavar="out_image", help="foo")
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to modify")
 
    # pull
    sp = ap.add_parser("pull",
