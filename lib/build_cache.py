@@ -907,7 +907,7 @@ class Enabled_Cache:
             i += 1
          text = "\n".join(lines)
          text = re.sub(r"^(D|M [0-7]+ [0-9a-f]+) \.(git|weirdal_)ignore$",
-                       "#\g<0>", text, flags=re.MULTILINE)
+                       r"#\g<0>", text, flags=re.MULTILINE)
          #fs.Path("/tmp/new").file_write(text)
          self.git(["fast-import", "--force"], input=text)
          self.git(["reflog", "expire", "--all", "--expire=now"])
@@ -1324,6 +1324,15 @@ class Enabled_Cache:
                                              // "*" // im.GIT_DIR)) }
       wt_gits =    { fs.Path(i).name
                      for i in glob.iglob("%s/worktrees/*" % self.root) }
+      # Unlink images that think they are in Git but are not. This should not
+      # happen, but it does, and I wasn’t able to figure out how it happened.
+      wt_gits_orphaned = wt_actuals - wt_gits
+      for img_dir in wt_gits_orphaned:
+         link = ch.storage.unpack_base // img_dir // im.GIT_DIR
+         ch.WARNING("image erroneously marked cached, fixing: %s" % link,
+                    ch.BUG_REPORT_PLZ)
+         link.unlink()
+      wt_actuals -= wt_gits_orphaned
       # Delete worktree data for images that no longer exist or aren’t
       # Git-enabled any more.
       wt_gits_deleted = wt_gits - wt_actuals
@@ -1331,7 +1340,12 @@ class Enabled_Cache:
          (ch.storage.build_cache // "worktrees" // wt).rmtree()
       ch.VERBOSE("deleted %d stale worktree metadatas" % len(wt_gits_deleted))
       wt_gits -= wt_gits_deleted
-      assert (wt_gits == wt_actuals)
+      # Validate that the pointers are in sync now.
+      if (wt_gits != wt_actuals):
+         ch.ERROR("found images -> cache links: %s" % " ".join(wt_actuals))
+         ch.ERROR("found cache -> images links: %s" % " ".join(wt_gits))
+         ch.FATAL("build cache is desynchronized, cannot proceed",
+                  ch.BUG_REPORT_PLZ)
       # If storage directory moved, repair all the paths.
       if (len(wt_gits) > 0):
          wt_dir_stored = fs.Path((   ch.storage.build_cache

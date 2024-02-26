@@ -1,4 +1,5 @@
 import getpass
+import hashlib
 import io
 import os
 import re
@@ -395,7 +396,7 @@ class HTTP:
       # /v2/library/hello-world/blobs/<layer-hash>
       url = self._url_of("blobs", "sha256:" + digest)
       sw = ch.Progress_Writer(path, msg)
-      self.request("GET", url, out=sw)
+      self.request("GET", url, out=sw, hd=digest)
       sw.close()
 
    def blob_upload(self, digest, data, note=""):
@@ -518,17 +519,19 @@ class HTTP:
       self.request("PUT", url, {201}, data=manifest,
                    headers={ "Content-Type": TYPES_MANIFEST["docker2"] })
 
-   def request(self, method, url, statuses={200}, out=None, **kwargs):
+   def request(self, method, url, statuses={200}, out=None, hd=None, **kwargs):
       """Request url using method and return the response object. If statuses
          is given, it is set of acceptable response status codes, defaulting
          to {200}; any other response is a fatal error. If out is given,
          response content will be streamed to this Progress_Writer object and
-         must be non-zero length.
+         must be non-zero length. If hd is given, validate integrity of
+         downloaded data using expected hash digest.
 
          Use current session if there is one, or start a new one if not. If
          authentication fails (or isn’t initialized), then authenticate harder
          and re-try the request."""
       # Set up.
+      assert (out or hd is None), "digest only checked if streaming"
       self.session_init_maybe()
       ch.VERBOSE("auth: %s" % self.auth)
       if (out is not None):
@@ -547,6 +550,7 @@ class HTTP:
             else:
                ch.FATAL("unhandled authentication failure")
       # Stream response if needed.
+      m = hashlib.sha256()
       if (out is not None and res.status_code == 200):
          try:
             length = int(res.headers["Content-Length"])
@@ -557,6 +561,10 @@ class HTTP:
          out.start(length)
          for chunk in res.iter_content(ch.HTTP_CHUNK_SIZE):
             out.write(chunk)
+            m.update(chunk) # store downloaded hash digest
+         # Validate integrity of downloaded data
+         if (hd is not None and hd != m.hexdigest()):
+            ch.FATAL("registry streamed response content is invalid")
       # Done.
       return res
 

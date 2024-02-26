@@ -1,3 +1,4 @@
+# ch-test-scope: standard
 # ch-test-builder-include: ch-image
 FROM alpine:3.17
 RUN apk add gcc musl-dev strace

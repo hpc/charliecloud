@@ -27,8 +27,8 @@ Inject files from the host into the Charliecloud image directory
 
 The purpose of this command is to inject arbitrary host files into a container
 necessary to access host specific resources; usually GPU or proprietary
-interconnets. **It is not a general copy-to-image tool**; see further discussion
-on use cases below.
+interconnects. **It is not a general copy-to-image tool**; see further
+discussion on use cases below.
 
 It should be run after:code:`ch-convert` and before :code:`ch-run`. After
 invocation, the image is no longer portable to other hosts.
@@ -91,12 +91,12 @@ To specify which files to inject
   :code:`-p`, :code:`--path PATH`
     Inject the file at :code:`PATH`.
 
-  :code:`--cray-mpi-cxi`
+  :code:`--cray-cxi`
     Inject cray-libfabric for slingshot. This is equivalent to
     :code:`--path $CH_FROMHOST_OFI_CXI`, where :code:`$CH_FROMHOST_OFI_CXI` is
     the path the Cray host libfabric :code:`libfabric.so`.
 
-  :code:`--cray-mpi-gni`
+  :code:`--cray-gni`
     Inject cray gemini/aries GNI libfabric provider :code:`libgnix-fi.so`. This
     is equivalent to :code:`--fi-provider $CH_FROMHOST_OFI_GNI`, where
     :code:`CH_FROMHOST_OFI_GNI` is the path to the Cray host ugni provider
@@ -120,10 +120,13 @@ To specify the destination within the image
 Additional arguments
 --------------------
 
-  :code:`--fi-path`
-    Print the guest destination path for libfabric providers and replacement.
+  :code:`--print-cray-fi`
+    Print inferred destination for libfabric replacement.
 
-  :code:`--lib-path`
+  :code:`--print-fi`
+    Print the guest destination path for libfabric provider(s).
+
+  :code:`--print-lib`
     Print the guest destination path for shared libraries inferred as
     described above.
 
@@ -135,10 +138,34 @@ Additional arguments
     Print help and exit.
 
   :code:`-v`, :code:`--verbose`
-    List the injected files.
+    Be more verbose about what is going on. Can be repeated.
 
   :code:`--version`
     Print version and exit.
+
+.. warning::
+
+   :code:`ldconfig` often prints scary-looking warnings on stderr even
+   everything is going well. By default, we suppress these, but you can see
+   them with sufficient verbosity. For example::
+
+     $ ch-fromhost --print-lib /var/tmp/bullseye
+     /usr/local/lib
+     $ ch-fromhost -v --print-lib /var/tmp/bullseye
+     asking ldconfig for inferred shared library destination
+     inferred shared library destination: /var/tmp/bullseye//usr/local/lib
+     /usr/local/lib
+     $ ch-fromhost -v -v --print-lib /var/tmp/bullseye
+     asking ldconfig for inferred shared library destination
+     /sbin/ldconfig: Can't stat /usr/local/lib/x86_64-linux-gnu: No such file or directory
+     /sbin/ldconfig: Path `/lib/x86_64-linux-gnu' given more than once
+     /sbin/ldconfig: Path `/usr/lib/x86_64-linux-gnu' given more than once
+     /sbin/ldconfig: /lib/x86_64-linux-gnu/ld-2.31.so is the dynamic linker, ignoring
+     inferred shared library destination: /var/tmp/bullseye//usr/local/lib
+     /usr/local/lib
+
+   See `issue #732 <https://github.com/hpc/charliecloud/issues/732>`_ for an
+   example of how this was confusing for users.
 
 
 When to use :code:`ch-fromhost`

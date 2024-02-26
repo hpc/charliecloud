@@ -26,9 +26,13 @@ setup () {
 }
 
 
-### Test cases that go in the paper ###
+### Test cases for build cache paper figures (DOI: 10.1145/3624062.3624585) ###
 
-@test "${tag}: §3.1 empty cache" {
+# Not all of these ended up as figures in the published paper, but I’m leaving
+# them here because they were targeted to the paper and were used in some
+# versions. If they are in the published paper, the figure number is noted.
+
+@test "${tag}: Fig. 2: empty cache" {
     rm -Rf --one-file-system "$CH_IMAGE_STORAGE"
 
     blessed_tree=$(cat << EOF
@@ -44,7 +48,7 @@ EOF
 }
 
 
-@test "${tag}: §3.2.1 initial pull" {
+@test "${tag}: Fig. 3: initial pull" {
     ch-image pull alpine:3.17
 
     blessed_tree=$(cat << 'EOF'
@@ -59,7 +63,7 @@ EOF
 }
 
 
-@test "${tag}: §3.5 FROM" {
+@test "${tag}: FROM" {
     # FROM pulls
     ch-image build-cache --reset
     run ch-image build -v -t d -f bucache/from.df .
@@ -108,7 +112,7 @@ EOF
 }
 
 
-@test "${tag}: §3.3.1 Dockerfile A" {
+@test "${tag}: Fig. 4: a.df" {
     ch-image build-cache --reset
 
     ch-image build -t a -f bucache/a.df .
@@ -127,7 +131,7 @@ EOF
 }
 
 
-@test "${tag}: §3.3.2 Dockerfile B" {
+@test "${tag}: Fig. 5: b.df" {
     ch-image build-cache --reset
 
     ch-image build -t a -f bucache/a.df .
@@ -148,7 +152,7 @@ EOF
 }
 
 
-@test "${tag}: §3.3.3 Dockerfile C" {
+@test "${tag}: Fig. 6: c.df" {
     ch-image build-cache --reset
 
     ch-image build -t a -f bucache/a.df .
@@ -173,7 +177,7 @@ EOF
 }
 
 
-@test "${tag}: rebuild A" {
+@test "${tag}: rebuild a.df" {
     # Forcing a rebuild show produce a new pair of FOO and BAR commits from
     # from the alpine branch.
     blessed_out=$(cat << 'EOF'
@@ -197,7 +201,7 @@ EOF
 }
 
 
-@test "${tag}: rebuild B" {
+@test "${tag}: rebuild b.df" {
     # Rebuild of B. Since A was rebuilt in the last test, and because
     # the rebuild behavior only forces misses on non-FROM instructions, it
     # should now be based on A's new commits.
@@ -222,7 +226,7 @@ EOF
 }
 
 
-@test "${tag}: rebuild C" {
+@test "${tag}: c.df" {
     # Rebuild C. Since C doesn’t reference img_a (like img_b does) rebuilding
     # causes a miss on FOO. Thus C makes new FOO and QUX commits.
     #
@@ -255,7 +259,7 @@ EOF
 }
 
 
-@test "${tag}: §3.7 change then revert" {
+@test "${tag}: Fig. 7: change then revert" {
     ch-image build-cache --reset
 
     ch-image build -t e -f bucache/a.df .
@@ -296,7 +300,7 @@ EOF
 }
 
 
-@test "${tag}: §3.4.1 two pulls, same" {
+@test "${tag}: two pulls, same" {
     ch-image build-cache --reset
     ch-image pull alpine:3.17
     ch-image pull alpine:3.17
@@ -313,7 +317,7 @@ EOF
 }
 
 
-@test "${tag}: §3.4.2 two pulls, different" {
+@test "${tag}: two pulls, different" {
     localregistry_init
     unset CH_IMAGE_AUTH  # don’t give local creds to Docker Hub
 
@@ -561,7 +565,7 @@ EOF
 }
 
 
-@test "${tag}: §3.6 rebuild" {
+@test "${tag}: Fig. 8: rebuild" {
     ch-image build-cache --reset
 
     # Build. Mode should not matter here, but we use enabled because that’s
@@ -1100,6 +1104,7 @@ EOF
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }
 
+
 @test "${tag}: multistage COPY" {
     # Multi-stage build with no instructions in the first stage.
     df_no=$(cat <<'EOF'
@@ -1502,6 +1507,7 @@ EOF
     [[ ! -e $CH_IMAGE_STORAGE/img/tmpimg/var/lib/rpm/__db.001 ]]
 }
 
+
 @test "${tag}: restore ACLs, xattrs" {  # issue #1287
     # Check if test needs to be skipped
     touch "$BATS_TMPDIR/tmpfs_test"
@@ -1537,4 +1543,40 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *"user:$USER:r--"* ]]
+}
+
+
+@test "${tag}: orphaned worktrees" {  # PR #1824
+    img_metadata=$CH_IMAGE_STORAGE/img/tmpimg/ch
+    img_to_git=$img_metadata/git
+    git_worktrees=$CH_IMAGE_STORAGE/bucache/worktrees
+    git_to_img=$git_worktrees/tmpimg
+
+    # pull image, should be unlinked
+    ch-image pull --no-cache scratch tmpimg
+    ch-image build-cache  # rm leftover $git_to_img if it exists
+    ls -lh "$img_metadata" "$git_worktrees"
+    [[ ! -e "$img_to_git" ]]
+    [[ ! -e "$git_to_img" ]]
+
+    # add fake link
+    touch "$img_to_git"
+    ls -lh "$img_metadata" "$git_worktrees"
+    [[   -e "$img_to_git" ]]
+    [[ ! -e "$git_to_img" ]]
+
+    # ch-image should warn and fix instead of crashing
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *'image erroneously marked cached, fixing'* ]]
+
+    # warning should now be gone and the state be good
+    ls -lh "$img_metadata" "$git_worktrees"
+    [[ ! -e "$img_to_git" ]]
+    [[ ! -e "$git_to_img" ]]
+    run ch-image list
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'image erroneously marked cached, fixing'* ]]
 }
