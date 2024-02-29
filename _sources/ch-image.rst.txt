@@ -66,6 +66,23 @@ Common options placed before or after the sub-command:
     default is to never authenticate, i.e., make all requests anonymously. The
     exception is :code:`push`, which implies :code:`--auth`.
 
+  :code:`--break MODULE:LINE`
+    Set a `PDB <https://docs.python.org/3/library/pdb.html>`_ breakpoint at
+    line number :code:`LINE` of module named :code:`MODULE` (typically the
+    filename with :code:`.py` removed, or :code:`__main__` for
+    :code:`ch-image` itself). That is, a PDB debugger shell will open before
+    executing the specified line.
+
+    This is accomplished by re-parsing the module, injecting :code:`import
+    pdb; pdb.set_trace()` into the parse tree, re-compiling the tree, and
+    replacing the module’s code with the result. This has various gotchas,
+    including (1) module-level code in the target module is executed twice,
+    (2) the option is parsed with bespoke early code so command line argument
+    parsing itself can be debugged, (3) breakpoints on function definition
+    will trigger while the module is being re-executed, not when the function
+    is called (break on the first line of the function body instead), and
+    (4) other weirdness we haven’t yet characterized.
+
   :code:`--cache`
     Enable build cache. Default if a sufficiently new Git is available. See
     section :ref:`Build cache <ch-image_build-cache>` for details.
@@ -2118,4 +2135,4 @@ Environment variables
 ..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
 ..  LocalWords:  pstats gprof chofile cffd cacdb ARGs NSYNC dst imgroot popt
 ..  LocalWords:  globbed ni AHSXpr drwxrwx ctx sym nom newB newC newD dstC
-..  LocalWords:  dstB dstF dstG upover drwx kexec
+..  LocalWords:  dstB dstF dstG upover drwx kexec pdb

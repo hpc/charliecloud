@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>4. ch-convert &mdash; Charliecloud 0.36 documentation</title>
+  <title>5. ch-convert &mdash; Charliecloud 0.37 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -17,8 +17,8 @@
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="5. ch-fromhost" href="ch-fromhost.html" />
-    <link rel="prev" title="3. ch-checkns" href="ch-checkns.html" /> 
+    <link rel="next" title="6. ch-fromhost" href="ch-fromhost.html" />
+    <link rel="prev" title="4. ch-completion.bash" href="ch-completion.bash.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -34,7 +34,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.36
+                0.37
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,22 +48,23 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#synopsis">4.1. Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#description">4.2. Description</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#image-formats">4.3. Image formats</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#format-inference">4.4. Format inference</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">4.5. Examples</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-completion.bash.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">5. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">5.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">5.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#image-formats">5.3. Image formats</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#format-inference">5.4. Format inference</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">5.5. Examples</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -80,7 +81,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active"><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></li>
+      <li class="breadcrumb-item active"><span class="section-number">5. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -90,16 +91,16 @@
            <div itemprop="articleBody">
              
   <section id="ch-convert">
-<h1><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code><a class="headerlink" href="#ch-convert" title="Permalink to this heading">¶</a></h1>
+<h1><span class="section-number">5. </span><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code><a class="headerlink" href="#ch-convert" title="Permalink to this heading">¶</a></h1>
 <p>Convert an image from one format to another.</p>
 <section id="synopsis">
-<h2><span class="section-number">4.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">5.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-convert<span class="w"> </span><span class="o">[</span>-i<span class="w"> </span>FMT<span class="o">]</span><span class="w"> </span><span class="o">[</span>-o<span class="w"> </span>FMT<span class="o">]</span><span class="w"> </span><span class="o">[</span>OPTION<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>IN<span class="w"> </span>OUT
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">4.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">5.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
 <p>Copy image <code class="code docutils literal notranslate"><span class="pre">IN</span></code> to <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> and convert its format. Replace
 <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> if it already exists, unless <code class="code docutils literal notranslate"><span class="pre">--no-clobber</span></code> is specified. It
 is an error if <code class="code docutils literal notranslate"><span class="pre">IN</span></code> and <code class="code docutils literal notranslate"><span class="pre">OUT</span></code> have the same format; use the
@@ -151,7 +152,7 @@ the image, depending on the input and output formats. Default:
 </div></blockquote>
 </section>
 <section id="image-formats">
-<h2><span class="section-number">4.3. </span>Image formats<a class="headerlink" href="#image-formats" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">5.3. </span>Image formats<a class="headerlink" href="#image-formats" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> knows about these values of <code class="code docutils literal notranslate"><span class="pre">FMT</span></code>:</p>
 <blockquote>
 <div><dl>
@@ -189,7 +190,7 @@ to <code class="code docutils literal notranslate"><span class="pre">tar(1)</spa
 or pull images.</p>
 </section>
 <section id="format-inference">
-<h2><span class="section-number">4.4. </span>Format inference<a class="headerlink" href="#format-inference" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">5.4. </span>Format inference<a class="headerlink" href="#format-inference" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code> tries to save typing by guessing formats when they are
 reasonably clear. This is done against filenames, rather than file contents,
 so the rules are the same for output descriptors that do not yet exist.</p>
@@ -210,7 +211,7 @@ explicit dot: Directory.</p></li>
 </div></blockquote>
 </section>
 <section id="examples">
-<h2><span class="section-number">4.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">5.5. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
 <p>Typical build-to-run sequence for image <code class="code docutils literal notranslate"><span class="pre">foo/bar</span></code> using <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s
 internal SquashFUSE code, inferring the output format:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>sudo<span class="w"> </span>docker<span class="w"> </span>build<span class="w"> </span>-t<span class="w"> </span>foo/bar<span class="w"> </span>-f<span class="w"> </span>Dockerfile<span class="w"> </span>.
@@ -239,8 +240,8 @@ internal SquashFUSE code, inferring the output format:</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="ch-checkns.html" class="btn btn-neutral float-left" title="3. ch-checkns" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="ch-fromhost.html" class="btn btn-neutral float-right" title="5. ch-fromhost" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="ch-completion.bash.html" class="btn btn-neutral float-left" title="4. ch-completion.bash" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ch-fromhost.html" class="btn btn-neutral float-right" title="6. ch-fromhost" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

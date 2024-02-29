@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Overview &mdash; Charliecloud 0.36 documentation</title>
+  <title>Overview &mdash; Charliecloud 0.37 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -33,7 +33,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.36
+                0.37
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -47,15 +47,16 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-completion.bash.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -121,8 +122,8 @@ a standard Linux filesystem tree.</p>
 <li><p>We wrote an article for USENIX’s magazine <em>;login:</em> that explains in more
 detail the motivation for Charliecloud and the technology upon which it is
 based: <a class="reference external" href="https://www.usenix.org/publications/login/fall2017/priedhorsky">https://www.usenix.org/publications/login/fall2017/priedhorsky</a></p></li>
-<li><p>A more technical resource is our Supercomputing 2017 paper:
-<a class="reference external" href="https://dl.acm.org/citation.cfm?id=3126925">https://dl.acm.org/citation.cfm?id=3126925</a></p></li>
+<li><p>For technical papers about Charliecloud, refer to the <em>Technical
+publications</em> section below.</p></li>
 </ul>
 </section>
 <section id="who-is-responsible">
@@ -163,8 +164,8 @@ Optionally, please include in your first patch a credit for yourself in the
 list above.</p>
 <p>We are friendly and welcoming of diversity on all dimensions.</p>
 </section>
-<section id="how-do-i-cite-charliecloud">
-<h2>How do I cite Charliecloud?<a class="headerlink" href="#how-do-i-cite-charliecloud" title="Permalink to this heading">¶</a></h2>
+<section id="technical-publications">
+<h2>Technical publications<a class="headerlink" href="#technical-publications" title="Permalink to this heading">¶</a></h2>
 <p>If Charliecloud helped your research, or it was useful to you in any other
 context where bibliographic citations are appropriate, please cite the
 following open-access paper:</p>
@@ -175,6 +176,36 @@ DOI: <a class="reference external" href="https://doi.org/10.1145/3126908.312692
 </div></blockquote>
 <p><em>Note:</em> This paper contains out-of-date number for the size of Charliecloud’s
 code. Please instead use the current number in the FAQ.</p>
+<p>Other publications:</p>
+<ul>
+<li><p>We compare the performance of three HPC-specific container technologies
+against bare metal, finding no concerns about performance degradation.</p>
+<blockquote>
+<div><p>Alfred Torrez, Tim Randles, and Reid Priedhorsky. “HPC container runtimes
+have minimal or no performance impact”, 2019. In <em>Proc. CANOPIE HPC
+Workshop &#64; SC</em>. DOI: <a class="reference external" href="https://ieeexplore.ieee.org/document/8950978">10.1109/CANOPIE-HPC49598.2019.00010</a>.</p>
+</div></blockquote>
+</li>
+<li><p>A demonstration of how low-privilege containers solve increasing demand for
+software flexibility.</p>
+<blockquote>
+<div><p>Reid Priedhorsky, R. Shane Canon, Timothy Randles, and Andrew J. Younge.
+“Minimizing privilege for building HPC containers”, 2021. In <em>Proc.
+Supercomputing</em>. DOI: <a class="reference external" href="https://doi.org/10.6084/m9.figshare.14396099">10.6084/m9.figshare.14396099</a>.</p>
+</div></blockquote>
+</li>
+<li><p>Charliecloud’s build cache performs competitively with the standard
+many-layered union filesystem approach and has structural advantages
+including a better diff format, lower cache overhead, and better file
+de-duplication.</p>
+<blockquote>
+<div><p>Reid Priedhorsky, Jordan Ogas, Claude H. (Rusty) Davis IV, Z. Noah
+Hounshel, Ashlyn Lee, Benjamin Stormer, and R. Shane Goff. “Charliecloud’s
+layer-free, Git-based container build cache”, 2023. In <em>Proc.
+Supercomputing</em>. DOI: <a class="reference external" href="https://doi.org/10.1145/3624062.3624585">10.1145/3624062.3624585</a>.</p>
+</div></blockquote>
+</li>
+</ul>
 </section>
 <section id="copyright-and-license">
 <h2>Copyright and license<a class="headerlink" href="#copyright-and-license" title="Permalink to this heading">¶</a></h2>
@@ -198,8 +229,8 @@ should be clearly marked, so as not to confuse it with the version available
 from LANL.</p>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>This documentation is for Charliecloud version 0.36 and was built
-2024-01-19 13:54 -0700.</p>
+<p>This documentation is for Charliecloud version 0.37 and was built
+2024-02-29 13:59 -0700.</p>
 </div>
 <div class="toctree-wrapper compound">
 </div>

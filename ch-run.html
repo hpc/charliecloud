@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>7. ch-run &mdash; Charliecloud 0.36 documentation</title>
+  <title>8. ch-run &mdash; Charliecloud 0.37 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -17,8 +17,8 @@
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="8. ch-run-oci" href="ch-run-oci.html" />
-    <link rel="prev" title="6. ch-image" href="ch-image.html" /> 
+    <link rel="next" title="9. ch-run-oci" href="ch-run-oci.html" />
+    <link rel="prev" title="7. ch-image" href="ch-image.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -34,7 +34,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.36
+                0.37
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,32 +48,33 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#synopsis">7.1. Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#description">7.2. Description</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#image-format">7.3. Image format</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#host-files-and-directories-available-in-container-via-bind-mounts">7.4. Host files and directories available in container via bind mounts</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">7.5. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#writeable-overlay-with-write-fake">7.6. Writeable overlay with <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#environment-variables">7.7. Environment variables</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#default-behavior">7.7.1. Default behavior</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#setting-variables-with-set-env-or-set-env0">7.7.2. Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#removing-variables-with-unset-env">7.7.3. Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-completion.bash.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">8. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">8.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">8.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#image-format">8.3. Image format</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#host-files-and-directories-available-in-container-via-bind-mounts">8.4. Host files and directories available in container via bind mounts</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#multiple-processes-in-the-same-container-with-join">8.5. Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#writeable-overlay-with-write-fake">8.6. Writeable overlay with <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-variables">8.7. Environment variables</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#default-behavior">8.7.1. Default behavior</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#setting-variables-with-set-env-or-set-env0">8.7.2. Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#removing-variables-with-unset-env">8.7.3. Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">7.8. Examples</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#syslog">7.9. Syslog</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#exit-status">7.10. Exit status</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">8.8. Examples</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#syslog">8.9. Syslog</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#exit-status">8.10. Exit status</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -90,7 +91,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active"><span class="section-number">7. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
+      <li class="breadcrumb-item active"><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -100,16 +101,16 @@
            <div itemprop="articleBody">
              
   <section id="ch-run">
-<h1><span class="section-number">7. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code><a class="headerlink" href="#ch-run" title="Permalink to this heading">¶</a></h1>
+<h1><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code><a class="headerlink" href="#ch-run" title="Permalink to this heading">¶</a></h1>
 <p>Run a command in a Charliecloud container.</p>
 <section id="synopsis">
-<h2><span class="section-number">7.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span><span class="o">[</span>OPTION...<span class="o">]</span><span class="w"> </span>IMAGE<span class="w"> </span>--<span class="w"> </span>COMMAND<span class="w"> </span><span class="o">[</span>ARG...<span class="o">]</span>
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">7.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
 <p>Run command <code class="code docutils literal notranslate"><span class="pre">COMMAND</span></code> in a fully unprivileged Charliecloud container using
 the image specified by <code class="code docutils literal notranslate"><span class="pre">IMAGE</span></code>, which can be: (1) a path to a directory,
 (2) the name of an image in <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> storage (e.g.
@@ -245,7 +246,7 @@ precaution to reduce the attack surface should bugs in these system calls or
 elsewhere arise.</p>
 </section>
 <section id="image-format">
-<h2><span class="section-number">7.3. </span>Image format<a class="headerlink" href="#image-format" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.3. </span>Image format<a class="headerlink" href="#image-format" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> supports two different image formats.</p>
 <p>The first is a simple directory that contains a Linux filesystem tree. This
 can be accomplished by:</p>
@@ -284,7 +285,7 @@ future version.</p>
 </div>
 </section>
 <section id="host-files-and-directories-available-in-container-via-bind-mounts">
-<h2><span class="section-number">7.4. </span>Host files and directories available in container via bind mounts<a class="headerlink" href="#host-files-and-directories-available-in-container-via-bind-mounts" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.4. </span>Host files and directories available in container via bind mounts<a class="headerlink" href="#host-files-and-directories-available-in-container-via-bind-mounts" title="Permalink to this heading">¶</a></h2>
 <p>In addition to any directories specified by the user with <code class="code docutils literal notranslate"><span class="pre">--bind</span></code>,
 <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> has standard host files and directories that are bind-mounted
 in as well.</p>
@@ -331,7 +332,7 @@ and group names need to be customized for each container run.</p></li>
 </div></blockquote>
 </section>
 <section id="multiple-processes-in-the-same-container-with-join">
-<h2><span class="section-number">7.5. </span>Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code><a class="headerlink" href="#multiple-processes-in-the-same-container-with-join" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.5. </span>Multiple processes in the same container with <code class="code docutils literal notranslate"><span class="pre">--join</span></code><a class="headerlink" href="#multiple-processes-in-the-same-container-with-join" title="Permalink to this heading">¶</a></h2>
 <p>By default, different <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> invocations use different user and mount
 namespaces (i.e., different containers). While this has no impact on sharing
 most resources between invocations, there are a few important exceptions.
@@ -386,7 +387,7 @@ as files in <code class="code docutils literal notranslate"><span class="pre">/d
 </ul>
 </section>
 <section id="writeable-overlay-with-write-fake">
-<span id="ch-run-overlay"></span><h2><span class="section-number">7.6. </span>Writeable overlay with <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code><a class="headerlink" href="#writeable-overlay-with-write-fake" title="Permalink to this heading">¶</a></h2>
+<span id="ch-run-overlay"></span><h2><span class="section-number">8.6. </span>Writeable overlay with <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code><a class="headerlink" href="#writeable-overlay-with-write-fake" title="Permalink to this heading">¶</a></h2>
 <p>If you need the image to stay read-only but appear writeable, you may be able
 to use <code class="code docutils literal notranslate"><span class="pre">--write-fake</span></code> to overlay a writeable tmpfs atop the image. This
 requires kernel support. Specifically:</p>
@@ -409,7 +410,7 @@ and thus is not helpful for unprivileged containers.)</p>
 </ol>
 </section>
 <section id="environment-variables">
-<h2><span class="section-number">7.7. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.7. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">¶</a></h2>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> leaves environment variables unchanged, i.e. the host
 environment is passed through unaltered, except:</p>
 <ul class="simple">
@@ -427,7 +428,7 @@ environment is passed through unaltered, except:</p>
 e.g. to add/remove multiple variable sets or add only some variables in a
 file.</p>
 <section id="default-behavior">
-<h3><span class="section-number">7.7.1. </span>Default behavior<a class="headerlink" href="#default-behavior" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.7.1. </span>Default behavior<a class="headerlink" href="#default-behavior" title="Permalink to this heading">¶</a></h3>
 <p>By default, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> makes the following environment variable changes:</p>
 <dl>
 <dt><code class="code docutils literal notranslate"><span class="pre">$CH_RUNNING</span></code></dt><dd><p>Set to <code class="code docutils literal notranslate"><span class="pre">Weird</span> <span class="pre">Al</span> <span class="pre">Yankovic</span></code>. While a process can figure out that it’s
@@ -466,7 +467,7 @@ given.</p>
 </dl>
 </section>
 <section id="setting-variables-with-set-env-or-set-env0">
-<h3><span class="section-number">7.7.2. </span>Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code><a class="headerlink" href="#setting-variables-with-set-env-or-set-env0" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.7.2. </span>Setting variables with <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code> or <code class="code docutils literal notranslate"><span class="pre">--set-env0</span></code><a class="headerlink" href="#setting-variables-with-set-env-or-set-env0" title="Permalink to this heading">¶</a></h3>
 <p>The purpose of these two options is to set environment variables within the
 container. Values given replace any already in the environment (i.e.,
 inherited from the host shell) or set by earlier uses of the options. These
@@ -676,7 +677,7 @@ is set to <code class="code docutils literal notranslate"><span class="pre">bar<
 </table>
 </section>
 <section id="removing-variables-with-unset-env">
-<h3><span class="section-number">7.7.3. </span>Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code><a class="headerlink" href="#removing-variables-with-unset-env" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">8.7.3. </span>Removing variables with <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code><a class="headerlink" href="#removing-variables-with-unset-env" title="Permalink to this heading">¶</a></h3>
 <p>The purpose of <code class="code docutils literal notranslate"><span class="pre">--unset-env=GLOB</span></code> is to remove unwanted environment
 variables. The argument <code class="code docutils literal notranslate"><span class="pre">GLOB</span></code> is a glob pattern (<a class="reference external" href="http://man7.org/linux/man-pages/man3/fnmatch.3.html">dialect</a> <code class="code docutils literal notranslate"><span class="pre">fnmatch(3)</span></code>
 with the <code class="code docutils literal notranslate"><span class="pre">FNM_EXTMATCH</span></code> flag where supported); all variables with
@@ -740,7 +741,7 @@ if started with no init files:</p>
 </section>
 </section>
 <section id="examples">
-<h2><span class="section-number">7.8. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.8. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
 <p>Run the command <code class="code docutils literal notranslate"><span class="pre">echo</span> <span class="pre">hello</span></code> inside a Charliecloud container using the
 unpacked image at <code class="code docutils literal notranslate"><span class="pre">/data/foo</span></code>:</p>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run<span class="w"> </span>/data/foo<span class="w"> </span>--<span class="w"> </span><span class="nb">echo</span><span class="w"> </span>hello
@@ -753,7 +754,7 @@ unpacked image at <code class="code docutils literal notranslate"><span class="p
 </div>
 </section>
 <section id="syslog">
-<h2><span class="section-number">7.9. </span>Syslog<a class="headerlink" href="#syslog" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.9. </span>Syslog<a class="headerlink" href="#syslog" title="Permalink to this heading">¶</a></h2>
 <p>By default, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> logs its command line to <a class="reference external" href="https://en.wikipedia.org/wiki/Syslog">syslog</a>. (This can be disabled by configuring
 with <code class="code docutils literal notranslate"><span class="pre">--disable-syslog</span></code>.) This includes: (1) the invoking real UID, (2)
 the number of command line arguments, and (3) the arguments, separated by
@@ -785,7 +786,7 @@ the shell. The zero byte, ASCII NUL, cannot appear in arguments because it
 would terminate the string.</p>
 </section>
 <section id="exit-status">
-<h2><span class="section-number">7.10. </span>Exit status<a class="headerlink" href="#exit-status" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">8.10. </span>Exit status<a class="headerlink" href="#exit-status" title="Permalink to this heading">¶</a></h2>
 <p>If there is an error during containerization, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> exits with status
 non-zero. If the user command is started successfully, the exit status is that
 of the user command, with one exception: if the image is an internally mounted
@@ -798,8 +799,8 @@ status is 1 regardless of the signal value.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="ch-image.html" class="btn btn-neutral float-left" title="6. ch-image" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="ch-run-oci.html" class="btn btn-neutral float-right" title="8. ch-run-oci" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="ch-image.html" class="btn btn-neutral float-left" title="7. ch-image" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ch-run-oci.html" class="btn btn-neutral float-right" title="9. ch-run-oci" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

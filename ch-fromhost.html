@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>5. ch-fromhost &mdash; Charliecloud 0.36 documentation</title>
+  <title>6. ch-fromhost &mdash; Charliecloud 0.37 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -17,8 +17,8 @@
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="6. ch-image" href="ch-image.html" />
-    <link rel="prev" title="4. ch-convert" href="ch-convert.html" /> 
+    <link rel="next" title="7. ch-image" href="ch-image.html" />
+    <link rel="prev" title="5. ch-convert" href="ch-convert.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -34,7 +34,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.36
+                0.37
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,39 +48,40 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#synopsis">5.1. Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#description">5.2. Description</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#arbitrary-files">5.2.1. Arbitrary files</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#libfabric">5.2.2. Libfabric</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-completion.bash.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">6. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">6.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">6.2. Description</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#arbitrary-files">6.2.1. Arbitrary files</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#libfabric">6.2.2. Libfabric</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#options">5.3. Options</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#to-specify-which-files-to-inject">5.3.1. To specify which files to inject</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#to-specify-the-destination-within-the-image">5.3.2. To specify the destination within the image</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#additional-arguments">5.3.3. Additional arguments</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#options">6.3. Options</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#to-specify-which-files-to-inject">6.3.1. To specify which files to inject</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#to-specify-the-destination-within-the-image">6.3.2. To specify the destination within the image</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#additional-arguments">6.3.3. Additional arguments</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#when-to-use-ch-fromhost">5.4. When to use <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
-<li class="toctree-l2"><a class="reference internal" href="#libfabric-usage-and-quirks">5.5. Libfabric usage and quirks</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#notes">5.6. Notes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#bugs">5.7. Bugs</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#examples">5.8. Examples</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#id1">5.8.1. libfabric</a></li>
-<li class="toctree-l3"><a class="reference internal" href="#arbitrary">5.8.2. Arbitrary</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#when-to-use-ch-fromhost">6.4. When to use <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#libfabric-usage-and-quirks">6.5. Libfabric usage and quirks</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#notes">6.6. Notes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#bugs">6.7. Bugs</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#examples">6.8. Examples</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">6.8.1. libfabric</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#arbitrary">6.8.2. Arbitrary</a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#acknowledgements">5.9. Acknowledgements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#acknowledgements">6.9. Acknowledgements</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -97,7 +98,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active"><span class="section-number">5. </span><code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></li>
+      <li class="breadcrumb-item active"><span class="section-number">6. </span><code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -107,16 +108,16 @@
            <div itemprop="articleBody">
              
   <section id="ch-fromhost">
-<h1><span class="section-number">5. </span><code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code><a class="headerlink" href="#ch-fromhost" title="Permalink to this heading">¶</a></h1>
+<h1><span class="section-number">6. </span><code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code><a class="headerlink" href="#ch-fromhost" title="Permalink to this heading">¶</a></h1>
 <p>Inject files from the host into an image directory, with various magic.</p>
 <section id="synopsis">
-<h2><span class="section-number">5.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span><span class="o">[</span>OPTION<span class="w"> </span>...<span class="o">]</span><span class="w"> </span><span class="o">[</span>FILE_OPTION<span class="w"> </span>...<span class="o">]</span><span class="w"> </span>IMGDIR
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">5.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This command is experimental. Features may be incomplete and/or buggy.
@@ -126,8 +127,8 @@ Please report any issues you find, so we can fix them!</p>
 <code class="code docutils literal notranslate"><span class="pre">IMGDIR</span></code>.</p>
 <p>The purpose of this command is to inject arbitrary host files into a container
 necessary to access host specific resources; usually GPU or proprietary
-interconnets. <strong>It is not a general copy-to-image tool</strong>; see further discussion
-on use cases below.</p>
+interconnects. <strong>It is not a general copy-to-image tool</strong>; see further
+discussion on use cases below.</p>
 <p>It should be run after:code:<cite>ch-convert</cite> and before <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>. After
 invocation, the image is no longer portable to other hosts.</p>
 <p>Injection is not atomic; if an error occurs partway through injection, the
@@ -136,7 +137,7 @@ Injection is currently implemented using a simple file copy, but that may
 change in the future.</p>
 <p>Arbitrary file and libfabric injection are handled differently.</p>
 <section id="arbitrary-files">
-<h3><span class="section-number">5.2.1. </span>Arbitrary files<a class="headerlink" href="#arbitrary-files" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.2.1. </span>Arbitrary files<a class="headerlink" href="#arbitrary-files" title="Permalink to this heading">¶</a></h3>
 <p>Arbitrary file paths that contain the strings <code class="code docutils literal notranslate"><span class="pre">/bin</span></code> or
 <code class="code docutils literal notranslate"><span class="pre">/sbin</span></code> are assumed to be executables and placed in <code class="code docutils literal notranslate"><span class="pre">/usr/bin</span></code>
 within the container. Paths that are not loadable libfabric providers and
@@ -148,7 +149,7 @@ directory specified by <code class="code docutils literal notranslate"><span cla
 container (using <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">-w</span></code>) after injection.</p>
 </section>
 <section id="libfabric">
-<h3><span class="section-number">5.2.2. </span>Libfabric<a class="headerlink" href="#libfabric" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.2.2. </span>Libfabric<a class="headerlink" href="#libfabric" title="Permalink to this heading">¶</a></h3>
 <p>MPI implementations have numerous ways of communicating messages over
 interconnects. We use libfabric (OFI), an OpenFabric framework that
 exports fabric communication services to applications, to manage these
@@ -171,9 +172,9 @@ be overwritten with the host’s. See details and quirks below.</p>
 </section>
 </section>
 <section id="options">
-<h2><span class="section-number">5.3. </span>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.3. </span>Options<a class="headerlink" href="#options" title="Permalink to this heading">¶</a></h2>
 <section id="to-specify-which-files-to-inject">
-<h3><span class="section-number">5.3.1. </span>To specify which files to inject<a class="headerlink" href="#to-specify-which-files-to-inject" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.3.1. </span>To specify which files to inject<a class="headerlink" href="#to-specify-which-files-to-inject" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">-c</span></code>, <code class="code docutils literal notranslate"><span class="pre">--cmd</span> <span class="pre">CMD</span></code></dt><dd><p>Inject files listed in the standard output of command <code class="code docutils literal notranslate"><span class="pre">CMD</span></code>.</p>
@@ -182,11 +183,11 @@ be overwritten with the host’s. See details and quirks below.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-p</span></code>, <code class="code docutils literal notranslate"><span class="pre">--path</span> <span class="pre">PATH</span></code></dt><dd><p>Inject the file at <code class="code docutils literal notranslate"><span class="pre">PATH</span></code>.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--cray-mpi-cxi</span></code></dt><dd><p>Inject cray-libfabric for slingshot. This is equivalent to
+<dt><code class="code docutils literal notranslate"><span class="pre">--cray-cxi</span></code></dt><dd><p>Inject cray-libfabric for slingshot. This is equivalent to
 <code class="code docutils literal notranslate"><span class="pre">--path</span> <span class="pre">$CH_FROMHOST_OFI_CXI</span></code>, where <code class="code docutils literal notranslate"><span class="pre">$CH_FROMHOST_OFI_CXI</span></code> is
 the path the Cray host libfabric <code class="code docutils literal notranslate"><span class="pre">libfabric.so</span></code>.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--cray-mpi-gni</span></code></dt><dd><p>Inject cray gemini/aries GNI libfabric provider <code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code>. This
+<dt><code class="code docutils literal notranslate"><span class="pre">--cray-gni</span></code></dt><dd><p>Inject cray gemini/aries GNI libfabric provider <code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code>. This
 is equivalent to <code class="code docutils literal notranslate"><span class="pre">--fi-provider</span> <span class="pre">$CH_FROMHOST_OFI_GNI</span></code>, where
 <code class="code docutils literal notranslate"><span class="pre">CH_FROMHOST_OFI_GNI</span></code> is the path to the Cray host ugni provider
 <code class="code docutils literal notranslate"><span class="pre">libgnix-fi.so</span></code>.</p>
@@ -199,7 +200,7 @@ to find executables and libraries to inject.</p>
 <p>These can be repeated, and at least one must be specified.</p>
 </section>
 <section id="to-specify-the-destination-within-the-image">
-<h3><span class="section-number">5.3.2. </span>To specify the destination within the image<a class="headerlink" href="#to-specify-the-destination-within-the-image" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.3.2. </span>To specify the destination within the image<a class="headerlink" href="#to-specify-the-destination-within-the-image" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
 <dt><code class="code docutils literal notranslate"><span class="pre">-d</span></code>, <code class="code docutils literal notranslate"><span class="pre">--dest</span> <span class="pre">DST</span></code></dt><dd><p>Place files specified later in directory <code class="code docutils literal notranslate"><span class="pre">IMGDIR/DST</span></code>, overriding the
@@ -211,12 +212,14 @@ repeated to place files in varying destinations.</p>
 </div></blockquote>
 </section>
 <section id="additional-arguments">
-<h3><span class="section-number">5.3.3. </span>Additional arguments<a class="headerlink" href="#additional-arguments" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.3.3. </span>Additional arguments<a class="headerlink" href="#additional-arguments" title="Permalink to this heading">¶</a></h3>
 <blockquote>
 <div><dl class="simple">
-<dt><code class="code docutils literal notranslate"><span class="pre">--fi-path</span></code></dt><dd><p>Print the guest destination path for libfabric providers and replacement.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--print-cray-fi</span></code></dt><dd><p>Print inferred destination for libfabric replacement.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--lib-path</span></code></dt><dd><p>Print the guest destination path for shared libraries inferred as
+<dt><code class="code docutils literal notranslate"><span class="pre">--print-fi</span></code></dt><dd><p>Print the guest destination path for libfabric provider(s).</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--print-lib</span></code></dt><dd><p>Print the guest destination path for shared libraries inferred as
 described above.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--no-ldconfig</span></code></dt><dd><p>Don’t run <code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> even if we appear to have injected shared
@@ -224,16 +227,40 @@ libraries.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-h</span></code>, <code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt><dd><p>Print help and exit.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>List the injected files.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">-v</span></code>, <code class="code docutils literal notranslate"><span class="pre">--verbose</span></code></dt><dd><p>Be more verbose about what is going on. Can be repeated.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt><dd><p>Print version and exit.</p>
 </dd>
 </dl>
 </div></blockquote>
+<div class="admonition warning">
+<p class="admonition-title">Warning</p>
+<p><code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> often prints scary-looking warnings on stderr even
+everything is going well. By default, we suppress these, but you can see
+them with sufficient verbosity. For example:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-fromhost<span class="w"> </span>--print-lib<span class="w"> </span>/var/tmp/bullseye
+<span class="go">/usr/local/lib</span>
+<span class="gp">$ </span>ch-fromhost<span class="w"> </span>-v<span class="w"> </span>--print-lib<span class="w"> </span>/var/tmp/bullseye
+<span class="go">asking ldconfig for inferred shared library destination</span>
+<span class="go">inferred shared library destination: /var/tmp/bullseye//usr/local/lib</span>
+<span class="go">/usr/local/lib</span>
+<span class="gp">$ </span>ch-fromhost<span class="w"> </span>-v<span class="w"> </span>-v<span class="w"> </span>--print-lib<span class="w"> </span>/var/tmp/bullseye
+<span class="go">asking ldconfig for inferred shared library destination</span>
+<span class="go">/sbin/ldconfig: Can&#39;t stat /usr/local/lib/x86_64-linux-gnu: No such file or directory</span>
+<span class="go">/sbin/ldconfig: Path `/lib/x86_64-linux-gnu&#39; given more than once</span>
+<span class="go">/sbin/ldconfig: Path `/usr/lib/x86_64-linux-gnu&#39; given more than once</span>
+<span class="go">/sbin/ldconfig: /lib/x86_64-linux-gnu/ld-2.31.so is the dynamic linker, ignoring</span>
+<span class="go">inferred shared library destination: /var/tmp/bullseye//usr/local/lib</span>
+<span class="go">/usr/local/lib</span>
+</pre></div>
+</div>
+<p>See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/732">issue #732</a> for an
+example of how this was confusing for users.</p>
+</div>
 </section>
 </section>
 <section id="when-to-use-ch-fromhost">
-<h2><span class="section-number">5.4. </span>When to use <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code><a class="headerlink" href="#when-to-use-ch-fromhost" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.4. </span>When to use <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code><a class="headerlink" href="#when-to-use-ch-fromhost" title="Permalink to this heading">¶</a></h2>
 <p>This command does a lot of heuristic magic; while it <em>can</em> copy arbitrary
 files into an image, this usage is discouraged and prone to error. Here are
 some use cases and the recommended approach:</p>
@@ -257,7 +284,7 @@ can package your functionality with a tidy option like <code class="code docutil
 </ol>
 </section>
 <section id="libfabric-usage-and-quirks">
-<h2><span class="section-number">5.5. </span>Libfabric usage and quirks<a class="headerlink" href="#libfabric-usage-and-quirks" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.5. </span>Libfabric usage and quirks<a class="headerlink" href="#libfabric-usage-and-quirks" title="Permalink to this heading">¶</a></h2>
 <p>The implementation of libfabric provider injection and replacement is
 experimental and has a couple quirks.</p>
 <ol class="arabic">
@@ -320,7 +347,7 @@ the necessary support.</p></li>
 code better.</p>
 </section>
 <section id="notes">
-<h2><span class="section-number">5.6. </span>Notes<a class="headerlink" href="#notes" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.6. </span>Notes<a class="headerlink" href="#notes" title="Permalink to this heading">¶</a></h2>
 <p>Symbolic links are dereferenced, i.e., the files pointed to are injected, not
 the links themselves.</p>
 <p>As a corollary, do not include symlinks to shared libraries. These will be
@@ -345,15 +372,15 @@ notion of a half-started container.</p></li>
 script for nVidia GPUs, they would not solve the problem for other situations.</p>
 </section>
 <section id="bugs">
-<h2><span class="section-number">5.7. </span>Bugs<a class="headerlink" href="#bugs" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.7. </span>Bugs<a class="headerlink" href="#bugs" title="Permalink to this heading">¶</a></h2>
 <p>File paths may not contain colons or newlines.</p>
 <p><code class="code docutils literal notranslate"><span class="pre">ldconfig</span></code> tends to print <code class="code docutils literal notranslate"><span class="pre">stat</span></code> errors; these are typically
 non-fatal and occur when trying to probe common library paths. See <a class="reference external" href="https://github.com/hpc/charliecloud/issues/732">issue #732</a>.</p>
 </section>
 <section id="examples">
-<h2><span class="section-number">5.8. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
-<section id="id1">
-<h3><span class="section-number">5.8.1. </span>libfabric<a class="headerlink" href="#id1" title="Permalink to this heading">¶</a></h3>
+<h2><span class="section-number">6.8. </span>Examples<a class="headerlink" href="#examples" title="Permalink to this heading">¶</a></h2>
+<section id="id2">
+<h3><span class="section-number">6.8.1. </span>libfabric<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
 <p>Cray Slingshot CXI injection.</p>
 <p>Replace image libabfric, i.e., <code class="code docutils literal notranslate"><span class="pre">libfabric.so</span></code>, with Cray host’s
 libfabric at host path <code class="code docutils literal notranslate"><span class="pre">/opt/cray-libfabric/lib64/libfabric.so</span></code>.</p>
@@ -454,7 +481,7 @@ with <code class="code docutils literal notranslate"><span class="pre">fi_info</
 </div>
 </section>
 <section id="arbitrary">
-<h3><span class="section-number">5.8.2. </span>Arbitrary<a class="headerlink" href="#arbitrary" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">6.8.2. </span>Arbitrary<a class="headerlink" href="#arbitrary" title="Permalink to this heading">¶</a></h3>
 <p>Place shared library <code class="code docutils literal notranslate"><span class="pre">/usr/lib64/libfoo.so</span></code> at path
 <code class="code docutils literal notranslate"><span class="pre">/usr/lib/libfoo.so</span></code> (assuming <code class="code docutils literal notranslate"><span class="pre">/usr/lib</span></code> is the first directory
 searched by the dynamic loader in the image), within the image
@@ -509,7 +536,7 @@ then run <code class="code docutils literal notranslate"><span class="pre">ldcon
 </section>
 </section>
 <section id="acknowledgements">
-<h2><span class="section-number">5.9. </span>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">6.9. </span>Acknowledgements<a class="headerlink" href="#acknowledgements" title="Permalink to this heading">¶</a></h2>
 <p>This command was inspired by the similar <a class="reference external" href="http://www.nersc.gov/research-and-development/user-defined-images/">Shifter</a> feature
 that allows Shifter containers to use the Cray Aries network. We particularly
 appreciate the help provided by Shane Canon and Doug Jacobsen during our
@@ -523,8 +550,8 @@ implementation of <code class="code docutils literal notranslate"><span class="p
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="ch-convert.html" class="btn btn-neutral float-left" title="4. ch-convert" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="ch-image.html" class="btn btn-neutral float-right" title="6. ch-image" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="ch-convert.html" class="btn btn-neutral float-left" title="5. ch-convert" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ch-image.html" class="btn btn-neutral float-right" title="7. ch-image" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

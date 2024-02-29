@@ -182,46 +182,41 @@ Third-party software compiled from source
 -----------------------------------------
 
 Under this method, one uses :code:`RUN` commands to fetch the desired software
-using :code:`curl` or :code:`wget`, compile it, and install. Our example does
-this with two chained Dockerfiles. First, we build a basic AlmaLinux image
-(:code:`examples/Dockerfile.almalinux_8ch`):
+using :code:`curl` or :code:`wget`, compile it, and install. Our example
+(:code:`examples/Dockerfile.almalinux_8ch`) does this with ImageMagick:
 
- .. literalinclude:: ../examples/Dockerfile.almalinux_8ch
-    :language: docker
-    :lines: 2-
-
-Then, in a second image (:code:`examples/Dockerfile.openmpi`), we add OpenMPI.
-This is a complex Dockerfile that compiles several dependencies in addition to
-OpenMPI. For the purposes of this documentation, you can skip most of it, but
-we felt it would be useful to show a real example.
-
-.. literalinclude:: ../examples/Dockerfile.openmpi
+.. literalinclude:: ../examples/Dockerfile.almalinux_8ch
    :language: docker
    :lines: 2-
 
 So what is going on here?
 
-1. Use the latest AlmaLinux 8 as the base image.
+#. Use the latest AlmaLinux 8 as the base image.
 
-2. Install a basic build system using the OS package manager.
+#. Install some packages using :code:`dnf`, the OS package manager, including
+   a basic development environment.
 
-3. For a few dependencies and then OpenMPI itself:
+#. Install :code:`wheel` using :code:`pip` and adjust the shared library
+   configuration. (These are not needed for ImageMagick but rather support
+   derived images.)
 
-   1. Download and untar. Note the use of variables to make adjusting the URL
-      and versions easier, as well as the explanation of why we’re not using
-      :code:`dnf`, given that several of these packages are included in
-      CentOS.
+#. For ImageMagick itself:
 
-   2. Build and install OpenMPI. Note the :code:`getconf` trick to guess at an
+   #. Download and untar. Note the use of the variable :code:`MAGICK_VERSION`
+      and versions easier.
+
+   #. Build and install. Note the :code:`getconf` trick to guess at an
       appropriate parallel build.
 
-4. Clean up, in order to reduce the size of the build cache as well as the
-   resulting Charliecloud image (:code:`rm -Rf`).
+   #. Clean up, in order to reduce the size of the build cache as well as the
+      resulting Charliecloud image (:code:`rm -Rf`).
 
-.. Finally, because it’s a container image, you can be less tidy than you
-   might be on a normal system. For example, the above downloads and builds in
-   :code:`/` rather than :code:`/usr/local/src`, and it installs MPI into
-   :code:`/usr` rather than :code:`/usr/local`.
+.. note::
+
+   Because it’s a container image, you can be less tidy than you might
+   normally be. For example, we install ImageMagick directly into
+   :code:`/usr/local` rather than using something like `GNU Stow
+   <https://www.gnu.org/software/stow/>`_ to organize this directory tree.
 
 Your software stored in the image
 ---------------------------------
@@ -309,4 +304,4 @@ terminal.
 
 
 ..  LocalWords:  userguide Gruening Souppaya Morello Scarfone openmpi nist
-..  LocalWords:  ident OCFS
+..  LocalWords:  ident OCFS MAGICK

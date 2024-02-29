@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>8. ch-run-oci &mdash; Charliecloud 0.36 documentation</title>
+  <title>9. ch-run-oci &mdash; Charliecloud 0.37 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -17,8 +17,8 @@
         <script src="_static/sphinx_highlight.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="9. ch-test" href="ch-test.html" />
-    <link rel="prev" title="7. ch-run" href="ch-run.html" /> 
+    <link rel="next" title="10. ch-test" href="ch-test.html" />
+    <link rel="prev" title="8. ch-run" href="ch-run.html" /> 
 </head>
 
 <body class="wy-body-for-nav"> 
@@ -34,7 +34,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.36
+                0.37
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -48,29 +48,30 @@
 <li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
-<li class="toctree-l1 current"><a class="current reference internal" href="#">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a><ul>
-<li class="toctree-l2"><a class="reference internal" href="#synopsis">8.1. Synopsis</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#description">8.2. Description</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#operations">8.3. Operations</a><ul>
-<li class="toctree-l3"><a class="reference internal" href="#create">8.3.1. <code class="code docutils literal notranslate"><span class="pre">create</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#delete">8.3.2. <code class="code docutils literal notranslate"><span class="pre">delete</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#kill">8.3.3. <code class="code docutils literal notranslate"><span class="pre">kill</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#start">8.3.4. <code class="code docutils literal notranslate"><span class="pre">start</span></code></a></li>
-<li class="toctree-l3"><a class="reference internal" href="#state">8.3.5. <code class="code docutils literal notranslate"><span class="pre">state</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-completion.bash.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">9. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">9.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">9.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#operations">9.3. Operations</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#create">9.3.1. <code class="code docutils literal notranslate"><span class="pre">create</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#delete">9.3.2. <code class="code docutils literal notranslate"><span class="pre">delete</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#kill">9.3.3. <code class="code docutils literal notranslate"><span class="pre">kill</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#start">9.3.4. <code class="code docutils literal notranslate"><span class="pre">start</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#state">9.3.5. <code class="code docutils literal notranslate"><span class="pre">state</span></code></a></li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#unsupported-oci-features">8.4. Unsupported OCI features</a></li>
-<li class="toctree-l2"><a class="reference internal" href="#environment-variables">8.5. Environment variables</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#unsupported-oci-features">9.4. Unsupported OCI features</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#environment-variables">9.5. Environment variables</a></li>
 </ul>
 </li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -87,7 +88,7 @@
           <div role="navigation" aria-label="Page navigation">
   <ul class="wy-breadcrumbs">
       <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
-      <li class="breadcrumb-item active"><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></li>
+      <li class="breadcrumb-item active"><span class="section-number">9. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></li>
       <li class="wy-breadcrumbs-aside">
       </li>
   </ul>
@@ -97,16 +98,16 @@
            <div itemprop="articleBody">
              
   <section id="ch-run-oci">
-<h1><span class="section-number">8. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code><a class="headerlink" href="#ch-run-oci" title="Permalink to this heading">¶</a></h1>
+<h1><span class="section-number">9. </span><code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code><a class="headerlink" href="#ch-run-oci" title="Permalink to this heading">¶</a></h1>
 <p>OCI wrapper for <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>.</p>
 <section id="synopsis">
-<h2><span class="section-number">8.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">9.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>OPERATION<span class="w"> </span><span class="o">[</span>ARG<span class="w"> </span>...<span class="o">]</span>
 </pre></div>
 </div>
 </section>
 <section id="description">
-<h2><span class="section-number">8.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">9.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
 <p>This command is experimental. Features may be incomplete and/or buggy. The
@@ -146,7 +147,7 @@ Guide.</p>
 versions are offered.</p>
 </section>
 <section id="operations">
-<h2><span class="section-number">8.3. </span>Operations<a class="headerlink" href="#operations" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">9.3. </span>Operations<a class="headerlink" href="#operations" title="Permalink to this heading">¶</a></h2>
 <p>All OCI operations are accepted, but some are no-ops or merely scaffolding to
 satisfy the caller. For comparison, see also:</p>
 <ul class="simple">
@@ -154,7 +155,7 @@ satisfy the caller. For comparison, see also:</p>
 <li><p>The <a class="reference external" href="https://github.com/opencontainers/runc/tree/master/man">runc man pages</a></p></li>
 </ul>
 <section id="create">
-<h3><span class="section-number">8.3.1. </span><code class="code docutils literal notranslate"><span class="pre">create</span></code><a class="headerlink" href="#create" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.1. </span><code class="code docutils literal notranslate"><span class="pre">create</span></code><a class="headerlink" href="#create" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>create<span class="w"> </span>--bundle<span class="w"> </span>DIR<span class="w"> </span>--pid-file<span class="w"> </span>FILE<span class="w"> </span><span class="o">[</span>--no-new-keyring<span class="o">]</span><span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
@@ -189,21 +190,21 @@ requesting a pseudoterminal.</p>
 </div></blockquote>
 </section>
 <section id="delete">
-<h3><span class="section-number">8.3.2. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.2. </span><code class="code docutils literal notranslate"><span class="pre">delete</span></code><a class="headerlink" href="#delete" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>delete<span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
 <p>Clean up the OCI-related scaffolding for specified container.</p>
 </section>
 <section id="kill">
-<h3><span class="section-number">8.3.3. </span><code class="code docutils literal notranslate"><span class="pre">kill</span></code><a class="headerlink" href="#kill" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.3. </span><code class="code docutils literal notranslate"><span class="pre">kill</span></code><a class="headerlink" href="#kill" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span><span class="nb">kill</span><span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
 <p>No-op.</p>
 </section>
 <section id="start">
-<h3><span class="section-number">8.3.4. </span><code class="code docutils literal notranslate"><span class="pre">start</span></code><a class="headerlink" href="#start" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.4. </span><code class="code docutils literal notranslate"><span class="pre">start</span></code><a class="headerlink" href="#start" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>start<span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
@@ -211,7 +212,7 @@ requesting a pseudoterminal.</p>
 container.</p>
 </section>
 <section id="state">
-<h3><span class="section-number">8.3.5. </span><code class="code docutils literal notranslate"><span class="pre">state</span></code><a class="headerlink" href="#state" title="Permalink to this heading">¶</a></h3>
+<h3><span class="section-number">9.3.5. </span><code class="code docutils literal notranslate"><span class="pre">state</span></code><a class="headerlink" href="#state" title="Permalink to this heading">¶</a></h3>
 <div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-run-oci<span class="w"> </span>state<span class="w"> </span>CONTAINER_ID
 </pre></div>
 </div>
@@ -220,7 +221,7 @@ JSON document.</p>
 </section>
 </section>
 <section id="unsupported-oci-features">
-<h2><span class="section-number">8.4. </span>Unsupported OCI features<a class="headerlink" href="#unsupported-oci-features" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">9.4. </span>Unsupported OCI features<a class="headerlink" href="#unsupported-oci-features" title="Permalink to this heading">¶</a></h2>
 <p>As noted above, various OCI features are not supported by Charliecloud. We
 have tried to guess which features would be essential to callers;
 <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code> fails with an error if these are requested. Otherwise, the
@@ -261,7 +262,7 @@ EGID</p></li>
 </div></blockquote>
 </section>
 <section id="environment-variables">
-<h2><span class="section-number">8.5. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">¶</a></h2>
+<h2><span class="section-number">9.5. </span>Environment variables<a class="headerlink" href="#environment-variables" title="Permalink to this heading">¶</a></h2>
 <dl>
 <dt><code class="code docutils literal notranslate"><span class="pre">CH_LOG_FILE</span></code></dt><dd><p>If set, append log chatter to this file, rather than standard error. This is
 useful for debugging situations where standard error is consumed or lost.</p>
@@ -286,8 +287,8 @@ be examined and debugged.</p>
            </div>
           </div>
           <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
-        <a href="ch-run.html" class="btn btn-neutral float-left" title="7. ch-run" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
-        <a href="ch-test.html" class="btn btn-neutral float-right" title="9. ch-test" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="ch-run.html" class="btn btn-neutral float-left" title="8. ch-run" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ch-test.html" class="btn btn-neutral float-right" title="10. ch-test" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
     </div>
 
   <hr/>

@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. ch-completion.bash &mdash; Charliecloud 0.37 documentation</title>
+      <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script src="_static/sphinx_highlight.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. ch-convert" href="ch-convert.html" />
+    <link rel="prev" title="3. ch-checkns" href="ch-checkns.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            Charliecloud
+              <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
+          </a>
+              <div class="version">
+                0.37
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="install.html">1. Installing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code></a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#synopsis">4.1. Synopsis</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#description">4.2. Description</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#dependencies">4.3. Dependencies</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#ch-completion">4.4. <code class="code docutils literal notranslate"><span class="pre">ch-completion</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">4.4.1. Synopsis</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">4.4.2. Description</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#debugging">4.5. Debugging</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">Charliecloud</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code></li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="ch-completion-bash">
+<span id="id1"></span><h1><span class="section-number">4. </span><code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code><a class="headerlink" href="#ch-completion-bash" title="Permalink to this heading">¶</a></h1>
+<p>Tab completion for the Charliecloud command line.</p>
+<section id="synopsis">
+<h2><span class="section-number">4.1. </span>Synopsis<a class="headerlink" href="#synopsis" title="Permalink to this heading">¶</a></h2>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">source</span><span class="w"> </span>ch-completion.bash
+</pre></div>
+</div>
+</section>
+<section id="description">
+<h2><span class="section-number">4.2. </span>Description<a class="headerlink" href="#description" title="Permalink to this heading">¶</a></h2>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code> provides tab completion for the charliecloud
+command line. Currently, tab completion is available for Bash users for the
+executables <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>, and <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code>.</p>
+<p>We do not currently install the file if Charliecloud is built from source (see
+<a class="reference external" href="https://github.com/hpc/charliecloud/issues/1842">issue #1842</a>). In this
+case, source it from the Charliecloud source code:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">source</span><span class="w"> </span><span class="nv">$CHARLIECLOUD_SOURCE_PATH</span>/bin/ch-completion.bash
+</pre></div>
+</div>
+<p>If you installed with a distribution package, the procedure is probably nicer.
+See your distro’s docs if you installed a package.)</p>
+<p>Disable completion with the utility function <code class="code docutils literal notranslate"><span class="pre">ch-completion</span></code> added to
+your environment when the above is sourced:</p>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-completion<span class="w"> </span>--disable
+</pre></div>
+</div>
+</section>
+<section id="dependencies">
+<h2><span class="section-number">4.3. </span>Dependencies<a class="headerlink" href="#dependencies" title="Permalink to this heading">¶</a></h2>
+<p>Tab completion has these additional dependencies:</p>
+<ul class="simple">
+<li><p>Bash ≥ 4.3.0</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">bash-completion</span></code> library (<a class="reference external" href="https://github.com/scop/bash-completion">GitHub</a>, or it probably comes with your
+distribution, <a class="reference external" href="https://packages.debian.org/bullseye/bash-completion">e.g.</a>)</p></li>
+</ul>
+</section>
+<section id="ch-completion">
+<span id="ch-completion-func"></span><h2><span class="section-number">4.4. </span><code class="code docutils literal notranslate"><span class="pre">ch-completion</span></code><a class="headerlink" href="#ch-completion" title="Permalink to this heading">¶</a></h2>
+<p>Utility function for <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code>.</p>
+<section id="id2">
+<h3><span class="section-number">4.4.1. </span>Synopsis<a class="headerlink" href="#id2" title="Permalink to this heading">¶</a></h3>
+<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-completion<span class="w"> </span><span class="o">[</span><span class="w"> </span>OPTIONS<span class="w"> </span><span class="o">]</span>
+</pre></div>
+</div>
+</section>
+<section id="id3">
+<h3><span class="section-number">4.4.2. </span>Description<a class="headerlink" href="#id3" title="Permalink to this heading">¶</a></h3>
+<p><code class="code docutils literal notranslate"><span class="pre">ch-completion</span></code> is a function to manage Charliecloud’s tab completion.
+It is added to the environment when completion is sourced. The option(s) given
+specify what to do:</p>
+<dl class="simple">
+<dt><code class="code docutils literal notranslate"><span class="pre">--disable</span></code></dt><dd><p>Disable tab completion for all Charliecloud executables.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--help</span></code></dt><dd><p>Print help message.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--version</span></code></dt><dd><p>Print version of tab completion that’s currently enabled.</p>
+</dd>
+<dt><code class="code docutils literal notranslate"><span class="pre">--version-ok</span></code></dt><dd><p>Verify that tab completion version is consistent with that of
+<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>.</p>
+</dd>
+</dl>
+</section>
+</section>
+<section id="debugging">
+<h2><span class="section-number">4.5. </span>Debugging<a class="headerlink" href="#debugging" title="Permalink to this heading">¶</a></h2>
+<p>Tab completion can write debugging logs to <code class="code docutils literal notranslate"><span class="pre">/tmp/ch-completion.log</span></code>.
+Enable this by setting the environment variable <code class="code docutils literal notranslate"><span class="pre">CH_COMPLETION_DEBUG</span></code>.
+(This is primarily intended for developers.)</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="ch-checkns.html" class="btn btn-neutral float-left" title="3. ch-checkns" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="ch-convert.html" class="btn btn-neutral float-right" title="5. ch-convert" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2014–2023, Triad National Security, LLC and others.</p>
+  </div>
+
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

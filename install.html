@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>1. Installing &mdash; Charliecloud 0.36 documentation</title>
+  <title>1. Installing &mdash; Charliecloud 0.37 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -34,7 +34,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.36
+                0.37
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -87,20 +87,21 @@
 </li>
 </ul>
 </li>
-<li class="toctree-l2"><a class="reference internal" href="#command-line-completion">1.4. Command line completion</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#command-line-tab-completion">1.4. Command line tab completion</a></li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="tutorial.html">2. Tutorial</a></li>
 <li class="toctree-l1"><a class="reference internal" href="ch-checkns.html">3. <code class="code docutils literal notranslate"><span class="pre">ch-checkns</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-image.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="ch-test.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
-<li class="toctree-l1"><a class="reference internal" href="faq.html">10. Frequently asked questions (FAQ)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="best_practices.html">11. Best practices</a></li>
-<li class="toctree-l1"><a class="reference internal" href="dev.html">12. Contributor’s guide</a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-completion.bash.html">4. <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-convert.html">5. <code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-fromhost.html">6. <code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-image.html">7. <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run.html">8. <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-run-oci.html">9. <code class="code docutils literal notranslate"><span class="pre">ch-run-oci</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="ch-test.html">10. <code class="code docutils literal notranslate"><span class="pre">ch-test</span></code></a></li>
+<li class="toctree-l1"><a class="reference internal" href="faq.html">11. Frequently asked questions (FAQ)</a></li>
+<li class="toctree-l1"><a class="reference internal" href="best_practices.html">12. Best practices</a></li>
+<li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
 </ul>
 
         </div>
@@ -155,7 +156,7 @@ no elevated privileges, provided that user namespaces have been enabled.</p>
 <li><p><a class="reference internal" href="#notes-on-specific-dependencies" id="id16">Notes on specific dependencies</a></p></li>
 </ul>
 </li>
-<li><p><a class="reference internal" href="#command-line-completion" id="id17">Command line completion</a></p></li>
+<li><p><a class="reference internal" href="#command-line-tab-completion" id="id17">Command line tab completion</a></p></li>
 </ul>
 </nav>
 <section id="build-and-install-from-source">
@@ -754,22 +755,12 @@ image used to exercise Charliecloud itself).</p>
 </section>
 </section>
 </section>
-<section id="command-line-completion">
-<h2><a class="toc-backref" href="#id17" role="doc-backlink"><span class="section-number">1.4. </span>Command line completion</a><a class="headerlink" href="#command-line-completion" title="Permalink to this heading">¶</a></h2>
-<p>Charliecloud offers experimental Bash command line completion for
-<code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>. This feature lets users have incomplete command line
-arguments auto-filled by pressing Tab. We expect that in the future, this will
-become more robust and available for more shells and more Charliecloud
-commands.</p>
-<p>To enable it, once <code class="code docutils literal notranslate"><span class="pre">ch-completion.bash</span></code> is in your path, source it:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span><span class="nb">source</span><span class="w"> </span>ch-completion.bash
-</pre></div>
-</div>
-<p>If it doesn’t work or you just don’t like it, it can be disabled with:</p>
-<div class="highlight-console notranslate"><div class="highlight"><pre><span></span><span class="gp">$ </span>ch-completion-disable
-</pre></div>
-</div>
-<p>In this case, please do submit a bug report so we can make it better.</p>
+<section id="command-line-tab-completion">
+<h2><a class="toc-backref" href="#id17" role="doc-backlink"><span class="section-number">1.4. </span>Command line tab completion</a><a class="headerlink" href="#command-line-tab-completion" title="Permalink to this heading">¶</a></h2>
+<p>Charliecloud offers experimental tab completion for Bash users. This feature is
+currently implemented for <code class="code docutils literal notranslate"><span class="pre">ch-image</span></code>, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>, and
+<code class="code docutils literal notranslate"><span class="pre">ch-convert</span></code>. For details on setting up tab completion, as well as general
+documentation, see <a class="reference internal" href="ch-completion.bash.html#ch-completion-bash"><span class="std std-ref">ch-completion.bash</span></a>.</p>
 </section>
 </section>
 
