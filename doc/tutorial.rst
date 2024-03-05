@@ -426,7 +426,7 @@ Let’s pull that image and see how it looks::
   hello.2
   $ ch-convert hello.2 ./hello.2
   $ ls ./hello.2
-  bin  ch  dev  etc  hello.py  home  lib  lib64  media  mnt  
+  bin  ch  dev  etc  hello.py  home  lib  lib64  media  mnt
   opt  proc  root  run  sbin  srv  sys  tmp  usr  var
 
 
