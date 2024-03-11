@@ -4,7 +4,7 @@
 
 set -e -o pipefail
 
-# Ensure reproducible output
+# Ensure reproducible output (#1849)
 export LC_ALL=C
 
 cat <<EOF
