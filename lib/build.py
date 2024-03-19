@@ -216,126 +216,6 @@ def main(cli_):
       text = ch.ossafe("can’t read: %s" % cli.file, fp.read)
       ch.close_(fp)
 
-   ml = parse_n_traverse(text)
-
-   # Check that all build arguments were consumed.
-   if (len(cli.build_arg) != 0):
-      ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
-
-   # Print summary & we’re done.
-   if (ml.instruction_total_ct == 0):
-      ch.FATAL("no instructions found: %s" % cli.file)
-   assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
-   if ((cli.force != ch.Force_Mode.NONE) and ml.miss_ct != 0):
-      ch.INFO("--force=%s: modified %d RUN instructions"
-              % (cli.force.value, forcer.run_modified_ct))
-   ch.INFO("grown in %d instructions: %s"
-           % (ml.instruction_total_ct, ml.inst_prev.image))
-   # FIXME: remove when we’re done encouraging people to use the build cache.
-   if (isinstance(bu.cache, bu.Disabled_Cache)):
-      ch.INFO("build slow? consider enabling the build cache",
-              "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
-
-
-## Functions ##
-
-def unescape(sl):
-   # FIXME: This is also ugly and should go in the grammar.
-   #
-   # The Dockerfile spec does not precisely define string escaping, but I’m
-   # guessing it’s the Go rules. You will note that we are using Python rules.
-   # This is wrong but close enough for now (see also gripe in previous
-   # paragraph).
-   if (    not sl.startswith('"')                          # no start quote
-       and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
-      sl = '"%s"' % sl
-   assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
-   return ast.literal_eval(sl)
-
-def modify(cli_):
-   global cli
-   cli = cli_
-
-   cli.parse_only = False
-   cli.force = ch.Force_Mode.SECCOMP
-   cli.force_cmd = force.FORCE_CMD_DEFAULT
-   cli.bind = []
-
-   print(cli.image_ref)
-   ch.ILLERI(cli.c)
-   ch.ILLERI(type(cli.c))
-   commands = []
-   # “Flatten” commands array
-   for c in cli.c:
-      ch.ILLERI(c)
-      commands += c
-   src_image = im.Image(im.Reference(cli.image_ref))
-   print("OUT: %s" % cli.out)
-   out_image = cli.out
-   cli.tag = cli.out
-   print("unpack %s" % src_image.unpack_path)
-   if (not src_image.unpack_exist_p):
-      ch.FATAL("not in storage: %s" % src_image.ref.name)
-   if (out_image == src_image.ref.name):
-      ch.FATAL("choose a different name brah")
-   if (cli.shell is not None):
-      shell = cli.shell
-   else:
-      shell = "/bin/sh"
-   # Make a temporary copy image to run our changes in. (I'm doing this to
-   # support rolling back changes in the case of a disabled build cache).
-   if not sys.stdin.isatty():
-      # https://stackoverflow.com/a/17735803
-      # commands from stdin
-      print("foo")
-      ch.ILLERI("INPUT DETECTED")
-      for line in sys.stdin:
-         # execute each line (analogous to RUN)
-         ch.ILLERI(line)
-   elif (cli.c != []):
-      print("bar")
-      df = "FROM %s\n" % src_image.ref.name
-      for cmd in commands:
-         df += "RUN %s\n" % cmd
-      df += "\n"
-      ml = parse_n_traverse(df)
-      
-   else:
-      #print(src_image.ref.name)
-      ch.ILLERI(src_image.ref)
-      # Make sure that shell exists.
-      #try:
-      #   subprocess.run([ch.CH_BIN + "/ch-run", str(src_image.ref), "--", shell], capture_output=True).check_returncode()
-      #except subprocess.CalledProcessError as x:
-      #   #print(x.__dict__)
-      #   if ("%s: No such file or directory" % shell in str(x.stderr)):
-      #      ch.FATAL("invalid shell: %s" % shell)
-      
-      subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
-                        str(src_image.ref), "--", shell])
-      save = input("Save changes ([y]/n)? ")
-      if (save.lower() in ["y", "yes"]):
-         if (not out_image):
-            while True:
-               out_image = input("specify destination image: ")
-               if (out_image != src_image.ref.name):
-                  break
-               else:
-                  ch.ERROR("choose a different name brah")
-         out_image = im.Image(im.Reference(out_image))
-         # Do something similar to “ch-image import”
-         out_image.unpack_clear()
-         out_image.copy_unpacked(src_image)
-         # FIXME: metadata history stuff? See misc.import_.
-      else:
-         pass
-   bu.cache.rollback(src_image.unpack_path)
-
-
-# FIXME: For some reason, on this branch the parsed tree node coresponding to
-#        “alpine:latest” is just called “alpine”. This does not happen on the
-#        master branch, so I need to get to the bottom of this.
-def parse_n_traverse(text):
    # Parse it.
    parser = lark.Lark(im.GRAMMAR_DOCKERFILE, parser="earley",
                       propagate_positions=True, tree_class=im.Tree)
@@ -391,15 +271,163 @@ def parse_n_traverse(text):
          ml.inst_prev.checkout()
       ml.inst_prev.ready()
 
-   return ml
+   # Check that all build arguments were consumed.
+   if (len(cli.build_arg) != 0):
+      ch.FATAL("--build-arg: not consumed: " + " ".join(cli.build_arg.keys()))
+
+   # Print summary & we’re done.
+   if (ml.instruction_total_ct == 0):
+      ch.FATAL("no instructions found: %s" % cli.file)
+   assert (ml.inst_prev.image_i + 1 == image_ct)  # should’ve errored already
+   if ((cli.force != ch.Force_Mode.NONE) and ml.miss_ct != 0):
+      ch.INFO("--force=%s: modified %d RUN instructions"
+              % (cli.force.value, forcer.run_modified_ct))
+   ch.INFO("grown in %d instructions: %s"
+           % (ml.instruction_total_ct, ml.inst_prev.image))
+   # FIXME: remove when we’re done encouraging people to use the build cache.
+   if (isinstance(bu.cache, bu.Disabled_Cache)):
+      ch.INFO("build slow? consider enabling the build cache",
+              "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
+
+
+## Functions ##
+
+def unescape(sl):
+   # FIXME: This is also ugly and should go in the grammar.
+   #
+   # The Dockerfile spec does not precisely define string escaping, but I’m
+   # guessing it’s the Go rules. You will note that we are using Python rules.
+   # This is wrong but close enough for now (see also gripe in previous
+   # paragraph).
+   if (    not sl.startswith('"')                          # no start quote
+       and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
+      sl = '"%s"' % sl
+   assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
+   return ast.literal_eval(sl)
+
+def modify(cli_):
+   global cli
+   cli = cli_
+
+   cli.parse_only = False
+   cli.force = ch.Force_Mode.SECCOMP
+   cli.force_cmd = force.FORCE_CMD_DEFAULT
+   cli.bind = []
+   # FIXME: This is super kludgey
+   cli.tag = cli.out
+
+   print(cli.image_ref)
+   ch.ILLERI(cli.c)
+   ch.ILLERI(type(cli.c))
+   commands = []
+   # “Flatten” commands array
+   for c in cli.c:
+      commands += c
+   src_image = im.Image(im.Reference(cli.image_ref))
+   out_image = cli.out
+   if (not src_image.unpack_exist_p):
+      ch.FATAL("not in storage: %s" % src_image.ref)
+   if (out_image == str(src_image.ref)):
+      ch.FATAL("output image must have different name from source (%s)" % src_image.ref)
+   if (cli.shell is not None):
+      shell = cli.shell
+   else:
+      shell = "/bin/sh"
+   if not sys.stdin.isatty():
+      # https://stackoverflow.com/a/17735803
+      # commands from stdin
+      for line in sys.stdin:
+         # execute each line (analogous to RUN)
+         commands.append(line)
+   if (commands != []):
+      tree = modify_tree_make(src_image.ref, commands)
+
+      # FIXME: Be more DRY in this section
+
+      # Count the number of stages (i.e., FROM instructions)
+      global image_ct
+      image_ct = sum(1 for i in tree.children_("from_"))
+
+      ml = Main_Loop()
+      if (hasattr(ml, 'visit_topdown')):
+         ml.visit_topdown(tree)
+      else:
+         ml.visit(tree)
+      if (ml.instruction_total_ct > 0):
+         if (ml.miss_ct == 0):
+            ml.inst_prev.checkout()
+         ml.inst_prev.ready()
+      
+   else:
+      # Make sure that shell exists.
+      #try:
+      #   subprocess.run([ch.CH_BIN + "/ch-run", str(src_image.ref), "--", shell], capture_output=True).check_returncode()
+      #except subprocess.CalledProcessError as x:
+      #   #print(x.__dict__)
+      #   if ("%s: No such file or directory" % shell in str(x.stderr)):
+      #      ch.FATAL("invalid shell: %s" % shell)
+      
+      out_image = im.Image(im.Reference(out_image))
+      # Do something similar to “ch-image import”
+      out_image.unpack_clear()
+      out_image.copy_unpacked(src_image)
+      subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
+                      str(out_image.ref), "--", shell])
+      # FIXME: metadata history stuff? See misc.import_.
+      #bu.cache.rollback(src_image.unpack_path)
 
 def modify_tree_make(src_img, cmds):
+   """Function that manually constructs a parse tree corresponding to a set of
+      “ch-image modify” commands, as though the commands had been specified in a
+      Dockerfile. Note that because “ch-image modify” simply executes one or
+      more commands inside a container, the only Dockerfile instructions we need
+      to consider are “FROM” and “RUN”. This results in conveniently simple
+      parse trees of the form:
+
+         start
+            dockerfile
+               from_
+                  image_ref
+                     IMAGE_REF <image_name>
+               run
+                  run_shell
+                     LINE_CHUNK <command_1>
+               [...]
+               run
+                  run_shell
+                     LINE_CHUNK <command_N>
+
+      e.g. for the command line
+
+         $ ch-image modify -o foo2 -c 'echo foo' -c 'echo bar' -- foo
+      
+      this function produces the following parse tree
+      
+         start
+            dockerfile
+               from_
+                  image_ref
+                     IMAGE_REF foo
+               run
+                  run_shell
+                     LINE_CHUNK echo foo
+               run
+                  run_shell
+                     LINE_CHUNK echo bar
+      """
    # Children of dockerfile tree
-   #df_children = []
-   src_img_ref = im.Reference(src_img)
-   ch.ILLERI(src_img)
-   #lark.Tree(lark.Token('RULE', 'image_ref')[lark.Token('IMAGE_REF', src_img_ref)])
-   #df_children.append()
+   df_children = []
+   # Metadata attribute. We use this attribute in the “_pretty” method for our
+   # “Tree” class. Constructing a tree without specifying a “Meta” instance that
+   # has been given a “line” value will result in the attribute not being present,
+   # which causes an error when we try to access that attribute. Here we give the
+   # attribute a debug value of -1 to avoid said errors.
+   meta = lark.tree.Meta()
+   meta.line = -1
+   df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', src_img.name)], meta)], meta))
+   for cmd in cmds:
+      df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', cmd)], meta)],meta))
+   return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
 
 ## Supporting classes ##
 
