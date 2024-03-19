@@ -415,6 +415,8 @@ if (__name__ == "__main__"):
          for (opt, arg) in zip(sys.argv[1:], sys.argv[2:] + [None]):
             (opt, _, arg_eq) = opt.partition("=")
             if (opt == "--break"):
+               if (not sys.stdin.isatty()):
+                  ch.FATAL("--break: standard input must be a terminal")
                if (arg_eq != ""):
                   arg = arg_eq
                try:
