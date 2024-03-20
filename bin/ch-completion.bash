@@ -259,14 +259,16 @@ _ch_convert_complete () {
 _image_build_opts="-b --bind --build-arg -f --file --force
                    --force-cmd -n --dry-run --parse-only -t --tag"
 
+_image_modify_opts="-o --out"
+
 _image_common_opts="-a --arch --always-download --auth --break
                     --cache --cache-large --dependencies -h --help
                     --no-cache --no-lock --no-xattrs --profile
                     --rebuild --password-many -q --quiet -s --storage
                     --tls-no-verify -v --verbose --version --xattrs"
 
-_image_subcommands="build build-cache delete gestalt
-                    import list pull push reset undelete"
+_image_subcommands="build build-cache delete gestalt import
+                    list modify pull push reset undelete"
 
 # archs taken from ARCH_MAP in charliecloud.py
 _archs="amd64 arm/v5 arm/v6 arm/v7 arm64/v8 386 mips64le ppc64le s390x"
@@ -374,20 +376,32 @@ _ch_image_complete () {
     build-cache)
         COMPREPLY=( $(compgen -W "--reset --gc --tree --dot" -- "$cur") )
         ;;
-    delete|list)
-        if [[ "$sub_cmd" == "list" ]]; then
+    delete|list|modify)
+        case "$sub_cmd" in
+        list)
             if [[ "$prev" == "--undeletable" || "$prev" == "--undeleteable" || "$prev" == "-u" ]]; then
                 COMPREPLY=( $(compgen -W "$(_ch_undelete_list "$strg_dir")" -- "$cur") )
                 return 0
             fi
-            extras+="$extras -l --long -u --undeletable"
+            extras="$extras -l --long -u --undeletable"
             # If “cur” starts with “--undelete,” add “--undeleteable” (the less
             # correct version of “--undeletable”) to the list of possible
             # completions.
             if [[ ${cur::10} == "--undelete" ]]; then
                 extras="$extras --undeleteable"
             fi
-        fi
+            ;;
+        modify)
+            case "$prev" in
+            -o|--out)
+                # Can’t complete for this option
+                COMPREPLY=()
+                return 0
+                ;;
+            esac
+            extras="$extras $_image_modify_opts"
+            ;;
+        esac
         COMPREPLY=( $(compgen -W "$(_ch_list_images "$strg_dir") $extras" -- "$cur") )
         __ltrim_colon_completions "$cur"
         ;;
