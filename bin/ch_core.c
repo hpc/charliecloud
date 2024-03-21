@@ -385,11 +385,11 @@ enum img_type image_type(const char *ref, const char *storage_dir)
    // If ref is the path to a directory that contains rootfs directory
    // and config.json file, assume it is an oci bundle
    if (S_ISDIR(st.st_mode)) {
-		if (path_exists(rootfs, NULL, true) && path_exists(conff, NULL, true)) {
-			return OCI_BUNDLE;
-		} else {
-			return IMG_DIRECTORY;
-   	}
+      if (path_exists(rootfs, NULL, true) && path_exists(conff, NULL, true)) {
+         return OCI_BUNDLE;
+      } else {
+         return IMG_DIRECTORY;
+      }
    }
 
    // Now we know it’s file-like enough to read. See if it has the SquashFS
