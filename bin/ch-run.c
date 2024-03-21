@@ -216,11 +216,11 @@ int main(int argc, char *argv[])
    case IMG_NONE:
       FATAL("unknown image type: %s", args.c.img_ref);
       break;
-    case OCI_BUNDLE:
-    	if (args.c.newroot != NULL)  // --mount was set
+   case OCI_BUNDLE:
+      if (args.c.newroot != NULL)  // --mount was set
          WARNING("--mount invalid with directory image, ignoring");
-	args.c.newroot = realpath_(cat(args.c.img_ref, "/rootfs"), false);
-	img_directory_verify(args.c.newroot, &args);
+      args.c.newroot = realpath_(cat(args.c.img_ref, "/rootfs"), false);
+      img_directory_verify(args.c.newroot, &args);
       break;
    }
 
