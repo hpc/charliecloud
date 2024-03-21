@@ -27,6 +27,11 @@
 // SquashFUSE redefines __le16 unless HAVE_LINUX_TYPES_LE16 is defined. We are
 // assuming it is defined in <linux/types.h> on your machine.
 #define HAVE_LINUX_TYPES_LE16
+// The forget operation in libfuse3 takes uint64_t as third parameter,
+// while SquashFUSE defaults to unsigned long as used in libfuse2.
+// This causes a mess on arches with different size of these types,
+// so explicitly switch to the libfuse3 variant.
+#define HAVE_FUSE_LL_FORGET_OP_64T
 // Now we can include ll.h.
 #include <squashfuse/ll.h>
 
