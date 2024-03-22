@@ -11,14 +11,14 @@
 
 Name:          charliecloud
 Version:       0.36
-Release:       2%{?dist}
+Release:       3%{?dist}
 Summary:       Lightweight user-defined software stacks for high-performance computing
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
 BuildRequires: gcc rsync bash findutils
 Patch0:        el7-pkgdir.patch
-%if 0%{?fedora} > 36 || 0%{?rhel} > 8
+%if 0%{!?el7} && 0%{!?el8}
 Requires:      fuse3 squashfuse
 BuildRequires: fuse3-libs fuse3-devel squashfuse-devel
 Patch1:        no-squashfuse-rpath.patch
@@ -43,7 +43,7 @@ BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-requests
-%if 1%{?el7}
+%if 0%{!?el7}
 Requires:      git >= 2.28.1
 %endif
 Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
@@ -68,7 +68,10 @@ Html and man page documentation for %{name}.
 %package   test
 Summary:   Charliecloud test suite
 License:   ASL 2.0
-Requires:  %{name} %{name}-builder /usr/bin/bats
+Requires:  %{name} %{name}-builder
+%if 0%{!?el7}
+Requires: bats
+%endif
 Obsoletes: %{name}-test < %{version}-%{release}
 
 %description test
@@ -81,7 +84,7 @@ Test fixtures for %{name}.
 %patch0 -p1
 %endif
 
-%if 0%{?fedora} > 36
+%if 0%{!?el7} && 0%{!?el8}
 %patch 1 -p1
 %endif
 
@@ -92,8 +95,8 @@ CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
-%if 0%{?fedora} > 34 || 0%{?rhel} > 8
-           --with-libsquashfusei=/usr \
+%if 0%{!?el7} && 0%{!?el8}
+           --with-libsquashfuse=/usr \
 %endif
 %if 0%{?el7}
            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
@@ -123,6 +126,13 @@ EOF
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/css
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/fonts
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/js
+
+# Remove el7 test bits; unnecessary after #1836 is resolved.
+%if 0%{?el7}
+%{__rm} -f  %{buildroot}%{_bindir}/ch-test
+%{__rm} -rf %{buildroot}%{_libexecdir}/%{name}
+%{__rm} -f  %{buildroot}%{_mandir}/man1/ch-test.1*
+%endif
 
 # Use Fedora package sphinx bits.
 sphinxdir=%{python3_sitelib}/sphinx_rtd_theme/static
@@ -178,11 +188,17 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
 %files test
+%if 0%{?el7}
+%else
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}
 %{_mandir}/man1/ch-test.1*
+%endif
 
 %changelog
+* Fri Mar 22 2024 Jordan Ogas <jogas@lanl.gov> - 0.36-3
+- tidy conditionals; remove test files from el7
+
 * Fri Feb 09 2024 Jordan Ogas <jogas@lanl.gov> - 0.36-2
 - fix epel7 patch
 
