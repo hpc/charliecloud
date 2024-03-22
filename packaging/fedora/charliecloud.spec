@@ -45,13 +45,9 @@ BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
 Requires:      python%{python3_pkgversion}-requests
-
-%if 0%{?el7}
-Requires:      git
-%else
+%if 0%{!?el7}
 Requires:      git >= 2.28.1
 %endif
-
 Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
 
 %description builder
@@ -73,7 +69,10 @@ Html and man page documentation for %{name}.
 %package   test
 Summary:   Charliecloud test suite
 License:   ASL 2.0
-Requires:  %{name} %{name}-builder bats
+Requires:  %{name} %{name}-builder
+%if 0%{!?el7}
+Requires: bats
+%endif
 Obsoletes: %{name}-test < %{version}-%{release}
 
 %description test
@@ -86,7 +85,7 @@ Test fixtures for %{name}.
 %patch0 -p1
 %endif
 
-%if 0%{!?el7}
+%if 0%{!?el7} && 0%{!?el8}
 %patch 1 -p1
 %endif
 
@@ -99,11 +98,12 @@ CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
-           --with-libsquashfusei=/usr \
+%if 0%{!?el7} && 0%{!?el8}
+           --with-libsquashfuse=/usr \
+%endif
 %if 0%{?el7}
            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
-           --with-libsquashfusei=/usr \
            --with-sphinx-build=%{_bindir}/sphinx-build
 %endif
 
@@ -130,6 +130,13 @@ EOF
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/fonts
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/js
 
+# Remove el7 test bits; unnecessary after #1836 is resolved.
+%if 0%{?el7}
+%{__rm} -f  %{buildroot}%{_bindir}/ch-test
+%{__rm} -rf %{buildroot}%{_libexecdir}/%{name}
+%{__rm} -f  %{buildroot}%{_mandir}/man1/ch-test.1*
+%endif
+
 # Use Fedora package sphinx bits.
 sphinxdir=%{python3_sitelib}/sphinx_rtd_theme/static
 ln -s "${sphinxdir}/css"   %{buildroot}%{_pkgdocdir}/html/_static/css
@@ -139,13 +146,6 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 # Remove bundled license and readme (prefer license and doc macros).
 %{__rm} -f %{buildroot}%{_pkgdocdir}/LICENSE
 %{__rm} -f %{buildroot}%{_pkgdocdir}/README.rst
-
-# FIXME: unnecessary after #1836 is resolved
-%if 0%{?el7}
-%{__rm} -f  %{buildroot}%{_bindir}/ch-test
-%{__rm} -rf %{buildroot}%{_libexecdir}/%{name}
-%{__rm} -f  %{buildroot}%{_mandir}/man1/ch-test.1*
-%endif
 
 %files
 %license LICENSE
