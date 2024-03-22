@@ -16,9 +16,15 @@ Summary:       Lightweight user-defined software stacks for high-performance com
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires: gcc rsync bash
-Requires:      squashfuse squashfs-tools
-Patch1:        el7-pkgdir.patch
+BuildRequires: gcc rsync bash findutils
+%if 0%{?el7}
+Patch0:        el7-pkgdir.patch
+%endif
+%if 0%{!?el7} && 0%{!?el8}
+Requires:      fuse3 squashfuse
+BuildRequires: fuse3-libs fuse3-devel squashfuse-devel
+Patch1:        no-squashfuse-rpath.patch
+%endif
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -34,14 +40,14 @@ For more information: https://hpc.github.io/charliecloud
 %package builder
 Summary:       Charliecloud container image building tools
 License:       ASL 2.0 and MIT
-BuildArch:     noarch
 BuildRequires: python3-devel
-BuildRequires: python%{python3_pkgversion}-lark-parser
 BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
-Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
+%if 0%{!?el7}
+Requires:      git >= 2.28.1
+%endif
 Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
 
 %description builder
@@ -63,7 +69,10 @@ Html and man page documentation for %{name}.
 %package   test
 Summary:   Charliecloud test suite
 License:   ASL 2.0
-Requires:  %{name} %{name}-builder /usr/bin/bats
+Requires:  %{name} %{name}-builder
+%if 0%{!?el7}
+Requires: bats
+%endif
 Obsoletes: %{name}-test < %{version}-%{release}
 
 %description test
@@ -73,16 +82,25 @@ Test fixtures for %{name}.
 %setup -q
 
 %if 0%{?el7}
-%patch1 -p1
+%patch0 -p1
+%endif
+
+%if 0%{!?el7} && 0%{!?el8}
+%patch 1 -p1
 %endif
 
 %build
 # Use old inlining behavior, see:
 # https://github.com/hpc/charliecloud/issues/735
 CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
+# FIXME: use --disable test when https://github.com/hpc/charliecloud/issues/1836
+# is resolved.
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
+%if 0%{!?el7} && 0%{!?el8}
+           --with-libsquashfuse=/usr \
+%endif
 %if 0%{?el7}
            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
@@ -111,6 +129,13 @@ EOF
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/css
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/fonts
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/js
+
+# Remove el7 test bits; unnecessary after #1836 is resolved.
+%if 0%{?el7}
+%{__rm} -f  %{buildroot}%{_bindir}/ch-test
+%{__rm} -rf %{buildroot}%{_libexecdir}/%{name}
+%{__rm} -f  %{buildroot}%{_mandir}/man1/ch-test.1*
+%endif
 
 # Use Fedora package sphinx bits.
 sphinxdir=%{python3_sitelib}/sphinx_rtd_theme/static
@@ -166,11 +191,13 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_pkgdocdir}/html
 %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
-
 %files test
+%if 0%{?el7}
+%else
 %{_bindir}/ch-test
 %{_libexecdir}/%{name}
 %{_mandir}/man1/ch-test.1*
+%endif
 
 %changelog
 * Thu Apr 16 2020 <jogas@lanl.gov> - @VERSION@-@RELEASE@

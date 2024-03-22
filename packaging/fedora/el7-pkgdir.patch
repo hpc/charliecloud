@@ -1,12 +1,11 @@
-diff -ru charliecloud/bin/ch-test charliecloud-lib/bin/ch-test
---- charliecloud/bin/ch-test	2020-04-07 12:19:37.054609706 -0600
-+++ charliecloud-lib/bin/ch-test	2020-04-15 16:36:55.128831767 -0600
-@@ -662,7 +662,7 @@
+--- a/bin/ch-test	2024-01-19 13:17:53.000000000 -0500
++++ b/bin/ch-test	2024-02-09 14:37:15.388753491 -0500
+@@ -779,7 +779,7 @@
+
+ # Find test directories. Note some of this gets rewritten at install time.
+ CHTEST_DIR=${ch_base}/test
+-CHTEST_EXAMPLES_DIR=${ch_base}/examples
++CHTEST_EXAMPLES_DIR=${ch_base}-${ch_version}/examples
+ if [[ ! -f ${ch_base}/VERSION ]]; then
+     # installed
      CHTEST_INSTALLED=yes
-     CHTEST_GITWD=
-     CHTEST_DIR=${ch_base}/libexec/charliecloud/test
--    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud/examples
-+    CHTEST_EXAMPLES_DIR=${ch_base}/share/doc/charliecloud-${ch_version}/examples
- else
-     # build dir
-     CHTEST_INSTALLED=

@@ -10,16 +10,19 @@
 %{?el7:%global __python %__python3}
 
 Name:          charliecloud
-Version:       0.26
-Release:       1%{?dist}
+Version:       0.36
+Release:       3%{?dist}
 Summary:       Lightweight user-defined software stacks for high-performance computing
 License:       ASL 2.0
 URL:           https://hpc.github.io/%{name}/
 Source0:       https://github.com/hpc/%{name}/releases/downloads/v%{version}/%{name}-%{version}.tar.gz
-BuildRequires: gcc rsync bash
-Requires:      squashfuse squashfs-tools
-Patch1:        el7-pkgdir.patch
-Patch2:        printf.patch
+BuildRequires: gcc rsync bash findutils
+Patch0:        el7-pkgdir.patch
+%if 0%{!?el7} && 0%{!?el8}
+Requires:      fuse3 squashfuse
+BuildRequires: fuse3-libs fuse3-devel squashfuse-devel
+Patch1:        no-squashfuse-rpath.patch
+%endif
 
 %description
 Charliecloud uses Linux user namespaces to run containers with no privileged
@@ -35,15 +38,16 @@ For more information: https://hpc.github.io/charliecloud
 %package builder
 Summary:       Charliecloud container image building tools
 License:       ASL 2.0 and MIT
-BuildArch:     noarch
 BuildRequires: python3-devel
-BuildRequires: python%{python3_pkgversion}-lark-parser
 BuildRequires: python%{python3_pkgversion}-requests
 Requires:      %{name}
 Requires:      python3
-Requires:      python%{python3_pkgversion}-lark-parser
 Requires:      python%{python3_pkgversion}-requests
-Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 0.11.3
+%if 0%{!?el7}
+Requires:      git >= 2.28.1
+%endif
+Provides:      bundled(python%{python3_pkgversion}-lark-parser) = 1.1.9
+%{?el7:BuildArch: noarch}
 
 %description builder
 This package provides ch-image, Charliecloud's completely unprivileged container
@@ -64,7 +68,10 @@ Html and man page documentation for %{name}.
 %package   test
 Summary:   Charliecloud test suite
 License:   ASL 2.0
-Requires:  %{name} %{name}-builder /usr/bin/bats
+Requires:  %{name} %{name}-builder
+%if 0%{!?el7}
+Requires: bats
+%endif
 Obsoletes: %{name}-test < %{version}-%{release}
 
 %description test
@@ -74,10 +81,12 @@ Test fixtures for %{name}.
 %setup -q
 
 %if 0%{?el7}
-%patch1 -p1
+%patch0 -p1
 %endif
 
-%patch2 -p1
+%if 0%{!?el7} && 0%{!?el8}
+%patch 1 -p1
+%endif
 
 %build
 # Use old inlining behavior, see:
@@ -86,6 +95,9 @@ CFLAGS=${CFLAGS:-%optflags -fgnu89-inline}; export CFLAGS
 %configure --docdir=%{_pkgdocdir} \
            --libdir=%{_prefix}/lib \
            --with-python=/usr/bin/python3 \
+%if 0%{!?el7} && 0%{!?el8}
+           --with-libsquashfuse=/usr \
+%endif
 %if 0%{?el7}
            --with-sphinx-build=%{_bindir}/sphinx-build-3.6
 %else
@@ -114,6 +126,13 @@ EOF
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/css
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/fonts
 %{__rm} -rf %{buildroot}%{_pkgdocdir}/html/_static/js
+
+# Remove el7 test bits; unnecessary after #1836 is resolved.
+%if 0%{?el7}
+%{__rm} -f  %{buildroot}%{_bindir}/ch-test
+%{__rm} -rf %{buildroot}%{_libexecdir}/%{name}
+%{__rm} -f  %{buildroot}%{_mandir}/man1/ch-test.1*
+%endif
 
 # Use Fedora package sphinx bits.
 sphinxdir=%{python3_sitelib}/sphinx_rtd_theme/static
@@ -148,14 +167,17 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{_bindir}/ch-image
 %{_mandir}/man1/ch-image.1*
 %{_prefix}/lib/%{name}/build.py
+%{_prefix}/lib/%{name}/build_cache.py
 %{_prefix}/lib/%{name}/charliecloud.py
-%{_prefix}/lib/%{name}/fakeroot.py
+%{_prefix}/lib/%{name}/filesystem.py
+%{_prefix}/lib/%{name}/force.py
+%{_prefix}/lib/%{name}/image.py
 %{_prefix}/lib/%{name}/lark
-%{_prefix}/lib/%{name}/lark-1.1.8.dist-info
-%{_prefix}/lib/%{name}/lark-stubs
+%{_prefix}/lib/%{name}/lark-1.1.9.dist-info
 %{_prefix}/lib/%{name}/misc.py
 %{_prefix}/lib/%{name}/pull.py
 %{_prefix}/lib/%{name}/push.py
+%{_prefix}/lib/%{name}/registry.py
 %{_prefix}/lib/%{name}/version.py
 %{?el7:%{_prefix}/lib/%{name}/__pycache__}
 
@@ -166,12 +188,50 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 %{?el7:%exclude %{_pkgdocdir}/examples/*/__pycache__}
 
 %files test
+%if 0%{?el7}
+%else
 %{_bindir}/ch-test
-%{_libexecdir}/%{name}/test
+%{_libexecdir}/%{name}
 %{_mandir}/man1/ch-test.1*
+%endif
 
 %changelog
-* Mon Jan 24 2022 Jordan Ogas <jogas@lanl.gov 0.26-1
+* Fri Mar 22 2024 Jordan Ogas <jogas@lanl.gov> - 0.36-3
+- tidy conditionals; remove test files from el7
+
+* Fri Feb 09 2024 Jordan Ogas <jogas@lanl.gov> - 0.36-2
+- fix epel7 patch
+
+* Fri Feb 09 2024 Jordan Ogas <jogas@lanl.gov> - 0.36-1
+- new version 0.36
+
+* Tue Jan 23 2024 Fedora Release Engineering <releng@fedoraproject.org> - 0.32-5
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
+* Fri Jan 19 2024 Fedora Release Engineering <releng@fedoraproject.org> - 0.32-4
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_40_Mass_Rebuild
+
+* Wed Jul 19 2023 Fedora Release Engineering <releng@fedoraproject.org> - 0.32-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_39_Mass_Rebuild
+
+* Mon Apr 03 2023 Jordan Ogas <jogas@lanl.gov> 0.32-2
+- fix macro conditionals
+
+* Fri Mar 31 2023 Jordan Ogas <jogas@lanl.gov> 0.32-1
+- edit el7 patch: update ch-test path
+- add patch: prevent rpath of standard path
+- update builder package files
+- add dependency: findutils
+- add conditional dependencies: fuse3, squashfuse-devel, & git
+- new version 0.32
+
+* Wed Jan 18 2023 Fedora Release Engineering <releng@fedoraproject.org> - 0.26-3
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_38_Mass_Rebuild
+
+* Wed Jul 20 2022 Fedora Release Engineering <releng@fedoraproject.org> - 0.26-2
+- Rebuilt for https://fedoraproject.org/wiki/Fedora_37_Mass_Rebuild
+
+* Mon Jan 24 2022 Jordan Ogas <jogas@lanl.gov> 0.26-1
 - add printf patch for 32-bit
 - add ch-convert script
 - new version 0.26
@@ -179,7 +239,7 @@ ln -s "${sphinxdir}/js"    %{buildroot}%{_pkgdocdir}/html/_static/js
 * Wed Jan 19 2022 Fedora Release Engineering <releng@fedoraproject.org> - 0.25-2
 - Rebuilt for https://fedoraproject.org/wiki/Fedora_36_Mass_Rebuild
 
-* Mon Sep 20 2021 Jordan Ogas <jogas@lanl.gov 0.25-1
+* Mon Sep 20 2021 Jordan Ogas <jogas@lanl.gov> 0.25-1
 - bundle python lark parser
 - new version
 
