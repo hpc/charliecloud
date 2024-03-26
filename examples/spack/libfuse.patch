@@ -1,0 +1,9 @@
+index 0e8f983545..b85ef9958a 100644
+--- spack/var/spack/repos/builtin/packages/charliecloud/package.py
++++ spack/var/spack/repos/builtin/packages/charliecloud/package.py
+@@ -152,5 +152,7 @@ def configure_args(self):
+         if "+squashfuse" in self.spec:
+             squashfuse_prefix = "{0}".format(self.spec["squashfuse"].prefix)
+             args.append("--with-libsquashfuse={0}".format(squashfuse_prefix))
++            fuse_include = self.spec["fuse"].prefix.include.fuse3
++            args.append("CFLAGS=-I{0}".format(fuse_include))

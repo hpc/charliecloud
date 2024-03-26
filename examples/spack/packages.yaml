@@ -1,0 +1,47 @@
+packages:
+  # The following packages are built externally to speed up the spack build
+  # process; they can be built from spack without issue, e.g., you can remove
+  # them from here without issue.
+  autoconf:
+    buildable: false
+    externals:
+      - spec: autoconf@2.69
+        prefix: /usr
+  automake:
+    buildable: false
+    externals:
+      - spec: automake@1.16.1
+        prefix: /usr
+  git:
+    buildable: false
+    externals:
+      - spec: git@2.39.3
+        prefix: /usr
+  perl:
+    buildable: false
+    externals:
+      - spec: perl@5.26.3
+        prefix: /usr
+  pkgconf:
+    buildable: false
+    externals:
+      - spec: pkgconf@1.4.2
+        prefix: /usr
+  python:
+    buildable: false
+    externals:
+      - spec: python@3.8.17
+        prefix: /usr
+  openssl:
+    buildable: false
+    externals:
+      - spec: openssl@1.1.1
+        prefix: /usr
+
+# Unlike the above, the following packages require a sysadmin. Removing these
+# will likely cause issues.
+  libfuse:
+    buildable: false
+    externals:
+      - spec: libfuse@3.3.0
+        prefix: /usr
