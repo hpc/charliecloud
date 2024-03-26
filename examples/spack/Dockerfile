@@ -59,15 +59,10 @@ ARG SPACK_REPO=https://github.com/spack/spack
 RUN git clone $SPACK_REPO && cd spack && git checkout releases/latest  # slow
 RUN cd spack && git status && git rev-parse --short HEAD
 
-# Spack kludge. For some reason Spack has difficulties finding external packages
-# in /usr/lib64; create a symlink in /opt and specify that as the external
-# prefix.
-RUN ln -s /usr/lib64 /opt/lib
-
 # Copy our Spack package file; by relying on external packages already installed
-# by the container we expedite the spack install process. We do this in Spacks
-# system hierarchy, e.g., /etc/spack, however, this could also be done in the
-# user $HOME/.spack directory.
+# by the container we expedite the spack install process. We do this using
+# Spacks config hierarchy, e.g., /etc/spack; however, this file could also be
+# placed in the user $HOME/.spack directory.
 COPY packages.yaml /etc/spack/
 
 # Apply a patch that resolves issues with Charliecloud 0.35 finding the
@@ -81,7 +76,6 @@ RUN patch -p 0 < libfuse.patch
 # newer default version, 0.5.0, introduces a dependency on node-js which doesn’t
 # appear to build on gcc 4.8 or gcc 8.3
 # (see: https://github.com/spack/spack/issues/19310).
-
 RUN source /spack/share/spack/setup-env.sh \
     && spack --version \
     && spack env create ch \
