@@ -13,20 +13,29 @@ FROM almalinux:8
 # Spack’s m4, and that package is in PowerTools, which we enable using sed(1)
 # to avoid installing the config-manager DNF plugin.
 #
+# autoconf, git, openssl, pkg-config, python3, fuse3-libs, fuse3-devel, are
+# packages that are typically installed on systems. Thus we install them outside
+# of Spack and rely them as externals to speed up the build process.
+#
 # [1]: https://spack.readthedocs.io/en/latest/getting_started.html
 # [2]: https://spack.readthedocs.io/en/latest/workflows.html#using-spack-to-create-docker-images
 RUN sed -Ei 's/enabled=0/enabled=1/' \
         /etc/yum.repos.d/almalinux-powertools.repo
 RUN dnf install -y --setopt=install_weak_deps=false \
+                autoconf \
+                automake \
                 bzip2 \
                 gcc \
                 gcc-c++ \
                 git \
                 gnupg2-smime \
                 file \
+                fuse3-devel \
+                fuse3-libs \
                 make \
                 patch \
-                python3 \
+                pkg-config \
+                python38 \
                 texinfo \
                 unzip \
                 which \
@@ -50,28 +59,44 @@ ARG SPACK_REPO=https://github.com/spack/spack
 RUN git clone $SPACK_REPO && cd spack && git checkout releases/latest  # slow
 RUN cd spack && git status && git rev-parse --short HEAD
 
-# Set up environment to use Spack. (We can’t use setup-env.sh because the
-# Dockerfile shell is sh, not Bash.)
-ENV PATH /spack/bin:$PATH
-RUN spack compiler find --scope system
+# Spack kludge. For some reason Spack has difficulties finding external packages
+# in /usr/lib64; create a symlink in /opt and specify that as the external
+# prefix.
+RUN ln -s /usr/lib64 /opt/lib
 
-# Test: Some basic commands.
-RUN which spack
-RUN spack --version
-RUN spack compiler find
-RUN spack compiler list
-RUN spack compiler list --scope=system
-RUN spack compiler list --scope=user
-RUN spack compilers
-RUN spack spec charliecloud
+# Copy our Spack package file; by relying on external packages already installed
+# by the container we expedite the spack install process. We do this in Spacks
+# system hierarchy, e.g., /etc/spack, however, this could also be done in the
+# user $HOME/.spack directory.
+COPY packages.yaml /etc/spack/
 
-# Test: Install Charliecloud.
+# Apply a patch that resolves issues with Charliecloud 0.35 finding the
+# Squashfuse ll.h header. Remove after https://github.com/spack/spack/pull/43374
+# is merged and included in the latest spack release.
+COPY libfuse.patch /
+RUN patch -p 0 < libfuse.patch
+
+# Test some basic commands and install Charliecloud.
 # Kludge: here we specify an older python sphinx rtd_theme version because
 # newer default version, 0.5.0, introduces a dependency on node-js which doesn’t
 # appear to build on gcc 4.8 or gcc 8.3
 # (see: https://github.com/spack/spack/issues/19310).
-RUN spack spec charliecloud+docs^py-sphinx-rtd-theme@0.4.3
-RUN spack install charliecloud+docs^py-sphinx-rtd-theme@0.4.3
+
+RUN source /spack/share/spack/setup-env.sh \
+    && spack --version \
+    && spack env create ch \
+    && spack env activate ch \
+    && spack compiler find \
+    && spack compiler list --scope=system \
+    && spack compiler list --scope=user \
+    && spack compilers \
+    && spack add charliecloud +docs +squashfuse ^py-sphinx-rtd-theme@0.4.3 \
+    && spack concretize --fresh --force \
+    && spack env depfile -o Makefile \
+    && make -j $(nproc) SPACK_COLOR=always \
+    && spack load charliecloud \
+    && ch-run --version \
+    && ldd $(which ch-run)
 
 # Clean up.
-RUN spack clean --all
+RUN /spack/bin/spack clean --all
