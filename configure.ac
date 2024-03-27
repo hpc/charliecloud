@@ -941,7 +941,7 @@ Building Charliecloud
     test suite ... ${enable_test}
 
   required:
-    C99 compiler ... ${CC} ${CC_VERSION}
+    C99 compiler ... ${CC} ${CFLAGS}
 
   optional:
     extended glob patterns in --unset-env ... ${have_fnm_extmatch}
