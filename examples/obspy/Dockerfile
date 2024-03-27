@@ -18,8 +18,8 @@ WORKDIR /usr/local/src
 #   2. Use latest version so we catch sooner if things explode.
 #
 #   3. ObsPy 1.4.0, the latest as of 2024-03-27, is incompatible with Python
-#      3.12 [2], which is recently the default in Miniconda (see PR #XXXX and
-#      issue #XXXX).
+#      3.12 [2], which is recently the default in Miniconda (see PR #1885 and
+#      issue #1886).
 #
 # [1]: https://docs.anaconda.com/anaconda/user-guide/faq/
 # [2]: https://github.com/obspy/obspy/issues/3313#issuecomment-1818165937
