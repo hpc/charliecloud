@@ -11,6 +11,7 @@ import re
 import shutil
 import subprocess
 import sys
+import uuid
 
 import charliecloud as ch
 import build_cache as bu
@@ -87,7 +88,6 @@ class Main_Loop(lark.Visitor):
    # instructions, rather than attributes of this class.
    def __default__(self, tree):
       class_ = tree.data.title() + "_G"
-      ch.ILLERI(tree.data.title())
       if (class_ in globals()):
          inst = globals()[class_](tree)
          if (self.instruction_total_ct == 0):
@@ -95,7 +95,6 @@ class Main_Loop(lark.Visitor):
                   or isinstance(inst, From__G)
                   or isinstance(inst, Instruction_No_Image))):
                ch.FATAL("first instruction must be ARG or FROM")
-         ch.ILLERI("PREV: %s" % self.inst_prev)
          inst.init(self.inst_prev)
          # The three announce_maybe() calls are clunky but I couldn’t figure
          # out how to avoid the repeats.
@@ -306,15 +305,16 @@ def unescape(sl):
    return ast.literal_eval(sl)
 
 def modify(cli_):
+   # In this file, “cli” is used as a global variable
    global cli
    cli = cli_
 
+   # This file assumes that global cli comes from the “build” function. If we
+   # don’t assign these values, it casues problems.
    cli.parse_only = False
    cli.force = ch.Force_Mode.SECCOMP
    cli.force_cmd = force.FORCE_CMD_DEFAULT
    cli.bind = []
-   # FIXME: This is super kludgey
-   cli.tag = cli.out
 
    print(cli.image_ref)
    ch.ILLERI(cli.c)
@@ -324,22 +324,38 @@ def modify(cli_):
    for c in cli.c:
       commands += c
    src_image = im.Image(im.Reference(cli.image_ref))
-   out_image = cli.out
+   if (cli.out_image == None):
+      out_image = src_image
+   else:
+      out_image = im.Image(im.Reference(cli.out_image))
+   ch.ILLERI("OUT_IMAGE: %s" % cli.out_image)
    if (not src_image.unpack_exist_p):
       ch.FATAL("not in storage: %s" % src_image.ref)
-   if (out_image == str(src_image.ref)):
-      ch.FATAL("output image must have different name from source (%s)" % src_image.ref)
+   #if (out_image == str(src_image.ref)):
+   #   ch.FATAL("output image must have different name from source (%s)" % src_image.ref)
+   #if ((out_image == str(src_image.ref) or (out_image == None)) and (not cli.unsafe)):
+   #   ch.FATAL("")
+   if (not cli.unsafe):
+      if (out_image == str(src_image.ref)):
+         ch.FATAL("placeholder error (src = dest)")
+      elif (cli.out_image == None):
+         ch.FATAL("placeholder error (no dest)")
+   
+   # This kludge is necessary because cli is a global variable, with cli.tag
+   # assumed present elsewhere in the file. cli.tag represents the image being
+   # built, which in our case can either be the source image or the output image
+   # (if specified).
+   cli.tag = str(out_image)
+
    if (cli.shell is not None):
       shell = cli.shell
    else:
       shell = "/bin/sh"
    if not sys.stdin.isatty():
-      # https://stackoverflow.com/a/17735803
-      # commands from stdin
-      for line in sys.stdin:
-         # execute each line (analogous to RUN)
-         commands.append(line)
+      # Treat stdin as opaque blob and run that
+      commands = [sys.stdin]
    if (commands != []):
+      # FIXME: verify that this code path works right
       tree = modify_tree_make(src_image.ref, commands)
 
       # FIXME: Be more DRY in this section
@@ -356,8 +372,7 @@ def modify(cli_):
       if (ml.instruction_total_ct > 0):
          if (ml.miss_ct == 0):
             ml.inst_prev.checkout()
-         ml.inst_prev.ready()
-      
+         ml.inst_prev.ready()    
    else:
       # Make sure that shell exists.
       #try:
@@ -366,13 +381,22 @@ def modify(cli_):
       #   #print(x.__dict__)
       #   if ("%s: No such file or directory" % shell in str(x.stderr)):
       #      ch.FATAL("invalid shell: %s" % shell)
-      
-      out_image = im.Image(im.Reference(out_image))
-      # Do something similar to “ch-image import”
-      out_image.unpack_clear()
-      out_image.copy_unpacked(src_image)
+
+      # Generate “fake” SID
+      fake_sid = uuid.uuid4()
+      if (out_image != src_image):
+         #out_image = im.Image(im.Reference(out_image))
+         # Do something similar to “ch-image import”
+         out_image.unpack_clear()
+         out_image.copy_unpacked(src_image)
+         #bu.cache.worktree_add(out_image, src_image)
+         bu.cache.worktree_adopt(out_image, "root")
+         bu.cache.ready(out_image)
+         bu.cache.branch_nocheckout(src_image.ref, out_image.ref)
       subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
                       str(out_image.ref), "--", shell])
+      ch.VERBOSE("using SID %s" % fake_sid)
+      bu.cache.commit(out_image.unpack_path, fake_sid, "MODIFY interactive", [])
       # FIXME: metadata history stuff? See misc.import_.
       #bu.cache.rollback(src_image.unpack_path)
 
@@ -381,23 +405,7 @@ def modify_tree_make(src_img, cmds):
       “ch-image modify” commands, as though the commands had been specified in a
       Dockerfile. Note that because “ch-image modify” simply executes one or
       more commands inside a container, the only Dockerfile instructions we need
-      to consider are “FROM” and “RUN”. This results in conveniently simple
-      parse trees of the form:
-
-         start
-            dockerfile
-               from_
-                  image_ref
-                     IMAGE_REF <image_name>
-               run
-                  run_shell
-                     LINE_CHUNK <command_1>
-               [...]
-               run
-                  run_shell
-                     LINE_CHUNK <command_N>
-
-      e.g. for the command line
+      to consider are “FROM” and “RUN”. E.g. for the command line
 
          $ ch-image modify -o foo2 -c 'echo foo' -c 'echo bar' -- foo
       
