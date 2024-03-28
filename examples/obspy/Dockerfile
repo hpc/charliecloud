@@ -17,8 +17,13 @@ WORKDIR /usr/local/src
 #
 #   2. Use latest version so we catch sooner if things explode.
 #
+#   3. ObsPy 1.4.0, the latest as of 2024-03-27, is incompatible with Python
+#      3.12 [2], which is recently the default in Miniconda (see PR #1885 and
+#      issue #1886).
+#
 # [1]: https://docs.anaconda.com/anaconda/user-guide/faq/
-ARG MC_VERSION=latest
+# [2]: https://github.com/obspy/obspy/issues/3313#issuecomment-1818165937
+ARG MC_VERSION=py311_24.1.2-0
 ARG MC_FILE=Miniconda3-$MC_VERSION-Linux-x86_64.sh
 RUN wget -nv https://repo.anaconda.com/miniconda/$MC_FILE
 # Miniconda will fail if the HOME variable is not set.
@@ -32,7 +37,6 @@ RUN conda config --set auto_update_conda False
 # new environment for obspy.
 # See: https://github.com/obspy/obspy/wiki/Installation-via-Anaconda
 RUN conda config --add channels conda-forge
-# Use numpy 1.21 to avoid isse: https://github.com/obspy/obspy/issues/2940
 RUN conda install --yes obspy=1.4.0
 RUN conda update obspy
 
