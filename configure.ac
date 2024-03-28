@@ -343,6 +343,7 @@ AC_MSG_RESULT($have_userns)
 AC_DEFUN([CH_OVERLAY_C], [[
   #define _GNU_SOURCE
   #include <errno.h>
+  #include <fcntl.h>
   #include <sched.h>
   #include <stdio.h>
   #include <stdlib.h>
