@@ -6,7 +6,7 @@ load ../common
 # start with a directory, cycle through all the formats one at a time, with
 # directory being last, then compare the starting and ending directories. That
 # corresponds to visiting all the cells in the matrix below, starting from one
-# labeled "a", ending in one labeled "b", and skipping those labeled with a
+# labeled “a”, ending in one labeled “b”, and skipping those labeled with a
 # dash. Also, if visit n is in column i, then the next visit n+1 must be in
 # row i. This approach does each conversion exactly once.
 #
@@ -112,6 +112,7 @@ compare () {
 #
 #   4. Directory sizes also seem not to be stable.
 #
+# See also “ls_” in 50_rsync.bats.
 compare-ls () {
     cd "$1" || exit  # to make -path reasonable
       find . -mindepth 1 \
@@ -234,6 +235,11 @@ delete () {
     esac
 }
 
+empty_dir_init () {
+    rm -rf --one-file-system "$1"
+    mkdir "$1"
+}
+
 # Test conversions dir -> $1 -> (all) -> dir.
 test_from () {
     end=${BATS_TMPDIR}/convert.dir
@@ -255,7 +261,7 @@ test_from () {
 
 @test 'ch-convert: format inference' {
     # Test input only; output uses same code. Test cases match all the
-    # criteria to validate the priority. We don't exercise every possible
+    # criteria to validate the priority. We don’t exercise every possible
     # descriptor pattern, only those I thought had potential for error.
 
     # SquashFS
@@ -319,56 +325,127 @@ test_from () {
     run ch-convert "${BATS_TMPDIR}/foo.tar" "$BATS_TMPDIR"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists but does not appear to be an image: ${BATS_TMPDIR}"* ]]
+    [[ $output = *"error: exists but does not appear to be an image and is not empty: ${BATS_TMPDIR}"* ]]
     rm "${BATS_TMPDIR}/foo.tar"
 }
 
 
 @test 'ch-convert: --no-clobber' {
     # ch-image
-    printf 'FROM alpine:3.9\n' | ch-image build -t tmpimg -f - "$BATS_TMPDIR"
+    printf 'FROM alpine:3.17\n' | ch-image build -t tmpimg -f - "$BATS_TMPDIR"
     run ch-convert --no-clobber -o ch-image "$BATS_TMPDIR" tmpimg
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists in ch-image storage, not deleting per --no-clobber: tmpimg" ]]
 
+    # convert ch_timg into ch-image format
+    ch-image delete timg || true
+    if [[ $(stat -c %F "$ch_timg") = 'symbolic link' ]]; then
+        # symlink to squash archive
+        fmt="squash"
+    else
+        # directory
+        fmt="dir"
+    fi
+    ch-convert -i "$fmt" -o ch-image "$ch_timg" timg
+
     # dir
-    ch-convert -i ch-image -o dir 00_tiny "$BATS_TMPDIR"/00_tiny
-    run ch-convert --no-clobber -i ch-image -o dir 00_tiny "$BATS_TMPDIR"/00_tiny
+    ch-convert -i ch-image -o dir timg "$BATS_TMPDIR/timg"
+    run ch-convert --no-clobber -i ch-image -o dir timg "$BATS_TMPDIR/timg"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny" ]]
-    rm -Rf --one-file-system "$BATS_TMPDIR"/00_tiny
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/timg" ]]
+    rm -Rf --one-file-system "${BATS_TMPDIR:?}/timg"
 
     # docker
-    printf 'FROM alpine:3.9\n' | docker_ build -t tmpimg -
+    printf 'FROM alpine:3.17\n' | docker_ build -t tmpimg -
     run ch-convert --no-clobber -o docker "$BATS_TMPDIR" tmpimg
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists in Docker storage, not deleting per --no-clobber: tmpimg" ]]
 
     # podman
-    printf 'FROM alpine:3.9\n' | podman_ build -t tmpimg -
+    printf 'FROM alpine:3.17\n' | podman_ build -t tmpimg -
     run ch-convert --no-clobber -o podman "$BATS_TMPDIR" tmpimg
     echo "$output"
     [[ $status -eq 1 ]]
     [[ $output = *"error: exists in Podman storage, not deleting per --no-clobber: tmpimg" ]]
 
     # squash
-    touch "${BATS_TMPDIR}/00_tiny.sqfs"
-    run ch-convert --no-clobber -i ch-image -o squash 00_tiny "$BATS_TMPDIR"/00_tiny.sqfs
+    touch "${BATS_TMPDIR}/timg.sqfs"
+    run ch-convert --no-clobber -i ch-image -o squash timg "$BATS_TMPDIR/timg.sqfs"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny.sqfs" ]]
-    rm "${BATS_TMPDIR}/00_tiny.sqfs"
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/timg.sqfs" ]]
+    rm "${BATS_TMPDIR}/timg.sqfs"
 
     # tar
-    touch "${BATS_TMPDIR}/00_tiny.tar.gz"
-    run ch-convert --no-clobber -i ch-image -o tar 00_tiny "$BATS_TMPDIR"/00_tiny.tar.gz
+    touch "${BATS_TMPDIR}/timg.tar.gz"
+    run ch-convert --no-clobber -i ch-image -o tar timg "$BATS_TMPDIR/timg.tar.gz"
     echo "$output"
     [[ $status -eq 1 ]]
-    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/00_tiny.tar.gz" ]]
-    rm "${BATS_TMPDIR}/00_tiny.tar.gz"
+    [[ $output = *"error: exists, not deleting per --no-clobber: ${BATS_TMPDIR}/timg.tar.gz" ]]
+    rm "${BATS_TMPDIR}/timg.tar.gz"
+}
+
+
+@test 'ch-convert: empty target dir' {
+    empty=${BATS_TMPDIR}/test-empty
+
+    ## setup source images ##
+
+    # ch-image
+    printf 'FROM alpine:3.17\n' | ch-image build -t tmpimg -f - "$BATS_TMPDIR"
+
+    # docker
+    printf 'FROM alpine:3.17\n' | docker_ build -t tmpimg -
+
+    # podman
+    printf 'FROM alpine:3.17\n' | podman_ build -t tmpimg -
+
+    # squash
+    touch "${BATS_TMPDIR}/tmpimg.sqfs"
+    ch-convert -i ch-image -o squash tmpimg "$BATS_TMPDIR/tmpimg.sqfs"
+
+    # tar
+    ch-convert -i ch-image -o tar tmpimg "$BATS_TMPDIR/tmpimg.tar.gz"
+
+    ## run test ##
+
+    # ch-image
+    empty_dir_init "$empty"
+    run ch-convert -i ch-image -o dir tmpimg "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
+
+    # docker
+    empty_dir_init "$empty"
+    run ch-convert -i docker -o dir tmpimg "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
+
+    # podman
+    empty_dir_init "$empty"
+    run ch-convert -i podman -o dir tmpimg "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
+
+    # squash
+    empty_dir_init "$empty"
+    run ch-convert -i squash -o dir "$BATS_TMPDIR/tmpimg.sqfs" "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
+
+    # tar
+    empty_dir_init "$empty"
+    run ch-convert -i tar -o dir "$BATS_TMPDIR/tmpimg.tar.gz" "$empty"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"using empty directory: $empty"* ]]
 }
 
 
@@ -391,7 +468,7 @@ test_from () {
 # The next three tests are for issue #1241.
 @test 'ch-convert: permissions retained (dir)' {
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert 00_tiny "$out"
+    ch-convert timg "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
     [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
@@ -400,7 +477,7 @@ test_from () {
 @test 'ch-convert: permissions retained (squash)' {
     squishy=${BATS_TMPDIR}/convert.sqfs
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert 00_tiny "$squishy"
+    ch-convert timg "$squishy"
     ch-convert "$squishy" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
@@ -410,13 +487,83 @@ test_from () {
 @test 'ch-convert: permissions retained (tar)' {
     tarball=${BATS_TMPDIR}/convert.tar.gz
     out=${BATS_TMPDIR}/convert.dir
-    ch-convert 00_tiny "$tarball"
+    ch-convert timg "$tarball"
     ch-convert "$tarball" "$out"
     ls -ld "$out"/maxperms_*
     [[ $(stat -c %a "${out}/maxperms_dir") = 1777 ]]
     [[ $(stat -c %a "${out}/maxperms_file") = 777 ]]
 }
 
+@test 'ch-convert: b0rked xattrs' {
+    # Check if test needs to be skipped
+    touch "$BATS_TMPDIR/tmpfs_test"
+    if    ! setfattr -n user.foo -v bar "$BATS_TMPDIR/tmpfs_test" \
+       && [[ -z $GITHUB_ACTIONS ]]; then
+        skip "xattrs unsupported in ${BATS_TMPDIR}"
+    fi
+
+    # b0rked: (adj) broken, messed up
+    #
+    # In this test, we create a tarball with “unusual” xattrs that we don’t want
+    # to restore (i.e. a borked tarball), and try to convert it into a ch-image.
+    [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
+
+    cd "$BATS_TMPDIR"
+
+    borked_img="borked_image"
+    borked_file="${borked_img}/home/foo"
+    borked_tar="borked.tgz"
+    borked_out="borked_dir"
+
+    rm -rf "$borked_img" "$borked_tar" "$borked_out"
+
+    ch-image build -t tmpimg - <<'EOF'
+FROM alpine:3.17
+RUN touch /home/foo
+EOF
+
+    # convert image to dir and actually bork it
+    ch-convert -i ch-image -o dir tmpimg "$borked_img"
+    setfattr -n user.foo -v bar "$borked_file"
+    sudo setfattr -n security.foo -v bar "$borked_file"
+    sudo setfattr -n trusted.foo -v bar "$borked_file"
+    setfacl -m "u:$USER:r" "$borked_file"
+
+    # confirm it worked
+    run sudo getfattr -dm - -- "$borked_file"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"# file: $borked_file"* ]]
+    [[ $output = *'security.foo="bar"'* ]]
+    [[ $output = *'trusted.foo="bar"'* ]]
+    [[ $output = *'user.foo="bar"'* ]]
+
+    run getfacl "$borked_file"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"user:$USER:r--"* ]]
+
+    # tar it up
+    sudo tar --xattrs-include='user.*' \
+             --xattrs-include='system.*' \
+             --xattrs-include='security.*' \
+             --xattrs-include='trusted.*' \
+             -czvf "$borked_tar" "$borked_img"
+
+    ch-convert -i tar -o dir "$borked_tar" "$borked_out"
+
+    run sudo getfattr -dm - -- "$borked_out/home/foo"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output != *'security.foo="bar"'* ]]
+    [[ $output != *'trusted.foo="bar"'* ]]
+    [[ $output = *'user.foo="bar"'* ]]
+
+    run getfacl "$borked_out/home/foo"
+    echo "$output"
+    [[ $status -eq 0 ]]
+    [[ $output = *"user:$USER:r--"* ]]
+}
 
 @test 'ch-convert: dir -> ch-image -> X' {
     test_from ch-image

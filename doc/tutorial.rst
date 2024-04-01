@@ -6,7 +6,7 @@ both examples included with the source code as well as new ones you create
 from scratch.
 
 This tutorial assumes that: (a) Charliecloud is in your path, including
-Charliecloud's fully unprivileged image builder :code:`ch-image` and
+Charliecloud’s fully unprivileged image builder :code:`ch-image` and
 (b) Charliecloud is installed under :code:`/usr/local`. (If the second
 assumption isn’t true, you will just need to modify some paths.)
 
@@ -41,10 +41,10 @@ should be able to tell you if this is linked in.
 ::
 
   $ cd /usr/local/share/doc/charliecloud/examples/hello
-  $ ch-image build --force .
+  $ ch-image build .
   inferred image name: hello
   [...]
-  grown in 4 instructions: hello
+  grown in 3 instructions: hello
   $ ch-convert hello /var/tmp/hello.sqfs
   input:   ch-image  hello
   output:  squash    /var/tmp/hello.sqfs
@@ -67,7 +67,7 @@ section.
 ::
 
   $ cd /usr/local/share/doc/charliecloud/examples/hello
-  $ ch-image build --force .
+  $ ch-image build .
   inferred image name: hello
   [...]
   grown in 4 instructions: hello
@@ -93,7 +93,7 @@ All the executables have decent help and can tell you what version of
 Charliecloud you have (if not, please report a bug). For example::
 
   $ ch-run --help
-  Usage: ch-run [OPTION...] NEWROOT CMD [ARG...]
+  Usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]
 
   Run a command in a Charliecloud container.
   [...]
@@ -281,6 +281,12 @@ These four instructions say:
 
   4. :code:`RUN`: Make that file executable.
 
+.. note::
+
+   :code:`COPY` is a standard instruction but has a number of disadvantages in
+   its corner cases. Charliecloud also has :code:`RSYNC`, which addresses
+   these; see :ref:`its documentation <ch-image_rsync>` for details.
+
 Let’s build this image::
 
   $ ch-image build -t hello -f Dockerfile .
@@ -418,10 +424,10 @@ Let’s pull that image and see how it looks::
   almalinux:8
   hello
   hello.2
-  $ ch-image convert hello.2 ./hello.2
+  $ ch-convert hello.2 ./hello.2
   $ ls ./hello.2
-  bin    etc    lib    mnt    proc   run    srv    tmp    var
-  dev    home   media  opt    root   sbin   sys    usr
+  bin  ch  dev  etc  hello.py  home  lib  lib64  media  mnt
+  opt  proc  root  run  sbin  srv  sys  tmp  usr  var
 
 
 MPI Hello World
@@ -444,16 +450,14 @@ These two build should take about 15 minutes total, depending on the speed of
 your system.
 
 Note that Charliecloud infers their names from the Dockerfile name, so we
-don’t need to specify :code:`-t`. Also, :code:`--force` enables some
-workarounds for tools like distribution package managers that expect to really
-be root.
+don’t need to specify :code:`-t`.
 
 ::
 
-  $ ch-image build --force \
+  $ ch-image build \
        -f /usr/local/share/doc/charliecloud/examples/Dockerfile.almalinux_8ch \
        /usr/local/share/doc/charliecloud/examples
-  $ ch-image build --force \
+  $ ch-image build \
        -f /usr/local/share/doc/charliecloud/examples/Dockerfile.openmpi \
           /usr/local/share/doc/charliecloud/examples
 
@@ -554,7 +558,7 @@ Build cache
 use a build cache to speed repeated operations. That is, an image is created
 by starting from the empty image and executing a sequence of instructions,
 largely Dockerfile instructions but also some others like “pull” and “import”.
-Some instructions are expensive to execute so it's often cheaper to retrieve
+Some instructions are expensive to execute so it’s often cheaper to retrieve
 their results from cache instead.
 
 Let’s set up this example by first resetting the build cache::
@@ -631,7 +635,7 @@ Finally, inspect the cache::
   |/
   *  RUN sleep 2 && echo foo
   *  (almalinux:8) PULL almalinux:8
-  *  (HEAD -> root) ROOT
+  *  (root) ROOT
 
   named images:    4
   state IDs:       5
@@ -745,7 +749,7 @@ supplementary groups have collapsed into 65534:code:`nogroup`, because they
 are unmapped inside the namespace. (If :code:`id` complains about not finding
 names for IDs, just ignore it.)
 
-We are root!! Let's try something sneaky!!!
+We are root!! Let’s try something sneaky!!!
 
 ::
 
@@ -824,7 +828,7 @@ Let’s revisit the symlinks in :code:`/proc`, but this time with Charliecloud::
 
 The container has different mount (:code:`mnt`) and user (:code:`user`)
 namespaces, but the rest of the namespaces are shared with the host. This
-highlights Charliecloud's focus on functionality (make your container run),
+highlights Charliecloud’s focus on functionality (make your container run),
 rather than isolation (protect the host from your container).
 
 Normally, each invocation of :code:`ch-run` creates a new container, so if you
@@ -956,6 +960,7 @@ directory to appear in multiple places in the filesystem tree, but it is a
 property of the running kernel rather than the filesystem.
 
 Several host directories are always bind-mounted into the container. These
+
 include system directories such as :code:`/dev`, :code:`/proc`, :code:`/sys`,
 and :code:`/tmp`. Others can be requested with a command line option, e.g.
 :code:`--home` bind-mounts the invoking user’s home directory.
@@ -988,7 +993,7 @@ a destination that already exists, like those created under :code:`/mnt`::
   $ mkdir /var/tmp/foo1
   $ echo world > /var/tmp/foo1/bar
   $ ch-run -b /var/tmp/foo0 -b /var/tmp/foo1 /var/tmp/hello -- bash
-  ch-run[1184427]: error: can't mkdir: /var/tmp/hello/var/tmp/foo0: Read-only file system (ch_misc.c:142 30)
+  ch-run[1184427]: error: can’t mkdir: /var/tmp/hello/var/tmp/foo0: Read-only file system (ch_misc.c:142 30)
   $ ch-run -b /var/tmp/foo0:/mnt/0 -b /var/tmp/foo1:/mnt/1 /var/tmp/hello -- bash
   > ls /mnt
   0  1  2  3  4  5  6  7  8  9
@@ -1017,7 +1022,7 @@ container, even if :code:`ssh` was initiated from a container::
   > ssh localhost stat -L --format='%i' /proc/self/ns/user
   4026531837
 
-There are several ways to SSH to a remote node and run commands inside a
+There are a couple ways to SSH to a remote node and run commands inside a
 container. The simplest is to manually invoke :code:`ch-run` in the
 :code:`ssh` command::
 
@@ -1031,52 +1036,15 @@ container. The simplest is to manually invoke :code:`ch-run` in the
    existing user namespace :code:`’2256`; rather, it has re-used the namespace
    ID :code:`’2256`.
 
-Another is to use the :code:`ch-ssh` wrapper program, which adds
-:code:`ch-run` to the :code:`ssh` command implicitly. It takes the
-:code:`ch-run` arguments from the environment variable :code:`CH_RUN_ARGS`,
-making it mostly a drop-in replacement for :code:`ssh`. For example::
-
-  $ export CH_RUN_ARGS="/var/tmp/hello.sqfs --"
-  $ ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
-  4026532256
-  $ ch-ssh -t localhost /bin/bash
-  > stat -L --format='%i' /proc/self/ns/user
-  4026532256
-
-:code:`ch-ssh` is available inside containers as well, in :code:`/usr/bin` via
-bind-mount, if the image has a dummy file at :code:`/usr/bin/ch-ssh`::
-
-  $ export CH_RUN_ARGS="/var/tmp/hello.sqfs --"
-  $ ch-run /var/tmp/hello.sqfs -- /bin/bash
-  > stat -L --format='%i' /proc/self/ns/user
-  4026532256
-  > ch-ssh localhost stat -L --format='%i' /proc/self/ns/user
-  4026532258
-
-This also demonstrates that :code:`ch-run` does not alter most environment
-variables.
-
-.. warning::
-
-   1. :code:`CH_RUN_ARGS` is interpreted very simply; the sole delimiter is
-      spaces. It is not shell syntax. In particular, quotes and backslashes
-      are not interpreted.
-
-   2. Argument :code:`-t` is required for SSH to allocate a pseudo-TTY and
-      thus convince your shell to be interactive. In the case of Bash,
-      otherwise you'll get a shell that accepts commands but doesn't print
-      prompts, among other other issues. (`Issue #2
-      <https://github.com/hpc/charliecloud/issues/2>`_.)
-
-A third approach may be to edit one's shell initialization scripts to check
-the command line and :code:`exec(1)` :code:`ch-run` if appropriate. This is
-brittle but avoids wrapping :code:`ssh` or altering its command line.
+Another may be to edit one's shell initialization scripts to check the command
+line and :code:`exec(1)` :code:`ch-run` if appropriate. This is brittle but
+avoids wrapping :code:`ssh` or altering its command line.
 
 User and group IDs
 ~~~~~~~~~~~~~~~~~~
 
 Unlike Docker and some other container systems, Charliecloud tries to make the
-container's users and groups look the same as the host’s. This is accomplished
+container’s users and groups look the same as the host’s. This is accomplished
 by bind-mounting a custom :code:`/etc/passwd` and :code:`/etc/group` into the
 container. For example::
 
@@ -1221,7 +1189,7 @@ we’ll find the Spark master’s IP manually::
   2: eth0  inet 192.168.8.3
   8: eth1  inet 10.8.8.3
 
-Your site support can tell you which to use. In this case, we'll use 10.8.8.3.
+Your site support can tell you which to use. In this case, we’ll use 10.8.8.3.
 
 Create some configuration files. Replace :code:`[MYSECRET]` with a string only
 you know. Edit to match your system; in particular, use local disks instead of
@@ -1309,7 +1277,7 @@ We can now start an interactive shell to do some Spark computing::
 
   $ ch-run -b ~/sparkconf /var/tmp/spark.sqfs -- /spark/bin/pyspark --master $MASTER_URL
 
-Let's use this shell to estimate 𝜋 (this is adapted from one of the Spark
+Let’s use this shell to estimate 𝜋 (this is adapted from one of the Spark
 `examples <http://spark.apache.org/examples.html>`_):
 
 .. code-block:: pycon

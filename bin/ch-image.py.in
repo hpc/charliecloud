@@ -1,24 +1,26 @@
 #!%PYTHON_SHEBANG%
 
 import argparse
+import ast
+import collections.abc
 import inspect
 import os.path
 import sys
 
-sys.path.insert(0, (  os.path.dirname(os.path.abspath(__file__))
-                    + "/../lib/charliecloud"))
-import build_cache as bu
+ch_lib = os.path.dirname(os.path.abspath(__file__)) + "/../lib"
+sys.path.insert(0, ch_lib)
 import charliecloud as ch
 import build
-import misc
+import build_cache as bu
 import filesystem as fs
+import misc
 import pull
 import push
 
 
 ## Constants ##
 
-# FIXME: It's currently easy to get the ch-run path from another script, but
+# FIXME: It’s currently easy to get the ch-run path from another script, but
 # hard from something in lib. So, we set it here for now.
 ch.CH_BIN = os.path.dirname(os.path.abspath(
                  inspect.getframeinfo(inspect.currentframe()).filename))
@@ -56,17 +58,17 @@ def main():
    #      because before the subcommand is preferred.
    #
    #   2. We suppress defaults in the subcommand [1]. Without this, the
-   #      subcommand option value wins even it it's the default. :P Currently,
+   #      subcommand option value wins even it it’s the default. :P Currently,
    #      if specified in both places, the subcommand value wins and the
    #      before value is not considered at all, e.g. "ch-image -vv foo -v"
    #      gives verbosity 1, not 3. This oddity seemed acceptable.
    #
    # Alternate approaches include:
    #
-   #   * Set the main parser as the "parent" of the subcommand parser [2].
+   #   * Set the main parser as the “parent” of the subcommand parser [2].
    #     This may be the documented approach? However, it adds all the
-   #     subcommands to the subparser, which we don't want. A workaround would
-   #     be to create a *third* parser that's the parent of both the main and
+   #     subcommands to the subparser, which we don’t want. A workaround would
+   #     be to create a *third* parser that’s the parent of both the main and
    #     subcommand parsers, but that seems like too much indirection to me.
    #
    #   * A two-stage parse (parse_known_args(), then parse_args() to have the
@@ -107,6 +109,9 @@ def main():
            [["--auth"],
             { "action": "store_true",
               "help": "authenticated registry access; implied by push" }],
+           [["--break"],
+            { "metavar": "MODULE:LINE",
+              "help": "break into PDB before LINE of MODULE" }],
            [["--cache-large"],
             { "metavar": "SIZE",
               "type": lambda s: ch.positive(s) * 2**20,  # internal unit: bytes
@@ -122,12 +127,19 @@ def main():
            [["--no-lock"],
             { "action": "store_true",
               "help": "allow concurrent storage directory access (risky!)" }],
+           [["--no-xattrs"],
+            { "action": "store_true",
+              "help": "disable xattrs and ACLs (overrides $CH_XATTRS)" }],
            [["--password-many"],
             { "action": "store_true",
               "help": "re-prompt each time a registry password is needed" }],
            [["--profile"],
             { "action": "store_true",
               "help": "dump profile to “./profile.{p,txt}”" }],
+           [["-q", "--quiet"],
+            { "action": "count",
+              "default": 0,
+              "help": "print less output (can be repeated)"}],
            [["-s", "--storage"],
             { "metavar": "DIR",
               "type": fs.Path,
@@ -141,7 +153,10 @@ def main():
               "help": "print extra chatter (can be repeated)" }],
            [["--version"],
             { "action": misc.Version,
-              "help": "print version and exit" }] ] }
+              "help": "print version and exit" }],
+           [["--xattrs"],
+            { "action": "store_true",
+              "help": "enable build cache support for xattrs and ACLs"}] ] }
 
    # Most, but not all, subcommands need to check dependencies before doing
    # anything (the exceptions being basic information commands like
@@ -154,7 +169,7 @@ def main():
    # Helper function to set up a subparser. The star forces the latter two
    # arguments to be called by keyword, for clarity.
    def add_opts(p, dispatch, *, deps_check, stog_init, help_=False):
-      assert (not stog_init or deps_check)  # can't init storage w/o deps
+      assert (not stog_init or deps_check)  # can’t init storage w/o deps
       if (dispatch is not None):
          p.set_defaults(func=dispatch)
          dependencies_check[dispatch] = deps_check
@@ -186,12 +201,14 @@ def main():
                    help="set build-time variable ARG to VAL, or $ARG if no VAL")
    sp.add_argument("-f", "--file", metavar="DOCKERFILE",
                    help="Dockerfile to use (default: CONTEXT/Dockerfile)")
-   sp.add_argument("--force", action="store_true",
+   sp.add_argument("--force", metavar="MODE", nargs="?", default="seccomp",
+                   type=ch.Force_Mode, const="seccomp",
                    help="inject unprivileged build workarounds")
+   sp.add_argument("--force-cmd", metavar="CMD,ARG1[,ARG2...]",
+                   action="append", default=[],
+                   help="command arg(s) to add under --force=seccomp")
    sp.add_argument("-n", "--dry-run", action="store_true",
-                   help="don't execute instructions")
-   sp.add_argument("--no-force-detect", action="store_true",
-                   help="don't try to detect if --force workarounds would work")
+                   help="don’t execute instructions")
    sp.add_argument("--parse-only", action="store_true",
                    help="stop after parsing the Dockerfile")
    sp.add_argument("-t", "--tag", metavar="TAG",
@@ -217,7 +234,7 @@ def main():
    # delete
    sp = ap.add_parser("delete", "delete image from internal storage")
    add_opts(sp, misc.delete, deps_check=True, stog_init=True)
-   sp.add_argument("image_ref", metavar="IMAGE_GLOB", help="image(s) to delete")
+   sp.add_argument("image_ref", metavar="IMAGE_GLOB", help="image(s) to delete", nargs='+')
 
    # gestalt (has sub-subcommands)
    sp = ap.add_parser("gestalt", "query debugging configuration",
@@ -235,6 +252,11 @@ def main():
    # python-path
    tp = sp.add_parser("python-path", "print path to python interpreter in use")
    add_opts(tp, misc.gestalt_python_path, deps_check=False, stog_init=False)
+   # logging
+   tp = sp.add_parser("logging", "print logging messages at all levels")
+   add_opts(tp, misc.gestalt_logging, deps_check=False, stog_init=False)
+   tp.add_argument("--fail", action="store_true",
+                   help="also generate a fatal error")
 
    # import
    sp = ap.add_parser("import", "copy external image into storage")
@@ -249,6 +271,10 @@ def main():
    add_opts(sp, misc.list_, deps_check=True, stog_init=True)
    sp.add_argument("-l", "--long", action="store_true",
                    help="use long listing format")
+   sp.add_argument("-u", "--undeletable", action="store_true",
+                   help="list images that can be restored with “undelete”")
+   sp.add_argument("--undeleteable", action="store_true", dest="undeletable",
+                   help=argparse.SUPPRESS)
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
 
@@ -283,6 +309,9 @@ def main():
    add_opts(sp, misc.undelete, deps_check=True, stog_init=True)
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to recover")
 
+   # Monkey patch problematic characters out of stdout and stderr.
+   ch.monkey_write_streams()
+
    # Parse it up!
    if (len(sys.argv) < 2):
        ap.print_help(file=sys.stderr)
@@ -300,14 +329,107 @@ def main():
    # Dispatch.
    ch.profile_start()
    cli.func(cli)
+   ch.warnings_dump()
    ch.exit(0)
+
+
+## Functions ##
+
+def breakpoint_inject(module_name, line_no):
+   # Inject a PDB breakpoint into the module named module_name before the
+   # statement on line line_no. See: https://stackoverflow.com/a/41858422
+
+   class PDB_Injector(ast.NodeTransformer):
+      def __init__(self, *args, **kwargs):
+         self.inject_ct = 0
+         return super().__init__(*args, **kwargs)
+      def generic_visit(self, parent):
+         # Operate on parent of target statement because we need to inject the
+         # new code into the parent’s body (i.e., as siblings of the target
+         # statement).
+         if (    self.inject_ct == 0
+             and hasattr(parent, "body")
+             and isinstance(parent.body, collections.abc.Sequence)):
+            for (i, child) in enumerate(parent.body):
+               if (    isinstance(child, ast.stmt)
+                   and hasattr(child, "lineno")
+                   and child.lineno == line_no):
+                  ch.WARNING(  "--break: injecting PDB breakpoint: %s:%d (%s)"
+                             % (module_name, line_no, type(child).__name__))
+                  parent.body[i:i] = inject_tree.body
+                  self.inject_ct += 1
+                  break
+         super().generic_visit(parent)  # superclass actually visits children
+         return parent
+
+   if (module_name not in sys.modules):
+      ch.FATAL("--break: no module named %s" % module_name)
+   module = sys.modules[module_name]
+   src_text = inspect.getsource(module)
+   src_path = inspect.getsourcefile(module)
+   module_tree = ast.parse(src_text, "%s <re-parsed>" % src_path)
+   inject_tree = ast.parse("import pdb; pdb.set_trace()", "Weird Al Yankovic")
+
+   ijor = PDB_Injector()
+   ijor.visit(module_tree)  # calls generic_visit() on all nodes
+   if (ijor.inject_ct < 1):
+      ch.FATAL("--break: no statement found at %s:%d" % (module_name, line_no))
+   assert (ijor.inject_ct == 1)
+
+   ast.fix_missing_locations(module_tree)
+   exec(compile(module_tree, "%s <re-compiled>" % src_path, "exec"),
+        module.__dict__)
+   # Set a global in the target module so it can test if it’s been
+   # re-executed. This means re-execution is *complete*, so it will not be set
+   # in module-level code run during re-execution, but if the original
+   # execution continues *after* re-execution completes (this happens for
+   # __main__), it *will* be set in that code.
+   module.__dict__["breakpoint_reexecuted"] = "%s:%d" % (module_name, line_no)
 
 
 ## Bootstrap ##
 
+# This code is more complicated than the standard boilerplace (i.e., “if
+# (__name__ == "__main__"): main()”) for two reasons:
+#
+#   1. The mechanism for fatal errors is to raise ch.Fatal_Error. We catch
+#      this to re-print warnings and print the error message before exiting.
+#      (We used to priont an error message and then sys.exit(1), but this
+#      approach lets us do things like rollback and fixes ordering problems
+#      such as #1486.)
+#
+#   2. There is a big mess of hairy code to let us set PDB breakpoints in this
+#      file (i.e., module __main__) with --break. See PR #1837.
+
 if (__name__ == "__main__"):
    try:
-      main()
+      # We can’t set these two module globals that support --break normally
+      # (i.e., module-level code at the top of this file) because this module
+      # might be executed twice, and thus any value we set would be
+      # overwritten by the default when the module is re-executed.
+      if ("breakpoint_considered" not in globals()):
+         global breakpoint_considered
+         breakpoint_considered = True
+         # A few lines of bespoke CLI parsing so that we can inject
+         # breakpoints into the CLI parsing code itself.
+         for (opt, arg) in zip(sys.argv[1:], sys.argv[2:] + [None]):
+            (opt, _, arg_eq) = opt.partition("=")
+            if (opt == "--break"):
+               if (not sys.stdin.isatty()):
+                  ch.FATAL("--break: standard input must be a terminal")
+               if (arg_eq != ""):
+                  arg = arg_eq
+               try:
+                  (module_name, line_no) = arg.split(":")
+                  line_no = int(line_no)
+               except ValueError:
+                  ch.FATAL("--break: can’t parse MODULE:LIST: %s" % arg)
+               breakpoint_inject(module_name, line_no)
+      # If we injected into __main__, we already ran main() when re-executing
+      # this module inside breakpoint_inject().
+      if ("breakpoint_reexecuted" not in globals()):
+         main()
    except ch.Fatal_Error as x:
+      ch.warnings_dump()
       ch.ERROR(*x.args, **x.kwargs)
       ch.exit(1)

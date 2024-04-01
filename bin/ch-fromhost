@@ -2,13 +2,12 @@
 
 # The basic algorithm here is that we build up a list of file
 # source:destination pairs separated by newlines, then walk through them and
-# copy them into the image. We also maintain a list of directories to create
-# and a list of file globs to remove.
+# copy them into the image.
 #
-# The colon separator to avoid the difficulty of iterating through a sequence
-# of pairs with no arrays or structures in POSIX sh. We could avoid it by
-# taking action immediately upon encountering each file in the argument list,
-# but that would (a) yield a half-injected image for basic errors like
+# The colon separator is to avoid the difficulty of iterating through a
+# sequence of pairs with no arrays or structures in POSIX sh. We could avoid
+# it by taking action immediately upon encountering each file in the argument
+# list, but that would (a) yield a half-injected image for basic errors like
 # misspellings on the command line and (b) would require the image to be first
 # on the command line, which seems awkward.
 #
@@ -35,12 +34,11 @@
 #   3. Here string, e.g. 'while IFS= read -r FILE; do ... done <<< "$FILES"'.
 #      This is a bashism.
 
-lib=$(cd "$(dirname "$0")" && pwd)/../lib/charliecloud
-. "${lib}/base.sh"
+ch_lib=$(cd "$(dirname "$0")" && pwd)/../lib
+. "${ch_lib}/base.sh"
 
 set -e
 
-# shellcheck disable=SC2034
 usage=$(cat <<EOF
 Inject files from the host into an image directory, with various magic.
 
@@ -50,11 +48,13 @@ Usage:
 
 Which files to inject (one or more required; can be repeated):
 
-  -c, --cmd CMD    listed in the stdout of CMD
-  -f, --file FILE  listed in file FILE
-  -p, --path PATH  inject the file at PATH
-  --cray-mpi       Cray-enable MPICH/OpenMPI installed within the image
-  --nvidia         recommended by nVidia (via "nvidia-container-cli list")
+  -c, --cmd     CMD   listed in the stdout of CMD
+  -f, --file    FILE  listed in file FILE
+  -p, --path    PATH  inject the file at PATH
+
+  --cray-cxi      inject cray’s libfabric and cxi libraries from cray host
+  --cray-gni      inject gemini/aries libfabric for MPI on xc40 machines
+  --nvidia        recommended by nVidia (via \"nvidia-container-cli list\")
 
 Destination within image:
 
@@ -62,9 +62,12 @@ Destination within image:
 
 Options:
 
-  --lib-path       print the inferred destination for shared libraries
-  --no-ldconfig    don't run ldconfig even if we injected shared libraries
+  --print-cray-fi  print inferred destination for libfabric replacement
+  --print-fi       print inferred destination for libfabric provider(s)
+  --print-lib      print inferred destination for shared libraries
+  --no-ldconfig    don’t run ldconfig even if we injected shared libraries
   -h, --help       print this help and exit
+  -q, --quiet      make the program more quiet, can be repeated
   -v, --verbose    list the injected files
   --version        print version and exit
 
@@ -72,9 +75,6 @@ NOTE: This command is experimental. Features may be incomplete and/or buggy.
 EOF
 )
 
-cray_mpi=          # Cray fixups requested
-cray_openmpi=      # ... for OpenMPI
-cray_mpich=        # ... for MPICH
 dest=
 image=
 newline='
@@ -82,28 +82,19 @@ newline='
 inject_files=      # source:destination files to inject
 inject_mkdirs=     # directories to create in image (image-rooted)
 inject_unlinks=    # files to rm -f (not rmdir or rm -Rf) (image-rooted)
+cray_fi_dest=
+cray_fi_found=
+fi_prov_dest=
+fi_prov_found=
 lib_dest=
-lib_dest_print=
 lib_found=
+print_cray_fi_dest=
+print_fi_dest=
+print_lib_dest=
 no_ldconfig=
 
-debug () {
-    if [ "$verbose" ]; then
-        printf '%s\n' "$1" 1>&2
-    fi
-}
-
 ensure_nonempty () {
-    [ "$2" ] || fatal "$1 must not be empty"
-}
-
-fatal () {
-    printf 'ch-fromhost: %s\n' "$1" 1>&2
-    exit 1
-}
-
-info () {
-    printf 'ch-fromhost: %s\n' "$1" 1>&2
+    [ "$2" ] || FATAL -- "$1 must not be empty"
 }
 
 is_bin () {
@@ -129,19 +120,52 @@ is_so () {
     esac
 }
 
-queue_files () {
+enqueue_file () {
     old_ifs="$IFS"
     IFS="$newline"
     d="${dest:-$2}"
+    VERBOSE "enqueue file(s)"
     for f in $1; do
         case $f in
             *:*)
-                fatal "paths can't contain colon: ${f}"
+                FATAL "paths can't contain colon: ${f}"
                 ;;
         esac
         if is_so "$f"; then
-            debug "found shared library: ${f}"
-            lib_found=yes
+            case $f in
+            *libfabric.so)
+                if ldd "$f" | grep libcxi > /dev/null 2>&1; then
+                    DEBUG "cray libfabric: ${f}"
+                    cray_fi_found=yes
+                    host_libfabric=$f
+                else
+                    DEBUG "libfabric: ${f}"
+                    lib_found=yes
+                fi
+                ;;
+            *-fi.so)
+                DEBUG "libfabric shared provider: ${f}"
+                fi_prov_found=yes
+                # Providers, like Cray's libgnix-fi.so, link against paths that
+                # need to be bind-mounted at run-time. Some of these paths need
+                # to be added to ldconf; thus, add the linked paths to a ldconf
+                # list to be added into the image.
+                ldds=$(ldd "$f" 2>&1 | grep lib | awk '{print $3}' | sort -u)
+                for l in $ldds; do
+                    ld=$(dirname "$(readlink -f "$l")")
+                    # Avoid duplicates and host libfabric.so.
+                    if     [ "$(echo "$ld_conf" | grep -c "$ld")" -eq 0 ] \
+                        && [ "$(echo "$ld" | grep -c "libfabric.so")" -eq 0 ]; \
+                           then
+                        enqueue_ldconf "$ld"
+                    fi
+                done
+                ;;
+            *)
+                DEBUG "shared library: ${f}"
+                lib_found=yes
+                ;;
+            esac
         fi
         # This adds a delimiter only for the second and subsequent files.
         # https://chris-lamb.co.uk/posts/joining-strings-in-posix-shell
@@ -150,6 +174,11 @@ queue_files () {
         inject_files="${inject_files:+$inject_files$newline}$f:$d"
     done
     IFS="$old_ifs"
+}
+
+enqueue_ldconf () {
+    [ "$1" ]
+    ld_conf="${ld_conf:+$ld_conf$newline}$1"
 }
 
 queue_mkdir () {
@@ -162,209 +191,279 @@ queue_unlink () {
     inject_unlinks="${inject_unlinks:+$inject_unlinks$newline}$1"
 }
 
+warn () {
+    printf '< warn >! %s\n' "$1" 1>&2
+}
 
-parse_basic_args "$@"
+warn_fi_var () {
+    if [ -n "$FI_PROVIDER" ]; then
+        warn "FI_PROVIDER=$FI_PROVIDER set; this will be preferred provider at runtime."
+    fi
+    if [ -n "$FI_PROVIDER_PATH" ]; then
+        warn "FI_PROVIDER_PATH=$FI_PROVIDER_PATH set; --dest required"
+    fi
+}
+
+if [ "$#" -eq 0 ]; then
+        usage 1
+fi
 
 while [ $# -gt 0 ]; do
     opt=$1; shift
-    case $opt in
-        -c|--cmd)
-            ensure_nonempty --cmd "$1"
-            out=$($1) || fatal "command failed: $1"
-            queue_files "$out"
-            shift
-            ;;
-        --cray-mpi)
-            # Can't act right away because we need the image path.
-            cray_mpi=yes
-            lib_found=yes
-            ;;
-        -d|--dest)
-            ensure_nonempty --dest "$1"
-            dest=$1
-            shift
-            ;;
-        -f|--file)
-            ensure_nonempty --file "$1"
-            out=$(cat "$1") || fatal "cannot read file: ${1}"
-            queue_files "$out"
-            shift
-            ;;
-        --lib-path)
-            # Note: If this is specified along with one of the file
-            # specification options, all the file gathering and checking work
-            # will happen, but it will be discarded.
-            lib_found=yes
-            lib_dest_print=yes
-            ;;
-        --no-ldconfig)
-            no_ldconfig=yes
-            ;;
-        --nvidia)
-               out=$(nvidia-container-cli list --binaries --libraries) \
-            || fatal "nvidia-container-cli failed; does this host have GPUs?"
-            queue_files "$out"
-            ;;
-        -p|--path)
-            ensure_nonempty --path "$1"
-            queue_files "$1"
-            shift
-            ;;
-        -v|--verbose)
-            verbose=yes
-            ;;
-        -*)
-            info "invalid option: ${opt}"
-            usage
-            ;;
-        *)
-            ensure_nonempty "image path" "${opt}"
-            [ -z "$image" ] || fatal "duplicate image: ${opt}"
-            [ -d "$opt" ] || fatal "image not a directory: ${opt}"
-            image="$opt"
-            ;;
-    esac
+    if ! parse_basic_arg "$opt"; then
+        case $opt in
+            -c|--cmd)
+                ensure_nonempty --cmd "$1"
+                out=$($1) || FATAL "command failed: $1"
+                enqueue_file "$out"
+                shift
+                ;;
+            --cray-cxi)
+                warn_fi_var
+                if [ -z "$CH_FROMHOST_OFI_CXI" ]; then
+                    FATAL "CH_FROMHOST_OFI_CXI is not set"
+                fi
+                enqueue_file "$CH_FROMHOST_OFI_CXI"
+                ;;
+            --cray-gni)
+                warn_fi_var
+                if [ -z "$CH_FROMHOST_OFI_GNI" ]; then
+                    FATAL "CH_FROMHOST_OFI_GNI is not set"
+                fi
+                enqueue_file "$CH_FROMHOST_OFI_GNI"
+                ;;
+            -d|--dest)
+                ensure_nonempty --dest "$1"
+                dest=$1
+                shift
+                ;;
+            -f|--file)
+                ensure_nonempty --file "$1"
+                out=$(cat "$1") || FATAL "cannot read file: ${1}"
+                enqueue_file "$out"
+                shift
+                ;;
+            # Note: Specifying any of the --print-* options along with one of
+            # the file specification options will result in all the file
+            # gathering and checking work being discarded.
+            --print-cray-fi)
+                cray_fi_found=yes
+                print_cray_fi_dest=yes
+                ;;
+            --print-fi)
+                fi_prov_found=yes
+                print_fi_dest=yes
+                ;;
+            --print-lib)
+                lib_found=yes
+                print_lib_dest=yes
+                ;;
+            --no-ldconfig)
+                no_ldconfig=yes
+                ;;
+            --nvidia)
+                    out=$(nvidia-container-cli list --binaries --libraries) \
+                || FATAL "nvidia-container-cli failed; does this host have GPUs?"
+                enqueue_file "$out"
+                ;;
+            -p|--path)
+                ensure_nonempty --path "$1"
+                enqueue_file "$1"
+                shift
+                ;;
+            -*)
+                INFO "invalid option: ${opt}"
+                usage
+                ;;
+            *)
+                ensure_nonempty "image path" "${opt}"
+                [ -z "$image" ] || FATAL "duplicate image: ${opt}"
+                [ -d "$opt" ] || FATAL "image not a directory: ${opt}"
+                image="$opt"
+                ;;
+        esac
+    fi
 done
 
-[ "$image" ] || fatal "no image specified"
-
-if [ $cray_mpi ]; then
-    sentinel=/etc/opt/cray/release/cle-release
-    [ -f $sentinel ] || fatal "not found: ${sentinel}: are you on a Cray?"
-
-    mpi_version=$("${ch_bin}/ch-run" "$image" -- mpirun --version || true)
-    case $mpi_version in
-        *mpich*)
-            cray_mpich=yes
-            ;;
-        *'Open MPI'*)
-            cray_openmpi=yes
-            ;;
-        *)
-            fatal "can't find MPI in image"
-            ;;
-    esac
+if [ -n "$FI_PROVIDER_PATH" ] && [ -n "$fi_prov_found" ] && [ -z "$dest" ]; then
+    FATAL "FI_PROVIDER_PATH set; missing --dest"
 fi
 
-if [ $lib_found ]; then
+[ "$image" ] || FATAL "no image specified"
+
+if [ -n "$cray_fi_found" ]; then
+    # There is no Slingshot provider CXI; to leverage slingshot we need to
+    # replace the image libfabric.so with Cray's.
+    VERBOSE "searching image for inferred libfabric destiation"
+    img_libfabric=$(find "$image" -name  "libfabric.so")
+    [ -n "$img_libfabric" ] || FATAL "libfabric.so not found in $image"
+    DEBUG "found $img_libfabric"
+    if [ "$(echo "$img_libfabric" | wc -l)" -ne 1 ]; then
+        warn 'found more than one libfabric.so'
+    fi
+    img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
+    cray_fi_dest=$(dirname "/$img_libfabric_path")
+
+    # Since cray's libfabric isn't a standard provider, to use slingshot we
+    # must also add any missing linked libraries from the host.
+    VERBOSE "adding cray libfabric libraries"
+    ldds=$(ldd "$host_libfabric" 2>&1 | grep lib | awk '{print $3}' | sort -u)
+    for l in $ldds; do
+        # Do not replace any libraries found in the image, experimentation has
+        # shown this to be problematic. Perhaps revisit in the future. For now,
+        # both MPICH and OpenMPI examples work with this conservative approach.
+        file_found=$(find "${image}" -name "$(basename "$l")")
+        if [ -n "$file_found" ]; then
+            DEBUG "skipping $l"
+            continue
+        fi
+        enqueue_file "$l"
+        file_dir=$(dirname "$l")
+        # Avoid duplicates.
+        if [ "$(echo "$ld_conf" | grep -c "$file_dir")" -eq 0 ]; then
+            enqueue_ldconf "$file_dir"
+        fi
+    done
+fi
+
+if [ -n "$lib_found" ]; then
     # We want to put the libraries in the first directory that ldconfig
     # searches, so that we can override (or overwrite) any of the same library
     # that may already be in the image.
-    debug "asking ldconfig for shared library destination"
-    # "ldconfig -Nv" gives some pointless warnings on stderr even if
-    # successful; we don't want to show those to users. However, we don't want
-    # to simply pipe stderr to /dev/null because this hides real errors. Thus,
-    # use the following abomination to pipe stdout and stderr to *separate
-    # grep commands*. See: https://stackoverflow.com/a/31151808
+    VERBOSE "asking ldconfig for inferred shared library destination"
+    # "ldconfig -Nv" gives pointless warnings on stderr even if successful; we
+    # don't want to show those to users (unless -vv or higher). However, we
+    # don't want to simply pipe stderr to /dev/null because this hides real
+    # errors. Thus, use the following abomination to pipe stdout and stderr to
+    # *separate grep commands*. See: https://stackoverflow.com/a/31151808
+    if [ "$log_level" -lt 2 ]; then  # VERBOSE or lower
+        stderr_filter='(^|dynamic linker, ignoring|given more than once|No such file or directory)$'
+    else                             # DEBUG or higher
+        stderr_filter=weird_al_yankovic_will_not_appear_in_ldconfig_output
+    fi
     lib_dest=$( { "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -Nv \
-                  2>&1 1>&3 3>&- | grep -Ev '(^|dynamic linker, ignoring|given more than once)$' ; } \
+                  2>&1 1>&3 3>&- | grep -Ev "$stderr_filter" ; } \
                 3>&1 1>&2 | grep -E '^/' | cut -d: -f1 | head -1 )
-    [ -n "$lib_dest" ] || fatal 'empty path from ldconfig'
-    [ -z "${lib_dest%%/*}" ] || fatal "bad path from ldconfig: ${lib_dest}"
-    debug "shared library destination: ${lib_dest}"
+    [ -n "$lib_dest" ] || FATAL 'empty path from ldconfig'
+    [ -z "${lib_dest%%/*}" ] || FATAL "bad path from ldconfig: ${lib_dest}"
+    VERBOSE "inferred shared library destination: ${image}/${lib_dest}"
 fi
 
-if [ $lib_dest_print ]; then
+if [ -n "$fi_prov_found" ]; then
+    # The libfabric provider can be specified with FI_PROVIDER. The path the
+    # search for shared providers at can be specified with FI_PROVIDER_PATH
+    # (undocumented). This complicates the inferred destination because these
+    # variables can be inherited from the host or explicitly set in the
+    # image's /ch/environment file.
+    #
+    # For simplicity, the inferred injection destination is the always the
+    # 'libfabric' directory at the path where libfabric.so is found. If it
+    # does not exist, create it. Warn if FI_PROVIDER_PATH or FI_PROVIDER is
+    # found in the the image's /ch/environment file.
+    VERBOSE "searching ${image} for libfabric shared provider destination"
+    ch_env_p=$(grep -E '^FI_PROVIDER_PATH=' "${image}/ch/environment") \
+             || true # avoid -e exit
+    ch_env_p=${ch_env_p##*=}
+    if  [ -n "$ch_env_p" ]; then
+       warn "FI_PROVIDER_PATH in ${image}/ch/environment; consider --dest"
+    fi
+    img_libfabric=$(find "$image" -name 'libfabric.so')
+    img_libfabric_path=$(echo "$img_libfabric" | sed "s@$image@@")
+    DEBUG "found: ${image}${img_libfabric_path}"
+    fi_prov_dest=$(dirname "/${img_libfabric_path}")
+    fi_prov_dest="${fi_prov_dest}/libfabric"
+    queue_mkdir "$fi_prov_dest"
+    VERBOSE "inferred provider destination: $fi_prov_dest"
+fi
+
+if [ -n "$print_lib_dest" ]; then
     echo "$lib_dest"
     exit 0
 fi
 
-if [ $cray_mpich ]; then
-    # Remove open source libmpi.so.
-    #
-    # FIXME: These versions are specific to MPICH 3.2.1. I haven't figured out
-    # how to use glob patterns here (they don't get expanded when I tried
-    # basic things).
-    queue_unlink "$lib_dest/libmpi.so"
-    queue_unlink "$lib_dest/libmpi.so.12"
-    queue_unlink "$lib_dest/libmpi.so.12.1.1"
-
-    # Directory containing Cray's libmpi.so.12.
-    # shellcheck disable=SC2016
-       [ "$CRAY_MPICH_DIR" ] \
-    || fatal '$CRAY_MPICH_DIR not set; is module cray-mpich-abi loaded?'
-    cray_libmpi=$CRAY_MPICH_DIR/lib/libmpi.so.12
-       [ -f "$cray_libmpi" ] \
-    || fatal "not found: ${cray_libmpi}; is module cray-mpich-abi loaded?"
-
-    # Note: Most or all of these filenames are symlinks, and the copy will
-    # convert them to normal files (with the same content). In the
-    # documentation, we say not to do that. However, it seems to work, it's
-    # simpler than resolving them, and we apply greater abuse to libmpi.so.12
-    # below.
-
-    # Cray libmpi.so.12.
-    queue_files "$cray_libmpi"
-    # Linked dependencies.
-    queue_files "$(  ldd "$cray_libmpi" \
-                   | grep -F /opt \
-                   | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
-    # dlopen(3)'ed dependencies. I don't know how to not hard-code these.
-    queue_files /opt/cray/alps/default/lib64/libalpsutil.so.0.0.0
-    queue_files /opt/cray/alps/default/lib64/libalpslli.so.0.0.0
-    queue_files /opt/cray/wlm_detect/default/lib64/libwlm_detect.so.0.0.0
-    #queue_files /opt/cray/alps/default/lib64/libalps.so.0.0.0
+if [ -n "$print_fi_dest" ]; then
+    echo "$fi_prov_dest"
 fi
 
-if [ $cray_openmpi ]; then
-    # Both MPI_ROOT and MPIHOME are the base of the OpenMPI install tree.
-    # We use MPIHOME because some users unset MPI_ROOT.
-    #
-    # Note also that the OpenMPI module name is not standardized.
-       [ "$MPIHOME" ] \
-    || fatal "MPIHOME not set; is OpenMPI module loaded?"
-
-    # Inject libmpi from the host
-    host_libmpi=${MPIHOME}/lib/libmpi.so
-        [ -f "$host_libmpi" ] \
-    || fatal "not found: ${host_libmpi}; is OpenMPI module loaded?"
-    queue_files "$host_libmpi"
-    queue_files "$(  ldd "$host_libmpi" \
-                   | grep -E "/usr|/opt" \
-                   | sed -E 's/^.+ => (.+) \(0x.+\)$/\1/')"
-
-    # Remove core MPI libraries from image. This works around ParaView
-    # dlopen(3)-related errors that we don't understand.
-    image_mpilibs=$(  "${ch_bin}/ch-run" "$image" -- /sbin/ldconfig -p \
-                    | sed -nE 's@^.* => (/.*/(libmpi|libopen-rte|libopen-pal)\.so([0-9.]+)?)$@\1@p')
-       echo "$image_mpilibs" | grep -q "libmpi" \
-    || fatal "can't find libmpi.so* in image"
-    for f in $image_mpilibs; do
-        queue_unlink "$f"
-        queue_unlink "$("${ch_bin}/ch-run" "$image" -- readlink -f "$f")"
-    done
+if [ -n "$print_cray_fi_dest" ]; then
+    echo "$cray_fi_dest"
 fi
 
-if [ $cray_mpi ]; then
-    # ALPS libraries require the contents of this directory to be present at
-    # the same path as the host. Create the mount point here, then ch-run
-    # bind-mounts it later.
-    queue_mkdir /var/opt/cray/alps/spool
+if [ -f /etc/opt/cray/release/cle-release ]; then
+    # Cray needs a pile of hugetlbfs filesystems mounted at
+    # /var/lib/hugetlbfs/global. Create mount point for ch-run.
+    queue_mkdir /var/lib/hugetlbfs
+    # UGNI
+    if [ ! -L /etc/opt/cray/release/cle-release ]; then
+        # ALPS libraries require the contents of this directory to be present
+        # at the same path as the host. Create the mount point here, then
+        # ch-run bind-mounts it later.
+        queue_mkdir /var/opt/cray/alps/spool
 
-    # libwlm_detect.so requires this file to be present.
-    queue_mkdir /etc/opt/cray/wlm_detect
-    queue_files /etc/opt/cray/wlm_detect/active_wlm /etc/opt/cray/wlm_detect
+        # The cray-ugni provider will link against cray’s libwlm_detect so.
+        # Create the mount point for ch-run.
+        queue_mkdir /opt/cray/wlm_detect
 
-    # uGNI needs a pile of hugetlbfs filesystems at paths that are arbitrary
-    # but in a specific order in /proc/mounts. ch-run bind-mounts here later.
-    queue_mkdir /var/opt/cray/hugetlbfs
+        # libwlm_detect.so requires file(s) to present at the same path as the
+        # host. Create mount point for ch-run.
+        queue_mkdir /etc/opt/cray/wlm_detect
+
+        # OFI uGNI provider, libgnix-fi.so, links against the Cray host’s
+        # libxpmem, libudreg, libalpsutil, libalpslli, and libugni; create
+        # mount points for ch-run to use later.
+        queue_mkdir /opt/cray/udreg
+        queue_mkdir /opt/cray/xpmem
+        queue_mkdir /opt/cray/ugni
+        queue_mkdir /opt/cray/alps
+    fi
+    # CXI (slingshot)
+    if [ -f /opt/cray/etc/release/cos ]; then
+        # Newer Cray Shasta environments require the contents of this
+        # directory to be present at the same path as the host. Create mount
+        # points for ch-run to use later.
+        queue_mkdir /var/spool/slurmd
+    fi
 fi
 
+[ "$inject_files" ] || FATAL "empty file list"
 
-[ "$inject_files" ] || fatal "empty file list"
-
-debug "injecting into image: ${image}"
+VERBOSE "injecting into image: ${image}"
 
 old_ifs="$IFS"
 IFS="$newline"
+
+# Process unlink list.
 for u in $inject_unlinks; do
-    debug "  rm -f ${image}${u}"
+    DEBUG "deleting: ${image}${u}"
     rm -f "${image}${u}"
 done
+
+# Process bind-mount destination targets.
 for d in $inject_mkdirs; do
-    debug "  mkdir -p ${image}${d}"
+    DEBUG "mkdir: ${image}${d}"
     mkdir -p "${image}${d}"
 done
+
+# Process ldconfig targets.
+if [ "$fi_prov_found" ] || [ "$cray_fi_found" ]; then
+    if [ ! -f "${image}/etc/ld.so.conf" ]; then
+        DEBUG "creating empty ld.so.conf"
+        touch "${image}/etc/ld.so.conf"
+    fi
+    if !   grep -F 'include ld.so.conf.d/*.conf' "${image}/etc/ld.so.conf" \
+         > /dev/null 2>&1; then
+        DEBUG "ld.so.conf: adding 'include ld.so.conf.d/*.conf'"
+        echo 'include ld.so.conf.d/*.conf' >> "${image}/etc/ld.so.conf"
+    fi
+    # Prepare image ch-ofi.conf.
+    printf '' > "${image}/etc/ld.so.conf.d/ch-ofi.conf"
+    # add ofi dso provider ld library dirs.
+    for c in $ld_conf; do
+        DEBUG "ld.so.conf: adding ${c}"
+        echo "$c" >> "${image}/etc/ld.so.conf.d/ch-ofi.conf"
+    done
+fi
+
 for file in $inject_files; do
     f="${file%%:*}"
     d="${file#*:}"
@@ -373,43 +472,64 @@ for file in $inject_files; do
         d=/usr/bin
         infer=" (inferred)"
     elif is_so "$f" && [ -z "$d" ]; then
-        d=$lib_dest
+        case "$f" in
+        *libfabric.so)
+            d=$lib_dest
+            if ldd "$f" | grep libcxi > /dev/null 2>&1; then
+                d=$cray_fi_dest
+            fi
+            ;;
+        *-fi.so)
+            d=$fi_prov_dest
+            ;;
+        *)
+            d=$lib_dest
+            ;;
+        esac
         infer=" (inferred)"
     fi
-    debug "  ${f} -> ${d}${infer}"
-    [ "$d" ] || fatal "no destination for: ${f}"
-    [ -z "${d%%/*}" ] || fatal "not an absolute path: ${d}"
-    [ -d "${image}${d}" ] || fatal "not a directory: ${image}${d}"
+    VERBOSE "${f} -> ${d}${infer}"
+    [ "$d" ] || FATAL "no destination for: ${f}"
+    [ -z "${d%%/*}" ] || FATAL "not an absolute path: ${d}"
+    [ -d "${image}${d}" ] || FATAL "not a directory: ${image}${d}"
     if [ ! -w "${image}${d}" ]; then
         # Some images unpack with unwriteable directories; fix. This seems
         # like a bit of a kludge to me, so I'd like to remove this special
         # case in the future if possible. (#323)
-        info "${image}${d} not writeable; fixing"
-        chmod u+w "${image}${d}" || fatal "can't chmod u+w: ${image}${d}"
+        INFO "${image}${d} not writeable; fixing"
+        chmod u+w "${image}${d}" || FATAL "can't chmod u+w: ${image}${d}"
     fi
        cp --dereference --preserve=all "$f" "${image}${d}" \
-    || fatal "cannot inject: ${f}"
+    || FATAL "cannot inject: ${f}"
 done
 IFS="$old_ifs"
 
-if [ $cray_mpich ]; then
-    # Restore libmpi.so symlink (it's part of several chains).
-    debug "  ln -s libmpi.so.12 ${image}${lib_dest}/libmpi.so"
-    ln -s libmpi.so.12 "${image}${lib_dest}/libmpi.so"
-
-    # Patch libmpi.so.12 so its soname is "libmpi.so.12" instead of e.g.
-    # "libmpich_gnu_51.so.3". Otherwise, the application won't link without
-    # LD_LIBRARY_PATH, and LD_LIBRARY_PATH is to be avoided.
-    #
-    # Note: This currently requires our patched patchelf (issue #256).
-    debug "fixing soname on libmpi.so.12"
-    "${ch_bin}/ch-run" -w "$image" -- \
-        patchelf --set-soname libmpi.so.12 "$lib_dest/libmpi.so.12"
-fi
-
-if [ $lib_found ] && [ -z "$no_ldconfig" ]; then
-    debug "running ldconfig"
-    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig
+if       [ -z "$no_ldconfig" ] \
+    && {    [ "$lib_found" ] \
+         || [ "$fi_prov_found" ] \
+         || [ "$cray_fi_found" ] ;} then
+    VERBOSE "running ldconfig"
+    "${ch_bin}/ch-run" -w "$image" -- /sbin/ldconfig 2> /dev/null \
+        || FATAL 'ldconfig error'
+    if [ -n "$fi_prov_found" ] || [ -n "$cray_fi_found" ]; then
+        VERBOSE "validating ldconfig cache"
+        for file in $inject_files; do
+            f="$(basename "${file%%:*}")"
+            f=$(   "${ch_bin}/ch-run" "$image" \
+                -- find / \
+                        -not \( -path /proc -prune \) \
+                        -not \( -path /dev -prune \) \
+                        -not \( -path /tmp -prune \) \
+                        -not \( -path /sys -prune \) \
+                        -not \( -path /var/opt/cray -prune \) \
+                        -not \( -path /etc/opt/cray -prune \) \
+                        -name  "$f")
+            if [ "$("${ch_bin}/ch-run" "$image" -- ldd "$f" | grep -c 'not found ')" -ne 0 ]; then
+                FATAL "ldconfig: '${ch_bin}/ch-run $image -- ldd $f' failed"
+            fi
+        done
+    fi
 else
-    debug "not running ldconfig"
+    VERBOSE "not running ldconfig"
 fi
+echo 'done'

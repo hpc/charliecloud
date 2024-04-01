@@ -1,12 +1,14 @@
 import argparse
 import atexit
+import cProfile
 import collections
 import collections.abc
-import cProfile
 import datetime
 import enum
+import functools
 import hashlib
 import io
+import locale
 import os
 import platform
 import pstats
@@ -18,19 +20,17 @@ import subprocess
 import sys
 import time
 import traceback
+import warnings
+
+
+# List of dependency problems. This variable needs to be created before we
+# import any other Charliecloud stuff to avoid #806.
+depfails = []  # 👻
+
 
 import filesystem as fs
 import registry as rg
-
-# Compatibility link. Sometimes we load pickled data from when Path was defined
-# in this file. This alias lets us still load such pickles. 
-Path = fs.Path
-
-
-## Hairy imports ##
-
-# List of dependency problems.
-depfails = []
+import version
 
 
 ## Enums ##
@@ -46,10 +46,33 @@ class Download_Mode(enum.Enum):
    ENABLED = "enabled"
    WRITE_ONLY = "write-only"
 
+# Root emulation mode
+class Force_Mode(enum.Enum):
+   FAKEROOT = "fakeroot"
+   SECCOMP = "seccomp"
+   NONE = "none"
+
+# Log level
+@functools.total_ordering
+class Log_Level(enum.Enum):
+   TRACE = 3
+   DEBUG = 2
+   VERBOSE = 1
+   INFO = 0
+   WARNING = -1
+   STDERR = -2
+   QUIET_STDERR = -3
+   # To support comparisons, we need to define at least one “ordering”
+   # operator. See: https://stackoverflow.com/a/39269589
+   def __lt__(self, other):
+      if self.__class__ is other.__class__:
+         return self.value < other.value
+      return NotImplemented
+
 
 ## Constants ##
 
-# Architectures. This maps the "machine" field returned by uname(2), also
+# Architectures. This maps the “machine” field returned by uname(2), also
 # available as "uname -m" and platform.machine(), into architecture names that
 # image registries use. It is incomplete (see e.g. [1], which is itself
 # incomplete) but hopefully includes most architectures encountered in
@@ -59,8 +82,7 @@ class Download_Mode(enum.Enum):
 #
 # [1]: https://stackoverflow.com/a/45125525
 # [2]: https://github.com/docker-library/bashbrew/blob/v0.1.0/vendor/github.com/docker-library/go-dockerlibrary/architecture/oci-platform.go
-ARCH_MAP = { "x86_64":    "amd64",
-             "armv5l":    "arm/v5",
+ARCH_MAP = { "armv5l":    "arm/v5",
              "armv6l":    "arm/v6",
              "aarch32":   "arm/v7",
              "armv7l":    "arm/v7",
@@ -70,7 +92,8 @@ ARCH_MAP = { "x86_64":    "amd64",
              "i686":      "386",
              "mips64le":  "mips64le",
              "ppc64le":   "ppc64le",
-             "s390x":     "s390x" }  # a.k.a. IBM Z
+             "s390x":     "s390x",     # a.k.a. IBM Z
+             "x86_64":    "amd64" }
 
 # Some images have oddly specified architecture. For example, as of
 # 2022-06-08, on Docker Hub, opensuse/leap:15.1 offers architectures amd64,
@@ -80,6 +103,10 @@ ARCH_MAP = { "x86_64":    "amd64",
 # Arch_Dict below.
 ARCH_MAP_FALLBACK = { "arm/v7": ("arm",),
                       "arm64/v8": ("arm64",) }
+
+# Incompatible option pairs for the ch-image command line
+CLI_INCOMPATIBLE_OPTS = [("quiet", "verbose"),
+                         ("xattrs", "no_xattrs")]
 
 # String to use as hint when we throw an error that suggests a bug.
 BUG_REPORT_PLZ = "please report this bug: https://github.com/hpc/charliecloud/issues"
@@ -97,11 +124,16 @@ FILENAME_MAX_CHARS = 192
 # takes over.
 HTTP_CHUNK_SIZE = 256 * 1024
 
-# Minimum Python version. NOTE: Keep in sync with configure.ac.
+# Minimum versions. NOTE: Keep in sync with configure.ac.
 PYTHON_MIN = (3,6)
+RSYNC_MIN = (3,1,0)
 
 
 ## Globals ##
+
+# Compatibility link. Sometimes we load pickled data from when Path was
+# defined in this file. This alias lets us still load such pickles.
+Path = fs.Path
 
 # Active architecture (both using registry vocabulary)
 arch = None       # requested by user
@@ -112,10 +144,13 @@ CH_BIN = None
 CH_RUN = None
 
 # Logging; set using init() below.
-verbose = 0          # Verbosity level.
-log_festoon = False  # If true, prepend pid and timestamp to chatter.
-log_fp = sys.stderr  # File object to print logs to.
-trace_fatal = False  # Add abbreviated traceback to fatal error hint.
+log_level = Log_Level(0)  # Verbosity level.
+log_festoon = False       # If true, prepend pid and timestamp to chatter.
+log_fp = sys.stderr       # File object to print logs to.
+trace_fatal = False       # Add abbreviated traceback to fatal error hint.
+
+# Warnings to be re-printed when program exits
+warns = list()
 
 # True if the download cache is enabled.
 dlcache_p = None
@@ -124,6 +159,9 @@ dlcache_p = None
 profiling = False
 profile = None
 
+# Width of terminal.
+term_width = shutil.get_terminal_size(fallback=(sys.maxsize, -1))[0]
+
 
 ## Exceptions ##
 
@@ -131,8 +169,8 @@ class Fatal_Error(Exception):
    def __init__(self, *args, **kwargs):
       self.args = args
       self.kwargs = kwargs
-class No_Fatman_Error(Exception): pass
 class Image_Unavailable_Error(Exception): pass
+class No_Fatman_Error(Exception): pass
 
 
 ## Classes ##
@@ -209,6 +247,8 @@ class ArgumentParser(argparse.ArgumentParser):
 
    def parse_args(self, *args, **kwargs):
       cli = super().parse_args(*args, **kwargs)
+      if (not hasattr(cli, "func")):
+         self.error("CMD not specified")
       # Bring in environment variables that set options.
       if (cli.bucache is None and "CH_IMAGE_CACHE" in os.environ):
          try:
@@ -222,7 +262,7 @@ class ArgumentParser(argparse.ArgumentParser):
 class OrderedSet(collections.abc.MutableSet):
 
    # Note: The superclass provides basic implementations of all the other
-   # methods. I didn't evaluate any of these.
+   # methods. I didn’t evaluate any of these.
 
    __slots__ = ("data",)
 
@@ -247,7 +287,7 @@ class OrderedSet(collections.abc.MutableSet):
       self.data[x] = None
 
    def clear(self):
-      # Superclass provides an implementation but warns it's slow (and it is).
+      # Superclass provides an implementation but warns it’s slow (and it is).
       self.data.clear()
 
    def discard(self, x):
@@ -257,7 +297,7 @@ class OrderedSet(collections.abc.MutableSet):
 class Progress:
    """Simple progress meter for countable things that updates at most once per
       second. Writes first update upon creation. If length is None, then just
-      count up (this is for registries like Red Hat that sometimes don't
+      count up (this is for registries like Red Hat that sometimes don’t
       provide a Content-Length header for blobs).
 
       The purpose of the divisor is to allow counting things that are much
@@ -292,6 +332,11 @@ class Progress:
       self.display_last = float("-inf")
       self.update(0)
 
+   def done(self):
+      self.update(0, True)
+      if (self.overwrite_p):
+         INFO("")  # newline to release display line
+
    def update(self, increment, last=False):
       now = time.monotonic()
       self.progress += increment
@@ -306,17 +351,12 @@ class Progress:
                                 self.precision, self.length / self.divisor)
             pct = "%d%%" % (100 * self.progress / self.length)
             if (ct == "0.0/0.0"):
-               # too small, don't print count
+               # too small, don’t print count
                line = "%s: %s" % (self.msg, pct)
             else:
                line = ("%s: %s %s (%s)" % (self.msg, ct, self.unit, pct))
          INFO(line, end=("\r" if self.overwrite_p else "\n"))
          self.display_last = now
-
-   def done(self):
-      self.update(0, True)
-      if (self.overwrite_p):
-         INFO("")  # newline to release display line
 
 
 class Progress_Reader:
@@ -347,7 +387,7 @@ class Progress_Reader:
          close_(self.fp)
 
    def read(self, size=-1):
-     data = ossafe(self.fp.read, "can't read: %s" % self.fp.name, size)
+     data = ossafe("can’t read: %s" % self.fp.name, self.fp.read, size)
      self.progress.update(len(data))
      return data
 
@@ -355,10 +395,10 @@ class Progress_Reader:
       raise io.UnsupportedOperation
 
    def start(self):
-      # Get file size. This seems awkward, but I wasn't able to find anything
+      # Get file size. This seems awkward, but I wasn’t able to find anything
       # better. See: https://stackoverflow.com/questions/283707
       old_pos = self.fp.tell()
-      assert (old_pos == 0)  # math will be wrong if this isn't true
+      assert (old_pos == 0)  # math will be wrong if this isn’t true
       length = self.fp.seek(0, os.SEEK_END)
       self.fp.seek(old_pos)
       self.progress = Progress(self.msg, "MiB", 2**20, length)
@@ -366,30 +406,49 @@ class Progress_Reader:
 
 class Progress_Writer:
    """Wrapper around a binary file object to maintain a progress meter while
-      data are written."""
+      data are written. Overwrite the file if it already exists.
+
+      This downloads to a temporary file to ease recovery if the download is
+      interrupted. This uses a predictable name to support restarts in the
+      future, which would probably require verification after download. For
+      now, we just delete any leftover temporary files in Storage.init().
+
+      An interesting alternative is to download to an anonymous temporary file
+      that vanishes if not linked into the filesystem. Recent Linux provides a
+      very cool procedure to do this -- open(2) with O_TMPFILE followed by
+      linkat(2) [1] -- but it’s not always supported and the workaround
+      (create, then immediately unlink(2)) does not support re-linking [2].
+      This would also not support restarting the download.
+
+      [1]: https://man7.org/linux/man-pages/man2/open.2.html
+      [2]: https://stackoverflow.com/questions/4171713"""
 
    __slots__ = ("fp",
                 "msg",
                 "path",
+                "path_tmp",
                 "progress")
 
    def __init__(self, path, msg):
       self.msg = msg
       self.path = path
+      self.path_tmp = path.with_name("part_" + path.name)
       self.progress = None
 
    def close(self):
       if (self.progress is not None):
          self.progress.done()
          close_(self.fp)
+         self.path.unlink(missing_ok=True)
+         self.path_tmp.rename(self.path)
 
    def start(self, length):
       self.progress = Progress(self.msg, "MiB", 2**20, length)
-      self.fp = self.path.open_("wb")
+      self.fp = self.path_tmp.open("wb")
 
    def write(self, data):
       self.progress.update(len(data))
-      ossafe(self.fp.write, "can't write: %s" % self.path, data)
+      ossafe("can’t write: %s" % self.path, self.fp.write, data)
 
 
 class Timer:
@@ -406,7 +465,7 @@ class Timer:
 ## Supporting functions ##
 
 def DEBUG(msg, hint=None, **kwargs):
-   if (verbose >= 2):
+   if (log_level >= Log_Level.DEBUG):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def ERROR(msg, hint=None, trace=None, **kwargs):
@@ -423,20 +482,28 @@ def FATAL(msg, hint=None, **kwargs):
       tr = None
    raise Fatal_Error(msg, hint, tr, **kwargs)
 
+def ILLERI(msg, hint=None, **kwargs):
+   # For temporary debugging only. See contributors’ guide.
+   log(msg, hint, None, "38;5;207m", "", **kwargs)  # hot pink
+
 def INFO(msg, hint=None, **kwargs):
    "Note: Use print() for output; this function is for logging."
-   log(msg, hint, None, "33m", "", **kwargs)  # yellow
+   if (log_level >= Log_Level.INFO):
+      log(msg, hint, None, "33m", "", **kwargs)  # yellow
 
 def TRACE(msg, hint=None, **kwargs):
-   if (verbose >= 3):
+   if (log_level >= Log_Level.TRACE):
       log(msg, hint, None, "38;5;6m", "", **kwargs)  # dark cyan (same as 36m)
 
 def VERBOSE(msg, hint=None, **kwargs):
-   if (verbose >= 1):
+   if (log_level >= Log_Level.VERBOSE):
       log(msg, hint, None, "38;5;14m", "", **kwargs)  # light cyan (1;36m, not bold)
 
-def WARNING(msg, hint=None, **kwargs):
-   log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
+def WARNING(msg, hint=None, msg_save=True, **kwargs):
+   if (log_level > Log_Level.STDERR):
+      if (msg_save):
+         warns.append(msg)
+      log(msg, hint, None, "31m", "warning: ", **kwargs)  # red
 
 def arch_host_get():
    "Return the registry architecture of the host."
@@ -458,83 +525,94 @@ def bytes_hash(data):
    h.update(data)
    return h.hexdigest()
 
-def ch_run_modify(img, args, env, workdir="/", binds=[], fail_ok=False):
+def ch_run_modify(img, args, env, workdir="/", binds=[], ch_run_args=[],
+                  fail_ok=False):
    # Note: If you update these arguments, update the ch-image(1) man page too.
    args = (  [CH_BIN + "/ch-run"]
+           + ch_run_args
            + ["-w", "-u0", "-g0", "--no-passwd", "--cd", workdir, "--unsafe"]
            + sum([["-b", i] for i in binds], [])
            + [img, "--"] + args)
-   return cmd(args, env=env, fail_ok=fail_ok)
+   return cmd(args, env=env, stderr=None, fail_ok=fail_ok)
 
 def close_(fp):
    try:
       path = fp.name
    except AttributeError:
       path = "(no path)"
-   ossafe(fp.close, "can't close: %s" % path)
+   ossafe("can’t close: %s" % path, fp.close)
 
 def cmd(argv, fail_ok=False, **kwargs):
    """Run command using cmd_base(). If fail_ok, return the exit code whether
       or not the process succeeded; otherwise, return (zero) only if the
       process succeeded and exit with fatal error if it failed."""
+   if (log_level < Log_Level.WARNING):
+      kwargs["stdout"] = subprocess.DEVNULL
+      if (log_level <= Log_Level.QUIET_STDERR):
+         kwargs["stderr"] = subprocess.DEVNULL
    cp = cmd_base(argv, fail_ok=fail_ok, **kwargs)
    return cp.returncode
 
 def cmd_base(argv, fail_ok=False, **kwargs):
    """Run a command to completion. If not fail_ok, exit with a fatal error if
-      the command does not exit with code zero. If logging is verbose or
-      higher, first print the command line arguments; if debug or higher, the
-      environment as well (if given). Return the CompletedProcess object."""
+      the command fails (i.e., doesn’t exit with code zero). Return the
+      CompletedProcess object.
+
+      The command’s stderr is suppressed unless (1) logging is DEBUG or higher
+      or (2) fail_ok is False and the command fails."""
    argv = [str(i) for i in argv]
    VERBOSE("executing: %s" % argv_to_string(argv))
    if ("env" in kwargs):
-      VERBOSE("environment: %s" % kwargs["env"])
+      for (k,v) in sorted(kwargs["env"].items()):
+         VERBOSE("env: %s=%s" % (k,v))
+   if ("stderr" not in kwargs):
+      if (log_level <= Log_Level.INFO):  # VERBOSE or lower: capture for printing on fail only
+         kwargs["stderr"] = subprocess.PIPE
+   if ("input" not in kwargs):
+      kwargs["stdin"] = subprocess.DEVNULL
    try:
       profile_stop()
-      cp = subprocess.run(argv, stdin=subprocess.DEVNULL, **kwargs)
+      cp = subprocess.run(argv, **kwargs)
       profile_start()
    except OSError as x:
-      VERBOSE("can't execute %s: %s" % (argv[0], x.strerror))
-      # Most common reason we are here is that the command isn't found, which
+      VERBOSE("can’t execute %s: %s" % (argv[0], x.strerror))
+      # Most common reason we are here is that the command isn’t found, which
       # generates a FileNotFoundError. Use fake return value 127; this is
       # consistent with the shell [1]. This is a kludge, but we assume the
-      # caller doesn't care about the distinction between some problem within
+      # caller doesn’t care about the distinction between some problem within
       # the subprocess and inability to start the subprocess.
       #
       # [1]: https://devdocs.io/bash/exit-status#Exit-Status
       cp = subprocess.CompletedProcess(argv, 127)
    if (not fail_ok and cp.returncode != 0):
+      if (cp.stderr is not None):
+         if (isinstance(cp.stderr, bytes)):
+            cp.stderr = cp.stderr.decode("UTF-8")
+         sys.stderr.write(cp.stderr)
+         sys.stderr.flush()
       FATAL("command failed with code %d: %s"
             % (cp.returncode, argv_to_string(argv)))
    return cp
 
+def cmd_quiet(argv, **kwargs):
+   """Run command using cmd() and return the exit code. If logging is verbose
+      or lower, discard stdout."""
+   if (log_level >= Log_Level.DEBUG):  # debug or higher
+      stdout=None
+   else:
+      stdout=subprocess.DEVNULL
+   return cmd(argv, stdout=stdout, **kwargs)
+
 def cmd_stdout(argv, encoding="UTF-8", **kwargs):
    """Run command using cmd_base(), capturing its standard output. Return the
-      CompletedProcess object (its stdout is available in the "stdout"
-      attribute). If logging is info, discard stderr; otherwise send it to the
-      existing stderr. If logging is debug or higher, print stdout."""
-   if (verbose == 0 and "stderr" not in kwargs):  # info or lower
-      kwargs["stderr"] = subprocess.DEVNULL
+      CompletedProcess object (its stdout is available in the “stdout”
+      attribute). If logging is debug or higher, print stdout."""
    cp = cmd_base(argv, encoding=encoding, stdout=subprocess.PIPE, **kwargs)
-   if (verbose >= 2):  # debug or higher
+   if (log_level >= Log_Level.DEBUG):  # debug or higher
       # just dump to stdout rather than using DEBUG() to match cmd_quiet
       sys.stdout.write(cp.stdout)
       sys.stdout.flush()
    return cp
-
-def cmd_quiet(argv, **kwargs):
-   """Run command using cmd() and return the exit code. If logging is info,
-      discard both stdout and stderr; if it's verbose, discard stdout only; if
-      it's debug or higher, discard nothing."""
-   if (verbose >= 2):  # debug or higher
-      stdout=None
-   else:
-      stdout=subprocess.DEVNULL
-   if (verbose >= 1):  # verbose or higher
-      stderr=None
-   else:
-      stderr=subprocess.DEVNULL
-   return cmd(argv, stdout=stdout, stderr=stderr, **kwargs)
 
 def color_reset(*fps):
    for fp in fps:
@@ -543,10 +621,6 @@ def color_reset(*fps):
 def color_set(color, fp):
    if (fp.isatty()):
       print("\033[" + color, end="", flush=True, file=fp)
-
-def copy2(src, dst, **kwargs):
-   "Wrapper for shutil.copy2() with error checking."
-   ossafe(shutil.copy2, "can't copy: %s -> %s" % (src, dst), src, dst, **kwargs)
 
 def dependencies_check():
    """Check more dependencies. If any dependency problems found, here or above
@@ -591,18 +665,34 @@ def exit(code):
 
 def init(cli):
    # logging
-   global log_festoon, log_fp, trace_fatal, verbose
-   assert (0 <= cli.verbose <= 3)
-   verbose = cli.verbose
+   global log_festoon, log_fp, log_level, trace_fatal, xattrs_save
+   incomp_opts = 0
+   for (x,y) in CLI_INCOMPATIBLE_OPTS:
+      if (getattr(cli, x) and getattr(cli, y)):
+         ERROR("“--%s” incompatible with “--%s”" % ((x.replace("_","-"),
+                                                     y.replace("_","-"))))
+         incomp_opts += 1
+   if (incomp_opts > 0):
+      FATAL("%d incompatible option pair(s)" % incomp_opts)
+   xattrs_save = ((cli.xattrs) or (("CH_XATTRS" in os.environ) and (not cli.no_xattrs)))
    trace_fatal = (cli.debug or bool(os.environ.get("CH_IMAGE_DEBUG", False)))
+   log_level = Log_Level(cli.verbose - cli.quiet)
+   assert (-3 <= log_level.value <= 3)
+   if (log_level <= Log_Level.STDERR):
+      # suppress writing to stdout (particularly “print”).
+      sys.stdout = open(os.devnull, 'w')
    if ("CH_LOG_FESTOON" in os.environ):
       log_festoon = True
    file_ = os.getenv("CH_LOG_FILE")
    if (file_ is not None):
-      verbose = max(verbose, 1)
-      log_fp = file_.open_("at")
+      log_fp = file_.open("at")
    atexit.register(color_reset, log_fp)
-   VERBOSE("verbose level: %d" % verbose)
+   VERBOSE("version: %s" % version.VERSION)
+   VERBOSE("verbose level: %d (%s))" % (log_level.value, log_level.name))
+   VERBOSE("save xattrs: %s" % str(xattrs_save))
+   # signal handling
+   signal.signal(signal.SIGINT, sigterm)
+   signal.signal(signal.SIGTERM, sigterm)
    # storage directory
    global storage
    storage = fs.Storage(cli.storage)
@@ -632,6 +722,12 @@ def init(cli):
    else:
       rg.auth_p = False
    VERBOSE("registry authentication: %s" % rg.auth_p)
+   # Red Hat Python warns about tar bugs, citing CVE-2007-4559.
+   # We mitigate this already, so suppress the noise. (#1818)
+   warnings.filterwarnings("ignore", module=r"^tarfile$",
+                           message=(  "^The default behavior of tarfile"
+                                    + " extraction has been changed to disallow"
+                                    + " common exploits"))
    # misc
    global password_many, profiling
    password_many = cli.password_many
@@ -665,18 +761,6 @@ def kill_blocking(pid, timeout=10):
    FATAL("timeout of %ds exceeded trying to kill PID %d" % (timeout, pid),
          BUG_REPORT_PLZ)
 
-def walk(*args, **kwargs):
-   """Wrapper for os.walk(). Return a generator of the files in a directory
-      tree (root specified in *args). For each directory in said tree, yield a
-      3-tuple (dirpath, dirnames, filenames), where dirpath is a Path object,
-      and dirnames and filenames are lists of Path objects. For insight into
-      these being lists rather than generators, see use of ch.walk() in
-      I_copy.copy_src_dir()."""
-   for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
-      yield (fs.Path(dirpath),
-             [fs.Path(dirname) for dirname in dirnames],
-             [fs.Path(filename) for filename in filenames])
-
 def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
       color_set(color, log_fp)
@@ -693,10 +777,30 @@ def log(msg, hint, trace, color, prefix, end="\n"):
    if (color is not None):
       color_reset(log_fp)
 
+def monkey_write_streams():
+   """Monkey patch to replace problematic characters in stdout and stderr
+      streams when running Python 3.6. (see #1629)."""
+   def monkey_write_insert(f):
+      write_orig = f.write
+      def write_monkey(text):
+         text = text.replace("“", "\"").replace("”", "\"").replace("’", "'")
+         write_orig(text)
+      f.write = write_monkey
+   # Try to encode test string of problematic characters. If unsuccessful,
+   # monkey patch them out.
+   for stream in sys.stdout, sys.stderr:
+      for encoding in stream.encoding, locale.getpreferredencoding(), "ASCII":
+         if (encoding is not None):
+            try:
+               "“”’".encode(encoding=encoding)
+            except UnicodeEncodeError:
+               monkey_write_insert(stream)
+            break
+
 def now_utc_iso8601():
    return datetime.datetime.utcnow().isoformat(timespec="seconds") + "Z"
 
-def ossafe(f, msg, *args, **kwargs):
+def ossafe(msg, f, *args, **kwargs):
    """Call f with args and kwargs. Catch OSError and other problems and fail
       with a nice error message."""
    try:
@@ -759,19 +863,30 @@ def si_decimal(ct):
       ct /= 1000
    assert False, "unreachable"
 
+def sigterm(signum, frame):
+   "Handler for SIGTERM and friends."
+   # Ignore further signals because we are already cleaning up.
+   signal.signal(signal.SIGINT, signal.SIG_IGN)
+   signal.signal(signal.SIGTERM, signal.SIG_IGN)
+   # Don’t stomp on progress meter if one is being printed.
+   print()
+   signame = signal.Signals(signum).name
+   ERROR("received %s, exiting" % signame)
+   FATAL("received %s" % signame)
+
 def user():
-   "Return the current username; exit with error if it can't be obtained."
+   "Return the current username; exit with error if it can’t be obtained."
    try:
       return os.environ["USER"]
    except KeyError:
-      FATAL("can't get username: $USER not set")
+      FATAL("can’t get username: $USER not set")
 
 def variables_sub(s, variables):
    if (s is None):
       return s
    # FIXME: This should go in the grammar rather than being a regex kludge.
    #
-   # Dockerfile spec does not say what to do if substituting a value that's
+   # Dockerfile spec does not say what to do if substituting a value that’s
    # not set. We ignore those subsitutions. This is probably wrong (the shell
    # substitutes the empty string).
    for (k, v) in variables.items():
@@ -779,7 +894,7 @@ def variables_sub(s, variables):
       m = re.search(r"(?<!\\)\${.+?:[+-].+?}", s)
       if (m is not None):
          FATAL("modifiers ${foo:+bar} and ${foo:-bar} not yet supported (issue #774)")
-      s = re.sub(r"(?<!\\)\${?%s}?" % k, v, s)
+      s = re.sub(r"(?<!\\)\$({%s}|%s(?=\W|$))" % (k, k), v, s)
    return s
 
 def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
@@ -801,13 +916,13 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
       return False
    m = re.search(regex, cp.stdout)
    if (m is None):
-      bad_parse("can't parse %s version, assuming not present: %s"
+      bad_parse("can’t parse %s version, assuming not present: %s"
                 % (prog, cp.stdout))
       return False
    try:
       v = tuple(int(i) for i in m.groups())
    except ValueError:
-      bad_parse("can't parse %s version part, assuming not present: %s"
+      bad_parse("can’t parse %s version part, assuming not present: %s"
                 % (prog, cp.stdout))
       return False
    if (min_ > v):
@@ -815,3 +930,21 @@ def version_check(argv, min_, required=True, regex=r"(\d+)\.(\d+)\.(\d+)"):
       return False
    VERBOSE("%s version OK: %d.%d.%d ≥ %d.%d.%d" % ((prog,) + v + min_))
    return True
+
+def walk(*args, **kwargs):
+   """Wrapper for os.walk(). Return a generator of the files in a directory
+      tree (root specified in *args). For each directory in said tree, yield a
+      3-tuple (dirpath, dirnames, filenames), where dirpath is a Path object,
+      and dirnames and filenames are lists of Path objects. For insight into
+      these being lists rather than generators, see use of ch.walk() in
+      Copy_G.copy_src_dir()."""
+   for (dirpath, dirnames, filenames) in os.walk(*args, **kwargs):
+      yield (fs.Path(dirpath),
+             [fs.Path(dirname) for dirname in dirnames],
+             [fs.Path(filename) for filename in filenames])
+
+def warnings_dump():
+   if (len(warns) > 0):
+      WARNING("reprinting %d warning(s)" % len(warns), msg_save=False)
+   for msg in warns:
+      WARNING(msg, msg_save=False)

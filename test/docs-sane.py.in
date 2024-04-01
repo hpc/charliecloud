@@ -8,16 +8,22 @@
 #
 #      a. man/charliecloud.7 exists.
 #
-#      b. Every executable FOO in bin has:
+#      b. The correct files FOO in bin have:
 #
 #           - doc/FOO.rst
-#           - doc/man/FOO.1
-#           - an entry under "See also" in charliecloud.7
+#           - doc/man/FOO.N
+#           - an entry under “See also” in charliecloud.7
 #
-#      c. There aren't the things in (b) except for the executables (modulo a
-#         few execeptions for the other documentation source files).
+#         Where “N” is the appropriate man section number (e.g. 1 for
+#         executables). Currently, the “correct” files in bin are:
 #
-#      d. Summary in "FOO --help" matches FOO.rst and conf.py.
+#           - All executables
+#           - ch-completion.bash
+#
+#      c. There aren’t any unexpcected .rst files, man files, or charliecloud.7
+#         “See also” entries.
+#
+#      d. Synopsis in “FOO --help” (if applicable) matches FOO.rst and conf.py.
 
 from __future__ import print_function
 
@@ -26,6 +32,13 @@ import re
 import os
 import subprocess
 import sys
+
+# Dict of documentation files. Executables are added in “main()”. Files that are
+# not executables should be manually added here.
+man_targets = {"charliecloud":       {"synopsis": "",
+                                      "sec":  7},
+               "ch-completion.bash": {"synopsis": "Tab completion for the Charliecloud command line.",
+                                      "sec":  7}}
 
 
 CH_BASE = os.path.abspath(os.path.dirname(__file__) + "/..")
@@ -44,43 +57,63 @@ def main():
    else:
       sys.exit(1)
 
+# This is the function that actually performs the sanity check for the docs (see
+# the comment at the top of this file).
 def check_man():
+   global man_targets
 
+   # Add entries for executables to “man_targets”. “sec” is set to 1, “synopsis”
+   # is set using the executable’s “--help” option (see “help_get”). Note that
+   # this code assumes that a file is an executable if the execute bit for any
+   # permission group.
    os.chdir(CH_BASE + "/bin")
+   for f in os.listdir("."):
+      if (os.path.isfile(f) and os.stat(f).st_mode & 0o111):
+         man_targets[f] = {"synopsis": help_get(f), "sec":  1}
 
-   execs = { f for f in os.listdir(".")
-             if (os.path.isfile(f) and os.stat(f).st_mode & 0o111) }
-   helps = { x: help_get(x) for x in execs }
-
+   # Check that all the expected .rst files are in doc/ and that no unexpected
+   # .rst files are present.
    os.chdir(CH_BASE + "/doc")
-
-   man_rsts = set(glob.glob("ch-*.rst"))
-   man_rsts_expected = { i + ".rst" for i in execs }
+   man_rsts = set(glob.glob("ch*.rst"))
+   man_rsts_expected = { i + ".rst" for i in man_targets }
    lose_lots("unexpected .rst", man_rsts - man_rsts_expected)
    lose_lots("missing .rst",    man_rsts_expected - man_rsts)
 
+   # Construct a dictionary of synopses from the .rst files in doc. We’ll
+   # compare these against the synopses in “man_targets”, which have either been
+   # entered manually (for non-executables), or obtained from the help message
+   # (for executables).
    man_synopses = dict()
-   for man in execs:
+   for man in man_targets:
       m = re.search(r"^\s+(.+)$\n\n\n^Synopsis", open(man + ".rst").read(),
                     re.MULTILINE)
       if (m is not None):
          man_synopses[man] = m[1]
+      elif (man_targets[man]["synopsis"] == ""):
+         # No synopsis expected.
+         man_synopses[man] = ""
 
-   lose_lots("missing synopsis", execs - set(man_synopses))
+   # Check for missing or unexpected synopses.
+   lose_lots("missing synopsis",    set(man_targets) - set(man_synopses))
+   lose_lots("unexpected synopsis", set(man_synopses) - set(man_targets))
 
+   # Check for synopses that don’t match the expectation provided in
+   # “man_targets”.
    lose_lots("bad synopsis in man page",
-             {     "%s: %s (expected: %s)" % (p, s, helps[p])
+             {     "%s: %s (expected: %s)" % (p, man_targets[p]["synopsis"])
                for (p, s) in man_synopses.items()
-               if (    p in helps
-                   and summary_unrest(s) != helps[p])
+               if (    p in man_targets
+                   and summary_unrest(s) != man_targets[p]["synopsis"])
                    and "deprecated" not in s.lower() })
 
-   sees = { m[0] for m in re.finditer(r"ch-[a-z0-9-]+\(1\)",
+   # Check for “see also” entries in charliecloud.rst.
+   sees = { m[0] for m in re.finditer(r"ch-[a-z0-9-.]+\([1-8]\)",
                                       open("charliecloud.rst").read()) }
-   sees_expected = { i + "(1)" for i in execs }
+   sees_expected = { i + "(%d)" % (man_targets[i]["sec"]) for i in man_targets } - {"charliecloud(7)"}
    lose_lots("unexpected see-also in charliecloud.rst", sees - sees_expected)
    lose_lots("missing see-also in charliecloud.rst",    sees_expected - sees)
 
+   # Check for consistency with “conf.py”
    conf = {}
    execfile("./conf.py", conf)
    for (docname, name, desc, authors, section) in conf["man_pages"]:
@@ -89,20 +122,18 @@ def check_man():
       if (len(authors) != 0):
          lose("conf.py: bad authors: %s: %s" % (name, authors))
       if (name != "charliecloud"):
-         if (section != 1):
-            lose("conf.py: bad section: %s: %s != 1" % (name, section))
-         if (name not in helps):
+         if (section != man_targets[name]["sec"]):
+            lose("conf.py: bad section: %s: %s != %d" % (name, section, man_targets[name]["sec"]))
+         if (name not in man_targets):
             lose("conf.py: unexpected man page: %s" % name)
-         elif (desc + "." != helps[name] and "deprecated" not in desc.lower()):
+         elif (desc + "." != man_targets[name]["synopsis"] and "deprecated" not in desc.lower()):
             lose("conf.py: bad summary: %s: %s" % (name, desc))
-      else:
-         if (section != 7):
-            lose("conf.py: bad section: %s: %s != 7" % (name, section))
 
+   # Check that all expected man pages are present, and *only* the expected man
+   # pages.
    os.chdir(CH_BASE + "/doc/man")
-
-   mans = set(glob.glob("*.1"))
-   mans_expected = { i + ".1" for i in execs }
+   mans = set(glob.glob("*.[1-8]"))
+   mans_expected = { i + ".%d" % (man_targets[i]["sec"]) for i in man_targets}
    lose_lots("unexpected man", mans - mans_expected)
    lose_lots("missing man",    mans_expected - mans)
 
@@ -116,7 +147,10 @@ except NameError:
          code = compile(fp.read(), path, "exec")
          exec(code, globals_)
 
+# Get an executable’s synopsis from its help message.
 def help_get(prog):
+   if (not os.path.isfile(prog)):
+      lose("not a file: %s" % prog)
    try:
       out = subprocess.check_output(["./" + prog, "--help"],
                                     universal_newlines=True,

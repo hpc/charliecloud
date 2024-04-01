@@ -2,7 +2,7 @@
 # all the instructions that seemed like they ought to create metadata, even if
 # unsupported by ch-image.
 #
-# Scope is "skip" because we pull the image to test it; see
+# Scope is “skip” because we pull the image to test it; see
 # test/build/50_pull.bats.
 #
 # To build and push:
@@ -16,14 +16,14 @@
 #
 # ch-test-scope: skip
 
-FROM 00_tiny
+FROM alpine:3.17
 
 CMD ["bar", "baz"]
 ENTRYPOINT ["/bin/echo","foo"]
 ENV ch_foo=foo-ev ch_bar=bar-ev
 EXPOSE 867 5309/udp
 HEALTHCHECK --interval=60s --timeout=5s CMD ["/bin/true"]
-LABEL ch_foo=foo-label ch_bar=bar-label
+LABEL ch-foo=foo-label ch-bar=bar-label
 MAINTAINER charlie@example.com
 ONBUILD RUN echo hello
 RUN echo hello

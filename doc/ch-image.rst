@@ -15,7 +15,7 @@ Synopsis
 
    $ ch-image [...] build [-t TAG] [-f DOCKERFILE] [...] CONTEXT
    $ ch-image [...] build-cache [...]
-   $ ch-image [...] delete IMAGE_REF
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ...]
    $ ch-image [...] gestalt [SELECTOR]
    $ ch-image [...] import PATH IMAGE_REF
    $ ch-image [...] list [-l] [IMAGE_REF]
@@ -66,13 +66,37 @@ Common options placed before or after the sub-command:
     default is to never authenticate, i.e., make all requests anonymously. The
     exception is :code:`push`, which implies :code:`--auth`.
 
+  :code:`--break MODULE:LINE`
+    Set a `PDB <https://docs.python.org/3/library/pdb.html>`_ breakpoint at
+    line number :code:`LINE` of module named :code:`MODULE` (typically the
+    filename with :code:`.py` removed, or :code:`__main__` for
+    :code:`ch-image` itself). That is, a PDB debugger shell will open before
+    executing the specified line.
+
+    This is accomplished by re-parsing the module, injecting :code:`import
+    pdb; pdb.set_trace()` into the parse tree, re-compiling the tree, and
+    replacing the module’s code with the result. This has various gotchas,
+    including (1) module-level code in the target module is executed twice,
+    (2) the option is parsed with bespoke early code so command line argument
+    parsing itself can be debugged, (3) breakpoints on function definition
+    will trigger while the module is being re-executed, not when the function
+    is called (break on the first line of the function body instead), and
+    (4) other weirdness we haven’t yet characterized.
+
   :code:`--cache`
-    Enable build cache. Default if a sufficiently new Git is available.
+    Enable build cache. Default if a sufficiently new Git is available. See
+    section :ref:`Build cache <ch-image_build-cache>` for details.
 
   :code:`--cache-large SIZE`
     Set the cache’s large file threshold to :code:`SIZE` MiB, or :code:`0` for
-    no large files, which is the default. This can speed up some builds.
-    **Experimental.** See section "Build cache" for details.
+    no large files, which is the default. Values greater than zero can speed
+    up many builds but can also cause performance degradation.
+    **Experimental.** See section :ref:`Large file threshold
+    <ch-image_bu-large>` for details.
+
+  :code:`--debug`
+    Add a stack trace to fatal error hints. This can also be done by setting
+    the environment variable :code:`CH_IMAGE_DEBUG`.
 
   :code:`--no-cache`
     Disable build cache. Default if a sufficiently new Git is not available.
@@ -85,6 +109,14 @@ Common options placed before or after the sub-command:
     :code:`ch-image` instances as you want against the same storage directory,
     which risks corruption but may be OK for some workloads.
 
+  :code:`--no-xattrs`
+    Enforce default handling of xattrs, i.e. do not save them in the build cache
+    or restore them on rebuild. This is the default, but the option is provided
+    to override the :code:`$CH_XATTRS` environment variable.
+
+  :code:`--password-many`
+    Re-prompt the user every time a registry password is needed.
+
   :code:`--profile`
     Dump profile to files :code:`/tmp/chofile.p` (:code:`cProfile` dump
     format) and :code:`/tmp/chofile.txt` (text summary). You can convert the
@@ -93,12 +125,14 @@ Common options placed before or after the sub-command:
     subprocesses. Profile data should still be written on fatal errors, but
     not if the program crashes.
 
+  :code:`-q, --quiet`
+    Be quieter; can be repeated. Incompatible with :code:`-v` and suppresses
+    :code:`--debug` regardless of option order. See the :ref:`FAQ entry on
+    verbosity <faq_verbosity>` for details.
+
   :code:`--rebuild`
     Execute all instructions, even if they are build cache hits, except for
     :code:`FROM` which is retrieved from cache on hit.
-
-  :code:`--password-many`
-    Re-prompt the user every time a registry password is needed.
 
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory (see below for important details).
@@ -108,7 +142,12 @@ Common options placed before or after the sub-command:
     unless you understand the risks.)
 
   :code:`-v`, :code:`--verbose`
-    Print extra chatter; can be repeated.
+    Print extra chatter; can be repeated. See the :ref:`FAQ entry on verbosity
+    <faq_verbosity>` for details.
+
+  :code:`--xattrs`
+    Save xattrs and ACLs in the build cache, and restore them when rebuilding
+    from the cache.
 
 
 Architecture
@@ -262,7 +301,7 @@ tutorial for details.
 
 The storage directory format changes on no particular schedule.
 :code:`ch-image` is normally able to upgrade directories produced by a given
-Charliecloud version up to one year after that version's release. Upgrades
+Charliecloud version up to one year after that version’s release. Upgrades
 outside this window and downgrades are not supported. In these cases,
 :code:`ch-image` will refuse to run until you delete and re-initialize the
 storage directory with :code:`ch-image reset`.
@@ -273,6 +312,8 @@ storage directory with :code:`ch-image reset`.
    storage directory. This is a site-specific question and your local support
    will likely have strong opinions.
 
+
+.. _ch-image_build-cache:
 
 Build cache
 ===========
@@ -295,7 +336,16 @@ repositories within the image should work. **Important exception**: No files
 named :code:`.git*` or other Git metadata are permitted in the image’s root
 directory.
 
-The cache has three modes, *enabled*, *disabled*, and a hybrid mode called
+`Extended attributes <https://man7.org/linux/man-pages/man7/xattr.7.html>`_
+(xattrs) are ignored by the build cache by default. Cache support for xattrs
+belonging to unprivileged xattr namespaces (e.g. :code:`user`) can be enabled by
+specifying the :code:`--xattrs` option or by setting the :code:`CH_XATTRS`
+environment variable. If :code:`CH_XATTRS` is set, you override it with
+:code:`--no-xattrs`. **Note that extended attributes in privileged xattr
+namespaces (e.g. :code:`trusted`) cannot be read by :code:`ch-image` and will
+always be lost without warning.**
+
+The cache has three modes: *enabled*, *disabled*, and a hybrid mode called
 *rebuild* where the cache is fully enabled for :code:`FROM` instructions, but
 all other operations re-execute and re-cache their results. The purpose of
 *rebuild* is to do a clean rebuild of a Dockerfile atop a known-good base
@@ -310,23 +360,64 @@ appropriate Git is installed, otherwise *disabled*.
 Compared to other implementations
 ---------------------------------
 
-Other container implementations typically use build caches based on overlayfs,
-or fuse-overlayfs in unprivileged situations (configured via a "storage
-driver"). This works by creating a new tmpfs for each instruction, layered
-atop the previous instruction’s tmpfs using overlayfs. Each layer can then be
-tarred up separately to form a tar-based diff.
+.. note::
 
-The Git-based cache has two advantages over the overlayfs approach. First,
-kernel-mode overlayfs is only available unprivileged in Linux 5.11 and higher,
-forcing the use of fuse-overlayfs and its accompanying FUSE overhead for
-unprivileged use cases. Second, Git de-duplicates and compresses files in a
-fairly sophisticated way across the entire build cache, not just between image
-states with an ancestry relationship (detailed in the next section).
+   This section is a lightly edited excerpt from our paper “`Charliecloud’s
+   layer-free, Git-based container build cache
+   <https://arxiv.org/abs/2309.00166>`_”.
 
-A disadvantage is lowered performance in some cases. Preliminary experiments
-suggest this performance penalty is relatively modest, and sometimes
-Charliecloud is actually faster than alternatives. We have ongoing experiments
-to answer this performance question in more detail.
+Existing tools such as Docker and Podman implement their build cache with a
+layered (union) filesystem such as `OverlayFS
+<https://github.com/torvalds/linux/blob/af5f239/Documentation/filesystems/overlayfs.rst>`_
+or `FUSE-OverlayFS <https://github.com/containers/fuse-overlayfs/tree/v1.12>`_
+and tar archives to represent the content of each layer; this approach is
+`standardized by OCI
+<https://github.com/opencontainers/image-spec/blob/63b8bd0/spec.md>`_. The
+layered cache works, but it has drawbacks in three critical areas:
+
+1. **Diff format.** The tar format is poorly standardized and `not designed
+   for diffs <https://www.cyphar.com/blog/post/20190121-ociv2-images-i-tar>`_.
+   Notably, tar cannot represent file deletion. The workaround used for OCI
+   layers is specially named *whiteout* files, which means the tar archives
+   cannot be unpacked by standard UNIX tools and require special
+   container-specific processing.
+
+2. **Cache overhead.** Each time a Dockerfile instruction is started, a new
+   overlay filesystem is mounted atop the existing layer stack. File metadata
+   operations in the instruction then start at the top layer and descend the
+   stack until the layer containing the desired file is reached. The cost of
+   these operations is therefore proportional to the number of layers, i.e.,
+   the number of instructions between the empty root image and the instruction
+   being executed. This results in a `best practice
+   <https://docs.docker.com/develop/develop-images/dockerfile_best-practices/>`_
+   of large, complex instructions to minimize their number, which can conflict
+   with simpler, more numerous instructions the user might prefer.
+
+3. **De-duplication.** Identical files on layers with an ancestry relationship
+   (i.e., instruction *A* precedes *B* in a build) are stored only once.
+   However, identical files on layers without this relationship are stored
+   multiple times. For example, if instructions *B* and *B'* both follow *A* —
+   perhaps because *B* was modified and the image rebuilt — then any files
+   created by both *B* and *B'* will be stored twice.
+
+   Also, similar files are never de-duplicated, regardless of ancestry. For
+   example, if instruction *A* creates a file and subsequently instruction *B*
+   modifies a single bit in that file, both versions are stored in their
+   entirety.
+
+Our Git-based cache addresses the three drawbacks: (1) Git is purpose-built to
+store changing directory trees, (2) cache overhead is imposed only at
+instruction commit time, and (3) Git de-duplicates both identical and similar
+files. Also, it is based on an extremely widely used tool that enjoys development
+support from well-resourced actors, in particular on scaling (e.g.,
+Microsoft’s large-repository accelerator `Scalar
+<https://devblogs.microsoft.com/devops/introducing-scalar/>`_ was recently
+`merged into Git
+<https://github.blog/2022-10-03-highlights-from-git-2-38/>`_).
+
+In addition to these structural advantages, performance experiments reported in our paper above show that the Git-based approach is as good as (and sometimes better than) overlay-based caches. On build time, the two approaches are broadly similar, with one or the other being faster depending on context. Both had performance problems on NFS. Notably, however, the Git-based cache was much faster for a 129-instruction Dockerfile. On disk usage, the winner depended on the condition. For example, we saw the layered cache storing large sibling layers redundantly; on the other hand, the Git-based cache has some obvious redundancies as well, and one must compact it for full de-duplication benefit. However, Git’s de-duplication was quite effective in some conditions and we suspect will prove even better in more realistic scenarios.
+
+That is, we believe our results show that the Git-based build cache is highly competitive with the layered approach, with no obvious inferiority so far and hints that it may be superior on important dimensions. We have ongoing work to explore these questions in more detail.
 
 De-duplication and garbage collection
 -------------------------------------
@@ -380,31 +471,43 @@ files. In both cases, garbage uses all available cores.
 :code:`git build-cache` prints the specific garbage collection parameters in
 use, and :code:`-v` can be added for more detail.
 
+.. _ch-image_bu-large:
+
 Large file threshold
 --------------------
 
 Because Git uses content-addressed storage, upon commit, it must read in full
 all files modified by an instruction. This I/O cost can be a significant
-fraction of build time for some large images. Regular files larger than the
-experimental *large file threshold* are stored outside the Git repository,
-somewhat like `Git Large File Storage <https://git-lfs.github.com/>`_.
-:code:`ch-image` uses hard links to bring large files in and out of images as
-needed, which is a fast metadata operation that ignores file content.
+fraction of build time for some images. To mitigate this, regular files larger
+than the experimental *large file threshold* are stored outside the Git
+repository, somewhat like `Git Large File Storage
+<https://git-lfs.github.com/>`_.
+
+:code:`ch-image` copies large files in and out of images at each instruction
+commit. It tries to do this with a fast metadata-only copy-on-write operation
+called “reflink”, but that is only supported with the right Python version,
+Linux kernel version, and filesystem. If unsupported, Charliecloud falls back
+to an expensive standard copy, which is likely slower than letting Git deal
+with the files. See :ref:`File copy performance <best-practices_file-copy>`
+for details.
+
+Every version of a large file is stored verbatim and uncompressed (e.g., a
+large file with a one-byte change will be stored in full twice), so Git’s
+de-duplication does not apply. *However*, on filesystems with reflink support,
+files can share extents (e.g., each of the two files will have its own extent
+containing the changed byte, but the rest of the extents will remain shared).
+This provides de-duplication between large files images that share ancestry.
+Also, unused large files are deleted by :code:`ch-image build-cache --gc`.
+
+A final caveat: Large files in any image with the same path, mode, size, and
+mtime (to nanosecond precision if possible) are considered identical, even if
+their content is not actually identical (e.g., :code:`touch(1)` shenanigans
+can corrupt an image).
 
 Option :code:`--cache-large` sets the threshold in MiB; if not set,
 environment variable :code:`CH_IMAGE_CACHE_LARGE` is used; if that is not set
 either, the default value :code:`0` indicates that no files are considered
 large.
-
-There are two trade-offs. First, large files in any image with the same path,
-mode, size, and mtime (to nanosecond precision if possible) are considered
-identical, *even if their content is not actually identical*; e.g.,
-:code:`touch(1)` shenanigans can corrupt an image. Second, every version of a
-large file is stored verbatim and uncompressed (e.g., a large file with a
-one-byte change will be stored in full twice), and large files do not
-participate in the build cache’s de-duplication, so more storage space will
-likely be used. Unused versions *are* deleted by :code:`ch-image build-cache
---gc`.
 
 (Note that Git has an unrelated setting called :code:`core.bigFileThreshold`.)
 
@@ -414,14 +517,14 @@ Example
 Suppose we have this Dockerfile::
 
   $ cat a.df
-  FROM alpine:3.9
+  FROM alpine:3.17
   RUN echo foo
   RUN echo bar
 
 On our first build, we get::
 
   $ ch-image build -t foo -f a.df .
-    1. FROM alpine:3.9
+    1. FROM alpine:3.17
   [ ... pull chatter omitted ... ]
     2. RUN echo foo
   copying image ...
@@ -437,7 +540,7 @@ instruction was executed. You can also see this by the output of the two
 But on our second build, we get::
 
   $ ch-image build -t foo -f a.df .
-    1* FROM alpine:3.9
+    1* FROM alpine:3.17
     2* RUN echo foo
     3* RUN echo bar
   copying image ...
@@ -454,11 +557,11 @@ We can also try a second, slightly different Dockerfile. Note that the first
 three instructions are the same, but the third is different::
 
   $ cat c.df
-  FROM alpine:3.9
+  FROM alpine:3.17
   RUN echo foo
   RUN echo qux
   $ ch-image build -t c -f c.df .
-    1* FROM alpine:3.9
+    1* FROM alpine:3.17
     2* RUN echo foo
     3. RUN echo qux
   copying image ...
@@ -475,8 +578,8 @@ We can also inspect the cache::
   | *  (a) RUN echo bar
   |/
   *  RUN echo foo
-  *  (alpine+3.9) PULL alpine:3.9
-  *  (HEAD -> root) ROOT
+  *  (alpine+3.9) PULL alpine:3.17
+  *  (root) ROOT
 
   named images:     4
   state IDs:        5
@@ -485,7 +588,7 @@ We can also inspect the cache::
   disk used:        3 MiB
 
 Here there are four named images: :code:`a` and :code:`c` that we built, the
-base image :code:`alpine:3.9` (written as :code:`alpine+3.9` because colon is
+base image :code:`alpine:3.17` (written as :code:`alpine+3.9` because colon is
 not allowed in Git branch names), and the empty base of everything
 :code:`root`. Also note how :code:`a` and :code:`c` diverge after the last
 common instruction :code:`RUN echo foo`.
@@ -506,10 +609,12 @@ Synopsis
 Description
 -----------
 
-Uses :code:`ch-run -w -u0 -g0 --no-passwd --unsafe` to execute :code:`RUN`
-instructions. Note that :code:`FROM` implicitly pulls the base image if
-needed, so you may want to read about the :code:`pull` subcommand below as
-well.
+See below for differences with other Dockerfile interpreters. Charliecloud
+supports an extended instruction (:code:`RSYNC`), a few other instructions
+behave slightly differently, and a few are ignored.
+
+Note that :code:`FROM` implicitly pulls the base image if needed, so you may
+want to read about the :code:`pull` subcommand below as well.
 
 Required argument:
 
@@ -549,17 +654,25 @@ Options:
     like :code:`docker build`, the context directory is still available in
     this case.
 
-  :code:`--force`
-    Inject the unprivileged build workarounds; see discussion later in this
-    section for details on what this does and when you might need it. If a
-    build fails and :code:`ch-image` thinks :code:`--force` would help, it
-    will suggest it.
+  :code:`--force[=MODE]`
+    Use unprivileged build with root emulation mode :code:`MODE`, which can be
+    :code:`fakeroot`, :code:`seccomp` (the default), or :code:`none`. See
+    section “Privilege model” below for details on what this does and when you
+    might need it.
+
+  :code:`--force-cmd=CMD,ARG1[,ARG2...]`
+    If command :code:`CMD` is found in a :code:`RUN` instruction, add the
+    comma-separated :code:`ARGs` to it. For example,
+    :code:`--force-cmd=foo,-a,--bar=baz` would transform :code:`RUN foo -c`
+    into :code:`RUN foo -a --bar=baz -c`. This is intended to suppress
+    validation that defeats :code:`--force=seccomp` and implies that option.
+    Can be repeated. If specified, replaces (does not extend) the default
+    suppression options. Literal commas can be escaped with backslash;
+    importantly however, backslash will need to be protected from the shell
+    also. Section “Privilege model” below explains why you might need this.
 
   :code:`-n`, :code:`--dry-run`
     Don’t actually execute any Dockerfile instructions.
-
-  :code:`--no-force-detect`
-    Don’t try to detect if the workarounds in :code:`--force` would help.
 
   :code:`--parse-only`
     Stop after parsing the Dockerfile.
@@ -571,9 +684,9 @@ Options:
        extension with invalid characters stripped, e.g.
        :code:`Dockerfile.@FOO.bar` → :code:`foo.bar`.
 
-    2. If Dockerfile has extension :code:`dockerfile`: use the basename with
-       the same transformation, e.g. :code:`baz.@QUX.dockerfile` ->
-       :code:`baz.qux`.
+    2. If Dockerfile has extension :code:`df` or :code:`dockerfile`: use the
+       basename with the same transformation, e.g. :code:`baz.@QUX.dockerfile`
+       -> :code:`baz.qux`.
 
     3. If context directory is not :code:`/`: use its name, i.e. the last
        component of the absolute path to the context directory, with the same
@@ -583,8 +696,14 @@ Options:
 
     If no colon present in the name, append :code:`:latest`.
 
+Uses :code:`ch-run -w -u0 -g0 --no-passwd --unsafe` to execute :code:`RUN`
+instructions.
+
 Privilege model
 ---------------
+
+Overview
+~~~~~~~~
 
 :code:`ch-image` is a *fully* unprivileged image builder. It does not use any
 setuid or setcap helper programs, and it does not use configuration files
@@ -593,19 +712,18 @@ or “`fakeroot <https://sylabs.io/guides/3.7/user-guide/fakeroot.html>`_” mod
 of some competing builders, which do require privileged supporting code or
 utilities.
 
-This approach does yield some quirks. We provide built-in workarounds that
-should mostly work (i.e., :code:`--force`), but it can be helpful to
-understand what is going on.
+Without root emulation, this approach does confuse programs that expect to have
+real root privileges, most notably distribution package installers. This
+subsection describes why that happens and what you can do about it.
 
 :code:`ch-image` executes all instructions as the normal user who invokes it.
-For :code:`RUN`, this is accomplished with :code:`ch-run -w --uid=0 --gid=0`
-(and some other arguments), i.e., your host EUID and EGID both mapped to zero
-inside the container, and only one UID (zero) and GID (zero) are available
-inside the container. Under this arrangement, processes running in the
-container for each :code:`RUN` *appear* to be running as root, but many
-privileged system calls will fail without the workarounds described below.
-**This affects any fully unprivileged container build, not just
-Charliecloud.**
+For :code:`RUN`, this is accomplished with :code:`ch-run` arguments including
+:code:`-w --uid=0 --gid=0`. That is, your host EUID and EGID are both mapped to
+zero inside the container, and only one UID (zero) and GID (zero) are available
+inside the container. Under this arrangement, processes running in the container
+for each :code:`RUN` *appear* to be running as root, but many privileged system
+calls will fail without the root emulation methods described below. **This
+affects any fully unprivileged container build, not just Charliecloud.**
 
 The most common time to see this is installing packages. For example, here is
 RPM failing to :code:`chown(2)` a file, which makes the package update fail:
@@ -627,11 +745,29 @@ This one is (ironically) :code:`apt-get` failing to drop privileges:
   E: seteuid 100 failed - seteuid (22: Invalid argument)
   E: setgroups 0 failed - setgroups (1: Operation not permitted)
 
-By default, nothing is done to avoid these problems, though :code:`ch-image`
-does try to detect if the workarounds could help. :code:`--force` activates
-the workarounds: :code:`ch-image` injects extra commands to intercept these
-system calls and fake a successful result, using :code:`fakeroot(1)`. There
-are three basic steps:
+Charliecloud provides two different mechanisms to avoid these problems. Both
+involve lying to the containerized process about privileged system calls, but
+at very different levels of complexity.
+
+Root emulation mode :code:`fakeroot`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This mode uses :code:`fakeroot(1)` to maintain an elaborate web of deceit that
+is internally consistent. This program intercepts both privileged system calls
+(e.g., :code:`setuid(2)`) as well as other system calls whose return values
+depend on those calls (e.g., :code:`getuid(2)`), faking success for privileged
+system calls (perhaps making no system call at all) and altering return values
+to be consistent with earlier fake success. Charliecloud automatically
+installs the :code:`fakeroot(1)` program inside the container and then wraps
+:code:`RUN` instructions having known privilege needs with it. Thus, this mode
+is only available for certain distributions.
+
+The advantage of this mode is its consistency; e.g., careful programs that
+check the new UID after attempting to change it will not notice anything
+amiss. Its disadvantage is complexity: detailed knowledge and procedures for
+multiple Linux distributions.
+
+This mode has three basic steps:
 
   1. After :code:`FROM`, analyze the image to see what distribution it
      contains, which determines the specific workarounds.
@@ -647,13 +783,77 @@ are three basic steps:
      Debian derivatives and :code:`dnf`, :code:`rpm`, or :code:`yum` for
      RPM-based distributions.
 
+:code:`RUN` instructions that *do not* seem to need modification are
+unaffected by this mode.
+
 The details are specific to each distribution. :code:`ch-image` analyzes image
 content (e.g., grepping :code:`/etc/debian_version`) to select a
-configuration; see :code:`lib/fakeroot.py` for details. :code:`ch-image`
-prints exactly what it is doing.
+configuration; see :code:`lib/force.py` for details. :code:`ch-image` prints
+exactly what it is doing.
 
-Compatibility with other Dockerfile interpreters
-------------------------------------------------
+.. warning::
+
+   Because of :code:`fakeroot` mode’s complexity, we plan to remove it if
+   :code:`seccomp` mode performs well enough. If you have a situation where
+   :code:`fakeroot` mode works and :code:`seccomp` does not, please let us
+   know.
+
+Root emulation mode :code:`seccomp` (default)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+This mode uses the kernel’s :code:`seccomp(2)` system call filtering to
+intercept certain privileged system calls, do absolutely nothing, and return
+success to the program.
+
+Some system calls are quashed regardless of their arguments:
+:code:`capset(2)`; :code:`chown(2)` and friends; :code:`kexec_load(2)` (used
+to validate the filter itself); ; and :code:`setuid(2)`, :code:`setgid(2)`,
+and :code:`setgroups(2)` along with the other system calls that change user or
+group. :code:`mknod(2)` and :code:`mknodat(2)` are quashed if they try to
+create a device file (e.g., creating FIFOs works normally).
+
+The advantages of this approach is that it’s much simpler, it’s faster, it’s
+completely agnostic to libc, and it’s mostly agnostic to distribution. The
+disadvantage is that it’s a very lazy liar; even the most cursory consistency
+checks will fail, e.g., :code:`getuid(2)` after :code:`setuid(2)`.
+
+While this mode does not provide consistency, it does offer a hook to help
+prevent programs asking for consistency. For example, :code:`apt-get -o
+APT::Sandbox::User=root` will prevent :code:`apt-get` from attempting to drop
+privileges, which `it verifies
+<https://salsa.debian.org/apt-team/apt/-/blob/cacdb549/apt-pkg/contrib/fileutl.cc#L3343>`_,
+exiting with failure if the correct IDs are not found (which they won’t be
+under this approach). This can be expressed with
+:code:`--force-cmd=apt-get,-o,APT::Sandbox::User=root`, though this particular
+case is built-in and does not need to be specified. The full default
+configuration, which is applied regardless of the image distribution, can be
+examined in the source file :code:`force.py`. If any :code:`--force-cmd` are
+specified, this replaces (rather than extends) the default configuration.
+
+Note that because the substitutions are a simple regex with no knowledge of
+shell syntax, they can cause unwanted modifications. For example, :code:`RUN
+apt-get install -y apt-get` will be run as :code:`/bin/sh -c "apt-get -o
+APT::Sandbox::User=root install -y apt-get -o APT::Sandbox::User=root"`. One
+workaround is to add escape syntax transparent to the shell; e.g., :code:`RUN
+apt-get install -y a\pt-get`.
+
+This mode executes *all* :code:`RUN` instructions with the :code:`seccomp(2)`
+filter and has no knowledge of which instructions actually used the
+intercepted system calls. Therefore, the printed “instructions modified”
+number is only a count of instructions with a hook applied as described above.
+
+:code:`RUN`  logging
+~~~~~~~~~~~~~~~~~~~~
+
+In terminal output, image metadata, and the build cache, the :code:`RUN`
+instruction is always logged as :code:`RUN.S`, :code:`RUN.F`, or :code:`RUN.N`.
+The letter appended to the instruction reflects the root emulation mode used
+during the build in which the instruction was executed. :code:`RUN.S` indicates
+:code:`seccomp`, :code:`RUN.F` indicates :code:`fakeroot`, and :code:`RUN.N`
+indicates that neither form of root emulation was used (:code:`--force=none`).
+
+Compatibility and behavior differences
+--------------------------------------
 
 :code:`ch-image` is an independent implementation and shares no code with
 other Dockerfile interpreters. It uses a formal Dockerfile parsing grammar
@@ -688,8 +888,9 @@ Context directory
 
 The context directory is bind-mounted into the build, rather than copied like
 Docker. Thus, the size of the context is immaterial, and the build reads
-directly from storage like any other local process would. However, you still
-can’t access anything outside the context directory.
+directly from storage like any other local process would (i.e., it is
+reasonable use :code:`/` for the context). However, you still can’t
+access anything outside the context directory.
 
 Variable substitution
 ~~~~~~~~~~~~~~~~~~~~~
@@ -751,8 +952,22 @@ in other :code:`ARG` before the first :code:`FROM`.
 The :code:`FROM` instruction accepts option :code:`--arg=NAME=VALUE`, which
 serves the same purpose as the :code:`ARG` instruction. It can be repeated.
 
+:code:`LABEL`
+~~~~~~~~~~~~~
+
+The :code:`LABEL` instruction accepts :code:`key=value` pairs to
+add metadata for an image. Unlike Docker, multiline values are not supported;
+see issue `#1512 <https://github.com/hpc/charliecloud/issues/1512>`_.
+Can be repeated.
+
 :code:`COPY`
 ~~~~~~~~~~~~
+
+.. note:: The behavior described here matches Docker’s `now-deprecated legacy
+          builder
+          <https://docs.docker.com/engine/deprecated/#legacy-builder-for-linux-images>`_.
+          Docker’s new builder, BuildKit, has different behavior in some
+          cases, which we have not characterized.
 
 Especially for people used to UNIX :code:`cp(1)`, the semantics of the
 Dockerfile :code:`COPY` instruction can be confusing.
@@ -796,19 +1011,10 @@ bug-compatible.
    at the 2nd level or deeper, the source directory’s metadata (e.g.,
    permissions) are copied to the destination directory. (Not documented.)
 
-5. If an object appears in both the source and destination, and is at the 2nd
-   level or deeper, and is of different types in the source and destination,
-   then the source object will overwrite the destination object. (Not
-   documented.) For example, if :code:`/tmp/foo/bar` is a regular file, and
-   :code:`/tmp` is the context directory, then the following Dockerfile
-   snippet will result in a *file* in the container at :code:`/foo/bar`
-   (copied from :code:`/tmp/foo/bar`); the directory and all its contents will
-   be lost.
-
-     .. code-block:: docker
-
-       RUN mkdir -p /foo/bar && touch /foo/bar/baz
-       COPY foo /foo
+5. If an object (a) appears in both the source and destination, (b) is at the
+   2nd level or deeper, and (c) is different file types in source and
+   destination, the source object will overwrite the destination object. (Not
+   documented.)
 
 We expect the following differences to be permanent:
 
@@ -828,8 +1034,8 @@ Features we do not plan to support
   unprivileged processes.
 
 * :code:`HEALTHCHECK`: This instruction’s main use case is monitoring server
-  processes rather than applications. Also, implementing it requires a
-  container supervisor daemon, which we have no plans to add.
+  processes rather than applications. Also, it requires a container supervisor
+  daemon, which we have no plans to add.
 
 * :code:`MAINTAINER` is deprecated.
 
@@ -838,10 +1044,659 @@ Features we do not plan to support
 
 * :code:`USER` does not make sense for unprivileged builds.
 
-* :code:`VOLUME`: This instruction is not currently supported. Charliecloud
+* :code:`VOLUME`: Charliecloud
   has good support for bind mounts; we anticipate that it will continue to
   focus on that and will not introduce the volume management features that
   Docker has.
+
+.. _ch-image_rsync:
+
+:code:`RSYNC` (Dockerfile extension)
+------------------------------------
+
+.. warning::
+
+   This instruction is experimental and may change or be removed.
+
+Overview
+~~~~~~~~
+
+Copying files is often simple but has numerous difficult corner cases, e.g.
+when dealing with symbolic or hard links. The standard instruction
+:code:`COPY` deals with many of these corner cases differently from other UNIX
+utilities, lacks complete documentation, and behaves inconsistently between
+different Dockerfile interpreters (e.g., Docker’s legacy builder vs.
+BuildKit), as detailed above. On the other hand, :code:`rsync(1)` is an
+extremely capable, widely used file copy tool, with detailed options to
+specify behavior and 25 years of history dealing with weirdness.
+
+:code:`RSYNC` (also spelled :code:`NSYNC`) is a Charliecloud extension that
+gives copying behavior identical to :code:`rsync(1)`. In fact, Charliecloud’s
+current implementation literally calls the host’s :code:`rsync(1)` to do the
+copy, though this may change in the future. There is no list form of
+:code:`RSYNC`.
+
+The two key usage challenges are trailing slashes on paths and symlink
+handling. In particular, the default symlink handling seemed reasonable to us,
+but you may want something different. See the arguments and examples below.
+Importantly, :code:`COPY` is not any less fraught, and you have no choice
+about what to do with symlinks.
+
+
+Arguments
+~~~~~~~~~
+
+:code:`RSYNC` takes the same arguments as :code:`rsync(1)`, so refer to its
+`man page <https://man7.org/linux/man-pages/man1/rsync.1.html>`_ for a
+detailed explanation of all the options (with possible emphasis on its
+`symlink options
+<https://man7.org/linux/man-pages/man1/rsync.1.html#SYMBOLIC_LINKS>`_).
+Sources are relative to the context directory even if they look absolute with
+a leading slash. Any globbed sources are processed by :code:`ch-image(1)`
+using Python rules, i.e., :code:`rsync(1)` sees the expanded sources with no
+wildcards. Relative destinations are relative to the image’s current working
+directory, while absolute destinations refer to the image’s root.
+
+For arguments that read input from a file (e.g. :code:`--exclude-from` or
+:code:`--files-from`), relative paths are relative to the context directory,
+absolute paths refer to the image root, and :code:`-` (standard input) is an
+error.
+
+For example,
+
+.. code-block:: docker
+
+   WORKDIR /foo
+   RSYNC --foo src1 src2 dst
+
+is translated to (the equivalent of)::
+
+   $ mkdir -p /foo
+   $ rsync -@=-1 -AHSXpr --info=progress2 -l --safe-links \
+           --foo /context/src1 /context/src2 /storage/imgroot/foo/dst2
+
+Note the extensive default arguments to :code:`rsync(1)`. :code:`RSYNC` takes
+a single instruction option beginning with :code:`+` (plus) that is shorthand
+for a group of :code:`rsync(1)` options. This single option is one of:
+
+  :code:`+m`
+    Preserves metadata and directory structure. Symlinks are skipped *with a
+    warning*. Equivalent to all of:
+
+    * :code:`-@=-1`: use nanosecond precision when comparing timestamps.
+    * :code:`-A`: preserve ACLs.
+    * :code:`-H`: preserve hard link groups.
+    * :code:`-S`: preserve file sparseness when possible.
+    * :code:`-X`: preserve xattrs in :code:`user.*` namespace.
+    * :code:`-p`: preserve permissions.
+    * :code:`-r`: recurse into directories.
+    * :code:`--info=progress2` (only if stderr is a terminal): show progress
+      meter (note `subtleties in interpretation
+      <https://unix.stackexchange.com/questions/215271>`_).
+
+  :code:`+l` (default)
+    Like :code:`+u`, but *silently skips* “unsafe” symlinks whose target is
+    outside the top-of-transfer directory. Preserves:
+
+    * Metadata.
+
+    * Directory structure.
+
+    * Symlinks, if a link’s target is within the “top-of-transfer directory”.
+      This is not the context directory and often not the source either. Also,
+      this creates broken symlinks if the target is not within the source but
+      is within the top-of-transfer. See examples below.
+
+    Equivalent to the :code:`rsync(1)` options listed for :code:`+m` plus
+    :code:`--links` (copy symlinks as symlinks unless otherwise specified) and
+    :code:`--safe-links` (silently skip unsafe symlinks).
+
+  :code:`+u`
+    Like :code:`+l`, but *replaces* with their target “unsafe” symlinks whose
+    target is outside the top-of-transfer directory, and thus *can copy data
+    outside the context directory into the image*. Preserves:
+
+    * Metadata.
+
+    * Directory structure.
+
+    * Symlinks, if a link’s target is within the “top-of-transfer directory”.
+      This is not the context directory and often not the source either. Also,
+      this creates broken symlinks if the target is not within the source but
+      is within the top-of-transfer. See examples below.
+
+    Equivalent to the :code:`rsync(1)` options listed for :code:`+m` plus
+    :code:`--links` (copy symlinks as symlinks unless otherwise specified) and
+    :code:`--copy-unsafe-links` (copy the target of unsafe symlinks).
+
+  :code:`+z`
+    No default arguments. Directories will not be descended, no metadata will
+    be preserved, and both hard and symbolic links will be ignored, except as
+    otherwise specified by :code:`rsync(1)` options starting with a hyphen.
+    (Note that :code:`-a`/:code:`--archive` is discouraged because it omits
+    some metadata and handles symlinks inappropriately for containers.)
+
+.. note::
+
+   :code:`rsync(1)` supports a configuration file :code:`~/.popt` that alters
+   its command line processing. Currently, this configuration is respected for
+   :code:`RSYNC` arguments, but that may change without notice.
+
+Disallowed :code:`rsync(1)` features
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A small number of :code:`rsync(1)` features are actively disallowed:
+
+  1. :code:`rsync:` and :code:`ssh:` transports are an error. Charliecloud
+     needs access to the entire input to compute cache hit or miss, and these
+     transports make that impossible. It is possible these will become
+     available in the future (please let us know if that is your use case!).
+     For now, the workaround is to install :code:`rsync(1)` in the image and
+     use it in a :code:`RUN` instruction, though only the instruction text
+     will be considered for the cache.
+
+  2. Option arguments must be delimited with :code:`=` (equals). For example,
+     to set the block size to 4 MiB, you must say :code:`--block-size=4M` or
+     :code:`-B=4M`. :code:`-B4M` will be interpreted as the three arguments
+     :code:`-B`, :code:`-4`, and :code:`-M`; :code:`--block-size 4M` will be
+     interpreted as :code:`--block-size` with no argument and a copy source
+     named :code:`4M`. This is so Charliecloud can process :code:`rsync(1)`
+     options without knowing which ones take an argument.
+
+  3. Invalid :code:`rsync(1)` options:
+
+     :code:`--daemon`
+       Running :code:`rsync(1)` in daemon mode does not make sense for
+       container build.
+
+     :code:`-n`, :code:`--dry-run`
+       This makes the copy a no-op, and Charliecloud may want to use it
+       internally in the future.
+
+     :code:`--remove-source-files`
+       This would let the instruction alter the context directory.
+
+Note that there are likely other flags that don’t make sense and/or cause
+undesirable behavior. We have not characterized this problem.
+
+Build cache
+~~~~~~~~~~~
+
+The instruction is a cache hit if the metadata of all source files is
+unchanged (specifically: filename, file type and permissions, xattrs, size,
+and last modified time). Unlike Docker, Charliecloud does not use file
+contents. This has two implications. First, it is possible to fool the cache
+by manually restoring the last-modified time. Second, :code:`RSYNC` is
+I/O-intensive even when it hits, because it must :code:`stat(2)` every source
+file before checking the cache. However, this is still less I/O than reading
+the file content too.
+
+Notably, Charliecloud’s cache ignores :code:`rsync(1)`’s own internal notion
+of whether anything would be transferred (e.g., :code:`rsync -ni`). This may
+change in the future.
+
+Examples and tutorial
+~~~~~~~~~~~~~~~~~~~~~
+
+All of these examples use the same input, whose content will be introduced
+gradually, using edited output of :code:`ls -oghR` (which is like :code:`ls
+-lhR` but omits user and group). Examples assume a umask of :code:`0007`. The
+Dockerfile instructions listed also assume a preceding:
+
+.. code-block:: docker
+
+   FROM alpine:3.17
+   RUN mkdir /dst
+
+i.e., a simple base image containing a top-level directory :code:`dst`.
+
+Many additional examples are available in the source code in the file
+:code:`test/build/50_rsync.bats`.
+
+We begin by copying regular files. The context directory :code:`ctx` contains,
+in part, two directories containing one regular file each. Note that one of
+these files (:code:`file-basic1`) and one of the directories (:code:`basic1`)
+have strange permissions.
+
+::
+
+   ./ctx:
+   drwx---r-x 2  60 Oct 11 13:20 basic1
+   drwxrwx--- 2  60 Oct 11 13:20 basic2
+
+   ./ctx/basic1:
+   -rw----r-- 1 12 Oct 11 13:20 file-basic1
+
+   ./ctx/basic2:
+   -rw-rw---- 1 12 Oct 11 13:20 file-basic2
+
+The simplest form of :code:`RSYNC` is to copy a single file into a specified
+directory:
+
+.. code-block:: docker
+
+   RSYNC /basic1/file-basic1 /dst
+
+resulting in::
+
+   $ ls -oghR dst
+   dst:
+   -rw----r-- 1 12 Oct 11 13:26 file-basic1
+
+Note that :code:`file-basic1`’s metadata — here its odd permissions — are
+preserved. :code:`1` is the number of hard links to the file, and :code:`12`
+is the file size.
+
+One can also rename the destination by specifying a new file name, and with
+:code:`+z`, not copy metadata (from here on the :code:`ls` command is omitted
+for brevity):
+
+.. code-block:: docker
+
+   RSYNC +z /basic1/file-basic1 /dst/file-basic1_nom
+
+::
+
+   dst:
+   -rw------- 1 12 Sep 21 15:51 file-basic1_nom
+
+A trailing slash on the destination creates a new directory and places the
+source file within:
+
+.. code-block:: docker
+
+   RSYNC /basic1/file-basic1 /dst/new/
+
+::
+
+   dst:
+   drwxrwx--- 1 22 Oct 11 13:26 new
+
+   dst/new:
+   -rw----r-- 1 12 Oct 11 13:26 file-basic1
+
+With multiple source files, the destination trailing slash is optional:
+
+.. code-block:: docker
+
+   RSYNC /basic1/file-basic1 /basic2/file-basic2 /dst/newB
+
+::
+
+   dst:
+   drwxrwx--- 1 44 Oct 11 13:26 newB
+
+   dst/newB:
+   -rw----r-- 1 12 Oct 11 13:26 file-basic1
+   -rw-rw---- 1 12 Oct 11 13:26 file-basic2
+
+For directory sources, the presence or absence of a trailing slash is highly
+significant. Without one, the directory itself is placed in the destination
+(recall that this would rename a source *file*):
+
+.. code-block:: docker
+
+   RSYNC /basic1 /dst/basic1_new
+
+::
+
+   dst:
+   drwxrwx--- 1 12 Oct 11 13:28 basic1_new
+
+   dst/basic1_new:
+   drwx---r-x 1 22 Oct 11 13:28 basic1
+
+   dst/basic1_new/basic1:
+   -rw----r-- 1 12 Oct 11 13:28 file-basic1
+
+A source trailing slash means copy the *contents of* a directory rather than
+the directory itself. Importantly, however, the directory’s metadata is copied
+to the destination directory.
+
+.. code-block:: docker
+
+   RSYNC /basic1/ /dst/basic1_renamed
+
+::
+
+   dst:
+   drwx---r-x 1 22 Oct 11 13:28 basic1_renamed
+
+   dst/basic1_renamed:
+   -rw----r-- 1 12 Oct 11 13:28 file-basic1
+
+One gotcha is that :code:`RSYNC +z` is a no-op if the source is a directory:
+
+.. code-block:: docker
+
+   RSYNC +z /basic1 /dst/basic1_newC
+
+::
+
+   dst:
+
+At least :code:`-r` is needed with :code:`+z` in this case:
+
+.. code-block:: docker
+
+   RSYNC +z -r /basic1/ /dst/basic1_newD
+
+::
+
+   dst:
+   drwx------ 1 22 Oct 11 13:28 basic1_newD
+
+   dst/basic1_newD:
+   -rw------- 1 12 Oct 11 13:28 file-basic1
+
+Multiple source directories can be specified, including with wildcards. This
+example also illustrates that copies files are by default merged with content
+already existing in the image.
+
+.. code-block:: docker
+
+   RUN mkdir /dst/dstC && echo file-dstC > /dst/dstC/file-dstC
+   RSYNC /basic* /dst/dstC
+
+::
+
+   dst:
+   drwxrwx--- 1 42 Oct 11 13:33 dstC
+
+   dst/dstC:
+   drwx---r-x 1 22 Oct 11 13:33 basic1
+   drwxrwx--- 1 22 Oct 11 13:33 basic2
+   -rw-rw---- 1 10 Oct 11 13:33 file-dstC
+
+   dst/dstC/basic1:
+   -rw----r-- 1 12 Oct 11 13:33 file-basic1
+
+   dst/dstC/basic2:
+   -rw-rw---- 1 12 Oct 11 13:33 file-basic2
+
+Trailing slashes can be specified independently for each source:
+
+.. code-block:: docker
+
+   RUN mkdir /dst/dstF && echo file-dstF > /dst/dstF/file-dstF
+   RSYNC /basic1 /basic2/ /dst/dstF
+
+::
+
+   dst:
+   drwxrwx--- 1 52 Oct 11 13:33 dstF
+
+   dst/dstF:
+   drwx---r-x 1 22 Oct 11 13:33 basic1
+   -rw-rw---- 1 12 Oct 11 13:33 file-basic2
+   -rw-rw---- 1 10 Oct 11 13:33 file-dstF
+
+   dst/dstF/basic1:
+   -rw----r-- 1 12 Oct 11 13:33 file-basic1
+
+Bare :code:`/` (i.e., the entire context directory) is considered to have a
+trailing slash:
+
+.. code-block:: docker
+
+   RSYNC / /dst
+
+::
+
+   dst:
+   drwx---r-x 1  22 Oct 11 13:33 basic1
+   drwxrwx--- 1  22 Oct 11 13:33 basic2
+
+   dst/basic1:
+   -rw----r-- 1 12 Oct 11 13:33 file-basic1
+
+   dst/basic2:
+   -rw-rw---- 1 12 Oct 11 13:33 file-basic2
+
+To *replace* (rather than merge with) existing content, use :code:`--delete`.
+Note also that wildcards can be combined with trailing slashes and that the
+directory gets the metadata of the *first* slashed directory.
+
+.. code-block:: docker
+
+   RUN mkdir /dst/dstG && echo file-dstG > /dst/dstG/file-dstG
+   RSYNC --delete /basic*/ /dst/dstG
+
+::
+
+   dst:
+   drwx---r-x 1 44 Oct 11 14:00 dstG
+
+   dst/dstG:
+   -rw----r-- 1 12 Oct 11 14:00 file-basic1
+   -rw-rw---- 1 12 Oct 11 14:00 file-basic2
+
+Symbolic links in the source(s) add significant complexity. Like
+:code:`rsync(1)`, :code:`RSYNC` can do one of three things with a given
+symlink:
+
+1. Ignore it, silently or with a warning.
+
+2. Preserve it: copy as a symlink, with the same target.
+
+3. Dereference it: copy the target instead.
+
+These actions are selected independently for *safe symlinks* and *unsafe
+symlinks*. Safe symlinks are those which point to a target within the *top of
+transfer*, which is the deepest directory in the source path with a trailing
+slash. For example, :code:`/foo/bar`’s top-of-transfer is :code:`/foo`
+(regardless of whether :code:`bar` is a directory or file), while
+:code:`/foo/bar/`’s top-of-transfer is :code:`/foo/bar`.
+
+For the symlink examples, the context contains two sub-directories with a
+variety of symlinks, as well as a sibling file and directory outside the
+context. All of these links are valid on the host. In this listing, the
+absolute path to the parent of the context directory is replaced with
+:code:`/...`.
+
+::
+
+   .:
+   drwxrwx--- 9 200 Oct 11 14:00 ctx
+   drwxrwx--- 2  60 Oct 11 14:00 dir-out
+   -rw-rw---- 1   9 Oct 11 14:00 file-out
+
+   ./ctx:
+   drwxrwx--- 3 320 Oct 11 14:00 sym1
+
+   ./ctx/sym1:
+   lrwxrwxrwx 1 13 Oct 11 14:00 dir-out_rel -> ../../dir-out
+   drwxrwx--- 2 60 Oct 11 14:00 dir-sym1
+   lrwxrwxrwx 1  8 Oct 11 14:00 dir-sym1_direct -> dir-sym1
+   lrwxrwxrwx 1 10 Oct 11 14:00 dir-top_rel -> ../dir-top
+   lrwxrwxrwx 1 47 Oct 11 14:00 file-out_abs -> /.../file-out
+   lrwxrwxrwx 1 14 Oct 11 14:00 file-out_rel -> ../../file-out
+   -rw-rw---- 1 10 Oct 11 14:00 file-sym1
+   lrwxrwxrwx 1 57 Oct 11 14:00 file-sym1_abs -> /.../ctx/sym1/file-sym1
+   lrwxrwxrwx 1  9 Oct 11 14:00 file-sym1_direct -> file-sym1
+   lrwxrwxrwx 1 17 Oct 11 14:00 file-sym1_upover -> ../sym1/file-sym1
+   lrwxrwxrwx 1 51 Oct 11 14:00 file-top_abs -> /.../ctx/file-top
+   lrwxrwxrwx 1 11 Oct 11 14:00 file-top_rel -> ../file-top
+
+   ./ctx/sym1/dir-sym1:
+   -rw-rw---- 1 14 Oct 11 14:00 dir-sym1.file
+
+   ./dir-out:
+   -rw-rw---- 1 13 Oct 11 14:00 dir-out.file
+
+By default, safe symlinks are preserved while unsafe symlinks are silently
+ignored:
+
+.. code-block:: docker
+
+   RSYNC /sym1 /dst
+
+::
+
+   dst:
+   drwxrwx--- 1 206 Oct 11 17:10 sym1
+
+   dst/sym1:
+   drwxrwx--- 1 26 Oct 11 17:10 dir-sym1
+   lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -> dir-sym1
+   lrwxrwxrwx 1 10 Oct 11 17:10 dir-top_rel -> ../dir-top
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1
+   lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -> file-sym1
+   lrwxrwxrwx 1 17 Oct 11 17:10 file-sym1_upover -> ../sym1/file-sym1
+   lrwxrwxrwx 1 17 Oct 11 17:10 file-sym2_upover -> ../sym2/file-sym2
+   lrwxrwxrwx 1 11 Oct 11 17:10 file-top_rel -> ../file-top
+
+   dst/sym1/dir-sym1:
+   -rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file
+
+The source files have four rough fates:
+
+1. Regular files and directories (:code:`file-sym1` and :code:`dir-sym1`).
+   These are copied into the image unchanged, including metadata.
+
+2. Safe symlinks, now broken. This is one of the gotchas of :code:`RSYNC`’s
+   top-of-transfer directory (here host path :code:`./ctx`, image path
+   :code:`/`) differing from the source directory (:code:`./ctx/sym1`,
+   :code:`/sym1`), because the latter lacks a trailing slash.
+   :code:`dir-top_rel`, :code:`file-sym2_upover`, and :code:`file-top_rel` all
+   ascend only as high as :code:`./ctx` (host path, :code:`/` image) before
+   re-descending. This is within the top-of-transfer, so the symlinks are safe
+   and thus copied unchanged, but their targets were not included in the copy.
+
+3. Safe symlinks, still valid.
+
+   1. :code:`dir-sym1_direct` and :code:`file-sym1_direct` point directly to
+      files in the same directory.
+
+   2. :code:`dir-sym1_upover` and :code:`file-sym1_upover` point to files in
+      the same directory, but by first ascending into their parent — within
+      the top-of-transfer, so they are safe — and then re-descending. If
+      :code:`sym1` were renamed during the copy, these links would break.
+
+4. Unsafe symlinks, which are ignored by the copy and do not appear in the
+   image.
+
+   1. Absolute symlinks are always unsafe (:code:`*_abs`).
+
+   2. :code:`dir-out_rel` and :code:`file-out_rel` are relative symlinks that
+      ascend above the top-of-transfer, in this case to targets outside the
+      context, and are thus unsafe.
+
+The top-of-transfer can be changed to :code:`sym1` with a trailing slash. This
+also adds :code:`sym1` to the destination so the resulting directory structure
+is the same.
+
+.. code-block:: docker
+
+   RSYNC /sym1/ /dst/sym1
+
+::
+
+   dst:
+   drwxrwx--- 1 96 Oct 11 17:10 sym1
+
+   dst/sym1:
+   drwxrwx--- 1 26 Oct 11 17:10 dir-sym1
+   lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -> dir-sym1
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1
+   lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -> file-sym1
+
+   dst/sym1/dir-sym1:
+   -rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file
+
+:code:`*_upover` and :code:`*-out_rel` are now unsafe and replaced with their
+targets.
+
+Another common use case is to follow unsafe symlinks and copy their targets in
+place of the links. This is accomplished with :code:`+u`:
+
+.. code-block:: docker
+
+   RSYNC +u /sym1/ /dst/sym1
+
+::
+
+   dst:
+   drwxrwx--- 1 352 Oct 11 17:10 sym1
+
+   dst/sym1:
+   drwxrwx--- 1 24 Oct 11 17:10 dir-out_rel
+   drwxrwx--- 1 26 Oct 11 17:10 dir-sym1
+   lrwxrwxrwx 1  8 Oct 11 17:10 dir-sym1_direct -> dir-sym1
+   drwxrwx--- 1 24 Oct 11 17:10 dir-top_rel
+   -rw-rw---- 1  9 Oct 11 17:10 file-out_abs
+   -rw-rw---- 1  9 Oct 11 17:10 file-out_rel
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1_abs
+   lrwxrwxrwx 1  9 Oct 11 17:10 file-sym1_direct -> file-sym1
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym1_upover
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym2_abs
+   -rw-rw---- 1 10 Oct 11 17:10 file-sym2_upover
+   -rw-rw---- 1  9 Oct 11 17:10 file-top_abs
+   -rw-rw---- 1  9 Oct 11 17:10 file-top_rel
+
+   dst/sym1/dir-out_rel:
+   -rw-rw---- 1 13 Oct 11 17:10 dir-out.file
+
+   dst/sym1/dir-sym1:
+   -rw-rw---- 1 14 Oct 11 17:10 dir-sym1.file
+
+   dst/sym1/dir-top_rel:
+   -rw-rw---- 1 13 Oct 11 17:10 dir-top.file
+
+Now all the unsafe symlinks noted above are present in the image, but they
+have changed to the normal files and directories pointed to.
+
+.. warning::
+
+   This feature lets you copy files outside the context into the image, unlike
+   other container builders where :code:`COPY` can never access anything
+   outside the context.
+
+The sources themselves, if symlinks, do not get special treatment:
+
+.. code-block:: docker
+
+   RSYNC /sym1/file-sym1_direct /sym1/file-sym1_upover /dst
+
+::
+
+   dst:
+   lrwxrwxrwx 1 9 Oct 11 17:10 file-sym1_direct -> file-sym1
+
+Note that :code:`file-sym1_upover` does not appear in the image, despite being
+named explicitly in the instruction, because it is an unsafe symlink.
+
+If the *destination* is a symlink to a file, and the source is a file, the
+link is replaced and the target is unchanged. (If the source is a directory,
+that is an error.)
+
+.. code-block:: docker
+
+   RUN touch /dst/file-dst && ln -s file-dst /dst/file-dst_direct
+   RSYNC /file-top /dst/file-dst_direct
+
+::
+
+   dst:
+   -rw-rw---- 1 0 Oct 11 17:42 file-dst
+   -rw-rw---- 1 9 Oct 11 17:42 file-dst_direct
+
+If the destination is a symlink to a directory, the link is followed:
+
+.. code-block:: docker
+
+    RUN mkdir /dst/dir-dst && ln -s dir-dst /dst/dir-dst_direct
+    RSYNC /file-top /dst/dir-dst_direct
+
+::
+
+   dst:
+   drwxrwx--- 1 16 Oct 11 17:50 dir-dst
+   lrwxrwxrwx 1  7 Oct 11 17:50 dir-dst_direct -> dir-dst
+
+   dst/dir-dst:
+   -rw-rw---- 1 9 Oct 11 17:50 file-top
 
 Examples
 --------
@@ -868,7 +1723,7 @@ installing into the image::
    FROM centos:7
 
    RUN /opt/bin/cc hello.c
-   #COPY /opt/lib/*.so /usr/local/lib   # fail: COPY doesn't bind mount
+   #COPY /opt/lib/*.so /usr/local/lib   # fail: COPY doesn’t bind mount
    RUN cp /opt/lib/*.so /usr/local/lib  # possible workaround
    RUN ldconfig
 
@@ -886,8 +1741,10 @@ If any of the following options are given, do the corresponding operation
 before printing. Multiple options can be given, in which case they happen in
 this order.
 
-  :code:`--reset`
-    Clear and re-initialize the build cache.
+  :code:`--dot`
+    Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
+    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` and
+    :code:`git2dot`.
 
   :code:`--gc`
     Run Git garbage collection on the cache, including full de-duplication of
@@ -896,28 +1753,27 @@ this order.
     corruption if the build cache is being accessed concurrently by another
     process). The operation can take a long time on large caches.
 
-  :code:`--text`
+  :code:`--reset`
+    Clear and re-initialize the build cache.
+
+  :code:`--tree`
     Print a text tree of the cache using Git’s :code:`git log --graph`
     feature. If :code:`-v` is also given, the tree has more detail.
-
-  :code:`--dot`
-    Create a DOT export of the tree named :code:`./build-cache.dot` and a PDF
-    rendering :code:`./build-cache.pdf`. Requires :code:`graphviz` and
-    :code:`git2dot`.
 
 :code:`delete`
 ==============
 
 ::
 
-   $ ch-image [...] delete IMAGE_GLOB
+   $ ch-image [...] delete IMAGE_GLOB [IMAGE_GLOB ... ]
 
-Delete the image(s) described by :code:`IMAGE_GLOB` from the storage directory
-(including all build stages).
+Delete the image(s) described by each :code:`IMAGE_GLOB` from the storage
+directory (including all build stages).
 
 :code:`IMAGE_GLOB` can be either a plain image reference or an image reference
 with glob characters to match multiple images. For example, :code:`ch-image
 delete 'foo*'` will delete all images whose names start with :code:`foo`.
+Multiple images and/or globs can also be given in a single command line.
 
 Importantly, this sub-command *does not* also remove the image from the build
 cache. Therefore, it can be used to reduce the size of the storage directory,
@@ -977,6 +1833,9 @@ Optional argument:
   :code:`-l`, :code:`--long`
     Use long format (name, last change timestamp) when listing images.
 
+  :code:`-u`, :code:`--undeletable`
+    List images that can be undeleted. Can also be spelled :code:`--undeleteable`.
+
   :code:`IMAGE_REF`
     Print details of what’s known about :code:`IMAGE_REF`, both locally and in
     the remote registry, if any.
@@ -987,7 +1846,7 @@ Examples
 List images in builder storage::
 
    $ ch-image list
-   alpine:3.9 (amd64)
+   alpine:3.17 (amd64)
    alpine:latest (amd64)
    debian:buster (amd64)
 
@@ -1028,10 +1887,12 @@ If the imported image contains Charliecloud metadata, that will be imported
 unchanged, i.e., images exported from :code:`ch-image` builder storage will be
 functionally identical when re-imported.
 
-.. note::
+.. warning::
 
-   Every import creates a new cache entry, even if the file or directory has
-   already been imported.
+   Descendant images (i.e., :code:`FROM` the imported :code:`IMAGE_REF`) are
+   linked using :code:`IMAGE_REF` only. If a new image is imported under a new
+   :code:`IMAGE_REF`, all instructions descending from that :code:`IMAGE_REF`
+   will still hit, even if the new image is different.
 
 
 :code:`pull`
@@ -1193,13 +2054,13 @@ image must be named to match that remote reference.
    cleaning up
    done
 
-Same, except use local image :code:`alpine:3.9`. In this form, the local image
+Same, except use local image :code:`alpine:3.17`. In this form, the local image
 name does not have to match the destination reference.
 
 ::
 
-   $ ch-image push alpine:3.9 example.com:5000/foo/bar:latest
-   pushing image:   alpine:3.9
+   $ ch-image push alpine:3.17 example.com:5000/foo/bar:latest
+   pushing image:   alpine:3.17
    destination:     example.com:5000/foo/bar:latest
    layer 1/1: gathering
    layer 1/1: preparing
@@ -1272,4 +2133,6 @@ Environment variables
 
 ..  LocalWords:  tmpfs'es bigvendor AUTH auth bucache buc bigfile df rfc bae
 ..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
-..  LocalWords:  pstats gprof chofile
+..  LocalWords:  pstats gprof chofile cffd cacdb ARGs NSYNC dst imgroot popt
+..  LocalWords:  globbed ni AHSXpr drwxrwx ctx sym nom newB newC newD dstC
+..  LocalWords:  dstB dstF dstG upover drwx kexec pdb

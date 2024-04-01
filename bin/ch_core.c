@@ -1,13 +1,24 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#include "config.h"
+
 #include <fcntl.h>
 #include <grp.h>
 #include <libgen.h>
+#ifdef HAVE_SECCOMP
+#include <linux/audit.h>
+#include <linux/filter.h>
+#include <linux/seccomp.h>
+#endif
 #include <pwd.h>
 #include <sched.h>
 #include <semaphore.h>
 #include <stdio.h>
+#ifdef HAVE_SECCOMP
+#include <stddef.h>
+#include <stdint.h>
+#endif
 #include <stdlib.h>
 #include <string.h>
 #include <sys/mman.h>
@@ -18,7 +29,6 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "config.h"
 #include "ch_misc.h"
 #include "ch_core.h"
 #ifdef HAVE_LIBSQUASHFUSE
@@ -46,10 +56,106 @@ struct bind BINDS_DEFAULT[] = {
    { "/etc/hosts",               "/etc/hosts",               BD_OPTIONAL },
    { "/etc/machine-id",          "/etc/machine-id",          BD_OPTIONAL },
    { "/etc/resolv.conf",         "/etc/resolv.conf",         BD_OPTIONAL },
-   { "/var/lib/hugetlbfs",       "/var/opt/cray/hugetlbfs",  BD_OPTIONAL },
-   { "/var/opt/cray/alps/spool", "/var/opt/cray/alps/spool", BD_OPTIONAL },
+   /* Cray bind-mounts. See #1473. */
+   { "/var/lib/hugetlbfs",       "/var/lib/hugetlbfs",       BD_OPTIONAL },
+   /* Cray Gemini/Aries interconnect bind-mounts. */
+   { "/etc/opt/cray/wlm_detect", "/etc/opt/cray/wlm_detect", BD_OPTIONAL },
+   { "/opt/cray/wlm_detect",     "/opt/cray/wlm_detect",     BD_OPTIONAL },
+   { "/opt/cray/alps",           "/opt/cray/alps",           BD_OPTIONAL },
+   { "/opt/cray/udreg",          "/opt/cray/udreg",          BD_OPTIONAL },
+   { "/opt/cray/ugni",           "/opt/cray/ugni",           BD_OPTIONAL },
+   { "/opt/cray/xpmem",          "/opt/cray/xpmem",          BD_OPTIONAL },
+   { "/var/opt/cray/alps",       "/var/opt/cray/alps",       BD_OPTIONAL },
+   /* Cray Shasta/Slingshot bind-mounts. */
+   { "/var/spool/slurmd",        "/var/spool/slurmd",        BD_OPTIONAL },
    { 0 }
 };
+
+/* Special values for seccomp tables. These must be negative to avoid clashing
+   with real syscall numbers (note zero is often a valid syscal number). */
+#define NR_NON -1  // syscall does not exist on architecture
+#define NR_END -2  // end of table
+
+/* Architectures that we support for seccomp. Order matches the
+   corresponding table below.
+
+   Note: On some distros (e.g., CentOS 7), some of the architecture numbers
+   are missing. The workaround is to use the numbers I have on Debian
+   Bullseye. The reason I (Reid) feel moderately comfortable doing this is how
+   militant Linux is about not changing the userspace API. */
+#ifdef HAVE_SECCOMP
+#ifndef AUDIT_ARCH_AARCH64
+#define AUDIT_ARCH_AARCH64 0xC00000B7u  // undeclared on CentOS 7
+#undef  AUDIT_ARCH_ARM                  // uses undeclared EM_ARM on CentOS 7
+#define AUDIT_ARCH_ARM     0x40000028u
+#endif
+int SECCOMP_ARCHS[] = { AUDIT_ARCH_AARCH64,   // arm64
+                        AUDIT_ARCH_ARM,       // arm32
+                        AUDIT_ARCH_I386,      // x86 (32-bit)
+                        AUDIT_ARCH_PPC64LE,   // PPC
+                        AUDIT_ARCH_S390X,     // s390x
+                        AUDIT_ARCH_X86_64,    // x86-64
+                        NR_END };
+#endif
+
+/* System call numbers that we fake with seccomp (by doing nothing and
+   returning success). Some processors can execute multiple architectures
+   (e.g., 64-bit Intel CPUs can run both x64-64 and x86 code), and a process’
+   architecture can even change (if you execve(2) binary of different
+   architecture), so we can’t just use the build host’s architecture.
+
+   I haven’t figured out how to gather these system call numbers
+   automatically, so they are compiled from [1, 2, 3]. See also [4] for a more
+   general reference.
+
+   NOTE: The total number of faked syscalls (i.e., non-zero entries below)
+   must be somewhat less than 256. I haven’t computed the exact limit. There
+   will be an assertion failure at runtime if this is exceeded.
+
+   WARNING: Keep this list consistent with the ch-image(1) man page!
+
+   [1]: https://chromium.googlesource.com/chromiumos/docs/+/HEAD/constants/syscalls.md#Cross_arch-Numbers
+   [2]: https://github.com/strace/strace/blob/v4.26/linux/powerpc64/syscallent.h
+   [3]: https://github.com/strace/strace/blob/v6.6/src/linux/s390x/syscallent.h
+   [4]: https://unix.stackexchange.com/questions/421750 */
+#ifdef HAVE_SECCOMP
+int FAKE_SYSCALL_NRS[][6] = {
+   // arm64   arm32   x86     PPC64   s390x   x86-64
+   // ------  ------  ------  ------  ------  ------
+   {      91,    185,    185,    184,    185,    126 },  // capset
+   {  NR_NON,    182,    182,    181,    212,     92 },  // chown
+   {  NR_NON,    212,    212, NR_NON, NR_NON, NR_NON },  // chown32
+   {      55,     95,     95,     95,    207,     93 },  // fchown
+   {  NR_NON,    207,    207, NR_NON, NR_NON, NR_NON },  // fchown32
+   {      54,    325,    298,    289,    291,    260 },  // fchownat
+   {  NR_NON,     16,     16,     16,    198,     94 },  // lchown
+   {  NR_NON,    198,    198, NR_NON, NR_NON, NR_NON },  // lchown32
+   {     104,    347,    283,    268,    277,    246 },  // kexec_load
+   {     152,    139,    139,    139,    216,    123 },  // setfsgid
+   {  NR_NON,    216,    216, NR_NON, NR_NON, NR_NON },  // setfsgid32
+   {     151,    138,    138,    138,    215,    122 },  // setfsuid
+   {  NR_NON,    215,    215, NR_NON, NR_NON, NR_NON },  // setfsuid32
+   {     144,     46,     46,     46,    214,    106 },  // setgid
+   {  NR_NON,    214,    214, NR_NON, NR_NON, NR_NON },  // setgid32
+   {     159,     81,     81,     81,    206,    116 },  // setgroups
+   {  NR_NON,    206,    206, NR_NON, NR_NON, NR_NON },  // setgroups32
+   {     143,     71,     71,     71,    204,    114 },  // setregid
+   {  NR_NON,    204,    204, NR_NON, NR_NON, NR_NON },  // setregid32
+   {     149,    170,    170,    169,    210,    119 },  // setresgid
+   {  NR_NON,    210,    210, NR_NON, NR_NON, NR_NON },  // setresgid32
+   {     147,    164,    164,    164,    208,    117 },  // setresuid
+   {  NR_NON,    208,    208, NR_NON, NR_NON, NR_NON },  // setresuid32
+   {     145,     70,     70,     70,    203,    113 },  // setreuid
+   {  NR_NON,    203,    203, NR_NON, NR_NON, NR_NON },  // setreuid32
+   {     146,     23,     23,     23,    213,    105 },  // setuid
+   {  NR_NON,    213,    213, NR_NON, NR_NON, NR_NON },  // setuid32
+   { NR_END }, // end
+};
+int FAKE_MKNOD_NRS[] =
+   {  NR_NON,     14,     14,     14,     14,    133 };
+int FAKE_MKNODAT_NRS[] =
+   {      33,    324,    297,    288,    290,    259 };
+#endif
 
 
 /** Global variables **/
@@ -73,10 +179,14 @@ char **bind_mount_paths = NULL;
 /** Function prototypes (private) **/
 
 void bind_mount(const char *src, const char *dst, enum bind_dep,
-                const char *newroot, unsigned long flags);
+                const char *newroot, unsigned long flags, const char *scratch);
 void bind_mounts(const struct bind *binds, const char *newroot,
-                 unsigned long flags);
+                 unsigned long flags, const char * scratch);
 void enter_udss(struct container *c);
+#ifdef HAVE_SECCOMP
+void iw(struct sock_fprog *p, int i,
+        uint16_t op, uint32_t k, uint8_t jt, uint8_t jf);
+#endif
 void join_begin(const char *join_tag);
 void join_namespace(pid_t pid, const char *ns);
 void join_namespaces(pid_t pid);
@@ -92,7 +202,7 @@ void tmpfs_mount(const char *dst, const char *newroot, const char *data);
 
 /* Bind-mount the given path into the container image. */
 void bind_mount(const char *src, const char *dst, enum bind_dep dep,
-                const char *newroot, unsigned long flags)
+                const char *newroot, unsigned long flags, const char *scratch)
 {
    char *dst_fullc, *newrootc;
    char *dst_full = cat(newroot, dst);
@@ -113,12 +223,12 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
       case BD_OPTIONAL:
          return;
       case BD_MAKE_DST:
-         mkdirs(newroot, dst, bind_mount_paths);
+         mkdirs(newroot, dst, bind_mount_paths, scratch);
          break;
       }
 
-   newrootc = realpath_safe(newroot);
-   dst_fullc = realpath_safe(dst_full);
+   newrootc = realpath_(newroot, false);
+   dst_fullc = realpath_(dst_full, false);
    Tf (path_subdir_p(newrootc, dst_fullc),
        "can't bind: %s not subdirectory of %s", dst_fullc, newrootc);
    if (strcmp(newroot, "/"))  // don't record if newroot is "/"
@@ -130,10 +240,11 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
 
 /* Bind-mount a null-terminated array of struct bind objects. */
 void bind_mounts(const struct bind *binds, const char *newroot,
-                 unsigned long flags)
+                 unsigned long flags, const char * scratch)
 {
    for (int i = 0; binds[i].src != NULL; i++)
-      bind_mount(binds[i].src, binds[i].dst, binds[i].dep, newroot, flags);
+      bind_mount(binds[i].src, binds[i].dst, binds[i].dep,
+                 newroot, flags, scratch);
 }
 
 /* Set up new namespaces or join existing namespaces. */
@@ -164,25 +275,63 @@ void containerize(struct container *c)
 
 }
 
-/* Enter the UDSS. After this, we are inside the UDSS.
+/* Enter the new root (UDSS). On entry, the namespaces are set up, and this
+   does the mounting and filesystem setup.
 
    Note that pivot_root(2) requires a complex dance to work, i.e., to avoid
    multiple undocumented error conditions. This dance is explained in detail
    in bin/ch-checkns.c. */
 void enter_udss(struct container *c)
 {
-   char *newroot_parent, *newroot_base;
+   char *nr_parent, *nr_base, *mkdir_scratch;
 
    LOG_IDS;
+   mkdir_scratch = NULL;
+   path_split(c->newroot, &nr_parent, &nr_base);
 
-   path_split(c->newroot, &newroot_parent, &newroot_base);
-
-   // Claim new root for this namespace. We do need both calls to avoid
-   // pivot_root(2) failing with EBUSY later.
-   bind_mount(c->newroot, c->newroot, BD_REQUIRED, "/", MS_PRIVATE);
-   bind_mount(newroot_parent, newroot_parent, BD_REQUIRED, "/", MS_PRIVATE);
+   // Claim new root for this namespace. Despite MS_REC in bind_mount(), we do
+   // need both calls to avoid pivot_root(2) failing with EBUSY later.
+   DEBUG("claiming new root for this namespace")
+   bind_mount(c->newroot, c->newroot, BD_REQUIRED, "/", MS_PRIVATE, NULL);
+   bind_mount(nr_parent, nr_parent, BD_REQUIRED, "/", MS_PRIVATE, NULL);
+   // Re-mount new root read-only unless --write or already read-only.
+   if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
+      unsigned long flags =   path_mount_flags(c->newroot)
+                            | MS_REMOUNT  // Re-mount ...
+                            | MS_BIND     // only this mount point ...
+                            | MS_RDONLY;  // read-only.
+      Z_ (mount(NULL, c->newroot, NULL, flags, NULL));
+   }
+   // Overlay a tmpfs if --write-fake. See for useful details:
+   // https://www.kernel.org/doc/html/v5.11/filesystems/tmpfs.html
+   // https://www.kernel.org/doc/html/v5.11/filesystems/overlayfs.html
+   if (c->overlay_size != NULL) {
+      VERBOSE("overlaying tmpfs for --write-fake (%s)", c->overlay_size);
+      char *options;
+      T_ (1 <= asprintf(&options, "size=%s", c->overlay_size));
+      Zf (mount(NULL, "/mnt", "tmpfs", 0, options),  // host should have /mnt
+          "cannot mount tmpfs for overlay");
+      free(options);
+      Z_ (mkdir("/mnt/upper", 0700));
+      Z_ (mkdir("/mnt/work", 0700));
+      Z_ (mkdir("/mnt/merged", 0700));
+      mkdir_scratch = "/mnt/mkdir_overmount";
+      Z_ (mkdir(mkdir_scratch, 0700));
+      T_ (1 <= asprintf(&options, "lowerdir=%s,upperdir=%s,workdir=%s,"
+                                  "index=on,userxattr,volatile",
+                                  c->newroot, "/mnt/upper", "/mnt/work"));
+      // update newroot
+      c->newroot = "/mnt/merged";
+      free(nr_parent);
+      free(nr_base);
+      path_split(c->newroot, &nr_parent, &nr_base);
+      Zf (mount(NULL, c->newroot, "overlay", 0, options), "can't overlay");
+      VERBOSE("newroot updated: %s", c->newroot);
+      free(options);
+   }
+   DEBUG("starting bind-mounts");
    // Bind-mount default files and directories.
-   bind_mounts(BINDS_DEFAULT, c->newroot, MS_RDONLY);
+   bind_mounts(BINDS_DEFAULT, c->newroot, MS_RDONLY, NULL);
    // /etc/passwd and /etc/group.
    if (!c->private_passwd)
       setup_passwd(c);
@@ -190,53 +339,29 @@ void enter_udss(struct container *c)
    if (c->private_tmp) {
       tmpfs_mount("/tmp", c->newroot, NULL);
    } else {
-      bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0);
+      bind_mount(host_tmp, "/tmp", BD_REQUIRED, c->newroot, 0, NULL);
    }
-   // Container /home.
+   // Bind-mount user’s home directory at /home/$USER if requested.
    if (c->host_home) {
-      char *newhome;
-      // Mount tmpfs on guest /home because guest root may be read-only.
-      tmpfs_mount("/home", c->newroot, "size=4m");
-      // Bind-mount user's home directory at /home/$USER.
-      newhome = cat("/home/", username);
-      Z_ (mkdir(cat(c->newroot, newhome), 0755));
-      bind_mount(c->host_home, newhome, BD_REQUIRED, c->newroot, 0);
-   }
-   // Container /usr/bin/ch-ssh.
-   if (c->ch_ssh) {
-      char chrun_file[PATH_CHARS];
-      int len = readlink("/proc/self/exe", chrun_file, PATH_CHARS);
-      T_ (len >= 0);
-      Te (path_exists(cat(c->newroot, "/usr/bin/ch-ssh"), NULL, true),
-          "--ch-ssh: /usr/bin/ch-ssh not in image");
-      chrun_file[ len<PATH_CHARS ? len : PATH_CHARS-1 ] = 0; // terminate; #315
-      bind_mount(cat(dirname(chrun_file), "/ch-ssh"), "/usr/bin/ch-ssh",
-                 BD_REQUIRED, c->newroot, 0);
-   }
-
-   // Re-mount new root read-only unless --write or already read-only.
-   if (!c->writable && !(access(c->newroot, W_OK) == -1 && errno == EROFS)) {
-      unsigned long flags =   path_mount_flags(c->newroot)
-                            | MS_REMOUNT  // Re-mount ...
-                            | MS_BIND     // only this mount point ...
-                            | MS_RDONLY;  // read-only.
-      Zf (mount(NULL, c->newroot, NULL, flags, NULL),
-          "can't re-mount image read-only (is it on NFS?)");
+      T_ (c->overlay_size != NULL);
+      bind_mount(c->host_home, cat("/home/", username),
+                 BD_MAKE_DST, c->newroot, 0, mkdir_scratch);
    }
    // Bind-mount user-specified directories.
-   bind_mounts(c->binds, c->newroot, 0);
-   // Overmount / to avoid EINVAL if it's a rootfs.
-   Z_ (chdir(newroot_parent));
-   Z_ (mount(newroot_parent, "/", NULL, MS_MOVE, NULL));
+   bind_mounts(c->binds, c->newroot, 0, mkdir_scratch);
+   // Overmount / to avoid EINVAL if it’s a rootfs.
+   Z_ (chdir(nr_parent));
+   Z_ (mount(nr_parent, "/", NULL, MS_MOVE, NULL));
    Z_ (chroot("."));
-   c->newroot = cat("/", newroot_base);
-   // Pivot into the new root. Use /dev because it's available even in
+   // Pivot into the new root. Use /dev because it’s available even in
    // extremely minimal images.
+   c->newroot = cat("/", nr_base);
    Zf (chdir(c->newroot), "can't chdir into new root");
-   Zf (syscall(SYS_pivot_root, c->newroot, cat(c->newroot, "/dev")),
+   Zf (syscall(SYS_pivot_root, c->newroot, path_join(c->newroot, "dev")),
        "can't pivot_root(2)");
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
+   DEBUG("pivot_root(2) dance successful")
 }
 
 /* Return image type of path, or exit with error if not a valid type. */
@@ -291,6 +416,16 @@ char *img_name2path(const char *name, const char *storage_dir)
    free(name_fs);  // make Tim happy
    return path;
 }
+
+/* Helper function to write seccomp-bpf programs. */
+#ifdef HAVE_SECCOMP
+void iw(struct sock_fprog *p, int i,
+        uint16_t op, uint32_t k, uint8_t jt, uint8_t jf)
+{
+   p->filter[i] = (struct sock_filter){ op, jt, jf, k };
+   DEBUG("%4d: { op=%2x k=%8x jt=%3d jf=%3d }", i, op, k, jt, jf);
+}
+#endif
 
 /* Begin coordinated section of namespace joining. */
 void join_begin(const char *join_tag)
@@ -406,9 +541,155 @@ void run_user_command(char *argv[], const char *initial_dir)
    VERBOSE("executing: %s", argv_to_string(argv));
 
    Zf (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0), "can't set no_new_privs");
+   if (verbose < LL_INFO)
+      T_ (freopen("/dev/null", "w", stdout));
+   if (verbose < LL_STDERR)
+      T_ (freopen("/dev/null", "w", stderr));
    execvp(argv[0], argv);  // only returns if error
    Tf (0, "can't execve(2): %s", argv[0]);
 }
+
+/* Set up the fake-syscall seccomp(2) filter. This computes and installs a
+   long-ish but fairly simple BPF program to implement the filter. To
+   understand this rather hairy language:
+
+     1. https://man7.org/training/download/secisol_seccomp_slides.pdf
+     2. https://www.kernel.org/doc/html/latest/userspace-api/seccomp_filter.html
+     3. https://elixir.bootlin.com/linux/latest/source/samples/seccomp */
+#ifdef HAVE_SECCOMP
+void seccomp_install(void)
+{
+   int arch_ct = sizeof(SECCOMP_ARCHS)/sizeof(SECCOMP_ARCHS[0]) - 1;
+   int syscall_cts[arch_ct];
+   struct sock_fprog p = { 0 };
+   int ii, idx_allow, idx_fake, idx_mknod, idx_mknodat, idx_next_arch;
+   // Lengths of certain instruction groups. These are all obtained manually
+   // by counting below, violating DRY. We could automate these counts, but it
+   // seemed like the cost of extra buffers and code to do that would exceed
+   // that of maintaining the manual counts.
+   int ct_jump_start = 4;  // ld arch & syscall nr, arch test, end-of-arch jump
+   int ct_mknod_jump = 2;  // jump table handling for mknod(2) and mknodat(2)
+   int ct_mknod = 2;       // mknod(2) handling
+   int ct_mknodat = 6;     // mknodat(2) handling
+
+   // Count how many syscalls we are going to fake in the standard way. We
+   // need this to compute the right offsets for all the jumps.
+   for (int ai = 0; SECCOMP_ARCHS[ai] != NR_END; ai++) {
+      p.len += ct_jump_start + ct_mknod_jump;
+      syscall_cts[ai] = 0;
+      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != NR_END; si++) {
+         bool syscall_p = FAKE_SYSCALL_NRS[si][ai] != NR_NON;
+         syscall_cts[ai] += syscall_p;
+         p.len += syscall_p;  // syscall jump table entry
+      }
+      DEBUG("seccomp: arch %x: found %d syscalls",
+            SECCOMP_ARCHS[ai], syscall_cts[ai]);
+   }
+
+   // Initialize program buffer.
+   p.len += (  1             // return allow
+             + 1             // return fake success
+             + ct_mknod      // mknod(2) handling
+             + ct_mknodat);  // mknodat(2) handling
+   DEBUG("seccomp(2) program has %d instructions", p.len);
+   T_ (p.filter = calloc(p.len, sizeof(struct sock_filter)));
+
+   // Return call addresses. Allow needs to come first because we’ll jump to
+   // it for unknown architectures.
+   idx_allow =   p.len - 2 - ct_mknod - ct_mknodat;
+   idx_fake =    p.len - 1 - ct_mknod - ct_mknodat;
+   idx_mknod =   p.len     - ct_mknod - ct_mknodat;
+   idx_mknodat = p.len                - ct_mknodat;
+
+   // Build a jump table for each architecture. The gist is: if architecture
+   // matches, fall through into the jump table, otherwise jump to the next
+   // architecture (or ALLOW for the last architecture).
+   ii = 0;
+   idx_next_arch = -1;  // avoid warning on some compilers
+   for (int ai = 0; SECCOMP_ARCHS[ai] != NR_END; ai++) {
+      int jump;
+      idx_next_arch = ii + syscall_cts[ai] + ct_jump_start + ct_mknod_jump;
+      // load arch into accumulator
+      iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+         offsetof(struct seccomp_data, arch), 0, 0);
+      // jump to next arch if arch doesn't match
+      jump = idx_next_arch - ii - 1;
+      T_ (jump <= 255);
+      iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, SECCOMP_ARCHS[ai], 0, jump);
+      // load syscall number into accumulator
+      iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+         offsetof(struct seccomp_data, nr), 0, 0);
+      // jump table of syscalls
+      for (int si = 0; FAKE_SYSCALL_NRS[si][0] != NR_END; si++) {
+         int nr = FAKE_SYSCALL_NRS[si][ai];
+         if (nr != NR_NON) {
+            jump = idx_fake - ii - 1;
+            T_ (jump <= 255);
+            iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, nr, jump, 0);
+         }
+      }
+      // jump to mknod(2) handling (add even if syscall not implemented to
+      // make the instruction counts simpler)
+      jump = idx_mknod - ii - 1;
+      T_ (jump <= 255);
+      iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, FAKE_MKNOD_NRS[ai], jump, 0);
+      // jump to mknodat(2) handling
+      jump = idx_mknodat - ii - 1;
+      T_ (jump <= 255);
+      iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, FAKE_MKNODAT_NRS[ai], jump, 0);
+      // unfiltered syscall, jump to allow (limit of 255 doesn’t apply to JA)
+      jump = idx_allow - ii - 1;
+      iw(&p, ii++, BPF_JMP|BPF_JA, jump, 0, 0);
+   }
+   T_ (idx_next_arch == idx_allow);
+
+   // Returns. (Note that if we wanted a non-zero errno, we’d bitwise-or with
+   // SECCOMP_RET_ERRNO. But because fake success is errno == 0, we don’t need
+   // a no-op “| 0”.)
+   T_ (ii == idx_allow);
+   iw(&p, ii++, BPF_RET|BPF_K, SECCOMP_RET_ALLOW, 0, 0);
+   T_ (ii == idx_fake);
+   iw(&p, ii++, BPF_RET|BPF_K, SECCOMP_RET_ERRNO, 0, 0);
+
+   // mknod(2) handling. This just loads the file mode and jumps to the right
+   // place in the mknodat(2) handling.
+   T_ (ii == idx_mknod);
+   // load mode argument into accumulator
+   iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+                offsetof(struct seccomp_data, args[1]), 0, 0);
+   // jump to mode test
+   iw(&p, ii++, BPF_JMP|BPF_JA, 1, 0, 0);
+
+   // mknodat(2) handling.
+   T_ (ii == idx_mknodat);
+   // load mode argument into accumulator
+   iw(&p, ii++, BPF_LD|BPF_W|BPF_ABS,
+                offsetof(struct seccomp_data, args[2]), 0, 0);
+   // jump to fake return if trying to create a device.
+   iw(&p, ii++, BPF_ALU|BPF_AND|BPF_K, S_IFMT, 0, 0);   // file type only
+   iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, S_IFCHR, 2, 0);
+   iw(&p, ii++, BPF_JMP|BPF_JEQ|BPF_K, S_IFBLK, 1, 0);
+   // returns
+   iw(&p, ii++, BPF_RET|BPF_K, SECCOMP_RET_ALLOW, 0, 0);
+   iw(&p, ii++, BPF_RET|BPF_K, SECCOMP_RET_ERRNO, 0, 0);
+
+   // Install filter. Use prctl(2) rather than seccomp(2) for slightly greater
+   // compatibility (Linux 3.5 rather than 3.17) and because there is a glibc
+   // wrapper.
+   T_ (ii == p.len);  // next instruction now one past the end of the buffer
+   Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p));
+   DEBUG("note: see FAQ to disassemble the above")
+
+   // Test filter. This will fail if the kernel executes the call (because we
+   // are not really privileged and the arguments are bogus) or succeed if
+   // filter handles it. We selected it over something more naturally in the
+   // filter, e.g. setuid(2), because (1) no container process should ever use
+   // it and (2) it’s unlikely to be emulated by a smarter filter in the
+   // future, i.e., it won’t silently start doing something.
+   Zf (syscall(SYS_kexec_load, 0, 0, NULL, 0),
+       "seccomp root emulation failed (is your architecture supported?)");
+}
+#endif
 
 /* Wait for semaphore sem for up to timeout seconds. If timeout or an error,
    exit unsuccessfully. */
@@ -503,7 +784,7 @@ void setup_passwd(const struct container *c)
       }
    }
    Z_ (close(fd));
-   bind_mount(path, "/etc/passwd", BD_REQUIRED, c->newroot, 0);
+   bind_mount(path, "/etc/passwd", BD_REQUIRED, c->newroot, 0, NULL);
    Z_ (unlink(path));
 
    // /etc/group
@@ -526,7 +807,7 @@ void setup_passwd(const struct container *c)
       }
    }
    Z_ (close(fd));
-   bind_mount(path, "/etc/group", BD_REQUIRED, c->newroot, 0);
+   bind_mount(path, "/etc/group", BD_REQUIRED, c->newroot, 0, NULL);
    Z_ (unlink(path));
 }
 

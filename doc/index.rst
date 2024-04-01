@@ -21,12 +21,12 @@ Overview
    install
    tutorial
    ch-checkns
+   ch-completion.bash
    ch-convert
    ch-fromhost
    ch-image
    ch-run
    ch-run-oci
-   ch-ssh
    ch-test
    faq
    best_practices

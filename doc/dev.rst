@@ -1,4 +1,4 @@
-Contributor's guide
+Contributor’s guide
 *******************
 
 This section is notes on contributing to Charliecloud development. Currently,
@@ -13,18 +13,18 @@ consult the internal documentation and other resources.
 
 .. note::
 
-   We're interested in and will consider all good-faith contributions. While
+   We are interested in and will consider all good-faith contributions. While
    it does make things easier and faster if you follow the guidelines here,
-   they are not required. We'll either clean it up for you or walk you through
-   any necessary changes.
+   *they are not required*. We’ll either clean it up for you or walk you
+   through any necessary changes.
 
 
 Workflow
 ========
 
-We try to keep procedures and the Git branching model simple. Right now, we're
-pretty similar to Scott Chacon's “`GitHub Flow
-<http://scottchacon.com/2011/08/31/github-flow.html>`_”: Master is stable;
+We try to keep procedures and the Git branching model simple. Right now, we’re
+pretty similar to Scott Chacon’s “`GitHub Flow
+<https://scottchacon.com/2011/08/31/github-flow>`_”: Master is stable;
 work on short-lived topic branches; use pull requests to ask for merging; keep issues organized with tags and milestones.
 
 The standard workflow is:
@@ -42,92 +42,114 @@ The standard workflow is:
 
   6. Review/iterate.
 
-  7. Project lead merges.
+  7. Project lead merges with “squash and merge”.
 
-Core team members may deliberate in public on GitHub or internally, whichever
-they are comfortable with, making sure to follow LANL policy and taking into
-account the probable desires of the recipient as well.
-
-Milestones
-----------
-
-We use milestones to organize what we plan to do next and what happened in a
-given release. There are two groups of milestones:
-
-* :code:`next` contains the issues that we plan to complete soon but have not
-  yet landed on a specific release. Generally, we avoid putting PRs in here
-  because of their ticking clocks.
-
-* Each release has a milestone. These are dated with the target date for that
-  release. We put an issue in when it has actually landed in that release or
-  we are willing to delay that release until it does. We put a PR in when we
-  think it's reasonably likely to be merged for that release.
-
-If an issue is assigned to a person, that means they are actively leading the
-work on it or will do so in the near future. Typically this happens when the
-issue ends up in :code:`next`. Issues in a status of "I'll get to this later"
-should not be assigned to a person.
-
-Peer review
+Code review
 -----------
 
-**Issues and pull requests.** The standard workflow is to introduce a change
-in an issue, get consensus on what to do, and then create a *draft* `pull
-request <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_
-(PR) for the implementation.
+**Issues and pull requests.** The typical workflow is:
+
+#. Propose a change in an issue.
+
+#. Get consensus on what to do, whether in the issue or elsewhere.
+
+#. Create a `pull request
+   <https://git-scm.com/book/en/v2/GitHub-Contributing-to-a-Project>`_ (PR)
+   for the implementation.
+
+#. Iterate the PR until consensus is reached to either merge or abandon.
+
+#. Merge or close the PR accordingly.
 
 The issue, not the PR, should be tagged and milestoned so a given change shows
 up only once in the various views.
 
-If consensus is obtained through other means (e.g., in-person discussion),
-then open a PR directly. In this case, the PR should be tagged and milestoned,
-since there is no issue.
+GitHub PRs have two states, which are often poorly labeled. These states and
+our interpretations are:
 
-**Address a single concern.** When possible, issues and PRs should address
+* *Ready for review* (the green *Create pull request* button). This means that
+  the PR is ready to be merged once tests and code review pass. In-progress
+  PRs headed in that direction should also be in this state (i.e., the trigger
+  for review and possible merge is the review request, not a draft to
+  ready-for-review transition).
+
+* *Draft*. This means not ready for merge even if tests and review pass.
+  (GitLab would indicate this with a :code:`WIP:` prefix in the title.)
+
+**Stand-alone PRs.** If consensus is obtained through other means, e.g.
+out-of-band discussion, then a stand-alone PR is appropriate (i.e., don’t
+create an issue just for the sake of having an issue to link to a PR). A
+stand-alone PR should be tagged and milestoned, since there is no issue. Note
+that stand-alone PRs are generally not a good way to *propose* something.
+
+**Address a single concern.** When practical, issues and PRs should address
 completely one self-contained change. If there are multiple concerns, make
 separate issues and/or PRs. For example, PRs should not tidy unrelated code,
 and non-essential complications should be split into a follow-on issue.
+However, sometimes one PR addresses several related issues, which is fine.
 
 **Documentation and tests first.** The best practice for significant changes
 is to draft documentation and/or tests first, get feedback on that, and then
 implement the code. Reviews of the form "you need a completely different
 approach" are no fun.
 
-**Tests must pass.** PRs will not be merged until they pass the tests. While
-this most saliently includes CI, the tests should also pass on your
-development box as well as all relevant clusters (if appropriate for the
-changes).
+**CI must pass.** PRs will usually not be merged until they pass CI, with
+exceptions if the failures are clearly unconnected and we are confident they
+aren’t masking a real issue. If appropriate, tests should also pass on
+relevant supercomputers.
 
-**No close keywords in PRs.** While GitHub will interpret issue-closing
-keywords (variations on `"closes", "fixes", and "resolves"
+**Use close keywords in PRs.** Use the issue-closing keywords (variations on
+`"closes", "fixes", and "resolves"
 <https://help.github.com/en/articles/closing-issues-using-keywords>`_) in PR
-descriptions, don't use this feature, because often the specific issues a PR
-closes change over time, and we don't want to have to edit the description to
-deal with that. We also want this information in only one place (the commit
-log). Instead, use "addresses", and we'll edit the keywords into the commit
-message(s) at merge time if needed.
+descriptions to link it to the relevant issue(s). If this changes, edit the
+description to add/remove issues.
 
-**PR review procedure.** When your draft PR is ready for review — which may or
-may not be when you want it considered for merging! — do one or both of:
+**PR review procedure.** When your PR is ready for review — which may or may
+not be when you want it considered for merging! — do this:
 
-* Request review from the person(s) you want to look at it. If you think it
-  may be ready for merge, that should include the project lead. The purpose of
-  requesting review is so the person is notified you need their help.
+#. Request review from the person(s) you want to look at it. The purpose of
+   requesting review is so the person is notified you need their help.
 
-* If you think it may be ready to merge (even if you're not sure), then also
-  mark the PR "ready to review". The purpose of this is so the project lead
-  can see which PRs are ready to consider for merging (green icon) and which
-  are not (gray icon). If the project lead decides it's ready, they will
-  merge; otherwise, they'll change it back to draft.
+#. If you think it’s ready to merge (even if you’re not sure), ensure the PR
+   is (1) marked “ready for review” (green icon), and (2) the project lead is
+   included in your review request.
 
 In both cases, the person from whom you requested review now owns the branch,
-and you should stop work on it unless and until you get it back.
+and you should stop work on it unless and until you get it back (modulo other
+communication, of course). This is so they can make tidy commits if needed
+without collision.
 
-Do not hesitate to pester your reviewer if you haven't heard back promptly,
-say within 24 hours.
+It is good practice to communicate with your reviewer directly to set
+expectations on review urgency.
+
+Review outcomes:
+
+* *Request changes*: The reviewer believes there are changes needed, *and* the
+  PR needs re-review after these are done.
+
+* *Comment*: The reviewer has questions or comments, *and* the PR needs
+  re-review after these are addressed.
+
+* *Approve*: The reviewer believes the branch is ready to proceed (further
+  work if draft, merging if ready for review). Importantly, the review can
+  include comments/questions/changes *but* the reviewer believes these don’t
+  need re-review (i.e., the PR author can deal with them independently).
+
+*Use multi-comment reviews.* Review comments should all be packaged up into a
+single review; click *Start a review* rather than *Add single comment*. Then
+the PR author gets only a single notification instead of one for every comment
+you make, and it’s clear when the branch is theirs again.
+
+*Selecting a reviewer.* Generally, you want to find a reviewer with time to do
+the review and appropriate expertise. Feel free to ask if you’re not sure.
+Note that the project lead must approve any PRs before merge, so they are
+typically a reasonable choice if you don’t have someone else in mind.
+
+External contributions do not need to select a reviewer. The team will notice
+the PR and wrangle its review.
 
 *Special case 1:* Often, the review consists of code changes, and the reviewer
-will want you to assess those changes. GitHub doesn't let you request review
+will want you to assess those changes. GitHub doesn’t let you request review
 from the PR submitter, so this must be done with a comment, either online or
 offline.
 
@@ -135,49 +157,55 @@ offline.
 so this needs to be done with a comment too. Generally you should ask the
 original bug reporter to review, to make sure it solves their problem.
 
-**Use multi-comment reviews.** Review comments should all be packaged up into
-a single review; click *Start a review* rather than *Add single comment*. Then
-the PR author gets only a single notification instead of one for every comment
-you make, and it's clear when they branch is theirs again.
-
 Branching and merging
 ---------------------
 
-**Don't commit directly to master.** Even the project lead doesn't do this.
+**Don’t commit directly to master.** Even the project lead doesn’t do this.
 While it may appear that some trivial fixes are being committed to the master
-directly, what's really happening is that these are prototyped on a branch and
-then fast-forward merged after the tests pass.
+directly, what really happened is that these were prototyped on a branch and
+then fast-forward merged after the tests pass. (Note we no longer do this.)
 
 **Merging to master.** Only the project lead should do this.
+
+**Branch naming convention.** Name the branch with a *brief* summary of the
+issue being fixed — just a couple words — with words separated by hyphens,
+then an underscore and the issue number being addressed. For example, issue
+`#1773 <https://github.com/hpc/charliecloud/issues/1773>`_ is titled
+“:code:`ch-image build`: :code:`--force=fakeroot` outputs to stderr despite
+:code:`-q`”; the corresponding branch (for `PR #1812
+<https://github.com/hpc/charliecloud/pull/1812>`_) is called
+:code:`fakeroot-quiet-rhel_1773`. Something even shorter, such as
+:code:`fakeroot_1773`, would have been fine too.
+
+Stand-alone PRs do the same, just without an issue number. For example, `PR
+#1804 <https://github.com/hpc/charliecloud/pull/1804>`_ is titled “add tab
+completion to :code:`ch-convert`” and the branch is
+:code:`convert-completion`.
+
+It’s okay if the branch name misses a little. For example, if you discover
+during work on a PR that you should close a second issue in the same PR, it’s
+not necessary to add the second issue number to the branch name.
 
 **Branch merge procedure.** Generally, branches are merged in the GitHub web
 interface with the *Squash and merge* button, which is :code:`git merge
 --squash` under the hood. This squashes the branch into a single commit on
-master. Commit message example::
+master.
 
-  PR #268 from @j-ogas: remove ch-docker-run (closes #258)
+Commit message must be the PR number followed by the PR title, e.g.:
 
-If the branch closes multiple issues and it's reasonable to separate those
-issues into independent commits, then the branch is rebased, interactively
-squashed, and force-pushed into a tidy history with close instructions, then
-merged in the web interface with *Create a merge commit*. Example history and
-commit messages::
+  PR #268: remove ch-docker-run
 
-  * 18aa2b8 merge PR #254 from @j-ogas and me: Dockerfile.openmpi: use snapshot
-  |\
-  | * 79fa89a upgrade to ibverbs 20.0-1 (closes #250)
-  | * 385ce16 Dockerfile.debian9: use snapshot.debian.org (closes #249)
-  |/
-  * 322df2f ...
+The commit message should not mention issue numbers; let the PR itself do
+that.
 
-The reason to prefer merge via web interface is that GitHub often doesn't
+The reason to prefer merge via web interface is that GitHub often doesn’t
 notice merges done on the command line.
 
-After merge, the branch is deleted via the web interface.
+After merge, delete the branch via the web interface.
 
 **Branch history tidiness.** Commit frequently at semantically relevant times,
 and keep in mind that this history will probably be squashed per above. It is
-not necessary to rebase or squash to keep branch history tidy. But, don't go
+not necessary to rebase or squash to keep branch history tidy. But, don’t go
 crazy. Commit messages like "try 2" and "fix CI again" are a bad sign; so are
 carefully proofread ones. Commit messages that are brief, technically
 relevant, and quick to write are what you want on feature branches.
@@ -187,10 +215,10 @@ rebasing. This lets you resolve conflicts once rather than multiple times as
 rebase works through a stack of commits.
 
 Note that PRs with merge conflicts will generally not be merged. Resolve
-conflicts before asking for merge.
+conflicts before asking for review.
 
-**Remove obsolete branches.** Keep your repo free of old branches with
-:code:`git branch -d` (or :code:`-D`) and :code:`git fetch --prune --all`.
+**Remove obsolete branches.** Keep your repo free of old branches with the
+script :code:`misc/branches-tidy`.
 
 Miscellaneous issue and pull request notes
 ------------------------------------------
@@ -198,20 +226,20 @@ Miscellaneous issue and pull request notes
 **Acknowledging issues.** Issues and PRs submitted from outside should be
 acknowledged promptly, including adding or correcting tags.
 
-**Closing issues.** We close issues when we've taken the requested action,
+**Closing issues.** We close issues when we’ve taken the requested action,
 decided not to take action, resolved the question, or actively determined an
-issue is obsolete. It is OK for "stale" issues to sit around indefinitely
+issue is obsolete. It is OK for “stale” issues to sit around indefinitely
 awaiting this. Unlike many projects, we do not automatically close issues just
-because they're old.
+because they’re old.
 
-**Closing PR.** Stale PRs, on the other hand, are to be avoided due to bit
+**Closing PRs.** Stale PRs, on the other hand, are to be avoided due to bit
 rot. We try to either merge or reject PRs in a timely manner.
 
 **Re-opening issues.** Closed issues can be re-opened if new information
 arises, for example a :code:`worksforme` issue with new reproduction steps.
 
-Continuous integration testing
-------------------------------
+Continuous integration (CI) testing
+-----------------------------------
 
 **Quality of testing.** Tagged versions currently get more testing for various
 reasons. We are working to improve testing for normal commits on master, but
@@ -220,30 +248,29 @@ full parity is probably unlikely.
 **Cycles budget.** The resource is there for your use, so take advantage of
 it, but be mindful of the various costs of this compute time.
 
-Things you can do include testing locally first, cancelling jobs you know will
-fail or that won't give you additional information, and not pushing every
-commit (CI tests only the most recent commit in a pushed group).
-
-**Iterating.** When trying to make CI happy, force-push or squash-merge. Don't
-submit a PR with half a dozen "fix CI" commits.
+Things you can do include focused local testing, cancelling jobs you know will
+fail or that won’t give you additional information, and not pushing every
+commit (CI tests only the most recent commit in a pushed group). Avoid making
+commits merely to trigger CI.
 
 **Purging Docker cache.** :code:`misc/docker-clean.sh` can be used to purge
 your Docker cache, either by removing all tags or deleting all containers and
 images. The former is generally preferred, as it lets you update only those
-base images that have actually changed (the ones that haven't will be
+base images that have actually changed (the ones that haven’t will be
 re-tagged).
 
 Issue labeling
 --------------
 
 We use the following labels (a.k.a. tags) to organize issues. Each issue (or
-stand-alone PR) should have label(s) from every category, with the exception
-of disposition which only applies to closed issues.
+stand-alone PR) should have label(s) from each category, with the exception of
+disposition which only applies to closed issues. Labels are periodically
+validated using a script.
 
-Charliecloud team members should label their own issues. Members of the
-general public are more than welcome to label their issues if they like, but
-in practice this is rare, which is fine. Whoever triages the incoming issue
-should add or adjust labels as needed.
+Charliecloud team members should label their own issues. The general public
+are more than welcome to label their issues if they like, but in practice this
+is rare, which is fine. Whoever triages the incoming issue should add or
+adjust labels as needed.
 
 .. note::
 
@@ -256,7 +283,7 @@ What kind of change is it?
 Choose *one type* from:
 
 :code:`bug`
-  Something doesn't work; e.g., it doesn't work as intended or it was
+  Something doesn’t work; e.g., it doesn’t work as intended or it was
   mis-designed. This includes usability and documentation problems. Steps to
   reproduce with expected and actual behavior are almost always very helpful.
 
@@ -268,7 +295,7 @@ Choose *one type* from:
 
 :code:`refactor`
   Change that will improve Charliecloud but does not materially affect
-  user-visible behavior. Note this doesn't mean "invisible to the user"; even
+  user-visible behavior. Note this doesn’t mean “invisible to the user”; even
   user-facing documentation or logging changes could feasibly be this, if they
   are more cleanup-oriented.
 
@@ -287,7 +314,7 @@ Choose *one priority* from:
   Low priority. Note: Unfortunately, due to resource limitations, complex
   issues here are likely to wait a long time, perhaps forever. If that makes
   you particularly sad on a particular issue, please comment to say why. Maybe
-  it's mis-prioritized.
+  it’s mis-prioritized.
 
 :code:`deferred`
   No plans to do this, but not rejected. These issues stay open, because we do
@@ -347,7 +374,7 @@ Special considerations
 Choose *one or more extras* from:
 
 :code:`blocked`
-  We can't do this yet because something else needs to happen first. If that
+  We can’t do this yet because something else needs to happen first. If that
   something is another issue, mention it in a comment.
 
 :code:`hpc`
@@ -372,7 +399,7 @@ choose *one disposition* from:
 
 :code:`cantfix`
   The issue is not something we can resolve. Typically problems with other
-  software, problems with containers in general that we can't work around, or
+  software, problems with containers in general that we can’t work around, or
   not actionable due to clarity or other reasons. *Use caution when blaming a
   problem on user error. Often (or usually) there is a documentation or
   usability bug that caused the "user error".*
@@ -393,30 +420,35 @@ choose *one disposition* from:
   change in plans.
 
 :code:`wontfix`
-  We are not going to do this, and we won't merge PRs. Sometimes you'll want
+  We are not going to do this, and we won’t merge PRs. Sometimes you’ll want
   to tag and then wait a few days before closing, to allow for further
   discussion to catch mistaken tags.
 
 :code:`worksforme`
   We cannot reproduce a bug, and it seems unlikely this will change given
-  available information. Typically you'll want to tag, then wait a few days
+  available information. Typically you’ll want to tag, then wait a few days
   for clarification before closing. Bugs closed with this tag that do gain a
   reproducer later should definitely be re-opened. For some bugs, it really
-  feels like they should be reproducible but we're missing it somehow; such
+  feels like they should be reproducible but we’re missing it somehow; such
   bugs should be left open in hopes of new insight arising.
+
+.. note::
+
+   We do not use the GitHub “closed as not planned” feature, so everything is
+   “closed as completed” even if the reason is one of the above.
 
 Deprecated labels
 ~~~~~~~~~~~~~~~~~
 
 You might see these on old issues, but they are no longer in use.
 
-* :code:`help wanted`: This tended to get stale and wasn't generating any
+* :code:`help wanted`: This tended to get stale and wasn’t generating any
   leads.
 
 * :code:`key issue`: Replaced by priority labels.
 
 * :code:`question`: Replaced by Discussions. (If you report a bug that seems
-  to be a discussion, we'll be happy to convert it to you.)
+  to be a discussion, we’ll be happy to convert it to you.)
 
 
 Test suite
@@ -430,13 +462,13 @@ prepends each line with the elapsed time since the previous line::
 
   $ ch-test -s quick | ts -i '%M:%.S'
 
-Note: a skipped test isn't free; I see ~0.15 seconds to do a skip.
+Note: a skipped test isn’t free; I see ~0.15 seconds to do a skip.
 
 :code:`ch-test` complains about inconsistent versions
 -----------------------------------------------------
 
 There are multiple ways to ask Charliecloud for its version number. These
-should all give the same result. If they don't, :code:`ch-test` will fail.
+should all give the same result. If they don’t, :code:`ch-test` will fail.
 Typically, something needs to be rebuilt. Recall that :code:`configure`
 contains the version number as a constant, so a common way to get into this
 situation is to change Git branches without rebuilding it.
@@ -506,6 +538,7 @@ must appear:
 
 .. code-block:: none
 
+  ch-test-scope: skip
   ch-test-scope: quick
   ch-test-scope: standard
   ch-test-scope: full
@@ -531,7 +564,7 @@ Optional test modification directives are:
 How to write a :code:`Dockerfile` recipe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-It's a standard Dockerfile.
+It’s a standard Dockerfile.
 
 How to write a :code:`Build` recipe
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -600,19 +633,21 @@ Charliecloud source code. This is for two purposes:
 
 Item 2 is tested; i.e., if you break the RPM build, the test suite will fail.
 
-This section describes how to build the RPMs and the pain we've hopefully
+This section describes how to build the RPMs and the pain we’ve hopefully
 abstracted away.
 
 Dependencies
 ------------
 
-  * charliecloud
+  * Charliecloud
   * Python 3.6+
-  * Either:
+  * either:
 
-    * the provided example :code:`centos_7ch` or :code:`almalinux_8ch` images
+    * the provided example :code:`centos_7ch` or :code:`almalinux_8ch` images,
+      or
     * a RHEL/CentOS 7 or newer container image with (note there are different
       python version names for the listed packages in RHEL 8 and derivatives):
+
       * autoconf
       * automake
       * gcc
@@ -689,7 +724,7 @@ is what enables us to make additional RPM releases for a given Charliecloud
 release (e.g. 0.9.7-2).
 
 Corollaries of this policy are that RPM build configuration can be any or no
-commit, and it's not possible to create an RPM of uncommitted source code.
+commit, and it’s not possible to create an RPM of uncommitted source code.
 
 Changelog maintenance
 ~~~~~~~~~~~~~~~~~~~~~
@@ -702,7 +737,7 @@ entry matches the given :code:`VERSION` argument. The timestamp is not
 automatically verified.
 
 For other Charliecloud versions, :code:`build` adds a generic changelog entry
-with the appropriate version stating that it's a pre-release RPM.
+with the appropriate version stating that it’s a pre-release RPM.
 
 
 .. _build-ova:
@@ -710,7 +745,7 @@ with the appropriate version stating that it's a pre-release RPM.
 Style hints
 ===========
 
-We haven't written down a comprehensive style guide. Generally, follow the
+We haven’t written down a comprehensive style guide. Generally, follow the
 style of the surrounding code, think in rectangles rather than lines of code
 or text, and avoid CamelCase.
 
@@ -736,7 +771,7 @@ Writing English
 
 * Use sentence case for titles, not title case.
 
-* If it's not a sentence, start with a lower-case character.
+* If it’s not a sentence, start with a lower-case character.
 
 * Use spell check. Keep your personal dictionary updated so your editor is not
   filled with false positives.
@@ -746,7 +781,7 @@ Documentation
 
 Heading underline characters:
 
-  1. Asterisk, :code:`*`, e.g. "5. Contributor's guide"
+  1. Asterisk, :code:`*`, e.g. "5. Contributor’s guide"
   2. Equals, :code:`=`, e.g. "5.7 OCI technical notes"
   3. Hyphen, :code:`-`, e.g. "5.7.1 Gotchas"
   4. Tilde, :code:`~`, e.g. "5.7.1.1 Namespaces" (try to avoid)
@@ -777,17 +812,14 @@ essentials. Exceptions, to be used judiciously:
     additional dependencies that are reasonably expected on most systems where
     the convenience would be used.
 
-  * Features that only work if some other software is present (example: the
-    Docker wrapper scripts) can add dependencies of that other software.
+  * Features that only work if some other software is present can add
+    dependencies of that other software (e.g., :code:`ch-convert` depends on
+    Docker to convert to/from Docker image storage).
 
 The test suite is tricky, because we need a test framework and to set up
 complex test fixtures. We have not yet figured out how to do this at
 reasonable expense with dependencies as tight as run- and build-time, so there
 are systems that do support Charliecloud but cannot run the test suite.
-
-Building the documentation needs Sphinx features that have not made their way
-into common distributions (i.e., RHEL), so we use recent versions of Sphinx
-and provide a source distribution with pre-built documentation.
 
 Building the RPMs should work on RPM-based distributions with a kernel new
 enough to support Charliecloud. You might need to install additional packages
@@ -800,7 +832,7 @@ enough to support Charliecloud. You might need to install additional packages
 For URL downloading in shell code, including Dockerfiles, use :code:`wget -nv`.
 
 Both work fine for our purposes, and we need to use one or the other
-consistently. According to Debian's popularity contest, 99.88% of reporting
+consistently. According to Debian’s popularity contest, 99.88% of reporting
 systems have :code:`wget` installed, vs. about 44% for :code:`curl`. On the
 other hand, :code:`curl` is in the minimal install of CentOS 7 while
 :code:`wget` is not.
@@ -822,7 +854,7 @@ Variable conventions in shell scripts and :code:`.bats` files
   case, :code:`ch_` prefix.
 
 * Surround lower-case variables expanded in strings with curly braces, unless
-  they're the only thing in the string. E.g.:
+  they’re the only thing in the string. E.g.:
 
   .. code-block:: none
 
@@ -831,21 +863,80 @@ Variable conventions in shell scripts and :code:`.bats` files
     "$foo/bar"    # no
     "${foo}"      # no
 
-* Quote the entire string instead of just the variable when practical:
-
-  .. code-block:: none
-
-    "${foo}/bar"  # yes
-    "${foo}"/bar  # no
-    "$foo"/bar    # no
-
-* Don't quote variable assignments or other places where not needed (e.g.,
+* Don’t quote variable assignments or other places where not needed (e.g.,
   case statements). E.g.:
 
   .. code-block:: none
 
     foo=${bar}/baz    # yes
     foo="${bar}/baz"  # no
+
+Statement ordering within source files
+--------------------------------------
+
+In general, we order things alphabetically.
+
+Python
+~~~~~~
+
+The module as a whole, and each class, comprise a sequence of ordering units
+separated by section header comments surrounded by two or more hashes, e.g.
+:code:`## Globals ##`. Sections with the following names must be in this order
+(omissions are fine). Other section names may appear in any order. There is
+also an unnamed zeroth section.
+
+  #. Enums
+  #. Constants
+  #. Globals
+  #. Exceptions
+  #. Main
+  #. Functions
+  #. Supporting classes
+  #. Core classes
+  #. Classes
+
+Within each section, statements occur in the following order.
+
+  #. imports
+
+     #. standard library
+     #. external imports not in the standard library
+     #. :code:`import charliecloud`
+     #. other Charliecloud imports
+
+  #. assignments
+
+  #. class definitions
+
+  #. function definitions
+
+     #. :code:`__init__`
+     #. static methods
+     #. class methods
+     #. other double-underscore methods (e.g. :code:`__str__`)
+     #. properties
+     #. “normal” functions (instance methods)
+
+Within each group of statements above, identifiers must occur in alphabetical
+order. Exceptions:
+
+  #. Classes must appear after their base class.
+  #. Assignments may appear in any order.
+
+Statement types not listed above may appear in any order.
+
+A statement that must be out of order is exempted with a comment on its first
+line containing 👻, because a ghost says “OOO”, i.e. “out of order”.
+
+Python code
+-----------
+
+Indentation width
+~~~~~~~~~~~~~~~~~
+
+`3 spaces <https://peps.python.org/pep-0008/#indentation>`_ per level. No tab
+characters.
+
 
 C code
 ------
@@ -865,14 +956,14 @@ example:
 
 is a function that will not alter the string pointed to by :code:`in` but may
 alter the string pointed to by :code:`out`. (Note that :code:`char const` is
-equivalent to :code:`const char`, but we use the latter order because that's
+equivalent to :code:`const char`, but we use the latter order because that’s
 what appears in GCC error messages.)
 
 We do not use :code:`const` on local variables or function arguments passed by
-value. One could do this to be more clear about what is and isn't mutable, but
-it adds quite a lot of noise to the source code, and in our evaluations didn't
+value. One could do this to be more clear about what is and isn’t mutable, but
+it adds quite a lot of noise to the source code, and in our evaluations didn’t
 catch any bugs. We also do not use it on double pointers (e.g., :code:`char
-**out` used when a function allocates a string and sets the caller's pointer
+**out` used when a function allocates a string and sets the caller’s pointer
 to point to it), because so far those are all out-arguments and C has
 `confusing rules <http://c-faq.com/ansi/constmismatch.html>`_ about double
 pointers and :code:`const`.
@@ -942,53 +1033,61 @@ This form of list should be used unless some API requires something else.
     char **list = list_new(sizeof(char *), 0)
     list_append((void **)list, &bar, sizeof(char *));  // OK
 
-Logging
--------
 
-Charliecloud uses reasonably standard log levels for its stderr logging. The
-verbosity can be increased by up to three :code:`-v` command line arguments.
-Both the Python and C code use the same levels by calling logging functions
-named by level. The main error can be accompanied by a hint. The levels are:
+Debugging
+=========
 
-  1. **FATAL**; always printed. Some error condition that makes it impossible
-     to proceed. The program exits unsuccessfully immediately after printing
-     the error. Examples: unknown image type, Dockerfile parse error.
+Python :code:`printf(3)`-style debugging
+----------------------------------------
 
-  2. **WARNING**; always printed. Unexpected condition the user needs to know
-     about but that should not stop the program. Examples: :code:`ch-run
-     --mount` with a directory image (which does not use a mount point),
-     unsupported Dockerfile instructions that are ignored.
+Consider :code:`ch.ILLERI()`. This uses the same mechanism as the standard
+logging functions (:code:`ch.INFO()`, :code:`ch.VERBOSE()`, etc.) but it
+(1) cannot be suppressed and (2) uses a color that stands out.
 
-  3. **INFO**; always printed. Chatter useful enough to always be printed.
-     Example: progress messages during image download and unpacking. Note
-     :code:`ch-run` is silent during normal operations and does not have any
-     INFO logging.
+All :code:`ch.ILLERI()` calls must be removed before a PR can be merged.
 
-  4. **VERBOSE**; printed if :code:`-v` or more. Diagnostic information useful
-     for debugging user containers, the Charliecloud installation, and
-     Charliecloud itself. Examples: :code:`ch-run --join` coordination
-     progress, :code:`ch-image` internal paths, Dockerfile parse tree.
+:code:`seccomp(2)` BPF
+----------------------
 
-  5. **DEBUG**; printed if :code:`-vv` or more. More detailed diagnostic
-     information useful for debugging Charliecloud. Examples: data structures
-     unserialized from image registry metadata JSON, image reference parse
-     tree.
+:code:`ch-run --seccomp -vv` will log the BPF instructions as they are
+computed, but it’s all in raw hex and hard to interpret, e.g.::
 
-  6. **TRACE**; printed if :code:`-vvv`. Grotesquely detailed diagnostic
-     information for debugging Charliecloud, to the extent it interferes with
-     normal use. A sensible person might use a `debugger
-     <https://twitter.com/wesamo__/status/1464764461831663626>`_ instead.
-     Examples: component-by-component progress of bind-mount target directory
-     analysis/creation, text of image registry JSON, every single file
-     unpacked from image layers.
+  $ ch-run --seccomp -vv alpine:3.17 -- true
+  [...]
+  ch-run[62763]: seccomp: arch c00000b7: found 13 syscalls (ch_core.c:582)
+  ch-run[62763]: seccomp: arch 40000028: found 27 syscalls (ch_core.c:582)
+  [...]
+  ch-run[62763]: seccomp(2) program has 156 instructions (ch_core.c:591)
+  ch-run[62763]:    0: { op=20 k=       4 jt=  0 jf=  0 } (ch_core.c:423)
+  ch-run[62763]:    1: { op=15 k=c00000b7 jt=  0 jf= 17 } (ch_core.c:423)
+  ch-run[62763]:    2: { op=20 k=       0 jt=  0 jf=  0 } (ch_core.c:423)
+  ch-run[62763]:    3: { op=15 k=      5b jt=145 jf=  0 } (ch_core.c:423)
+  [...]
+  ch-run[62763]:  154: { op= 6 k=7fff0000 jt=  0 jf=  0 } (ch_core.c:423)
+  ch-run[62763]:  155: { op= 6 k=   50000 jt=  0 jf=  0 } (ch_core.c:423)
+  ch-run[62763]: note: see FAQ to disassemble the above (ch_core.c:676)
+  ch-run[62763]: executing: true (ch_core.c:538)
 
-There is no level ERROR; anything important the user needs to know about is
-WARNING if we can safely proceed or FATAL if not.
+You can instead use `seccomp-tools
+<https://github.com/david942j/seccomp-tools>`_ to disassemble and pretty-print
+the BPF code in a far easier format, e.g.::
 
-.. warning::
+  $ sudo apt install ruby-dev
+  $ gem install --user-install seccomp-tools
+  $ export PATH=~/.gem/ruby/3.1.0/bin:$PATH
+  $ seccomp-tools dump -c 'ch-run --seccomp alpine:3.19 -- true'
+   line  CODE  JT   JF      K
+  =================================
+   0000: 0x20 0x00 0x00 0x00000004  A = arch
+   0001: 0x15 0x00 0x11 0xc00000b7  if (A != ARCH_AARCH64) goto 0019
+   0002: 0x20 0x00 0x00 0x00000000  A = sys_number
+   0003: 0x15 0x91 0x00 0x0000005b  if (A == aarch64.capset) goto 0149
+  [...]
+   0154: 0x06 0x00 0x00 0x7fff0000  return ALLOW
+   0155: 0x06 0x00 0x00 0x00050000  return ERRNO(0)
 
-   Do not use INFO for *output*. For example, the results of :code:`ch-image
-   list` just use plain :code:`print()` to stdout.
+Note that the disassembly is not perfect; e.g. if an architecture is not in
+your kernel headers, the system call name is wrong.
 
 
 OCI technical notes
@@ -1005,7 +1104,7 @@ ch-run-oci
 ----------
 
 Currently, :code:`ch-run-oci` is only tested with Buildah. These notes
-describe what we are seeing from Buildah's runtime expectations.
+describe what we are seeing from Buildah’s runtime expectations.
 
 Gotchas
 ~~~~~~~
@@ -1029,7 +1128,7 @@ Supervisor process and maintaining state
 """"""""""""""""""""""""""""""""""""""""
 
 OCI (and thus Buildah) expects a process that exists throughout the life of
-the container. This conflicts with Charliecloud's lack of a supervisor process.
+the container. This conflicts with Charliecloud’s lack of a supervisor process.
 
 Bundle directory
 ~~~~~~~~~~~~~~~~
@@ -1038,7 +1137,7 @@ Bundle directory
 
 The bundle directory defines the container and is used to communicate between
 Buildah and the runtime. The root filesystem (:code:`mnt/rootfs`) is mounted
-within Buildah's namespaces, so you'll want to join them before examination.
+within Buildah’s namespaces, so you’ll want to join them before examination.
 
 :code:`ch-run-oci` has restrictions on bundle directory path so it can be
 inferred from the container ID (see the man page). This lets us store state in
@@ -1075,9 +1174,9 @@ Example::
 Observations:
 
 #. The weird permissions on :code:`empty` (000) and :code:`mnt` (100) persist
-   within the namespaces, so you'll want to be namespace root to look around.
+   within the namespaces, so you’ll want to be namespace root to look around.
 
-#. :code:`hosts` and :code:`resolv.conf` are identical to the host's.
+#. :code:`hosts` and :code:`resolv.conf` are identical to the host’s.
 
 #. :code:`empty` is still an empty directory with in the namespaces. What is
    this for?
@@ -1217,13 +1316,11 @@ Path to root filesystem; maps to :code:`NEWROOT`. If key :code:`readonly` is
 This says what filesystems to mount in the container. It is a mix; it has
 tmpfses, bind-mounts of both files and directories, and other
 non-device-backed filesystems. The docs suggest a lot of flexibility,
-including stuff that won't work in an unprivileged user namespace (e.g.,
+including stuff that won’t work in an unprivileged user namespace (e.g.,
 filesystems backed by a block device).
 
 The things that matter seem to be the same as Charliecloud defaults.
 Therefore, for now we just ignore mounts.
-
-We do add :code:`--no-home` in OCI mode.
 
 .. code-block:: javascript
 
@@ -1251,8 +1348,8 @@ Maps to :code:`--cd`.
          "apk add --no-cache bc"
        ],
 
-Maps to :code:`CMD [ARG ...]`. Note that we do not run :code:`ch-run` via the
-shell, so there aren't worries about shell parsing.
+Maps to :code:`COMMAND [ARG ...]`. Note that we do not run :code:`ch-run` via
+the shell, so there aren’t worries about shell parsing.
 
 .. code-block:: javascript
 
@@ -1352,8 +1449,8 @@ Namespaces that Buildah wants. Ignored; Charliecloud just does user and mount.
        ],
 
 Describes the identity map between the namespace and host. Buildah wants it
-much larger than Charliecloud's single entry and asks for container root to be
-host root, which we can't do. Ignored.
+much larger than Charliecloud’s single entry and asks for container root to be
+host root, which we can’t do. Ignored.
 
 .. code-block:: javascript
 
@@ -1383,7 +1480,7 @@ State
 ~~~~~
 
 The OCI spec does not say how the JSON document describing state should be
-given to the caller. Buildah is happy to get it on the runtime's standard
+given to the caller. Buildah is happy to get it on the runtime’s standard
 output.
 
 :code:`ch-run-oci` provides an OCI compliant state document. Status
@@ -1425,7 +1522,7 @@ OCI runtime and image specification information.
 Since various OCI features are unsupported by Charliecloud we push only what is
 necessary to satisfy general image registry requirements.
 
-The pushed config is created on the fly, referencing the image's metadata
+The pushed config is created on the fly, referencing the image’s metadata
 and layer tar hash. For example, including commentary:
 
 .. code-block:: javascript
@@ -1545,7 +1642,7 @@ extensions.
       ],
     }
 
-The history section is collected from the image's metadata and
+The history section is collected from the image’s metadata and
 :code:`empty_layer` added to all entries except the last to represent a
 single-layer image. This is needed because Quay checks that the number of
 non-empty history entries match the number of pushed layers.
@@ -1557,15 +1654,15 @@ Updating bundled Lark parser
 ----------------------------
 
 In order to change the version of the bundled lark parser you must modify
-multiple files. To find them, e.g. for version 0.11.3 (the regex is hairy to
+multiple files. To find them, e.g. for version 1.1.9 (the regex is hairy to
 catch both dot notation and tuples, but not the list of filenames in
 :code:`lib/Makefile.am`)::
 
-  $ misc/grep -E '0(\.|, )11(\.|, )3($|\s|\))'
+  $ misc/grep -E '1(\.|, )1(\.|, )9($|\s|\))'
 
 What to do in each location should either be obvious or commented.
 
 
-..  LocalWords:  milestoned gh nv cht Chacon's scottchacon mis cantfix tmpimg
+..  LocalWords:  milestoned gh nv cht Chacon’s scottchacon mis cantfix tmpimg
 ..  LocalWords:  rootfs cbd cae ce bafb bc weirdal yankovic nop cb fbe adb fd
-..  LocalWords:  abd bbf LOGFILE logfile rtd
+..  LocalWords:  abd bbf LOGFILE logfile rtd Enums WIP rpmlintrc rhel ILLERI

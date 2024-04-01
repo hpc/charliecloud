@@ -5,7 +5,7 @@
 #    See: https://www.gnu.org/software/autoconf/manual/autoconf-2.69/html_node/Quadrigraphs.html
 #
 # 2. Booleans. The convention for Autoconf variables, which we follow, is
-#    "yes" for true and "no" for false. This differs from the Charliecloud
+#    “yes” for true and “no” for false. This differs from the Charliecloud
 #    convention of non-empty for true and empty for false.
 
 
@@ -33,28 +33,28 @@ AS_CASE([$host_os],
 # in a situation where I felt it helped, but (2) fairly regularly re-builds or
 # re-configures at surprising times.
 #
-# In particular, it often rebuilds before "make clean" and friends, e.g. if
+# In particular, it often rebuilds before “make clean” and friends, e.g. if
 # you change branches and then clean. This seems wrong. In my view, clean
 # should remove what is currently there, not what *would have been there* had
 # the build used a different, not-yet-existing build system. Disabling
-# maintainer mode also lets us put "make maintainer-clean" in autogen.sh
+# maintainer mode also lets us put “make maintainer-clean” in autogen.sh
 # without triggering spurious rebuilds.
 AM_MAINTAINER_MODE([disable])
 
 # By default, Autotools honors umask for directories but not files. Thus, if
-# you "sudo make install" with a umask more restrictive than 0022, the result
+# you “sudo make install” with a umask more restrictive than 0022, the result
 # is an installation unavailable to most users (issue #947). This appears to
 # be a somewhat common complaint.
 #
-# Our workaround is to set the "mkdir -p" command [1]. (Note those
+# Our workaround is to set the “mkdir -p” command [1]. (Note those
 # instructions also mention a different variable ac_cv_path_mkdir, but I
-# couldn't figure out how to set it.) This needs to be before AM_INIT_AUTOMAKE
-# because that macro does something with the value. We use "install -d" rather
-# than "mkdir -m" because the latter still uses only umask for intermediate
+# couldn’t figure out how to set it.) This needs to be before AM_INIT_AUTOMAKE
+# because that macro does something with the value. We use “install -d” rather
+# than “mkdir -m” because the latter still uses only umask for intermediate
 # directories [2].
 #
 # This can still be overridden on the configure command line; for example, to
-# restore the previous behavior, use "./configure MKDIR_P='mkdir -p'" [3].
+# restore the previous behavior, use “./configure MKDIR_P='mkdir -p'” [3].
 #
 # [1]: https://unix.stackexchange.com/a/436000
 # [2]: http://gnu-automake.7480.n7.nabble.com/bug-12130-sudo-make-install-applies-umask-to-new-directories-tp18545p18548.html
@@ -104,6 +104,10 @@ AC_ARG_ENABLE([html],
   AS_HELP_STRING([--disable-html], [HTML documentation]),
   [], [enable_html=yes])
 
+AC_ARG_ENABLE([impolite-checks],
+  AS_HELP_STRING([--disable-impolite-checks], [potentially troublesome informational checks]),
+  [], [enable_impolite_checks=yes])
+
 AC_ARG_ENABLE([man],
   AS_HELP_STRING([--disable-man], [man pages]),
   [], [enable_man=yes])
@@ -116,8 +120,28 @@ AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
 
+AC_ARG_WITH([seccomp],
+  AS_HELP_STRING([--with-seccomp=(yes|no)],
+                 [support for --seccomp]))
+AS_CASE([$with_seccomp],
+  [yes],  # explicit “yes”
+    [want_seccomp=yes
+     need_seccomp=yes
+     msg_seccomp=yes],
+  [no],   # explicit “no”
+    [want_seccomp=no
+     need_seccomp=no
+     msg_seccomp=no],
+  [''],   # option not specified
+    [want_seccomp=yes
+     need_seccomp=no
+     msg_seccomp='if tested working'],
+  [*],    # anything else
+    [AC_MSG_ERROR([invalid --with-seccomp arg: $with_seccomp])])
+
 AC_ARG_WITH([libsquashfuse],
-  AS_HELP_STRING([--with-libsquashfuse=foo], [foo]))
+  AS_HELP_STRING([--with-libsquashfuse=@<:@yes|no|PATH@:>@],
+                 [whether to link with libsquashfuse]))
 AS_CASE([$with_libsquashfuse],
   [yes], # explicit “yes”
     [want_libsquashfuse=yes
@@ -141,7 +165,7 @@ AC_ARG_WITH([python],
   [PYTHON_SHEBANG="$withval"],
   [PYTHON_SHEBANG='/usr/bin/env python3'])
 
-# Can't deduce shebang from Gentoo "sphinx-python"; allow override. See #629.
+# Can’t deduce shebang from Gentoo “sphinx-python”; allow override. See #629.
 AC_ARG_WITH([sphinx-python],
   AS_HELP_STRING(
     [--with-sphinx-python=SHEBANG],
@@ -165,8 +189,8 @@ AC_ARG_WITH([sphinx-python],
 # the name of a program in $PATH. A prior macro such as AX_WITH_PROG can be
 # used to ensure this condition.
 #
-# If ${!1} is an absolute path, and that file isn't executable, error out. If
-# it's something other than an absolute path, assume it's the name of a
+# If ${!1} is an absolute path, and that file isn’t executable, error out. If
+# it’s something other than an absolute path, assume it’s the name of a
 # program in $PATH; if not, the behavior is undefined but not good (FIXME).
 #
 # Post-conditions:
@@ -217,8 +241,8 @@ AC_PROG_CC
 ch_cflags='-std=c99 -Wall'
 AS_IF([test -n "$lib_libsquashfuse"],
       [ch_cflags="$ch_cflags -I$inc_libsquashfuse -L$lib_libsquashfuse"
-       # Without this, clang fails with "error: argument unused during
-       # compilation" on the -L. GCC ignores it.
+       # Without this, clang fails with “error: argument unused during
+       # compilation” on the -L. GCC ignores it.
        ch_cflags="$ch_cflags -Wno-unused-command-line-argument"])
 AS_IF([test $use_werror = yes],
       [ch_cflags="$ch_cflags -Werror"])
@@ -237,7 +261,7 @@ AS_IF([test "$CC" = icc],
 # Only ch-run needs any kind of interesting library stuff; this variable holds
 # the library arguments we need. This also requires us to use AC_CHECK_LIB
 # instead of the (recommended by docs) AC_SEARCH_LIBS, because that adds
-# things to LIBS, which we don't want because it's applied to all executables.
+# things to LIBS, which we don’t want because it’s applied to all executables.
 CH_RUN_LIBS=
 
 # asprintf(3)
@@ -282,7 +306,7 @@ AC_LINK_IFELSE([AC_LANG_SOURCE([[
      [CH_RUN_LIBS="-largp $CH_RUN_LIBS"],
      [AC_MSG_ERROR([argp_parse(3) not found; please report this bug])])])
 
-# pthreads; needed for "ch-run --join".
+# pthreads; needed for “ch-run --join”.
 AX_PTHREAD
 
 # POSIX IPC lives in librt.
@@ -315,6 +339,87 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
   [AC_MSG_ERROR([cross-compilation not supported])])
 AC_MSG_RESULT($have_userns)
 
+# overlayfs
+AC_DEFUN([CH_OVERLAY_C], [[
+  #define _GNU_SOURCE
+  #include <errno.h>
+  #include <sched.h>
+  #include <stdio.h>
+  #include <stdlib.h>
+  #include <string.h>
+  #include <sys/mount.h>
+  #include <sys/stat.h>
+  #include <unistd.h>
+
+  #define T_(x) if (!(x)) fatal_(__FILE__, __LINE__, errno, #x)
+  #define Z_(x) if (x) fatal_(__FILE__, __LINE__, errno, #x)
+
+  void fatal_(const char *file, int line, int errno_, const char *str)
+  {
+     fprintf(stderr, "error: %s: %d: %s\n", file, line, str);
+     fprintf(stderr, "errno: %d: %s\n", errno_, strerror(errno_));
+     exit(1);
+  }
+
+  int main(void)
+  {
+     int fd;
+     uid_t euid = geteuid();
+     gid_t egid = getegid();
+
+     // enter namespaces
+     Z_ (unshare(CLONE_NEWNS|CLONE_NEWUSER));
+
+     // set up ID maps
+     T_ (-1 != (fd = open("/proc/self/uid_map", O_WRONLY)));
+     T_ (1 <= dprintf(fd, "%d %d 1\n", 0, euid));
+     Z_ (close(fd));
+     T_ (-1 != (fd = open("/proc/self/setgroups", O_WRONLY)));
+     T_ (1 <= dprintf(fd, "deny\n"));
+     Z_ (close(fd));
+     T_ (-1 != (fd = open("/proc/self/gid_map", O_WRONLY)));
+     T_ (1 <= dprintf(fd, "%d %d 1\n", 0, egid));
+     Z_ (close(fd));
+
+     // set up overlayfs
+     Z_ (mount("/", "/", NULL, MS_BIND | MS_REC | MS_PRIVATE, NULL));
+     Z_ (mount(NULL, "/mnt", "tmpfs", 0, NULL));
+     Z_ (mkdir("/mnt/upper", 0700));
+     Z_ (mkdir("/mnt/lower", 0700));
+     Z_ (mkdir("/mnt/lower/test", 0700));
+     Z_ (mkdir("/mnt/work", 0700));
+     Z_ (mkdir("/mnt/merged", 0700));
+     Z_ (mount(NULL, "/mnt/merged", "overlay", MS_NOATIME,
+               "lowerdir=/mnt/lower,"
+               "upperdir=/mnt/upper,"
+               "workdir=/mnt/work,"
+               "index=on,userxattr,volatile"));
+
+     // test if user xattrs are working
+  #ifdef XATTRS
+     Z_ (rmdir("/mnt/merged/test"));
+     Z_ (mkdir("/mnt/merged/test", 0700));
+  #endif
+  }
+]])
+AC_MSG_CHECKING([for unprivileged overlayfs])
+have_overlayfs="check disabled"
+AS_IF([test $enable_impolite_checks = yes],
+      [AC_RUN_IFELSE([AC_LANG_SOURCE(CH_OVERLAY_C)],
+                     [have_overlayfs=yes],
+                     [have_overlayfs=no],
+                     [AC_MSG_ERROR([cross-compilation not supported])])])
+AC_MSG_RESULT($have_overlayfs)
+have_tmpfs_xattrs="check disabled"
+AC_MSG_CHECKING([for tmpfs user xattrs])
+AS_IF([test $enable_impolite_checks = yes],
+      [AC_RUN_IFELSE([#define XATTRS
+                      AC_LANG_SOURCE(CH_OVERLAY_C)],
+                     [have_tmpfs_xattrs=yes],
+                     [have_tmpfs_xattrs=no],
+                     [AC_MSG_ERROR([cross-compilation not supported])])])
+AC_MSG_RESULT($have_tmpfs_xattrs)
+
 
 ### ch-run optional ##########################################################
 
@@ -324,6 +429,41 @@ AC_CHECK_DECL(FNM_EXTMATCH,
               [have_fnm_extmatch=no],
               [[#define _GNU_SOURCE
                 #include <fnmatch.h>]])
+
+# Should we build seccomp?
+AC_MSG_CHECKING([for seccomp filter support])
+AC_RUN_IFELSE([AC_LANG_SOURCE([[
+    #define _GNU_SOURCE
+    #include <linux/filter.h>
+    #include <linux/seccomp.h>
+    #include <linux/unistd.h>
+    #include <stdio.h>
+    #include <stdlib.h>
+    #include <sys/prctl.h>
+
+    #define Z_(x)  if (x) { perror(NULL); exit(1); }
+
+    int main(void)
+    {
+       struct sock_filter f[] = { BPF_STMT(BPF_RET|BPF_K, SECCOMP_RET_ALLOW) };
+       struct sock_fprog p = { 1, f };
+       Z_ (prctl(PR_SET_NO_NEW_PRIVS, 1, 0, 0, 0, 0));
+       Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p, 0, 0, 0));
+       return 0;
+    }
+  ]])],
+  [AC_MSG_RESULT([yes])
+   test_seccomp=yes],
+  [AC_MSG_RESULT([no])
+   test_seccomp=no],
+  [AC_MSG_ERROR([cross-compilation not supported])])
+AS_IF([test $test_seccomp = yes],
+      [AS_IF([test $want_seccomp = yes],
+             [have_seccomp=yes],   # works and =yes or not given
+             [have_seccomp=no])],  # works and =no
+      [AS_IF([test $need_seccomp = yes],
+             [have_seccomp=yes],   # doesn’t work and =yes (build anyway)
+             [have_seccomp=no])])  # doesn’t work and =no or not given
 
 
 ### SquashFS #################################################################
@@ -340,21 +480,41 @@ AC_CHECK_PROG([SQUASHFUSE], [squashfuse], [squashfuse])
 CH_CHECK_VERSION([SQUASHFUSE], [$vmin_squashfuse],
                  [--help 2>&1 | head -1 | cut -d' ' -f2])
 
-# libfuse3
-AC_CHECK_LIB([fuse3], [fuse_set_signal_handlers],
-  [have_libfuse3=yes],
+# Check for libsquashfuse if it’s wanted.
+have_libfuse3=n/a
+have_libsquashfuse_ll=n/a
+have_ll_h=n/a
+AS_IF([test $want_libsquashfuse = yes], [
+  # libfuse3. As of version 0.5.0, SquashFUSE’s ll.h won’t build without an
+  # appropriate -I [1]. Presently we use pkg-config to find it, but see #1844.
+  #
+  # We avoid PKG_CHECK_MODULES because it introduces a dependency on
+  # pkg-config at autogen.sh time, with impressively incomprehensible error
+  # messages if it’s not met [2]. The approach below also seems simpler [3]?
+  #
+  # [1]: https://github.com/vasi/squashfuse/commit/eca5764
+  # [2]: https://ae1020.github.io/undefined-macro-pkg-config/
+  # [3]: https://tirania.org/blog/archive/2012/Oct-20.html
+  AC_CHECK_PROG(have_pkg_config, pkg-config, yes, no)
+  AS_IF([test $have_pkg_config != yes],
+        [AC_MSG_ERROR([need pkg-config to find libfuse3; try --with-libsquashfuse=no or see issue @%:@1844])])
+  AS_IF([pkg-config --exists fuse3], [
+    have_libfuse3=yes
+    CFLAGS="$CFLAGS $(pkg-config --cflags fuse3)"
+    # libsquashfuse?
+    AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount],
+      [have_libsquashfuse_ll=yes],
+      [have_libsquashfuse_ll=no])
+    # ll.h?
+    AC_CHECK_HEADER([squashfuse/ll.h],
+      [have_ll_h=yes],
+      [have_ll_h=no],
+      [#define SQFS_CONFIG_H
+       #define FUSE_USE_VERSION 32
+      ])  # see comment in ch_fuse.c regarding these defines
+  ],
   [have_libfuse3=no])
-
-# libsquashfuse
-AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount],
-  [have_libsquashfuse_ll=yes],
-  [have_libsquashfuse_ll=no])
-AC_CHECK_HEADER([squashfuse/ll.h],
-  [have_ll_h=yes],
-  [have_ll_h=no],
-  [#define SQFS_CONFIG_H
-   #define FUSE_USE_VERSION 32
-  ])  # see comment in ch_fuse.c regarding these defines
+])
 
 # Should we link with libsquashfuse?
 AS_IF([   test $want_libsquashfuse = yes \
@@ -395,8 +555,8 @@ AS_CASE([$python],
 CH_CHECK_VERSION([PYTHON], [$vmin_python],
                  [--version | head -1 | cut -d' ' -f2])
 
-# Python module "requests"
-vmin_requests=2.6.0  # CentOS 7; FIXME: haven't actually tested this
+# Python module “requests”
+vmin_requests=2.6.0  # CentOS 7; FIXME: haven’t actually tested this
 AS_IF([test -n "$PYTHON"], [
   AC_MSG_CHECKING([for requests module])
   cat <<EOF | $PYTHON_SHEBANG
@@ -415,8 +575,8 @@ EOF
 ])
 
 # Check for bundled Lark; we do not verify or report version. Note this
-# assumes that $PWD is the top of the source tree. I don't believe anything
-# else is supported (see issue #820), but it's brittle.
+# assumes that $PWD is the top of the source tree. I don’t believe anything
+# else is supported (see issue #820), but it’s brittle.
 AC_MSG_CHECKING([for bundled Lark module])
 AS_IF([test -e ./lib/lark-*.dist-info],
       [lark_status=bundled],
@@ -426,20 +586,26 @@ AS_IF([   test $enable_bundled_lark = yes \
        && test $lark_status != bundled],
        [AC_MSG_ERROR([bundled Lark not found; see docs])])
 
-# Git
-vmin_git=2.28.1
-AC_CHECK_PROG([GIT], [git], [git])
-CH_CHECK_VERSION([GIT], [$vmin_git], [--version | cut -d' ' -f3])
-
 # DOT
 vmin_dot=2.30.1
 AC_CHECK_PROG([DOT], [dot], [dot])
 CH_CHECK_VERSION([DOT], [$vmin_dot], [dot -V 2>&1 | cut -d' ' -f5])
 
+# Git
+vmin_git=2.28.1
+AC_CHECK_PROG([GIT], [git], [git])
+CH_CHECK_VERSION([GIT], [$vmin_git], [--version | cut -d' ' -f3])
+
 # git2dot
 vmin_git2dot=0.8.3
 AC_CHECK_PROG([GIT2DOT], [git2dot.py], [git2dot.py])
 CH_CHECK_VERSION([GIT2DOT], [$vmin_git2dot], [--version | cut -d' ' -f3])
+
+# rsync
+vmin_rsync=3.1.0  # NOTE: keep in sync with lib/charliecloud.py
+AC_CHECK_PROG([RSYNC], [rsync], [rsync])
+CH_CHECK_VERSION([RSYNC], [$vmin_rsync],
+  [-V | sed -En 's/rsync +version (@<:@0-9@:>@+\.@<:@0-9@:>@+\.@<:@0-9@:>@+).*$/\1/p'])
 
 
 ### Docs #####################################################################
@@ -450,7 +616,7 @@ AX_WITH_PROG([SPHINX], [sphinx-build])
 CH_CHECK_VERSION([SPHINX], [$vmin_sphinx],
                  [--version | sed -E 's/sphinx-build //'])
 
-# Get the Sphinx Python. We don't care about version.
+# Get the Sphinx Python. We don’t care about version.
 AS_IF([test -n "$SPHINX"], [
   AS_IF([test -z "$sphinx_python"], [
     AC_MSG_CHECKING([for sphinx-build Python])
@@ -463,18 +629,18 @@ AS_IF([test -n "$SPHINX"], [
            AC_MSG_ERROR([--with-sphinx-python: must start with slash])])
 ])])
 
-# "docutils" module
+# “docutils” module
 vmin_docutils=0.14
 AS_IF([test -n "$SPHINX"], [
-  # Sphinx depends on docutils, so we don't need to check if the module exists
-  # before checking its version. (CH_CHECK_VERSION isn't smart enough to deal
+  # Sphinx depends on docutils, so we don’t need to check if the module exists
+  # before checking its version. (CH_CHECK_VERSION isn’t smart enough to deal
   # with Python being present but a module not.)
   DOCUTILS=$sphinx_python  # FIXME: output is confusing
   CH_CHECK_VERSION([DOCUTILS], [$vmin_docutils],
                    [-c 'import docutils; print(docutils.__version__)'])
 ], [DOCUTILS_VERSION_NOTE='moot b/c no sphinx-build'])
 
-# "sphinx-rtd-theme" module
+# “sphinx-rtd-theme” module
 vmin_rtd=0.2.4
 AS_IF([test -n "$SPHINX"], [
   AC_MSG_CHECKING([for sphinx_rtd_theme module])
@@ -510,19 +676,6 @@ AS_IF([   test $enable_man = yes && test $have_docs = no],
 
 ### Glue scripts #############################################################
 
-# Buildah
-vmin_buildah=1.11.2
-AC_CHECK_PROG([BUILDAH], [buildah], [buildah])
-CH_CHECK_VERSION([BUILDAH], [$vmin_buildah], [--version | cut -d' ' -f3])
-
-# Docker
-vmin_docker=17.03
-AC_CHECK_PROG([DOCKER], [docker], [docker])
-CH_CHECK_VERSION([DOCKER], [$vmin_docker], [-v | tr -d , | cut -d' ' -f3])
-
-# mktemp - no version
-AC_CHECK_PROG([MKTEMP], [mktemp], [mktemp])
-
 # libnvidia-container-cli
 vmin_nvidia_cli=1.0.0
 AC_CHECK_PROG([NVIDIA_CLI], [nvidia-container-cli], [nvidia-container-cli])
@@ -545,12 +698,12 @@ AC_CHECK_PROG([_BASH], [bash], [bash])  # $BASH and $BASH_VERSION already used
 CH_CHECK_VERSION([_BASH], [$vmin_bash], [--version | head -1 | cut -d' ' -f4])
 
 # Bats
-vmin_bats=0.4.0
+vmin_bats=1.2.0
 AC_CHECK_PROG([BATS], [bats], [bats])
 CH_CHECK_VERSION([BATS], [$vmin_bats], [--version | cut -d' ' -f2])
 
 # ShellCheck
-vmin_shellcheck=0.6.0
+vmin_shellcheck=0.9.0
 AC_CHECK_PROG([SHELLCHECK], [shellcheck], [shellcheck])
 # https://stackoverflow.com/questions/6022384
 CH_CHECK_VERSION([SHELLCHECK], [$vmin_shellcheck],
@@ -583,12 +736,12 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #      a. Replace the string "@foo@" with the value of foo anywhere it
 #         appears.
 #
-#      b. Set the Make variable foo to the same value, i.e., add "foo = @foo@"
+#      b. Set the Make variable foo to the same value, i.e., add “foo = @foo@”
 #         which is then substituted as in item 1.
 #
 #      So this is how you transfer a variable from configure to Make.
 #
-#   2. AC_SUBST_NOTMAKE(foo) does only (a).
+#   2. AC_SUBST_NOTMAKE(foo) does only 1a.
 #
 #   3. AM_CONDITIONAL(foo, test) creates a variable for use in Automake
 #      conditionals. E.g. if you say in configure.ac:
@@ -603,13 +756,13 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #            ... baz ...
 #        endif
 #
-#      then if the configure variable $foo is "yes", lines "... bar ..." will
-#      be placed in the Makefile; otherwise, "... baz ..." will be included.
+#      then if the configure variable $foo is “yes”, lines “... bar ...” will
+#      be placed in the Makefile; otherwise, “... baz ...” will be included.
 #
 #      This is how you include and exclude portions of the Makefile.am from
 #      the output Makefile. It *does not* create a Make variable.
 #
-#   4. AC_DEFINE(foo, value, comment) #define's the preprocessor symbol foo to
+#   4. AC_DEFINE(foo, value, comment) #define’s the preprocessor symbol foo to
 #      value in config.h. (Supposedly value and comment are optional but I got
 #      warnings doing that.) So this is how you make configure values
 #      available in C code (as macros, not variables). Typically you would
@@ -617,7 +770,7 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #      true or false (which would require #if).
 #
 #   5. AC_DEFINE_UNQUOTES adds some extra transformations to the above. I
-#      didn't quite follow.
+#      didn’t quite follow.
 #
 # Below are all the variables we want available outside configure.
 
@@ -635,6 +788,8 @@ AC_SUBST([SPHINX])
 
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
+AS_IF([test $have_seccomp = yes],
+      [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
@@ -653,10 +808,6 @@ AS_IF([   test $have_userns = yes],
 
 # image builders
 
-AS_IF([   test -n "$BUILDAH"],
-      [have_buildah=yes],
-      [have_buildah=no])
-
 AS_IF([   test $enable_ch_image = yes \
        && test -n "$PYTHON" \
        && test -n "$PYTHON_SHEBANG" \
@@ -670,28 +821,26 @@ AS_IF([   test $have_ch_image = yes \
       [have_ch_image_bu=yes],
       [have_ch_image_bu=no])
 
-AS_IF([   test -n "$DOCKER" \
-       && test -n "$MKTEMP"],
-      [have_docker=yes],
-      [have_docker=no])
+AS_IF([   test $have_ch_image = yes \
+       && test -n "$RSYNC"],
+      [have_ch_image_rsync=yes],
+      [have_ch_image_rsync=no])
 
 # managing container images
 
-AS_IF([   test $have_buildah = yes \
-       || test $have_ch_image = yes \
-       || test $have_docker = yes],
+AS_IF([   test $have_ch_image = yes],
       [have_any_builder=yes],
       [have_any_builder=no])
 
-AS_IF([   test $have_any_builder = yes],
+AS_IF([   test $have_ch_image = yes],
       [have_dockerfile_build=yes],
       [have_dockerfile_build=no])
 
-AS_IF([   test $have_any_builder = yes],
+AS_IF([   test $have_ch_image = yes],
       [have_builder_to_tar=yes],
       [have_builder_to_tar=no])
 
-AS_IF([   test $have_any_builder = yes \
+AS_IF([   test $have_ch_image = yes \
        && test -n "$MKSQUASHFS"],
       [have_pack_squash=yes],
       [have_pack_squash=no])
@@ -707,7 +856,7 @@ AS_IF([   test -n "$NVIDIA_CLI" \
 
 AS_IF([   test $enable_test = yes \
        && test $have_ch_run = yes \
-       && test $have_any_builder = yes \
+       && test $have_ch_image = yes \
        && test -n "$_BASH" \
        && test -n "$BATS" \
        && test -n "$WGET"],         # assume access to Docker Hub or mirror
@@ -799,7 +948,7 @@ Building Charliecloud
 
   ch-run(1) internal SquashFS mounting: ${have_libsquashfuse}
     enabled ... ${want_libsquashfuse}
-    libfuse3 ... ${have_libfuse3}
+    libfuse3 ... ${have_libfuse3} ${fuse3_CFLAGS:-}
     libsquashfuse_ll ... ${have_libsquashfuse_ll}
     ll.h header ... ${have_ll_h}
 
@@ -811,9 +960,6 @@ Building Charliecloud
 
 Building images
 ~~~~~~~~~~~~~~~
-
-  with Buildah (warning: not tested; see issue #990): ${have_buildah}
-    Buildah ≥ $vmin_buildah ... ${BUILDAH_VERSION_NOTE}
 
   with ch-image(1): ${have_ch_image}
     enabled ... ${enable_ch_image}
@@ -827,22 +973,22 @@ Building images
     ch-image(1): ... ${have_ch_image}
     Git ≥ $vmin_git ... ${GIT_VERSION_NOTE}
 
-  with Docker: ${have_docker}
-    Docker ≥ $vmin_docker ... ${DOCKER_VERSION_NOTE}
-    mktemp(1) ... ${MKTEMP:-not found}
+  with ch-image(1) using RSYNC instruction: ${have_ch_image_rsync}
+    ch-image(1): ... ${have_ch_image}
+    rsync ≥ $vmin_rsync ... ${RSYNC_VERSION_NOTE}
 
 Managing container images
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
   build from Dockerfile: ${have_dockerfile_build}
-    at least one builder ... ${have_any_builder}
+    ch-image(1) builder ... ${have_ch_image}
     access to an image repository ... assumed yes
 
   pack images from builder storage to tarball: ${have_builder_to_tar}
-    at least one builder ... ${have_any_builder}
+    ch-image(1) builder ... ${have_ch_image}
 
   pack images from builder storage to SquashFS: ${have_pack_squash}
-    at least one builder ... ${have_any_builder}
+    ch-image(1) builder ... ${have_ch_image}
     mksquashfs(1) ≥ $vmin_mksquashfs ... ${MKSQUASHFS_VERSION_NOTE}
 
   Note: Pulling/pushing images from/to a repository is currently done using
@@ -858,6 +1004,13 @@ Running containers
     manual mount with SquashFUSE ≥ $vmin_squashfuse ... ${SQUASHFUSE_VERSION_NOTE}
     internal mount with libsquashfuse ... ${have_libsquashfuse}
 
+  fake system calls with seccomp(2): ${have_seccomp}
+    enabled ... ${msg_seccomp}
+    tested working ... ${test_seccomp}
+
+  writeable overlay (--write-fake): ${have_overlayfs}
+    fully functional ... ${have_tmpfs_xattrs}
+
   inject nVidia GPU libraries: ${have_nvidia}
     nvidia-container-cli(1) ≥ $vmin_nvidia_cli ... ${NVIDIA_CLI_VERSION_NOTE}
     nVidia libraries & executables present ... ${have_nvidia_libs}
@@ -868,7 +1021,7 @@ Test suite
   basic tests, all stages: ${have_tests_basic}
     test suite enabled ... ${enable_test}
     ch-run(1) ... ${have_ch_run}
-    any builder above ... ${have_any_builder}
+    any builder above ... ${have_ch_image}
     access to Docker Hub or mirror ... assumed yes
     Bats ≥ $vmin_bats ... ${BATS_VERSION_NOTE}
     Bash ≥ $vmin_bash ... ${_BASH_VERSION_NOTE}

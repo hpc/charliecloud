@@ -19,7 +19,7 @@ Description
 Copy image :code:`IN` to :code:`OUT` and convert its format. Replace
 :code:`OUT` if it already exists, unless :code:`--no-clobber` is specified. It
 is an error if :code:`IN` and :code:`OUT` have the same format; use the
-format's own tools for that case.
+format’s own tools for that case.
 
 :code:`ch-run` can run container images that are plain directories or
 (optionally) SquashFS archives. However, images can take on a variety of other
@@ -31,7 +31,7 @@ producing the final format actually needed.
 
   :code:`IN`
     Descriptor for the input image. For image builders, this is an image
-    reference; otherwise, it's a filesystem path.
+    reference; otherwise, it’s a filesystem path.
 
   :code:`OUT`
     Descriptor for the output image.
@@ -43,14 +43,25 @@ producing the final format actually needed.
     Input image format is :code:`FMT`. If omitted, inferred as described below.
 
   :code:`-n`, :code:`--dry-run`
-    Don't read the input or write the output. Useful for testing format
+    Don’t read the input or write the output. Useful for testing format
     inference.
 
   :code:`--no-clobber`
     Error if :code:`OUT` already exists, rather than replacing it.
 
+  :code:`--no-xattrs`
+    Ignore xattrs and ACLs when converting. Overrides :code:`$CH_XATTRS`.
+
   :code:`-o`, :code:`--out-fmt FMT`
     Output image format is :code:`FMT`; inferred if omitted.
+
+  :code:`-q`, :code:`--quiet`
+    Be quieter; can be repeated. Incompatible with :code:`-v`. See the :ref:`FAQ
+    entry on verbosity <faq_verbosity>` for details.
+
+  :code:`-s`, :code:`--storage DIR`
+    Set the storage directory. Equivalent to the same option for :code:`ch-image(1)`
+    and :code:`ch-run(1)`.
 
   :code:`--tmp DIR`
     A sub-directory for temporary storage is created in :code:`DIR` and
@@ -63,9 +74,12 @@ producing the final format actually needed.
   :code:`-v`, :code:`--verbose`
     Print extra chatter. Can be repeated.
 
+  :code:`--xattrs`
+    Preserve xattrs and ACLs when converting.
+
 .. Notes:
 
-   1. It's a deliberate choice to use UNIXey options rather than the Skopeo
+   1. It’s a deliberate choice to use UNIXey options rather than the Skopeo
       syntax [1], e.g. "-i docker" rather than "docker:image-name".
 
       [1]: https://manpages.debian.org/unstable/golang-github-containers-image/containers-transports.5.en.html
@@ -76,7 +90,7 @@ producing the final format actually needed.
       up. Also, it’s not clear when it will be called. For example, if you
       convert a directory to a tarball, then passing e.g. -J to XZ-compress
       will work fine, but when converting from Docker, we just compress the
-      tarball we got from Docker, so in that case -J wouldn't work.
+      tarball we got from Docker, so in that case -J wouldn’t work.
 
    3. I also deliberately left out an option to change the output compression
       algorithm, under the assumption that the default is good enough. This
@@ -95,14 +109,16 @@ Image formats
   :code:`dir`
     Ordinary filesystem directory (i.e., not a mount point) containing an
     unpacked image. Output directories that already exist are replaced if they
-    look like an image; otherwise, exit with an error.
+    look like an image. If the output directory is empty, the conversion should
+    use the directory without overwriting it. If the directory doesn’t look like
+    an image and isn’t empty, exit with an error.
 
   :code:`docker`
     Internal storage for Docker.
 
   :code:`podman`
     Internal storage for Podman.
-    
+
   :code:`squash`
     SquashFS filesystem archive containing the flattened image. SquashFS
     archives are much like tar archives but are mountable, including by

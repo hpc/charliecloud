@@ -2,7 +2,7 @@ What is Charliecloud?
 ---------------------
 
 Charliecloud provides user-defined software stacks (UDSS) for high-performance
-computing (HPC) centers. This "bring your own software stack" functionality
+computing (HPC) centers. This “bring your own software stack” functionality
 addresses needs such as:
 
 * software dependencies that are numerous, complex, unusual, differently
@@ -46,8 +46,8 @@ How do I learn more?
   detail the motivation for Charliecloud and the technology upon which it is
   based: https://www.usenix.org/publications/login/fall2017/priedhorsky
 
-* A more technical resource is our Supercomputing 2017 paper:
-  https://dl.acm.org/citation.cfm?id=3126925
+* For technical papers about Charliecloud, refer to the *Technical
+  publications* section below.
 
 Who is responsible?
 -------------------
@@ -79,9 +79,9 @@ How can I participate?
 
 Use our GitHub page: https://github.com/hpc/charliecloud
 
-Bug reports and feature requests should be filed as "Issues". Questions,
-comments, support requests, and everything else should use our "Discussions".
-Don't worry if you put something in the wrong place; we'll be more than happy
+Bug reports and feature requests should be filed as “Issues”. Questions,
+comments, support requests, and everything else should use our “Discussions”.
+Don't worry if you put something in the wrong place; we’ll be more than happy
 to help regardless.
 
 We also have a mailing list for announcements: https://groups.io/g/charliecloud
@@ -92,24 +92,53 @@ list above.
 
 We are friendly and welcoming of diversity on all dimensions.
 
-How do I cite Charliecloud?
----------------------------
+Technical publications
+----------------------
 
 If Charliecloud helped your research, or it was useful to you in any other
 context where bibliographic citations are appropriate, please cite the
 following open-access paper:
 
-  Reid Priedhorsky and Tim Randles. "Charliecloud: Unprivileged containers for
-  user-defined software stacks in HPC", 2017. In *Proc. Supercomputing*.
+  Reid Priedhorsky and Tim Randles. “Charliecloud: Unprivileged containers for
+  user-defined software stacks in HPC”, 2017. In *Proc. Supercomputing*.
   DOI: `10.1145/3126908.3126925 <https://doi.org/10.1145/3126908.3126925>`_.
 
-*Note:* This paper contains out-of-date number for the size of Charliecloud's
+*Note:* This paper contains out-of-date number for the size of Charliecloud’s
 code. Please instead use the current number in the FAQ.
+
+Other publications:
+
+* We compare the performance of three HPC-specific container technologies
+  against bare metal, finding no concerns about performance degradation.
+
+    Alfred Torrez, Tim Randles, and Reid Priedhorsky. “HPC container runtimes
+    have minimal or no performance impact”, 2019. In *Proc. CANOPIE HPC
+    Workshop @ SC*. DOI: `10.1109/CANOPIE-HPC49598.2019.00010
+    <https://ieeexplore.ieee.org/document/8950978>`_.
+
+* A demonstration of how low-privilege containers solve increasing demand for
+  software flexibility.
+
+    Reid Priedhorsky, R. Shane Canon, Timothy Randles, and Andrew J. Younge.
+    “Minimizing privilege for building HPC containers”, 2021. In *Proc.
+    Supercomputing*. DOI: `10.6084/m9.figshare.14396099
+    <https://doi.org/10.6084/m9.figshare.14396099>`_.
+
+* Charliecloud’s build cache performs competitively with the standard
+  many-layered union filesystem approach and has structural advantages
+  including a better diff format, lower cache overhead, and better file
+  de-duplication.
+
+    Reid Priedhorsky, Jordan Ogas, Claude H. (Rusty) Davis IV, Z. Noah
+    Hounshel, Ashlyn Lee, Benjamin Stormer, and R. Shane Goff. "Charliecloud’s
+    layer-free, Git-based container build cache", 2023. In *Proc.
+    Supercomputing*. DOI: `10.1145/3624062.3624585
+    <https://doi.org/10.1145/3624062.3624585>`_.
 
 Copyright and license
 ---------------------
 
-Charliecloud is copyright © 2014–2022 Triad National Security, LLC and others.
+Charliecloud is copyright © 2014–2023 Triad National Security, LLC and others.
 
 This software was produced under U.S. Government contract 89233218CNA000001
 for Los Alamos National Laboratory (LANL), which is operated by Triad National
@@ -134,4 +163,4 @@ should be clearly marked, so as not to confuse it with the version available
 from LANL.
 
 
-..  LocalWords:  USENIX's CNA Meisam
+..  LocalWords:  USENIX's CNA Meisam figshare

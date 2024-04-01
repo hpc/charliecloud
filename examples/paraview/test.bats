@@ -1,24 +1,24 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
     scope full
     prerequisites_ok paraview
+    pmix_or_skip
     indir=${CHTEST_EXAMPLES_DIR}/paraview
-    outdir=$BATS_TMPDIR
+    outdir=$BATS_TMPDIR/paraview
     inbind=${indir}:/mnt/0
     outbind=${outdir}:/mnt/1
     if [[ $ch_multinode ]]; then
         # Bats only creates $BATS_TMPDIR on the first node.
         # shellcheck disable=SC2086
-        $ch_mpirun_node mkdir -p "$BATS_TMPDIR"
+        $ch_mpirun_node mkdir -p "$outdir"
+    else
+        mkdir -p "$outdir"
     fi
 }
 
-# The first two tests demonstrate ParaView as an "executable" to process a
+# The first two tests demonstrate ParaView as an “executable” to process a
 # non-containerized input deck (cone.py) and produce non-containerized output.
 #
 #   .png: In previous versions, PNG output is antialiased with a single rank
@@ -31,11 +31,16 @@ setup () {
 #         cluster. The resulting VTK file is dependent on whether an image was
 #         rendered serially or using 2 or n processes.
 #
-# We do not check .pvtp (and its companion .vtp) output because it's a
+# We do not check .pvtp (and its companion .vtp) output because it’s a
 # collection of XML files containing binary data and it seems too hairy to me.
 
-@test "${ch_tag}/crayify image" {
-    crayify_mpi_or_skip "$ch_img"
+@test "${ch_tag}/inject cray mpi ($cray_prov)" {
+    cray_ofi_or_skip "$ch_img"
+    run ch-run "$ch_img" -- fi_info
+    echo "$output"
+    [[ $output == *"provider: $cray_prov"* ]]
+    [[ $output == *"fabric: $cray_prov"* ]]
+    [[ $status -eq 0 ]]
 }
 
 @test "${ch_tag}/cone serial" {
@@ -49,6 +54,7 @@ setup () {
 }
 
 @test "${ch_tag}/cone serial PNG" {
+    [[ -z $ch_cray ]] || skip 'serial launches unsupported on Cray'
     pict_ok
     pict_assert_equal "${indir}/cone.png" "${outdir}/cone.serial.png" 1000
 }

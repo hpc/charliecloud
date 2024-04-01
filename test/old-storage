@@ -17,13 +17,13 @@ and run the test suite.
 
 Usage:
 
-  $ old-storage.sh SCOPE WORKDIR TAR1 [TAR2 ...]
+  $ old-storage.sh SCOPE WORKDIR (DIR|TAR1) [TAR2 ...]
 
 WORKDIR is where ch-image storage are unpacked. It must be empty and have
 enough space for one storage directory.
 
-TARn are old storage directories arechived as tarballs. These must have
-certain properties:
+TARn are old storage directories archived as tarballs. These must have certain
+properties:
 
   1. Named storage-$VERSION.$ARCH.tar.gz, e.g. “storage-0.27.x86_64.tar.gz”.
      (Note: $ARCH is not currently validated but may be in the future.)
@@ -43,6 +43,9 @@ certain properties:
 
      Note: Best practice is to generate the tarball at the time of release,
      because old test suites often don’t pass due to changing source images.
+
+If a directory DIR is given instead, use all tarballs in that directory that
+have last-modified dates less than one year in the past. (See #1507.)
 EOF
 }
 
@@ -68,18 +71,29 @@ trap 'fatal_msg "command failed on line $LINENO"' ERR
 PATH=$(cd "$(dirname "$0")" && pwd)/../bin:$PATH
 export PATH
 
+if [[ -d $1 ]]; then
+    oldtars=$(find "$1" -mindepth 1 -mtime -365 -print | sort)
+else
+    oldtars=$(printf '%s ' "$@")  # https://www.shellcheck.net/wiki/SC2124
+fi
+
+summary=''
+pass_ct=0
+fail_ct=0
+
 
 ### Main loop
 
 INFO "workdir: $workdir"
-for oldtar in "$@"; do
+for oldtar in $oldtars; do
     base=$(basename "$oldtar")
     base=${base%.*}  # rm .gz
     base=${base%.*}  # rm .tar
     base=${base%.*}  # rm architecture
     storage=${workdir}/${base}
 
-    INFO "unpacking: $oldtar -> $storage"
+    INFO "old tar:   $oldtar ($(stat -c %y "$oldtar"))"
+    INFO "unpacking: $storage"
     [[ -d $workdir ]]
     [[ ! -d $storage ]]
     mkdir "$storage"
@@ -88,14 +102,46 @@ for oldtar in "$@"; do
     export CH_IMAGE_STORAGE=$storage
     INFO "unpacked: $(du -sh "$storage" | cut -f1) bytes in $(du --inodes -sh "$storage" | cut -f1) inodes"
 
+    case ${storage#*-} in
+        0.29|0.30|0.31)
+            INFO "working around bug fixed by PR #1662"
+            (cd "$storage"/bucache && git branch -D alpine+latest)
+            ;;
+    esac
+
     INFO "upgrading"
     ch-image list
+    # These are images that contain references to things on the internet that
+    # go out of date, so builds based on them fail. Re-pull them to get a
+    # current base image.
+    ch-image pull archlinux:latest
 
     INFO "testing"
-    ch-test -b ch-image --pedantic=no -s "$scope" all
+    if (ch-test -b ch-image --pedantic=no -s "$scope" all); then
+        pass_ct=$((pass_ct + 1))
+        summary+="😁  ${oldtar}: PASS"$'\n'
+    else
+        fail_ct=$((fail_ct + 1))
+        summary+="🤦  ${oldtar}: FAIL"$'\n'
+    fi
+
 
     INFO "deleting: $storage"
     rm -Rf --one-file-system "$storage"
     [[ ! -d $storage ]]
-
 done
+
+cat <<EOF
+
+🌻🌻🌻  Summary  🌻🌻🌻
+
+${summary}
+pass: ${pass_ct}
+fail: ${fail_ct}
+EOF
+
+if [[ $fail_ct -gt 0 ]]; then
+    echo
+    fatal_msg 'one or more old storage test suites failed'
+    exit 1
+fi

@@ -24,12 +24,12 @@ best_practices.rst \
 bugs.rst \
 charliecloud.rst \
 ch-checkns.rst \
+ch-completion.bash.rst \
 ch-convert.rst \
 ch-fromhost.rst \
 ch-image.rst \
 ch-run.rst \
 ch-run-oci.rst \
-ch-ssh.rst \
 ch-test.rst \
 conf.py \
 dev.rst \
@@ -49,12 +49,12 @@ if ENABLE_MAN
 man_MANS = \
 man/charliecloud.7 \
 man/ch-checkns.1 \
+man/ch-completion.bash.7 \
 man/ch-convert.1 \
 man/ch-fromhost.1 \
 man/ch-image.1 \
 man/ch-run.1 \
 man/ch-run-oci.1 \
-man/ch-ssh.1 \
 man/ch-test.1
 endif
 
@@ -62,13 +62,14 @@ if ENABLE_HTML
 nobase_html_DATA = \
 html/searchindex.js \
 html/_images/rd100-winner.png \
+html/best_practices.html \
 html/ch-checkns.html \
+html/ch-completion.bash.html \
 html/ch-convert.html \
 html/ch-fromhost.html \
 html/ch-image.html \
 html/ch-run.html \
 html/ch-run-oci.html \
-html/ch-ssh.html \
 html/ch-test.html \
 html/command-usage.html \
 html/dev.html \

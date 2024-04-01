@@ -74,17 +74,24 @@ allows trading off thoroughness versus time.
     images directory produced by a successful :code:`build` phase, which can
     be copied from the build system if it’s not also the run system.
 
+  :code:`rootemu`
+    Test the root emulation modes (:code:`seccomp`, :code:`fakeroot`, and
+    :code:`none`) on various linux distributions.
+
   :code:`examples`
     Example applications. Requires an unpacked images directory produced by a
     successful :code:`run` phase.
 
   :code:`all`
-    Execute phases :code:`build`, :code:`run`, and :code:`examples`, in that
-    order.
+    Execute phases :code:`build`, :code:`rootemu`, :code:`run`, and
+    :code:`examples`, in that order.
 
   :code:`mk-perm-dirs`
     Create the filesystem permissions directories. Requires
     :code:`--perm-dirs`.
+
+  :code:`build-images`
+    Build images from :code:`build` phase, without running the associated tests.
 
   :code:`clean`
     Delete automatically-generated test files, and packed and unpacked image
@@ -155,7 +162,7 @@ Additional arguments:
   :code:`--img-dir DIR`
     Set unpacked images directory to :code:`DIR`. In a multi-node allocation,
     this directory may not be shared between nodes. Default:
-    :code:`$CH_TEST_IMGDIR` if set; otherwise :code:`/var/tmp/img`.
+    :code:`$CH_TEST_IMGDIR` if set; otherwise :code:`/var/tmp/${USER}.img`.
 
   :code:`--lustre DIR`
     Use :code:`DIR` for run-phase Lustre tests. Default:
@@ -166,7 +173,7 @@ Additional arguments:
 
   :code:`--pack-dir DIR`
     Set packed images directory to :code:`DIR`. Default:
-    :code:`$CH_TEST_TARDIR` if set; otherwise :code:`/var/tmp/pack`.
+    :code:`$CH_TEST_TARDIR` if set; otherwise :code:`/var/tmp/${USER}.pack`.
 
   :code:`--pedantic (yes|no)`
     Some tests require configurations that are very specific (e.g., being a

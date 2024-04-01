@@ -29,7 +29,6 @@ enum img_type {
 
 struct container {
    struct bind *binds;
-   bool ch_ssh;          // bind /usr/bin/ch-ssh?
    gid_t container_gid;  // GID to use in container
    uid_t container_uid;  // UID to use in container
    bool env_expand;      // expand variables in --set-env
@@ -40,6 +39,7 @@ struct container {
    int join_ct;          // number of peers in a synchronized join
    pid_t join_pid;       // process in existing namespace to join
    char *join_tag;       // identifier for synchronized join
+   char *overlay_size;   // size of overlaid tmpfs (NULL for no overlay)
    bool private_passwd;  // don't bind custom /etc/{passwd,group}
    bool private_tmp;     // don't bind host's /tmp
    enum img_type type;   // directory, SquashFS, etc.
@@ -53,3 +53,6 @@ void containerize(struct container *c);
 enum img_type image_type(const char *ref, const char *images_dir);
 char *img_name2path(const char *name, const char *storage_dir);
 void run_user_command(char *argv[], const char *initial_dir);
+#ifdef HAVE_SECCOMP
+void seccomp_install(void);
+#endif

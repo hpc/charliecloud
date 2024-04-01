@@ -12,7 +12,7 @@ tarball_gz=${2}.tar.gz
 workdir=$3
 
 tag=docker_pull
-addr=alpine:3.9
+addr=alpine:3.17
 img=$tag:latest
 
 cd "$workdir"

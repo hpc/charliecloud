@@ -1,16 +1,16 @@
 import errno
 import fcntl
-import getpass
+import fnmatch
+import glob
 import hashlib
 import json
 import os
-import pathlib
-import re
 import pprint
+import re
 import shutil
 import stat
+import struct
 import tarfile
-import version
 
 import charliecloud as ch
 
@@ -23,8 +23,8 @@ import charliecloud as ch
 #
 # To see the directory formats in released versions:
 #
-#   $ git grep -F 'STORAGE_VERSION =' $(git tag | sort -V)
-STORAGE_VERSION = 5
+#   $ git grep -E '^STORAGE_VERSION =' $(git tag | sort -V)
+STORAGE_VERSION = 7
 
 
 ## Globals ##
@@ -34,87 +34,119 @@ STORAGE_VERSION = 5
 storage_lock = True
 
 
+### Functions ###
+
+def copy(src, dst, follow_symlinks=False):
+   """Copy file src to dst. Wrapper function providing same signature as
+      shutil.copy2(). See Path.copy() for lots of gory details. Accepts
+      follow_symlinks, but the only valid value is False."""
+   assert (not follow_symlinks)
+   if (isinstance(src, str)):
+      src = Path(src)
+   if (isinstance(dst, str)):
+      dst = Path(dst)
+   src.copy(dst)
+
+
 ## Classes ##
 
-class Path(pathlib.PosixPath):
-   """Stock Path objects have the very weird property that appending an
-      *absolute* path to an existing path ignores the left operand, leaving
-      only the absolute right operand:
+class Path(os.PathLike):
+   """Path class roughly corresponding to pathlib.PosixPath. While it does
+      subclass os.PathLike, it does not subclass anything in pathlib because:
 
-        >>> import pathlib
-        >>> a = pathlib.Path("/foo/bar")
-        >>> a.joinpath("baz")
-        PosixPath('/foo/bar/baz')
-        >>> a.joinpath("/baz")
-        PosixPath('/baz')
+        1. Only in 3.12 does pathlib.Path actually support subclasses [1].
+           Before then it can be done, but it’s messy and brittle.
 
-      This is contrary to long-standing UNIX/POSIX, where extra slashes in a
-      path are ignored, e.g. the path "foo//bar" is equivalent to "foo/bar".
-      It seems to be inherited from os.path.join().
+        2. pathlib.Path seems overcomplicated for our use case and is often
+           slow.
 
-      Even with the relatively limited use of Path objects so far, this has
-      caused quite a few bugs. IMO it's too difficult and error-prone to
-      manually manage whether paths are absolute or relative. Thus, this
-      subclass introduces a new operator "//" which does the right thing,
-      i.e., if the right operand is absolute, that fact is ignored. E.g.:
+      This class implements (incompletely) the pathlib.PosixPath API, with
+      many extensions and two important differences:
 
-        >>> a = Path("/foo/bar")
-        >>> a.joinpath_posix("baz")
-        Path('/foo/bar/baz')
-        >>> a.joinpath_posix("/baz")
-        Path('/foo/bar/baz')
-        >>> a // "/baz"
-        Path('/foo/bar/baz')
-        >>> "/baz" // a
-        Path('/baz/foo/bar')
+        1. Trailing slash. Objects remember whether a trailing slash is
+           present, and append it when str() or repr().
 
-      We introduce a new operator because it seemed like too subtle a change
-      to the existing operator "/" (which we disable to avoid getting burned
-      here in Charliecloud). An alternative was "+" like strings, but that led
-      to silently wrong results when the paths *were* strings (components
-      concatenated with no slash)."""
+           “/” is considered to *not* have a trailing slash. Subprograms might
+           interpret this differently. Notably, rsync(1) *does* interpret “/”
+           as trailing-slashed.
 
-   # Name of the gzip(1) to use; set on first call of file_gzip().
+        2. Path join operator. This class uses the “//” operator, not “/”, for
+           joining paths, with different semantics.
+
+           When appending an absolute path to a pathlib.PosixPath object, the
+           left operand is ignored, leaving only the absolute right operand:
+
+             >>> import pathlib
+             >>> a = pathlib.Path("/foo/bar")
+             >>> a / "baz"
+             PosixPath('/foo/bar/baz')
+             >>> a / "/baz"
+             PosixPath('/baz')
+
+           This is contrary to long-standing UNIX/POSIX, where extra slashes
+           in a path are ignored, e.g. “/foo//bar” is equivalent to
+           “/foo/bar”. os.path.join() behaves the same way. This behavior
+           caused quite a few Charliecloud bugs. IMO it’s too error-prone to
+           manually manage whether paths are absolute or relative.
+
+           Thus, the operator to join instances of this class is “//”, which
+           does the POSIX thing, i.e., if the right operand is absolute, that
+           fact is just ignored. E.g.:
+
+             >>> a = Path("/foo/bar")
+             >>> a // "/baz"
+             Path('/foo/bar/baz')
+             >>> "/baz" // a
+             Path('/baz/foo/bar')
+
+           We used a different operator because it seemed a source of
+           confusion to change the behavior of “/” (which is not provided by
+           this class). An alternative was “+” like strings, but that led to
+           silently wrong results when the paths *were* strings (simple string
+           concatenation with no slash).
+
+      [1]: https://docs.python.org/3/whatsnew/3.12.html#pathlib"""
+
+   # Store the path as a string. Assume:
+   #
+   #   1. No multiple slashes.
+   #   2. Length at least one character.
+   #   3. Does not begin with redundant “./” (but can be just “.”).
+   #
+   # Call self._tidy() if these can’t be assumed.
+   __slots__ = ("path",)
+
+   # Name of the gzip(1) to use for file_gzip(); set on first call.
    gzip = None
 
-   def __floordiv__(self, right):
-      return self.joinpath_posix(right)
+   def __init__(self, *segments):
+      """e.g.:
 
-   def __len__(self):
-      return self.parts.__len__()
+           >>> Path("/a/b")
+           Path('/a/b')
+           >>> Path("/", "a", "b")
+           Path('/a/b')
+           >>> Path("/", "a", "b", "/")
+           Path('/a/b/')
+           >>> Path("a/b")
+           Path('a/b')
+           >>> Path("/a/b/")
+           Path('/a/b/')
+           >>> Path("//")
+           Path('/')
+           >>> Path("")
+           Path('.')
+           >>> Path("./a")
+           Path('a')"""
+      segments = [    (i.__fspath__() if isinstance(i, os.PathLike) else i)
+                  for i in segments]
+      self.path = "/".join(segments)
+      self._tidy()
 
-   def __rfloordiv__(self, left):
-      left = Path(left)
-      return left.joinpath_posix(self)
-
-   def __rtruediv__(self, left):
-      return NotImplemented
-
-   def __truediv__(self, right):
-      return NotImplemented
-
-   @property
-   def first(self):
-      """Return my first component, or if I have no components (i.e.,
-         Path(".")), return None."""
-      try:
-         return self.parts[0]
-      except IndexError:
-         return None
-
-   @property
-   def git_escaped(self):
-      "Return a copy of me escaped for Git storage."
-      assert (self.git_incompatible_p)
-      return self.with_name(self.name.replace(".git", ".weirdal_"))
-
-   @property
-   def git_incompatible_p(self):
-      "Return True if I can’t be stored in Git because of my name."
-      return self.name.startswith(".git")
+   ## Internal ##
 
    @classmethod
-   def gzip_set(cls):
+   def _gzip_set(cls):
       """Set gzip class attribute on first call to file_gzip().
 
          Note: We originally thought this could be accomplished WITHOUT
@@ -130,64 +162,170 @@ class Path(pathlib.PosixPath):
          else:
             ch.FATAL("can’t find path to gzip or pigz")
 
-   def add_suffix(self, suff):
-      """Returns the path object restulting from appending the specified
-         suffix to the end of the path name. E.g. Path(foo).add_suffix(".txt")
-         returns Path("foo.txt)."""
-      return Path(str(self) + suff)
+   def _tidy(self):
+      "Repair self.path assumptions (see attribute docs above)."
+      if (self.path == ""):
+         self.path = "."
+      else:
+         self.path = re.sub(r"/{2,}", "/", self.path)
+         self.path = re.sub(r"^\./", "", self.path)
 
-   def chdir(self):
-      "Change CWD to path and return previous CWD. Exit on error."
-      old = ch.ossafe(os.getcwd, "can’t get cwd(2)")
-      ch.ossafe(os.chdir, "can’t chdir: %s" % self.name, self)
-      return Path(old)
+   ## pathlib.PosixPath API ##
 
-   def chmod_min(self, perms_new, st=None):
-      """Set permissions on path so they are at least mode. If given, st is a
-         stat object for self, to avoid another stat(2) call if unneeded.
-         Return the new file mode (complete, not just permission bits).
+   def __eq__(self, other):
+      """e.g.:
 
-         For symlinks, do nothing, because we don’t want to follow symlinks
-         and follow_symlinks=False (or os.lchmod) is not supported on some
-         (all?) Linux. (Also, symlink permissions are ignored on Linux, so it
-         doesn’t matter anyway.)"""
-      if (st is None):
-         st = self.stat_(False)
-      if (stat.S_ISLNK(st.st_mode)):
-         return st.st_mode
-      perms_old = stat.S_IMODE(st.st_mode)
-      perms_new |= perms_old
-      if (perms_new != perms_old):
-         ch.VERBOSE("fixing permissions: %s: %03o -> %03o"
-                 % (self, perms_old, perms_new))
-         ch.ossafe(os.chmod, "can’t chmod: %s" % self, self, perms_new)
-      return (st.st_mode | perms_new)
+           >>> a1 = Path("a")
+           >>> a2 = Path("a")
+           >>> b = Path("b")
+           >>> a1 == a1
+           True
+           >>> a1 is a1
+           True
+           >>> a1 == a2
+           True
+           >>> a1 is a2
+           False
+           >>> a1 == b
+           False
+           >>> a1 != b
+           True
+           >>> Path("a") == Path("a/")
+           False
+           >>> Path("a") == Path("a/").untrailed
+           True
+           >>> Path("") == Path(".")
+           True
+           >>> Path("/") == Path("//")
+           True
+           >>> Path("a/b") == Path("a//b") == Path("a///b")
+           True"""
+      return (self.path == Path(other).path)
 
-   def copytree(self, *args, **kwargs):
-      "Wrapper for shutil.copytree() that exits on the first error."
-      shutil.copytree(str(self), copy_function=ch.copy2, *args, **kwargs)
+   def __fspath__(self):
+      return self.path
 
-   def disk_bytes(self):
-      """Return the number of disk bytes consumed by path. Note this is
-         probably different from the file size."""
-      return self.stat().st_blocks * 512
+   def __ge__(self, other):
+      return not self.__lt__(other)
 
-   def du(self):
-      """Return a tuple (number of files, total bytes on disk) for everything
-         under path. Warning: double-counts files with multiple hard links."""
-      file_ct = 1
-      byte_ct = self.disk_bytes()
-      for (dir_, subdirs, files) in os.walk(self):
-         file_ct += len(subdirs) + len(files)
-         byte_ct += sum(Path(dir_ + "/" + i).disk_bytes()
-                        for i in subdirs + files)
-      return (file_ct, byte_ct)
+   def __gt__(self, other):
+      return not self.__le__(other)
 
-   def exists_(self, links=False):
-      "Return True if I exist, False otherwise. Iff links, follow symlinks."
+   def __hash__(self):
+      return hash(self.path)
+
+   def __le__(self, other):
+      return (self.path <= Path(other).path)
+
+   def __lt__(self, other):
+      return (self.path < Path(other).path)
+
+   def __ne__(self, other):
+      return not self.__eq__(other)
+
+   def __repr__(self):
+      """e.g.:
+
+           >>> repr(Path("a"))
+           "Path('a')"
+           >>> repr(Path("a'b"))
+           'Path("a\\'b")'
+      """
+      return 'Path(%s)' % repr(self.path)
+
+   def __str__(self):
+      """e.g.:
+
+           >>> str(Path("a"))
+           'a'"""
+      return self.path
+
+   @property
+   def name(self):
+      """e.g.:
+
+           >>> Path("a").name
+           'a'
+           >>> Path("/a/b").name
+           'b'
+           >>> Path("a/b").name
+           'b'
+           >>> Path("a/b/").name
+           'b'
+
+         Note: Unlike pathlib.Path, dot and slash return themselves:
+
+           >>> Path("/").name
+           '/'
+           >>> Path(".").name
+           '.'
+      """
+      if (self.root_p):
+         return "/"
+      return self.untrailed.path.rpartition("/")[-1]
+
+   @property
+   def parent(self):
+      """e.g.:
+
+           >>> Path("/a/b").parent
+           Path('/a')
+           >>> Path("a/b").parent
+           Path('a')
+           >>> Path("/a").parent
+           Path('/')
+           >>> Path("a/b/").parent
+           Path('a')
+           >>> Path("a").parent
+           Path('.')
+           >>> Path(".").parent
+           Path('.')
+
+         Note that the parent of “/” is “/”, per POSIX:
+
+           >>> Path("/").parent
+           Path('/')"""
+      if (self.root_p):
+         return self.deepcopy()
+      (parent, slash, _) = self.untrailed.path.rpartition("/")
+      if (parent != ""):
+         return self.__class__(parent)
+      elif (slash == "/"):  # absolute path with single non-root component
+         return self.__class__("/")
+      else:                 # relative path with single component
+         return self.__class__(".")
+
+   @property
+   def parts(self):
+      """e.g.:
+
+           >>> Path("/a/b").parts
+           ['/', 'a', 'b']
+           >>> Path("a/b/").parts
+           ['a', 'b']
+           >>> Path("/").parts
+           ['/']
+           >>> Path(".").parts
+           []"""
+      if (self.path == "."):
+         return []
+      ret = self.path.split("/")
+      if (ret[0] == ""):
+         ret[0] = "/"
+      if (ret[-1] == ""):
+         del ret[-1]
+      return ret
+
+   def exists(self, links=False):
+      """Return True if I exist, False otherwise. Iff links, follow symlinks.
+
+           >>> Path("/").exists()
+           True
+           >>> Path("/doesnotexist").exists()
+           False
+           >>> Path("/proc/self/cmdline").exists(False)
+           True"""
       try:
-         # Don’t wrap self.exists() because that always follows symlnks. Use
-         # os.stat() b/c it has follow_symlinks in 3.6, unlike self.stat().
          os.stat(self, follow_symlinks=links)
       except FileNotFoundError:
          return False
@@ -195,22 +333,485 @@ class Path(pathlib.PosixPath):
          ch.FATAL("can’t stat: %s: %s" % (self, x.strerror))
       return True
 
+   def glob(self, pattern):
+      oldcwd = self.chdir()
+      # No root_dir in glob.glob() until 3.10.
+      ret = glob.glob(pattern, recursive=True)
+      oldcwd.chdir()
+      return ret
+
+   def hardlink_to(self, target):
+      ch.ossafe("can’t hard link: %s -> %s", os.link, target, self)
+
+   def is_absolute(self):
+      return (self.path[0] == "/")
+
+   def is_dir(self):
+      """e.g.:
+
+           >>> Path("/proc").is_dir()
+           True
+           >>> Path("/proc/self").is_dir()
+           True
+           >>> Path("/proc/cmdline").is_dir()
+           False
+           >>> Path("/doesnotexist").is_dir()
+           False"""
+      return os.path.isdir(self)
+
+   def is_file(self):
+      return os.path.isfile(self)
+
+   def is_relative_to(self, other):
+      """e.g.:
+
+           >>> Path("/a/b").is_relative_to("/a")
+           True
+           >>> Path("/a/b/").is_relative_to("/a")
+           True
+           >>> Path("/a/b").is_relative_to("/c")
+           False
+           >>> Path("/a/b").is_relative_to("c")
+           False"""
+      try:
+         self.relative_to(other)
+         return True
+      except ValueError:
+         return False
+
+   def is_symlink(self):
+      return os.path.islink(self)
+
+   def match(self, pattern):
+      """e.g.:
+
+         >>> a = Path("/foo/bar.txt")
+         >>> a.match("*.txt")
+         True
+         >>> a.match("*.TXT")
+         False"""
+      return fnmatch.fnmatchcase(self.__fspath__(), pattern)
+
+   def mkdir(self):
+      ch.TRACE("ensuring directory: %s" % self)
+      if (self.is_dir()):
+         return  # target exists and is a directory, do nothing
+      try:
+         os.mkdir(self)
+      except FileExistsError as x:
+         ch.FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
+      except OSError as x:
+         ch.FATAL("can’t mkdir: %s: %s" % (x.filename, x.strerror))
+
+   def open(self, mode, *args, **kwargs):
+      return ch.ossafe("can’t open for %s: %s" % (mode, self),
+                       open, self, mode, *args, **kwargs)
+
+   def relative_to(self, other):
+      """e.g. absolute paths:
+
+           >>> a = Path("/a/b")
+           >>> a.relative_to(Path("/"))
+           Path('a/b')
+           >>> a.relative_to("/a")
+           Path('b')
+           >>> Path("/a/b/").relative_to("/a")
+           Path('b/')
+
+         e.g. relative paths:
+
+           >>> a = Path("a/b")
+           >>> a.relative_to("a")
+           Path('b')
+
+         e.g. problems:
+
+           >>> Path("/a/b").relative_to("a")
+           Traceback (most recent call last):
+             ...
+           ValueError: Can't mix absolute and relative paths
+           >>> Path("/a/b").relative_to("/c")
+           Traceback (most recent call last):
+             ...
+           ValueError: /a/b not a subpath of /c
+
+      """
+      if (isinstance(other, Path)):
+         other = other.untrailed.__fspath__()
+      common = os.path.commonpath([self, other])
+      if (common != other):
+         raise ValueError("%s not a subpath of %s" % (self, other))
+      return self.__class__(self.path[  len(other)
+                                      + (0 if other == "/" else 1):])
+
+   def rename(self, path_new):
+      path_new = self.__class__(path_new)
+      ch.ossafe("can’t rename: %s -> %s" % (self, path_new),
+                os.rename, self, path_new)
+      return path_new
+
+   def resolve(self):
+      """e.g.:
+
+         >>> import os
+         >>> real = Path("/proc/%d" % os.getpid())
+         >>> link = Path("/proc/self")
+         >>> link.resolve() == real
+         True"""
+      return self.__class__(os.path.realpath(self))
+
+   def rmdir(self):
+      ch.ossafe("can’t rmdir: %s" % self, os.rmdir, self)
+
+   def stat(self, links):
+      """e.g.:
+
+           >>> import stat
+           >>> st = Path("/proc/self").stat(False)
+           >>> stat.S_ISDIR(st.st_mode)
+           False
+           >>> stat.S_ISLNK(st.st_mode)
+           True
+           >>> st = Path("/proc/self").stat(True)
+           >>> stat.S_ISDIR(st.st_mode)
+           True
+           >>> stat.S_ISLNK(st.st_mode)
+           False"""
+      return ch.ossafe("can’t stat: %s" % self,
+                       os.stat, self, follow_symlinks=links)
+
+   def symlink_to(self, target, clobber=False):
+      if (clobber and self.is_file()):
+         self.unlink()
+      try:
+         os.symlink(target, self)
+      except FileExistsError:
+         if (not self.is_symlink()):
+            ch.FATAL("can’t symlink: source exists and isn’t a symlink: %s"
+                     % self)
+         if (self.readlink() != target):
+            ch.FATAL("can’t symlink: %s exists; want target %s but existing is %s"
+                     % (self, target, self.readlink()))
+      except OSError as x:
+         ch.FATAL("can’t symlink: %s -> %s: %s" % (self, target, x.strerror))
+
+   def unlink(self, missing_ok=False):
+      if (missing_ok and not self.exists()):
+         return
+      ch.ossafe("can’t unlink: %s" % self, os.unlink, self)
+
+   def with_name(self, name_new):
+      """e.g.:
+
+           >>> Path("a").with_name("b")
+           Path('b')
+           >>> Path("a/b").with_name("c")
+           Path('a/c')
+           >>> Path(".").with_name("a")
+           Path('a')
+
+         Not available for “/” because this would change an absolute path to
+         relative, and that seems too surprising:
+
+           >>> Path("/").with_name("a")
+           Traceback (most recent call last):
+             ...
+           ValueError: with_name() invalid for /"""
+      if (self.root_p):
+         raise ValueError("with_name() invalid for /")
+      return self.parent // name_new
+
+   ## Extensions ##
+
+   @staticmethod
+   def stat_bytes_all(paths):
+      "Return concatenation of metadata_bytes() on each given Path object."
+      md = bytearray()
+      for path in paths:
+         md += path.stat_bytes_recursive()
+      return md
+
+   def __floordiv__(self, right):
+      left = self.path
+      try:
+         right = right.__fspath__()
+      except AttributeError:
+         pass  # assume right is a string
+      return self.__class__(left + "/" + right)
+
+   def __len__(self):
+      """The length of a Path is the number of components, including the root
+         directory. “.” has zero components.
+
+           >>> len(Path("a"))
+           1
+           >>> len(Path("/"))
+           1
+           >>> len(Path("/a"))
+           2
+           >>> len(Path("a/b"))
+           2
+           >>> len(Path("/a/b"))
+           3
+           >>> len(Path("/a/"))
+           2
+           >>> len(Path("."))
+           0"""
+      return len(self.parts)
+
+   def __rfloordiv__(self, left):
+      return self.__class__(left).__floordiv__(self)
+
+   @property
+   def empty_p(self):
+      return (self.path == ".")
+
+   @property
+   def first(self):
+      """Return my first component as a new Path object, e.g.:
+
+           >>> a = Path("/")
+           >>> b = a.first
+           >>> b
+           Path('/')
+           >>> a == b
+           True
+           >>> a is b
+           False
+           >>> Path("").first
+           Path('.')
+           >>> Path("./a").first
+           Path('a')
+           >>> Path("a/b").first
+           Path('a')"""
+      if (self.root_p):
+         return self.deepcopy()
+      return self.__class__(self.path.partition("/")[0])
+
+   @property
+   def git_compatible_p(self):
+      """Return True if my filename can be stored in Git, false otherwise.
+
+         >>> Path("/gitignore").git_compatible_p
+         True
+         >>> Path("/.gitignore").git_compatible_p
+         False"""
+      return (not self.name.startswith(".git"))
+
+   @property
+   def git_escaped(self):
+      """Return a copy of me escaped for Git storage, possibly unchanged.
+
+         >>> Path("/gitignore").git_escaped
+         Path('/gitignore')
+         >>> Path("/.gitignore").git_escaped
+         Path('/.weirdal_ignore')
+         >>> Path("/.gitignore/").git_escaped
+         Path('/.weirdal_ignore/')
+
+      """
+      ret = self.with_name(self.name.replace(".git", ".weirdal_"))
+      if (self.trailed_p):
+         ret.path += "/"
+      return ret
+
+   @property
+   def root_p(self):
+      return (self.path == "/")
+
+   @property
+   def trailed_p(self):
+      """e.g.:
+
+           >>> Path("a").trailed_p
+           False
+           >>> Path("a/").trailed_p
+           True
+           >>> Path("/").trailed_p
+           False
+           >>> (Path("a") // "b").trailed_p
+           False
+           >>> (Path("a/") // "b").trailed_p
+           False
+           >>> (Path("a") // "b/").trailed_p
+           True
+           >>> (Path("a") // "/").trailed_p
+           True"""
+      return (self.path != "/" and self.path[-1] == "/")
+
+   @property
+   def untrailed(self):
+      """Return self with trailing slash removed (if any). E.g.:
+
+         >>> Path("a").untrailed
+         Path('a')
+         >>> Path("a/").untrailed
+         Path('a')
+         >>> Path("/").untrailed
+         Path('/')
+         >>> Path(".").untrailed
+         Path('.')"""
+      if (self.root_p):
+         return self.deepcopy()
+      else:
+         return self.__class__(self.path.rstrip("/"))
+
+   def chdir(self):
+      "Change CWD to path and return previous CWD. Exit on error."
+      old = ch.ossafe("can’t getcwd(2)", os.getcwd)
+      ch.ossafe("can’t chdir(2): %s" % self, os.chdir, self)
+      return self.__class__(old)
+
+   def chmod_min(self, st_old=None):
+      """Set my permissions to at least 0o700 for directories and 0o400
+         otherwise.
+
+         For symlinks, do nothing, because we don’t want to follow symlinks
+         and follow_symlinks=False (or os.lchmod) is not supported on some
+         (all?) Linux. (Also, symlink permissions are ignored on Linux, so it
+         doesn’t matter anyway.)
+
+         If given, st_old is a stat_result object for self, to avoid another
+         stat(2) call. In this case, also return the resulting stat_result
+         object, which is st itself if nothing was modified, or a new
+         stat_result object if the mode was changed."""
+      st = self.stat(False) if not st_old else st_old
+      if (stat.S_ISLNK(st.st_mode)):
+         return st_old
+      perms_old = stat.S_IMODE(st.st_mode)
+      perms_new = perms_old | (0o700 if stat.S_ISDIR(st.st_mode) else 0o400)
+      if (perms_new != perms_old):
+         ch.VERBOSE("fixing permissions: %s: %03o -> %03o"
+                 % (self, perms_old, perms_new))
+         ch.ossafe("can’t chmod: %s" % self, os.chmod, self, perms_new)
+      if (st_old):
+         # stat_result is a deeply weird object (a “structsec” rather than a
+         # named tuple), including multiple values for the same field when
+         # accessed by index vs. name. I did figure out how to create a
+         # modified copy, which is the commented code below, but it seems too
+         # brittle and scary, so just re-stat(2) the modified metadata.
+         #
+         #   st_list = list(st_old)
+         #   st_dict = { k:getattr(a, k) for k in dir(a) if k[:3] == "st_" }
+         #   st_list[0] |= perms_new
+         #   st_dict["st_mode"] |= perms_new
+         #   st_new = os.stat_result(st_list, st_dict)
+         #   assert (st_new[0] == st_new.st_mode)
+         #   return st_new
+         if (perms_new == perms_old):
+            return st_old
+         else:
+            return self.stat(False)
+
+   def copy(self, dst):
+      """Copy file myself to dst, including metadata, overwriting dst if it
+         exists. dst must be the actual destination path, i.e., it may not be
+         a directory. Does not follow symlinks.
+
+         If (a) src is a regular file, (b) src and dst are on the same
+         filesystem, and (c) Python is version ≥3.8, then use
+         os.copy_file_range() [1,2], which at a minimum does an in-kernel data
+         transfer. If that filesystem also (d) supports copy-on-write [3],
+         then this is a very fast lazy reflink copy.
+
+         [1]: https://docs.python.org/3/library/os.html#os.copy_file_range
+         [2]: https://man7.org/linux/man-pages/man2/copy_file_range.2.html
+         [3]: https://elixir.bootlin.com/linux/latest/A/ident/remap_file_range
+      """
+      src_st = self.stat(False)
+      # dst is not a directory, so parent must be on the same filesystem. We
+      # *do* want to follow symlinks on the parent.
+      dst_dev = dst.parent.stat(True).st_dev
+      if (    stat.S_ISREG(src_st.st_mode)
+          and src_st.st_dev == dst_dev
+          and hasattr(os, "copy_file_range")):
+         # Fast path. The same-filesystem restriction is because reliable
+         # copy_file_range(2) between filesystems seems quite new (maybe
+         # kernel 5.18?).
+         try:
+            if (dst.exists()):
+               # If dst is a symlink, we get OLOOP from os.open(). Delete it
+               # unconditionally though, for simplicity.
+               dst.unlink()
+            src_fd = os.open(self, os.O_RDONLY|os.O_NOFOLLOW)
+            dst_fd = os.open(dst, os.O_WRONLY|os.O_NOFOLLOW|os.O_CREAT)
+            # I’m not sure why we need to loop this -- there’s no explanation
+            # of *when* fewer bytes than requested would be copied -- but the
+            # man page example does.
+            remaining = src_st.st_size
+            while (remaining > 0):
+               copied = os.copy_file_range(src_fd, dst_fd, remaining)
+               if (copied == 0):
+                  ch.FATAL("zero bytes copied: %s -> %s" % (self, dst))
+               remaining -= copied
+            os.close(src_fd)
+            os.close(dst_fd)
+         except OSError as x:
+            ch.FATAL("can’t copy data (fast): %s -> %s: %s"
+                     % (self, dst, x.strerror))
+      else:
+         # Slow path.
+         try:
+            shutil.copyfile(self, dst, follow_symlinks=False)
+         except OSError as x:
+            ch.FATAL("can’t copy data (slow): %s -> %s: %s"
+                     % (self, dst, x.strerror))
+      try:
+         # Metadata.
+         shutil.copystat(self, dst, follow_symlinks=False)
+      except OSError as x:
+         ch.FATAL("can’t copy metadata: %s -> %s" % (self, dst, x.strerror))
+
+   def copytree(self, *args, **kwargs):
+      "Wrapper for shutil.copytree() that exits on the first error."
+      shutil.copytree(self, copy_function=copy, *args, **kwargs)
+
+   def deepcopy(self):
+      """Return a copy of myself. E.g.:
+
+           >>> a = Path("a")
+           >>> b = a.deepcopy()
+           >>> b
+           Path('a')
+           >>> a == b
+           True
+           >>> a is b
+           False"""
+      return self.__class__(self.path)
+
+   def disk_bytes(self):
+      """Return the number of disk bytes consumed by path. Note this is
+         probably different from the file size."""
+      return self.stat(False).st_blocks * 512
+
+   def du(self):
+      """Return a tuple (number of files, total bytes on disk) for everything
+         under path. Warning: double-counts files with multiple hard links and
+         any shared data extents."""
+      file_ct = 1
+      byte_ct = self.disk_bytes()
+      for (dir_, subdirs, files) in ch.walk(self):
+         file_ct += len(subdirs) + len(files)
+         byte_ct += sum((self.__class__(dir_) // i).disk_bytes()
+                        for i in subdirs + files)
+      return (file_ct, byte_ct)
+
    def file_ensure_exists(self):
       """If the final element of path exists (without dereferencing if it’s a
          symlink), do nothing; otherwise, create it as an empty regular file."""
-      if (not os.path.lexists(self)): # no substitute for lexists() in pathlib.
-         fp = self.open_("w")
+      if (not os.path.lexists(self)):
+         fp = self.open("w")
          ch.close_(fp)
 
    def file_gzip(self, args=[]):
       """Run pigz(1) if it’s available, otherwise gzip(1), on file at path and
-         return the file's new name. Pass args to the gzip executable. This
+         return the file’s new name. Pass args to the gzip executable. This
          lets us gzip files (a) in parallel if pigz(1) is installed and
          (b) without reading them into memory."""
-      path_c = self.add_suffix(".gz")
+      path_c = self.suffix_add(".gz")
       # On first call, remember first available of pigz and gzip using class
       # attribute 'gzip'.
-      Path.gzip_set()
+      self.__class__._gzip_set()
       # Remove destination if it already exists, because “gzip --force” does
       # several other things too. Also, pigz(1) sometimes confusingly reports
       # “Inappropriate ioctl for device” if destination already exists.
@@ -221,106 +822,90 @@ class Path(pathlib.PosixPath):
       # Zero out GZIP header timestamp, bytes 4–7 zero-indexed inclusive [1],
       # to ensure layer hash is consistent. See issue #1080.
       # [1]: https://datatracker.ietf.org/doc/html/rfc1952 §2.3.1
-      fp = path_c.open_("r+b")
-      ch.ossafe(fp.seek, "can’t seek: %s" % fp, 4)
-      ch.ossafe(fp.write, "can’t write: %s" % fp, b'\x00\x00\x00\x00')
+      fp = path_c.open("r+b")
+      ch.ossafe("can’t seek: %s" % fp, fp.seek, 4)
+      ch.ossafe("can’t write: %s" % fp, fp.write, b'\x00\x00\x00\x00')
       ch.close_(fp)
       return path_c
 
    def file_hash(self):
       """Return the hash of data in file at path, as a hex string with no
-         algorithm tag. File is read in chunks and can be larger than memory."""
-      fp = self.open_("rb")
+         algorithm tag. File is read in chunks and can be larger than memory.
+
+           >>> Path("/dev/null").file_hash()
+           'e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855'
+      """
+      fp = self.open("rb")
       h = hashlib.sha256()
       while True:
-         data = ch.ossafe(fp.read, "can’t read: %s" % self.name, 2**18)
-         if (len(data) == 0):
-            break  # EOF
+         data = ch.ossafe("can’t read: %s" % self, fp.read, 2**18)
+         if (len(data) == 0):  # EOF
+            break
          h.update(data)
       ch.close_(fp)
       return h.hexdigest()
 
    def file_read_all(self, text=True):
-      """Return the contents of file at path, or exit with error. If text, read
-         in "rt" mode with UTF-8 encoding; otherwise, read in mode "rb"."""
+      """Return the contents of file at path, or exit with error. If text,
+         read in “rt” mode with UTF-8 encoding; otherwise, read in mode “rb”.
+
+           >>> Path("/dev/null").file_read_all()
+           ''
+           >>> Path("/dev/null").file_read_all(False)
+           b''"""
       if (text):
          mode = "rt"
          encoding = "UTF-8"
       else:
          mode = "rb"
          encoding = None
-      fp = self.open_(mode, encoding=encoding)
-      data = ch.ossafe(fp.read, "can't read: %s" % self.name)
+      fp = self.open(mode, encoding=encoding)
+      data = ch.ossafe("can’t read: %s" % self, fp.read)
       ch.close_(fp)
       return data
 
    def file_size(self, follow_symlinks=False):
-      "Return the size of file at path in bytes."
-      st = ch.ossafe(os.stat, "can’t stat: %s" % self.name,
-                  self, follow_symlinks=follow_symlinks)
-      return st.st_size
+      """Return the size of file at path in bytes.
+
+           >>> Path("/dev/null").file_size()
+           0"""
+      return self.stat(follow_symlinks).st_size
 
    def file_write(self, content):
+      """e.g.:
+
+           >>> Path("/dev/null").file_write("Weird Al Yankovic")
+      """
       if (isinstance(content, str)):
          content = content.encode("UTF-8")
-      fp = self.open_("wb")
-      ch.ossafe(fp.write, "can’t write: %s" % self.name, content)
+      fp = self.open("wb")
+      ch.ossafe("can’t write: %s" % self, fp.write, content)
       ch.close_(fp)
 
    def grep_p(self, rx):
       """Return True if file at path contains a line matching regular
-         expression rx, False if it does not."""
-      rx = re.compile(rx)
+         expression rx, False if it does not.
+
+           >>> Path("/dev/null").grep_p(r"foo")
+           False"""
       try:
          with open(self, "rt") as fp:
             for line in fp:
-               if (rx.search(line) is not None):
+               if (re.search(rx, line) is not None):
                   return True
          return False
       except OSError as x:
-         ch.FATAL("can’t read %s: %s" % (self.name, x.strerror))
+         ch.FATAL("can’t read %s: %s" % (self, x.strerror))
 
-   def hardlink(self, target):
-      try:
-         os.link(target, self)  # no super().hardlink_to() until 3.10
-      except OSError as x:
-         ch.FATAL("can’t hard link: %s -> %s: %s" % (self, target, x.strerror))
+   def iterdir(self):
+      """e.g.:
 
-   def is_relative_to(self, *other):
-      try:
-         return super().is_relative_to(*other)
-      except AttributeError:
-         # pathlib.Path.is_relative_to() was introduced in 3.9. If not
-         # available, use the standard library’s trivial definition in terms
-         # of relative_to().
-         try:
-            self.relative_to(*other)
-            return True
-         except ValueError:
-            return False
-
-   def joinpath_posix(self, other):
-      # This method is a hot spot, so the hairiness is due to optimizations.
-      # It runs about 30% faster than the naïve verson below.
-      if (isinstance(other, Path)):
-         other_parts = other._parts
-         if (len(other_parts) > 0 and other_parts[0] == "/"):
-            other_parts = other_parts[1:]
-      elif (isinstance(other, str)):
-         other_parts = other.split("/")
-         if (len(other_parts) > 0 and len(other_parts[0]) == 0):
-            other_parts = other_parts[1:]
-      else:
-         ch.INFO(type(other))
-         assert False, "unknown type"
-      return self._from_parsed_parts(self._drv, self._root,
-                                     self._parts + other_parts)
-      # Naïve implementation for reference.
-      #other = Path(other)
-      #if (other.is_absolute()):
-      #   other = other.relative_to("/")
-      #   assert (not other.is_absolute())
-      #return self.joinpath(other)
+           >>> import os
+           >>> dir = Path("/proc/self/task")
+           >>> set(dir.iterdir()) == { dir // str(os.getpid()) }
+           True"""
+      for entry in ch.ossafe("can’t scan: %s" % self, os.scandir, self):
+         yield self.__class__(entry.path)
 
    def json_from_file(self, msg):
       ch.DEBUG("loading JSON: %s: %s" % (msg, self))
@@ -330,107 +915,140 @@ class Path(pathlib.PosixPath):
          data = json.loads(text)
          ch.DEBUG("result:\n%s" % pprint.pformat(data, indent=2))
       except json.JSONDecodeError as x:
-         ch.FATAL("can’t parse JSON: %s:%d: %s" % (self.name, x.lineno, x.msg))
+         ch.FATAL("can’t parse JSON: %s:%d: %s" % (self, x.lineno, x.msg))
       return data
 
    def listdir(self):
       """Return set of entries in directory path, as strings, without self (.)
          and parent (..). We considered changing this to use os.scandir() for
          #992, but decided that the advantages it offered didn’t warrant the
-         effort required to make the change."""
-      return set(ch.ossafe(os.listdir, "can’t list: %s" % self.name, self))
+         effort required to make the change.
 
-   def strip(self, left=0, right=0):
-      """Return a copy of myself with n leading components removed. E.g.:
-
-           >>> a = Path("/a/b/c")
-           >>> a.strip(left=1)
-           Path("a/b/c")
-           >>> a.strip(right=1)
-           Path("/a/b")
-           >>> a.strip(left=1, right=1)
-           Path("a/b")
-
-         It is an error if I don’t have at least left + right components,
-         i.e., you can strip a path down to nothing but not further."""
-      assert (len(self.parts) >= left + right)
-      return Path(*self.parts[left:len(self.parts)-right])
-
-   def mkdir_(self):
-      ch.TRACE("ensuring directory: %s" % self)
-      try:
-         super().mkdir(exist_ok=True)
-      except FileExistsError as x:
-         ch.FATAL("can’t mkdir: exists and not a directory: %s" % x.filename)
-      except OSError as x:
-         ch.FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename,
-                                               x.strerror))
+           >>> import os
+           >>> Path("/proc/self/task").listdir() == { str(os.getpid()) }
+           True"""
+      return set(ch.ossafe("can’t list: %s" % self, os.listdir, self))
 
    def mkdirs(self, exist_ok=True):
-      ch.TRACE("ensuring directories: %s" % self.name)
+      "Like “mkdir -p”."
+      ch.TRACE("ensuring directory and parents: %s" % self)
       try:
          os.makedirs(self, exist_ok=exist_ok)
       except OSError as x:
-         ch.FATAL("can’t mkdir: %s: %s: %s" % (self.name, x.filename,
-                                               x.strerror))
+         # x.filename might be an intermediate directory
+         ch.FATAL("can’t mkdir: %s: %s: %s" % (self, x.filename, x.strerror))
 
-   def open_(self, mode, *args, **kwargs):
-      return ch.ossafe(super().open,
-                       "can't open for %s: %s" % (mode, self.name),
-                       mode, *args, **kwargs)
+   def mountpoint(self):
+      """Return the mount point of the filesystem containing, or, if symlink,
+         the file pointed to. E.g.:
 
-   def rename_(self, name_new):
-      if (Path(name_new).exists()):
-         ch.FATAL("can’t rename: destination exists: %s" % name_new)
-      ch.ossafe(super().rename,
-                "can’t rename: %s -> %s" % (self.name, name_new),
-                name_new)
-
-   def rmdir_(self):
-      ch.ossafe(super().rmdir, "can’t rmdir: %s" % self.name)
+            >>> Path("/proc").mountpoint()
+            Path('/proc')
+            >>> Path("/proc/self").mountpoint()
+            Path('/proc')
+            >>> Path("/").mountpoint()
+            Path('/')"""
+      # https://stackoverflow.com/a/4453715
+      try:
+         pc = self.resolve()
+      except RuntimeError:
+         ch.FATAL("not found, can’t resolve: %s" % self)
+      dev_child = pc.stat(False).st_dev
+      while (not pc.root_p):
+         dev_parent = pc.parent.stat(False).st_dev
+         if (dev_child != dev_parent):
+            return pc
+         pc = pc.parent
+      # Got all the way up to root without finding a transition, so we’re on
+      # the root filesystem.
+      return self.__class__("/")
 
    def rmtree(self):
-      if (self.is_dir()):
-         ch.TRACE("deleting directory: %s" % self.name)
-         try:
-            shutil.rmtree(self)
-         except OSError as x:
-            ch.FATAL("can’t recursively delete directory %s: %s: %s"
-                     % (self.name, x.filename, x.strerror))
-      else:
-         assert False, "unimplemented"
-
-   def stat_(self, links):
-      """An error-checking version of stat(). Note that we cannot simply
-         change the definition of stat() to be ossafe, as the exists() method
-         in pathlib relies on an OSError check.
-
-         See: https://github.com/python/cpython/blob/3.10/Lib/pathlib.py#L1291
-
-         NOTE: We also cannot just call super().stat here because the
-         follow_symlinks kwarg is absent in pathlib for Python 3.6, which we
-         want to retain compatibility with."""
-      return ch.ossafe(os.stat, "can’t stat: %s" % self, self,
-                    follow_symlinks=links)
-
-   def symlink(self, target, clobber=False):
-      if (clobber and self.is_file()):
-         self.unlink_()
+      ch.TRACE("deleting directory: %s" % self)
       try:
-         super().symlink_to(target)
-      except FileExistsError:
-         if (not self.is_symlink()):
-            ch.FATAL("can’t symlink: source exists and isn't a symlink: %s"
-                     % self.name)
-         if (self.readlink() != target):
-            ch.FATAL("can’t symlink: %s exists; want target %s but existing is %s"
-                     % (self.name, target, self.readlink()))
+         shutil.rmtree(self)
       except OSError as x:
-         ch.FATAL("can’t symlink: %s -> %s: %s" % (self.name, target,
-                                                   x.strerror))
+         ch.FATAL("can’t recursively delete directory %s: %s: %s"
+                  % (self, x.filename, x.strerror))
 
-   def unlink_(self, *args, **kwargs):
-      ch.ossafe(super().unlink, "can't unlink: %s" % self.name)
+   def setxattr(self, name, value):
+      if (ch.xattrs_save):
+         try:
+            os.setxattr(self, name, value, follow_symlinks=False)
+         except OSError as x:
+            if (x.errno == errno.ENOTSUP):  # no OSError subclass
+               ch.WARNING("xattrs not supported on %s, setting --no-xattr"
+                          % self.mountpoint())
+               ch.xattrs_save = False
+            else:
+               ch.FATAL("can’t set xattr: %s: %s: %s"
+                        % (self, name, x.strerror))
+      if (not ch.xattrs_save):  # not “else” because maybe changed in “if”
+         ch.DEBUG("xattrs disabled, ignoring: %s: %s" % (self, name))
+         return
+
+   def stat_bytes(self, links):
+      "Return self.stat() encoded as an opaque bytearray."
+      st = self.stat(links)
+      return (  self.path.encode("UTF-8")
+              + struct.pack("=HQQ", st.st_mode, st.st_size, st.st_mtime_ns))
+
+   def stat_bytes_recursive(self):
+      """Return concatenation of self.stat() and all my children as an opaque
+         bytearray, in unspecified but consistent order. Follow symlinks in
+         self but not its descendants."""
+      # FIXME: Locale issues related to sorting?
+      md = self.stat_bytes(True)
+      if (self.is_dir()):
+         for (dir_, dirs, files) in ch.walk(self):
+            md += dir_.stat_bytes(False)
+            for f in sorted(files):
+               md += (dir_ // f).stat_bytes(False)
+            dirs.sort()
+      return md
+
+   def strip(self, left=0, right=0):
+      """Return a copy of self with n leading components removed. E.g.:
+
+           >>> a = Path("/a/b/c")
+           >>> a.strip(left=1)
+           Path('a/b/c')
+           >>> a.strip(right=1)
+           Path('/a/b')
+           >>> a.strip(left=1, right=1)
+           Path('a/b')
+           >>> Path("/a/b/").strip(right=1)
+           Path('/a/')
+
+         It is an error if self doesn’t have at least left + right components,
+         i.e., you can strip a path down to nothing but not further.
+
+           >>> Path("/").strip(left=1, right=1)
+           Traceback (most recent call last):
+             ...
+           ValueError: can't strip 2 components from a path with only 1"""
+      parts = self.parts
+      if (len(parts) < left + right):
+         raise ValueError("can't strip %d components from a path with only %d"
+                          % (left + right, len(parts)))
+      ret = self.__class__(*self.parts[left:len(self.parts)-right])
+      if (self.trailed_p):
+         ret.path += "/"
+      return ret
+
+   def suffix_add(self, suffix):
+      """Append the given suffix and return the result. Dot (“.”) is not
+         special and must be specified explicitly if needed. E.g.:
+
+           >>> Path("a").suffix_add(".txt")
+           Path('a.txt')
+           >>> Path("a").suffix_add("_txt")
+           Path('a_txt')
+           >>> Path("a/").suffix_add(".txt")
+           Path('a.txt/')"""
+      return self.__class__(  self.untrailed.path
+                            + suffix
+                            + ("/" if self.trailed_p else ""))
 
 
 class Storage:
@@ -449,6 +1067,27 @@ class Storage:
          self.root = self.root_default()
       if (not self.root.is_absolute()):
          self.root = os.getcwd() // self.root
+
+   @staticmethod
+   def root_default():
+      # FIXME: Perhaps we should use getpass.getch.user() instead of the $USER
+      # environment variable? It seems a lot more robust. But, (1) we’d have
+      # to match it in some scripts and (2) it makes the documentation less
+      # clear becase we have to explain the fallback behavior.
+      return Path("/var/tmp/%s.ch" % ch.user())
+
+   @staticmethod
+   def root_env():
+      if (not "CH_IMAGE_STORAGE" in os.environ):
+         return None
+      path = Path(os.environ["CH_IMAGE_STORAGE"])
+      if (not path.is_absolute()):
+         ch.FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
+      return path
+
+   @property
+   def bucache_needs_ignore_upgrade(self):
+      return self.build_cache // "ch_upgrade-ignore"
 
    @property
    def build_cache(self):
@@ -488,7 +1127,7 @@ class Storage:
          otherwise. This answers “is the storage directory real”, not “can
          this storage directory be used”; it should return True for more or
          less any Charliecloud storage directory we might feasibly come
-         across, even if it can't be upgraded. See also #1147."""
+         across, even if it can’t be upgraded. See also #1147."""
       return (os.path.isdir(self.unpack_base) and
               os.path.isdir(self.download_cache))
 
@@ -496,28 +1135,23 @@ class Storage:
    def version_file(self):
       return self.root // "version"
 
-   @staticmethod
-   def root_default():
-      # FIXME: Perhaps we should use getpass.getch.user() instead of the $USER
-      # environment variable? It seems a lot more robust. But, (1) we'd have
-      # to match it in some scripts and (2) it makes the documentation less
-      # clear becase we have to explain the fallback behavior.
-      return Path("/var/tmp/%s.ch" % ch.user())
-
-   @staticmethod
-   def root_env():
-      if ("CH_GROW_STORAGE" in os.environ):
-         # Avoid surprises if user still has $CH_GROW_STORAGE set (see #906).
-         ch.FATAL("$CH_GROW_STORAGE no longer supported; use $CH_IMAGE_STORAGE")
-      if (not "CH_IMAGE_STORAGE" in os.environ):
-         return None
-      path = Path(os.environ["CH_IMAGE_STORAGE"])
-      if (not path.is_absolute()):
-         ch.FATAL("$CH_IMAGE_STORAGE: not absolute path: %s" % path)
-      return path
-
    def build_large_path(self, name):
       return self.build_large // name
+
+   def cleanup(self):
+      "Called during initialization after we know the storage dir is valid."
+      # Delete partial downloads.
+      part_ct = 0
+      for path in self.download_cache.glob("part_*"):
+         path = Path(path)
+         ch.VERBOSE("deleting: %s" % path)
+         path.unlink()
+         part_ct += 1
+      if (part_ct > 0):
+         ch.WARNING("deleted %d partially downloaded files" % part_ct)
+
+   def fatman_for_download(self, image_ref):
+      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def init(self):
       """Ensure the storage directory exists, contains all the appropriate
@@ -526,7 +1160,6 @@ class Storage:
       # point is to lock as soon as we know the storage directory exists, and
       # definitely before writing anything, to reduce the race conditions that
       # surely exist. Ensure new code paths also call self.lock().
-      self.init_move_old()  # see issues #1160 and #1243
       if (not os.path.isdir(self.root)):
          op = "initializing"
          v_found = None
@@ -537,77 +1170,41 @@ class Storage:
                hint = "let Charliecloud create %s; see FAQ" % self.root.name
             else:
                hint = None
-            ch.FATAL("storage directory seems invalid: %s" % self.root, hint=hint)
+            ch.FATAL("storage directory seems invalid: %s" % self.root, hint)
          v_found = self.version_read()
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 1, 2, 3, 4}):  # initialize/upgrade
+      elif (v_found in {None, 6}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
-         self.root.mkdir_()
+         self.root.mkdir()
          self.lock()
-         self.download_cache.mkdir_()
-         self.build_cache.mkdir_()
-         self.build_large.mkdir_()
-         self.unpack_base.mkdir_()
-         self.upload_cache.mkdir_()
-         for old in self.unpack_base.iterdir():
-            new = old.parent // str(old.name).replace(":", "+")
-            if (old != new):
-               if (new.exists()):
-                  ch.FATAL("can't upgrade: already exists: %s" % new)
-               old.rename(new)
+         # These directories appeared in various storage versions, but since
+         # the thing to do on upgrade is the same as initialize, we don’t
+         # track the details.
+         self.download_cache.mkdir()
+         self.build_cache.mkdir()
+         self.build_large.mkdir()
+         self.unpack_base.mkdir()
+         self.upload_cache.mkdir()
+         if (v_found is not None):  # upgrade
+            if (v_found == 6):
+               # Charliecloud 0.32 had a bug where symlinks to fat manifests
+               # that were really skinny were erroneously absolute, making the
+               # storage directory immovable (PR #1657). Remove all symlinks
+               # in dlcache; they’ll be re-created later.
+               for entry in self.download_cache.iterdir():
+                  if (entry.is_symlink()):
+                     ch.DEBUG("deleting bad v6 symlink: %s" % entry)
+                     entry.unlink()
          self.version_file.file_write("%d\n" % STORAGE_VERSION)
-      else:                         # can't upgrade
+      else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
                   % (v_found, self.root),
-                  'you can delete and re-initialize with "ch-image reset"')
+                  "you can delete and re-initialize with “ch-image reset”")
       self.validate_strict()
-
-   def init_move_old(self):
-      """If appropriate, move storage directory from old default path to new.
-         See issues #1160 and #1243."""
-      old = Storage(Path("/var/tmp") // ch.user() // "ch-image")
-      moves = ( "dlcache", "img", "ulcache", "version" )
-      if (self.root != self.root_default()):
-         return  # do nothing silently unless using default storage dir
-      if (not os.path.exists(old.root)):
-         return  # do nothing silently unless old default storage dir exists
-      if (not old.valid_p):
-         ch.WARNING("storage dir: invalid at old default, ignoring: %s"
-                    % old.root)
-         return
-      ch.INFO("storage dir: valid at old default: %s" % old.root)
-      if (not os.path.exists(self.root)):
-         self.root.mkdir_()
-      elif (self.valid_p):
-         ch.WARNING("storage dir: also valid at new default: %s" % self.root,
-                 hint="consider deleting the old one")
-         return
-      elif (not os.path.isdir(self.root)):
-         return  # new isn't a directory; init/upgrade code will error later
-      elif (any(os.path.exists(self.root // i) for i in moves)):
-         return  # new is broken; init/upgrade should error later
-      # Now we know (1) the old storage exists and is valid and (2) the new
-      # storage exists, is a directory, and contains none of the files we'd
-      # move. However, it *may* contain subdirectories other parts of
-      # Charliecloud care about, e.g. "mnt" for ch-run.
-      ch.INFO("storage dir: moving to new default path: %s" % self.root)
-      for i in moves:
-         src = old.root // i
-         dst = self.root // i
-         if (os.path.exists(src)):
-            ch.DEBUG("moving: %s -> %s" % (src, dst))
-            try:
-               shutil.move(src, dst)
-            except OSError as x:
-               ch.FATAL("can't move: %s -> %s: %s"
-                     % (x.filename, x.filename2, x.strerror))
-      old.root.rmdir_()
-      if (not old.root.parent.listdir()):
-         ch.WARNING("parent of old storage dir now empty: %s" % old.root.parent,
-                 hint="consider deleting it")
+      self.cleanup()
 
    def lock(self):
       """Lock the storage directory. Charliecloud does not at present support
@@ -622,7 +1219,7 @@ class Storage:
       # [3]: https://stackoverflow.com/a/22411531
       if (not storage_lock):
          return
-      self.lockfile_fp = self.lockfile.open_("w")
+      self.lockfile_fp = self.lockfile.open("w")
       try:
          fcntl.lockf(self.lockfile_fp, fcntl.LOCK_EX | fcntl.LOCK_NB)
       except OSError as x:
@@ -630,16 +1227,13 @@ class Storage:
             ch.FATAL("storage directory is already in use",
                      "concurrent instances of ch-image cannot share the same storage directory")
          else:
-            ch.FATAL("can't lock storage directory: %s" % x.strerror)
+            ch.FATAL("can’t lock storage directory: %s" % x.strerror)
 
    def manifest_for_download(self, image_ref, digest):
       if (digest is None):
          digest = "skinny"
       return (   self.download_cache
               // ("%s%%%s.manifest.json" % (image_ref.for_path, digest)))
-
-   def fatman_for_download(self, image_ref):
-      return self.download_cache // ("%s.fat.json" % image_ref.for_path)
 
    def reset(self):
       if (self.valid_p):
@@ -660,7 +1254,7 @@ class Storage:
          errors, not meddling."""
       ch.DEBUG("validating storage directory: %s" % self.root)
       msg_prefix = "invalid storage directory"
-      # Check that all expected files exist, and no others. Note that we don't
+      # Check that all expected files exist, and no others. Note that we don’t
       # verify file *type*, assuming that kind of error is rare.
       entries = self.root.listdir()
       for entry in { i.name for i in (self.build_cache,
@@ -673,7 +1267,15 @@ class Storage:
             entries.remove(entry)
          except KeyError:
             ch.FATAL("%s: missing file or directory: %s" % (msg_prefix, entry))
+      # Ignore some files that may or may not exist.
       entries -= { i.name for i in (self.lockfile, self.mount_point) }
+      # Delete some files that exist only if we crashed.
+      for i in (self.image_tmp, ):
+         if (i.name in entries):
+            ch.WARNING("deleting leftover temporary file/dir: %s" % i.name)
+            i.rmtree()
+            entries.remove(i.name)
+      # If anything is left, yell about it.
       if (len(entries) > 0):
          ch.FATAL("%s: extraneous file(s): %s"
                % (msg_prefix, " ".join(sorted(entries))))
@@ -692,15 +1294,15 @@ class Storage:
                      % (msg_prefix, img), ch.BUG_REPORT_PLZ)
 
    def version_read(self):
-      if (os.path.isfile(self.version_file)):
-          # WARNING: version_file might not be Path
-         text = self.version_file.file_read_all()
-         try:
-            return int(text)
-         except ValueError:
-            ch.FATAL('malformed storage version: "%s"' % text)
-      else:
+      # While support for storage v1 was dropped some time ago, let’s at least
+      # retain the ability to recognize it.
+      if (not os.path.isfile(self.version_file)):
          return 1
+      text = self.version_file.file_read_all()
+      try:
+         return int(text)
+      except ValueError:
+         ch.FATAL('malformed storage version: "%s"' % text)
 
 
 class TarFile(tarfile.TarFile):
@@ -711,7 +1313,7 @@ class TarFile(tarfile.TarFile):
    # class method TarFile.open(), and the source code recommends subclassing
    # TarFile [2].
    #
-   # It's here because the standard library class has problems with symlinks
+   # It’s here because the standard library class has problems with symlinks
    # and replacing one file type with another; see issues #819 and #825 as
    # well as multiple unfixed Python bugs [e.g. 3,4,5]. We work around this
    # with manual deletions.
@@ -721,44 +1323,6 @@ class TarFile(tarfile.TarFile):
    # [3]: https://bugs.python.org/issue35483
    # [4]: https://bugs.python.org/issue19974
    # [5]: https://bugs.python.org/issue23228
-
-   # Need new method name because add() is called recursively and we don't
-   # want those internal calls to get our special sauce.
-   def add_(self, name, **kwargs):
-      def filter_(ti):
-         assert (ti.name == "." or ti.name[:2] == "./")
-         if (ti.name.startswith("./.git") or ti.name == "./ch/git.pickle"):
-            ch.DEBUG("omitting from push: %s" % ti.name)
-            return None
-         self.fix_member_uidgid(ti)
-         return ti
-      kwargs["filter"] = filter_
-      super().add(name, **kwargs)
-
-   def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
-      assert (regulars or symlinks or dirs)
-      try:
-         st = os.lstat(targetpath)
-      except FileNotFoundError:
-         # We could move this except clause after all the stat.S_IS* calls,
-         # but that risks catching FileNotFoundError that came from somewhere
-         # other than lstat().
-         st = None
-      except OSError as x:
-         ch.FATAL("can't lstat: %s" % targetpath, targetpath)
-      if (st is not None):
-         if (stat.S_ISREG(st.st_mode)):
-            if (regulars):
-               Path(targetpath).unlink_()
-         elif (stat.S_ISLNK(st.st_mode)):
-            if (symlinks):
-               Path(targetpath).unlink_()
-         elif (stat.S_ISDIR(st.st_mode)):
-            if (dirs):
-               Path(targetpath).rmtree()
-         else:
-            ch.FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
-                     % (stat.S_IFMT(st.st_mode), targetpath))
 
    @staticmethod
    def fix_link_target(ti, tb):
@@ -797,7 +1361,7 @@ class TarFile(tarfile.TarFile):
 
    @staticmethod
    def fix_member_uidgid(ti):
-      assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn't happen
+      assert (ti.name[0] != "/")  # absolute paths unsafe but shouldn’t happen
       if (not (ti.isfile() or ti.isdir() or ti.issym() or ti.islnk())):
          ch.FATAL("invalid file type: %s" % ti.name)
       ti.uid = 0
@@ -810,6 +1374,44 @@ class TarFile(tarfile.TarFile):
       if (ti.mode & stat.S_ISGID):
          ch.VERBOSE("stripping unsafe setgid bit: %s" % ti.name)
          ti.mode &= ~stat.S_ISGID
+
+   # Need new method name because add() is called recursively and we don’t
+   # want those internal calls to get our special sauce.
+   def add_(self, name, **kwargs):
+      def filter_(ti):
+         assert (ti.name == "." or ti.name[:2] == "./")
+         if (ti.name in ("./ch/git", "./ch/git.pickle")):
+            ch.DEBUG("omitting from push: %s" % ti.name)
+            return None
+         self.fix_member_uidgid(ti)
+         return ti
+      kwargs["filter"] = filter_
+      super().add(name, **kwargs)
+
+   def clobber(self, targetpath, regulars=False, symlinks=False, dirs=False):
+      assert (regulars or symlinks or dirs)
+      try:
+         st = os.lstat(targetpath)
+      except FileNotFoundError:
+         # We could move this except clause after all the stat.S_IS* calls,
+         # but that risks catching FileNotFoundError that came from somewhere
+         # other than lstat().
+         st = None
+      except OSError as x:
+         ch.FATAL("can’t lstat: %s" % targetpath, targetpath)
+      if (st is not None):
+         if (stat.S_ISREG(st.st_mode)):
+            if (regulars):
+               Path(targetpath).unlink()
+         elif (stat.S_ISLNK(st.st_mode)):
+            if (symlinks):
+               Path(targetpath).unlink()
+         elif (stat.S_ISDIR(st.st_mode)):
+            if (dirs):
+               Path(targetpath).rmtree()
+         else:
+            ch.FATAL("invalid file type 0%o in previous layer; see inode(7): %s"
+                     % (stat.S_IFMT(st.st_mode), targetpath))
 
    def makedir(self, tarinfo, targetpath):
       # Note: This gets called a lot, e.g. once for each component in the path

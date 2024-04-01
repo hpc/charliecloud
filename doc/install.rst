@@ -1,6 +1,11 @@
 Installing
 **********
 
+.. admonition:: Audience
+
+   This section assumes a moderate level of experience installing UNIX
+   software.
+
 This section describes what you need to install Charliecloud and how to do so.
 
 Note that installing and using Charliecloud can be done as a normal user with
@@ -25,7 +30,7 @@ simple as::
   $ make
   $ sudo make install
 
-If you don't have sudo, you can:
+If you don’t have sudo, you can:
 
   * Run Charliecloud directly from the build directory; add
     :code:`$BUILD_DIR/bin` to your :code:`$PATH` and you are good to go,
@@ -46,7 +51,7 @@ common distributions should be sufficient.
 
   * Automake
   * Autoconf
-  * Python's :code:`pip3` package installer and its :code:`wheel` extension
+  * Python’s :code:`pip3` package installer and its :code:`wheel` extension
 
 Create :code:`configure` with::
 
@@ -54,7 +59,7 @@ Create :code:`configure` with::
 
 This script has a few options; see its :code:`--help`.
 
-Note that Charliecloud disables Automake's "maintainer mode" by default, so
+Note that Charliecloud disables Automake’s "maintainer mode" by default, so
 the build system (Makefiles, :code:`configure`, etc.) will never automatically
 be rebuilt. You must run :code:`autogen.sh` manually if you need this. You can
 also re-enable maintainer mode with :code:`configure` if you like, though this
@@ -63,7 +68,7 @@ is not a tested configuration.
 :code:`configure` options
 -------------------------
 
-Charliecloud's :code:`configure` has the following options in addition to the
+Charliecloud’s :code:`configure` has the following options in addition to the
 standard ones.
 
 Feature selection: :code:`--disable-FOO`
@@ -73,7 +78,7 @@ By default, all features that can be built will be built and installed. You
 can exclude some features with:
 
   ========================== =======================================================
-  option                     don't build/install
+  option                     don’t build/install
   ========================== =======================================================
   :code:`--disable-ch-image` :code:`ch-image` unprivileged builder & image manager
   :code:`--disable-html`     HTML documentation
@@ -82,7 +87,7 @@ can exclude some features with:
   :code:`--disable-tests`    test suite
   ========================== =======================================================
 
-You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can't
+You can also say :code:`--enable-FOO` to fail the build if :code:`FOO` can’t
 be built.
 
 Dependency selection: :code:`--with-FOO`
@@ -102,7 +107,7 @@ Some dependencies can be specified as follows. Note only some of these support
     with it if found; otherwise, error.
 
   * :code:`no`: Disable :code:`libsquashfuse` linking and internal SquashFS
-    mounting, even if it's installed.
+    mounting, even if it’s installed.
 
   * Path to :code:`libsquashfuse` install prefix: Link with
     :code:`libsquashfuse` found there, or error if not found, and add it to
@@ -137,7 +142,7 @@ prefer :code:`-Werror` unless there is a specific reason to turn it off. For
 example, this approach identified a buggy :code:`configure` test (`issue #798
 <https://github.com/hpc/charliecloud/issues/798>`_).
 
-Many others recommend the opposite. For example, Gentoo's "`Common mistakes
+Many others recommend the opposite. For example, Gentoo’s "`Common mistakes
 <https://devmanual.gentoo.org/ebuild-writing/common-mistakes/index.html>`_"
 guide advises against :code:`-Werror` because it causes breakage that is
 "random" and "without purpose". There is a well-known `blog post
@@ -146,7 +151,7 @@ from Flameeyes that recommends :code:`-Werror` be off by default and used by
 developers and testers only.
 
 In our opinion, for Charliecloud, these warnings are most likely the result of
-real bugs and shouldn't be hidden (i.e., they are neither random nor without
+real bugs and shouldn’t be hidden (i.e., they are neither random nor without
 purpose). Our code should have no warnings, regardless of compiler, and any
 spurious warnings should be silenced individually. We do not have the
 resources to test with a wide variety of compilers, so enabling
@@ -160,9 +165,9 @@ code with a minimum of hassle. Thus, we provide the :code:`configure` flag:
 :code:`--enable-buggy-build`
   Remove :code:`-Werror` from :code:`CFLAGS` when building.
 
-Don't hesitate to use it. But if you do, we would very much appreciate if you:
+Don’t hesitate to use it. But if you do, we would very much appreciate if you:
 
-  1. File a bug explaining why! We'll fix it.
+  1. File a bug explaining why! We’ll fix it.
   2. Remove it from your package or procedure once we fix that bug.
 
 Disable bundled Lark package: :code:`--disable-bundled-lark`
@@ -193,6 +198,22 @@ you are starting from a Git checkout, bundled Lark is installed by default by
 The main use case for these options is to support package maintainers. If this
 is you and does not meet your needs, please get in touch with us and we will
 help.
+
+Avoid potentially troublesome informational tests: :code:`--disable-impolite-checks`
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:code:`configure` performs a lot of checks that do not inform decisions but
+are simply informational, for the report at the end. These checks replicate
+run-time decisions; their purpose is to offer guidance on what to expect at
+run time.
+
+Some of these checks trigger alerts in some situations. for example, writing
+files in :code:`/proc` confuses the Gentoo package build `sandbox
+<https://wiki.gentoo.org/wiki/Project:Sandbox>`_.
+
+Option :code:`--disable-impolite-checks` skips these checks. The only
+consequence is a somewhat less informative report.
+
 
 Install with package manager
 ============================
@@ -225,15 +246,15 @@ particularly welcome!
 Dependencies
 ============
 
-Charliecloud's philosophy on dependencies is that they should be (1) minimal
+Charliecloud’s philosophy on dependencies is that they should be (1) minimal
 and (2) granular. For any given feature, we try to implement it with the
 minimum set of dependencies, and in any given environment, we try to make the
 maximum set of features available.
 
-This section documents Charliecloud's dependencies in detail. Do you need to
+This section documents Charliecloud’s dependencies in detail. Do you need to
 read it? If you are installing Charliecloud on the same system where it will
 be used, probably not. :code:`configure` will issue a report saying what will
-and won't work. Otherwise, it may be useful to gain an understanding of what
+and won’t work. Otherwise, it may be useful to gain an understanding of what
 to expect when deploying Charliecloud.
 
 Note that we do not rigorously track dependency versions. We update the
@@ -242,15 +263,15 @@ bounds and may be out of date. It is worth trying even if your version is
 documented to be too old. Please let us know any success or failure reports.
 
 Finally, the run-time dependencies are lazy; specific features just try to use
-their dependencies and fail if there's a problem, hopefully with a useful
-error message. In other words, there's no version checking or whatnot that
-will keep you from using a feature unless it truly doesn't work in your
+their dependencies and fail if there’s a problem, hopefully with a useful
+error message. In other words, there’s no version checking or whatnot that
+will keep you from using a feature unless it truly doesn’t work in your
 environment.
 
 User namespaces
 ---------------
 
-Charliecloud's fundamental principle of a workflow that is fully unprivileged
+Charliecloud’s fundamental principle of a workflow that is fully unprivileged
 end-to-end requires unprivileged `user namespaces
 <https://lwn.net/Articles/531114/>`_. In order to enable them, you need a
 vaguely recent Linux kernel with the feature compiled in and active.
@@ -264,12 +285,12 @@ Some distributions need configuration changes. For example:
   <https://access.redhat.com/documentation/en-us/red_hat_enterprise_linux_atomic_host/7/html-single/getting_started_with_containers/#user_namespaces_options>`_.
   RHEL/CentOS 7.6 and up need only the sysctl. Note that Docker does not work
   with user namespaces, so skip step 4 of the Red Hat instructions, i.e.,
-  don't add :code:`--userns-remap` to the Docker configuration (see `issue #97
+  don’t add :code:`--userns-remap` to the Docker configuration (see `issue #97
   <https://github.com/hpc/charliecloud/issues/97>`_).
 
 Note: User namespaces `always fail in a chroot
 <http://man7.org/linux/man-pages/man2/unshare.2.html>`_ with :code:`EPERM`. If
-:code:`configure` detects that it's in a chroot, it will print a warning in
+:code:`configure` detects that it’s in a chroot, it will print a warning in
 its report. One common scenario where this comes up is packaging, where builds
 often happen in a chroot. However, like all the run-time :code:`configure`
 tests, this is informational only and does not affect the build.
@@ -281,7 +302,7 @@ Charliecloud should work on any architecture supported by the Linux kernel,
 and we have run Charliecloud containers on x86-64, ARM, and Power. However, it
 is currently tested only on x86_64 and ARM.
 
-Most builders are also fairly portable; e.g., see `Docker's supported
+Most builders are also fairly portable; e.g., see `Docker’s supported
 platforms <https://docs.docker.com/install/#supported-platforms>`_.
 
 libc
@@ -289,8 +310,8 @@ libc
 
 We want Charliecloud to work with any C99/POSIX libc, though it is only tested
 with `glibc <https://www.gnu.org/software/libc/>`_ and `musl
-<https://musl.libc.org/>`_, and other libc's are very likely to have problems.
-(Please report these bugs!) Non-glibc libc's will currently need a `standalone
+<https://musl.libc.org/>`_, and other libc’s are very likely to have problems.
+(Please report these bugs!) Non-glibc libc’s will currently need a `standalone
 libargp <https://github.com/ericonr/argp-standalone>`_ (see issue `#1260
 <https://github.com/hpc/charliecloud/issues/1260>`_).
 
@@ -318,31 +339,18 @@ order by dependency.
 Bash
 ~~~~
 
-When Bash is needed, it's because:
+When Bash is needed, it’s because:
 
   * Shell scripting is a lot easier in Bash than POSIX shell, so we use it for
-    scripts applicable in contexts where it's very likely Bash is already
+    scripts applicable in contexts where it’s very likely Bash is already
     available.
 
   * It is required by our testing framework, Bats.
 
-Bats
-~~~~
-
-Bats ("Bash Automated Testing System") is a test framework for tests written
-as Bash shell scripts.
-
-`Upstream Bats <https://github.com/sstephenson/bats>`_ is unmaintained, but
-widely available. Both version 0.4.0, which tends to be in distributions, and
-upstream master branch (commit 0360811) should work. There is a maintained
-fork called `Bats-core <https://github.com/bats-core/bats-core>`_, but the
-test suite currently does not pass with it; see `issue #582
-<https://github.com/hpc/charliecloud/issues/582>`_. Patches welcome!
-
 Buildah
 ~~~~~~~
 
-Charliecloud uses Buildah's "rootless" mode and :code:`ignore-chown-errors`
+Charliecloud uses Buildah’s "rootless" mode and :code:`ignore-chown-errors`
 storage configuration for a fully unprivileged workflow with no sudo and no
 setuid binaries. Note that in this mode, images in Buildah internal storage
 will have all user and group ownership flattened to UID/GID 0.
@@ -386,7 +394,7 @@ In principle, any C99 compiler should work. Please let us know any success or
 failure reports.
 
 Intel :code:`icc` is not supported because it links extra shared libraries
-that our test suite can't deal with. See `PR #481
+that our test suite can’t deal with. See `PR #481
 <https://github.com/hpc/charliecloud/pull/481>`_.
 
 image repository access
@@ -397,7 +405,7 @@ access to an image repository and configuring the builder for that repository.
 Options include:
 
   * `Docker Hub <https://hub.docker.com>`_, or other public repository such as
-    `gitlab.com <https://gitlab.com>`_ or NVIDIA's `NCG container registry
+    `gitlab.com <https://gitlab.com>`_ or NVIDIA’s `NCG container registry
     <https://ngc.nvidia.com>`_.
 
   * A private Docker-compatible registry, such as a private Docker Hub or
@@ -420,8 +428,8 @@ linter for shell scripts. In order to pass the full test suite, all the shell
 scripts need to pass ShellCheck.
 
 While it is widely available in distributions, the packaged version is usually
-too old. Building from source is tricky because it's a Haskell program, which
-isn't a widely available tool chain. Fortunately, the developers provide
+too old. Building from source is tricky because it’s a Haskell program, which
+isn’t a widely available tool chain. Fortunately, the developers provide
 pre-compiled `static binaries
 <https://github.com/koalaman/shellcheck/releases>`_ on their GitHub page.
 
@@ -432,11 +440,11 @@ We use Sphinx to build the documentation; the theme is
 `sphinx-rtd-theme <https://sphinx-rtd-theme.readthedocs.io/en/stable/>`_.
 
 Minimum versions are listed above. Note that while anything greater than the
-minimum should yield readable documentation, we don't test quality with
+minimum should yield readable documentation, we don’t test quality with
 anything other than what we use to build the website, which is usually but not
 always the most recent version available on PyPI.
 
-If you're on Debian Stretch or some version of Ubuntu, installing with
+If you’re on Debian Stretch or some version of Ubuntu, installing with
 :code:`pip3` will silently install into :code:`~/.local`, leaving the
 :code:`sphinx-build` binary in :code:`~/.local/bin`, which is often not on
 your path. One workaround (untested) is to run :code:`pip3` as root, which
@@ -465,10 +473,11 @@ To mount these archives using :code:`ch-run`'s internal code, you need:
      setuid, but Charliecloud does not need that**; you can :code:`chmod u-s`
      the file or build/install as a normal user.
 
-2. `SquashFUSE <https://github.com/vasi/squashfuse>`_ v0.1.105 or later (we
-   need the :code:`libsquashfuse_ll` shared library). This must be installed,
-   not linked from its build directory, though it can be installed in a
-   non-standard location.
+2. `SquashFUSE <https://github.com/vasi/squashfuse>`_ v0.1.105 or later,
+   excluding v0.3.0 (we need the :code:`libsquashfuse_ll` shared library).
+   Version 0.3.0 contains an incompatible function signature change that was
+   reverted in 0.4.0. This must be installed, not linked from its build
+   directory, though it can be installed in a non-standard location.
 
 Without these, you can still use a SquashFS workflow but must mount and
 unmount the filesystem archives manually. You can do this using the
@@ -477,8 +486,8 @@ less stringent.
 
 .. note:: If :code:`libfuse2` development files are available but those for
    :code:`libfuse3` are not, SquashFUSE will still build and install, but the
-   proper components will not be available, so Charliecloud's
-   :code:`configure` will say it's not found.
+   proper components will not be available, so Charliecloud’s
+   :code:`configure` will say it’s not found.
 
 sudo, generic
 ~~~~~~~~~~~~~
@@ -497,4 +506,13 @@ Wget is used to demonstrate building an image without a builder (the main test
 image used to exercise Charliecloud itself).
 
 
-..  LocalWords:  Werror Flameeyes plougher deps libc's ericonr
+Command line tab completion
+===========================
+
+Charliecloud offers experimental tab completion for Bash users. This feature is
+currently implemented for :code:`ch-image`, :code:`ch-run`, and
+:code:`ch-convert`. For details on setting up tab completion, as well as general
+documentation, see :ref:`ch-completion.bash`.
+
+
+..  LocalWords:  Werror Flameeyes plougher deps libc’s ericonr

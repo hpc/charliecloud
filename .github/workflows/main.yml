@@ -9,26 +9,31 @@ on:
 
 jobs:
   main:
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     timeout-minutes: 90
     strategy:
       fail-fast: false  # Actions seems kind of flaky lately
       matrix:
-        builder: [none, docker, ch-image]
+        builder:
+          - ch-image
         pack_fmt: [squash-mount, tar-unpack, squash-unpack]
         keep_sudo:   # if false, remove self from sudoers post-install/setup
           - false
         cache:
-          - disabled
+          - enabled
         include:
-          - builder: docker
+          - builder: none
             pack_fmt: squash-mount
-            keep_sudo: true
+            keep_sudo: false
             cache: disabled
+          - builder: docker
+            pack_fmt: tar-unpack
+            keep_sudo: true
+            cache: enabled
           - builder: ch-image
             pack_fmt: squash-mount
             keep_sudo: false
-            cache: enabled
+            cache: disabled
 
     env:
       CH_IMAGE_CACHE: ${{ matrix.cache }}
@@ -40,7 +45,7 @@ jobs:
       ch_prefix: /var/tmp
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: early setup & validation
         run: |
@@ -59,8 +64,8 @@ jobs:
           echo "PATH=$path_new" >> $GITHUB_ENV
           # Set sudo umask to something quite restrictive. The default is
           # 0022, but we had a "make install" bug (issue #947) that was
-          # tickled by 0027, which is a better setting. For reasons I don't
-          # understand, this only affects sudo, but since that's what we want,
+          # tickled by 0027, which is a better setting. For reasons I don’t
+          # understand, this only affects sudo, but since that’s what we want,
           # I left it. Note there are a few dependency installs below that
           # have similar permissions bugs; these relax the umask on a
           # case-by-case basis.
@@ -96,28 +101,15 @@ jobs:
           sudo apt-get install cloc
           misc/loc
 
-      - name: install Bats
-        # We need (1) old Bats, not bats-core and (2) prior to commit 1735a4f,
-        # because this is what is provided in distros we need to support and
-        # it contains a bug we work around (see issue #552).
-        run: |
-          cd /usr/local/src
-          git clone --depth 1 --branch v0.4.0 https://github.com/sstephenson/bats.git
-          cd bats
-          sudo sh -c 'umask 0022 && ./install.sh /usr/local'
-          command -v bats
-          bats --version
-          [[ $(command -v bats) == /usr/local/bin/bats ]]
-          [[ $(bats --version) == 'Bats 0.4.0' ]]
-
       - name: install/configure dependencies, all
         run: |
-          # configure doesn't tell us about these.
+          # configure doesn’t tell us about these.
           sudo apt-get install attr pigz pv
           # configure does tell us about these.
-          sudo apt-get install squashfs-tools
+          sudo apt-get install bats squashfs-tools
           # Track newest Sphinx in case it breaks things.
-          sudo su -c 'umask 0022 && pip3 install sphinx sphinx-rtd-theme sphinx-reredirects'
+          # FIXME: pip yells about docutils 0.19 so ask for latest 0.18
+          sudo su -c 'umask 0022 && pip3 install docutils==0.18.1 sphinx sphinx-rtd-theme sphinx-reredirects'
           # Use newest shellcheck.
           cd /usr/local/src
           wget -nv https://github.com/koalaman/shellcheck/releases/download/stable/shellcheck-stable.linux.x86_64.tar.xz
@@ -129,19 +121,6 @@ jobs:
       - name: install/configure dependencies, ch-image
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
-          # Install the minimum Python version we support (issue #959). Python
-          # is pretty quick to build, so this only takes a couple of minutes.
-          cd /usr/local/src
-          wget -nv https://www.python.org/ftp/python/3.6.12/Python-3.6.12.tar.xz
-          tar xf Python-3.6.12.tar.xz
-          cd Python-3.6.12
-          ./configure --prefix=/usr/local
-          make $ch_makej
-          sudo sh -c 'umask 0022 && make install'
-          command -v pip3
-          command -v python3
-          [[ $(command -v pip3) == /usr/local/bin/pip3 ]]
-          [[ $(command -v python3) == /usr/local/bin/python3 ]]
           # Use most current packages b/c new versions sometimes break things.
           sudo sh -c 'umask 0022 && pip3 install lark requests wheel'
           # Configure Git and friends for build cache.
@@ -158,8 +137,8 @@ jobs:
               dot -V
               # git2dot
               sudo sh -c 'umask 0022 && pip install python-dateutil'
-              git clone https://github.com/jlinoff/git2dot.git
-              cd ./git2dot
+              git clone https://github.com/jlinoff/git2dot.git ~/git2dot
+              cd ~/git2dot
               git checkout $(git tag | sort -Vr | head -1)
               sudo cp -a git2dot.py /usr/local/bin
               command -v git2dot.py
@@ -171,10 +150,11 @@ jobs:
         run: |
           set -x
           sudo apt-get install -y libfuse3-dev
-          # Currently we need the master branch of SquashFUSE.
           cd /usr/local/src
           git clone https://github.com/vasi/squashfuse.git
           cd squashfuse
+          # Check out the latest release.
+          git checkout $(git tag -l '[0-9].*' | sort -V | tail -1)
           ./autogen.sh
           ./configure --prefix=/usr/local
           make
@@ -182,7 +162,6 @@ jobs:
           sudo ldconfig
           # Unset setuid on all fusermount3(1) on the system.
           sudo chmod -v u-s /usr/bin/fusermount*
-          sudo find / -name 'fusermount*' -ls
           ls -lh $(command -v fusermount3)
           [[ ! -u $(command -v fusermount3) ]]
 
@@ -192,7 +171,7 @@ jobs:
         run: |
           sudo apt-get install -y musl-tools
           # At present we use argp to parse command line arguments. This is
-          # not portable; it's a glibc extension (see #1260). Thus, install a
+          # not portable; it’s a glibc extension (see #1260). Thus, install a
           # standalone argp.
           cd /usr/local/src
           git clone --depth=1 https://github.com/ericonr/argp-standalone.git
@@ -202,31 +181,16 @@ jobs:
           make $ch_makej
           sudo install -D -m644 argp.h /usr/include/x86_64-linux-musl/argp.h
           sudo install -D -m755 libargp.a /usr/lib/x86_64-linux-musl/libargp.a
-
-      - name: install/configure dependencies, all Buildah
-        if: ${{ startsWith(matrix.builder, 'buildah') }}
-        run: |
-          command -v buildah
-          buildah --version
-          command -v runc
-          runc --version
-          # As of 2020-11-30, stock registries.conf is pretty simple; it
-          # includes Docker Hub (docker.io) and then quay.io. Still, use ours
-          # for stability.
-          cat /etc/containers/registries.conf
-          cat <<'EOF' | sudo tee /etc/containers/registries.conf
-          [registries.search]
-            registries = ['docker.io']
-          EOF
-
-      - name: install/configure dependencies, privileged Buildah
-        if: ${{ startsWith(matrix.builder, 'buildah-') }}
-        run: |
-          sudo usermod --add-subuids 10000-65536 $USER
-          sudo usermod --add-subgids 10000-65536 $USER
+          # musl-gcc does not install Linux headers. This is a bad kludge.
+          # See: https://www.openwall.com/lists/musl/2017/11/23/1
+          sudo ln -s ../linux ../asm-generic ../x86_64-linux-gnu \
+                     /usr/include/x86_64-linux-musl/
+          sudo ln -s x86_64-linux-gnu/asm /usr/include/x86_64-linux-musl/
 
       - name: disable bundled lark, ch-image
-        if: ${{ matrix.builder == 'ch-image' && matrix.cache == 'enabled' }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'disabled' }}
         run: |
           set -x
           # no install, disable
@@ -236,8 +200,8 @@ jobs:
           ! test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
-          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
-          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
           make clean
           # install, disable
           ./autogen.sh
@@ -246,8 +210,8 @@ jobs:
           test -f ./lib/lark/lark.py
           make $ch_makej
           sudo make $ch_makej install
-          [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py' ]]
-          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.6/site-packages/lark/__init__.py' ]]
+          [[ $(bin/ch-image -v --dependencies) = 'lark path: /home/runner/work/charliecloud/charliecloud/lib/lark/__init__.py' ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = 'lark path: /usr/local/lib/python3.10/dist-packages/lark/__init__.py' ]]
           make clean
           # no install, enable: build fails, untested
           # install, enable: normal configuration, remainder of CI
@@ -270,16 +234,23 @@ jobs:
           # workflow also use glibc.
           if [[ $CH_TEST_PACK_FMT == tar-unpack ]]; then
               export CC=musl-gcc
-              # GNU ldd(1) doesn't work on musl binaries.
+              # GNU ldd(1) doesn’t work on musl binaries.
               LDD='/lib/ld-musl-x86_64.so.1 --list'
           else
               LDD=ldd
           fi
-          ./configure --prefix=$ch_prefix/from-git
+          # Go wild with install directories to make sure it works (see #683).
+          # We do have a normal install below.
+          ./configure --prefix=$ch_prefix/from-git \
+                      --datarootdir=$ch_prefix/from-git_dataroot \
+                      --libexecdir=$ch_prefix/from-git_libexec \
+                      --libdir=$ch_prefix/from-git_lib \
+                      --mandir=$ch_prefix/from-git_man \
+                      --docdir=$ch_prefix/from-git_doc \
+                      --htmldir=$ch_prefix/from-git_html
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_TEST_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_TEST_BUILDER = docker ]] && command -v docker
           if [[ $CH_TEST_BUILDER = ch-image ]]; then
               fgrep 'with ch-image(1): yes' config.log
               fgrep '"lark" module ... bundled' config.log
@@ -310,10 +281,10 @@ jobs:
         if: ${{ matrix.builder == 'ch-image' }}
         run: |
           set -x
-          [[ $(bin/ch-image gestalt python-path) = /usr/local/bin/python3 ]]
-          [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/charliecloud/lark/__init__.py" ]]
-          [[ $($ch_prefix/from-git/bin/ch-image gestalt python-path) = /usr/local/bin/python3 ]]
-          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git/lib/charliecloud/lark/__init__.py" ]]
+          [[ $(bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
+          [[ $(bin/ch-image -v --dependencies) = "lark path: /home/runner/work/charliecloud/charliecloud/lib/lark/__init__.py" ]]
+          [[ $($ch_prefix/from-git/bin/ch-image gestalt python-path) = /usr/bin/python3 ]]
+          [[ $($ch_prefix/from-git/bin/ch-image -v --dependencies) = "lark path: /var/tmp/from-git_lib/charliecloud/lark/__init__.py" ]]
 
       - name: late setup & validation, all
         run: |
@@ -345,23 +316,10 @@ jobs:
                   -v ~/registry-etc:/etc/docker/registry registry:2
           docker ps -a
 
-      - name: configure sudo to user root, group non-root
-        if: ${{ matrix.keep_sudo }}
-        run: |
-          sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/runner
-          sudo cat /etc/sudoers.d/runner
-
-      - name: remove sudo
-        if: ${{ ! matrix.keep_sudo }}
-        run: |
-          sudo rm /etc/sudoers.d/runner
-          ! sudo echo hello
-
       - name: build/install from tarball
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
         run: |
           # Create and unpack tarball. The wildcard saves us having to put the
-          # version in a variable. This assumes there isn't already a tarball
+          # version in a variable. This assumes there isn’t already a tarball
           # or unpacked directory in $ch_prefix, which is true on the clean
           # VMs GitHub gives us. Note that cd fails if it gets more than one
           # argument, which helps, but this is probably kind of brittle.
@@ -369,15 +327,15 @@ jobs:
           mv charliecloud-*.tar.gz $ch_prefix
           cd $ch_prefix
           tar xf charliecloud-*.tar.gz
-          rm charliecloud-*.tar.gz  # else cd fails with "too many arguments"
+          rm charliecloud-*.tar.gz  # else cd fails with “too many arguments”
           cd charliecloud-*
           pwd
           # Configure and verify output.
           ./configure --prefix=$ch_prefix/from-tarball
           set -x
           fgrep 'documentation: yes' config.log
-          [[ $CH_TEST_BUILDER = buildah* ]] && fgrep 'with Buildah: yes' config.log
-          [[ $CH_TEST_BUILDER = docker ]] && fgrep 'with Docker: yes' config.log
+          [[ $CH_TEST_BUILDER = buildah* ]] && command -v buildah
+          [[ $CH_TEST_BUILDER = docker ]] && command -v docker
           [[ $CH_TEST_BUILDER = ch-image ]] && fgrep 'with ch-image(1): yes' config.log
           fgrep 'recommended tests, tar-unpack mode: yes' config.log
           fgrep 'recommended tests, squash-unpack mode: yes' config.log
@@ -395,29 +353,57 @@ jobs:
           bin/ch-run --version
           $ch_prefix/from-tarball/bin/ch-run --version
 
-      - name: run test suite (Git WD, quick)
-        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+      - name: configure sudo to user root, group non-root
+        if: ${{ matrix.keep_sudo }}
         run: |
-          bin/ch-test --scope=quick all
+          sudo sed -Ei 's/=\(ALL\)/=(ALL:ALL)/g' /etc/sudoers.d/runner
+          sudo cat /etc/sudoers.d/runner
+
+      - name: remove sudo
+        if: ${{ ! matrix.keep_sudo }}
+        run: |
+          sudo rm /etc/sudoers.d/runner
+          ! sudo echo hello
 
       - name: run test suite (Git WD, standard)
         run: |
           bin/ch-test all
+          # Validate that “rootemu” test phase didn’t run (skipped by default
+          # on standard scope).
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
+
+      - name: run root emulation phase
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
+        run: |
+          # We only really need to run the root emulation tests once in CI.
+          # ch-image with an enabled cache is required for these unit tests.
+          # Since all CI tests that use ch-image with an enabled cache take
+          # roughly the same amount of time, we arbitrarily chose squash-mount
+          # as the pack format.
+          bin/ch-test rootemu
+          # Validate that “rootemu” test phase ran.
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = yes ]]
 
       - name: run test suite (installed from Git WD, standard)
-        if: ${{    ( matrix.builder == 'docker' && ! matrix.keep_sudo )
-                || (    matrix.builder == 'ch-image'
-                     && matrix.cache == 'enabled' ) }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-git/bin/ch-test all
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
 
       - name: run test suite (installed from tarball, standard)
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+        if: ${{    matrix.builder == 'ch-image'
+                && matrix.pack_fmt == 'squash-mount'
+                && matrix.cache == 'enabled' }}
         run: |
           $ch_prefix/from-tarball/bin/ch-test all
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
 
-      - name: make uninstall
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo }}
+      - name: uninstall from tarball
+        if: ${{ matrix.keep_sudo }}
         run: |
           cd $ch_prefix/charliecloud-*
           sudo make uninstall
@@ -434,7 +420,7 @@ jobs:
           EOF
 
       - name: rebuild with most things --disable’d
-        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           make distclean
           ./configure --prefix=/doesnotexist \
@@ -443,9 +429,10 @@ jobs:
           fgrep 'HTML documentation ... no' config.log
           fgrep 'man pages ... no' config.log
           fgrep 'ch-image(1) ... no' config.log
-          fgrep 'with Docker: yes' config.log
           fgrep 'with ch-image(1): no' config.log
-          fgrep 'basic tests, all stages: yes' config.log
+          # This CI test requires Docker, but the “configure” script doesn’t
+          # check for Docker, so we do it ourselves with “command -v”.
+          command -v docker
           fgrep 'more complete tests: no' config.log
           set +x
           # Build.
@@ -453,12 +440,13 @@ jobs:
           bin/ch-run --version
 
       - name: run test suite (Git WD, standard)
-        if: ${{ matrix.builder == 'docker' && ! matrix.keep_sudo }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           bin/ch-test all
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
 
       - name: remove non-essential dependencies
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           set -x
           # This breaks lots of dependencies unrelated to our build but YOLO.
@@ -466,25 +454,22 @@ jobs:
                     pigz \
                     pv \
                     python3-requests \
-                    squashfs-tools \
+                    squashfs-tools
           sudo pip3 uninstall -y sphinx sphinx-rtd-theme
           if [[ ${{ matrix.pack_fmt }} = squash-mount ]]; then
-              ( cd /usr/local/src/squashfuse && make uninstall )
+              ( cd /usr/local/src/squashfuse && sudo make uninstall )
           fi
           ! python3 -c 'import requests'
           ! python3 -c 'import lark'
-          test -e bin/ch-image
-          bin/ch-test -f test/build/10_sanity.bats  # issue #806
 
       - name: rebuild
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           make distclean
           ./configure --prefix=/doesnotexist
           set -x
           fgrep 'documentation: no' config.log
-          fgrep 'with Docker: yes' config.log
-          fgrep 'basic tests, all stages: yes' config.log
+          command -v docker
           fgrep 'more complete tests: no' config.log
           fgrep 'recommended tests, squash-mount mode: no' config.log
           set +x
@@ -493,9 +478,10 @@ jobs:
           bin/ch-run --version
 
       - name: run test suite (Git WD, standard)
-        if: ${{ matrix.builder == 'docker' && matrix.keep_sudo && matrix.pack_fmt == 'tar-unpack' }}
+        if: ${{ matrix.builder == 'docker' }}
         run: |
           bin/ch-test all
+          [[ $(cat /tmp/ch-test.tmp.$USER/rootemu) = no ]]
 
       - name: print ending environment
         if: ${{ always() }}

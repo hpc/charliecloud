@@ -4,7 +4,6 @@ import datetime
 import json
 import os
 import re
-import shutil
 import sys
 import tarfile
 
@@ -14,9 +13,9 @@ import filesystem as fs
 
 ## Hairy Imports ##
 
-# Lark is bundled or provided by package dependencies, so assume it's always
-# importable. There used to be a conflicting package on PyPI called "lark",
-# but it's gone now [1]. However, verify the version we got.
+# Lark is bundled or provided by package dependencies, so assume it’s always
+# importable. There used to be a conflicting package on PyPI called “lark”,
+# but it’s gone now [1]. However, verify the version we got.
 #
 # [1]: https://github.com/lark-parser/lark/issues/505
 import lark
@@ -67,6 +66,7 @@ LINE_CHUNK: /[^\\\n]+|(\\(?![ \t]+\n))+/
 
 HEX_STRING: /[0-9A-Fa-f]+/
 WORD: /[^ \t\n=]/+
+WORDE: /[^ \t\n]/+
 
 IR_PATH_COMPONENT: /[a-z0-9_.-]+/
 
@@ -75,10 +75,17 @@ _string_list: "[" _WS? STRING_QUOTED ( "," _WS? STRING_QUOTED )* _WS? "]"
 _WSH: /[ \t]/+                   // sequence of horizontal whitespace
 _LINE_CONTINUE: "\\" _WSH? "\n"  // line continuation
 _WS: ( _WSH | _LINE_CONTINUE )+  // horizontal whitespace w/ line continuations
-_NEWLINES: ( _WSH? "\n" )+       // sequence of newlines
+_NEWLINES: ( _WS? "\n" )+        // sequence of newlines
 
 %import common.ESCAPED_STRING -> STRING_QUOTED
 """
+
+# Where the .git “directory” in the image is located. (Normally it’s a
+# directory, and that’s what the Git docs call it, but it’s a file for
+# worktrees.) We deliberately do not call it “.git” because that makes it
+# hidden, but also more importantly it confuses Git into thinking /ch is a
+# different Git repo.
+GIT_DIR = ch.Path("ch/git")
 
 # Dockerfile grammar. Note image references are not parsed during Dockerfile
 # parsing.
@@ -88,7 +95,7 @@ start: dockerfile
 // First instruction must be ARG or FROM, but that is not a syntax error.
 dockerfile: _NEWLINES? ( arg_first | directive | comment )* ( instruction | comment )*
 
-?instruction: _WS? ( arg | copy | env | from_ | run | shell | workdir | uns_forever | uns_yet )
+?instruction: _WS? ( arg | copy | env | from_ | label | rsync | run | shell | workdir | uns_forever | uns_yet )
 
 directive.2: _WS? "#" _WS? DIRECTIVE_NAME "=" _line _NEWLINES
 DIRECTIVE_NAME: ( "escape" | "syntax" )
@@ -113,8 +120,15 @@ env_space: WORD _WS _line
 env_equalses: env_equals ( _WS env_equals )*
 env_equals: WORD "=" ( WORD | STRING_QUOTED )
 
-from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref [ _WS from_alias ] _NEWLINES
+from_: "FROM"i ( _WS ( option | option_keypair ) )* _WS image_ref ( _WS from_alias )? _NEWLINES
 from_alias: "AS"i _WS IR_PATH_COMPONENT  // FIXME: undocumented; this is guess
+
+label: "LABEL"i _WS ( label_space | label_equalses ) _NEWLINES
+label_space: WORD _WS _line
+label_equalses: label_equals ( _WS label_equals )*
+label_equals: WORD "=" ( WORD | STRING_QUOTED )
+
+rsync: ( "RSYNC"i | "NSYNC"i ) ( _WS option_plus )? _WS WORDE ( _WS WORDE )+ _NEWLINES
 
 run: "RUN"i _WS ( run_exec | run_shell ) _NEWLINES
 run_exec.2: _string_list
@@ -128,25 +142,27 @@ uns_forever: UNS_FOREVER _WS _line _NEWLINES
 UNS_FOREVER: ( "EXPOSE"i | "HEALTHCHECK"i | "MAINTAINER"i | "STOPSIGNAL"i | "USER"i | "VOLUME"i )
 
 uns_yet: UNS_YET _WS _line _NEWLINES
-UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "LABEL"i | "ONBUILD"i )
+UNS_YET: ( "ADD"i | "CMD"i | "ENTRYPOINT"i | "ONBUILD"i )
 
 /// Common ///
 
 option: "--" OPTION_KEY "=" OPTION_VALUE
 option_keypair: "--" OPTION_KEY "=" OPTION_VAR "=" OPTION_VALUE
+option_plus: "+" OPTION_LETTER
 OPTION_KEY: /[a-z]+/
+OPTION_LETTER: /[a-z]/
 OPTION_VALUE: /[^= \t\n]+/
 OPTION_VAR: /[a-z]+/
 
 image_ref: IMAGE_REF
-IMAGE_REF: /[A-Za-z0-9$:._\/-]+/
+IMAGE_REF: /[${}A-Za-z0-9:._\/-]+/  // variable substitution chars ${} added
 """ + GRAMMAR_COMMON
 
 # Grammar for image references.
 GRAMMAR_IMAGE_REF = r"""
 // Note: Hostnames with no dot and no port get parsed as a hostname, which
 // is wrong; it should be the first path component. We patch this error later.
-// FIXME: Supposedly this can be fixed with priorities, but I couldn't get it
+// FIXME: Supposedly this can be fixed with priorities, but I couldn’t get it
 // to work with brief trying.
 
 start: image_ref
@@ -164,6 +180,9 @@ IR_TAG: /[A-Za-z0-9_.-]+/
 
 # Top-level directories we create if not present.
 STANDARD_DIRS = { "bin", "dev", "etc", "mnt", "proc", "sys", "tmp", "usr" }
+
+# Width of token name when truncating text to fit on screen.
+WIDTH_TOKEN_MAX = 10
 
 
 ## Classes ##
@@ -183,6 +202,8 @@ class Image:
                 "unpack_path")
 
    def __init__(self, ref, unpack_path=None):
+      if (isinstance(ref, str)):
+         ref = Reference(ref)
       assert isinstance(ref, Reference)
       self.ref = ref
       if (unpack_path is not None):
@@ -192,9 +213,19 @@ class Image:
          self.unpack_path = ch.storage.unpack(self.ref)
       self.metadata_init()
 
+   @classmethod
+   def glob(class_, image_glob):
+      """Return a possibly-empty iterator of images in the storage directory
+         matching the given glob."""
+      for ref in Reference.glob(image_glob):
+         yield class_(ref)
+
+   def __str__(self):
+      return str(self.ref)
+
    @property
    def deleteable(self):
-      """True if it's OK to delete me, either my unpack directory (a) is at
+      """True if it’s OK to delete me, either my unpack directory (a) is at
          the expected location within the storage directory xor (b) is not not
          but it looks like an image; False otherwise."""
       if (self.unpack_path == ch.storage.unpack_base // self.unpack_path.name):
@@ -210,7 +241,7 @@ class Image:
       # Return the last modified time of self as a datetime.datetime object in
       # the local time zone.
       return datetime.datetime.fromtimestamp(
-                 (self.metadata_path // "metadata.json").stat_(False).st_mtime,
+                 (self.metadata_path // "metadata.json").stat(False).st_mtime,
                  datetime.timezone.utc).astimezone()
 
    @property
@@ -218,22 +249,12 @@ class Image:
       return self.unpack_path // "ch"
 
    @property
-   def unpack_exist_p(self):
-      return os.path.exists(self.unpack_path)
+   def unpack_cache_linked(self):
+      return (self.unpack_path // GIT_DIR).exists()
 
    @property
-   def unpack_cache_linked(self):
-      return self.unpack_exist_p and os.path.exists(self.unpack_path // ".git")
-
-   def __str__(self):
-      return str(self.ref)
-
-   @classmethod
-   def glob(class_, image_glob):
-      """Return a possibly-empty iterator of images in the storage directory
-         matching the given glob."""
-      for ref in Reference.glob(image_glob):
-         yield class_(ref)
+   def unpack_exist_p(self):
+      return os.path.exists(self.unpack_path)
 
    def commit(self):
       "Commit the current unpack directory into the layer cache."
@@ -244,24 +265,14 @@ class Image:
          can be either a path (string or fs.Path object) or an Image object;
          in the latter case other.unpack_path is used. other need not be a
          valid image; the essentials will be created if needed."""
-      def ignore(path, names):
-         # Need this path conversion, since shutil._copytree() calls ignore()
-         # and passes a string, not a fs.Path. See:
-         # https://github.com/python/cpython/blob/main/Lib/shutil.py#L456
-         path = fs.Path(path)
-         ignore = list()
-         if (path == src_path):
-            for name in names:
-               if (name.startswith(".git")):
-                  ch.VERBOSE("ignoring from source image: /%s" % name)
-                  ignore.append(name)
-         return ignore
       if (isinstance(other, str) or isinstance(other, fs.Path)):
          src_path = other
       else:
          src_path = other.unpack_path
       ch.VERBOSE("copying image: %s -> %s" % (src_path, self.unpack_path))
-      fs.Path(src_path).copytree(self.unpack_path, symlinks=True, ignore=ignore)
+      fs.Path(src_path).copytree(self.unpack_path, symlinks=True)
+      # Simpler to copy this file then delete it, rather than filter it out.
+      (self.unpack_path // GIT_DIR).unlink(missing_ok=True)
       self.unpack_init()
 
    def layers_open(self, layer_tars):
@@ -278,13 +289,13 @@ class Image:
          Important note: TarFile.extractall() extracts the given members in
          the order they are specified, so we need to preserve their order from
          the file, as returned by getmembers(). We also need to quickly remove
-         members we don't want from this sequence. Thus, we use the OrderedSet
+         members we don’t want from this sequence. Thus, we use the OrderedSet
          class defined in this module."""
       TT = collections.namedtuple("TT", ["fp", "members"])
       layers = collections.OrderedDict()
       # Schema version one (v1) allows one or more empty layers for Dockerfile
       # entries like CMD (https://github.com/containers/skopeo/issues/393).
-      # Unpacking an empty layer doesn't accomplish anything, so ignore them.
+      # Unpacking an empty layer doesn’t accomplish anything, so ignore them.
       empty_cnt = 0
       for (i, path) in enumerate(layer_tars, start=1):
          lh = os.path.basename(path).split(".", 1)[0]
@@ -296,10 +307,11 @@ class Image:
          except tarfile.TarError as x:
             ch.FATAL("cannot open: %s: %s" % (path, x))
          if (lh in layers and len(members) > 0):
-            ch.FATAL("duplicate non-empty layer %s" % lh)
+            ch.WARNING("ignoring duplicate non-empty layer: %s" % lh_short)
          if (len(members) > 0):
             layers[lh] = TT(fp, members)
          else:
+            ch.WARNING("ignoring empty layer: %s" % lh_short)
             empty_cnt += 1
       ch.VERBOSE("skipped %d empty layers" % empty_cnt)
       return layers
@@ -314,12 +326,12 @@ class Image:
                         "history": list(),
                         "labels": dict(),
                         "shell": ["/bin/sh", "-c"],
-                        "volumes": list() }  # set isn't JSON-serializable
+                        "volumes": list() }  # set isn’t JSON-serializable
 
    def metadata_load(self, target_img=None):
       """Load metadata file, replacing the existing metadata object. If
-         metadata doesn't exist, warn and use defaults. If target_img is
-         non-None, use that image's metadata instead of self's."""
+         metadata doesn’t exist, warn and use defaults. If target_img is
+         non-None, use that image’s metadata instead of self’s."""
       if (target_img is not None):
          path = target_img.metadata_path
       else:
@@ -341,7 +353,7 @@ class Image:
    def metadata_merge_from_config(self, config):
       """Interpret all the crap in the config data structure that is
          meaningful to us, and add it to self.metadata. Ignore anything we
-         expect in config that's missing."""
+         expect in config that’s missing."""
       def get(*keys):
          d = config
          keys = list(keys)
@@ -369,7 +381,7 @@ class Image:
             try:
                (k,v) = line.split("=", maxsplit=1)
             except AttributeError:
-               ch.FATAL("can't parse config: bad Env line: %s" % line)
+               ch.FATAL("can’t parse config: bad Env line: %s" % line)
             self.metadata["env"][k] = v
       # History.
       if ("history" not in config):
@@ -392,15 +404,15 @@ class Image:
       else:
          # Copy pulled config file into the image so we still have it.
          path = self.metadata_path // "config.pulled.json"
-         ch.copy2(config_json, path)
+         config_json.copy(path)
          ch.VERBOSE("pulled config path: %s" % path)
          self.metadata_merge_from_config(path.json_from_file("config"))
       self.metadata_save()
 
    def metadata_save(self):
-      """Dump image's metadata to disk, including the main data structure but
+      """Dump image’s metadata to disk, including the main data structure but
          also all auxiliary files, e.g. ch/environment."""
-      # Adjust since we don't save everything.
+      # Adjust since we don’t save everything.
       metadata = copy.deepcopy(self.metadata)
       for k in ARGS_MAGIC:
          metadata["arg"].pop(k, None)
@@ -426,7 +438,7 @@ class Image:
    def tarballs_write(self, tarball_dir):
       """Write one uncompressed tarball per layer to tarball_dir. Return a
          sequence of tarball basenames, with the lowest layer first."""
-      # FIXME: Yes, there is only one layer for now and we'll need to update
+      # FIXME: Yes, there is only one layer for now and we’ll need to update
       # it when (if) we have multiple layers. But, I wanted the interface to
       # support multiple layers.
       base = "%s.tar" % self.ref.for_path
@@ -440,15 +452,15 @@ class Image:
          fp.add_(unpack_path, arcname=".")
          fp.close()
       except OSError as x:
-         ch.FATAL("can't write tarball: %s" % x.strerror)
+         ch.FATAL("can’t write tarball: %s" % x.strerror)
       return [base]
 
    def unpack(self, layer_tars, last_layer=None):
       """Unpack config_json (path to JSON config file) and layer_tars
          (sequence of paths to tarballs, with lowest layer first) into the
          unpack directory, validating layer contents and dealing with
-         whiteouts. Empty layers are ignored. The unpack directory must exist,
-         and either be empty or contain only a single entry called “.git”."""
+         whiteouts. Empty layers are ignored. The unpack directory must not
+         exist."""
       if (last_layer is None):
          last_layer = sys.maxsize
       ch.INFO("flattening image")
@@ -465,10 +477,10 @@ class Image:
          ch.VERBOSE("no image found: %s" % self.unpack_path)
       else:
          if (not os.path.isdir(self.unpack_path)):
-            ch.FATAL("can't flatten: %s exists but is not a directory"
+            ch.FATAL("can’t flatten: %s exists but is not a directory"
                   % self.unpack_path)
          if (not self.deleteable):
-            ch.FATAL("can't flatten: %s exists but does not appear to be an image"
+            ch.FATAL("can’t flatten: %s exists but does not appear to be an image"
                      % self.unpack_path)
          ch.VERBOSE("removing image: %s" % self.unpack_path)
          t = ch.Timer()
@@ -481,11 +493,11 @@ class Image:
          ch.FATAL("image not found, can’t delete: %s" % self.ref)
       if (self.deleteable):
          ch.INFO("deleting image: %s" % self.ref)
-         self.unpack_path.chmod_min(0o700)
+         self.unpack_path.chmod_min()
          for (dir_, subdirs, _) in os.walk(self.unpack_path):
             # must fix as subdirs so we can traverse into them
             for subdir in subdirs:
-               (fs.Path(dir_) // subdir).chmod_min(0o700)
+               (fs.Path(dir_) // subdir).chmod_min()
          self.unpack_path.rmtree()
       else:
          ch.FATAL("storage directory seems broken: not an image: %s" % self.ref)
@@ -495,11 +507,11 @@ class Image:
          present will be left unchanged. After this, self.unpack_path is a
          valid Charliecloud image directory."""
       # Metadata directory.
-      (self.unpack_path // "ch").mkdir_()
+      (self.unpack_path // "ch").mkdir()
       (self.unpack_path // "ch/environment").file_ensure_exists()
       # Essential directories & mount points. Do nothing if something already
-      # exists, without dereferencing, in case it's a symlink, which will work
-      # for bind-mount later but won't resolve correctly now outside the
+      # exists, without dereferencing, in case it’s a symlink, which will work
+      # for bind-mount later but won’t resolve correctly now outside the
       # container (e.g. linuxcontainers.org images; issue #1015).
       #
       # WARNING: Keep in sync with shell scripts.
@@ -514,7 +526,7 @@ class Image:
       layers = self.layers_open(layer_tars)
       self.validate_members(layers)
       self.whiteouts_resolve(layers)
-      self.unpack_path.mkdir_()  # create directory in case no layers
+      self.unpack_path.mkdir()  # create directory in case no layers
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          lh_short = lh[:7]
          if (i > last_layer):
@@ -525,7 +537,7 @@ class Image:
             try:
                fp.extractall(path=self.unpack_path, members=members)
             except OSError as x:
-               ch.FATAL("can't extract layer %d: %s" % (i, x.strerror))
+               ch.FATAL("can’t extract layer %d: %s" % (i, x.strerror))
 
    def validate_members(self, layers):
       ch.INFO("validating tarball members")
@@ -549,6 +561,7 @@ class Image:
             # Correct absolute paths.
             if (m.name.is_absolute()):
                m.name = m.name.relative_to("/")
+               abs_ct += 1
             # Record top-level directory.
             if (len(m.name.parts) > 1 or m.isdir()):
                top_dirs.add(m.name.first)
@@ -595,7 +608,7 @@ class Image:
                members.remove(m)
                continue
             # Discard anything under /dev. Docker puts regular files and
-            # directories in here on "docker export". Note leading slashes
+            # directories in here on “docker export”. Note leading slashes
             # already taken care of in TarFile.fix_member_path() above.
             if (re.search(r"^(\./)?dev/.", m.name)):
                ch.VERBOSE("ignoring member under /dev: %s" % m.name)
@@ -619,7 +632,7 @@ class Image:
       ignore_ct = 0
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          if (i > max_i): break
-         members2 = list(members)  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we’ll alter members
          for m in members2:
             if (ch.prefix_path(prefix, m.name)):
                ignore_ct += 1
@@ -635,7 +648,7 @@ class Image:
       for (i, (lh, (fp, members))) in enumerate(layers.items(), start=1):
          wo_ct = 0
          ig_ct = 0
-         members2 = list(members)  # copy b/c we'll alter members
+         members2 = list(members)  # copy b/c we’ll alter members
          for m in members2:
             dir_ = os.path.dirname(m.name)
             filename = os.path.basename(m.name)
@@ -643,11 +656,11 @@ class Image:
                wo_ct += 1
                members.remove(m)
                if (filename == ".wh..wh..opq"):
-                  # "Opaque whiteout": remove contents of dir_.
+                  # “Opaque whiteout”: remove contents of dir_.
                   ch.DEBUG("found opaque whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1, dir_)
                else:
-                  # "Explicit whiteout": remove same-name file without ".wh.".
+                  # “Explicit whiteout”: remove same-name file without ".wh.".
                   ch.DEBUG("found explicit whiteout: %s" % m.name)
                   ig_ct += self.whiteout_rm_prefix(layers, i - 1,
                                                    dir_ + "/" + filename[4:])
@@ -685,8 +698,8 @@ class Reference:
                 "variables")
 
    # Reference parser object. Instantiating a parser took 100ms when we tested
-   # it, which means we can't really put it in a loop. But, at parse time,
-   # "lark" may refer to a dummy module (see above), so we can't populate the
+   # it, which means we can’t really put it in a loop. But, at parse time,
+   # “lark” may refer to a dummy module (see above), so we can’t populate the
    # parser here either. We use a class varible and populate it at the time of
    # first use.
    parser = None
@@ -705,21 +718,6 @@ class Reference:
          self.from_tree(src)
       elif (src is not None):
          assert False, "unsupported initialization type"
-
-   def __str__(self):
-      out = ""
-      if (self.host is not None):
-         out += self.host
-      if (self.port is not None):
-         out += ":" + str(self.port)
-      if (self.host is not None):
-         out += "/"
-      out += self.path_full
-      if (self.tag is not None):
-         out += ":" + self.tag
-      if (self.digest is not None):
-         out += "@sha256:" + self.digest
-      return out
 
    @staticmethod
    def path_to_ref(path):
@@ -743,7 +741,7 @@ class Reference:
       if (class_.parser is None):
          class_.parser = lark.Lark(GRAMMAR_IMAGE_REF, parser="earley",
                                    propagate_positions=True, tree_class=Tree)
-      s = s.replace("%", "/").replace("+", ":")
+      s = s.translate(str.maketrans("%+", "/:", "&"))
       hint="https://hpc.github.io/charliecloud/faq.html#how-do-i-specify-an-image-reference"
       s = ch.variables_sub(s, variables)
       if "$" in s:
@@ -757,10 +755,25 @@ class Reference:
             ch.FATAL("image ref syntax, char %d: %s" % (x.column, s), hint)
       except lark.exceptions.UnexpectedEOF as x:
          # We get UnexpectedEOF because of Lark issue #237. This exception
-         # doesn't have a column location.
+         # doesn’t have a column location.
          ch.FATAL("image ref syntax, at end: %s" % s, hint)
       ch.DEBUG(tree.pretty())
       return tree
+
+   def __str__(self):
+      out = ""
+      if (self.host is not None):
+         out += self.host
+      if (self.port is not None):
+         out += ":" + str(self.port)
+      if (self.host is not None):
+         out += "/"
+      out += self.path_full
+      if (self.tag is not None):
+         out += ":" + self.tag
+      if (self.digest is not None):
+         out += "@sha256:" + self.digest
+      return out
 
    @property
    def as_verbose_str(self):
@@ -828,7 +841,7 @@ fields:
       if (self.port is None): self.port = 443
       if (self.host == "registry-1.docker.io" and len(self.path) == 0):
          # FIXME: For Docker Hub only, images with no path need a path of
-         # "library" substituted. Need to understand/document the rules here.
+         # “library” substituted. Need to understand/document the rules here.
          self.path = ["library"]
       if (self.tag is None and self.digest is None): self.tag = "latest"
 
@@ -854,6 +867,29 @@ fields:
 
 class Tree(lark.tree.Tree):
 
+   def _pretty(self, level, istr):
+      # Re-implement with less space optimization and more debugging info.
+      # See: https://github.com/lark-parser/lark/blob/262ab71/lark/tree.py#L78
+      pfx = "%4d %3d%s" % (self.meta.line, self.meta.column, istr*(level+1))
+      yield (pfx + self._pretty_label() + "\n")
+      for c in self.children:
+         if (isinstance(c, Tree)):
+            yield from c._pretty(level + 1, istr)
+         else:
+            text = c
+            type_ = c.type
+            width = len(pfx) + len(istr) + len(text) + len(type_) + 2
+            over = width - ch.term_width
+            if (len(type_) > WIDTH_TOKEN_MAX):
+               # trim token (unconditionally for consistent alignment)
+               token_rm = len(type_) - WIDTH_TOKEN_MAX
+               type_ = type_[:-token_rm]
+               over -= token_rm
+            if (over > 0):
+               # trim text (if needed)
+               text = text[:-(over + 3)] + "..."
+            yield "%s%s %s %s\n" % (pfx, istr, type_, text)
+
    def child(self, cname):
       """Locate a descendant subtree named cname using breadth-first search
          and return it. If no such subtree exists, return None."""
@@ -862,7 +898,7 @@ class Tree(lark.tree.Tree):
    def child_terminal(self, cname, tname, i=0):
       """Locate a descendant subtree named cname using breadth-first search
          and return its first child terminal named tname. If no such subtree
-         exists, or it doesn't have such a terminal, return None."""
+         exists, or it doesn’t have such a terminal, return None."""
       st = self.child(cname)
       if (st is not None):
          return st.terminal(tname, i)

@@ -9,10 +9,10 @@
 #      variables is rather hairy & error prone (e.g., command substitution
 #      strips trailing newlines but echo adds a trailing newline, hiding it).
 #
-#   2. To add/update language definitions, cloc only has "merge, but mine are
-#      lower priority" (--read-lang-def) and "use mine only, with no default
-#      definitions" (--force-lang-def). We need "merge my definitions with
-#      default, but with mine higher priority", so we emulate it with
+#   2. To add/update language definitions, cloc only has “merge, but mine are
+#      lower priority” (--read-lang-def) and “use mine only, with no default
+#      definitions” (--force-lang-def). We need “merge my definitions with
+#      default, but with mine higher priority”, so we emulate it with
 #      --force-lang-def, providing all the language definitions we need, some
 #      of which are altered.
 #
@@ -20,7 +20,7 @@
 #      Dockerfile.*). So we list all the Dockerfiles we have manually in the
 #      language definitions.
 #
-#   4. To debug "cloc ignoring wrong number of files": just look in
+#   4. To debug “cloc ignoring wrong number of files”: just look in
 #      /tmp/loc.ignored.out. However, you need cloc 1.84 or higher because of
 #      cloc issue #401 [1]; otherwise the file is empty.
 #
@@ -78,17 +78,18 @@ Dockerfile
     filter remove_inline #.*$
     extension df
     filename Dockerfile
-    filename Dockerfile.00_tiny
     filename Dockerfile.argenv
     filename Dockerfile.centos_7ch
     filename Dockerfile.almalinux_8ch
-    filename Dockerfile.debian_9ch
+    filename Dockerfile.debian_11ch
     filename Dockerfile.file-quirks
+    filename Dockerfile.libfabric
     filename Dockerfile.metadata
     filename Dockerfile.mpich
     filename Dockerfile.nvidia
     filename Dockerfile.ocimanifest
     filename Dockerfile.openmpi
+    filename Dockerfile.quick
     3rd_gen_scale 2.00
     end_of_line_continuation \\$
 m4
@@ -129,6 +130,7 @@ plain text
     filename PERUSEME
     filename README
     filename VERSION
+    filename approved-trailing-whitespace
     3rd_gen_scale 1.00
 POSIX sh
     filter remove_matches ^\s*#
@@ -241,7 +243,9 @@ find ./.github ./examples ./test -type f -a \( \
      -o -path ./test/fixtures/README \
      -o -path ./.github/PERUSEME \
      -o -path ./examples/chtest/printns \
+     -o -path ./test/approved-trailing-whitespace \
      -o -path ./test/common.bash \
+     -o -path ./test/doctest-auto \
      -o -path ./test/old-storage \
      -o -path ./test/sotest/files_inferrable.txt \
      -o -path ./test/whiteout \) | sort > /tmp/loc.test
@@ -278,11 +282,12 @@ find . -type f -a \( \
      -o -path ./.gitignore \
      -o -path ./VERSION \
      -o -path ./misc/docker-clean.sh \
+     -o -path ./misc/branches-tidy \
      -o -path ./misc/grep \
      -o -path ./misc/loc \) | sort > /tmp/loc.misc
 countem "MISCELLANEOUS" /tmp/loc.misc
 
-# ignored - this includes binaries and files we distribute but didn't write
+# ignored - this includes binaries and files we distribute but didn’t write
 find . -type f -a \( \
         -name '*.ico' \
      -o -name '.gitmodules' \

@@ -1,10 +1,10 @@
 import getpass
+import hashlib
 import io
 import os
 import re
-import sys
-import urllib
 import types
+import urllib
 
 import charliecloud as ch
 
@@ -12,7 +12,7 @@ import charliecloud as ch
 ## Hairy imports ##
 
 # Requests is not bundled, so this noise makes the file parse and
-# --version/--help work even if it's not installed.
+# --version/--help work even if it’s not installed.
 try:
    import requests
    import requests.auth
@@ -49,40 +49,6 @@ auth_p = False
 
 ## Classes ##
 
-class Credentials:
-
-   __slots__ = ("password",
-                "username")
-
-   def __init__(self):
-      self.username = None
-      self.password = None
-
-   def get(self):
-      # If stored, return those.
-      if (self.username is not None):
-         username = self.username
-         password = self.password
-      else:
-         try:
-            # Otherwise, use environment variables.
-            username = os.environ["CH_IMAGE_USERNAME"]
-            password = os.environ["CH_IMAGE_PASSWORD"]
-         except KeyError:
-            # Finally, prompt the user.
-            # FIXME: This hangs in Bats despite sys.stdin.isatty() == True.
-            try:
-               username = input("\nUsername: ")
-            except KeyboardInterrupt:
-               ch.FATAL("authentication cancelled")
-            password = getpass.getpass("Password: ")
-         if (not ch.password_many):
-            # Remember the credentials.
-            self.username = username
-            self.password = password
-      return (username, password)
-
-
 class Auth(requests.auth.AuthBase):
 
    # Every registry request has an “authorization object”. This starts as no
@@ -112,18 +78,18 @@ class Auth(requests.auth.AuthBase):
 
    __slots__ = ("auth_h_next",)  # WWW-Authenticate header for next escalator
 
-   def __eq__(self, other):
-      return (type(self) == type(other))
-
-   @property
-   def escalators(self):
-      ...
-
    @classmethod
    def authenticate(class_, creds, auth_d):
       """Authenticate using the given credentials and parsed WWW-Authenticate
          dictionary. Return a new Auth object if successful, None if
          not. The caller is responsible for dealing with the failure."""
+      ...
+
+   def __eq__(self, other):
+      return (type(self) == type(other))
+
+   @property
+   def escalators(self):
       ...
 
    def escalate(self, reg, res):
@@ -173,6 +139,16 @@ class Auth_Basic(Auth):
 
    __slots__ = ("basic")
 
+   @classmethod
+   def authenticate(class_, reg, auth_d):
+      # Note: Basic does not validate the credentials until we try to use it.
+      if ("realm" not in auth_d):
+         ch.FATAL("WWW-Authenticate missing realm")
+      (username, password) = reg.creds.get()
+      i = class_()
+      i.basic = requests.auth.HTTPBasicAuth(username, password)
+      return i
+
    def __call__(self, *args, **kwargs):
       return self.basic(*args, **kwargs)
 
@@ -185,16 +161,6 @@ class Auth_Basic(Auth):
    @property
    def escalators(self):
       return ()
-
-   @classmethod
-   def authenticate(class_, reg, auth_d):
-      # Note: Basic does not validate the credentials until we try to use it.
-      if ("realm" not in auth_d):
-         ch.FATAL("WWW-Authenticate missing realm")
-      (username, password) = reg.creds.get()
-      i = class_()
-      i.basic = requests.auth.HTTPBasicAuth(username, password)
-      return i
 
 
 class Auth_Bearer_IDed(Auth):
@@ -211,32 +177,10 @@ class Auth_Bearer_IDed(Auth):
       self.token = token
       self.auth_d = auth_d
 
-   def __call__(self, req):
-      req.headers["Authorization"] = "Bearer %s" % self.token
-      return req
-
-   def __eq__(self, other):
-      return super().__eq__(other) and (self.auth_d == other.auth_d)
-
-   def __str__(self):
-      return ("Bearer (%s) %s" % (self.__class__.__name__.split("_")[-1],
-                                  self.token_short))
-
-   @property
-   def escalators(self):
-      # One can escalate to an authenticated Bearer with a greater scope. I’m
-      # pretty sure this doesn’t create an infinite loop because eventually
-      # the token request will fail.
-      return (Auth_Bearer_IDed,)
-
-   @property
-   def token_short(self):
-      return ("%s..%s" % (self.token[:8], self.token[-8:]))
-
    @classmethod
    def authenticate(class_, reg, auth_d):
       # Registries and endpoints vary in what they put in WWW-Authenticate. We
-      # need realm because it's the URL to use for a token. Otherwise, just
+      # need realm because it’s the URL to use for a token. Otherwise, just
       # give back all the keys we got.
       for k in ("realm",):
          if (k not in auth_d):
@@ -260,6 +204,28 @@ class Auth_Bearer_IDed(Auth):
       (username, password) = creds.get()
       return requests.auth.HTTPBasicAuth(username, password)
 
+   def __call__(self, req):
+      req.headers["Authorization"] = "Bearer %s" % self.token
+      return req
+
+   def __eq__(self, other):
+      return super().__eq__(other) and (self.auth_d == other.auth_d)
+
+   def __str__(self):
+      return ("Bearer (%s) %s" % (self.__class__.__name__.split("_")[-1],
+                                  self.token_short))
+
+   @property
+   def escalators(self):
+      # One can escalate to an authenticated Bearer with a greater scope. I’m
+      # pretty sure this doesn’t create an infinite loop because eventually
+      # the token request will fail.
+      return (Auth_Bearer_IDed,)
+
+   @property
+   def token_short(self):
+      return ("%s..%s" % (self.token[:8], self.token[-8:]))
+
 
 class Auth_Bearer_Anon(Auth_Bearer_IDed):
    anon_p = True
@@ -268,15 +234,15 @@ class Auth_Bearer_Anon(Auth_Bearer_IDed):
 
    __slots__ = ()
 
-   @property
-   def escalators(self):
-      return (Auth_Bearer_IDed,)
-
    @classmethod
    def token_auth(class_, creds):
       # The way to get an anonymous Bearer token is to give no Basic auth
       # header in the token request.
       return None
+
+   @property
+   def escalators(self):
+      return (Auth_Bearer_IDed,)
 
 
 class Auth_None(Auth):
@@ -295,6 +261,40 @@ class Auth_None(Auth):
       return (Auth_Basic,
               Auth_Bearer_Anon,
               Auth_Bearer_IDed)
+
+
+class Credentials:
+
+   __slots__ = ("password",
+                "username")
+
+   def __init__(self):
+      self.username = None
+      self.password = None
+
+   def get(self):
+      # If stored, return those.
+      if (self.username is not None):
+         username = self.username
+         password = self.password
+      else:
+         try:
+            # Otherwise, use environment variables.
+            username = os.environ["CH_IMAGE_USERNAME"]
+            password = os.environ["CH_IMAGE_PASSWORD"]
+         except KeyError:
+            # Finally, prompt the user.
+            # FIXME: This hangs in Bats despite sys.stdin.isatty() == True.
+            try:
+               username = input("\nUsername: ")
+            except KeyboardInterrupt:
+               ch.FATAL("authentication cancelled")
+            password = getpass.getpass("Password: ")
+         if (not ch.password_many):
+            # Remember the credentials.
+            self.username = username
+            self.password = password
+      return (username, password)
 
 
 class HTTP:
@@ -338,7 +338,7 @@ class HTTP:
          h = hs["ratelimit-limit"]
          m = re.search(r"^(\d+);w=(\d+)$", h)
          if (m is None):
-            WARNING("can’t parse RateLimit-Limit: %s" % h)
+            ch.WARNING("can’t parse RateLimit-Limit: %s" % h)
          else:
             pull_ct = m[1]
             period = str(int(m[2]) / 3600)  # seconds to hours
@@ -365,10 +365,13 @@ class HTTP:
          ch.INFO("Docker Hub rate limit: %s pulls left of %s per %s hours (%s)"
                  % (left_ct, pull_ct, period, reason))
 
+   @property
+   def _url_base(self):
+      return "https://%s:%d/v2/" % (self.ref.host, self.ref.port)
+
    def _url_of(self, type_, address):
       "Return an appropriate repository URL."
-      url_base = "https://%s:%d/v2" % (self.ref.host, self.ref.port)
-      return "/".join((url_base, self.ref.path_full, type_, address))
+      return self._url_base + "/".join((self.ref.path_full, type_, address))
 
    def blob_exists_p(self, digest):
       """Return true if a blob with digest (hex string) exists in the
@@ -376,14 +379,14 @@ class HTTP:
       # Gotchas:
       #
       # 1. HTTP 401 means both unauthorized *or* not found, I assume to avoid
-      #    information leakage about the presence of stuff one isn't allowed
+      #    information leakage about the presence of stuff one isn’t allowed
       #    to see. By the time it gets here, we should be authenticated, so
       #    interpret it as not found.
       #
-      # 2. Sometimes we get 301 Moved Permanently. It doesn't bubble up to
+      # 2. Sometimes we get 301 Moved Permanently. It doesn’t bubble up to
       #    here because requests.request() follows redirects. However,
       #    requests.head() does not follow redirects, and it seems like a
-      #    weird status, so I worry there is a gotcha I haven't figured out.
+      #    weird status, so I worry there is a gotcha I haven’t figured out.
       url = self._url_of("blobs", "sha256:%s" % digest)
       res = self.request("HEAD", url, {200,401,404})
       return (res.status_code == 200)
@@ -393,12 +396,12 @@ class HTTP:
       # /v2/library/hello-world/blobs/<layer-hash>
       url = self._url_of("blobs", "sha256:" + digest)
       sw = ch.Progress_Writer(path, msg)
-      self.request("GET", url, out=sw)
+      self.request("GET", url, out=sw, hd=digest)
       sw.close()
 
    def blob_upload(self, digest, data, note=""):
       """Upload blob with hash digest to url. data is the data to upload, and
-         can be anything requests can handle; if it's an open file, then it's
+         can be anything requests can handle; if it’s an open file, then it’s
          wrapped in a Progress_Reader object. note is a string to prepend to
          the log messages; default empty string."""
       ch.INFO("%s%s: checking if already in repository" % (note, digest[:7]))
@@ -415,8 +418,8 @@ class HTTP:
       # 2. Get upload URL for blob.
       url = self._url_of("blobs", "uploads/")
       res = self.request("POST", url, {202})
-      # 3. Upload blob. We do a "monolithic" upload (i.e., send all the
-      # content in a single PUT request) as opposed to a "chunked" upload
+      # 3. Upload blob. We do a “monolithic” upload (i.e., send all the
+      # content in a single PUT request) as opposed to a “chunked” upload
       # (i.e., send data in multiple PATCH requests followed by a PUT request
       # with no body).
       url = res.headers["Location"]
@@ -484,9 +487,9 @@ class HTTP:
 
    def layer_from_file(self, digest, path, note=""):
       "Upload gzipped tarball layer at path, which must have hash digest."
-      # NOTE: We don't verify the digest b/c that means reading the whole file.
+      # NOTE: We don’t verify the digest b/c that means reading the whole file.
       ch.VERBOSE("layer tarball: %s" % path)
-      fp = path.open_("rb") # open file avoids reading it all into memory
+      fp = path.open("rb")  # open file avoids reading it all into memory
       self.blob_upload(digest, fp, note)
       ch.close_(fp)
 
@@ -516,17 +519,19 @@ class HTTP:
       self.request("PUT", url, {201}, data=manifest,
                    headers={ "Content-Type": TYPES_MANIFEST["docker2"] })
 
-   def request(self, method, url, statuses={200}, out=None, **kwargs):
+   def request(self, method, url, statuses={200}, out=None, hd=None, **kwargs):
       """Request url using method and return the response object. If statuses
          is given, it is set of acceptable response status codes, defaulting
          to {200}; any other response is a fatal error. If out is given,
          response content will be streamed to this Progress_Writer object and
-         must be non-zero length.
+         must be non-zero length. If hd is given, validate integrity of
+         downloaded data using expected hash digest.
 
          Use current session if there is one, or start a new one if not. If
-         authentication fails (or isn't initialized), then authenticate harder
+         authentication fails (or isn’t initialized), then authenticate harder
          and re-try the request."""
       # Set up.
+      assert (out or hd is None), "digest only checked if streaming"
       self.session_init_maybe()
       ch.VERBOSE("auth: %s" % self.auth)
       if (out is not None):
@@ -545,6 +550,7 @@ class HTTP:
             else:
                ch.FATAL("unhandled authentication failure")
       # Stream response if needed.
+      m = hashlib.sha256()
       if (out is not None and res.status_code == 200):
          try:
             length = int(res.headers["Content-Length"])
@@ -555,6 +561,10 @@ class HTTP:
          out.start(length)
          for chunk in res.iter_content(ch.HTTP_CHUNK_SIZE):
             out.write(chunk)
+            m.update(chunk) # store downloaded hash digest
+         # Validate integrity of downloaded data
+         if (hd is not None and hd != m.hexdigest()):
+            ch.FATAL("registry streamed response content is invalid")
       # Done.
       return res
 
@@ -564,7 +574,7 @@ class HTTP:
          the requests.Response object.
 
          Session must already exist. If auth arg given, use it; otherwise, use
-         object's stored authentication if initialized; otherwise, use no
+         object’s stored authentication if initialized; otherwise, use no
          authentication."""
       ch.VERBOSE("%s: %s" % (method, url))
       if (auth is None):
@@ -581,7 +591,7 @@ class HTTP:
       return res
 
    def session_init_maybe(self):
-      "Initialize session if it's not initialized; otherwise do nothing."
+      "Initialize session if it’s not initialized; otherwise do nothing."
       if (self.session is None):
          ch.VERBOSE("initializing session")
          self.session = requests.Session()

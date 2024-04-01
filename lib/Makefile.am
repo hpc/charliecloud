@@ -9,52 +9,41 @@ dist_mylib_DATA = base.sh \
                   build.py \
                   build_cache.py \
                   charliecloud.py \
-                  fakeroot.py \
                   filesystem.py \
+                  force.py \
                   image.py \
                   misc.py \
                   pull.py \
                   push.py \
                   registry.py
-noinst_DATA = charliecloud
 mylib_DATA = contributors.bash \
              version.py \
              version.sh \
              version.txt
 
-# Bundled Lark (currently version 0.11.3); Automake does not support wildcards
+# Bundled Lark (currently version 1.1.9); Automake does not support wildcards
 # [1], so list the files. Note it's version-specific. Hopefully if a new
 # version of Lark adds a file and we omit it here by mistake, the tests will
 # catch it. To get this list:
 #
-# $ (cd lib && find lark lark-stubs lark-*.dist-info -xtype f) | LC_ALL=C sort | sed -E 's/$/ \\/'
+# $ (cd lib && find lark lark-*.dist-info -xtype f) | LC_ALL=C sort | sed -E 's/$/ \\/'
 #
 # Then, copy-n-paste & remove the last backslash. PROOFREAD YOUR DIFF!!!
 
 LARK = \
-lark-0.11.3.dist-info/INSTALLER \
-lark-0.11.3.dist-info/LICENSE \
-lark-0.11.3.dist-info/METADATA \
-lark-0.11.3.dist-info/RECORD \
-lark-0.11.3.dist-info/WHEEL \
-lark-0.11.3.dist-info/entry_points.txt \
-lark-0.11.3.dist-info/top_level.txt \
-lark-stubs/__init__.pyi \
-lark-stubs/ast_utils.pyi \
-lark-stubs/exceptions.pyi \
-lark-stubs/grammar.pyi \
-lark-stubs/indenter.pyi \
-lark-stubs/lark.pyi \
-lark-stubs/lexer.pyi \
-lark-stubs/load_grammar.pyi \
-lark-stubs/reconstruct.pyi \
-lark-stubs/tree.pyi \
-lark-stubs/visitors.pyi \
+lark-1.1.9.dist-info/INSTALLER \
+lark-1.1.9.dist-info/LICENSE \
+lark-1.1.9.dist-info/METADATA \
+lark-1.1.9.dist-info/RECORD \
+lark-1.1.9.dist-info/WHEEL \
+lark-1.1.9.dist-info/entry_points.txt \
+lark-1.1.9.dist-info/top_level.txt \
 lark/__init__.py \
 lark/ast_utils.py \
 lark/common.py \
 lark/exceptions.py \
 lark/grammar.py \
+lark/grammars/__init__.py \
 lark/grammars/common.lark \
 lark/grammars/lark.lark \
 lark/grammars/python.lark \
@@ -74,8 +63,9 @@ lark/parsers/grammar_analysis.py \
 lark/parsers/lalr_analysis.py \
 lark/parsers/lalr_interactive_parser.py \
 lark/parsers/lalr_parser.py \
-lark/parsers/lalr_puppet.py \
+lark/parsers/lalr_parser_state.py \
 lark/parsers/xearley.py \
+lark/py.typed \
 lark/reconstruct.py \
 lark/tools/__init__.py \
 lark/tools/nearley.py \
@@ -83,18 +73,14 @@ lark/tools/serialize.py \
 lark/tools/standalone.py \
 lark/tree.py \
 lark/tree_matcher.py \
+lark/tree_templates.py \
 lark/utils.py \
 lark/visitors.py
 if ENABLE_LARK
 nobase_dist_mylib_DATA = $(LARK)
 endif
 
-CLEANFILES = $(mylib_DATA) $(noinst_DATA)
-
-# This symlink is so scripts can use "lib/charliecloud" whether they are
-# installed or not.
-charliecloud:
-	ln -s . charliecloud
+CLEANFILES = $(mylib_DATA)
 
 contributors.bash: ../README.rst
 	rm -f $@

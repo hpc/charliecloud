@@ -11,13 +11,13 @@ Synopsis
 
 ::
 
-  $ ch-run [OPTION...] IMAGE -- CMD [ARG...]
+  $ ch-run [OPTION...] IMAGE -- COMMAND [ARG...]
 
 
 Description
 ===========
 
-Run command :code:`CMD` in a fully unprivileged Charliecloud container using
+Run command :code:`COMMAND` in a fully unprivileged Charliecloud container using
 the image specified by :code:`IMAGE`, which can be: (1) a path to a directory,
 (2) the name of an image in :code:`ch-image` storage (e.g.
 :code:`example.com:5050/foo`) or, if the proper support is enabled, a SquashFS
@@ -29,15 +29,18 @@ mounting SquashFS images with FUSE.
     not specified is to use the same path as the host; i.e., the default is
     :code:`--bind=SRC:SRC`. Can be repeated.
 
-    If :code:`--write` is given and :code:`DST` does not exist, it will be
-    created as an empty directory. However, :code:`DST` must be entirely
-    within the image itself; :code:`DST` cannot enter a previous bind mount.
-    For example, :code:`--bind /foo:/tmp/foo` will fail because :code:`/tmp`
-    is shared with the host via bind-mount (unless :code:`$TMPDIR` is set to
-    something else or :code:`--private-tmp` is given).
+    With a read-only image (the default), :code:`DST` must exist. However, if
+    :code:`--write` or :code:`--write-fake` are given, :code:`DST` will be
+    created as an empty directory (possibly with the tmpfs overmount trick
+    described in :ref:`faq_mkdir-ro`). In this case, :code:`DST` must be
+    entirely within the image itself, i.e., :code:`DST` cannot enter a
+    previous bind mount. For example, :code:`--bind /foo:/tmp/foo` will fail
+    because :code:`/tmp` is shared with the host via bind-mount (unless
+    :code:`$TMPDIR` is set to something else or :code:`--private-tmp` is
+    given).
 
-    Most images do have ten directories :code:`/mnt/[0-9]` already available
-    as mount points.
+    Most images have ten directories :code:`/mnt/[0-9]` already available as
+    mount points.
 
     Symlinks in :code:`DST` are followed, and absolute links can have
     surprising behavior. Bind-mounting happens after namespace setup but
@@ -53,21 +56,21 @@ mounting SquashFS images with FUSE.
   :code:`-c`, :code:`--cd=DIR`
     Initial working directory in container.
 
-  :code:`--ch-ssh`
-    Bind :code:`ch-ssh(1)` into container at :code:`/usr/bin/ch-ssh`.
-
   :code:`--env-no-expand`
-    don’t expand variables when using :code:`--set-env`
+    Don’t expand variables when using :code:`--set-env`.
+
+  :code:`--feature=FEAT`
+    If feature :code:`FEAT` is enabled, exit with success. Valid values of
+    :code:`FEAT` are :code:`extglob` for extended globs, :code:`seccomp` for
+    :code:`seccomp(2)`, and :code:`squash` for squashfs archives.
 
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.
 
   :code:`--home`
     Bind-mount your host home directory (i.e., :code:`$HOME`) at guest
-    :code:`/home/$USER`. This is accomplished by over-mounting a new
-    :code:`tmpfs` at :code:`/home`, which hides any image content under that
-    path. By default, neither of these things happens and the image’s
-    :code:`/home` is exposed unaltered.
+    :code:`/home/$USER`, hiding any existing image content at that path.
+    Implies :code:`--write-fake` so the mount point can be created if needed.
 
   :code:`-j`, :code:`--join`
     Use the same container (namespaces) as peer :code:`ch-run` invocations.
@@ -94,9 +97,19 @@ mounting SquashFS images with FUSE.
     bind-mounted into it. If this is specified, no such temporary files are
     created and the image’s files are exposed.
 
+  :code:`-q`, :code:`--quiet`
+    Be quieter; can be repeated. Incompatible with :code:`-v`. See the
+    :ref:`faq_verbosity` for details.
+
   :code:`-s`, :code:`--storage DIR`
     Set the storage directory. Equivalent to the same option for
     :code:`ch-image(1)`.
+
+  :code:`--seccomp`
+    Using seccomp, intercept some system calls that would fail due to lack of
+    privilege, do nothing, and return fake success to the calling program.
+    This is intended for use by :code:`ch-image(1)` when building images; see
+    that man page for a detailed discussion.
 
   :code:`-t`, :code:`--private-tmp`
     By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
@@ -104,21 +117,12 @@ mounting SquashFS images with FUSE.
     :code:`tmpfs` is mounted on the container’s :code:`/tmp` instead.
 
   :code:`--set-env`, :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
-    Set environment variable(s). With:
+    Set environment variables with newline-separated file
+    (:code:`/ch/environment` within the image if not specified) or on the
+    command line. See below for details.
 
-       * no argument: as listed in file :code:`/ch/environment` within the
-         image. It is an error if the file does not exist or cannot be read.
-         (Note that with SquashFS images, it is not currently possible to use
-         other files within the image.)
-
-       * :code:`FILE` (i.e., no equals in argument): as specified in file at
-         host path :code:`FILE`. Again, it is an error if the file cannot be
-         read.
-
-       * :code:`NAME=VALUE` (i.e., equals sign in argument): set variable
-         :code:`NAME` to :code:`VALUE`.
-
-    See below for details on how environment variables work in :code:`ch-run`.
+  :code:`--set-env0`, :code:`--set-env0=FILE`, :code:`--set-env0=VAR=VALUE`
+    Like :code:`--set-env`, but file is null-byte separated.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
@@ -131,10 +135,33 @@ mounting SquashFS images with FUSE.
     Unset environment variables whose names match :code:`GLOB`.
 
   :code:`-v`, :code:`--verbose`
-    Be more verbose (can be repeated).
+    Print extra chatter; can be repeated. See the :ref:`FAQ entry on verbosity
+    <faq_verbosity>` for details.
 
   :code:`-w`, :code:`--write`
-    Mount image read-write (by default, the image is mounted read-only).
+    Mount image read-write. By default, the image is mounted read-only. *This
+    option should be avoided for most use cases,* because (1) changing images
+    live (as opposed to prescriptively with a Dockerfile) destroys their
+    provenance and (2) SquashFS images, which is the best-practice format on
+    parallel filesystems, must be read-only. It is better to use
+    :code:`--write-fake` (for disposable data) or bind-mount host directories
+    (for retained data).
+
+  :code:`-W`, :code:`--write-fake[=SIZE]`
+    Overlay a writeable tmpfs on top of the image. This makes the image
+    *appear* read-write, but it actually remains read-only and unchanged. All
+    data “written” to the image are discarded when the container exits.
+
+    The size of the writeable filesystem :code:`SIZE` is any size
+    specification acceptable to :code:`tmpfs`, e.g. :code:`4m` for 4MiB or
+    :code:`50%` for half of physical memory. If this option is specified
+    without :code:`SIZE`, the default is :code:`12%`. Note (1) this limit is a
+    maximum — only actually stored files consume virtual memory — and
+    (2) :code:`SIZE` larger than memory can be requested without error (the
+    failure happens later if the actual contents become too large).
+
+    This requires kernel support and there are some caveats. See section
+    “:ref:`ch-run_overlay`” below for details.
 
   :code:`-?`, :code:`--help`
     Print help and exit.
@@ -195,12 +222,12 @@ value-add over the standard, unwrapped commands.
 .. warning::
 
    Currently, Charliecloud unmounts the SquashFS filesystem when user command
-   :code:`CMD`’s process exits. It does not monitor any of its child
+   :code:`COMMAND`’s process exits. It does not monitor any of its child
    processes. Therefore, if the user command spawns child processes and then
    exits before them (e.g., some daemons), those children will have the image
    unmounted from underneath them. In this case, the workaround is to
-   mount/unmount using external tools. We expect to remove this limitation in
-   a future version.
+   mount/unmount using external tools. We expect to remove this limitation in a
+   future version.
 
 
 Host files and directories available in container via bind mounts
@@ -235,9 +262,6 @@ without error or warning if not.
 
   * :code:`/var/lib/hugetlbfs` at guest :code:`/var/opt/cray/hugetlbfs`, and
     :code:`/var/opt/cray/alps/spool`. These support Cray MPI.
-
-  * :code:`$PREFIX/bin/ch-ssh` at guest :code:`/usr/bin/ch-ssh`. SSH wrapper
-    that automatically containerizes after connecting.
 
 Additional bind mounts done by default but can be disabled; see the options
 above.
@@ -314,6 +338,35 @@ Caveats:
 * Many of the arguments given to the race losers, such as the image path and
   :code:`--bind`, will be ignored in favor of what was given to the winner.
 
+.. _ch-run_overlay:
+
+Writeable overlay with :code:`--write-fake`
+===========================================
+
+If you need the image to stay read-only but appear writeable, you may be able
+to use :code:`--write-fake` to overlay a writeable tmpfs atop the image. This
+requires kernel support. Specifically:
+
+1. To use the feature at all, you need unprivileged overlayfs support. This is
+   available in `upstream 5.11
+   <https://kernelnewbies.org/Linux_5.11#Unprivileged_Overlayfs_mounts>`_
+   (February 2021), but distributions vary considerably. If you don’t have
+   this, the container will fail to start with error “operation not
+   permitted”.
+
+2. For a fully functional overlay, you need a tmpfs that supports xattrs in
+   the :code:`user` namespace. This is available in `upstream 6.6
+   <https://kernelnewbies.org/Linux_6.6#TMPFS>`_ (October 2023). If you don’t
+   have this, most things will work fine, but some operations will fail with
+   “I/O error”, for example creating a directory with the same path as a
+   previously deleted directory. There will also be syslog noise about xattr
+   problems.
+
+   (overlayfs can also use xattrs in the :code:`trusted` namespace, but this
+   requires :code:`CAP_SYS_ADMIN` `on the host
+   <https://elixir.bootlin.com/linux/v5.11/source/kernel/capability.c#L447>`_
+   and thus is not helpful for unprivileged containers.)
+
 
 Environment variables
 =====================
@@ -321,6 +374,8 @@ Environment variables
 :code:`ch-run` leaves environment variables unchanged, i.e. the host
 environment is passed through unaltered, except:
 
+* by default (:code:`--home` not specified), :code:`HOME` is set to
+  :code:`/root`, if it exists, and :code:`/` otherwise.
 * limited tweaks to avoid significant guest breakage;
 * user-set variables via :code:`--set-env`;
 * user-unset variables via :code:`--unset-env`; and
@@ -375,13 +430,13 @@ By default, :code:`ch-run` makes the following environment variable changes:
   made available in the guest at :code:`/tmp` unless :code:`--private-tmp` is
   given.
 
-Setting variables with :code:`--set-env`
-----------------------------------------
+Setting variables with :code:`--set-env` or :code:`--set-env0`
+--------------------------------------------------------------
 
-The purpose of :code:`--set-env` is to set environment variables within the
+The purpose of these two options is to set environment variables within the
 container. Values given replace any already in the environment (i.e.,
-inherited from the host shell) or set by earlier :code:`--set-env`. This flag
-takes an optional argument with two possible forms:
+inherited from the host shell) or set by earlier uses of the options. These
+flags take an optional argument with two possible forms:
 
 1. **If the argument contains an equals sign** (:code:`=`, ASCII 61), that
    sets an environment variable directly. For example, to set :code:`FOO` to
@@ -399,11 +454,16 @@ takes an optional argument with two possible forms:
 
 2. **If the argument does not contain an equals sign**, it is a host path to a
    file containing zero or more variables using the same syntax as above
-   (except with no prior shell processing). This file contains a sequence of
-   assignments separated by newlines. Empty lines are ignored, and no comments
-   are interpreted. (This syntax is designed to accept the output of
-   :code:`printenv` and be easily produced by other simple mechanisms.) For
-   example::
+   (except with no prior shell processing).
+
+   With :code:`--set-env`, this file contains a sequence of assignments
+   separated by newline (:code:`\n` or ASCII 10); with :code:`--set-env0`, the
+   assignments are separated by the null byte (i.e., :code:`\0` or ASCII 0).
+   Empty assignments are ignored, and no comments are interpreted. (This
+   syntax is designed to accept the output of :code:`printenv` and be easily
+   produced by other simple mechanisms.) The file need not be seekable.
+
+   For example::
 
      $ cat /tmp/env.txt
      FOO=bar
@@ -534,7 +594,7 @@ Example valid assignments that are probably not what you want:
    * - :code:`FOO="bar"`
      - :code:`FOO`
      - :code:`"bar"`
-     - double quotes aren't stripped
+     - double quotes aren’t stripped
    * - :code:`FOO=bar # baz`
      - :code:`FOO`
      - :code:`bar # baz`
@@ -693,4 +753,4 @@ status is 1 regardless of the signal value.
 .. include:: ./see_also.rst
 
 ..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH
-..  LocalWords:  noprofile norc SHLVL PWD
+..  LocalWords:  noprofile norc SHLVL PWD kernelnewbies extglob

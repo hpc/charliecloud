@@ -1,7 +1,4 @@
-true
-# shellcheck disable=SC2034
 CH_TEST_TAG=$ch_test_tag
-
 load "${CHTEST_DIR}/common.bash"
 
 setup () {
@@ -37,7 +34,7 @@ setup () {
 }
 
 @test "${ch_tag}/no first-stage stuff present" {
-    # Can't run GCC.
+    # Can’t run GCC.
     run ch-run "$ch_img" -- gcc --version
     echo "$output"
     [[ $status -eq 1 ]]
@@ -45,7 +42,7 @@ setup () {
 
     # No GCC or Make.
     ls -lh "${ch_img}/usr/bin/gcc" || true
-    ! test -f "${ch_img}/usr/bin/gcc"
+    [[ ! -f "${ch_img}/usr/bin/gcc" ]]
     ls -lh "${ch_img}/usr/bin/make" || true
-    ! test -f "${ch_img}/usr/bin/make"
+    [[ ! -f "${ch_img}/usr/bin/make" ]]
 }

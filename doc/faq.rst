@@ -313,11 +313,11 @@ Charliecloud issue
 For example::
 
   $ cat Dockerfile
-  FROM alpine:3.9
+  FROM alpine:3.17
   RUN apk add git
   RUN git config --global http.sslVerify false
   $ ch-image build -t foo -f Dockerfile .
-    1 FROM alpine:3.9
+    1 FROM alpine:3.17
     2 RUN ['/bin/sh', '-c', 'apk add git']
   [...]
     3 RUN ['/bin/sh', '-c', 'git config --global http.sslVerify false']
@@ -325,16 +325,16 @@ For example::
   error: build failed: RUN command exited with 128
 
 The reason this happens is that :code:`ch-image build` executes :code:`RUN`
-instructions with :code:`ch-run` options including :code:`--no-home`, under
-which the environment variable :code:`$HOME` is unset. Thus, tools like Git
-that try to use it will fail.
+instructions with :code:`ch-run` options including the absence of
+:code:`--home`, under which the environment variable :code:`$HOME` is unset.
+Thus, tools like Git that try to use it will fail.
 
 The reasoning for leaving the variable unset is that because Charliecloud runs
 unprivileged, it isn’t really meaningful for a container to have multiple
 users, and thus building images with things in the home directory is an
-antipattern. In fact, by default (i.e., without :code:`--no-home`),
-:code:`ch-run` sets :code:`$HOME` to :code:`/home/$USER` and bind-mounts the
-user’s host home directory at that path.
+antipattern. In fact, with :code:`--home` specified, :code:`ch-run` sets
+:code:`$HOME` to :code:`/home/$USER` and bind-mounts the user’s host home
+directory at that path.
 
 The concern with setting :code:`$HOME` to some default value during build is
 that it could simply hide the problem until runtime later, where it would be
@@ -486,6 +486,84 @@ References:
 * http://lxr.free-electrons.com/source/kernel/capability.c?v=4.2#L442
 * http://lxr.free-electrons.com/source/fs/namei.c?v=4.2#L328
 
+.. _faq_mkdir-ro:
+
+:code:`--bind` creates mount points within un-writeable directories!
+--------------------------------------------------------------------
+
+Consider this image::
+
+  $ ls /var/tmp/image
+  bin  dev  home  media  opt   root  sbin  sys  usr
+  ch   etc  lib   mnt    proc  run   srv   tmp  var
+  $ ls -ld /var/tmp/image/mnt
+  drwxr-xr-x 4 root root 80 Jan  5 09:52 /var/tmp/image/mnt
+  $ ls /var/tmp/image/mnt
+  bar  foo
+
+That is, :code:`/mnt` is owned by root, un-writeable by us even considering
+the prior question, and contains two subdirectories. Indeed, we cannot create
+a new directory there::
+
+  $ mkdir /var/tmp/image/mnt/baz
+  mkdir: cannot create directory ‘/var/tmp/image/mnt/baz’: Permission denied
+
+Recall that bind-mounting to a path that does not exist in a read-only image
+fails::
+
+  $ ch-run -b /tmp/baz:/mnt/baz /var/tmp/image -- ls /mnt
+  ch-run[40498]: error: can't mkdir: /var/tmp/image/mnt/baz: Read-only file system (ch_misc.c:582 30)
+
+That’s fine; we’ll just use :code:`--write-fake` to create a writeable overlay
+on the container. Then we can make any mount points we need. Right?
+
+::
+
+  $ ch-run -W /var/tmp/image -- mkdir /qux      # succeeds
+  $ ch-run -W /var/tmp/image -- mkdir /mnt/baz  # fails
+  mkdir: can't create directory '/mnt/baz': Permission denied
+
+Wait — why could we create a subdirectory of (container path) :code:`/` but
+not a subdirectory of :code:`/mnt`? This is because the latter, which is at
+host path :code:`/var/tmp/image/mnt`, is not writeable by us: the overlayfs
+propagates the directory’s no-write permissions. Despite this, we can in fact
+use paths that do not yet exist for bind-mount destinations::
+
+  $ ch-run -W -b /tmp/baz:/mnt/baz /var/tmp/image -- ls /mnt
+  bar  baz  foo
+
+What’s happening is bind-mount trickery and a symlink ranch. :code:`ch-run`
+creates a new directory on the overlaid tmpfs, bind-mounts the old (host path)
+:code:`/var/tmp/images/mnt` to a subdirectory of it, symlinks the old
+contents, and finally overmounts the old, un-writeable directory with the new
+one::
+
+  $ ch-run -W -b /tmp/baz:/mnt/baz /var/tmp/image -- ls -la /mnt
+  drwxr-x---    4 reidpr   reidpr         120 Jan  5 17:11 .
+  drwx------    1 reidpr   reidpr          40 Jan  5 17:11 ..
+  drwxr-xr-x    4 nobody   nogroup         80 Jan  5 16:52 .orig
+  lrwxrwxrwx    1 reidpr   reidpr           9 Jan  5 17:11 bar -> .orig/bar
+  drwxr-x---    2 reidpr   reidpr          40 Jan  3 23:49 baz
+  lrwxrwxrwx    1 reidpr   reidpr           9 Jan  5 17:11 foo -> .orig/foo
+  $ ch-run -W -b /tmp/baz:/mnt/baz /var/tmp/image -- cat /proc/mounts | fgrep ' /mnt'
+  none /mnt tmpfs rw,relatime,size=3943804k,uid=1000,gid=1000,inode64 0 0
+  none /mnt/.orig overlay rw,relatime,lowerdir=/var/tmp/image,upperdir=/mnt/upper,workdir=/mnt/work,volatile,userxattr 0 0
+  tmpfs /mnt/baz tmpfs rw,relatime,size=8388608k,inode64 0 0
+
+This new directory is writeable, and :code:`mkdir(2)` succeeds. (The overlaid
+tmpfs is mounted on *host* :code:`/mnt` during container assembly, which is
+why it appears in mount options.)
+
+There are differences from the original directory, of course. Most notably:
+
+  * The ranched symlinks can be deleted by the user within the container,
+    contrary to the old directory’s read-only permissions.
+
+  * The contents of the “ranched” directory become symlinks rather than their
+    original file type.
+
+Software that cares about these things may break.
+
 Why does :code:`ping` not work?
 -------------------------------
 
@@ -546,8 +624,6 @@ The workaround is to map your EGID of 1001 to 5 inside the container (instead
 of the default 1001:1001), i.e. :code:`--gid=5`. Then, step 4 succeeds because
 the call is mapped to :code:`chown("/dev/pts/0", 1000, 1001)` and MATLAB is
 happy.
-
-.. _faq_docker2tar-size:
 
 :code:`ch-convert` from Docker incorrect image sizes
 ----------------------------------------------------
@@ -657,27 +733,6 @@ other stuff cannot be written anywhere in the image. You have three options:
 
 3. Run the image read-write with :code:`ch-run -w`. Be careful that multiple
    containers do not try to write to the same files.
-
-Which specific :code:`sudo` commands are needed?
-------------------------------------------------
-
-For running images, :code:`sudo` is not needed at all.
-
-For building images, it depends on what you would like to support. For
-example, do you want to let users build images with Docker? Do you want to let
-them run the build tests?
-
-We do not maintain specific lists, but you can search the source code and
-documentation for uses of :code:`sudo` and :code:`$DOCKER` and evaluate them
-on a case-by-case basis. (The latter includes :code:`sudo` if needed to invoke
-:code:`docker` in your environment.) For example::
-
-  $ find . \(   -type f -executable \
-             -o -name Makefile \
-             -o -name '*.bats' \
-             -o -name '*.rst' \
-             -o -name '*.sh' \) \
-           -exec egrep -H '(sudo|\$DOCKER)' {} \;
 
 OpenMPI Charliecloud jobs don’t work
 ------------------------------------
@@ -803,26 +858,20 @@ There are lots of ways to do this coordination. Because we are launching with
 the host’s Slurm, we need it to provide something for the containerized
 processes for such coordination. OpenMPI must be compiled to use what that
 Slurm has to offer, and Slurm must be told to offer it. What works for us is a
-something called "PMI2". You can see if your Slurm supports it with::
+something called "PMIx". You can see if your Slurm supports it with::
 
   $ srun --mpi=list
-  srun: MPI types are...
-  srun: mpi/pmi2
-  srun: mpi/openmpi
-  srun: mpi/mpich1_shmem
-  srun: mpi/mpich1_p4
-  srun: mpi/lam
-  srun: mpi/none
-  srun: mpi/mvapich
-  srun: mpi/mpichmx
-  srun: mpi/mpichgm
+    cray_shasta
+    none
+    pmi2
+    pmix
 
-If :code:`pmi2` is not in the list, you must ask your admins to enable Slurm’s
-PMI2 support. If it is in the list, but you’re seeing this problem, that means
+If :code:`pmix` is not in the list, you must either (a) ask your admins to
+enable Slurm’s PMIx support, or (b) rebuild your container MPI against an PMI
+in the list. If it is in the list, but you’re seeing this problem, that means
 it is not the default, and you need to tell Slurm you want it. Try::
 
-  $ export SLURM_MPI_TYPE=pmi2
-  $ srun ch-run /var/tmp/mpihello-openmpi -- /hello/hello
+  $ srun --mpi=pmix ch-run /var/tmp/mpihello-openmpi -- /hello/hello
   0: init ok wc035.localdomain, 2 ranks, userns 4026554634
   1: init ok wc036.localdomain, 2 ranks, userns 4026554634
   0: send/receive ok
@@ -956,21 +1005,21 @@ pull images to OCI format, and `umoci <https://umo.ci>`_ can flatten an OCI
 image to a directory. Thus, you can use the following commands to run an
 Alpine 3.9 image pulled from Docker hub::
 
-  $ skopeo copy docker://alpine:3.9 oci:/tmp/oci:img
+  $ skopeo copy docker://alpine:3.17 oci:/tmp/oci:img
   [...]
   $ ls /tmp/oci
   blobs  index.json  oci-layout
-  $ umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.9
+  $ umoci unpack --rootless --image /tmp/oci:img /tmp/alpine:3.17
   [...]
-  $ ls /tmp/alpine:3.9
+  $ ls /tmp/alpine:3.17
   config.json
   rootfs
   sha256_2ca27acab3a0f4057852d9a8b775791ad8ff62fbedfc99529754549d33965941.mtree
   umoci.json
-  $ ls /tmp/alpine:3.9/rootfs
+  $ ls /tmp/alpine:3.17/rootfs
   bin  etc   lib    mnt  proc  run   srv  tmp  var
   dev  home  media  opt  root  sbin  sys  usr
-  $ ch-run /tmp/alpine:3.9/rootfs -- cat /etc/alpine-release
+  $ ch-run /tmp/alpine:3.17/rootfs -- cat /etc/alpine-release
   3.9.5
 
 How do I authenticate with SSH during :code:`ch-image` build?
@@ -1043,7 +1092,7 @@ At this point, the build stops while SSH waits for input.
 
 This happens even if you have :code:`github.com` in your
 :code:`~/.ssh/known_hosts`. This file is not available to the build because
-:code:`ch-image` runs :code:`ch-run` with :code:`--no-home`, so :code:`RUN`
+:code:`ch-image` runs :code:`ch-run` without :code:`--home`, so :code:`RUN`
 instructions can’t see anything in your home directory.
 
 Solutions include:
@@ -1211,7 +1260,6 @@ One fix is to configure your :code:`.bashrc` or equivalent to:
          fi
      }
 
-
 How can I build images for a foreign architecture?
 --------------------------------------------------
 
@@ -1244,9 +1292,9 @@ For example, to build a ppc64le image on a Debian Buster amd64 host::
   $ uname -m
   x86_64
   $ sudo apt install qemu-user-static
-  $ ch-image pull --arch ppc64le alpine:3.15
-  $ printf 'FROM alpine:3.15\nRUN apk add coreutils\n' | ch-image build -t foo -
-  $ ch-convert alpine:3.15 /var/tmp/foo
+  $ ch-image pull --arch ppc64le alpine:3.17
+  $ printf 'FROM alpine:3.17\nRUN apk add coreutils\n' | ch-image build -t foo -
+  $ ch-convert alpine:3.17 /var/tmp/foo
   $ ch-run /var/tmp/foo -- uname -m
   ppc64le
 
@@ -1259,7 +1307,6 @@ install :code:`qemu-*-static`, is to populate a chroot for it with the `PRoot
 specifying a :code:`qemu-*-static` binary (perhaps obtained by unpacking a
 distribution package).
 
-
 How can I use tarball base images from e.g. linuxcontainers.org?
 ----------------------------------------------------------------
 
@@ -1269,15 +1316,205 @@ of rootfs archives `maintained by linuxcontainers.org
 <https://uk.lxd.images.canonical.com/images/>`_. They are meant for LXC, but
 are fine as a basis for Charliecloud.
 
-For example, this would leave a :code:`ppc64le/alpine:3.15` image du jour in
+For example, this would leave a :code:`ppc64le/alpine:3.17` image du jour in
 the registry for use in a Dockerfile :code:`FROM` line. Note that
 linuxcontainers.org uses the opposite order for “le” in the architecture name.
 
 ::
 
   $ wget https://uk.lxd.images.canonical.com/images/alpine/3.15/ppc64el/default/20220304_13:00/rootfs.tar.xz
-  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.15
+  $ ch-image import rootfs.tar.xz ppc64le/alpine:3.17
+
+.. _faq_verbosity:
+
+How can I control Charliecloud’s quietness or verbosity?
+--------------------------------------------------------
+
+Charliecloud logs various chatter about what is going on to standard error.
+This is distinct from *output*, e.g., :code:`ch-image list` prints the list of
+images to standard output. We use reasonably standard log levels:
+
+  1. **Error**. Some error condition that makes it impossible to proceed. The
+     program exits soon after printing the error. Examples: unknown image
+     type, Dockerfile parse error. (There is an internal distinction between
+     “fatal” and “error” levels, but this isn’t really meaningful to users.)
+
+  2. **Warning**. Unexpected condition the user needs to know about but that
+     should not stop the program. Examples: :code:`ch-run --mount` with a
+     directory image (which does not use a mount point), unsupported
+     Dockerfile instructions that are ignored.
+
+  3. **Info**. Chatter useful enough to be printed by default. Example:
+     progress messages during image download and unpacking. (:code:`ch-run` is
+     silent during normal operations and does not have any “info” logging.)
+
+  4. **Verbose**. Diagnostic information useful for debugging user containers,
+     the Charliecloud installation, and Charliecloud itself. Examples:
+     :code:`ch-run --join` coordination progress, :code:`ch-image` internal
+     paths, Dockerfile parse tree.
+
+  5. **Debug**. More detailed diagnostic information useful for debugging
+     Charliecloud. Examples: data structures unserialized from image registry
+     metadata JSON, image reference parse tree.
+
+  6. **Trace**; printed if :code:`-vvv`. Grotesquely detailed diagnostic
+     information for debugging Charliecloud, to the extent it interferes with
+     normal use. A sensible person might use a `debugger
+     <https://twitter.com/wesamo__/status/1464764461831663626>`_ instead.
+     Examples: component-by-component progress of bind-mount target directory
+     analysis/creation, text of image registry JSON, every single file
+     unpacked from image layers.
+
+Charliecloud also runs sub-programs at various times, notably commands in
+:code:`RUN` instructions and :code:`git(1)` to manage the build cache. These
+programs have their own standard error and standard output streams, which
+Charliecloud either suppresses or passes through depending on verbosity level.
+
+Most Charliecloud programs accept :code:`-v` to increase logging verbosity and
+:code:`-q` to decrease it. Generally:
+
+  * Each :code:`-v` (up to three) makes Charliecloud noisier.
+
+  * :code:`-q` suppresses normal logging.
+
+  * :code:`-qq` also suppresses stdout for the program and its subprocesses,
+    and warnings from the program.
+
+  * :code:`-qqq` also suppresses subprocess stderr. (This means subprocesses
+    are completely silenced no matter what goes wrong!)
+
+This table list which logging is printed at which verbosity levels (✅
+indicates printed, ❌ suppressed).
+
+.. list-table::
+   :header-rows: 1
+
+   * -
+     - :code:`-vvv`
+     - :code:`-vv`
+     - :code:`-v`
+     - def.
+     - :code:`-q`
+     - :code:`-qq`
+     - :code:`-qqq`
+   * - trace
+     - ✅
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+   * - debug
+     - ✅
+     - ✅
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+   * - verbose
+     - ✅
+     - ✅
+     - ✅
+     - ❌
+     - ❌
+     - ❌
+     - ❌
+   * - info
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ❌
+     - ❌
+     - ❌
+   * - program stdout
+     - ✅
+     - ✅
+     - [1]
+     - [1]
+     - [1]
+     - ❌
+     - ❌
+   * - subprocess stdout
+     - ✅
+     - ✅
+     - [1]
+     - [1]
+     - [1] [2]
+     - ❌
+     - ❌
+   * - warning
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ❌
+     - ❌
+   * - subprocess stderr
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ❌
+   * - error
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+     - ✅
+
+Notes:
+
+1. Charliecloud handles subprocess stdout on case-by-case basis for these log
+   levels. For example, sometimes it’s passed through by default (e.g.,
+   :code:`RUN`) and sometimes it’s captured for internal use (e.g., many
+   :code:`git(1)` invocations).
+
+
+2. In the case of :code:`ch-run`, the user command is considered a subprocess,
+   e.g. :code:`ch-run -q example -- echo foo` will produce no output.
+
+.. _faq_xattrs:
+
+How do I handle extended attributes in Charliecloud?
+----------------------------------------------------
+
+As noted in section :ref:`ch-image_build-cache`, Charliecloud doesn’t support
+extended attributes (xattrs) by default. Support for xattrs  can be enabled for
+:code:`ch-image` and :code:`ch-convert` by specifying :code:`--xattrs` or
+setting :code:`$CH_XATTRS`. This will make :code:`ch-image` save and restore
+xattrs via the build cache, and will make :code:`ch-convert` preserve xattrs on
+conversion. Important caveats include:
+
+1. :code:`ch-image` and :code:`ch-convert` cannot read xattrs in privileged
+   namespaces (e.g. :code:`trusted` and :code:`security`). Extended attributes
+   in these namespaces will never be saved or restored via the cache, and will
+   never be preserved when converting between image formats.
+
+2. :code:`ch-image import` cannot handle xattrs. This is a limitation of the
+   Python `tarfile <https://docs.python.org/3/library/tarfile.html>`_ library,
+   which as of version 3.12.1 doesn’t support xattrs (see CPython issue `#113293
+   <https://github.com/python/cpython/issues/113293>`_).
+
+3. :code:`ch-convert -o ch-image` uses :code:`ch-image import` under the hood.
+   This in conjunction with (2) means that :code:`ch-convert` cannot preserve
+   xattrs when converting to the :code:`ch-image` format.
+
+4. :code:`ch-image pull` uses the tarfile library, so xattrs will be lost when
+   pulling from a registry.
+
+5. Support for xattrs varies among filesystems, e.g. tmpfs didn’t support xattrs
+   in the :code:`user` namespace prior to Linux kernel `upstream 6.6
+   <https://kernelnewbies.org/Linux_6.6#TMPFSe>`_ (Oct 2023).
 
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
-..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr
+..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq drwxr
+..  LocalWords:  drwx
