@@ -120,22 +120,21 @@ The following snippet is from our Libfabric example,
 
 ::
     ARG LIBFABRIC_VERSION=${OFI_VERSION}
-    RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
-                  https://github.com/ofiwg/libfabric/ \
-     && cd libfabric \
-     && ./autogen.sh \
-     && ./configure --prefix=/usr/local \
-                    --disable-opx \
-                    --disable-psm2 \
-                    --disable-efa \
-                    --disable-sockets \
-                    --enable-psm3 \
-                    --enable-rxm \
-                    --enable-shm \
-                    --enable-tcp \
-                    --enable-verbs \
-     && make -j$(getconf _NPROCESSORS_ONLN) install \
-     && rm -Rf ../libfabric*
+    RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 https://github.com/ofiwg/libfabric/ \
+    && cd libfabric \
+    && ./autogen.sh \
+    && ./configure --prefix=/usr/local \
+    --disable-opx \
+    --disable-psm2 \
+    --disable-efa \
+    --disable-sockets \
+    --enable-psm3 \
+    --enable-rxm \
+    --enable-shm \
+    --enable-tcp \
+    --enable-verbs \
+    && make -j$(getconf _NPROCESSORS_ONLN) install \
+    && rm -Rf ../libfabric*
 
 The above compiles Libfabric with several "built-in" providers, e.g.,
 :code:`psm3`, :code:`rxm`, :code:`shm`, :code:`tcp`, and :code:`verbs`, which
