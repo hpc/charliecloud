@@ -286,6 +286,9 @@ def modify(cli_):
       commands += c
    src_image = im.Image(im.Reference(cli.image_ref))
    out_image = im.Image(im.Reference(cli.out_image))
+   ch.ILLERI("SRC REF: %s" % str(src_image.ref))
+   ch.ILLERI("SRC IMAGE: %s" % str(src_image))
+   ch.ILLERI("SRC REF NAME: %s" % str(src_image.ref.name))
    if (not src_image.unpack_exist_p):
       ch.FATAL("not in storage: %s" % src_image.ref)
    if (cli.out_image == cli.image_ref):
@@ -324,7 +327,7 @@ def modify(cli_):
       bu.cache.branch_nocheckout(src_image.ref, out_image.ref)
       foo = subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
                             str(out_image.ref), "--", shell])
-      if (foo.returncode == 58):
+      if (foo.returncode == 57):
          # FIXME: Write a better error message?
          ch.FATAL("Unable to run shell: %s" % shell)
       ch.ILLERI("retcode: %s" % foo.returncode)
@@ -364,7 +367,8 @@ def modify_tree_make(src_img, cmds):
    # attribute a debug value of -1 to avoid said errors.
    meta = lark.tree.Meta()
    meta.line = -1
-   df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', src_img.name)], meta)], meta))
+   #df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', src_img.name)], meta)], meta))
+   df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
    for cmd in cmds:
       df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', cmd)], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)

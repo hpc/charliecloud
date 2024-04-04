@@ -864,7 +864,7 @@ EOF
 @test 'ch-run storage errors' {
     run ch-run -v -w alpine:3.17 -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *'error: --write invalid when running by name'* ]]
 
     run ch-run -v "$CH_IMAGE_STORAGE"/img/alpine+3.17 -- /bin/true
@@ -1001,11 +1001,11 @@ EOF
 
   run ch-image modify -c 'echo foo' -- alpine:3.17 alpine:3.17
   echo "$output"
+  echo "$status"
   [[ $status -eq 1 ]]
   [[ $output = *'output must be different from source image'* ]]
 
-  run ch-image modify -S foo alpine:latest tmpimg
-  echo "$output"
+  run ch-image modify -S "foo" -- alpine:3.17 tmpimg
   [[ $status -eq 1 ]]
   [[ $output = *'Unable to run shell:'* ]]
 }
