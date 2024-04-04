@@ -245,30 +245,7 @@ def main(cli_):
          ch.ERROR("Dockerfile uses RSYNC, so rsync(1) is required")
          raise
 
-   # Traverse the tree and do what it says.
-   #
-   # We don’t actually care whether the tree is traversed breadth-first or
-   # depth-first, but we *do* care that instruction nodes are visited in
-   # order. Neither visit() nor visit_topdown() are documented as of
-   # 2020-06-11 [1], but examining source code [2] shows that visit_topdown()
-   # uses Tree.iter_trees_topdown(), which *is* documented to be in-order [3].
-   #
-   # This change seems to have been made in 0.8.6 (see PR #761); before then,
-   # visit() was in order. Therefore, we call that instead, if visit_topdown()
-   # is not present, to improve compatibility (see issue #792).
-   #
-   # [1]: https://lark-parser.readthedocs.io/en/latest/visitors/#visitors
-   # [2]: https://github.com/lark-parser/lark/blob/445c8d4/lark/visitors.py#L211
-   # [3]: https://lark-parser.readthedocs.io/en/latest/classes/#tree
-   ml = Main_Loop()
-   if (hasattr(ml, 'visit_topdown')):
-      ml.visit_topdown(tree)
-   else:
-      ml.visit(tree)
-   if (ml.instruction_total_ct > 0):
-      if (ml.miss_ct == 0):
-         ml.inst_prev.checkout()
-      ml.inst_prev.ready()
+   ml = traverse_parse_tree(tree)
 
    # Check that all build arguments were consumed.
    if (len(cli.build_arg) != 0):
@@ -291,19 +268,6 @@ def main(cli_):
 
 ## Functions ##
 
-def unescape(sl):
-   # FIXME: This is also ugly and should go in the grammar.
-   #
-   # The Dockerfile spec does not precisely define string escaping, but I’m
-   # guessing it’s the Go rules. You will note that we are using Python rules.
-   # This is wrong but close enough for now (see also gripe in previous
-   # paragraph).
-   if (    not sl.startswith('"')                          # no start quote
-       and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
-      sl = '"%s"' % sl
-   assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
-   return ast.literal_eval(sl)
-
 def modify(cli_):
    # In this file, “cli” is used as a global variable
    global cli
@@ -316,31 +280,17 @@ def modify(cli_):
    cli.force_cmd = force.FORCE_CMD_DEFAULT
    cli.bind = []
 
-   print(cli.image_ref)
-   ch.ILLERI(cli.c)
-   ch.ILLERI(type(cli.c))
    commands = []
    # “Flatten” commands array
    for c in cli.c:
       commands += c
    src_image = im.Image(im.Reference(cli.image_ref))
-   if (cli.out_image == None):
-      out_image = src_image
-   else:
-      out_image = im.Image(im.Reference(cli.out_image))
-   ch.ILLERI("OUT_IMAGE: %s" % cli.out_image)
+   out_image = im.Image(im.Reference(cli.out_image))
    if (not src_image.unpack_exist_p):
       ch.FATAL("not in storage: %s" % src_image.ref)
-   #if (out_image == str(src_image.ref)):
-   #   ch.FATAL("output image must have different name from source (%s)" % src_image.ref)
-   #if ((out_image == str(src_image.ref) or (out_image == None)) and (not cli.unsafe)):
-   #   ch.FATAL("")
-   if (not cli.unsafe):
-      if (out_image == str(src_image.ref)):
-         ch.FATAL("placeholder error (src = dest)")
-      elif (cli.out_image == None):
-         ch.FATAL("placeholder error (no dest)")
-   
+   if (cli.out_image == cli.image_ref):
+      ch.FATAL("output must be different from source image (%s)" % cli.image_ref)
+
    # This kludge is necessary because cli is a global variable, with cli.tag
    # assumed present elsewhere in the file. cli.tag represents the image being
    # built, which in our case can either be the source image or the output image
@@ -353,52 +303,34 @@ def modify(cli_):
       shell = "/bin/sh"
    if not sys.stdin.isatty():
       # Treat stdin as opaque blob and run that
-      commands = [sys.stdin]
+      commands = [sys.stdin.read()]
    if (commands != []):
-      # FIXME: verify that this code path works right
       tree = modify_tree_make(src_image.ref, commands)
-
-      # FIXME: Be more DRY in this section
 
       # Count the number of stages (i.e., FROM instructions)
       global image_ct
       image_ct = sum(1 for i in tree.children_("from_"))
 
-      ml = Main_Loop()
-      if (hasattr(ml, 'visit_topdown')):
-         ml.visit_topdown(tree)
-      else:
-         ml.visit(tree)
-      if (ml.instruction_total_ct > 0):
-         if (ml.miss_ct == 0):
-            ml.inst_prev.checkout()
-         ml.inst_prev.ready()    
+      ml = traverse_parse_tree(tree)
    else:
-      # Make sure that shell exists.
-      #try:
-      #   subprocess.run([ch.CH_BIN + "/ch-run", str(src_image.ref), "--", shell], capture_output=True).check_returncode()
-      #except subprocess.CalledProcessError as x:
-      #   #print(x.__dict__)
-      #   if ("%s: No such file or directory" % shell in str(x.stderr)):
-      #      ch.FATAL("invalid shell: %s" % shell)
-
-      # Generate “fake” SID
+      # Generate “fake” SID for build cache. We do this because we can’t compute
+      # an SID, but we still want to make sure that it’s unique enough that
+      # we’re unlikely to run into a collision.
       fake_sid = uuid.uuid4()
-      if (out_image != src_image):
-         #out_image = im.Image(im.Reference(out_image))
-         # Do something similar to “ch-image import”
-         out_image.unpack_clear()
-         out_image.copy_unpacked(src_image)
-         #bu.cache.worktree_add(out_image, src_image)
-         bu.cache.worktree_adopt(out_image, "root")
-         bu.cache.ready(out_image)
-         bu.cache.branch_nocheckout(src_image.ref, out_image.ref)
-      subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
-                      str(out_image.ref), "--", shell])
+      out_image.unpack_clear()
+      out_image.copy_unpacked(src_image)
+      bu.cache.worktree_adopt(out_image, "root")
+      bu.cache.ready(out_image)
+      bu.cache.branch_nocheckout(src_image.ref, out_image.ref)
+      foo = subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
+                            str(out_image.ref), "--", shell])
+      if (foo.returncode == 58):
+         # FIXME: Write a better error message?
+         ch.FATAL("Unable to run shell: %s" % shell)
+      ch.ILLERI("retcode: %s" % foo.returncode)
       ch.VERBOSE("using SID %s" % fake_sid)
       bu.cache.commit(out_image.unpack_path, fake_sid, "MODIFY interactive", [])
       # FIXME: metadata history stuff? See misc.import_.
-      #bu.cache.rollback(src_image.unpack_path)
 
 def modify_tree_make(src_img, cmds):
    """Function that manually constructs a parse tree corresponding to a set of
@@ -408,9 +340,9 @@ def modify_tree_make(src_img, cmds):
       to consider are “FROM” and “RUN”. E.g. for the command line
 
          $ ch-image modify -o foo2 -c 'echo foo' -c 'echo bar' -- foo
-      
+
       this function produces the following parse tree
-      
+
          start
             dockerfile
                from_
@@ -436,6 +368,46 @@ def modify_tree_make(src_img, cmds):
    for cmd in cmds:
       df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', cmd)], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
+
+# Traverse Lark parse tree and do what it says.
+#
+# We don’t actually care whether the tree is traversed breadth-first or
+# depth-first, but we *do* care that instruction nodes are visited in order.
+# Neither visit() nor visit_topdown() are documented as of 2020-06-11 [1], but
+# examining source code [2] shows that visit_topdown() uses
+# Tree.iter_trees_topdown(), which *is* documented to be in-order [3].
+#
+# This change seems to have been made in 0.8.6 (see PR #761); before then,
+# visit() was in order. Therefore, we call that instead, if visit_topdown() is
+# not present, to improve compatibility (see issue #792).
+#
+# [1]: https://lark-parser.readthedocs.io/en/latest/visitors/#visitors
+# [2]: https://github.com/lark-parser/lark/blob/445c8d4/lark/visitors.py#L211
+# [3]: https://lark-parser.readthedocs.io/en/latest/classes/#tree
+def traverse_parse_tree(tree):
+   ml = Main_Loop()
+   if (hasattr(ml, 'visit_topdown')):
+      ml.visit_topdown(tree)
+   else:
+      ml.visit(tree)
+   if (ml.instruction_total_ct > 0):
+      if (ml.miss_ct == 0):
+         ml.inst_prev.checkout()
+      ml.inst_prev.ready()
+   return ml
+
+def unescape(sl):
+   # FIXME: This is also ugly and should go in the grammar.
+   #
+   # The Dockerfile spec does not precisely define string escaping, but I’m
+   # guessing it’s the Go rules. You will note that we are using Python rules.
+   # This is wrong but close enough for now (see also gripe in previous
+   # paragraph).
+   if (    not sl.startswith('"')                          # no start quote
+       and (not sl.endswith('"') or sl.endswith('\\"'))):  # no end quote
+      sl = '"%s"' % sl
+   assert (len(sl) >= 2 and sl[0] == '"' and sl[-1] == '"' and sl[-2:] != '\\"')
+   return ast.literal_eval(sl)
 
 ## Supporting classes ##
 

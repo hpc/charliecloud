@@ -586,6 +586,16 @@ void msg(enum log_level level, const char *file, int line, int errno_,
    va_end(ap);
 }
 
+void msg_error(const char *file, int line, int errno_,
+                       const char *fmt, ...)
+{
+   va_list ap;
+
+   va_start(ap, fmt);
+   msgv(LL_FATAL, file, line, errno_, fmt, ap);
+   va_end(ap);
+}
+
 noreturn void msg_fatal(const char *file, int line, int errno_,
                        const char *fmt, ...)
 {
@@ -595,7 +605,7 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
    msgv(LL_FATAL, file, line, errno_, fmt, ap);
    va_end(ap);
 
-   exit(EXIT_FAILURE);
+   exit(ERR_CHRUN);
 }
 
 /* va_list form of msg(). */

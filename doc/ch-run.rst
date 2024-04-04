@@ -742,11 +742,20 @@ would terminate the string.
 Exit status
 ===========
 
-If there is an error during containerization, :code:`ch-run` exits with status
-non-zero. If the user command is started successfully, the exit status is that
-of the user command, with one exception: if the image is an internally mounted
-SquashFS filesystem and the user command is killed by a signal, the exit
-status is 1 regardless of the signal value.
+If the user command is started successfully, the exit status is that of the user
+command, with one exception: if the image is an internally mounted SquashFS
+filesystem and the user command is killed by a signal, the exit status is 1
+regardless of the signal value. Alternatively, :code:`ch-run` can exit with the
+following statuses:
+
+57
+  Error during containerization (:code:`ch-run` failure)
+
+58
+  Unable to start user command
+
+59
+  SquashFUSE loop exited on signal before user command was complete
 
 
 .. include:: ./bugs.rst

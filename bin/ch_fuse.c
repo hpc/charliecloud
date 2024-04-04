@@ -183,7 +183,7 @@ int sq_loop(void)
 
    // Clean up zombie child if exit signal was SIGCHLD.
    if (!sigchld_received)
-      exit_code = 0;
+      exit_code = 59;
    else {
       Tf (wait(&child_status) >= 0, "can't wait for child");
       if (WIFEXITED(child_status)) {
@@ -198,8 +198,8 @@ int sq_loop(void)
          //
          // [1]: https://codereview.stackexchange.com/a/109349
          // [2]: https://man7.org/linux/man-pages/man2/wait.2.html
-         exit_code = 1;
-         VERBOSE("child terminated by signal %d", WTERMSIG(child_status))
+         exit_code = 128 + WTERMSIG(child_status);
+         VERBOSE("child terminated by signal %d", exit_code - 128)
       }
    }
 

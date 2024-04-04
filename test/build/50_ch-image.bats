@@ -979,3 +979,33 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output = *'PWD=/bar/baz'* ]]
 }
+
+@test "ch-image modify" {
+  run ch-image modify -c "echo foo" -c "echo bar" -- alpine:3.17 tmpimg
+  echo "$output"
+  [[ $status -eq 0 ]]
+  [[ $output = *'foo'* ]]
+  [[ $output = *'bar'* ]]
+
+  ch-image modify -c "touch /home/foo" -- alpine:3.17 tmpimg
+  run ch-run tmpimg -- ls /home
+  echo "$output"
+  [[ $status -eq 0 ]]
+  [[ $output = *'foo'* ]]
+
+  printf "touch /home/bar" | ch-image modify alpine:3.17 tmpimg
+  run ch-run tmpimg -- ls /home
+  echo "$output"
+  [[ $status -eq 0 ]]
+  [[ $output = *'bar'* ]]
+
+  run ch-image modify -c 'echo foo' -- alpine:3.17 alpine:3.17
+  echo "$output"
+  [[ $status -eq 1 ]]
+  [[ $output = *'output must be different from source image'* ]]
+
+  run ch-image modify -S foo alpine:latest tmpimg
+  echo "$output"
+  [[ $status -eq 1 ]]
+  [[ $output = *'Unable to run shell:'* ]]
+}
