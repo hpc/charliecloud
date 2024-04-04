@@ -466,7 +466,7 @@ unset_vars () {
     # Can’t join namespaces of processes we don’t own.
     run ch-run -v --join-pid=1 "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"join: can't open /proc/1/ns/user: Permission denied"* ]]
 
     # Can’t join namespaces of processes that don’t exist.

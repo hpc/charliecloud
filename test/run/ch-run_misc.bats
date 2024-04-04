@@ -210,7 +210,7 @@ EOF
     # Error if directory does not exist.
     run ch-run --cd /goops "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output =~ "can't cd to /goops: No such file or directory" ]]
 }
 
@@ -619,7 +619,7 @@ EOF
     # file does not exist
     run ch-run --set-env=doesnotexist.txt "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't open: doesnotexist.txt: No such file or directory"* ]]
 
     # /ch/environment missing
@@ -661,7 +661,7 @@ EOF
     # missing environment variable
     run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
 
@@ -708,7 +708,7 @@ EOF
     printf '\n# Empty string\n\n'
     run ch-run --unset-env= "$ch_timg" -- env
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *'--unset-env: GLOB must have non-zero length'* ]]
 }
 
