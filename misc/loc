@@ -327,6 +327,7 @@ if [[ -s /tmp/loc.extra ]]; then
     cat /tmp/loc.extra
     echo
     echo '🚨🚨🚨 unknown files found 🚨🚨🚨'
+    echo 'hint: did you forget to add new file(s) to misc/loc?'
     exit 1
 fi
 
