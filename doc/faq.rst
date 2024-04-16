@@ -119,6 +119,7 @@ The following snippet is from our Libfabric example,
 :code:`examples/Dockerfile.Libfabric`.
 
 ::
+
     ARG LIBFABRIC_VERSION=${OFI_VERSION}
     RUN git clone --branch v${LIBFABRIC_VERSION} --depth 1 \
                   https://github.com/ofiwg/libfabric/ \
