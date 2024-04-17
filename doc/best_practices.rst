@@ -367,8 +367,8 @@ Generally, we recommend building a flexible MPI container using:
    a. **libfabric** to flexibly manage process communication over a diverse
       set of network fabrics;
 
-   b. a parallel **process management interface** (PMI) compatible with the
-      host workload manager; and
+   b. a parallel **process management interface** (PMI), compatible with the
+      host workload manager (e.g., PMI2, PMIx, flux-pmi); and
 
    c. an **MPI** that supports (1) libfabric and (2) the selected PMI.
 
@@ -405,8 +405,10 @@ verb devices using TCP, IB, OPA, and RoCE protocols.
 
 Two key advantages of using libfabric are: (1) the container’s libfabric can
 make use of “external” i.e. dynamic-shared-object (DSO) providers, and
-(2) Cray’s Slingshot provider (CXI) can be used by replacing the container
-image’s :code:`libfabric.so` with the Cray host’s.
+(2) libfabric replacement is simpler than MPI replacement and preserves the
+original container MPI. That is, managing host/container ABI compatibility is
+difficult and error-prone, so we instead manage the more forgiving libfabric
+ABI compatibility.
 
 A DSO provider can be used by a libfabric that did not originally compile it,
 i.e., they can be compiled on a target host and later injected into the
@@ -427,8 +429,8 @@ Choose a compatible PMI
 
 Unprivileged processes, including unprivileged containerized processes, are
 unable to independently launch containerized processes on different nodes,
-aside from using SSH, which isn’t scalable. We must either (1)_rely on a host
-supported parallel process management interface (PMI), or (2)_achieve
+aside from using SSH, which isn’t scalable. We must either (1) rely on a host
+supported parallel process management interface (PMI), or (2) achieve
 host/container MPI ABI compatibility through unsavory practices such as
 complete container MPI replacement.
 
