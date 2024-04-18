@@ -252,7 +252,8 @@ EOF
 
 @test 'ch-run --bind with tmpfs overmount' {
     [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
-    demand-overlayfs
+    ch-run -W "$ch_timg" -- true
+    #demand-overlayfs
 
     img=$BATS_TMPDIR/bind-overmount
     src=$BATS_TMPDIR/bind-overmount-src
