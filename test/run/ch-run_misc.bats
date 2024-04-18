@@ -12,7 +12,7 @@ setup () {
 
 
 demand-overlayfs () {
-    ch-run -W "$ch_timg" -- true || skip 'no unpriv overlayfs'
+    ch-run --feature=overlayfs || skip 'no unpriv overlayfs'
 }
 
 
@@ -252,8 +252,7 @@ EOF
 
 @test 'ch-run --bind with tmpfs overmount' {
     [[ -n $CH_TEST_SUDO ]] || skip 'sudo required'
-    ch-run -W "$ch_timg" -- true
-    #demand-overlayfs
+    demand-overlayfs
 
     img=$BATS_TMPDIR/bind-overmount
     src=$BATS_TMPDIR/bind-overmount-src
