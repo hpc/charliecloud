@@ -41,9 +41,26 @@
 /* Timeout in seconds for waiting for join semaphore. */
 #define JOIN_TIMEOUT 30
 
-/* Maximum length of paths we're willing to deal with. (Note that
+/* Maximum length of paths we’re willing to deal with. (Note that
    system-defined PATH_MAX isn't reliable.) */
 #define PATH_CHARS 4096
+
+/* Mount point for the tmpfs used by -W. We want this to be (a) always
+   available [1], (b) short, (c) not used by anything else we care about
+   during container setup, and (d) not wildly confusing if users see it in an
+   error message. Must be a string literal because we use C’s literal
+   concatenation feature. Options considered (all of these required by FHS):
+
+      /boot       Not present if host is booted in some strange way?
+      /etc        Likely very reliable but seems risky
+      /mnt        Used for images on GitHub Actions and causes CI failures
+      /opt        Seems very omittable
+      /srv        I’ve never actually seen it used; reliable?
+      /var        Too aggressive?
+      /var/spool  Long; omittable for lightweight hosts?
+
+   [1]: https://www.pathname.com/fhs/pub/fhs-2.3.pdf */
+#define WF_MNT "/srv"
 
 
 /** Constants **/
@@ -310,21 +327,21 @@ void enter_udss(struct container *c)
       struct stat st;
       VERBOSE("overlaying tmpfs for --write-fake (%s)", c->overlay_size);
       T_ (1 <= asprintf(&options, "size=%s", c->overlay_size));
-      Zf (mount(NULL, "/mnt", "tmpfs", 0, options),  // host should have /mnt
+      Zf (mount(NULL, WF_MNT, "tmpfs", 0, options),
           "cannot mount tmpfs for overlay");
       free(options);
-      Z_ (mkdir("/mnt/upper", 0700));
-      Z_ (mkdir("/mnt/work", 0700));
-      Z_ (mkdir("/mnt/merged", 0700));
-      mkdir_scratch = "/mnt/mkdir_overmount";
+      Z_ (mkdir(WF_MNT "/upper", 0700));
+      Z_ (mkdir(WF_MNT "/work", 0700));
+      Z_ (mkdir(WF_MNT "/merged", 0700));
+      mkdir_scratch = WF_MNT "/mkdir_overmount";
       Z_ (mkdir(mkdir_scratch, 0700));
-      T_ (1 <= asprintf(&options, "lowerdir=%s,upperdir=%s,workdir=%s,"
-                                  "index=on,userxattr,volatile",
-                                  c->newroot, "/mnt/upper", "/mnt/work"));
+      T_ (1 <= asprintf(&options, ("lowerdir=%s,upperdir=%s,workdir=%s,"
+                                   "index=on,userxattr,volatile"),
+                        c->newroot, WF_MNT "/upper", WF_MNT "/work"));
       // update newroot
       Zf (stat(c->newroot, &st),
-          "can't stat new root; overmounted by -W tmpfs?: %s", c->newroot);
-      c->newroot = "/mnt/merged";
+          "can't stat new root; overmounted by tmpfs for -W?: %s", c->newroot);
+      c->newroot = WF_MNT "/merged";
       free(nr_parent);
       free(nr_base);
       path_split(c->newroot, &nr_parent, &nr_base);
