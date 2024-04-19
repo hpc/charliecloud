@@ -291,10 +291,11 @@ EOF
     [[ $status -eq 0 ]]
 
     # --home
-    run ch-run --home "$img" -- ls -lah /home
+    run ch-run --home "$img" -- ls -lAh /home
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | wc -l) -eq 3 ]]
+    [[ $(echo "$output" | wc -l) -eq 5 ]]  # 4 files plus “total” line
+    [[ $output = *.orig* ]]
     [[ $output = *directory-in-home* ]]
     [[ $output = *file-in-home* ]]
     [[ $output = *"$USER"* ]]
