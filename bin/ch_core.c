@@ -325,7 +325,8 @@ void enter_udss(struct container *c)
       free(nr_parent);
       free(nr_base);
       path_split(c->newroot, &nr_parent, &nr_base);
-      Zf (mount(NULL, c->newroot, "overlay", 0, options), "can't overlay");
+      Zf (mount(NULL, c->newroot, "overlay", 0, options),
+          "can't overlay: %s, %s", c->newroot, options);
       VERBOSE("newroot updated: %s", c->newroot);
       free(options);
    }
