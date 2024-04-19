@@ -48,7 +48,8 @@ jobs:
       - uses: actions/checkout@v3
 
       # This allows SSH access to the GitHub Actions VM to debug things that
-      # only happen on CI. Comment out unless needed.
+      # only happen on CI. Comment out unless needed. WARNING: tmate.io has
+      # access to unencrypted SSH traffic.
       # See: https://github.com/marketplace/actions/debugging-with-tmate
       - name: set up tmate session
         uses: mxschmitt/action-tmate@v3

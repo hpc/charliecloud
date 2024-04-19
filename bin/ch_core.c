@@ -306,8 +306,9 @@ void enter_udss(struct container *c)
    // https://www.kernel.org/doc/html/v5.11/filesystems/tmpfs.html
    // https://www.kernel.org/doc/html/v5.11/filesystems/overlayfs.html
    if (c->overlay_size != NULL) {
-      VERBOSE("overlaying tmpfs for --write-fake (%s)", c->overlay_size);
       char *options;
+      struct stat st;
+      VERBOSE("overlaying tmpfs for --write-fake (%s)", c->overlay_size);
       T_ (1 <= asprintf(&options, "size=%s", c->overlay_size));
       Zf (mount(NULL, "/mnt", "tmpfs", 0, options),  // host should have /mnt
           "cannot mount tmpfs for overlay");
@@ -321,6 +322,8 @@ void enter_udss(struct container *c)
                                   "index=on,userxattr,volatile",
                                   c->newroot, "/mnt/upper", "/mnt/work"));
       // update newroot
+      Zf (stat(c->newroot, &st),
+          "can't stat new root; overmounted by -W tmpfs?: %s", c->newroot);
       c->newroot = "/mnt/merged";
       free(nr_parent);
       free(nr_base);
