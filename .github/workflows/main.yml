@@ -47,6 +47,14 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
+      # This allows SSH access to the GitHub Actions VM to debug things that
+      # only happen on CI. Comment out unless needed.
+      # See: https://github.com/marketplace/actions/debugging-with-tmate
+      - name: set up tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          detached: true
+
       - name: early setup & validation
         run: |
           [[ -n $CH_TEST_BUILDER ]]
