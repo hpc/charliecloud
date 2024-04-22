@@ -787,6 +787,10 @@ AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
+AS_IF([test $have_overlayfs = yes],
+      [AC_DEFINE([HAVE_OVERLAYFS], [1], [unprivileged overlayfs])])
+AS_IF([test $have_tmpfs_xattrs = yes],
+      [AC_DEFINE([HAVE_TMPFS_XATTRS], [1], [tmpfs user xattrs])])
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
 AS_IF([test $have_seccomp = yes],
