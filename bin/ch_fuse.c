@@ -249,7 +249,7 @@ void sq_mount(const char *img_path, char *mountpt)
                                    &OPS, sizeof(OPS), sq.ll)) {
          break;  // success
       } else if (i <= 0) {
-         FATAL("too many FUSE errors; giving up");
+         FATAL(0, "too many FUSE errors; giving up");
       } else {
          WARNING("FUSE error mounting SquashFS; will retry");
          sleep(1);

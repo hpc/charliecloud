@@ -121,7 +121,7 @@ EOF
     run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export HOME="$home_tmp"
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     # shellcheck disable=SC2016
     [[ $output = *'--home failed: $HOME not set'* ]]
 
@@ -132,7 +132,7 @@ EOF
     run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export USER=$user_tmp
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     # shellcheck disable=SC2016
     [[ $output = *'$USER not set'* ]]
 }
@@ -291,10 +291,10 @@ EOF
     [[ $status -eq 0 ]]
 
     # --home
-    run ch-run --home "$img" -- ls -lah /home
+    run ch-run --home "$img" -- ls -lAh /home
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | wc -l) -eq 3 ]]
+    [[ $(echo "$output" | wc -l) -eq 5 ]]
     [[ $output = *directory-in-home* ]]
     [[ $output = *file-in-home* ]]
     [[ $output = *"$USER"* ]]
@@ -625,7 +625,7 @@ EOF
     # /ch/environment missing
     run ch-run --set-env "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't open: /ch/environment: No such file or directory"* ]]
 
     # Note: I’m not sure how to test an error during reading, i.e., getline(3)
@@ -635,14 +635,14 @@ EOF
     echo 'FOO bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't parse variable: no delimiter: ${f_in}:1"* ]]
 
     # invalid line: no name
     echo '=bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't parse variable: empty name: ${f_in}:1"* ]]
 }
 
@@ -947,7 +947,7 @@ EOF
     # This should start up the container OK but fail to find the user command.
     run ch-run "$img" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 58 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # For each required file, we want a correct error if it’s missing.
@@ -958,7 +958,7 @@ EOF
         run ch-run "$img" -- /bin/true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
-        [[ $status -eq 1 ]]
+        [[ $status -eq 57 ]]
         r="can't bind: destination not found: .+/${f}"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
@@ -971,7 +971,7 @@ EOF
         run ch-run "$img" -- /bin/true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
-        [[ $status -eq 1 ]]
+        [[ $status -eq 58 ]]
         [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
     done
 
@@ -984,7 +984,7 @@ EOF
         rmdir "${img}/${f}"  # restore before test fails for idempotency
         touch "${img}/${f}"
         echo "$output"
-        [[ $status -eq 1 ]]
+        [[ $status -eq 57 ]]
         r="can't bind .+ to /.+/${f}: Not a directory"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
@@ -997,7 +997,7 @@ EOF
         run ch-run "$img" -- /bin/true
         mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
-        [[ $status -eq 1 ]]
+        [[ $status -eq 57 ]]
         r="can't bind: destination not found: .+/${d}"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
@@ -1012,7 +1012,7 @@ EOF
         rm "${img}/${d}"    # restore before test fails for idempotency
         mkdir "${img}/${d}"
         echo "$output"
-        [[ $status -eq 1 ]]
+        [[ $status -eq 57 ]]
         r="can't bind .+ to /.+/${d}: Not a directory"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
@@ -1023,7 +1023,7 @@ EOF
     run ch-run --private-tmp "$img" -- /bin/true
     mkdir "${img}/tmp"  # restore before test fails for idempotency
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     r="can't mount tmpfs at /.+/tmp: No such file or directory"
     echo "expected: ${r}"
     [[ $output =~ $r ]]
@@ -1033,13 +1033,13 @@ EOF
     run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 58 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # Everything should be restored and back to the original error.
     run ch-run "$img" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 58 ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # At this point, there should be exactly two each of passwd and group
@@ -1143,7 +1143,7 @@ EOF
     # subprocess failure at quiet level 2
     run ch-run -qq "$ch_timg" -- doesnotexist
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 58 ]]
     [[ $output = *"error: can't execve(2): doesnotexist: No such file or directory"* ]]
 
     # quiet level 3
@@ -1156,13 +1156,12 @@ EOF
     # subprocess failure at quiet level 3
     run ch-run -qqq "$ch_timg" -- doesnotexist
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 58 ]]
     [[ $output != *"error: can't execve(2): doesnotexist: No such file or directory"* ]]
 
     # failure at quiet level 3
     run ch-run -qqq --test=log-fail
-    echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output != *'info'* ]]
     [[ $output != *'warning: warning'* ]]
     [[ $output = *'error: the program failed inexplicably'* ]]
@@ -1174,6 +1173,6 @@ EOF
     # bad tmpfs size
     run ch-run --write-fake=foo "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output == *'cannot mount tmpfs for overlay: Invalid argument'* ]]
 }

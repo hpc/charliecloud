@@ -189,7 +189,7 @@ int main(int argc, char *argv[])
 
    if (arg_next >= argc - 1) {
       printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
-      FATAL("IMAGE and/or COMMAND not specified");
+      FATAL(0, "IMAGE and/or COMMAND not specified");
    }
    args.c.img_ref = argv[arg_next++];
    args.c.newroot = realpath_(args.c.newroot, true);
@@ -210,11 +210,11 @@ int main(int argc, char *argv[])
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
-      FATAL("this ch-run does not support internal SquashFS mounts");
+      FATAL(0, "this ch-run does not support internal SquashFS mounts");
 #endif
       break;
    case IMG_NONE:
-      FATAL("unknown image type: %s", args.c.img_ref);
+      FATAL(0, "unknown image type: %s", args.c.img_ref);
       break;
    }
 
@@ -461,7 +461,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #endif
       }
       else
-         FATAL("unknown feature: %s", arg);
+         FATAL(0, "unknown feature: %s", arg);
       break;
    case -12: // --home
       Tf (args->c.host_home = getenv("HOME"), "--home failed: $HOME not set");
@@ -492,7 +492,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       else if (!strcmp(arg, "log-fail"))
          test_logging(true);
       else
-         FATAL("invalid --test argument: %s; see source code", arg);
+         FATAL(0, "invalid --test argument: %s; see source code", arg);
       break;
    case 'b': {  // --bind
          char *src, *dst;

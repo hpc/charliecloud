@@ -72,13 +72,13 @@
 #define Zf(x, ...) if (x)    msg_fatal(__FILE__, __LINE__, errno, __VA_ARGS__)
 #define Ze(x, ...) if (x)    msg_fatal(__FILE__, __LINE__, 0, __VA_ARGS__)
 
-#define FATAL(...)   msg_fatal(      __FILE__, __LINE__, 0, __VA_ARGS__);
-#define ERROR(...)   msg_error(      __FILE__, __LINE__, 0, __VA_ARGS__);
-#define WARNING(...) msg(LL_WARNING, __FILE__, __LINE__, 0, __VA_ARGS__);
-#define INFO(...)    msg(LL_INFO,    __FILE__, __LINE__, 0, __VA_ARGS__);
-#define VERBOSE(...) msg(LL_VERBOSE, __FILE__, __LINE__, 0, __VA_ARGS__);
-#define DEBUG(...)   msg(LL_DEBUG,   __FILE__, __LINE__, 0, __VA_ARGS__);
-#define TRACE(...)   msg(LL_TRACE,   __FILE__, __LINE__, 0, __VA_ARGS__);
+#define FATAL(e, ...) msg_fatal(      __FILE__, __LINE__, e, __VA_ARGS__);
+#define ERROR(e, ...) msg_error(      __FILE__, __LINE__, e, __VA_ARGS__);
+#define WARNING(...)  msg(LL_WARNING, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define INFO(...)     msg(LL_INFO,    __FILE__, __LINE__, 0, __VA_ARGS__);
+#define VERBOSE(...)  msg(LL_VERBOSE, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define DEBUG(...)    msg(LL_DEBUG,   __FILE__, __LINE__, 0, __VA_ARGS__);
+#define TRACE(...)    msg(LL_TRACE,   __FILE__, __LINE__, 0, __VA_ARGS__);
 
 
 /** Types **/

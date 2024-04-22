@@ -322,18 +322,22 @@ def modify(cli_):
       fake_sid = uuid.uuid4()
       out_image.unpack_clear()
       out_image.copy_unpacked(src_image)
-      bu.cache.worktree_adopt(out_image, "root")
+      bu.cache.worktree_adopt(out_image, src_image.ref.for_path)
       bu.cache.ready(out_image)
       bu.cache.branch_nocheckout(src_image.ref, out_image.ref)
       foo = subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
                             str(out_image.ref), "--", shell])
-      if (foo.returncode == 57):
+      if (foo.returncode == 58):
          # FIXME: Write a better error message?
          ch.FATAL("Unable to run shell: %s" % shell)
       ch.ILLERI("retcode: %s" % foo.returncode)
       ch.VERBOSE("using SID %s" % fake_sid)
-      bu.cache.commit(out_image.unpack_path, fake_sid, "MODIFY interactive", [])
       # FIXME: metadata history stuff? See misc.import_.
+      if (out_image.metadata["history"] == []):
+         out_image.metadata["history"].append({ "empty_layer": False,
+                                                "command":     "ch-image import"})
+      out_image.metadata_save()
+      bu.cache.commit(out_image.unpack_path, fake_sid, "MODIFY interactive", [])
 
 def modify_tree_make(src_img, cmds):
    """Function that manually constructs a parse tree corresponding to a set of

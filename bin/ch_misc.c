@@ -449,7 +449,7 @@ void test_logging(bool fail) {
    INFO("info");
    WARNING("warning");
    if (fail)
-      FATAL("the program failed inexplicably (\"log-fail\" specified)");
+      FATAL(0, "the program failed inexplicably (\"log-fail\" specified)");
    exit(0);
 }
 
@@ -587,7 +587,7 @@ void msg(enum log_level level, const char *file, int line, int errno_,
 }
 
 void msg_error(const char *file, int line, int errno_,
-                       const char *fmt, ...)
+               const char *fmt, ...)
 {
    va_list ap;
 

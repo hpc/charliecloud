@@ -218,7 +218,7 @@ void bind_mount(const char *src, const char *dst, enum bind_dep dep,
    if (!path_exists(dst_full, NULL, true))
       switch (dep) {
       case BD_REQUIRED:
-         FATAL("can't bind: destination not found: %s", dst_full);
+         FATAL(0, "can't bind: destination not found: %s", dst_full);
          break;
       case BD_OPTIONAL:
          return;
@@ -400,7 +400,7 @@ enum img_type image_type(const char *ref, const char *storage_dir)
       return IMG_SQUASH;
 
    // Well now we’re stumped.
-   FATAL("unknown image type: %s", ref);
+   FATAL(0, "unknown image type: %s", ref);
 }
 
 char *img_name2path(const char *name, const char *storage_dir)
@@ -546,9 +546,7 @@ void run_user_command(char *argv[], const char *initial_dir)
    if (verbose < LL_STDERR)
       T_ (freopen("/dev/null", "w", stderr));
    execvp(argv[0], argv);  // only returns if error
-   //Tf (0, "can't execve(2): %s", argv[0]);
-   //Terror (0, "can't execve(2): %s", argv[0]);
-   ERROR("can't execve(2): %s", argv[0])
+   ERROR(errno, "can't execve(2): %s", argv[0]);
    exit(ERR_CMD);
 }
 
