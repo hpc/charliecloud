@@ -12,7 +12,7 @@ setup () {
 
 
 demand-overlayfs () {
-    ch-run -W "$ch_timg" -- true || skip 'no unpriv overlayfs'
+    ch-run --feature=overlayfs || skip 'no unpriv overlayfs'
 }
 
 
@@ -294,7 +294,8 @@ EOF
     run ch-run --home "$img" -- ls -lAh /home
     echo "$output"
     [[ $status -eq 0 ]]
-    [[ $(echo "$output" | wc -l) -eq 5 ]]
+    [[ $(echo "$output" | wc -l) -eq 5 ]]  # 4 files plus “total” line
+    [[ $output = *.orig* ]]
     [[ $output = *directory-in-home* ]]
     [[ $output = *file-in-home* ]]
     [[ $output = *"$USER"* ]]

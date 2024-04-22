@@ -1364,4 +1364,4 @@ conversion. Important caveats include:
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
 ..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq drwxr
-..  LocalWords:  drwx
+..  LocalWords:  drwx mpich

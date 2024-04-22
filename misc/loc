@@ -243,6 +243,8 @@ find ./.github ./examples ./test -type f -a \( \
      -o -path ./test/fixtures/README \
      -o -path ./.github/PERUSEME \
      -o -path ./examples/chtest/printns \
+     -o -path ./examples/spack/packages.yaml \
+     -o -path ./examples/spack/libfuse.patch \
      -o -path ./test/approved-trailing-whitespace \
      -o -path ./test/common.bash \
      -o -path ./test/doctest-auto \
@@ -325,6 +327,7 @@ if [[ -s /tmp/loc.extra ]]; then
     cat /tmp/loc.extra
     echo
     echo '🚨🚨🚨 unknown files found 🚨🚨🚨'
+    echo 'hint: did you forget to add new file(s) to misc/loc?'
     exit 1
 fi
 
