@@ -317,7 +317,7 @@ EOF
     # empty argument to --bind
     run ch-run -b '' "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 64 ]]
     [[ $output = *'--bind: no source provided'* ]]
 
     # source not provided
@@ -911,7 +911,7 @@ EOF
     # image is file but not sqfs
     run ch-run -vv ./fixtures/README -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
     [[ $output = *'unknown image type: '*'/fixtures/README'* ]]
 

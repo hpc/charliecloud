@@ -981,6 +981,8 @@ EOF
 }
 
 @test "ch-image modify" {
+  ch-image reset
+
   run ch-image modify -c "echo foo" -c "echo bar" -- alpine:3.17 tmpimg
   echo "$output"
   [[ $status -eq 0 ]]
