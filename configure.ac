@@ -63,12 +63,6 @@ MKDIR_P=${MKDIR_P:-install -d -m 0755}
 
 AM_INIT_AUTOMAKE([1.13 -Wall -Werror foreign subdir-objects])
 
-# Check for “pkg-config”. It’s here because we use PKG_CHECK_MODULES
-# conditionally later and we want to make sure this always happens [1, §3.4].
-#
-# [1]: https://autotools.info/pkgconfig/pkg_check_modules.html
-PKG_PROG_PKG_CONFIG
-
 AC_CONFIG_HEADERS([bin/config.h])
 AC_CONFIG_FILES([Makefile
                  bin/Makefile
@@ -349,6 +343,7 @@ AC_MSG_RESULT($have_userns)
 AC_DEFUN([CH_OVERLAY_C], [[
   #define _GNU_SOURCE
   #include <errno.h>
+  #include <fcntl.h>
   #include <sched.h>
   #include <stdio.h>
   #include <stdlib.h>
@@ -491,17 +486,22 @@ have_libfuse3=n/a
 have_libsquashfuse_ll=n/a
 have_ll_h=n/a
 AS_IF([test $want_libsquashfuse = yes], [
-  # libfuse3. Must use pkg-config because as of version 0.5.0 SquashFUSE’s
-  # ll.h won’t build without an appropriate -I [1]. This macro defines some
-  # variables that we use here; see this third-party documentation [2]. (I
-  # could not find first-party docs for it.)
+  # libfuse3. As of version 0.5.0, SquashFUSE’s ll.h won’t build without an
+  # appropriate -I [1]. Presently we use pkg-config to find it, but see #1844.
+  #
+  # We avoid PKG_CHECK_MODULES because it introduces a dependency on
+  # pkg-config at autogen.sh time, with impressively incomprehensible error
+  # messages if it’s not met [2]. The approach below also seems simpler [3]?
   #
   # [1]: https://github.com/vasi/squashfuse/commit/eca5764
-  # [2]: https://autotools.info/pkgconfig/pkg_check_modules.html
-  PKG_CHECK_MODULES([fuse3], [fuse3], [
-    # libfuse3 found
+  # [2]: https://ae1020.github.io/undefined-macro-pkg-config/
+  # [3]: https://tirania.org/blog/archive/2012/Oct-20.html
+  AC_CHECK_PROG(have_pkg_config, pkg-config, yes, no)
+  AS_IF([test $have_pkg_config != yes],
+        [AC_MSG_ERROR([need pkg-config to find libfuse3; try --with-libsquashfuse=no or see issue @%:@1844])])
+  AS_IF([pkg-config --exists fuse3], [
     have_libfuse3=yes
-    CFLAGS="$CFLAGS $fuse3_CFLAGS"
+    CFLAGS="$CFLAGS $(pkg-config --cflags fuse3)"
     # libsquashfuse?
     AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount],
       [have_libsquashfuse_ll=yes],
@@ -787,6 +787,10 @@ AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
+AS_IF([test $have_overlayfs = yes],
+      [AC_DEFINE([HAVE_OVERLAYFS], [1], [unprivileged overlayfs])])
+AS_IF([test $have_tmpfs_xattrs = yes],
+      [AC_DEFINE([HAVE_TMPFS_XATTRS], [1], [tmpfs user xattrs])])
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
 AS_IF([test $have_seccomp = yes],
@@ -942,7 +946,7 @@ Building Charliecloud
     test suite ... ${enable_test}
 
   required:
-    C99 compiler ... ${CC} ${CC_VERSION}
+    C99 compiler ... ${CC} ${CFLAGS}
 
   optional:
     extended glob patterns in --unset-env ... ${have_fnm_extmatch}
