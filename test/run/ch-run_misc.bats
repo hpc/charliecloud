@@ -311,118 +311,127 @@ EOF
     # no argument to --bind
     run ch-run "$ch_timg" -b
     echo "$output"
+    echo "STATUS"
+    echo "$status"
+    echo "STATUS"
     [[ $status -eq 64 ]]
     [[ $output = *'option requires an argument'* ]]
 
     # empty argument to --bind
     run ch-run -b '' "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 64 ]]
+    echo "STATUS"
+    echo "$status"
+    echo "STATUS"
+    [[ $status -eq 57 ]]
     [[ $output = *'--bind: no source provided'* ]]
 
     # source not provided
     run ch-run -b :/mnt/9 "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    echo "STATUS"
+    echo "$status"
+    echo "STATUS"
+    [[ $status -eq 57 ]]
     [[ $output = *'--bind: no source provided'* ]]
 
     # destination not provided
     run ch-run -b "${bind1_dir}:" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *'--bind: no destination provided'* ]]
 
     # destination is /
     run ch-run -b "${bind1_dir}:/" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"--bind: destination can't be /"* ]]
 
     # destination is relative
     run ch-run -b "${bind1_dir}:foo" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"--bind: destination must be absolute"* ]]
 
     # destination climbs out of image, exists
     run ch-run -b "${bind1_dir}:/.." "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't bind: "*"/${USER}.ch not subdirectory of "*"/${USER}.ch/mnt"* ]]
 
     # destination climbs out of image, does not exist
     run ch-run -b "${bind1_dir}:/../doesnotexist/a" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/doesnotexist not subdirectory of "*"/${USER}.ch/mnt"* ]]
     [[ ! -e ${ch_imgdir}/doesnotexist ]]
 
     # source does not exist
     run ch-run -b "/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't bind: source not found: /doesnotexist"* ]]
 
     # destination does not exist and image is not writeable
     run ch-run -b "${bind1_dir}:/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/doesnotexist: Read-only file system"* ]]
 
     # neither source nor destination exist
     run ch-run -b /doesnotexist-out:/doesnotexist-in "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't bind: source not found: /doesnotexist-out"* ]]
 
     # correct bind followed by source does not exist
     run ch-run -b "${bind1_dir}:/mnt/0" -b /doesnotexist "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't bind: source not found: /doesnotexist"* ]]
 
     # correct bind followed by destination does not exist
     run ch-run -b "${bind1_dir}:/mnt/0" -b "${bind2_dir}:/doesnotexist" \
                "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/doesnotexist: Read-only file system"* ]]
 
     # destination is broken symlink
     run ch-run -b "${bind1_dir}:/mnt/link-b0rken-abs" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't mkdir: symlink not relative: "*"/${USER}.ch/mnt/mnt/link-b0rken-abs"* ]]
 
     # destination is absolute symlink outside image
     run ch-run -b "${bind1_dir}:/mnt/link-bad-abs" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't bind: "*" not subdirectory of"* ]]
 
     # destination relative symlink outside image
     run ch-run -b "${bind1_dir}:/mnt/link-bad-rel" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't bind: "*" not subdirectory of"* ]]
 
     # mkdir(2) under existing bind-mount, default, first level
     run ch-run -b "${bind1_dir}:/proc/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/proc/doesnotexist under existing bind-mount "*"/${USER}.ch/mnt/proc "* ]]
 
     # mkdir(2) under existing bind-mount, user-supplied, first level
     run ch-run -b "${bind1_dir}:/mnt/0" \
                -b "${bind2_dir}:/mnt/0/foo" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/mnt/0/foo under existing bind-mount "*"/${USER}.ch/mnt/mnt/0 "* ]]
 
     # mkdir(2) under existing bind-mount, default, 2nd level
     run ch-run -b "${bind1_dir}:/proc/sys/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq 57 ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/proc/sys/doesnotexist under existing bind-mount "*"/${USER}.ch/mnt/proc "* ]]
 }
 
