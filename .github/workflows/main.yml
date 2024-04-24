@@ -51,10 +51,10 @@ jobs:
       # only happen on CI. Comment out unless needed. WARNING: tmate.io has
       # access to unencrypted SSH traffic.
       # See: https://github.com/marketplace/actions/debugging-with-tmate
-      #- name: set up tmate session
-      #  uses: mxschmitt/action-tmate@v3
-      #  with:
-      #    detached: true
+      - name: set up tmate session
+        uses: mxschmitt/action-tmate@v3
+        with:
+          detached: true
 
       - name: early setup & validation
         run: |
