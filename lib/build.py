@@ -297,10 +297,12 @@ def modify(cli_):
    # (if specified).
    cli.tag = str(out_image)
 
+   ch.ILLERI("CLI SHELL: %s" % cli.shell)
    if (cli.shell is not None):
       shell = cli.shell
    else:
       shell = "/bin/sh"
+   ch.ILLERI("SHELL: %s" % shell)
    # Second condition here is to ensure that “commands” does’t get overwritten
    # in the case where “ch-image modify” isn’t called from a terminal session
    # (e.g. in Github actions). I’m considering this a temporary fix, although I
