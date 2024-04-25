@@ -307,6 +307,7 @@ def modify(cli_):
       shell = "/bin/sh"
    if not sys.stdin.isatty():
       # Treat stdin as opaque blob and run that
+      ch.ILLERI("FOUND IT!!!")
       commands = [sys.stdin.read()]
    if (commands != []):
       ch.ILLERI("commands (pre tree): %s" % commands)
