@@ -311,6 +311,8 @@ def modify(cli_):
    if ((not sys.stdin.isatty()) and (commands == [])):
       # Treat stdin as opaque blob and run that
       commands = [sys.stdin.read()]
+   # Again, the fact that we have to check against both “[]” and “['']” is to
+   # get CI to work...
    if (commands not in [[],['']]):
       tree = modify_tree_make(src_image.ref, commands)
 
