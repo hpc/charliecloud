@@ -311,7 +311,7 @@ def modify(cli_):
    if ((not sys.stdin.isatty()) and (commands == [])):
       # Treat stdin as opaque blob and run that
       commands = [sys.stdin.read()]
-   if (commands != []):
+   if (commands not in [[],['']]):
       tree = modify_tree_make(src_image.ref, commands)
 
       # Count the number of stages (i.e., FROM instructions)
