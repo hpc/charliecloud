@@ -284,6 +284,7 @@ def modify(cli_):
    # “Flatten” commands array
    for c in cli.c:
       commands += c
+   ch.ILLERI("COMMANDS: %s" % commands)
    src_image = im.Image(im.Reference(cli.image_ref))
    out_image = im.Image(im.Reference(cli.out_image))
    ch.ILLERI("SRC REF: %s" % str(src_image.ref))
@@ -310,6 +311,8 @@ def modify(cli_):
    if (commands != []):
       tree = modify_tree_make(src_image.ref, commands)
 
+      ch.ILLERI("TREE")
+      ch.ILLERI(tree)
       # Count the number of stages (i.e., FROM instructions)
       global image_ct
       image_ct = sum(1 for i in tree.children_("from_"))
