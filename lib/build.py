@@ -309,6 +309,7 @@ def modify(cli_):
       # Treat stdin as opaque blob and run that
       commands = [sys.stdin.read()]
    if (commands != []):
+      ch.ILLERI("commands (pre tree): %s" % commands)
       tree = modify_tree_make(src_image.ref, commands)
 
       ch.ILLERI("TREE")
@@ -365,6 +366,8 @@ def modify_tree_make(src_img, cmds):
                   run_shell
                      LINE_CHUNK echo bar
       """
+   ch.ILLERI("commands (in tree func): %s" % cmds)
+
    # Children of dockerfile tree
    df_children = []
    # Metadata attribute. We use this attribute in the “_pretty” method for our
@@ -376,7 +379,9 @@ def modify_tree_make(src_img, cmds):
    meta.line = -1
    #df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', src_img.name)], meta)], meta))
    df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
+   ch.ILLERI("ADDING COMMANDS TO TREE")
    for cmd in cmds:
+      ch.ILLERI("command: %s" % cmd)
       df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', cmd)], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
 
