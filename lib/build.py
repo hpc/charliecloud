@@ -364,8 +364,6 @@ def modify_tree_make(src_img, cmds):
                   run_shell
                      LINE_CHUNK echo bar
       """
-   ch.ILLERI("commands (in tree func): %s" % cmds)
-
    # Children of dockerfile tree
    df_children = []
    # Metadata attribute. We use this attribute in the “_pretty” method for our

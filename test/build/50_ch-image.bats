@@ -1002,11 +1002,11 @@ EOF
 
   run ch-image modify -c 'echo foo' -- alpine:3.17 alpine:3.17
   echo "$output"
-  echo "$status"
   [[ $status -eq 1 ]]
   [[ $output = *'output must be different from source image'* ]]
 
-  run ch-image modify -S "foo" -- alpine:3.17 tmpimg
+  run ch-image modify -S "doesnotexist" -- alpine:3.17 tmpimg
+  echo "$output"
   [[ $status -eq 1 ]]
   [[ $output = *'Unable to run shell:'* ]]
 }
