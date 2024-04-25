@@ -284,12 +284,8 @@ def modify(cli_):
    # “Flatten” commands array
    for c in cli.c:
       commands += c
-   ch.ILLERI("COMMANDS: %s" % commands)
    src_image = im.Image(im.Reference(cli.image_ref))
    out_image = im.Image(im.Reference(cli.out_image))
-   ch.ILLERI("SRC REF: %s" % str(src_image.ref))
-   ch.ILLERI("SRC IMAGE: %s" % str(src_image))
-   ch.ILLERI("SRC REF NAME: %s" % str(src_image.ref.name))
    if (not src_image.unpack_exist_p):
       ch.FATAL("not in storage: %s" % src_image.ref)
    if (cli.out_image == cli.image_ref):
@@ -305,16 +301,17 @@ def modify(cli_):
       shell = cli.shell
    else:
       shell = "/bin/sh"
-   if not sys.stdin.isatty():
+   # Second condition here is to ensure that “commands” does’t get overwritten
+   # in the case where “ch-image modify” isn’t called from a terminal session
+   # (e.g. in Github actions). I’m considering this a temporary fix, although I
+   # think a case could also be made for “-c” to have precedence over pipeline
+   # input.
+   if ((not sys.stdin.isatty()) and (commands == [])):
       # Treat stdin as opaque blob and run that
-      ch.ILLERI("FOUND IT!!!")
       commands = [sys.stdin.read()]
    if (commands != []):
-      ch.ILLERI("commands (pre tree): %s" % commands)
       tree = modify_tree_make(src_image.ref, commands)
 
-      ch.ILLERI("TREE")
-      ch.ILLERI(tree)
       # Count the number of stages (i.e., FROM instructions)
       global image_ct
       image_ct = sum(1 for i in tree.children_("from_"))
