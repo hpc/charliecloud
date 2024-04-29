@@ -162,6 +162,28 @@ image_ok () {
 
 }
 
+# Function to determine whether first argument is in the subsequent expanded
+# array or sequence of words.
+
+# Example:
+#   $ is_elem "foo" "foo" "bar" "baz"
+#   0
+#
+#   $ is_elem "banana" "foo" "bar" "baz"
+#   1
+is_elem () {
+    local test_word="$1"
+    shift
+    local word_array=("$@")
+    for e in "${word_array[@]}"
+    do
+        if [[ "$e" == "$test_word" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 localregistry_init () {
     # Skip unless GitHub Actions or there is a listener on localhost:5000.
     if [[ -z $GITHUB_ACTIONS ]] && ! (   command -v ss > /dev/null 2>&1 \

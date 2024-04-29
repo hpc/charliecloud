@@ -669,6 +669,10 @@ test_one_file () {
     bats "$one_file"
 }
 
+#build_one_image () {
+#
+#}
+
 test_rootemu () {
     if command -v ch-image > /dev/null 2>&1; then
         bats force-auto.bats
@@ -854,6 +858,11 @@ while [[ $# -gt 0 ]]; do
         ;;
     -h|--help)
         usage 0
+        ;;
+    -i)
+        phase=one-file
+        one_file="${TMP_}/build_auto.bats:$1"
+        shift
         ;;
     --img-dir)
         require_unset imgdir
