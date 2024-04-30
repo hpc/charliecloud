@@ -15,7 +15,7 @@
 #include "config.h"
 #include "ch_core.h"
 #include "ch_misc.h"
-
+#include "json.h"
 
 /** Constants and macros **/
 
@@ -208,6 +208,11 @@ int main(int argc, char *argv[])
       Tf (!args.c.writable || args.unsafe,
           "--write invalid when running by name");
       break;
+   case IMG_OCI_BUNDLE:
+      /* Parse config.json file -> containerize */
+      /* OR call ch-run-oci to create and start/run container */
+      args.c.newroot = path_join(args.c.img_ref, "/rootfs");
+      break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
       FATAL("this ch-run does not support internal SquashFS mounts");
@@ -215,12 +220,6 @@ int main(int argc, char *argv[])
       break;
    case IMG_NONE:
       FATAL("unknown image type: %s", args.c.img_ref);
-      break;
-   case OCI_BUNDLE:
-      if (args.c.newroot != NULL)  // --mount was set
-         WARNING("--mount invalid with directory image, ignoring");
-      args.c.newroot = realpath_(cat(args.c.img_ref, "/rootfs"), false);
-      img_directory_verify(args.c.newroot, &args);
       break;
    }
 
