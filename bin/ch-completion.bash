@@ -259,7 +259,7 @@ _ch_convert_complete () {
 _image_build_opts="-b --bind --build-arg -f --file --force
                    --force-cmd -n --dry-run --parse-only -t --tag"
 
-_image_modify_opts="-o --out"
+_image_modify_opts="-c -S --shell"
 
 _image_common_opts="-a --arch --always-download --auth --break
                     --cache --cache-large --dependencies -h --help

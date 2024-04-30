@@ -1910,7 +1910,7 @@ Synopsis
 Description
 -----------
 
-This subcommand makes a copy of image :code:`TARGET`, named :code:`DEST`, and
+This subcommand makes a copy of image :code:`TARGET` named :code:`DEST` and
 starts a shell on :code:`DEST` in order to edit the image interactively. It is
 similar to a :code:`RUN` instruction that starts an interactive shell. If there
 is already an image named :code:`DEST`, it will be overwritten. :code:`DEST` must
@@ -1921,7 +1921,7 @@ be different than :code:`TARGET`.
     instruction in a Dockerfile. Can be repeated to run multiple commands
     sequentially.
 
-  :code:`-S SHELL`
+  :code:`-S`, :code:`--shell SHELL`
    Use shell :code:`SHELL` for interactive session, rather than the default
    :code:`/bin/sh`.
 
@@ -1938,21 +1938,18 @@ Examples
 To edit the image :code:`foo`, adding :code:`/opt/lib` to the default shared
 library search path, producing image :code:`bar` as the result::
 
-   $ ch-image modify bar foo
-   [...]
-   > emacs /etc/ld.so.conf
-   [... append line “/opt/lib” to the file ...]
-   > ldconfig
+   $ ch-image modify foo bar
+   copying image from cache ...
+   > echo foo >> /home/foo.txt
    > exit
-   committing ...
-   [...]
+   $ ch-run foo_modified -- cat /home/foo.txt
+   foo
 
 Equivalently, and almost certainly preferred::
 
    $ cat Dockerfile
    FROM foo
-   RUN echo /opt/lib >> /etc/ld.so.conf
-   RUN ldconfig
+   RUN echo foo >> /home/foo.txt
    $ ch-image build -t bar -f Dockerfile .
 
 

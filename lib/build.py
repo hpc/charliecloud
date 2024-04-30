@@ -297,12 +297,10 @@ def modify(cli_):
    # (if specified).
    cli.tag = str(out_image)
 
-   ch.ILLERI("CLI SHELL: %s" % cli.shell)
    if (cli.shell is not None):
       shell = cli.shell
    else:
       shell = "/bin/sh"
-   ch.ILLERI("SHELL: %s" % shell)
    # Second condition here is to ensure that “commands” does’t get overwritten
    # in the case where “ch-image modify” isn’t called from a terminal session
    # (e.g. in Github actions). I’m considering this a temporary fix, although I
@@ -336,7 +334,6 @@ def modify(cli_):
       if (foo.returncode == 58):
          # FIXME: Write a better error message?
          ch.FATAL("Unable to run shell: %s" % shell)
-      ch.ILLERI("retcode: %s" % foo.returncode)
       ch.VERBOSE("using SID %s" % fake_sid)
       # FIXME: metadata history stuff? See misc.import_.
       if (out_image.metadata["history"] == []):
@@ -379,9 +376,7 @@ def modify_tree_make(src_img, cmds):
    meta.line = -1
    #df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', src_img.name)], meta)], meta))
    df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
-   ch.ILLERI("ADDING COMMANDS TO TREE")
    for cmd in cmds:
-      ch.ILLERI("command: %s" % cmd)
       df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', cmd)], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
 
