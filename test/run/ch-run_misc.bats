@@ -1,4 +1,4 @@
-load ../common
+    load ../common
 
 bind1_dir=$BATS_TMPDIR/bind1
 bind2_dir=$BATS_TMPDIR/bind2
@@ -121,7 +121,7 @@ EOF
     run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export HOME="$home_tmp"
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     # shellcheck disable=SC2016
     [[ $output = *'--home failed: $HOME not set'* ]]
 
@@ -132,7 +132,7 @@ EOF
     run ch-run --home "$ch_timg" -- /bin/sh -c 'echo $HOME'
     export USER=$user_tmp
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     # shellcheck disable=SC2016
     [[ $output = *'$USER not set'* ]]
 }
@@ -210,7 +210,7 @@ EOF
     # Error if directory does not exist.
     run ch-run --cd /goops "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output =~ "can't cd to /goops: No such file or directory" ]]
 }
 
@@ -324,7 +324,7 @@ EOF
     echo "STATUS"
     echo "$status"
     echo "STATUS"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'--bind: no source provided'* ]]
 
     # source not provided
@@ -333,106 +333,106 @@ EOF
     echo "STATUS"
     echo "$status"
     echo "STATUS"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'--bind: no source provided'* ]]
 
     # destination not provided
     run ch-run -b "${bind1_dir}:" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'--bind: no destination provided'* ]]
 
     # destination is /
     run ch-run -b "${bind1_dir}:/" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"--bind: destination can't be /"* ]]
 
     # destination is relative
     run ch-run -b "${bind1_dir}:foo" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"--bind: destination must be absolute"* ]]
 
     # destination climbs out of image, exists
     run ch-run -b "${bind1_dir}:/.." "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't bind: "*"/${USER}.ch not subdirectory of "*"/${USER}.ch/mnt"* ]]
 
     # destination climbs out of image, does not exist
     run ch-run -b "${bind1_dir}:/../doesnotexist/a" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/doesnotexist not subdirectory of "*"/${USER}.ch/mnt"* ]]
     [[ ! -e ${ch_imgdir}/doesnotexist ]]
 
     # source does not exist
     run ch-run -b "/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't bind: source not found: /doesnotexist"* ]]
 
     # destination does not exist and image is not writeable
     run ch-run -b "${bind1_dir}:/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/doesnotexist: Read-only file system"* ]]
 
     # neither source nor destination exist
     run ch-run -b /doesnotexist-out:/doesnotexist-in "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't bind: source not found: /doesnotexist-out"* ]]
 
     # correct bind followed by source does not exist
     run ch-run -b "${bind1_dir}:/mnt/0" -b /doesnotexist "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't bind: source not found: /doesnotexist"* ]]
 
     # correct bind followed by destination does not exist
     run ch-run -b "${bind1_dir}:/mnt/0" -b "${bind2_dir}:/doesnotexist" \
                "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/doesnotexist: Read-only file system"* ]]
 
     # destination is broken symlink
     run ch-run -b "${bind1_dir}:/mnt/link-b0rken-abs" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't mkdir: symlink not relative: "*"/${USER}.ch/mnt/mnt/link-b0rken-abs"* ]]
 
     # destination is absolute symlink outside image
     run ch-run -b "${bind1_dir}:/mnt/link-bad-abs" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't bind: "*" not subdirectory of"* ]]
 
     # destination relative symlink outside image
     run ch-run -b "${bind1_dir}:/mnt/link-bad-rel" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't bind: "*" not subdirectory of"* ]]
 
     # mkdir(2) under existing bind-mount, default, first level
     run ch-run -b "${bind1_dir}:/proc/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/proc/doesnotexist under existing bind-mount "*"/${USER}.ch/mnt/proc "* ]]
 
     # mkdir(2) under existing bind-mount, user-supplied, first level
     run ch-run -b "${bind1_dir}:/mnt/0" \
                -b "${bind2_dir}:/mnt/0/foo" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/mnt/0/foo under existing bind-mount "*"/${USER}.ch/mnt/mnt/0 "* ]]
 
     # mkdir(2) under existing bind-mount, default, 2nd level
     run ch-run -b "${bind1_dir}:/proc/sys/doesnotexist" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't mkdir: "*"/${USER}.ch/mnt/proc/sys/doesnotexist under existing bind-mount "*"/${USER}.ch/mnt/proc "* ]]
 }
 
@@ -629,13 +629,13 @@ EOF
     # file does not exist
     run ch-run --set-env=doesnotexist.txt "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't open: doesnotexist.txt: No such file or directory"* ]]
 
     # /ch/environment missing
     run ch-run --set-env "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't open: /ch/environment: No such file or directory"* ]]
 
     # Note: I’m not sure how to test an error during reading, i.e., getline(3)
@@ -645,14 +645,14 @@ EOF
     echo 'FOO bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't parse variable: no delimiter: ${f_in}:1"* ]]
 
     # invalid line: no name
     echo '=bar' > "$f_in"
     run ch-run --set-env="$f_in" "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"can't parse variable: empty name: ${f_in}:1"* ]]
 }
 
@@ -671,7 +671,7 @@ EOF
     # missing environment variable
     run ch-run --set-env='$PATH:foo' "$ch_timg" -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'$PATH:foo: No such file or directory'* ]]
 }
 
@@ -718,7 +718,7 @@ EOF
     printf '\n# Empty string\n\n'
     run ch-run --unset-env= "$ch_timg" -- env
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'--unset-env: GLOB must have non-zero length'* ]]
 }
 
@@ -921,7 +921,7 @@ EOF
     # image is file but not sqfs
     run ch-run -vv ./fixtures/README -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'magic expected: 6873 7173; actual: 596f 7520'* ]]
     [[ $output = *'unknown image type: '*'/fixtures/README'* ]]
 
@@ -957,7 +957,7 @@ EOF
     # This should start up the container OK but fail to find the user command.
     run ch-run "$img" -- /bin/true
     echo "$output"
-    [[ $status -eq 58 ]]
+    [[ $status -eq $CH_ERR_CMD ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # For each required file, we want a correct error if it’s missing.
@@ -968,7 +968,7 @@ EOF
         run ch-run "$img" -- /bin/true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
-        [[ $status -eq 57 ]]
+        [[ $status -eq $CH_ERR_RUN ]]
         r="can't bind: destination not found: .+/${f}"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
@@ -981,7 +981,7 @@ EOF
         run ch-run "$img" -- /bin/true
         touch "${img}/${f}"  # restore before test fails for idempotency
         echo "$output"
-        [[ $status -eq 58 ]]
+        [[ $status -eq $CH_ERR_CMD ]]
         [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
     done
 
@@ -994,7 +994,7 @@ EOF
         rmdir "${img}/${f}"  # restore before test fails for idempotency
         touch "${img}/${f}"
         echo "$output"
-        [[ $status -eq 57 ]]
+        [[ $status -eq $CH_ERR_RUN ]]
         r="can't bind .+ to /.+/${f}: Not a directory"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
@@ -1007,7 +1007,7 @@ EOF
         run ch-run "$img" -- /bin/true
         mkdir "${img}/${d}"  # restore before test fails for idempotency
         echo "$output"
-        [[ $status -eq 57 ]]
+        [[ $status -eq $CH_ERR_RUN ]]
         r="can't bind: destination not found: .+/${d}"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
@@ -1022,7 +1022,7 @@ EOF
         rm "${img}/${d}"    # restore before test fails for idempotency
         mkdir "${img}/${d}"
         echo "$output"
-        [[ $status -eq 57 ]]
+        [[ $status -eq $CH_ERR_RUN ]]
         r="can't bind .+ to /.+/${d}: Not a directory"
         echo "expected: ${r}"
         [[ $output =~ $r ]]
@@ -1033,7 +1033,7 @@ EOF
     run ch-run --private-tmp "$img" -- /bin/true
     mkdir "${img}/tmp"  # restore before test fails for idempotency
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     r="can't mount tmpfs at /.+/tmp: No such file or directory"
     echo "expected: ${r}"
     [[ $output =~ $r ]]
@@ -1043,13 +1043,13 @@ EOF
     run ch-run "$img" -- /bin/true
     mkdir "${img}/home"  # restore before test fails for idempotency
     echo "$output"
-    [[ $status -eq 58 ]]
+    [[ $status -eq $CH_ERR_CMD ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # Everything should be restored and back to the original error.
     run ch-run "$img" -- /bin/true
     echo "$output"
-    [[ $status -eq 58 ]]
+    [[ $status -eq $CH_ERR_CMD ]]
     [[ $output = *"can't execve(2): /bin/true: No such file or directory"* ]]
 
     # At this point, there should be exactly two each of passwd and group
@@ -1153,7 +1153,7 @@ EOF
     # subprocess failure at quiet level 2
     run ch-run -qq "$ch_timg" -- doesnotexist
     echo "$output"
-    [[ $status -eq 58 ]]
+    [[ $status -eq $CH_ERR_CMD ]]
     [[ $output = *"error: can't execve(2): doesnotexist: No such file or directory"* ]]
 
     # quiet level 3
@@ -1166,12 +1166,12 @@ EOF
     # subprocess failure at quiet level 3
     run ch-run -qqq "$ch_timg" -- doesnotexist
     echo "$output"
-    [[ $status -eq 58 ]]
+    [[ $status -eq $CH_ERR_CMD ]]
     [[ $output != *"error: can't execve(2): doesnotexist: No such file or directory"* ]]
 
     # failure at quiet level 3
     run ch-run -qqq --test=log-fail
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output != *'info'* ]]
     [[ $output != *'warning: warning'* ]]
     [[ $output = *'error: the program failed inexplicably'* ]]
@@ -1183,6 +1183,6 @@ EOF
     # bad tmpfs size
     run ch-run --write-fake=foo "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output == *'cannot mount tmpfs for overlay: Invalid argument'* ]]
 }

@@ -37,7 +37,7 @@ setup () {
     # Can’t run GCC.
     run ch-run "$ch_img" -- gcc --version
     echo "$output"
-    [[ $status -eq 58 ]]
+    [[ $status -eq $CH_ERR_CMD ]]
     [[ $output = *'gcc: No such file or directory'* ]]
 
     # No GCC or Make.

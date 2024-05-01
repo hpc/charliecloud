@@ -864,17 +864,17 @@ EOF
 @test 'ch-run storage errors' {
     run ch-run -v -w alpine:3.17 -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'error: --write invalid when running by name'* ]]
 
     run ch-run -v "$CH_IMAGE_STORAGE"/img/alpine+3.17 -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
 
     run ch-run -v -s /doesnotexist alpine:3.17 -- /bin/true
     echo "$output"
-    [[ $status -eq 57 ]]
+    [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
     [[ $output = *"error: can't stat: alpine:3.17: No such file or directory"* ]]
 }
