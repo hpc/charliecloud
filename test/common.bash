@@ -330,9 +330,9 @@ export BATS_TMPDIR=$btnew
 [[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
 
 # ch-run exit codes (see also: ch_misc.h)
-export CH_ERR_RUN=57
-export CH_ERR_CMD=58
-export CH_ERR_SQUASH=59 # Currently not used, here just in case
+CH_ERR_RUN=57
+CH_ERR_CMD=58
+CH_ERR_SQUASH=59 # Currently not used, here just in case
 
 ch_runfile=$(command -v ch-run)
 

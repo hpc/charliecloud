@@ -18,6 +18,7 @@ demand-overlayfs () {
 
 @test 'relative path to image' {  # issue #6
     scope full
+    # shellcheck disable=SC2154
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 
@@ -86,7 +87,7 @@ EOF
     [[ $USER ]]
 
     # default: no change
-    # shellcheck disable=SC2016
+    # shellcheck disable=SC2016,SC2154
     run ch-run "${ch_imgdir}"/quick -- /bin/sh -c 'echo $HOME'
     echo "$output"
     [[ $status -eq 0 ]]
@@ -142,6 +143,7 @@ EOF
     scope quick
     echo "$PATH"
     # if /bin is in $PATH, latter passes through unchanged
+    # shellcheck disable=SC2154
     PATH2="$ch_bin:/bin:/usr/bin"
     echo "$PATH2"
     # shellcheck disable=SC2016
@@ -171,6 +173,7 @@ EOF
     scope standard
     old_path=$PATH
     unset PATH
+    # shellcheck disable=SC2154
     run "$ch_runfile" "$ch_timg" -- \
         /usr/bin/python3 -c 'import os; print(os.getenv("PATH") is None)'
     PATH=$old_path
@@ -269,6 +272,7 @@ EOF
     }
 
     rm-img
+    # shellcheck disable=SC2154
     ch-convert "$ch_tardir"/chtest.* "$img"
     ls -l "$img"
     mkdir "$img"/foo
