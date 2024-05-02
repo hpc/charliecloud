@@ -755,15 +755,17 @@ filesystem and the user command is killed by a signal, the exit status is 1
 regardless of the signal value. Alternatively, :code:`ch-run` can exit with the
 following statuses:
 
-57
+31
   Error during containerization (:code:`ch-run` failure)
 
-58
+49
   Unable to start user command
 
-59
+84
   SquashFUSE loop exited on signal before user command was complete
 
+128+N
+  Child process failed to exit normally, with exit code N
 
 .. include:: ./bugs.rst
 .. include:: ./see_also.rst

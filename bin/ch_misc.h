@@ -24,10 +24,10 @@
    don’t need to worry about running out of room. */
 #define WARNINGS_SIZE (4*1024)
 
-/* Exit codes */
-#define ERR_CHRUN 57
-#define ERR_CMD 58
-#define ERR_SQUASH 59
+/* Exit codes (see also: test/common.bash). */
+#define ERR_CHRUN 31
+#define ERR_CMD 49
+#define ERR_SQUASH 84
 
 /* Test some value, and if it's not what we expect, exit with a fatal error.
    These are macros so we have access to the file and line number.
@@ -67,7 +67,6 @@
 #define T_(x)      if (!(x)) msg_fatal(__FILE__, __LINE__, errno, NULL)
 #define Tf(x, ...) if (!(x)) msg_fatal(__FILE__, __LINE__, errno, __VA_ARGS__)
 #define Te(x, ...) if (!(x)) msg_fatal(__FILE__, __LINE__, 0, __VA_ARGS__)
-#define Terror(x, ...) if (!(x)) msg_error(__FILE__, __LINE__, errno, __VA_ARGS__)
 #define Z_(x)      if (x)    msg_fatal(__FILE__, __LINE__, errno, NULL)
 #define Zf(x, ...) if (x)    msg_fatal(__FILE__, __LINE__, errno, __VA_ARGS__)
 #define Ze(x, ...) if (x)    msg_fatal(__FILE__, __LINE__, 0, __VA_ARGS__)

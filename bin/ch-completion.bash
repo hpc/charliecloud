@@ -392,13 +392,7 @@ _ch_image_complete () {
             fi
             ;;
         modify)
-            case "$prev" in
-            -o|--out)
-                # Can’t complete for this option
-                COMPREPLY=()
-                return 0
-                ;;
-            esac
+            # FIXME: Implement
             extras="$extras $_image_modify_opts"
             ;;
         esac

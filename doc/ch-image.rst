@@ -1905,16 +1905,16 @@ Synopsis
 
 ::
 
-   $ ch-image [...] modify [...] TARGET DEST
+   $ ch-image [...] modify [...] SOURCE DEST
 
 Description
 -----------
 
-This subcommand makes a copy of image :code:`TARGET` named :code:`DEST` and
+This subcommand makes a copy of image :code:`SOURCE` named :code:`DEST` and
 starts a shell on :code:`DEST` in order to edit the image interactively. It is
 similar to a :code:`RUN` instruction that starts an interactive shell. If there
 is already an image named :code:`DEST`, it will be overwritten. :code:`DEST` must
-be different than :code:`TARGET`.
+be different than :code:`SOURCE`.
 
   :code:`-c CMD`
     Run :code:`CMD` inside the container, as though specified by the :code:`RUN`
@@ -1924,6 +1924,56 @@ be different than :code:`TARGET`.
   :code:`-S`, :code:`--shell SHELL`
    Use shell :code:`SHELL` for interactive session, rather than the default
    :code:`/bin/sh`.
+
+Build cache implications
+------------------------
+
+Images produced by a :code:`modify` operation (:code:`DEST`) are adopted into
+the  build cache, with the parent being the specified source image
+(:code:`SOURCE`). The nature of :code:`modify` makes it impossible to perform
+the usual computation of state ID (SID) for the resulting cache entry without
+intercepting the input of the interactive session, which is unnecessarily
+complicated. Instead, we assign the adopted image a “fake” SID in the
+form of a version 4 UUID.
+
+SIDs are used to retrieve image states from the cache. Since the :code:`modify`
+operation is at odds with the notion of container provenance, image states
+resulting from :code:`modify` will never be used by the cache, so using UUIDs in
+place of SIDs does not undermine cache functionality. Adoption of modified
+images is done soley for cache consistency rather than actual utility.
+
+Below is an example of cache adoption of a modified image, starting with a
+non-empty cache::
+
+  $ ch-image build-cache --tree
+   *  (bar) IMPORT bar
+   | *  (foo) IMPORT foo
+   |/
+   *  (root) ROOT
+
+   named images:       3
+   state IDs:          3
+   large files:        0
+   commits:            3
+   internal files:     7 K
+   disk used:        227 MiB
+   $ ch-image modify foo baz
+   copying image from cache ...
+   [...]
+   > exit
+   $ ch-image build-cache --tree
+   *  (baz) MODIFY interactive
+   *  (foo) IMPORT foo
+   | *  (bar) IMPORT bar
+   |/
+   *  (root) ROOT
+
+   named images:       4
+   state IDs:          4
+   large files:        0
+   commits:            4
+   internal files:     7 K
+   disk used:        227 MiB
 
 .. warning::
 
