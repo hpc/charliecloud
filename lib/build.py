@@ -331,7 +331,9 @@ def modify(cli_):
       bu.cache.branch_nocheckout(src_image.ref, out_image.ref)
       foo = subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
                             str(out_image.ref), "--", shell])
-      if (foo.returncode == 58):
+      # FIXME: This causes issues when you change the value in ch_misc.h and
+      #        forget to change it here...
+      if (foo.returncode == 49):
          # FIXME: Write a better error message?
          ch.FATAL("Unable to run shell: %s" % shell)
       ch.VERBOSE("using SID %s" % fake_sid)

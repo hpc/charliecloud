@@ -329,7 +329,7 @@ chmod 700 "$btnew"
 export BATS_TMPDIR=$btnew
 [[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
 
-# ch-run exit codes. (see also: ch_misc.h)
+# ch-run exit codes. (see also: ch_misc.h, lib/build.py)
 CH_ERR_RUN=31
 CH_ERR_CMD=49
 CH_ERR_SQUASH=84 # Currently not used, here just in case

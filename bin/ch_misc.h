@@ -24,7 +24,7 @@
    don’t need to worry about running out of room. */
 #define WARNINGS_SIZE (4*1024)
 
-/* Exit codes (see also: test/common.bash). */
+/* Exit codes (see also: test/common.bash, lib/build.py). */
 #define ERR_CHRUN 31
 #define ERR_CMD 49
 #define ERR_SQUASH 84
