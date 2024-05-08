@@ -15,7 +15,6 @@
 #include "config.h"
 #include "ch_core.h"
 #include "ch_misc.h"
-#include "json.h"
 
 /** Constants and macros **/
 

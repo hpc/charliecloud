@@ -119,10 +119,10 @@ am_ch_checkns_OBJECTS = ch-checkns.$(OBJEXT) ch_misc.$(OBJEXT)
 ch_checkns_OBJECTS = $(am_ch_checkns_OBJECTS)
 ch_checkns_LDADD = $(LDADD)
 am__ch_run_SOURCES_DIST = ch-run.c ch_core.h ch_core.c ch_misc.h \
-	ch_misc.c ch_fuse.h ch_fuse.c json.h json.c
+	ch_misc.c ch_fuse.h ch_fuse.c
 am__objects_1 = ch_run-ch_fuse.$(OBJEXT)
 am_ch_run_OBJECTS = ch_run-ch-run.$(OBJEXT) ch_run-ch_core.$(OBJEXT) \
-	ch_run-ch_misc.$(OBJEXT) ch_run-json.$(OBJEXT) $(am__objects_1)
+	ch_run-ch_misc.$(OBJEXT) $(am__objects_1)
 ch_run_OBJECTS = $(am_ch_run_OBJECTS)
 am__DEPENDENCIES_1 =
 ch_run_DEPENDENCIES = $(am__DEPENDENCIES_1)
@@ -173,8 +173,7 @@ depcomp = $(SHELL) $(top_srcdir)/build-aux/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/ch-checkns.Po ./$(DEPDIR)/ch_misc.Po \
 	./$(DEPDIR)/ch_run-ch-run.Po ./$(DEPDIR)/ch_run-ch_core.Po \
-	./$(DEPDIR)/ch_run-ch_fuse.Po ./$(DEPDIR)/ch_run-ch_misc.Po \
-	./$(DEPDIR)/ch_run-json.Po
+	./$(DEPDIR)/ch_run-ch_fuse.Po ./$(DEPDIR)/ch_run-ch_misc.Po
 am__mv = mv -f
 AM_V_lt = $(am__v_lt_$(V))
 am__v_lt_ = $(am__v_lt_$(AM_DEFAULT_VERBOSITY))
@@ -364,7 +363,7 @@ top_builddir = ..
 top_srcdir = ..
 ch_checkns_SOURCES = ch-checkns.c ch_misc.h ch_misc.c
 ch_run_SOURCES = ch-run.c ch_core.h ch_core.c ch_misc.h ch_misc.c \
-	json.h json.c $(am__append_1)
+	$(am__append_1)
 ch_run_CFLAGS = $(CFLAGS) $(PTHREAD_CFLAGS)
 ch_run_LDADD = $(CH_RUN_LIBS)
 dist_bin_SCRIPTS = ch-convert \
@@ -557,7 +556,6 @@ include ./$(DEPDIR)/ch_run-ch-run.Po # am--include-marker
 include ./$(DEPDIR)/ch_run-ch_core.Po # am--include-marker
 include ./$(DEPDIR)/ch_run-ch_fuse.Po # am--include-marker
 include ./$(DEPDIR)/ch_run-ch_misc.Po # am--include-marker
-include ./$(DEPDIR)/ch_run-json.Po # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -636,20 +634,6 @@ ch_run-ch_fuse.obj: ch_fuse.c
 #	$(AM_V_CC)source='ch_fuse.c' object='ch_run-ch_fuse.obj' libtool=no \
 #	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
 #	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ch_run_CFLAGS) $(CFLAGS) -c -o ch_run-ch_fuse.obj `if test -f 'ch_fuse.c'; then $(CYGPATH_W) 'ch_fuse.c'; else $(CYGPATH_W) '$(srcdir)/ch_fuse.c'; fi`
-
-ch_run-json.o: json.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ch_run_CFLAGS) $(CFLAGS) -MT ch_run-json.o -MD -MP -MF $(DEPDIR)/ch_run-json.Tpo -c -o ch_run-json.o `test -f 'json.c' || echo '$(srcdir)/'`json.c
-	$(AM_V_at)$(am__mv) $(DEPDIR)/ch_run-json.Tpo $(DEPDIR)/ch_run-json.Po
-#	$(AM_V_CC)source='json.c' object='ch_run-json.o' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ch_run_CFLAGS) $(CFLAGS) -c -o ch_run-json.o `test -f 'json.c' || echo '$(srcdir)/'`json.c
-
-ch_run-json.obj: json.c
-	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ch_run_CFLAGS) $(CFLAGS) -MT ch_run-json.obj -MD -MP -MF $(DEPDIR)/ch_run-json.Tpo -c -o ch_run-json.obj `if test -f 'json.c'; then $(CYGPATH_W) 'json.c'; else $(CYGPATH_W) '$(srcdir)/json.c'; fi`
-	$(AM_V_at)$(am__mv) $(DEPDIR)/ch_run-json.Tpo $(DEPDIR)/ch_run-json.Po
-#	$(AM_V_CC)source='json.c' object='ch_run-json.obj' libtool=no \
-#	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) \
-#	$(AM_V_CC_no)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(ch_run_CFLAGS) $(CFLAGS) -c -o ch_run-json.obj `if test -f 'json.c'; then $(CYGPATH_W) 'json.c'; else $(CYGPATH_W) '$(srcdir)/json.c'; fi`
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -784,7 +768,6 @@ distclean: distclean-am
 	-rm -f ./$(DEPDIR)/ch_run-ch_core.Po
 	-rm -f ./$(DEPDIR)/ch_run-ch_fuse.Po
 	-rm -f ./$(DEPDIR)/ch_run-ch_misc.Po
-	-rm -f ./$(DEPDIR)/ch_run-json.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
@@ -837,7 +820,6 @@ maintainer-clean: maintainer-clean-am
 	-rm -f ./$(DEPDIR)/ch_run-ch_core.Po
 	-rm -f ./$(DEPDIR)/ch_run-ch_fuse.Po
 	-rm -f ./$(DEPDIR)/ch_run-ch_misc.Po
-	-rm -f ./$(DEPDIR)/ch_run-json.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
