@@ -209,7 +209,6 @@ int main(int argc, char *argv[])
       break;
    case IMG_OCI_BUNDLE:
       /* Parse config.json file -> containerize */
-      /* OR call ch-run-oci to create and start/run container */
       args.c.newroot = path_join(args.c.img_ref, "/rootfs");
       break;
    case IMG_SQUASH:
