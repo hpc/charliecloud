@@ -60,9 +60,16 @@ mounting SquashFS images with FUSE.
     Don’t expand variables when using :code:`--set-env`.
 
   :code:`--feature=FEAT`
-    If feature :code:`FEAT` is enabled, exit with success. Valid values of
-    :code:`FEAT` are :code:`extglob` for extended globs, :code:`seccomp` for
-    :code:`seccomp(2)`, and :code:`squash` for squashfs archives.
+    If feature :code:`FEAT` is enabled, exit successfully (zero); otherwise,
+    exit unsuccessfully (non-zero). Note this just communicates the results of
+    :code:`configure` rather than testing the feature. Valid values of
+    :code:`FEAT` are:
+
+       * :code:`extglob`: extended globs in :code:`--unset-env`
+       * :code:`seccomp`: :code:`--seccomp` available
+       * :code:`squash`: internal SquashFUSE image mounts
+       * :code:`overlayfs`: unprivileged overlayfs support
+       * :code:`tmpfs-xattrs`: :code:`user` xattrs on tmpfs
 
   :code:`-g`, :code:`--gid=GID`
     Run as group :code:`GID` within container.

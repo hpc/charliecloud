@@ -224,7 +224,7 @@ package managers.
 Maintained by us:
 
   * `Spack
-    <https://spack.readthedocs.io/en/latest/package_list.html#charliecloud>`_;
+    <https://packages.spack.io/package.html?name=charliecloud>`_;
     install with :code:`+builder` to get :code:`ch-image`.
   * `Fedora/EPEL <https://bodhi.fedoraproject.org/updates/?search=charliecloud>`_;
     check for available versions with :code:`{yum,dnf} list charliecloud`.

@@ -450,6 +450,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #else
          exit(1);
 #endif
+      } else if (!strcmp(arg, "overlayfs")) {
+#ifdef HAVE_OVERLAYFS
+         exit(0);
+#else
+         exit(1);
+#endif
       } else if (!strcmp(arg, "seccomp")) {
 #ifdef HAVE_SECCOMP
          exit(0);
@@ -458,6 +464,12 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #endif
       } else if (!strcmp(arg, "squash")) {
 #ifdef HAVE_LIBSQUASHFUSE
+         exit(0);
+#else
+         exit(1);
+#endif
+      } else if (!strcmp(arg, "tmpfs-xattrs")) {
+#ifdef HAVE_TMPFS_XATTRS
          exit(0);
 #else
          exit(1);

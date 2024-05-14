@@ -1175,7 +1175,7 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 4, 5, 6}):  # initialize/upgrade
+      elif (v_found in {None, 6}):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_VERSION, self.root))
          self.root.mkdir()
@@ -1189,23 +1189,6 @@ class Storage:
          self.unpack_base.mkdir()
          self.upload_cache.mkdir()
          if (v_found is not None):  # upgrade
-            if (v_found < 6):
-               # Git metadata moved from /.git to /ch/.git, and /.gitignore
-               # went out-of-band (to info/exclude in the repository).
-               for img in self.unpack_base.iterdir():
-                  old = img // ".git"
-                  new = img // "ch/git"
-                  if (old.exists()):
-                     new.parent.mkdir()
-                     old.rename(new)
-                     gi = img // ".gitignore"
-                     if (gi.exists()):
-                        gi.unlink()
-               # Must also remove .gitignore from all commits. This requires
-               # Git operations, which we can’t do here because the build
-               # cache may be disabled. Do it in Enabled_Cache.configure().
-               if (len(self.build_cache.listdir()) > 0):
-                  self.bucache_needs_ignore_upgrade.file_ensure_exists()
             if (v_found == 6):
                # Charliecloud 0.32 had a bug where symlinks to fat manifests
                # that were really skinny were erroneously absolute, making the

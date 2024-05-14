@@ -343,6 +343,7 @@ AC_MSG_RESULT($have_userns)
 AC_DEFUN([CH_OVERLAY_C], [[
   #define _GNU_SOURCE
   #include <errno.h>
+  #include <fcntl.h>
   #include <sched.h>
   #include <stdio.h>
   #include <stdlib.h>
@@ -786,6 +787,10 @@ AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
+AS_IF([test $have_overlayfs = yes],
+      [AC_DEFINE([HAVE_OVERLAYFS], [1], [unprivileged overlayfs])])
+AS_IF([test $have_tmpfs_xattrs = yes],
+      [AC_DEFINE([HAVE_TMPFS_XATTRS], [1], [tmpfs user xattrs])])
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
 AS_IF([test $have_seccomp = yes],
@@ -941,7 +946,7 @@ Building Charliecloud
     test suite ... ${enable_test}
 
   required:
-    C99 compiler ... ${CC} ${CC_VERSION}
+    C99 compiler ... ${CC} ${CFLAGS}
 
   optional:
     extended glob patterns in --unset-env ... ${have_fnm_extmatch}

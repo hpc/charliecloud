@@ -13,7 +13,8 @@ if HAVE_LIBSQUASHFUSE
 ch_run_SOURCES += ch_fuse.h ch_fuse.c
 endif
 
-ch_run_CFLAGS = $(CFLAGS) $(PTHREAD_CFLAGS)
+# additional build flags for ch-run
+ch_run_CFLAGS = $(PTHREAD_CFLAGS)
 ch_run_LDADD = $(CH_RUN_LIBS)
 
 

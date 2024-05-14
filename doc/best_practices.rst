@@ -1,6 +1,10 @@
 Best practices
 **************
 
+.. contents::
+   :depth: 3
+   :local:
+
 Other best practices information
 ================================
 
@@ -303,5 +307,149 @@ building, and then run using a separate container invoked from a different
 terminal.
 
 
-..  LocalWords:  userguide Gruening Souppaya Morello Scarfone openmpi nist
-..  LocalWords:  ident OCFS MAGICK
+MPI
+===
+
+Problems that best practices help you avoid
+-------------------------------------------
+
+These recommendations are derived from our experience in mitigating container
+MPI issues. It is important to note that, despite marketing claims, no single
+container implementation has “solved” MPI or is free of warts; the issues are
+numerous, multifaceted, and dynamic.
+
+Key concepts and related issues include:
+
+  1. **Workload management**. Running applications on HPC clusters requires
+     resource management and job scheduling. Put simply, resource management
+     is the act of allocating and restricting compute resources, e.g., CPU and
+     memory, whereas job scheduling is the act of prioritizing and enforcing
+     resource management. *Both require privileged operations.*
+
+     Some privileged container implementations attempt to provide their own
+     workload management, often referred to as “container orchestration”.
+
+     Charliecloud is lightweight and completely unprivileged. We rely on
+     existing, reputable and well established HPC workload managers such as
+     Slurm.
+
+  2. **Job launch**. When a multi-node MPI job is launched, each node must
+     launch a number of containerized processes, i.e., *ranks*. Doing this
+     unprivileged and at scale requires interaction between the application
+     and workload manager. That is, something like Process Management
+     Interface (PMI) is needed to facilitate the job launch.
+
+  3. **Shared memory**. Processes in separate sibling containers cannot use
+     single-copy *cross-memory attach* (CMA), as opposed to double-copy POSIX
+     or SysV shared memory. The solution is to put all ranks in the *same*
+     container with :code:`ch-run --join`. (See above for details:
+     :ref:`faq_join`.)
+
+  4. **Network fabric.** Performant MPI jobs must recognize and use a system’s
+     high-speed interconnect. Common issues that arise are:
+
+       a. Libraries required to use the interconnect are proprietary or
+          otherwise unavailable to the container.
+
+       b. The interconnect is not supported by the container MPI.
+
+     In both cases, the containerized MPI application will either fail or run
+     significantly slower.
+
+These problems can be avoided, and this section describes our recommendations
+to do so.
+
+Recommendations TL;DR
+---------------------
+
+Generally, we recommend building a flexible MPI container using:
+
+   a. **libfabric** to flexibly manage process communication over a diverse
+      set of network fabrics;
+
+   b. a parallel **process management interface** (PMI), compatible with the
+      host workload manager (e.g., PMI2, PMIx, flux-pmi); and
+
+   c. an **MPI** that supports (1) libfabric and (2) the selected PMI.
+
+More experienced MPI and unprivileged container users can find success through
+MPI replacement (injection); however, such practices are beyond the scope of
+this FAQ.
+
+The remaining sections detail the reasoning behind our approach. We recommend
+referencing, or directly using, our examples
+:code:`examples/Dockerfile.{libfabric,mpich,openmpi}`.
+
+Use libfabric
+-------------
+
+`libfabric <https://ofiwg.github.io/libfabric>`_ (a.k.a. Open Fabrics
+Interfaces or OFI) is a low-level communication library that abstracts diverse
+networking technologies. It defines *providers* that implement the mapping
+between application-facing software (e.g., MPI) and network specific drivers,
+protocols, and hardware. These providers have been co-designed with fabric
+hardware and application developers with a focus on HPC needs. libfabric lets
+us more easily manage MPI communication over diverse network high-speed
+interconnects (a.k.a. *fabrics*).
+
+From our libfabric example (:code:`examples/Dockerfile.libfabric`):
+
+.. literalinclude:: ../examples/Dockerfile.libfabric
+   :language: docker
+   :lines: 116-135
+
+The above compiles libfabric with several “built-in” providers, i.e.
+:code:`psm3` (on x86-64), :code:`rxm`, :code:`shm`, :code:`tcp`, and
+:code:`verbs`, which enables MPI applications to run efficiently over most
+verb devices using TCP, IB, OPA, and RoCE protocols.
+
+Two key advantages of using libfabric are: (1) the container’s libfabric can
+make use of “external” i.e. dynamic-shared-object (DSO) providers, and
+(2) libfabric replacement is simpler than MPI replacement and preserves the
+original container MPI. That is, managing host/container ABI compatibility is
+difficult and error-prone, so we instead manage the more forgiving libfabric
+ABI compatibility.
+
+A DSO provider can be used by a libfabric that did not originally compile it,
+i.e., they can be compiled on a target host and later injected into the
+container along with any missing shared library dependencies, and used by the
+container's libfabric. To build a libfabric provider as a DSO, add :code:`=dl`
+to its :code:`configure` argument, e.g., :code:`--with-cxi=dl`.
+
+A container's libfabric can also be replaced by a host libfabric. This is a
+brittle but usually effective way to give containers access to the Cray
+libfabric Slingshot provider :code:`cxi`.
+
+In Charliecloud, both of these injection operations are currently done with
+:code:`ch-fromhost`, though see `issue #1861
+<https://github.com/hpc/charliecloud/issues/1861>`_.
+
+Choose a compatible PMI
+-----------------------
+
+Unprivileged processes, including unprivileged containerized processes, are
+unable to independently launch containerized processes on different nodes,
+aside from using SSH, which isn’t scalable. We must either (1) rely on a host
+supported parallel process management interface (PMI), or (2) achieve
+host/container MPI ABI compatibility through unsavory practices such as
+complete container MPI replacement.
+
+The preferred PMI implementation, e.g., PMI1, PMI2, OpenPMIx, or flux-pmi,
+will be that which is best supported by your host workload manager and
+container MPI.
+
+In :code:`example/Dockerfile.libfabric`, we selected :code:`OpenPMIx` because
+(1) it is supported by SLURM, OpenMPI, and MPICH, (2)~it is required for
+exascale, and (3) OpenMPI versions 5 and newer will no longer support PMI2.
+
+Choose an MPI compatible with your libfabric and PMI
+----------------------------------------------------
+
+There are various MPI implementations, e.g., OpenMPI, MPICH, MVAPICH2,
+Intel-MPI, etc., to consider. We generally recommend OpenMPI; however, your
+MPI implementation of choice will ultimately be that which best supports the
+libfabric and PMI most compatible with your hardware and workload manager.
+
+
+..  LocalWords:  userguide Gruening Souppaya Morello Scarfone openmpi nist dl
+..  LocalWords:  ident OCFS MAGICK mpich psm rxm shm DSO pmi MVAPICH
