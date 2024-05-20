@@ -4,8 +4,42 @@
 #include <string.h>
 #include <cjson/cJSON.h>
 
+
+struct json_dispatch {
+    char *name;
+    struct json_dispatch *children;
+    void (*f)(cJSON *);
+};
+
+
 void readJSONFile(const char *filename);
 void iterJSONFile(cJSON *json);
+void visit(struct json_dispatch actions[], cJSON *json);
+void dispatch(struct json_dispatch action, cJSON *json);
+void oci_ociVersion(cJSON *json);
+void oci_env(cJSON *json);
+void oci_cwd(cJSON *json);
+void oci_path(cJSON *json);
+void oci_readonly(cJSON *json);
+
+
+struct json_dispatch oci_process[] = {
+    { "env",            NULL, oci_env },
+    { "cwd",            NULL, oci_cwd },
+    { }
+};
+struct json_dispatch oci_root[] = {
+    { "path",           NULL, oci_path },
+    { "readonly",       NULL, oci_readonly },
+    { }
+};
+struct json_dispatch oci_top[] = {
+    { "ociVersion",     NULL, oci_ociVersion },
+    { "process",        oci_process },
+    { "root",           oci_root },
+    { }
+};
+
 
 int main() {
     const char *filename = "config.json";
@@ -13,50 +47,12 @@ int main() {
     return 0;
 }
 
-void iterJSONFile(cJSON *json) {
- 
-    cJSON *proc_key = cJSON_GetObjectItemCaseSensitive(json, "process");
-    cJSON *root_key = cJSON_GetObjectItemCaseSensitive(json, "root");
-
-    json = json->child;
-
-    while (json != NULL) {
-        if (strcmp(json->string, "ociVersion") == 0) {
-            // validate oci Version
-            printf("ociVersion: %s\n", json->valuestring);
-        } else if (strcmp(json->string, "process") == 0) {
-            // child: env - set environment to PATH value, cwd corresponds to --cd
-            cJSON *env_key = cJSON_GetObjectItemCaseSensitive(proc_key, "env");
-            printf("process env: %s\n", env_key->child->valuestring);
-            printf("process env: %s\n", env_key->child->next->valuestring);
-            cJSON *cwd_key = cJSON_GetObjectItemCaseSensitive(proc_key, "cwd");
-            printf("process cwd: %s\n", cwd_key->valuestring);
-        } else if (strcmp(json->string, "root") == 0) {
-            // child: path (map to newroot in ch-run.c), readonly (ignore for now)
-            cJSON *path_key = cJSON_GetObjectItemCaseSensitive(root_key, "path");
-            printf("root path: %s\n", path_key->valuestring);
-            cJSON *read_key = cJSON_GetObjectItemCaseSensitive(root_key, "readonly");
-            //printf("root readonly: %s\n", read_key->valuestring);
-        } else if (strcmp(json->string, "hostname") == 0) {
-            printf("hostname key identified.\n");
-            // ignore
-        } else if (strcmp(json->string, "mounts") == 0) {
-            printf("mounts key identified.\n");
-            // check mount(2)
-        } else if (strcmp(json->string, "linux") == 0) {
-            printf("linux key identified.\n");
-        } else {
-            printf("key name %s NOT identified.\n", json->string);
-        }
-        json = json->next;
-    }
-}
 
 void readJSONFile(const char *filename) {
 
-    FILE *file = fopen(filename, "r");
-    long length = 0;
+    FILE *file = fopen(filename, "rb");
     char *buffer = NULL;
+    size_t length, file_len;
     
     if (file == NULL) {
         fprintf(stderr, "Error: could not open file %s\n", filename);
@@ -68,10 +64,9 @@ void readJSONFile(const char *filename) {
     length = ftell(file);
     fseek(file, 0, SEEK_SET);
     // Allocate content buffer
-    buffer = (char *)malloc((size_t)length + sizeof(""));
-    fread(buffer, sizeof(char), (size_t)length, file);
-    // Null-terminate the string
-    buffer[length] = '\0';
+    buffer = malloc(length);
+    file_len = fread(buffer, 1, length, file);
+    printf("Read %lu bytes of %lu\n", file_len, length);
 
     fclose(file);
 
@@ -83,9 +78,7 @@ void readJSONFile(const char *filename) {
         if (error_ptr != NULL) {
             fprintf(stderr, "Error before: %s\n", error_ptr);
         }
-        cJSON_Delete(json);
-        free(buffer);
-        return;
+        goto end;
     }
 
     // Print the JSON data
@@ -97,10 +90,64 @@ void readJSONFile(const char *filename) {
     //printf("%s\n", json_tree);
 
     // Process the JSON data
-    iterJSONFile(json);
+    visit(oci_top, json);
 
     // Clean up
+end:
     cJSON_Delete(json);
     free(buffer);
-    free(json_tree);
+}
+
+void dispatch(struct json_dispatch action, cJSON *json) {
+    if (action.f != NULL)
+        action.f(json);
+    if (action.children != NULL)
+        visit(action.children, json);
+}
+
+
+void visit(struct json_dispatch actions[], cJSON *json) {
+    for (int i =0; actions[i].name != NULL; i++) {
+        cJSON *subtree = cJSON_GetObjectItem(json, actions[i].name);
+        if (cJSON_IsArray(subtree)) {
+            cJSON *elem;
+            cJSON_ArrayForEach(elem, subtree)
+                dispatch(actions[i], elem);
+        } else {
+            dispatch(actions[i], subtree);
+        }
+    }
+}
+
+void oci_ociVersion(cJSON *json) {
+    printf("oci_ociVersion: %s\n", json->valuestring);
+}
+
+
+void oci_env(cJSON *json) {
+    printf("oci_env: %s\n", json->valuestring);
+}
+
+
+void oci_cwd(cJSON *json) {
+    printf("oci_cwd: %s\n", json->valuestring);
+}
+
+
+void oci_path(cJSON *json) {
+    printf("oci_path: %s\n", json->valuestring);
+}
+
+
+void oci_readonly(cJSON *json) {
+    // json->root->readonly is a boolean
+    const char *bool_to_str;
+
+    if (cJSON_IsTrue(json)) {
+        bool_to_str = "true";
+    } if (cJSON_IsFalse(json)) {
+        bool_to_str = "false";
+    }
+
+    printf("oci_readonly: %s\n", bool_to_str);
 }
