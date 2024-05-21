@@ -52,6 +52,12 @@ const struct argp_option options[] = {
    { "bind",          'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default: same as SRC)"},
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
+#ifdef HAVE_JSON
+   { "cdi-dirs",      -19, "DIRS", 0, "director(y|ies) containing CDI specs" },
+   { "device",        -18, "DEV[,DEV]", 0,
+                           "inject CDI device DEV (can be repeated)" },
+   { "devices",       'd', 0,      0, "inject default CDI devices" },
+#endif
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },

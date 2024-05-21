@@ -477,7 +477,7 @@ AC_CHECK_DECL(FNM_EXTMATCH,
 # library we find. Hopefully that’s not a problem.
 AS_IF([test $want_json = yes], [
   AC_CHECK_LIB(cjson, cJSON_ParseWithLength,
-               [have_libcjson=yes,
+               [have_libcjson=yes
                 AS_IF([test -n "$lib_json"],
                       [CH_RUN_LIBS="-Wl,-rpath=$lib_json $CH_RUN_LIBS"])
                 CH_RUN_LIBS="-lcjson $CH_RUN_LIBS"],
@@ -489,11 +489,11 @@ AS_IF([test $want_json = yes], [
   # and define a macro. Double quotes support bundling it with Charliecloud.
   AC_CHECK_HEADER([cJSON.h],
                   [have_cjson_h=yes
-                   CJSON_H='"cJSON.h"'],
+                   cjson_h='"cJSON.h"'],
                   [AC_CHECK_HEADER([cjson/cJSON.h],
                                    [have_cjson_h=yes
-                                    CJSON_H='"cjson/cJSON.h"'],
-                                   [CJSON_H='not found'
+                                    cjson_h='"cjson/cJSON.h"'],
+                                   [cjson_h='not found'
                                     have_cjson_h=no])])
 ], [have_libcjson=no
     have_cjson_h=no])
@@ -502,7 +502,7 @@ AS_IF([test $have_libcjson = yes && test $have_cjson_h = yes],
       [have_json=yes],
       [have_json=no])
 AS_IF([test $need_json = yes && test $have_json = no],
-      [AC_MSG_ERROR([--with-json=yes but cJSON.h not found])])
+      [AC_MSG_ERROR([--with-json=yes but cJSON not found])])
 
 # Should we build seccomp?
 AC_MSG_CHECKING([for seccomp filter support])
@@ -837,14 +837,13 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #      the output Makefile. It *does not* create a Make variable.
 #
 #   4. AC_DEFINE(foo, value, comment) #define’s the preprocessor symbol foo to
-#      value in config.h. (Supposedly value and comment are optional but I got
-#      warnings doing that.) So this is how you make configure values
-#      available in C code (as macros, not variables). Typically you would
-#      define something or not (allowing #ifdef), rather than always define to
-#      true or false (which would require #if).
+#      value in config.h. (Supposedly, value and comment are optional but I
+#      got warnings doing that.) Importantly, value is not expanded. This is
+#      good for either defining or not defining a C macro; you can then use
+#      #ifdef to gate on that macro.
 #
-#   5. AC_DEFINE_UNQUOTES adds some extra transformations to the above. I
-#      didn’t quite follow.
+#   5. AC_DEFINE_UNQUOTED also expands value. This is good for defining a C
+#      macro to the actual value of some configure variable.
 #
 # Below are all the variables we want available outside configure.
 
@@ -857,7 +856,6 @@ AS_IF([test $enable_syslog = yes],
 AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 
 AC_SUBST([CH_RUN_LIBS])
-AC_SUBST([CJSON_H])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
@@ -869,6 +867,10 @@ AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
 AS_IF([test $have_seccomp = yes],
       [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
+AM_CONDITIONAL([HAVE_JSON], [test $have_json = yes])
+AS_IF([test $have_json = yes],
+      [AC_DEFINE([HAVE_JSON], [1], [enable JSON features])
+       AC_DEFINE_UNQUOTED([CJSON_H], [$cjson_h], [cJSON.h location])])
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
@@ -888,7 +890,7 @@ AS_IF([   test $have_userns = yes],
 AS_IF([   test $want_json = yes],
       [libcjson_note=$have_libcjson
        AS_IF([test $have_cjson_h = yes],
-             [cjson_h_note="yes, $CJSON_H"],
+             [cjson_h_note="yes, $cjson_h"],
              [cjson_h_note=no])],
       [libcjson_note='not tested'
        cjson_h_note='not tested'])
