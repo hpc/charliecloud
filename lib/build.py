@@ -279,6 +279,7 @@ def modify(cli_):
    cli.force = ch.Force_Mode.SECCOMP
    cli.force_cmd = force.FORCE_CMD_DEFAULT
    cli.bind = []
+   cli.context = os.path.abspath(os.sep)
 
    commands = []
    # “Flatten” commands array
@@ -290,6 +291,9 @@ def modify(cli_):
       ch.FATAL("not in storage: %s" % src_image.ref)
    if (cli.out_image == cli.image_ref):
       ch.FATAL("output must be different from source image (%s)" % cli.image_ref)
+   if (cli.script is not None):
+      if (not ch.Path(cli.script).exists):
+         ch.FATAL("%s: no such file" % cli.script)
 
    # This kludge is necessary because cli is a global variable, with cli.tag
    # assumed present elsewhere in the file. cli.tag represents the image being
@@ -301,18 +305,12 @@ def modify(cli_):
       shell = cli.shell
    else:
       shell = "/bin/sh"
-   # Second condition here is to ensure that “commands” does’t get overwritten
-   # in the case where “ch-image modify” isn’t called from a terminal session
-   # (e.g. in Github actions). I’m considering this a temporary fix, although I
-   # think a case could also be made for “-c” to have precedence over pipeline
-   # input.
-   if ((not sys.stdin.isatty()) and (commands == [])):
-      # Treat stdin as opaque blob and run that
-      commands = [sys.stdin.read()]
-   # Again, the fact that we have to check against both “[]” and “['']” is to
-   # get CI to work...
-   if (commands not in [[],['']]):
-      tree = modify_tree_make(src_image.ref, commands)
+   if ((commands not in [[],['']]) or (cli.script is not None)):
+      # FIXME: Kludge!!!
+      if (cli.script is not None):
+         tree = modify_tree_make_script(src_image.ref, cli.script)
+      else:
+         tree = modify_tree_make(src_image.ref, commands)
 
       # Count the number of stages (i.e., FROM instructions)
       global image_ct
@@ -351,7 +349,7 @@ def modify_tree_make(src_img, cmds):
       more commands inside a container, the only Dockerfile instructions we need
       to consider are “FROM” and “RUN”. E.g. for the command line
 
-         $ ch-image modify -o foo2 -c 'echo foo' -c 'echo bar' -- foo
+         $ ch-image modify -c 'echo foo' -c 'echo bar' -- foo foo2
 
       this function produces the following parse tree
 
@@ -380,6 +378,42 @@ def modify_tree_make(src_img, cmds):
    df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
    for cmd in cmds:
       df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', cmd)], meta)],meta))
+   return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
+
+# FIXME: Probably should merge into “modify_tree_make”
+#        (This is a tmp function to implement functionality)
+def modify_tree_make_script(src_img, path):
+   """Temporary(?) analog of “modify_tree_make” for the non-interactive version
+      of “modify” using a script. For the command line:
+
+         $ ch-image modify foo foo2 /path/to/script
+
+      this function produces the following parse tree
+
+         start
+            dockerfile
+               from_
+                  image_ref
+                     IMAGE_REF foo
+               copy
+                  copy_shell
+                     WORD /path/to/script WORD /ch/script.sh
+               run
+                  run_shell
+                     LINE_CHUNK /ch/script.sh
+      """
+   # Children of dockerfile tree
+   df_children = []
+   # Metadata attribute. We use this attribute in the “_pretty” method for our
+   # “Tree” class. Constructing a tree without specifying a “Meta” instance that
+   # has been given a “line” value will result in the attribute not being present,
+   # which causes an error when we try to access that attribute. Here we give the
+   # attribute a debug value of -1 to avoid said errors.
+   meta = lark.tree.Meta()
+   meta.line = -1
+   df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
+   df_children.append(im.Tree(lark.Token('RULE', 'copy'), [im.Tree(lark.Token('RULE', 'copy_shell'),[lark.Token('WORD', path),lark.Token('WORD', '/ch/script.sh')], meta)],meta))
+   df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', '/ch/script.sh')], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
 
 # Traverse Lark parse tree and do what it says.

@@ -2139,7 +2139,7 @@ Options:
   :code:`-S`, :code:`--shell SHELL`
     Use :code:`SHELL` instead of the default :code:`/bin/sh`.
 
-:code:`ch-image shell` operates in one of the following three modes. If the
+:code:`ch-image modify` operates in one of the following three modes. If the
 mode desired is ambiguous, that is an error.
 
 Non-interactive mode, commands specified with :code:`-c`
@@ -2147,7 +2147,7 @@ Non-interactive mode, commands specified with :code:`-c`
 
 The following are equivalent::
 
-  $ ch-image modify -S /bin/ash -c 'echo hello' -c 'echo world' foo bar
+  $ ch-image modify -S /bin/bash -c 'echo hello' -c 'echo world' foo bar
 
 and::
 
@@ -2171,7 +2171,7 @@ Non-interactive mode using a shell script
 
 The following are equivalent::
 
-  $ ch-image shell foo bar /baz/qux.sh
+  $ ch-image modify foo bar /baz/qux.sh
 
 and::
 
@@ -2190,7 +2190,7 @@ modification time is set to 1993-10-21T10:00:00Z and its name to a hash of the
 content, so the cache hits if the content is the same and misses if not. That
 is, the following are equivalent::
 
-  $ ch-image shell foo bar <<'EOF'
+  $ ch-image modify foo bar <<'EOF'
   echo hello world
   EOF
 
@@ -2239,10 +2239,10 @@ Interactive mode
    shell script. Only use it if you really know what you are doing.
 
 If :code:`SCRIPT` is not provided and standard input *is* a TTY,
-:code:`ch-image shell` opens an interactive shell. That is, the following are
+:code:`ch-image modify` opens an interactive shell. That is, the following are
 roughly equivalent (assuming a terminal)::
 
-  $ ch-image shell foo bar
+  $ ch-image modify foo bar
 
 and::
 
@@ -2256,7 +2256,7 @@ empty root image.
 
 This mode largely defeats the cache. While images descending from :code:`DEST`
 will use the latest version (as :code:`FROM` normally behaves), no other
-operations can re-use the results with a cache hit, and :code:`ch-image shell`
+operations can re-use the results with a cache hit, and :code:`ch-image modify`
 cannot have a cache hit itself. (This is implemented with a random state ID.)
 We reasoned that making an interactive session cache-aware would be too
 difficult both conceptually and to implement. The mode is much like

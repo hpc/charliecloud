@@ -286,6 +286,8 @@ def main():
    sp.add_argument("-S", "--shell", metavar="shell", help="foo")
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to modify")
    sp.add_argument("out_image", metavar="OUT_IMAGE", help="destination of modified image")
+   # Optional positional argument? https://stackoverflow.com/a/4480202
+   sp.add_argument("script", metavar="SCRIPT", help="foo", nargs='?')
 
    # pull
    sp = ap.add_parser("pull",
