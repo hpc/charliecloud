@@ -14,6 +14,9 @@
 
 #include "config.h"
 #include "ch_core.h"
+#ifdef HAVE_JSON
+#include "ch_json.h"
+#endif
 #include "ch_misc.h"
 
 
@@ -54,8 +57,7 @@ const struct argp_option options[] = {
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
 #ifdef HAVE_JSON
    { "cdi-dirs",      -19, "DIRS", 0, "director(y|ies) containing CDI specs" },
-   { "device",        -18, "DEV[,DEV]", 0,
-                           "inject CDI device DEV (can be repeated)" },
+   { "device",        -18, "DEV",  0, "inject CDI device(s) DEV (repeatable)" },
    { "devices",       'd', 0,      0, "inject default CDI devices" },
 #endif
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
@@ -98,6 +100,9 @@ const struct argp_option options[] = {
 struct args {
    struct container c;
    struct env_delta *env_deltas;
+#ifdef HAVE_JSON
+   char ** cdi_devids;
+#endif
    char *initial_dir;
 #ifdef HAVE_SECCOMP
    bool seccomp_p;
@@ -119,7 +124,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void parse_set_env(struct args *args, char *arg, int delim);
 void privs_verify_invoking();
 char *storage_default(void);
-extern void warnings_reprint(void);
+void write_fake_enable(struct args *args, char *overlay_size);
 
 
 /** Global variables **/
@@ -173,6 +178,7 @@ int main(int argc, char *argv[])
                                .private_tmp = false,
                                .type = IMG_NONE,
                                .writable = false },
+      .cdi_devids = list_new(sizeof(char *), 0),
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL,
 #ifdef HAVE_SECCOMP
@@ -252,12 +258,14 @@ int main(int argc, char *argv[])
 #endif
    VERBOSE("unsafe: %d", args.unsafe);
 
+   cdi_update(&args.c, args.cdi_devids);
    containerize(&args.c);
    fix_environment(&args);
 #ifdef HAVE_SECCOMP
    if (args.seccomp_p)
       seccomp_install();
 #endif
+   // run_command(ldconfig, true, NULL);  // FIXME
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
@@ -512,6 +520,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       else
          FATAL("invalid --test argument: %s; see source code", arg);
       break;
+#ifdef HAVE_JSON
+   case -18: // --device
+      Te (strlen(arg) > 0, "--device: DEV must be longer than zero");
+      write_fake_enable(args, NULL);
+      list_append((void **)&(args->cdi_devids), &arg, sizeof(arg));
+      break;
+#endif
    case 'b': {  // --bind
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
@@ -579,7 +594,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.writable = true;
       break;
    case 'W':  // --write-fake
-      args->c.overlay_size = arg != NULL ? arg : WRITE_FAKE_DEFAULT;
+      write_fake_enable(args, arg);
       break;
    case ARGP_KEY_NO_ARGS:
       argp_state_help(state, stderr, (  ARGP_HELP_SHORT_USAGE
@@ -651,4 +666,19 @@ char *storage_default(void)
       T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch", username));
 
    return storage;
+}
+
+/* Enable the overlay if not already enabled. */
+void write_fake_enable(struct args *args, char *overlay_size)
+{
+   if (overlay_size != NULL) {
+      // new overlay size specified: use it regardless of previous enablement
+      args->c.overlay_size = overlay_size;
+   } else if (args->c.overlay_size == NULL) {
+      // no new size, not yet enabled: enable with default size
+      args->c.overlay_size = WRITE_FAKE_DEFAULT;
+   } else {
+      // no new size, already enabled: keep existing size, nothing to do
+      T_ (args->c.overlay_size != NULL);
+   }
 }

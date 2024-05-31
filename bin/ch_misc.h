@@ -5,6 +5,8 @@
    libraries that ch_core requires. */
 
 #define _GNU_SOURCE
+#pragma once
+
 #include <dirent.h>
 #include <errno.h>
 #include <stdbool.h>

@@ -1,6 +1,7 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#pragma once
 
 /** Function prototypes **/
 
