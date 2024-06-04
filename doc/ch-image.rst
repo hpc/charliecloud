@@ -2147,7 +2147,7 @@ Non-interactive mode, commands specified with :code:`-c`
 
 The following are equivalent::
 
-  $ ch-image modify -S /bin/bash -c 'echo hello' -c 'echo world' foo bar
+  $ ch-image modify -S /bin/ash -c 'echo hello' -c 'echo world' foo bar
 
 and::
 

@@ -301,6 +301,19 @@ def modify(cli_):
    # (if specified).
    cli.tag = str(out_image)
 
+   if ((not sys.stdin.isatty()) and (commands == [])):
+      # https://stackoverflow.com/a/6482200
+      stdin = sys.stdin.read()
+      # We use “decode("utf-8")” here because stdout seems default to a bytes
+      # object, which is not a valid type for an argument for “Path”.
+      tmpfile = ch.Path(subprocess.run(["mktemp", "-d"],capture_output=True).stdout.decode("utf-8"))
+      with open(tmpfile, "w") as outfile:
+         outfile.write(stdin)
+      # By default, the file is seemingly created with its execute bit
+      # unassigned. This is problematic for the RUN instruction.
+      os.chmod(tmpfile, 0o755)
+      cli.script = str(tmpfile)
+
    if (cli.shell is not None):
       shell = cli.shell
    else:
@@ -376,6 +389,10 @@ def modify_tree_make(src_img, cmds):
    meta.line = -1
    #df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', src_img.name)], meta)], meta))
    df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
+   if (cli.shell is not None):
+      #df_children.append(im.Tree(lark.Token('RULE', 'shell'), [lark.Token('STRING_QUO', "/bin/sh"),lark.Token('STRING_QUO', "-c")], meta))
+      #ch.ILLERI("HERE")
+      df_children.append(im.Tree(lark.Token('RULE', 'shell'), [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),lark.Token('STRING_QUOTED', '"-c"')],meta))
    for cmd in cmds:
       df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', cmd)], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
@@ -412,6 +429,9 @@ def modify_tree_make_script(src_img, path):
    meta = lark.tree.Meta()
    meta.line = -1
    df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
+   if (cli.shell is not None):
+      #df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'shell'),[lark.Token('STRING_QUO', "%s" % cli.shell),lark.Token('STRING_QUO', "-c")], meta)], meta))
+      df_children.append(im.Tree(lark.Token('RULE', 'shell'), [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),lark.Token('STRING_QUOTED', '"-c"')],meta))
    df_children.append(im.Tree(lark.Token('RULE', 'copy'), [im.Tree(lark.Token('RULE', 'copy_shell'),[lark.Token('WORD', path),lark.Token('WORD', '/ch/script.sh')], meta)],meta))
    df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', '/ch/script.sh')], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)

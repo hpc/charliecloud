@@ -982,18 +982,21 @@ EOF
 
 @test "ch-image modify" {
 
+  # -c success, echo
   run ch-image modify -c "echo foo" -c "echo bar" -- alpine:3.17 tmpimg
   echo "$output"
   [[ $status -eq 0 ]]
   [[ $output = *'foo'* ]]
   [[ $output = *'bar'* ]]
 
+  # -c success, create file
   ch-image modify -c "touch /home/foo" -- alpine:3.17 tmpimg
   run ch-run tmpimg -- ls /home
   echo "$output"
   [[ $status -eq 0 ]]
   [[ $output = *'foo'* ]]
 
+  # non-interactive, script
   echo "touch /home/bar" >> "${BATS_TMPDIR}/modify-script.sh"
   chmod 755 "${BATS_TMPDIR}/modify-script.sh"
   ch-image modify alpine:3.17 tmpimg "${BATS_TMPDIR}/modify-script.sh"
@@ -1002,11 +1005,22 @@ EOF
   [[ $status -eq 0 ]]
   [[ $output = *'bar'* ]]
 
+  # non-interactive, here doc
+  ch-image modify alpine:3.17 tmpimg <<'EOF'
+touch /home/foobar
+EOF
+  run ch-run tmpimg -- ls /home
+  echo "$output"
+  [[ $status -eq 0 ]]
+  [[ $output = *'foobar'* ]]
+
+  # -c fail
   run ch-image modify -c 'echo foo' -- alpine:3.17 alpine:3.17
   echo "$output"
   [[ $status -eq 1 ]]
   [[ $output = *'output must be different from source image'* ]]
 
+  # non-existant shell
   run ch-image modify -S "doesnotexist" -- alpine:3.17 tmpimg
   echo "$output"
   [[ $status -eq 1 ]]
