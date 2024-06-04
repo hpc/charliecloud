@@ -301,9 +301,21 @@ def modify(cli_):
    # (if specified).
    cli.tag = str(out_image)
 
+   ch.ILLERI(cli.script)
+
+   if (cli.ci_debug):
+      stdin = sys.stdin.read()
+      ch.INFO("STDIN!!!")
+      ch.INFO(stdin)
+
    if ((not sys.stdin.isatty()) and (commands == [])):
       # https://stackoverflow.com/a/6482200
-      stdin = sys.stdin.read()
+
+      # FIXME: remove this try except kludge
+      try:
+         ch.DEBUG(stdin)
+      except NameError:
+         stdin = sys.stdin.read()
       # We use “decode("utf-8")” here because stdout seems default to a bytes
       # object, which is not a valid type for an argument for “Path”.
       tmpfile = ch.Path(subprocess.run(["mktemp", "-d"],capture_output=True).stdout.decode("utf-8"))
