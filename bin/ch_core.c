@@ -391,8 +391,8 @@ enum img_type image_type(const char *ref, const char *storage_dir)
    struct stat st;
    FILE *fp;
    char magic[4];  // four bytes, not a string
-   char *conff = path_join(ref, "/config.json");
-   char *rootfs = path_join(ref, "/rootfs");
+   //char *conff = path_join(ref, "/config.json");
+   //char *rootfs = path_join(ref, "/rootfs");
 
    // If there’s a directory in storage where we would expect there to be if
    // ref were an image name, assume it really is an image name.
@@ -406,11 +406,12 @@ enum img_type image_type(const char *ref, const char *storage_dir)
    // If ref is the path to a directory that contains rootfs directory
    // and config.json file, assume it is an oci bundle
    if (S_ISDIR(st.st_mode)) {
-      if (path_exists(rootfs, NULL, true) && path_exists(conff, NULL, true)) {
+      /*if (path_exists(rootfs, NULL, true) && path_exists(conff, NULL, true)) {
          return IMG_OCI_BUNDLE;
       } else {
          return IMG_DIRECTORY;
-      }
+      }*/
+      return IMG_DIRECTORY;
    }
 
    // Now we know it’s file-like enough to read. See if it has the SquashFS

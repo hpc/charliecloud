@@ -16,6 +16,8 @@
 #include "ch_core.h"
 #include "ch_misc.h"
 
+#include "cJSON.h"
+
 /** Constants and macros **/
 
 /* Environment variables used by --join parameters. */
@@ -62,6 +64,7 @@ const struct argp_option options[] = {
    { "test",          -17, "TEST", 0, "do test TEST" },
    { "mount",         'm', "DIR",  0, "SquashFS mount point"},
    { "no-passwd",      -9, 0,      0, "don't bind-mount /etc/{passwd,group}"},
+   { "oci",           'o', 0,      0, "run as an oci bundle" },
    { "private-tmp",   't', 0,      0, "use container-private /tmp" },
    { "quiet",         'q', 0,      0, "print less output (can be repeated)"},
 #ifdef HAVE_SECCOMP
@@ -113,6 +116,38 @@ void parse_set_env(struct args *args, char *arg, int delim);
 void privs_verify_invoking();
 char *storage_default(void);
 extern void warnings_reprint(void);
+
+struct json_dispatch {
+    char *name;
+    struct json_dispatch *children;
+    void (*f)(cJSON *, struct args *args);
+};
+
+void readJSONFile(const char *filename, struct args *args);
+void visit(struct json_dispatch actions[], cJSON *json, struct args *args);
+void dispatch(struct json_dispatch action, cJSON *json, struct args *args);
+void oci_ociVersion(cJSON *json, struct args *args);
+void oci_env(cJSON *json, struct args *args);
+void oci_cwd(cJSON *json, struct args *args);
+void oci_path(cJSON *json, struct args *args);
+void oci_readonly(cJSON *json, struct args *args);
+
+struct json_dispatch oci_process[] = {
+    { "env",            NULL, oci_env },
+    { "cwd",            NULL, oci_cwd },
+    { }
+};
+struct json_dispatch oci_root[] = {
+    { "path",           NULL, oci_path },
+    { "readonly",       NULL, oci_readonly },
+    { }
+};
+struct json_dispatch oci_top[] = {
+    { "ociVersion",     NULL, oci_ociVersion },
+    { "process",        oci_process },
+    { "root",           oci_root },
+    { }
+};
 
 
 /** Global variables **/
@@ -193,7 +228,10 @@ int main(int argc, char *argv[])
    args.c.img_ref = argv[arg_next++];
    args.c.newroot = realpath_(args.c.newroot, true);
    args.storage_dir = realpath_(args.storage_dir, true);
-   args.c.type = image_type(args.c.img_ref, args.storage_dir);
+
+   if (args.c.type != IMG_OCI_BUNDLE) {
+      args.c.type = image_type(args.c.img_ref, args.storage_dir);
+   }
 
    switch (args.c.type) {
    case IMG_DIRECTORY:
@@ -209,7 +247,15 @@ int main(int argc, char *argv[])
       break;
    case IMG_OCI_BUNDLE:
       /* Parse config.json file -> containerize */
-      args.c.newroot = path_join(args.c.img_ref, "/rootfs");
+      char *rootfs = path_join(args.c.img_ref, "rootfs");
+      char *conff = path_join(args.c.img_ref, "config.json");
+
+      Tf (path_exists(rootfs, NULL, true), "%s: No such file or directory", rootfs);
+      Tf (path_exists(conff, NULL, true), "%s: No such file or directory", conff);
+      //printf("initial dir before: %s\n", args.initial_dir);
+      readJSONFile(conff, &args);
+      //args.c.newroot = rootfs;
+      printf("args.initial_dir is: %s\n", args.initial_dir);
       break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
@@ -531,6 +577,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       }
       break;
    case 'c':  // --cd
+   printf("key is: %d\n", key);
       args->initial_dir = arg;
       break;
    case 'g':  // --gid
@@ -544,6 +591,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'm':  // --mount
       Ze ((arg[0] == '\0'), "mount point can't be empty string");
       args->c.newroot = arg;
+      break;
+   case 'o': // --oci
+      args->c.type = IMG_OCI_BUNDLE;
       break;
    case 's':  // --storage
       args->storage_dir = arg;
@@ -648,4 +698,128 @@ char *storage_default(void)
       T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch", username));
 
    return storage;
+}
+
+void readJSONFile(const char *filename, struct args *args) {
+
+    FILE *file = fopen(filename, "rb");
+    char *buffer = NULL;
+    size_t length;
+    size_t file_len;
+    
+    if (file == NULL) {
+        fprintf(stderr, "Error: could not open file %s\n", filename);
+        return;
+    }
+
+    // Get the file length
+    fseek(file, 0, SEEK_END);
+    length = ftell(file);
+    fseek(file, 0, SEEK_SET);
+    // Allocate content buffer
+    buffer = malloc(length);
+    file_len = fread(buffer, 1, length, file);
+    printf("Read %lu bytes of %lu\n", file_len, length);
+
+    fclose(file);
+
+    // Parse the JSON data
+    cJSON *json = cJSON_Parse(buffer);
+    // Check if parsing was successful
+    if (json == NULL) {
+        const char *error_ptr = cJSON_GetErrorPtr();
+        if (error_ptr != NULL) {
+            fprintf(stderr, "Error before: %s\n", error_ptr);
+        }
+        goto end;
+    }
+
+    // Print the JSON data
+    char *json_tree = cJSON_Print(json);
+    if (json_tree == NULL)
+    {
+        fprintf(stderr, "Failed to print JSON tree.\n");
+    }
+    //printf("%s\n", json_tree);
+
+    // Process the JSON data
+    visit(oci_top, json, args);
+
+    // Clean up
+end:
+    cJSON_Delete(json);
+    free(buffer);
+}
+
+void dispatch(struct json_dispatch action, cJSON *json, struct args *args) {
+    if (action.f != NULL)
+        action.f(json, args);
+    if (action.children != NULL)
+        visit(action.children, json, args);
+}
+
+
+void visit(struct json_dispatch actions[], cJSON *json, struct args *args) {
+    for (int i =0; actions[i].name != NULL; i++) {
+        cJSON *subtree = cJSON_GetObjectItem(json, actions[i].name);
+        if (cJSON_IsArray(subtree)) {
+            cJSON *elem;
+            cJSON_ArrayForEach(elem, subtree)
+                dispatch(actions[i], elem, args);
+        } else {
+            dispatch(actions[i], subtree, args);
+        }
+    }
+}
+
+void oci_ociVersion(cJSON *json, struct args *args) {
+   // Need to validate this version. Not sure how just yet.
+   printf("oci_ociVersion: %s\n", json->valuestring);
+}
+
+
+void oci_env(cJSON *json, struct args *args) {
+   // TO DO: corresponds to --set-env
+   printf("oci_env: %s\n", json->valuestring);
+}
+
+
+void oci_cwd(cJSON *json, struct args *args) {
+   // corresponds to --cd
+   //printf("oci_cwd: %s\n", json->valuestring);
+   if (args->initial_dir == NULL) {
+      args->initial_dir = json->valuestring;
+   }
+   //printf("after assignment in oci_cwd: %c\n",json->valuestring);
+   printf("oci_cwd is: %s\n", args->initial_dir);
+}
+
+
+void oci_path(cJSON *json, struct args *args) {
+   //printf("oci_path: %s\n", json->valuestring);
+
+   args->c.newroot = json->valuestring;
+
+   if (!path_exists(args->c.newroot, NULL, true)) {
+      args->c.newroot = path_join(args->c.img_ref, json->valuestring);
+   }
+
+   //printf("args.c.newroot in oci_path function is: %s\n", args->c.newroot);
+}
+
+
+void oci_readonly(cJSON *json, struct args *args) {
+    /*const char *bool_to_str;
+
+    if (cJSON_IsTrue(json)) {
+        bool_to_str = "true";
+    } if (cJSON_IsFalse(json)) {
+        bool_to_str = "false";
+    }*/
+
+    //printf("oci_readonly: %s\n", bool_to_str);
+
+   if (cJSON_IsFalse(json)) {
+      args->c.writable = true;
+   }
 }
