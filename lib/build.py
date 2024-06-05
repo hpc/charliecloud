@@ -304,11 +304,13 @@ def modify(cli_):
    ch.ILLERI(cli.script)
 
 
-   if ((not sys.stdin.isatty()) and (commands == [])):
+   if ((not sys.stdin.isatty()) and (commands == []) and (not cli.ci_debug)):
       # https://stackoverflow.com/a/6482200
 
       stdin = sys.stdin.read()
 
+
+      # FIXME: remove
       if (cli.ci_debug):
          ch.INFO("STDIN!!!")
          ch.INFO(stdin)
