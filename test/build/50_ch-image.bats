@@ -999,7 +999,7 @@ EOF
   # non-interactive, script
   echo "touch /home/bar" >> "${BATS_TMPDIR}/modify-script.sh"
   chmod 755 "${BATS_TMPDIR}/modify-script.sh"
-  ch-image modify alpine:3.17 tmpimg "${BATS_TMPDIR}/modify-script.sh"
+  ch-image modify --ci-debug alpine:3.17 tmpimg "${BATS_TMPDIR}/modify-script.sh"
   run ch-run tmpimg -- ls /home
   echo "$output"
   [[ $status -eq 0 ]]
