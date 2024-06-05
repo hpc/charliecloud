@@ -1021,7 +1021,7 @@ EOF
   [[ $output = *'output must be different from source image'* ]]
 
   # non-existant shell
-  run ch-image modify -S "doesnotexist" -- alpine:3.17 tmpimg
+  run ch-image modify --ci-debug -S "doesnotexist" -- alpine:3.17 tmpimg
   echo "$output"
   [[ $status -eq 1 ]]
   [[ $output = *'Unable to run shell:'* ]]
