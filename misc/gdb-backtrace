@@ -1,0 +1,8 @@
+#!/bin/bash
+
+gdb -batch $1 $2 \
+    -ex 'set style enabled on' \
+    -ex 'set print pretty on' \
+    -ex 'set print frame-info source-and-location' \
+    -ex 'echo \n\n' \
+    -ex 'backtrace -full'

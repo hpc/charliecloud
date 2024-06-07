@@ -32,6 +32,31 @@
 #define SUPP_GIDS_MAX 128
 
 
+/** Constants **/
+
+/* Text colors. In principle, we should be using a library for this, e.g.
+   terminfo(5). However, moderately thorough web searching suggests that
+   pretty much any modern terminal will support 256-color ANSI codes, and this
+   is way simpler [1]. Probably should coordinate these colors with the Python
+   code somehow.
+
+   [1]: https://stackoverflow.com/a/3219471 */
+/*
+static const char *COLOUR_CYAN_DARK =  "38;5;6m";
+static const char *COLOUR_CYAN_LIGHT = "38;5;14m";
+static const char *COLOUR_RED =        "31m";
+static const char *COLOUR_RED_BOLD =   "1;31m";
+static const char *COLOUR_RESET =      "0m";
+static const char *COLOUR_YELLOW =     "33m";
+static const char *_LL_COLOURS[] = { COLOUR_RED_BOLD,    // fatal
+                                     COLOUR_RED_BOLD,    // stderr
+                                     COLOUR_RED,         // warning
+                                     COLOUR_YELLOW,      // info
+                                     COLOUR_CYAN_LIGHT,  // verbose
+                                     COLOUR_CYAN_DARK,   // debug
+                                     COLOUR_CYAN_DARK }  // trace
+*/
+
 /** External variables **/
 
 /* Level of chatter on stderr. */
@@ -602,45 +627,67 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
-   char *message, *ap_msg;
+   // note: all components contain appropriate leading/trailing space
+   // note: be careful about which components need to be freed
+   char *text_formatted;  // caller’s message, formatted
+   char *level_prefix;    // level prefix
+   char *errno_code;      // errno code/number
+   char *errno_desc;      // errno description
+   char *text_full;       // complete text but w/o color codes
+//   char *colour;          // ANSI codes for color
+//   char *colour_reset;    // ANSI codes to reset color
 
-   if (level > verbose)
+   if (level > verbose)   // not verbose enough to log message; do nothing
       return;
 
-   T_ (1 <= asprintf(&message, "%s[%d]: ",
-                     program_invocation_short_name, getpid()));
+   // Format caller message.
+   if (fmt == NULL)
+      text_formatted = "please report this bug";  // users should not see
+   else
+      T_ (1 <= vasprintf(&text_formatted, fmt, ap));
 
-   // Prefix for the more urgent levels.
+   // Prefix some of the levels.
    switch (level) {
    case LL_FATAL:
-      message = cat(message, "error: ");  // "fatal" too morbid for users
+      level_prefix = "error: ";   // "fatal" too morbid for users
       break;
    case LL_WARNING:
-      message = cat(message, "warning: ");
+      level_prefix = "warning: ";
       break;
    default:
+      level_prefix = "";
       break;
    }
 
-   // Default message if not specified. Users should not see this.
-   if (fmt == NULL)
-      fmt = "please report this bug";
-
-   T_ (1 <= vasprintf(&ap_msg, fmt, ap));
-   if (errno_) {
-      T_ (1 <= asprintf(&message, "%s%s: %s (%s:%d %d)", message, ap_msg,
-                        strerror(errno_), file, line, errno_));
+   // errno.
+   if (!errno_) {
+      errno_code = "";
+      errno_desc = "";
    } else {
-      T_ (1 <= asprintf(&message, "%s%s (%s:%d)", message, ap_msg, file, line));
+      errno_code = cat(" ", strerrorname_np(errno_));  // FIXME: non-portable
+      T_ (1 <= asprintf(&errno_desc, ": %s", strerror(errno_)));
    }
 
-   if (level == LL_WARNING) {
-      warnings_offset += string_append(warnings, message, WARNINGS_SIZE,
-                                       warnings_offset);
-   }
-   fprintf(stderr, "%s\n", message);
+   // Format and print.
+   T_ (1 <= asprintf(&text_full, "%s[%d]: %s%s%s (%s:%d%s)",
+                     program_invocation_short_name, getpid(),
+                     level_prefix, text_formatted, errno_desc,
+                     file, line, errno_code));
+   fprintf(stderr, "%s\n", text_full);
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
+   if (level == LL_WARNING)
+      warnings_offset += string_append(warnings, text_full,
+                                       WARNINGS_SIZE, warnings_offset);
+
+   // Clean up.
+   free(text_full);
+   if (errno_) {
+      free(errno_code);
+      free(errno_desc);
+   }
+   if (fmt != NULL)
+      free(text_formatted);
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. If

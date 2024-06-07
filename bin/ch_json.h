@@ -8,8 +8,19 @@
 
 #include "config.h"
 #include "ch_core.h"
+#include "ch_misc.h"
 
 #include CJSON_H
+
+
+/** Types **/
+
+struct cdi_spec {
+   char *kind;
+   bool ldconfig_p;
+   struct env_var *envs;
+   struct bind *binds;
+};
 
 
 /** Function prototypes **/
