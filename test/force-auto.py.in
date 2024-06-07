@@ -123,7 +123,7 @@ class Test(abc.ABC):
          return
       # targeted skip, see issue #1904
       if ((self.base == "quay.io/centos/centos:stream8" and self.run == Run.NEEDED and self.force == "seccomp" and not self.preprep)
-         or (self.base == "fedora:26" and self.run == Run.NEEDED and self.force == "fakeroot" and not self.preprep)):
+         or (self.base == "fedora:26" and self.run == Run.NEEDED and self.force == "seccomp" and not self.preprep)):
          skip = "skip 'see issue #1904'"
       else:
          skip = ""
