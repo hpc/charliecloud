@@ -41,6 +41,12 @@ class Build_Mode(enum.Enum):
    DISABLED = "disabled"
    REBUILD = "rebuild"
 
+# ch-run exit codes (see also: bin/ch_misc.h)
+class Ch_Run_Retcode(enum.Enum):
+   ERR_CHRUN = 31
+   ERR_CMD = 49
+   ERR_SQUASH = 84
+
 # Download cache mode.
 class Download_Mode(enum.Enum):
    ENABLED = "enabled"

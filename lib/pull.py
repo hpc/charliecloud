@@ -106,7 +106,7 @@ class Image_Puller:
                # currently, this error is only raised if we’ve downloaded the
                # skinny manifest.
                have_skinny = True
-               if (ch.arch == "amd64"):
+               if (ch.arch in ["amd64", "aarch64"]):
                   # We’re guessing that enough arch-unaware images are amd64 to
                   # barge ahead if requested architecture is amd64.
                   ch.arch = "yolo"

@@ -316,9 +316,6 @@ EOF
     # no argument to --bind
     run ch-run "$ch_timg" -b
     echo "$output"
-    echo "STATUS"
-    echo "$status"
-    echo "STATUS"
     [[ $status -eq 64 ]]
     [[ $output = *'option requires an argument'* ]]
 

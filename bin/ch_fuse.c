@@ -204,7 +204,7 @@ int sq_loop(void)
          // [1]: https://codereview.stackexchange.com/a/109349
          // [2]: https://man7.org/linux/man-pages/man2/wait.2.html
          exit_code = 128 + WTERMSIG(child_status);
-         VERBOSE("child terminated by signal %d", exit_code - 128)
+         VERBOSE("child terminated by signal %d", WTERMSIG(child_status))
       }
    }
 

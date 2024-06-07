@@ -284,8 +284,11 @@ def main():
    add_opts(sp, build.modify, deps_check=True, stog_init=True)
    sp.add_argument("-c", metavar="CMD", action="append", default=[], nargs=1, help="foo")
    sp.add_argument("-S", "--shell", metavar="shell", help="foo")
-   # FIXME: rename
-   sp.add_argument("--ci-debug", action="store_true", help="CI debugging, remove this before merge!")
+   # “--ci-automated” is a hidden option for automated CI pipelines (e.g. Github
+   # Actions). The absence of an interactive terminal in such pipelines can
+   # break the internal logic of “modify”, which generally checks for an
+   # interactive shell when determining what to do.
+   sp.add_argument("--ci-automated", action="store_true", help=argparse.SUPPRESS)
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to modify")
    sp.add_argument("out_image", metavar="OUT_IMAGE", help="destination of modified image")
    # Optional positional argument? https://stackoverflow.com/a/4480202

@@ -274,7 +274,8 @@ def modify(cli_):
    cli = cli_
 
    # This file assumes that global cli comes from the “build” function. If we
-   # don’t assign these values, it casues problems.
+   # don’t assign these values, the program will fail after trying to access
+   # them.
    cli.parse_only = False
    cli.force = ch.Force_Mode.SECCOMP
    cli.force_cmd = force.FORCE_CMD_DEFAULT
@@ -296,24 +297,15 @@ def modify(cli_):
          ch.FATAL("%s: no such file" % cli.script)
 
    # This kludge is necessary because cli is a global variable, with cli.tag
-   # assumed present elsewhere in the file. cli.tag represents the image being
-   # built, which in our case can either be the source image or the output image
-   # (if specified).
+   # assumed present elsewhere in the file. Here, cli.tag represents the
+   # destination image.
    cli.tag = str(out_image)
 
-   ch.ILLERI(cli.script)
 
-
-   if ((not sys.stdin.isatty()) and (commands == []) and (not cli.ci_debug)):
+   if ((not sys.stdin.isatty()) and (commands == []) and (not cli.ci_automated)):
       # https://stackoverflow.com/a/6482200
 
       stdin = sys.stdin.read()
-
-
-      # FIXME: remove
-      if (cli.ci_debug):
-         ch.INFO("STDIN!!!")
-         ch.INFO(stdin)
       # We use “decode("utf-8")” here because stdout seems default to a bytes
       # object, which is not a valid type for an argument for “Path”.
       tmpfile = ch.Path(subprocess.run(["mktemp", "-d"],capture_output=True).stdout.decode("utf-8"))
@@ -328,8 +320,9 @@ def modify(cli_):
       shell = cli.shell
    else:
       shell = "/bin/sh"
+   # FIXME: This logic is a bit busted
    if ((commands not in [[],['']]) or (cli.script is not None)):
-      # FIXME: Kludge!!!
+      # non-interactive case (“-c” or script)
       if (cli.script is not None):
          tree = modify_tree_make_script(src_image.ref, cli.script)
       else:
@@ -341,6 +334,8 @@ def modify(cli_):
 
       ml = traverse_parse_tree(tree)
    else:
+      # Interactive case
+
       # Generate “fake” SID for build cache. We do this because we can’t compute
       # an SID, but we still want to make sure that it’s unique enough that
       # we’re unlikely to run into a collision.
@@ -352,9 +347,7 @@ def modify(cli_):
       bu.cache.branch_nocheckout(src_image.ref, out_image.ref)
       foo = subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
                             str(out_image.ref), "--", shell])
-      # FIXME: This causes issues when you change the value in ch_misc.h and
-      #        forget to change it here...
-      if (foo.returncode == 49):
+      if (foo.returncode == ch.Ch_Run_Retcode.ERR_CMD.value):
          # FIXME: Write a better error message?
          ch.FATAL("Unable to run shell: %s" % shell)
       ch.VERBOSE("using SID %s" % fake_sid)
@@ -397,14 +390,17 @@ def modify_tree_make(src_img, cmds):
    # attribute a debug value of -1 to avoid said errors.
    meta = lark.tree.Meta()
    meta.line = -1
-   #df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', src_img.name)], meta)], meta))
-   df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
+   df_children.append(im.Tree(lark.Token('RULE', 'from_'),
+                      [im.Tree(lark.Token('RULE', 'image_ref'),
+                      [lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
    if (cli.shell is not None):
-      #df_children.append(im.Tree(lark.Token('RULE', 'shell'), [lark.Token('STRING_QUO', "/bin/sh"),lark.Token('STRING_QUO', "-c")], meta))
-      #ch.ILLERI("HERE")
-      df_children.append(im.Tree(lark.Token('RULE', 'shell'), [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),lark.Token('STRING_QUOTED', '"-c"')],meta))
+      df_children.append(im.Tree(lark.Token('RULE', 'shell'),
+                         [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),
+                         lark.Token('STRING_QUOTED', '"-c"')],meta))
    for cmd in cmds:
-      df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', cmd)], meta)],meta))
+      df_children.append(im.Tree(lark.Token('RULE', 'run'),
+                         [im.Tree(lark.Token('RULE', 'run_shell'),
+                         [lark.Token('LINE_CHUNK', cmd)], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
 
 # FIXME: Probably should merge into “modify_tree_make”
@@ -438,12 +434,19 @@ def modify_tree_make_script(src_img, path):
    # attribute a debug value of -1 to avoid said errors.
    meta = lark.tree.Meta()
    meta.line = -1
-   df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'image_ref'),[lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
+   df_children.append(im.Tree(lark.Token('RULE', 'from_'),
+                      [im.Tree(lark.Token('RULE', 'image_ref'),
+                      [lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
    if (cli.shell is not None):
-      #df_children.append(im.Tree(lark.Token('RULE', 'from_'), [im.Tree(lark.Token('RULE', 'shell'),[lark.Token('STRING_QUO', "%s" % cli.shell),lark.Token('STRING_QUO', "-c")], meta)], meta))
-      df_children.append(im.Tree(lark.Token('RULE', 'shell'), [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),lark.Token('STRING_QUOTED', '"-c"')],meta))
-   df_children.append(im.Tree(lark.Token('RULE', 'copy'), [im.Tree(lark.Token('RULE', 'copy_shell'),[lark.Token('WORD', path),lark.Token('WORD', '/ch/script.sh')], meta)],meta))
-   df_children.append(im.Tree(lark.Token('RULE', 'run'), [im.Tree(lark.Token('RULE', 'run_shell'),[lark.Token('LINE_CHUNK', '/ch/script.sh')], meta)],meta))
+      df_children.append(im.Tree(lark.Token('RULE', 'shell'),
+                         [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),
+                         lark.Token('STRING_QUOTED', '"-c"')],meta))
+   df_children.append(im.Tree(lark.Token('RULE', 'copy'),
+                      [im.Tree(lark.Token('RULE', 'copy_shell'),[lark.Token('WORD', path),
+                      lark.Token('WORD', '/ch/script.sh')], meta)],meta))
+   df_children.append(im.Tree(lark.Token('RULE', 'run'),
+                      [im.Tree(lark.Token('RULE', 'run_shell'),
+                      [lark.Token('LINE_CHUNK', '/ch/script.sh')], meta)],meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
 
 # Traverse Lark parse tree and do what it says.
