@@ -321,7 +321,7 @@ def modify(cli_):
    else:
       shell = "/bin/sh"
    # FIXME: This logic is a bit busted
-   if ((commands not in [[],['']]) or (cli.script is not None)):
+   if ((commands != []) or (cli.script is not None)):
       # non-interactive case (“-c” or script)
       if (cli.script is not None):
          tree = modify_tree_make_script(src_image.ref, cli.script)
