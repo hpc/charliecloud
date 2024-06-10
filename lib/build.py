@@ -305,7 +305,7 @@ def modify(cli_):
 
    # We check that stdin isn’t None to ensure that we don’t go down this code
    # path by mistake (e.g. in CI, where stdin will never by a TTY).
-   if ((not sys.stdin.isatty()) and (commands == []) and (stdin != None)):
+   if ((not sys.stdin.isatty()) and (commands == []) and (stdin != '')):
       # https://stackoverflow.com/a/6482200
 
       # We use “decode("utf-8")” here because stdout seems default to a bytes
