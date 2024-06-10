@@ -303,7 +303,8 @@ def modify(cli_):
 
    stdin = sys.stdin.read()
 
-   # FIXME: If this passes CI, try removing empty string from last check
+   # We check that stdin isn’t None to ensure that we don’t go down this code
+   # path by mistake.
    if ((not sys.stdin.isatty()) and (commands == []) and (stdin not in [None, ''])):
       # https://stackoverflow.com/a/6482200
 
