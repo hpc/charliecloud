@@ -301,11 +301,12 @@ def modify(cli_):
    # destination image.
    cli.tag = str(out_image)
 
+   stdin = sys.stdin.read()
 
-   if ((not sys.stdin.isatty()) and (commands == []) and (not cli.ci_automated)):
+   # FIXME: If this passes CI, try removing empty string from last check
+   if ((not sys.stdin.isatty()) and (commands == []) and (stdin not in [None, ''])):
       # https://stackoverflow.com/a/6482200
 
-      stdin = sys.stdin.read()
       # We use “decode("utf-8")” here because stdout seems default to a bytes
       # object, which is not a valid type for an argument for “Path”.
       tmpfile = ch.Path(subprocess.run(["mktemp", "-d"],capture_output=True).stdout.decode("utf-8"))
