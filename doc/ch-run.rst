@@ -61,6 +61,23 @@ mounting SquashFS images with FUSE.
     Default: :code:`CH_RUN_CDI_DIRS` if set, otherwise
     :code:`/etc/cdi:/var/run/cdi`.
 
+  :code:`--color[=WHEN]`
+    Color logging output by log level when :code:`WHEN`:
+
+       * By default, or if :code:`WHEN` is :code:`auto`, :code:`tty`,
+         :code:`if-tty`: use color if standard error is a TTY; otherwise,
+         don’t use color.
+
+       * If :code:`WHEN` is :code:`yes`, :code:`always`, or :code:`force`; or
+         if :code:`--color` is specified without an argument: always use
+         color.
+
+       * If :code:`WHEN` is :code:`no`, :code:`never`, or :code:`none`: never
+         use color.
+
+    This uses ANSI color codes without checking any terminal databases, which
+    should work on all modern terminals.
+
   :code:`-d`, :code:`--devices`
     Inject default CDI devices into the container. The default devices are
     those listed in :code:`CH_RUN_CDI_DEFAULT` if set, otherwise all devices
