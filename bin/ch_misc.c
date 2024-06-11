@@ -41,26 +41,30 @@
    code somehow.
 
    [1]: https://stackoverflow.com/a/3219471 */
-/*
-static const char *COLOUR_CYAN_DARK =  "38;5;6m";
-static const char *COLOUR_CYAN_LIGHT = "38;5;14m";
-static const char *COLOUR_RED =        "31m";
-static const char *COLOUR_RED_BOLD =   "1;31m";
-static const char *COLOUR_RESET =      "0m";
-static const char *COLOUR_YELLOW =     "33m";
-static const char *_LL_COLOURS[] = { COLOUR_RED_BOLD,    // fatal
-                                     COLOUR_RED_BOLD,    // stderr
-                                     COLOUR_RED,         // warning
-                                     COLOUR_YELLOW,      // info
-                                     COLOUR_CYAN_LIGHT,  // verbose
-                                     COLOUR_CYAN_DARK,   // debug
-                                     COLOUR_CYAN_DARK }  // trace
-*/
+static const char COLOUR_CYAN_DARK[] =  "[38;5;6m";
+static const char COLOUR_CYAN_LIGHT[] = "\033[38;5;14m";
+static const char COLOUR_RED[] =        "[31m";
+static const char COLOUR_RED_BOLD[] =   "[1;31m";
+static const char COLOUR_RESET[] =      "[0m";
+static const char COLOUR_YELLOW[] =     "[33m";
+static const char *_LL_COLOURS[] = { COLOUR_RED_BOLD,     // fatal
+                                     COLOUR_RED_BOLD,     // stderr
+                                     COLOUR_RED,          // warning
+                                     COLOUR_YELLOW,       // info
+                                     COLOUR_CYAN_LIGHT,   // verbose
+                                     COLOUR_CYAN_DARK,    // debug
+                                     COLOUR_CYAN_DARK };  // trace
+/* This lets us index by verbosity, which can be negative. */
+static const char **LL_COLOURS = _LL_COLOURS + 3;
+
 
 /** External variables **/
 
 /* Level of chatter on stderr. */
 enum log_level verbose;
+
+/* If true, use colored logging. */
+bool log_color_p = true;
 
 /* Path to host temporary directory. Set during command line processing. */
 char *host_tmp = NULL;
@@ -634,8 +638,8 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    char *errno_code;      // errno code/number
    char *errno_desc;      // errno description
    char *text_full;       // complete text but w/o color codes
-//   char *colour;          // ANSI codes for color
-//   char *colour_reset;    // ANSI codes to reset color
+   const char * colour;          // ANSI codes for color
+   const char * colour_reset;    // ANSI codes to reset color
 
    if (level > verbose)   // not verbose enough to log message; do nothing
       return;
@@ -668,12 +672,21 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
       T_ (1 <= asprintf(&errno_desc, ": %s", strerror(errno_)));
    }
 
+   // Color.
+   if (log_color_p) {
+      colour = LL_COLOURS[level];
+      colour_reset = COLOUR_RESET;
+   } else {
+      colour = "";
+      colour_reset = "";
+   };
+
    // Format and print.
    T_ (1 <= asprintf(&text_full, "%s[%d]: %s%s%s (%s:%d%s)",
                      program_invocation_short_name, getpid(),
                      level_prefix, text_formatted, errno_desc,
                      file, line, errno_code));
-   fprintf(stderr, "%s\n", text_full);
+   fprintf(stderr, "%s%s%s\n", colour, text_full, colour_reset);
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
    if (level == LL_WARNING)
@@ -887,17 +900,20 @@ void warnings_reprint(void)
    size_t offset = 0;
    int warn_ct = buf_strings_count(warnings, WARNINGS_SIZE);
 
-   if (warn_ct > 0)
-      fprintf(stderr, "%s[%d]: warning: reprinting first %d warning(s)\n",
-              program_invocation_short_name, getpid(), warn_ct);
-
-   while (   warnings[offset] != 0
-          || (offset < (WARNINGS_SIZE - 1) && warnings[offset+1] != 0)) {
-      fputs(warnings + offset, stderr);
-      fputc('\n', stderr);
-      offset += strlen(warnings + offset) + 1;
+   if (warn_ct > 0) {
+      if (log_color_p)
+         T_ (EOF != fputs(LL_COLOURS[LL_WARNING], stderr));
+      T_ (1 <= fprintf(stderr, "%s[%d]: reprinting first %d warning(s)\n",
+                       program_invocation_short_name, getpid(), warn_ct));
+      while (   warnings[offset] != 0
+             || (offset < (WARNINGS_SIZE - 1) && warnings[offset+1] != 0)) {
+         T_ (EOF != fputs(warnings + offset, stderr));
+         T_ (EOF != fputc('\n', stderr));
+         offset += strlen(warnings + offset) + 1;
+      }
+      if (log_color_p)
+         T_ (EOF != fputs(COLOUR_RESET, stderr));
+      if (fflush(stderr))
+         abort();  // can't print an error b/c already trying to do that
    }
-
-   if (fflush(stderr))
-      abort();  // can't print an error b/c already trying to do that
 }

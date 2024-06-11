@@ -109,6 +109,7 @@ enum log_level { LL_FATAL =   -3,
 /** External variables **/
 
 extern enum log_level verbose;
+extern bool log_color_p;
 extern char *host_tmp;
 extern char *username;
 extern char *warnings;
