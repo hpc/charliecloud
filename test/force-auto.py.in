@@ -264,7 +264,7 @@ class T_Rocky_8(CentOS_8):
 class Fedora(RHEL8):
    config = "fedora"
 class T_Fedora_26(Fedora):
-   skip = "issue #1904"
+   skip_reason = "issue #1904"
    # We would prefer to test the lowest supported --force version, 24,
    # but the ancient version of dnf it has doesn't fail the transaction when
    # a package fails so we test with 26 instead.
