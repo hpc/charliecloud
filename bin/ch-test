@@ -299,16 +299,17 @@ pedantry_set () {
     if [[ $ch_pedantic == no ]]; then
         ch_pedantic=  # proper boolean
     fi
-    # The motivation here is that in pedantic mode, we want to run all the
-    # tests we reasonably can. So, if the user *has* sudo, then default --sudo
-    # to yes. What is a little awkward is that “sudo -v” can generate a
-    # password prompt in the middle of the status output. An alternative is
-    # “sudo -nv”, which doesn’t; drawbacks are that you have to analyze the
-    # output (not exit code) and it generates a failed password log message if
-    # there is not already a sudo session going.
+    # Motivation here: In pedantic mode, we want to run all the tests we
+    # reasonably can. So, if the user *has* sudo, then default --sudo to yes.
+    # What is a little awkward is that “sudo true” can generate a password
+    # prompt in the middle of the status output. An alternative is “sudo -nv”,
+    # which doesn’t; drawbacks are that you have to analyze the output (not
+    # exit code) and it generates a failed password log message if there is
+    # not already a sudo session going. We also used to use “sudo -v”, which
+    # prompts for a password even if you have passwordless sudo set up.
     if    [[ -n $ch_pedantic ]] \
        && command -v sudo > /dev/null \
-       && sudo -v > /dev/null 2>&1; then
+       && sudo true > /dev/null 2>&1; then
         use_sudo_default=yes
     else
         use_sudo_default=

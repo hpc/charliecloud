@@ -454,7 +454,7 @@ fi
 # Do we have and want sudo?
 if    [[ $CH_TEST_SUDO ]] \
    && command -v sudo >/dev/null 2>&1 \
-   && sudo -v > /dev/null 2>&1; then
+   && sudo true > /dev/null 2>&1; then
     # This isn’t super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     ch_have_sudo=yes
