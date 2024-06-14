@@ -63,8 +63,8 @@ static const char **LL_COLOURS = _LL_COLOURS + 3;
 /* Level of chatter on stderr. */
 enum log_level verbose;
 
-/* If true, use colored logging. */
-bool log_color_p = true;
+/* If true, use colored logging. Set in ch-run.c. */
+bool log_color_p = false;
 
 /* Path to host temporary directory. Set during command line processing. */
 char *host_tmp = NULL;
@@ -471,15 +471,43 @@ void log_ids(const char *func, int line)
    }
 }
 
-void test_logging(bool fail) {
-   TRACE("trace");
-   DEBUG("debug");
-   VERBOSE("verbose");
-   INFO("info");
-   WARNING("warning");
-   if (fail)
-      FATAL("the program failed inexplicably (\"log-fail\" specified)");
-   exit(0);
+
+/* Set up logging. Note ch-run(1) specifies a bunch of
+   color synonyms; this translation happens during argument parsing.*/
+void logging_init(enum log_color_when when, enum log_test test)
+{
+   // set up colors
+   switch (when) {
+   case LL_COLOR_AUTO:
+      if (isatty(fileno(stderr)))
+         log_color_p = true;
+      else {
+         T_ (errno == ENOTTY);
+         log_color_p = false;
+      }
+      break;
+   case LL_COLOR_YES:
+      log_color_p = true;
+      break;
+   case LL_COLOR_NO:
+      log_color_p = false;
+      break;
+   case LL_COLOR_NULL:
+      Tf(0, "unreachable code reached");
+      break;
+   }
+
+   // test logging
+   if (test >= LL_TEST_YES) {
+      TRACE("trace");
+      DEBUG("debug");
+      VERBOSE("verbose");
+      INFO("info");
+      WARNING("warning");
+      if (test >= LL_TEST_FATAL)
+         FATAL("the program failed inexplicably (\"log-fail\" specified)");
+      exit(0);
+   }
 }
 
 /* Create the directory at path, despite its parent not allowing write access,

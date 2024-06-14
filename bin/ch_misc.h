@@ -105,6 +105,15 @@ enum log_level { LL_FATAL =   -3,
                  LL_DEBUG =    2,
                  LL_TRACE =    3 };
 
+enum log_color_when { LL_COLOR_NULL = 0,
+                      LL_COLOR_AUTO,
+                      LL_COLOR_YES,
+                      LL_COLOR_NO };
+
+enum log_test { LL_TEST_NONE  = 0,
+                LL_TEST_YES   = 1,
+                LL_TEST_FATAL = 2 };
+
 
 /** External variables **/
 
@@ -132,6 +141,7 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
 void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
+void logging_init(enum log_color_when when, enum log_test test);
 void test_logging(bool fail);
 void mkdirs(const char *base, const char *path, char **denylist,
             const char *scratch);

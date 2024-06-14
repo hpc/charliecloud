@@ -20,6 +20,30 @@
 #include "ch_misc.h"
 
 
+/** Types **/
+
+struct args {
+   struct container c;
+   struct env_delta *env_deltas;
+#ifdef HAVE_JSON
+   char ** cdi_devids;
+#endif
+   enum log_color_when log_color;
+   enum log_test log_test;
+   char *initial_dir;
+#ifdef HAVE_SECCOMP
+   bool seccomp_p;
+#endif
+   char *storage_dir;
+   bool unsafe;
+};
+
+struct log_color_synonym {
+   char *name;
+   enum log_color_when color;
+};
+
+
 /** Constants and macros **/
 
 /* Environment variables used by --join parameters. */
@@ -32,6 +56,20 @@ char *JOIN_TAG_ENV[] = { "SLURM_STEP_ID",
 
 /* Default overlaid tmpfs size. */
 char *WRITE_FAKE_DEFAULT = "12%";
+
+/* Log color WHEN synonyms. Note that no argument (i.e., bare --color) is
+   handled separately. */
+struct log_color_synonym log_color_synonyms[] = {
+   { "auto",    LL_COLOR_AUTO },
+   { "tty",     LL_COLOR_AUTO },
+   { "if-tty",  LL_COLOR_AUTO },
+   { "yes",     LL_COLOR_YES },
+   { "always",  LL_COLOR_YES },
+   { "force",   LL_COLOR_YES },
+   { "no",      LL_COLOR_NO },
+   { "never",   LL_COLOR_NO },
+   { "none",    LL_COLOR_NO },
+   { NULL,      LL_COLOR_NULL } };
 
 
 /** Command line options **/
@@ -57,6 +95,10 @@ const struct argp_option options[] = {
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
 #ifdef HAVE_JSON
    { "cdi-dirs",      -19, "DIRS", 0, "director(y|ies) containing CDI specs" },
+#endif
+   { "color",         -20, "WHEN", OPTION_ARG_OPTIONAL,
+                           "specify when to use colored logging" },
+#ifdef HAVE_JSON
    { "device",        -18, "DEV",  0, "inject CDI device(s) DEV (repeatable)" },
    { "devices",       'd', 0,      0, "inject default CDI devices" },
 #endif
@@ -92,23 +134,6 @@ const struct argp_option options[] = {
    { "write-fake",    'W', "SIZE", OPTION_ARG_OPTIONAL,
                            "overlay read-write tmpfs on top of image" },
    { 0 }
-};
-
-
-/** Types **/
-
-struct args {
-   struct container c;
-   struct env_delta *env_deltas;
-#ifdef HAVE_JSON
-   char ** cdi_devids;
-#endif
-   char *initial_dir;
-#ifdef HAVE_SECCOMP
-   bool seccomp_p;
-#endif
-   char *storage_dir;
-   bool unsafe;
 };
 
 
@@ -179,6 +204,8 @@ int main(int argc, char *argv[])
                                .type = IMG_NONE,
                                .writable = false },
       .cdi_devids = list_new(sizeof(char *), 0),
+      .log_color = LL_COLOR_AUTO,
+      .log_test = LL_TEST_NONE,
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL,
 #ifdef HAVE_SECCOMP
@@ -198,6 +225,7 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
+   logging_init(args.log_color, args.log_test);
 
    if (arg_next >= argc - 1) {
       printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
@@ -514,9 +542,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case -17: // --test
       if (!strcmp(arg, "log"))
-         test_logging(false);
+         args->log_test = LL_TEST_YES;
       else if (!strcmp(arg, "log-fail"))
-         test_logging(true);
+         args->log_test = LL_TEST_FATAL;
       else
          FATAL("invalid --test argument: %s; see source code", arg);
       break;
@@ -527,6 +555,20 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       list_append((void **)&(args->cdi_devids), &arg, sizeof(arg));
       break;
 #endif
+   case -20: // --color
+      if (arg == NULL)
+         args->log_color = LL_COLOR_AUTO;
+      args->log_color = LL_COLOR_NULL;
+      for (int i = 0; true; i++) {
+         if (log_color_synonyms[i].name == NULL)
+            break;
+         if (!strcmp(arg, log_color_synonyms[i].name)) {
+            args->log_color = log_color_synonyms[i].color;
+            break;
+         }
+      }
+      Tf (args->log_color != LL_COLOR_NULL, "--color: invalid arg: %s", arg);
+      break;
    case 'b': {  // --bind
          char *src, *dst;
          for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
