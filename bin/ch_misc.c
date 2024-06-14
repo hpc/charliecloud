@@ -34,7 +34,10 @@
 
 /** Constants **/
 
-/* Text colors. In principle, we should be using a library for this, e.g.
+/* Text colors. Note leading escape characters (U+001B), which don’t always
+   show up depending on your viewer.
+
+   In principle, we should be using a library for this, e.g.
    terminfo(5). However, moderately thorough web searching suggests that
    pretty much any modern terminal will support 256-color ANSI codes, and this
    is way simpler [1]. Probably should coordinate these colors with the Python
@@ -42,7 +45,7 @@
 
    [1]: https://stackoverflow.com/a/3219471 */
 static const char COLOUR_CYAN_DARK[] =  "[38;5;6m";
-static const char COLOUR_CYAN_LIGHT[] = "\033[38;5;14m";
+static const char COLOUR_CYAN_LIGHT[] = "[38;5;14m";
 static const char COLOUR_RED[] =        "[31m";
 static const char COLOUR_RED_BOLD[] =   "[1;31m";
 static const char COLOUR_RESET[] =      "[0m";
