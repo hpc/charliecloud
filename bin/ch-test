@@ -410,7 +410,15 @@ test_make () {
         test_make_auto "$phase" "${build_targets[@]}" > "${TMP_}/build_auto.bats"
         printf 'ok\n\n'
         ;;
-    run)
+    #build-targeted)
+    #    for i in $ch_build_unpack_list; do
+    #        if test_make_check_image "$i"; then
+    #           echo "found: $i"
+    #           build_targets+=( "$i" )
+    #       fi
+    #    done
+    #    ;;
+     run)
         # For each tarball or squashfs file in --pack-dir look for a
         # corresponding example or image that produces a matching tag. If
         # found, check the image for exclusion conidtions.
@@ -669,6 +677,17 @@ test_one_file () {
     bats "$one_file"
 }
 
+test_build_unpack () {
+    case $phase in
+    build)
+        bats "${TMP_}/build_auto.bats"
+        ;;
+    run)
+        bats "${TMP_}/run_auto.bats"
+        ;;
+    esac
+}
+
 #build_one_image () {
 #
 #}
@@ -820,6 +839,7 @@ fi
 if [[ $# == 0 ]]; then
     usage 1
 fi
+ch_build_unpack_list=""
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
@@ -860,8 +880,12 @@ while [[ $# -gt 0 ]]; do
         usage 0
         ;;
     -i)
-        phase=one-file
-        one_file="${TMP_}/build_auto.bats:$1"
+        #phase=one-file
+        phase=build-unpack
+        #one_file="${TMP_}/build_auto.bats:$1"
+        # FIXME: remove ch_build_unpack
+        export ch_build_unpack="true"
+        ch_build_unpack_list+=" $1"
         shift
         ;;
     --img-dir)
@@ -953,6 +977,8 @@ while [[ $# -gt 0 ]]; do
         ;;
     esac
 done
+
+export ch_build_unpack_list
 
 printf 'ch-run:       %s (%s)\n' "${ch_bin}/ch-run" "$ch_libc"
 printf 'bats:         %s (%s)\n' "$bats" "$bats_version"
@@ -1176,6 +1202,20 @@ case $phase in
         test_build_images
         test_build
         win
+        ;;
+    build-unpack)
+        phase=build
+        dir_tar_mk
+        builder_check
+        test_make
+        test_build_images
+        test_build
+
+        #phase=run
+        dir_img_mk
+        dir_tar_check
+        test_make
+        test_run
         ;;
     clean)
         dirs_unpriv_rm
