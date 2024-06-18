@@ -985,16 +985,13 @@ else
 fi
 printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
-if [[ $phase = one-file || $phase = build-unpack ]]; then
+if [[ $phase = one-file ]]; then
     printf "FOO\n"
     if [[ $one_file == *:* ]]; then
-        printf "FOO2\n"
         x=$one_file
         one_file=${x%%:*}            # before first colon
         export ch_one_test=${x#*:}   # after first colon
     fi
-    printf "FOO3\n"
-    # ERROR HERE!!
     if [[ ! -f $one_file ]]; then
         fatal "not a file: $one_file"
     fi

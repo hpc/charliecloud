@@ -174,16 +174,13 @@ image_ok () {
 is_elem () {
     local test_word="$1"
     shift
-    IFS_tmp=$IFS
-    IFS=' '
-    for word in "$@"
+    local word_array=("$@")
+    for e in "${word_array[@]}"
     do
-        if [[ "$test_word" == "$word" ]]; then
-            IFS=$IFS_tmp
+        if [[ "$e" == "$test_word" ]]; then
             return 0
         fi
     done
-    IFS=$IFS_tmp
     return 1
 }
 
@@ -276,32 +273,6 @@ scope () {
         else
             return 0
         fi
-    # If “CHTEST_BUILD_UNPACK” has been set, then one or more images have been
-    # specified for building and unpacking. Assume “CHTEST_BUILD_UNPACK is a
-    # string-separated sequence of complete image names, e.g.
-
-    # CHTEST_BUILD_UNPACK="argenv copy hello"
-
-    # If this variable is set, we should skip all tests EXCEPT when
-    # “BATS_TEST_DESCRIPTION” takes the form of:
-
-    #   - “build X”
-    #   - “builder to archive X”
-    #   - “unpack X”
-
-    # Where “X” is an entry in “CHTEST_BUILD_UNPACK”
-
-    # So we need something like:
-
-    # for img in $CHTEST_BUILD_UNPACK; do
-    #   if [[ BATS_TEST_DESCRIPTION == "build $img" \
-    #        || BATS_TEST_DESCRIPTION == "builder to archive $img" \
-    #        || BATS_TEST_DESCRIPTION == "unpack $img" ]]; then
-    #       return 0
-    #   else
-    #       skip 'reason...'
-    #   fi
-    # done
     fi
     if [[ -n $ch_build_unpack_list ]]; then
         for image in $ch_build_unpack_list; do
