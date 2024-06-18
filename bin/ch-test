@@ -410,14 +410,6 @@ test_make () {
         test_make_auto "$phase" "${build_targets[@]}" > "${TMP_}/build_auto.bats"
         printf 'ok\n\n'
         ;;
-    #build-targeted)
-    #    for i in $ch_build_unpack_list; do
-    #        if test_make_check_image "$i"; then
-    #           echo "found: $i"
-    #           build_targets+=( "$i" )
-    #       fi
-    #    done
-    #    ;;
      run)
         # For each tarball or squashfs file in --pack-dir look for a
         # corresponding example or image that produces a matching tag. If
@@ -687,10 +679,6 @@ test_build_unpack () {
         ;;
     esac
 }
-
-#build_one_image () {
-#
-#}
 
 test_rootemu () {
     if command -v ch-image > /dev/null 2>&1; then
@@ -1209,13 +1197,15 @@ case $phase in
         builder_check
         test_make
         test_build_images
-        test_build
+        #test_build
+        #test_build_unpack
 
-        #phase=run
+        phase=run
         dir_img_mk
         dir_tar_check
         test_make
-        test_run
+        #test_run
+        test_build_unpack
         ;;
     clean)
         dirs_unpriv_rm
