@@ -1196,15 +1196,12 @@ case $phase in
         dir_tar_mk
         builder_check
         test_make
-        test_build_images
-        #test_build
-        #test_build_unpack
+        test_build_unpack
 
         phase=run
         dir_img_mk
         dir_tar_check
         test_make
-        #test_run
         test_build_unpack
         ;;
     clean)
