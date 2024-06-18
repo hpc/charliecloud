@@ -52,8 +52,9 @@ void visit(struct json_dispatch actions[], cJSON *tree, void *state);
 void visit_dispatch(struct json_dispatch action, cJSON *tree, void *state);
 
 // parser callbacks
-void cdiPC_kind(cJSON *tree, struct cdi_spec *spec);
+void cdiPC_cdiVersion(cJSON *tree, struct cdi_spec *spec);
 void cdiPC_env(cJSON *tree, struct cdi_spec *spec);
+void cdiPC_kind(cJSON *tree, struct cdi_spec *spec);
 
 
 /** Global variables **/
@@ -68,9 +69,14 @@ void cdiPC_env(cJSON *tree, struct cdi_spec *spec);
 
      2. Add a local variable of the correct type to each callback. I thought
         such distributed boilerplate seemed worse. */
+struct json_dispatch cdiPD_containerEdits[] = {
+   { "env",            NULL, (JDF)cdiPC_env },
+   { }
+};
 struct json_dispatch cdiPD_root[] = {
-   { "kind", NULL, (JDF)cdiPC_kind },
-   { "env",  NULL, (JDF)cdiPC_env },
+   { "cdiVersion",     NULL, (JDF)cdiPC_cdiVersion },
+   { "kind",           NULL, (JDF)cdiPC_kind },
+   { "containerEdits", cdiPD_containerEdits, },
    { }
 };
 
@@ -113,7 +119,7 @@ void cdi_log(struct cdi_spec *spec)
 {
    size_t ct;
 
-   DEBUG("CDI: spec %s from %s:", spec->kind, spec->src);
+   DEBUG("CDI: %s from %s:", spec->kind, spec->src);
    DEBUG("CDI:   devices requested:   %s", bool_to_string(spec->requested));
    DEBUG("CDI:   ldconfig(8) needed:  %s", bool_to_string(spec->ldconfig_p));
    ct = list_count((void *)(spec->envs), sizeof(struct env_var));
@@ -204,9 +210,9 @@ void cdi_update(struct container *c, char **devids)
    free(specs);
 }
 
-void cdiPC_kind(cJSON *tree, struct cdi_spec *spec)
+void cdiPC_cdiVersion(cJSON *tree, struct cdi_spec *spec)
 {
-   T_ (spec->kind = strdup(tree->valuestring));
+   DEBUG("CDI: %s: version %s", spec->src, tree->valuestring);
 }
 
 void cdiPC_env(cJSON *tree, struct cdi_spec *spec)
@@ -223,10 +229,17 @@ void cdiPC_env(cJSON *tree, struct cdi_spec *spec)
    value_len = arnold - delim - 1;
    T_ (ev.name = malloc(name_len + 1));
    memcpy(ev.name, tree->valuestring, name_len);
-   ev.name[name_len - 1] = 0;
+   ev.name[name_len] = 0;
    T_ (ev.value = malloc(value_len + 1));
    memcpy(ev.value, delim + 1, value_len);
-   ev.value[value_len - 1] = 0;
+   ev.value[value_len] = 0;
+
+   list_append((void **)&spec->envs, &ev, sizeof(ev));
+}
+
+void cdiPC_kind(cJSON *tree, struct cdi_spec *spec)
+{
+   T_ (spec->kind = strdup(tree->valuestring));
 }
 
 /* Visit each node in the parse tree in depth-first order. At each node, if
@@ -234,15 +247,16 @@ void cdiPC_env(cJSON *tree, struct cdi_spec *spec)
    callback once per array element. */
 void visit(struct json_dispatch actions[], cJSON *tree, void *state)
 {
-   printf("visiting: %s\n", tree->valuestring);
    for (int i = 0; actions[i].name != NULL; i++) {
       cJSON *subtree = cJSON_GetObjectItem(tree, actions[i].name);
-      if (cJSON_IsArray(subtree)) {
-         cJSON *elem;
-         cJSON_ArrayForEach(elem, subtree)
-            visit_dispatch(actions[i], elem, state);
-      } else {
-         visit_dispatch(actions[i], subtree, state);
+      if (subtree != NULL) {  // child matching action name exists
+         if (!cJSON_IsArray(subtree))
+            visit_dispatch(actions[i], subtree, state);
+         else {
+            cJSON *elem;
+            cJSON_ArrayForEach(elem, subtree)
+               visit_dispatch(actions[i], elem, state);
+         }
       }
    }
 }
