@@ -128,6 +128,7 @@ extern size_t warnings_offset;
 /** Function prototypes **/
 
 char *argv_to_string(char **argv);
+const char *bool_to_string(bool b);
 int buf_strings_count(char *str, size_t s);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
@@ -139,6 +140,7 @@ void env_set(const char *name, const char *value, const bool expand);
 void env_unset(const char *glob);
 struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
+size_t list_count(void *ar, size_t size);
 void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
 void logging_init(enum log_color_when when, enum log_test test);

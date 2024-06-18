@@ -15,13 +15,6 @@
 
 /** Types **/
 
-struct cdi_spec {
-   char *kind;
-   bool ldconfig_p;
-   struct env_var *envs;
-   struct bind *binds;
-};
-
 
 /** Function prototypes **/
 

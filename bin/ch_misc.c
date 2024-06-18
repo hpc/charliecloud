@@ -174,6 +174,12 @@ char *argv_to_string(char **argv)
    return s;
 }
 
+/* Return bool b as a string. */
+const char *bool_to_string(bool b)
+{
+   return (b ? "yes" : "no");
+}
+
 /* Iterate through buffer “buf” of size “s” consisting of null-terminated
    strings and return the number of strings in it. Key assumptions:
 
@@ -422,16 +428,23 @@ void list_append(void **ar, void *new, size_t size)
    int ct;
    T_ (new != NULL);
 
-   // count existing elements
-   if (*ar == NULL)
-      ct = 0;
-   else
-      for (ct = 0; !buf_zero_p((char *)*ar + ct*size, size); ct++)
-         ;
-
+   ct = list_count(*ar, size);
    T_ (*ar = realloc(*ar, (ct+2)*size));        // existing + new + terminator
    memcpy((char *)*ar + ct*size, new, size);    // append new (no overlap)
    memset((char *)*ar + (ct+1)*size, 0, size);  // set new terminator
+}
+
+/* Return the number of elements of size size in list *ar. */
+size_t list_count(void *ar, size_t size)
+{
+   size_t ct;
+
+   if (ar == NULL)
+      return 0;
+
+   for (ct = 0; !buf_zero_p((char *)ar + ct*size, size); ct++)
+      ;
+   return ct;
 }
 
 /* Return a pointer to a new, empty zero-terminated array containing elements
@@ -447,7 +460,10 @@ void *list_new(size_t size, size_t ct)
    return list;
 }
 
-/* If verbose, print uids and gids on stderr prefixed with where. */
+/* If verbose enough, print uids and gids on stderr prefixed with where.
+
+   FIXME: Should change to DEBUG(), but that will give the file/line within
+   this function, which we don’t want. */
 void log_ids(const char *func, int line)
 {
    uid_t ruid, euid, suid;
@@ -455,9 +471,11 @@ void log_ids(const char *func, int line)
    gid_t supp_gids[SUPP_GIDS_MAX];
    int supp_gid_ct;
 
-   if (verbose >= 3) {
+   if (verbose >= LL_TRACE + 1) {  // don’t bother b/c haven’t needed in ages
       Z_ (getresuid(&ruid, &euid, &suid));
       Z_ (getresgid(&rgid, &egid, &sgid));
+      if (log_color_p)
+         T_ (EOF != fputs(LL_COLOURS[LL_TRACE], stderr));
       fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d + ", func, line,
               ruid, euid, suid, rgid, egid, sgid);
       supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids);
@@ -471,6 +489,9 @@ void log_ids(const char *func, int line)
          fprintf(stderr, "%d", supp_gids[i]);
       }
       fprintf(stderr, "\n");
+      if (log_color_p)
+         T_ (EOF != fputs(COLOUR_RESET, stderr));
+      Z_ (fflush(stderr));
    }
 }
 
