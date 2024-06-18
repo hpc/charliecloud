@@ -303,6 +303,14 @@ scope () {
     #   fi
     # done
     fi
+    if [[ -n $ch_build_unpack_list ]]; then
+        for image in $ch_build_unpack_list; do
+            if [[ $BATS_TEST_DESCRIPTION == *"build $image"* || $BATS_TEST_DESCRIPTION == *"builder to archive $image"* || $BATS_TEST_DESCRIPTION == *"unpack $image"* || $BATS_TEST_DESCRIPTION == *"custom build chtest"* ]]; then
+                return 0
+            fi
+        done
+        skip 'per -i'
+    fi
     case $1 in  # $1 is the test’s scope
         quick)
             ;;  # always run quick-scope tests
