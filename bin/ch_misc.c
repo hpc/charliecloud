@@ -44,12 +44,13 @@
    code somehow.
 
    [1]: https://stackoverflow.com/a/3219471 */
-static const char COLOUR_CYAN_DARK[] =  "[38;5;6m";
-static const char COLOUR_CYAN_LIGHT[] = "[38;5;14m";
-static const char COLOUR_RED[] =        "[31m";
+static const char COLOUR_CYAN_DARK[] =  "[0;38;5;6m";
+static const char COLOUR_CYAN_LIGHT[] = "[0;38;5;14m";
+//static const char COLOUR_GRAY[] =       "[0;90m";
+static const char COLOUR_RED[] =        "[0;31m";
 static const char COLOUR_RED_BOLD[] =   "[1;31m";
 static const char COLOUR_RESET[] =      "[0m";
-static const char COLOUR_YELLOW[] =     "[33m";
+static const char COLOUR_YELLOW[] =     "[0;33m";
 static const char *_LL_COLOURS[] = { COLOUR_RED_BOLD,     // fatal
                                      COLOUR_RED_BOLD,     // stderr
                                      COLOUR_RED,          // warning

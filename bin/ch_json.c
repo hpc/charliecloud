@@ -19,13 +19,27 @@
 
 /** Types **/
 
+/* Dispatch table row for CDI hook emulation.
+
+   We could alternately put args last, making it a “flexible array member”.
+   That would make the field order slightly sub-optimal, but more importantly
+   it would make sizeof() return misleading results, which seems like a
+   nasty trap waiting for someone. */
+#define HOOK_ARG_MAX 3
+struct cdi_hook_dispatch {
+   size_t arg_ct;             // number of arguments to compare
+   char *args[HOOK_ARG_MAX];  // matching arguments
+   void (*f)(void *, char **args);    // NULL to ignore quietly
+};
+#define HDF void (*)(void *, char **args)  // to cast in dispatch tables
+
 struct cdi_spec {
    char *kind;
-   char *src;       // path to source spec file
-   bool requested;
-   bool ldconfig_p;
+   char *src;             // path to source spec file
+   bool requested;        // true if user asked for this device kind
    struct env_var *envs;
    struct bind *binds;
+   char **ldconfig_dirs;  // directories to process with ldconfig(8)
 };
 
 struct json_dispatch {
@@ -33,7 +47,7 @@ struct json_dispatch {
    struct json_dispatch *children;
    void (*f)(cJSON *tree, void *state);
 };
-#define JDF void (*)(cJSON *, void *) /* to cast callbacks in dispatch tables */
+#define JDF void (*)(cJSON *, void *)  // to cast callbacks in dispatch tables
 
 
 /** Constants **/
@@ -44,8 +58,11 @@ const size_t READ_SZ = 16384;
 
 /** Function prototypes (private) **/
 
+char **array_strings_json_to_c(cJSON *jarry, size_t *ct);
 void cdi_add(struct cdi_spec ***specs, struct cdi_spec *spec_new);
 void cdi_free(struct cdi_spec *spec);
+void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args);
+char *cdi_hook_to_string(const char *hook_name, char **args);
 void cdi_log(struct cdi_spec *spec);
 struct cdi_spec *cdi_read(const char *path);
 void visit(struct json_dispatch actions[], cJSON *tree, void *state);
@@ -54,6 +71,7 @@ void visit_dispatch(struct json_dispatch action, cJSON *tree, void *state);
 // parser callbacks
 void cdiPC_cdiVersion(cJSON *tree, struct cdi_spec *spec);
 void cdiPC_env(cJSON *tree, struct cdi_spec *spec);
+void cdiPC_hook(cJSON *tree, struct cdi_spec *spec);
 void cdiPC_kind(cJSON *tree, struct cdi_spec *spec);
 
 
@@ -71,6 +89,7 @@ void cdiPC_kind(cJSON *tree, struct cdi_spec *spec);
         such distributed boilerplate seemed worse. */
 struct json_dispatch cdiPD_containerEdits[] = {
    { "env",            NULL, (JDF)cdiPC_env },
+   { "hooks",          NULL, (JDF)cdiPC_hook },
    { }
 };
 struct json_dispatch cdiPD_root[] = {
@@ -80,8 +99,46 @@ struct json_dispatch cdiPD_root[] = {
    { }
 };
 
+/* CDI hook dispatch table. */
+struct cdi_hook_dispatch cdi_hooks[] = {
+   { 2, { "nvidia-ctk-hook",    "update-ldcache" },  (HDF)cdi_hook_nv_ldcache },
+   { 3, { "nvidia-ctk", "hook", "update-ldcache" },  (HDF)cdi_hook_nv_ldcache },
+   { 2, { "nvidia-ctk-hook",    "chmod" },           NULL },
+   { 3, { "nvidia-ctk", "hook", "chmod" },           NULL },
+   { 2, { "nvidia-ctk-hook",    "create-symlinks" }, NULL },
+   { 3, { "nvidia-ctk", "hook", "create-symlinks" }, NULL },
+   { }
+};
+
 
 /** Functions **/
+
+
+/* Given JSON array of strings jar, which may be of length zero, convert it to
+   a freshly allocated NULL-terminated array of C strings (pointers to
+   null-terminated chars buffers) and return that. ct is an out parameter
+
+   WARNING: This is a shallow copy, i.e., the actual strings are still owned
+   by the JSON array. */
+char **array_strings_json_to_c(cJSON *jarry, size_t *ct)
+{
+   size_t i;
+   char **carry;
+   cJSON *j;
+
+   Tf (cJSON_IsArray(jarry), "JSON: expected array");
+   *ct = cJSON_GetArraySize(jarry);
+   T_ (carry = malloc((*ct + 1) * sizeof(char *)));
+   carry[*ct] = NULL;
+
+   i = 0;
+   cJSON_ArrayForEach(j, jarry) {
+      Tf (cJSON_IsString(j), "JSON: expected string");
+      carry[i++] = j->valuestring;
+   }
+
+   return carry;
+}
 
 /* Add spec to the given list of CDI specs, which is an out parameter. If
    we’ve seen the spec’s kind before, replace the existing spec with the same
@@ -111,7 +168,41 @@ void cdi_free(struct cdi_spec *spec)
       free(spec->envs[i].value);
    }
    free(spec->envs);
+   for (size_t i = 0; spec->ldconfig_dirs[i] != NULL; i++)
+      free(spec->ldconfig_dirs[i]);
+   free(spec->ldconfig_dirs);
    free(spec);
+}
+
+void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args)
+{
+   for (size_t i = 0; args[i] != NULL; i++)
+      if (!strcmp("--folder", args[i])) {
+         char *dir;
+         T_ (args[i+1] != NULL);
+         T_ (dir = strdup(args[i+1]));
+         // FIXME: YOU ARE HERE: APPEND ONLY IF WE DON'T ALREADY HAVE DIR
+         list_append((void **)&spec->ldconfig_dirs, &dir, sizeof(dir));
+         i++;
+      }
+}
+
+/* Return a freshly allocated string describing the given hook, for logging. */
+char *cdi_hook_to_string(const char *hook_name, char **args)
+{
+   char *ret, *args_str;
+
+   args_str = strdup("");
+   for (size_t i = 0; args[i] != NULL; i++) {
+      char *as_old = args_str;
+      T_ (1 <= asprintf(&args_str, "%s %s", as_old, args[i]));
+      free(as_old);
+   }
+
+   T_ (1 <= asprintf(&ret, "%s:%s", hook_name, args_str));
+
+   free(args_str);
+   return ret;
 }
 
 /* Log contents of spec. */
@@ -121,16 +212,18 @@ void cdi_log(struct cdi_spec *spec)
 
    DEBUG("CDI: %s from %s:", spec->kind, spec->src);
    DEBUG("CDI:   devices requested:   %s", bool_to_string(spec->requested));
-   DEBUG("CDI:   ldconfig(8) needed:  %s", bool_to_string(spec->ldconfig_p));
    ct = list_count((void *)(spec->envs), sizeof(struct env_var));
    DEBUG("CDI:   environment: %d:", ct);
    for (size_t i = 0; i < ct; i++)
       DEBUG("CDI:     %s=%s", spec->envs[i].name, spec->envs[i].value);
    ct = list_count((void *)(spec->binds), sizeof(struct bind));
    DEBUG("CDI:   bind mounts: %d:", ct);
-   for (size_t i = 0; i < ct; i++) {
+   for (size_t i = 0; i < ct; i++)
       DEBUG("CDI:     %s ->  %s", spec->binds[i].src, spec->binds[i].dst);
-   }
+   ct = list_count((void *)(spec->ldconfig_dirs), sizeof(char *));
+   DEBUG("CDI:   ldconfig directories: %d:", ct);
+   for (size_t i = 0; i < ct; i++)
+      DEBUG("CDI:     %s", spec->ldconfig_dirs[i]);
 }
 
 /* Read and parse the CDI spec file at path. Return a pointer to the parsed
@@ -235,6 +328,46 @@ void cdiPC_env(cJSON *tree, struct cdi_spec *spec)
    ev.value[value_len] = 0;
 
    list_append((void **)&spec->envs, &ev, sizeof(ev));
+}
+
+void cdiPC_hook(cJSON *tree, struct cdi_spec *spec)
+{
+   char **args;
+   size_t arg_ct;
+   char *hook_name;
+   char *hook_str;
+   bool hook_known;
+   //struct cdi_hook_dispatch hook;
+
+   T_ (hook_name = cJSON_GetStringValue(cJSON_GetObjectItem(tree, "hookName")));
+
+   T_ (cJSON_IsArray(cJSON_GetObjectItem(tree, "args")));
+   args = array_strings_json_to_c(cJSON_GetObjectItem(tree, "args"), &arg_ct);
+   hook_str = cdi_hook_to_string(hook_name, args);
+
+   hook_known = false;
+   for (size_t i = 0; cdi_hooks[i].arg_ct != 0; i++) {  // for each table row
+      if (arg_ct >= cdi_hooks[i].arg_ct) {   // enough hook args to compare
+         for (size_t j = 0; j < cdi_hooks[i].arg_ct; j++)
+            if (strcmp(args[j], cdi_hooks[i].args[j]))
+                goto continue_outer;
+         hook_known = true;  // all words matched
+         if (cdi_hooks[i].f == NULL) {
+            DEBUG("CDI: ignoring known hook: %s", hook_str);
+         } else {
+            DEBUG("CDI: emulating known hook: %s", hook_str);
+            cdi_hooks[i].f(spec, &args[cdi_hooks[i].arg_ct]);
+         }
+         break;  // only call one hook function
+      }
+   continue_outer:
+   }
+
+   if (!hook_known)
+      WARNING("CDI: ignoring unknown hook: %s", hook_str);
+
+   free(hook_str);
+   free(args);
 }
 
 void cdiPC_kind(cJSON *tree, struct cdi_spec *spec)
