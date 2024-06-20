@@ -986,7 +986,6 @@ fi
 printf 'contributor:  %s\n\n' "$ch_contributor_note"
 
 if [[ $phase = one-file ]]; then
-    printf "FOO\n"
     if [[ $one_file == *:* ]]; then
         x=$one_file
         one_file=${x%%:*}            # before first colon
@@ -995,9 +994,7 @@ if [[ $phase = one-file ]]; then
     if [[ ! -f $one_file ]]; then
         fatal "not a file: $one_file"
     fi
-    printf "BAR\n"
     one_file=$(readlink -f "$one_file")  # make absolute b/c we cd later
-    printf "BAZ\n"
     if [[ $one_file = */test.bats ]]; then
         fatal '--file: must specify build recipe file, not test.bats'
     fi
