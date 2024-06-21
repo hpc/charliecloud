@@ -29,10 +29,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "ch_misc.h"
-#include "ch_core.h"
+#include "misc.h"
+#include "core.h"
 #ifdef HAVE_LIBSQUASHFUSE
-#include "ch_fuse.h"
+#include "fuse.h"
 #endif
 
 

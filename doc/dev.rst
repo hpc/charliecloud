@@ -1054,19 +1054,19 @@ computed, but it’s all in raw hex and hard to interpret, e.g.::
 
   $ ch-run --seccomp -vv alpine:3.17 -- true
   [...]
-  ch-run[62763]: seccomp: arch c00000b7: found 13 syscalls (ch_core.c:582)
-  ch-run[62763]: seccomp: arch 40000028: found 27 syscalls (ch_core.c:582)
+  ch-run[62763]: seccomp: arch c00000b7: found 13 syscalls (core.c:582)
+  ch-run[62763]: seccomp: arch 40000028: found 27 syscalls (core.c:582)
   [...]
-  ch-run[62763]: seccomp(2) program has 156 instructions (ch_core.c:591)
-  ch-run[62763]:    0: { op=20 k=       4 jt=  0 jf=  0 } (ch_core.c:423)
-  ch-run[62763]:    1: { op=15 k=c00000b7 jt=  0 jf= 17 } (ch_core.c:423)
-  ch-run[62763]:    2: { op=20 k=       0 jt=  0 jf=  0 } (ch_core.c:423)
-  ch-run[62763]:    3: { op=15 k=      5b jt=145 jf=  0 } (ch_core.c:423)
+  ch-run[62763]: seccomp(2) program has 156 instructions (core.c:591)
+  ch-run[62763]:    0: { op=20 k=       4 jt=  0 jf=  0 } (core.c:423)
+  ch-run[62763]:    1: { op=15 k=c00000b7 jt=  0 jf= 17 } (core.c:423)
+  ch-run[62763]:    2: { op=20 k=       0 jt=  0 jf=  0 } (core.c:423)
+  ch-run[62763]:    3: { op=15 k=      5b jt=145 jf=  0 } (core.c:423)
   [...]
-  ch-run[62763]:  154: { op= 6 k=7fff0000 jt=  0 jf=  0 } (ch_core.c:423)
-  ch-run[62763]:  155: { op= 6 k=   50000 jt=  0 jf=  0 } (ch_core.c:423)
-  ch-run[62763]: note: see FAQ to disassemble the above (ch_core.c:676)
-  ch-run[62763]: executing: true (ch_core.c:538)
+  ch-run[62763]:  154: { op= 6 k=7fff0000 jt=  0 jf=  0 } (core.c:423)
+  ch-run[62763]:  155: { op= 6 k=   50000 jt=  0 jf=  0 } (core.c:423)
+  ch-run[62763]: note: see FAQ to disassemble the above (core.c:676)
+  ch-run[62763]: executing: true (core.c:538)
 
 You can instead use `seccomp-tools
 <https://github.com/david942j/seccomp-tools>`_ to disassemble and pretty-print

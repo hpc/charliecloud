@@ -7,8 +7,8 @@
 #pragma once
 
 #include "config.h"
-#include "ch_core.h"
-#include "ch_misc.h"
+#include "core.h"
+#include "misc.h"
 
 #include CJSON_H
 

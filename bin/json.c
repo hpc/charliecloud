@@ -9,9 +9,9 @@
 
 #include CJSON_H
 
-#include "ch_core.h"
-#include "ch_json.h"
-#include "ch_misc.h"
+#include "core.h"
+#include "json.h"
+#include "misc.h"
 
 
 /** Macros **/

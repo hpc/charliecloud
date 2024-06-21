@@ -585,7 +585,7 @@ AS_IF([test $want_libsquashfuse = yes], [
       [have_ll_h=no],
       [#define SQFS_CONFIG_H
        #define FUSE_USE_VERSION 32
-      ])  # see comment in ch_fuse.c regarding these defines
+      ])  # see comment in fuse.c regarding these defines
   ],
   [have_libfuse3=no])
 ])

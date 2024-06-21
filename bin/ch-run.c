@@ -13,11 +13,11 @@
 #include <unistd.h>
 
 #include "config.h"
-#include "ch_core.h"
+#include "core.h"
 #ifdef HAVE_JSON
-#include "ch_json.h"
+#include "json.h"
 #endif
-#include "ch_misc.h"
+#include "misc.h"
 
 
 /** Types **/
