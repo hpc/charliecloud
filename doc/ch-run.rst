@@ -749,15 +749,27 @@ would terminate the string.
 Exit status
 ===========
 
-If there is an error during containerization, :code:`ch-run` exits with status
-non-zero. If the user command is started successfully, the exit status is that
-of the user command, with one exception: if the image is an internally mounted
-SquashFS filesystem and the user command is killed by a signal, the exit
-status is 1 regardless of the signal value.
+If the user command is started successfully and exits normally,
+:code:`ch-run`’s exit status is that of the user command. Otherwise, the exit
+status is one of:
 
+.. list-table::
+   :header-rows: 0
+
+   * - 31
+     - Miscellaneous :code:`ch-run` failure other than the below
+   * - 49
+     - Unable to start user command (i.e., :code:`execvp(2)` failed)
+   * - 84
+     - SquashFUSE loop exited on signal before user command was complete
+   * - 87
+     - Feature queried by :code:`--feature` is not available
+   * - 128 + *N*
+     - User command killed by signal *N*
 
 .. include:: ./bugs.rst
 .. include:: ./see_also.rst
+
 
 ..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH
 ..  LocalWords:  noprofile norc SHLVL PWD kernelnewbies extglob
