@@ -201,7 +201,7 @@ handling.
 For example::
 
   $ ch-run /var/tmp/hello -- /bin/echo foo
-  ch-run[154334]: error: can’t execve(2): /bin/echo: Permission denied (ch_core.c:387 13)
+  ch-run[154334]: error: can’t execve(2): /bin/echo: Permission denied (core.c:387 13)
 
 But :code:`/bin/echo` *does* have execute permission::
 

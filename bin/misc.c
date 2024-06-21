@@ -17,7 +17,7 @@
 #include <unistd.h>
 
 #include "config.h"
-#include "ch_misc.h"
+#include "misc.h"
 
 
 /** Macros **/
@@ -32,10 +32,43 @@
 #define SUPP_GIDS_MAX 128
 
 
+/** Constants **/
+
+/* Text colors. Note leading escape characters (U+001B), which don’t always
+   show up depending on your viewer.
+
+   In principle, we should be using a library for this, e.g.
+   terminfo(5). However, moderately thorough web searching suggests that
+   pretty much any modern terminal will support 256-color ANSI codes, and this
+   is way simpler [1]. Probably should coordinate these colors with the Python
+   code somehow.
+
+   [1]: https://stackoverflow.com/a/3219471 */
+static const char COLOUR_CYAN_DARK[] =  "[0;38;5;6m";
+static const char COLOUR_CYAN_LIGHT[] = "[0;38;5;14m";
+//static const char COLOUR_GRAY[] =       "[0;90m";
+static const char COLOUR_RED[] =        "[0;31m";
+static const char COLOUR_RED_BOLD[] =   "[1;31m";
+static const char COLOUR_RESET[] =      "[0m";
+static const char COLOUR_YELLOW[] =     "[0;33m";
+static const char *_LL_COLOURS[] = { COLOUR_RED_BOLD,     // fatal
+                                     COLOUR_RED_BOLD,     // stderr
+                                     COLOUR_RED,          // warning
+                                     COLOUR_YELLOW,       // info
+                                     COLOUR_CYAN_LIGHT,   // verbose
+                                     COLOUR_CYAN_DARK,    // debug
+                                     COLOUR_CYAN_DARK };  // trace
+/* This lets us index by verbosity, which can be negative. */
+static const char **LL_COLOURS = _LL_COLOURS + 3;
+
+
 /** External variables **/
 
 /* Level of chatter on stderr. */
 enum log_level verbose;
+
+/* If true, use colored logging. Set in ch-run.c. */
+bool log_color_p = false;
 
 /* Path to host temporary directory. Set during command line processing. */
 char *host_tmp = NULL;
@@ -140,6 +173,12 @@ char *argv_to_string(char **argv)
    }
 
    return s;
+}
+
+/* Return bool b as a string. */
+const char *bool_to_string(bool b)
+{
+   return (b ? "yes" : "no");
 }
 
 /* Iterate through buffer “buf” of size “s” consisting of null-terminated
@@ -390,16 +429,23 @@ void list_append(void **ar, void *new, size_t size)
    int ct;
    T_ (new != NULL);
 
-   // count existing elements
-   if (*ar == NULL)
-      ct = 0;
-   else
-      for (ct = 0; !buf_zero_p((char *)*ar + ct*size, size); ct++)
-         ;
-
+   ct = list_count(*ar, size);
    T_ (*ar = realloc(*ar, (ct+2)*size));        // existing + new + terminator
    memcpy((char *)*ar + ct*size, new, size);    // append new (no overlap)
    memset((char *)*ar + (ct+1)*size, 0, size);  // set new terminator
+}
+
+/* Return the number of elements of size size in list *ar. */
+size_t list_count(void *ar, size_t size)
+{
+   size_t ct;
+
+   if (ar == NULL)
+      return 0;
+
+   for (ct = 0; !buf_zero_p((char *)ar + ct*size, size); ct++)
+      ;
+   return ct;
 }
 
 /* Return a pointer to a new, empty zero-terminated array containing elements
@@ -415,7 +461,10 @@ void *list_new(size_t size, size_t ct)
    return list;
 }
 
-/* If verbose, print uids and gids on stderr prefixed with where. */
+/* If verbose enough, print uids and gids on stderr prefixed with where.
+
+   FIXME: Should change to DEBUG(), but that will give the file/line within
+   this function, which we don’t want. */
 void log_ids(const char *func, int line)
 {
    uid_t ruid, euid, suid;
@@ -423,9 +472,11 @@ void log_ids(const char *func, int line)
    gid_t supp_gids[SUPP_GIDS_MAX];
    int supp_gid_ct;
 
-   if (verbose >= 3) {
+   if (verbose >= LL_TRACE + 1) {  // don’t bother b/c haven’t needed in ages
       Z_ (getresuid(&ruid, &euid, &suid));
       Z_ (getresgid(&rgid, &egid, &sgid));
+      if (log_color_p)
+         T_ (EOF != fputs(LL_COLOURS[LL_TRACE], stderr));
       fprintf(stderr, "%s %d: uids=%d,%d,%d, gids=%d,%d,%d + ", func, line,
               ruid, euid, suid, rgid, egid, sgid);
       supp_gid_ct = getgroups(SUPP_GIDS_MAX, supp_gids);
@@ -439,18 +490,49 @@ void log_ids(const char *func, int line)
          fprintf(stderr, "%d", supp_gids[i]);
       }
       fprintf(stderr, "\n");
+      if (log_color_p)
+         T_ (EOF != fputs(COLOUR_RESET, stderr));
+      Z_ (fflush(stderr));
    }
 }
 
-void test_logging(bool fail) {
-   TRACE("trace");
-   DEBUG("debug");
-   VERBOSE("verbose");
-   INFO("info");
-   WARNING("warning");
-   if (fail)
-      FATAL("the program failed inexplicably (\"log-fail\" specified)");
-   exit(0);
+
+/* Set up logging. Note ch-run(1) specifies a bunch of
+   color synonyms; this translation happens during argument parsing.*/
+void logging_init(enum log_color_when when, enum log_test test)
+{
+   // set up colors
+   switch (when) {
+   case LL_COLOR_AUTO:
+      if (isatty(fileno(stderr)))
+         log_color_p = true;
+      else {
+         T_ (errno == ENOTTY);
+         log_color_p = false;
+      }
+      break;
+   case LL_COLOR_YES:
+      log_color_p = true;
+      break;
+   case LL_COLOR_NO:
+      log_color_p = false;
+      break;
+   case LL_COLOR_NULL:
+      Tf(0, "unreachable code reached");
+      break;
+   }
+
+   // test logging
+   if (test >= LL_TEST_YES) {
+      TRACE("trace");
+      DEBUG("debug");
+      VERBOSE("verbose");
+      INFO("info");
+      WARNING("warning");
+      if (test >= LL_TEST_FATAL)
+         FATAL("the program failed inexplicably (\"log-fail\" specified)");
+      exit(0);
+   }
 }
 
 /* Create the directory at path, despite its parent not allowing write access,
@@ -602,45 +684,76 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
 void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
-   char *message, *ap_msg;
+   // note: all components contain appropriate leading/trailing space
+   // note: be careful about which components need to be freed
+   char *text_formatted;  // caller’s message, formatted
+   char *level_prefix;    // level prefix
+   char *errno_code;      // errno code/number
+   char *errno_desc;      // errno description
+   char *text_full;       // complete text but w/o color codes
+   const char * colour;          // ANSI codes for color
+   const char * colour_reset;    // ANSI codes to reset color
 
-   if (level > verbose)
+   if (level > verbose)   // not verbose enough to log message; do nothing
       return;
 
-   T_ (1 <= asprintf(&message, "%s[%d]: ",
-                     program_invocation_short_name, getpid()));
+   // Format caller message.
+   if (fmt == NULL)
+      text_formatted = "please report this bug";  // users should not see
+   else
+      T_ (1 <= vasprintf(&text_formatted, fmt, ap));
 
-   // Prefix for the more urgent levels.
+   // Prefix some of the levels.
    switch (level) {
    case LL_FATAL:
-      message = cat(message, "error: ");  // "fatal" too morbid for users
+      level_prefix = "error: ";   // "fatal" too morbid for users
       break;
    case LL_WARNING:
-      message = cat(message, "warning: ");
+      level_prefix = "warning: ";
       break;
    default:
+      level_prefix = "";
       break;
    }
 
-   // Default message if not specified. Users should not see this.
-   if (fmt == NULL)
-      fmt = "please report this bug";
-
-   T_ (1 <= vasprintf(&ap_msg, fmt, ap));
-   if (errno_) {
-      T_ (1 <= asprintf(&message, "%s%s: %s (%s:%d %d)", message, ap_msg,
-                        strerror(errno_), file, line, errno_));
+   // errno.
+   if (!errno_) {
+      errno_code = "";
+      errno_desc = "";
    } else {
-      T_ (1 <= asprintf(&message, "%s%s (%s:%d)", message, ap_msg, file, line));
+      errno_code = cat(" ", strerrorname_np(errno_));  // FIXME: non-portable
+      T_ (1 <= asprintf(&errno_desc, ": %s", strerror(errno_)));
    }
 
-   if (level == LL_WARNING) {
-      warnings_offset += string_append(warnings, message, WARNINGS_SIZE,
-                                       warnings_offset);
-   }
-   fprintf(stderr, "%s\n", message);
+   // Color.
+   if (log_color_p) {
+      colour = LL_COLOURS[level];
+      colour_reset = COLOUR_RESET;
+   } else {
+      colour = "";
+      colour_reset = "";
+   };
+
+   // Format and print.
+   T_ (1 <= asprintf(&text_full, "%s[%d]: %s%s%s (%s:%d%s)",
+                     program_invocation_short_name, getpid(),
+                     level_prefix, text_formatted, errno_desc,
+                     file, line, errno_code));
+   fprintf(stderr, "%s%s%s\n", colour, text_full, colour_reset);
    if (fflush(stderr))
       abort();  // can't print an error b/c already trying to do that
+   if (level == LL_WARNING)
+      warnings_offset += string_append(warnings, text_full,
+                                       WARNINGS_SIZE, warnings_offset);
+
+   // Clean up.
+   free(text_full);
+   if (errno_) {
+      free(errno_code);
+      free(errno_desc);
+   }
+   if (fmt != NULL)
+      free(text_formatted);
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. If
@@ -840,17 +953,20 @@ void warnings_reprint(void)
    size_t offset = 0;
    int warn_ct = buf_strings_count(warnings, WARNINGS_SIZE);
 
-   if (warn_ct > 0)
-      fprintf(stderr, "%s[%d]: warning: reprinting first %d warning(s)\n",
-              program_invocation_short_name, getpid(), warn_ct);
-
-   while (   warnings[offset] != 0
-          || (offset < (WARNINGS_SIZE - 1) && warnings[offset+1] != 0)) {
-      fputs(warnings + offset, stderr);
-      fputc('\n', stderr);
-      offset += strlen(warnings + offset) + 1;
+   if (warn_ct > 0) {
+      if (log_color_p)
+         T_ (EOF != fputs(LL_COLOURS[LL_WARNING], stderr));
+      T_ (1 <= fprintf(stderr, "%s[%d]: reprinting first %d warning(s)\n",
+                       program_invocation_short_name, getpid(), warn_ct));
+      while (   warnings[offset] != 0
+             || (offset < (WARNINGS_SIZE - 1) && warnings[offset+1] != 0)) {
+         T_ (EOF != fputs(warnings + offset, stderr));
+         T_ (EOF != fputc('\n', stderr));
+         offset += strlen(warnings + offset) + 1;
+      }
+      if (log_color_p)
+         T_ (EOF != fputs(COLOUR_RESET, stderr));
+      if (fflush(stderr))
+         abort();  // can't print an error b/c already trying to do that
    }
-
-   if (fflush(stderr))
-      abort();  // can't print an error b/c already trying to do that
 }

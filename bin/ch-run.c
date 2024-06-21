@@ -13,8 +13,35 @@
 #include <unistd.h>
 
 #include "config.h"
-#include "ch_core.h"
-#include "ch_misc.h"
+#include "core.h"
+#ifdef HAVE_JSON
+#include "json.h"
+#endif
+#include "misc.h"
+
+
+/** Types **/
+
+struct args {
+   struct container c;
+   struct env_delta *env_deltas;
+#ifdef HAVE_JSON
+   char ** cdi_devids;
+#endif
+   enum log_color_when log_color;
+   enum log_test log_test;
+   char *initial_dir;
+#ifdef HAVE_SECCOMP
+   bool seccomp_p;
+#endif
+   char *storage_dir;
+   bool unsafe;
+};
+
+struct log_color_synonym {
+   char *name;
+   enum log_color_when color;
+};
 
 
 /** Constants and macros **/
@@ -29,6 +56,20 @@ char *JOIN_TAG_ENV[] = { "SLURM_STEP_ID",
 
 /* Default overlaid tmpfs size. */
 char *WRITE_FAKE_DEFAULT = "12%";
+
+/* Log color WHEN synonyms. Note that no argument (i.e., bare --color) is
+   handled separately. */
+struct log_color_synonym log_color_synonyms[] = {
+   { "auto",    LL_COLOR_AUTO },
+   { "tty",     LL_COLOR_AUTO },
+   { "if-tty",  LL_COLOR_AUTO },
+   { "yes",     LL_COLOR_YES },
+   { "always",  LL_COLOR_YES },
+   { "force",   LL_COLOR_YES },
+   { "no",      LL_COLOR_NO },
+   { "never",   LL_COLOR_NO },
+   { "none",    LL_COLOR_NO },
+   { NULL,      LL_COLOR_NULL } };
 
 
 /** Command line options **/
@@ -52,6 +93,15 @@ const struct argp_option options[] = {
    { "bind",          'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default: same as SRC)"},
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
+#ifdef HAVE_JSON
+   { "cdi-dirs",      -19, "DIRS", 0, "director(y|ies) containing CDI specs" },
+#endif
+   { "color",         -20, "WHEN", OPTION_ARG_OPTIONAL,
+                           "specify when to use colored logging" },
+#ifdef HAVE_JSON
+   { "device",        -18, "DEV",  0, "inject CDI device(s) DEV (repeatable)" },
+   { "devices",       'd', 0,      0, "inject default CDI devices" },
+#endif
    { "env-no-expand", -10, 0,      0, "don't expand $ in --set-env input"},
    { "feature",       -11, "FEAT", 0, "exit successfully if FEAT is enabled" },
    { "gid",           'g', "GID",  0, "run as GID within container" },
@@ -87,20 +137,6 @@ const struct argp_option options[] = {
 };
 
 
-/** Types **/
-
-struct args {
-   struct container c;
-   struct env_delta *env_deltas;
-   char *initial_dir;
-#ifdef HAVE_SECCOMP
-   bool seccomp_p;
-#endif
-   char *storage_dir;
-   bool unsafe;
-};
-
-
 /** Function prototypes **/
 
 void fix_environment(struct args *args);
@@ -113,7 +149,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void parse_set_env(struct args *args, char *arg, int delim);
 void privs_verify_invoking();
 char *storage_default(void);
-extern void warnings_reprint(void);
+void write_fake_enable(struct args *args, char *overlay_size);
 
 
 /** Global variables **/
@@ -167,6 +203,9 @@ int main(int argc, char *argv[])
                                .private_tmp = false,
                                .type = IMG_NONE,
                                .writable = false },
+      .cdi_devids = list_new(sizeof(char *), 0),
+      .log_color = LL_COLOR_AUTO,
+      .log_test = LL_TEST_NONE,
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL,
 #ifdef HAVE_SECCOMP
@@ -186,6 +225,7 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
+   logging_init(args.log_color, args.log_test);
 
    if (arg_next >= argc - 1) {
       printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
@@ -246,12 +286,14 @@ int main(int argc, char *argv[])
 #endif
    VERBOSE("unsafe: %d", args.unsafe);
 
+   cdi_update(&args.c, args.cdi_devids);
    containerize(&args.c);
    fix_environment(&args);
 #ifdef HAVE_SECCOMP
    if (args.seccomp_p)
       seccomp_install();
 #endif
+   // run_command(ldconfig, true, NULL);  // FIXME
    run_user_command(c_argv, args.initial_dir); // should never return
    exit(EXIT_FAILURE);
 }
@@ -500,11 +542,32 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
    case -17: // --test
       if (!strcmp(arg, "log"))
-         test_logging(false);
+         args->log_test = LL_TEST_YES;
       else if (!strcmp(arg, "log-fail"))
-         test_logging(true);
+         args->log_test = LL_TEST_FATAL;
       else
          FATAL("invalid --test argument: %s; see source code", arg);
+      break;
+#ifdef HAVE_JSON
+   case -18: // --device
+      Te (strlen(arg) > 0, "--device: DEV must be longer than zero");
+      write_fake_enable(args, NULL);
+      list_append((void **)&(args->cdi_devids), &arg, sizeof(arg));
+      break;
+#endif
+   case -20: // --color
+      if (arg == NULL)
+         args->log_color = LL_COLOR_AUTO;
+      args->log_color = LL_COLOR_NULL;
+      for (int i = 0; true; i++) {
+         if (log_color_synonyms[i].name == NULL)
+            break;
+         if (!strcmp(arg, log_color_synonyms[i].name)) {
+            args->log_color = log_color_synonyms[i].color;
+            break;
+         }
+      }
+      Tf (args->log_color != LL_COLOR_NULL, "--color: invalid arg: %s", arg);
       break;
    case 'b': {  // --bind
          char *src, *dst;
@@ -573,7 +636,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.writable = true;
       break;
    case 'W':  // --write-fake
-      args->c.overlay_size = arg != NULL ? arg : WRITE_FAKE_DEFAULT;
+      write_fake_enable(args, arg);
       break;
    case ARGP_KEY_NO_ARGS:
       argp_state_help(state, stderr, (  ARGP_HELP_SHORT_USAGE
@@ -645,4 +708,19 @@ char *storage_default(void)
       T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch", username));
 
    return storage;
+}
+
+/* Enable the overlay if not already enabled. */
+void write_fake_enable(struct args *args, char *overlay_size)
+{
+   if (overlay_size != NULL) {
+      // new overlay size specified: use it regardless of previous enablement
+      args->c.overlay_size = overlay_size;
+   } else if (args->c.overlay_size == NULL) {
+      // no new size, not yet enabled: enable with default size
+      args->c.overlay_size = WRITE_FAKE_DEFAULT;
+   } else {
+      // no new size, already enabled: keep existing size, nothing to do
+      T_ (args->c.overlay_size != NULL);
+   }
 }

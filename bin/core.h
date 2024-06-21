@@ -3,7 +3,10 @@
    This interface contains Charliecloud's core containerization features. */
 
 #define _GNU_SOURCE
+#pragma once
+
 #include <stdbool.h>
+#include <sys/types.h>
 
 
 /** Types **/

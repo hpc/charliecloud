@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# $1  executable
+# $2  core dump, or directory containing core dumps, in which case pick newest
+
+bin=$1
+core=$2
+
+if [[ -d $core ]]; then
+    # kludge but good enough for now (https://stackoverflow.com/q/1015678)
+    printf "$core is a directory\n" 1>&2
+    core=$core/$(ls -At $core | head -1)
+    printf "using $core\n" 1>&2
+fi
+
+gdb -batch $bin $core \
+    -ex 'set style enabled on' \
+    -ex 'set print pretty on' \
+    -ex 'set print frame-info source-and-location' \
+    -ex 'echo \n\n' \
+    -ex 'backtrace -full'

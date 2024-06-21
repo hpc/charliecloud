@@ -5,6 +5,8 @@
    libraries that ch_core requires. */
 
 #define _GNU_SOURCE
+#pragma once
+
 #include <dirent.h>
 #include <errno.h>
 #include <stdbool.h>
@@ -103,10 +105,20 @@ enum log_level { LL_FATAL =   -3,
                  LL_DEBUG =    2,
                  LL_TRACE =    3 };
 
+enum log_color_when { LL_COLOR_NULL = 0,
+                      LL_COLOR_AUTO,
+                      LL_COLOR_YES,
+                      LL_COLOR_NO };
+
+enum log_test { LL_TEST_NONE  = 0,
+                LL_TEST_YES   = 1,
+                LL_TEST_FATAL = 2 };
+
 
 /** External variables **/
 
 extern enum log_level verbose;
+extern bool log_color_p;
 extern char *host_tmp;
 extern char *username;
 extern char *warnings;
@@ -116,6 +128,7 @@ extern size_t warnings_offset;
 /** Function prototypes **/
 
 char *argv_to_string(char **argv);
+const char *bool_to_string(bool b);
 int buf_strings_count(char *str, size_t s);
 bool buf_zero_p(void *buf, size_t size);
 char *cat(const char *a, const char *b);
@@ -127,8 +140,10 @@ void env_set(const char *name, const char *value, const bool expand);
 void env_unset(const char *glob);
 struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
+size_t list_count(void *ar, size_t size);
 void *list_new(size_t size, size_t ct);
 void log_ids(const char *func, int line);
+void logging_init(enum log_color_when when, enum log_test test);
 void test_logging(bool fail);
 void mkdirs(const char *base, const char *path, char **denylist,
             const char *scratch);

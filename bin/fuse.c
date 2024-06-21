@@ -36,9 +36,9 @@
 #include <squashfuse/ll.h>
 
 #include "config.h"
-#include "ch_core.h"
-#include "ch_fuse.h"
-#include "ch_misc.h"
+#include "core.h"
+#include "fuse.h"
+#include "misc.h"
 
 
 /** Types **/
