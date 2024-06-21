@@ -301,22 +301,24 @@ def modify(cli_):
    # destination image.
    cli.tag = str(out_image)
 
-   stdin = sys.stdin.read()
 
    # We check that stdin isn’t None to ensure that we don’t go down this code
    # path by mistake (e.g. in CI, where stdin will never by a TTY).
-   if ((not sys.stdin.isatty()) and (commands == []) and (stdin != '')):
-      # https://stackoverflow.com/a/6482200
+   if ((not sys.stdin.isatty()) and (commands == [])):
+      stdin = sys.stdin.read()
 
-      # We use “decode("utf-8")” here because stdout seems default to a bytes
-      # object, which is not a valid type for an argument for “Path”.
-      tmpfile = ch.Path(subprocess.run(["mktemp", "-d"],capture_output=True).stdout.decode("utf-8"))
-      with open(tmpfile, "w") as outfile:
-         outfile.write(stdin)
-      # By default, the file is seemingly created with its execute bit
-      # unassigned. This is problematic for the RUN instruction.
-      os.chmod(tmpfile, 0o755)
-      cli.script = str(tmpfile)
+      if (stdin != ''):
+         # https://stackoverflow.com/a/6482200
+
+         # We use “decode("utf-8")” here because stdout seems default to a bytes
+         # object, which is not a valid type for an argument for “Path”.
+         tmpfile = ch.Path(subprocess.run(["mktemp", "-d"],capture_output=True).stdout.decode("utf-8"))
+         with open(tmpfile, "w") as outfile:
+            outfile.write(stdin)
+         # By default, the file is seemingly created with its execute bit
+         # unassigned. This is problematic for the RUN instruction.
+         os.chmod(tmpfile, 0o755)
+         cli.script = str(tmpfile)
 
    if (cli.shell is not None):
       shell = cli.shell
