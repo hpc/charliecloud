@@ -104,7 +104,7 @@ def main(cli_):
                             str(out_image.ref), "--", shell])
       if (foo.returncode == ch.Ch_Run_Retcode.ERR_CMD.value):
          # FIXME: Write a better error message?
-         ch.FATAL("Unable to run shell: %s" % shell)
+         ch.FATAL("can't run shell: %s" % shell)
       ch.VERBOSE("using SID %s" % fake_sid)
       # FIXME: metadata history stuff? See misc.import_.
       if (out_image.metadata["history"] == []):

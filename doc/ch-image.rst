@@ -2106,7 +2106,7 @@ in the remote registry, so we don’t upload it again.)
 Delete all images and cache from ch-image builder storage.
 
 
-:code:`shell`
+:code:`modify`
 =============
 
 Modify an image with shell commands, possibly interactively.
@@ -2164,7 +2164,7 @@ That is, :code:`ch-image` simply builds a Dockerfile internally that uses
 executes this Dockerfile to produce image :code:`bar`. That is, if any command
 fails, the build fails and no further commands are attempted.
 
-This mode provides a detailed image provenance just like a Dockerfile.
+This mode provides detailed image provenance just like a Dockerfile.
 
 Non-interactive mode using a shell script
 -----------------------------------------

@@ -1,4 +1,4 @@
-    load ../common
+load ../common
 
 bind1_dir=$BATS_TMPDIR/bind1
 bind2_dir=$BATS_TMPDIR/bind2
@@ -322,18 +322,12 @@ EOF
     # empty argument to --bind
     run ch-run -b '' "$ch_timg" -- /bin/true
     echo "$output"
-    echo "STATUS"
-    echo "$status"
-    echo "STATUS"
     [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'--bind: no source provided'* ]]
 
     # source not provided
     run ch-run -b :/mnt/9 "$ch_timg" -- /bin/true
     echo "$output"
-    echo "STATUS"
-    echo "$status"
-    echo "STATUS"
     [[ $status -eq $CH_ERR_RUN ]]
     [[ $output = *'--bind: no source provided'* ]]
 

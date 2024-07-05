@@ -332,7 +332,7 @@ export BATS_TMPDIR=$btnew
 # ch-run exit codes. (see also: ch_misc.h, lib/build.py)
 CH_ERR_RUN=31
 CH_ERR_CMD=49
-CH_ERR_SQUASH=84 # Currently not used, here just in case
+#CH_ERR_SQUASH=84 # Currently not used
 
 ch_runfile=$(command -v ch-run)
 
