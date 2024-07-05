@@ -13,6 +13,7 @@ dist_mylib_DATA = base.sh \
                   force.py \
                   image.py \
                   misc.py \
+                  modify.py \
                   pull.py \
                   push.py \
                   registry.py
