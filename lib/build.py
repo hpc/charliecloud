@@ -11,7 +11,6 @@ import re
 import shutil
 import subprocess
 import sys
-import uuid
 
 import charliecloud as ch
 import build_cache as bu
@@ -122,13 +121,29 @@ class Main_Loop(lark.Visitor):
          self.inst_prev = inst
          self.instruction_total_ct += 1
 
-
 def main(cli_):
 
    # CLI namespace. :P
    global cli
    cli = cli_
 
+   # Process CLI. Make appropriate modifications to “cli” instance and return
+   # Dockerfile text.
+   text = cli_process(cli)
+
+   tree = parse_dockerfile(text)
+
+   global image_ct
+   ml = traverse_parse_tree(tree, image_ct, cli)
+
+## Functions ##
+
+# Function that processes parsed CLI, modifying the passed “cli” object
+# appropriatley as it does. Returns the text of the file used for the build
+# operation. Note that Python passes variables to functions by their object
+# reference, so changes made to mutable objects (which “cli” is) will persist in
+# the scope of the caller.'
+def cli_process(cli):
    # Infer input file if needed.
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
@@ -215,6 +230,9 @@ def main(cli_):
       text = ch.ossafe("can’t read: %s" % cli.file, fp.read)
       ch.close_(fp)
 
+   return text
+
+def parse_dockerfile(text):
    # Parse it.
    parser = lark.Lark(im.GRAMMAR_DOCKERFILE, parser="earley",
                       propagate_positions=True, tree_class=im.Tree)
@@ -245,7 +263,37 @@ def main(cli_):
          ch.ERROR("Dockerfile uses RSYNC, so rsync(1) is required")
          raise
 
-   ml = traverse_parse_tree(tree)
+   return tree
+
+# Traverse Lark parse tree and do what it says.
+#
+# We don’t actually care whether the tree is traversed breadth-first or
+# depth-first, but we *do* care that instruction nodes are visited in order.
+# Neither visit() nor visit_topdown() are documented as of 2020-06-11 [1], but
+# examining source code [2] shows that visit_topdown() uses
+# Tree.iter_trees_topdown(), which *is* documented to be in-order [3].
+#
+# This change seems to have been made in 0.8.6 (see PR #761); before then,
+# visit() was in order. Therefore, we call that instead, if visit_topdown() is
+# not present, to improve compatibility (see issue #792).
+#
+# [1]: https://lark-parser.readthedocs.io/en/latest/visitors/#visitors
+# [2]: https://github.com/lark-parser/lark/blob/445c8d4/lark/visitors.py#L211
+# [3]: https://lark-parser.readthedocs.io/en/latest/classes/#tree
+def traverse_parse_tree(tree, image_ct_, cli_):
+   global cli
+   global image_ct
+   cli = cli_
+   image_ct = image_ct_
+   ml = Main_Loop()
+   if (hasattr(ml, 'visit_topdown')):
+      ml.visit_topdown(tree)
+   else:
+      ml.visit(tree)
+   if (ml.instruction_total_ct > 0):
+      if (ml.miss_ct == 0):
+         ml.inst_prev.checkout()
+      ml.inst_prev.ready()
 
    # Check that all build arguments were consumed.
    if (len(cli.build_arg) != 0):
@@ -264,220 +312,6 @@ def main(cli_):
    if (isinstance(bu.cache, bu.Disabled_Cache)):
       ch.INFO("build slow? consider enabling the build cache",
               "https://hpc.github.io/charliecloud/command-usage.html#build-cache")
-
-
-## Functions ##
-
-def modify(cli_):
-   # In this file, “cli” is used as a global variable
-   global cli
-   cli = cli_
-
-   # This file assumes that global cli comes from the “build” function. If we
-   # don’t assign these values, the program will fail after trying to access
-   # them.
-   cli.parse_only = False
-   cli.force = ch.Force_Mode.SECCOMP
-   cli.force_cmd = force.FORCE_CMD_DEFAULT
-   cli.bind = []
-   cli.context = os.path.abspath(os.sep)
-
-   commands = []
-   # “Flatten” commands array
-   for c in cli.c:
-      commands += c
-   src_image = im.Image(im.Reference(cli.image_ref))
-   out_image = im.Image(im.Reference(cli.out_image))
-   if (not src_image.unpack_exist_p):
-      ch.FATAL("not in storage: %s" % src_image.ref)
-   if (cli.out_image == cli.image_ref):
-      ch.FATAL("output must be different from source image (%s)" % cli.image_ref)
-   if (cli.script is not None):
-      if (not ch.Path(cli.script).exists):
-         ch.FATAL("%s: no such file" % cli.script)
-
-   # This kludge is necessary because cli is a global variable, with cli.tag
-   # assumed present elsewhere in the file. Here, cli.tag represents the
-   # destination image.
-   cli.tag = str(out_image)
-
-
-   # We check that stdin isn’t None to ensure that we don’t go down this code
-   # path by mistake (e.g. in CI, where stdin will never by a TTY).
-   if ((not sys.stdin.isatty()) and (commands == [])):
-      stdin = sys.stdin.read()
-
-      if (stdin != ''):
-         # https://stackoverflow.com/a/6482200
-
-         # We use “decode("utf-8")” here because stdout seems default to a bytes
-         # object, which is not a valid type for an argument for “Path”.
-         tmpfile = ch.Path(subprocess.run(["mktemp", "-d"],capture_output=True).stdout.decode("utf-8"))
-         with open(tmpfile, "w") as outfile:
-            outfile.write(stdin)
-         # By default, the file is seemingly created with its execute bit
-         # unassigned. This is problematic for the RUN instruction.
-         os.chmod(tmpfile, 0o755)
-         cli.script = str(tmpfile)
-
-   if (cli.shell is not None):
-      shell = cli.shell
-   else:
-      shell = "/bin/sh"
-   # FIXME: This logic is a bit busted
-   if ((commands != []) or (cli.script is not None)):
-      # non-interactive case (“-c” or script)
-      if (cli.script is not None):
-         tree = modify_tree_make_script(src_image.ref, cli.script)
-      else:
-         tree = modify_tree_make(src_image.ref, commands)
-
-      # Count the number of stages (i.e., FROM instructions)
-      global image_ct
-      image_ct = sum(1 for i in tree.children_("from_"))
-
-      ml = traverse_parse_tree(tree)
-   else:
-      # Interactive case
-
-      # Generate “fake” SID for build cache. We do this because we can’t compute
-      # an SID, but we still want to make sure that it’s unique enough that
-      # we’re unlikely to run into a collision.
-      fake_sid = uuid.uuid4()
-      out_image.unpack_clear()
-      out_image.copy_unpacked(src_image)
-      bu.cache.worktree_adopt(out_image, src_image.ref.for_path)
-      bu.cache.ready(out_image)
-      bu.cache.branch_nocheckout(src_image.ref, out_image.ref)
-      foo = subprocess.run([ch.CH_BIN + "/ch-run", "--unsafe", "-w",
-                            str(out_image.ref), "--", shell])
-      if (foo.returncode == ch.Ch_Run_Retcode.ERR_CMD.value):
-         # FIXME: Write a better error message?
-         ch.FATAL("Unable to run shell: %s" % shell)
-      ch.VERBOSE("using SID %s" % fake_sid)
-      # FIXME: metadata history stuff? See misc.import_.
-      if (out_image.metadata["history"] == []):
-         out_image.metadata["history"].append({ "empty_layer": False,
-                                                "command":     "ch-image import"})
-      out_image.metadata_save()
-      bu.cache.commit(out_image.unpack_path, fake_sid, "MODIFY interactive", [])
-
-def modify_tree_make(src_img, cmds):
-   """Function that manually constructs a parse tree corresponding to a set of
-      “ch-image modify” commands, as though the commands had been specified in a
-      Dockerfile. Note that because “ch-image modify” simply executes one or
-      more commands inside a container, the only Dockerfile instructions we need
-      to consider are “FROM” and “RUN”. E.g. for the command line
-
-         $ ch-image modify -c 'echo foo' -c 'echo bar' -- foo foo2
-
-      this function produces the following parse tree
-
-         start
-            dockerfile
-               from_
-                  image_ref
-                     IMAGE_REF foo
-               run
-                  run_shell
-                     LINE_CHUNK echo foo
-               run
-                  run_shell
-                     LINE_CHUNK echo bar
-      """
-   # Children of dockerfile tree
-   df_children = []
-   # Metadata attribute. We use this attribute in the “_pretty” method for our
-   # “Tree” class. Constructing a tree without specifying a “Meta” instance that
-   # has been given a “line” value will result in the attribute not being present,
-   # which causes an error when we try to access that attribute. Here we give the
-   # attribute a debug value of -1 to avoid said errors.
-   meta = lark.tree.Meta()
-   meta.line = -1
-   df_children.append(im.Tree(lark.Token('RULE', 'from_'),
-                      [im.Tree(lark.Token('RULE', 'image_ref'),
-                      [lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
-   if (cli.shell is not None):
-      df_children.append(im.Tree(lark.Token('RULE', 'shell'),
-                         [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),
-                         lark.Token('STRING_QUOTED', '"-c"')],meta))
-   for cmd in cmds:
-      df_children.append(im.Tree(lark.Token('RULE', 'run'),
-                         [im.Tree(lark.Token('RULE', 'run_shell'),
-                         [lark.Token('LINE_CHUNK', cmd)], meta)],meta))
-   return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
-
-# FIXME: Combine with “modify_tree_make”?
-def modify_tree_make_script(src_img, path):
-   """Temporary(?) analog of “modify_tree_make” for the non-interactive version
-      of “modify” using a script. For the command line:
-
-         $ ch-image modify foo foo2 /path/to/script
-
-      this function produces the following parse tree
-
-         start
-            dockerfile
-               from_
-                  image_ref
-                     IMAGE_REF foo
-               copy
-                  copy_shell
-                     WORD /path/to/script WORD /ch/script.sh
-               run
-                  run_shell
-                     LINE_CHUNK /ch/script.sh
-      """
-   # Children of dockerfile tree
-   df_children = []
-   # Metadata attribute. We use this attribute in the “_pretty” method for our
-   # “Tree” class. Constructing a tree without specifying a “Meta” instance that
-   # has been given a “line” value will result in the attribute not being present,
-   # which causes an error when we try to access that attribute. Here we give the
-   # attribute a debug value of -1 to avoid said errors.
-   meta = lark.tree.Meta()
-   meta.line = -1
-   df_children.append(im.Tree(lark.Token('RULE', 'from_'),
-                      [im.Tree(lark.Token('RULE', 'image_ref'),
-                      [lark.Token('IMAGE_REF', str(src_img))], meta)], meta))
-   if (cli.shell is not None):
-      df_children.append(im.Tree(lark.Token('RULE', 'shell'),
-                         [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),
-                         lark.Token('STRING_QUOTED', '"-c"')],meta))
-   df_children.append(im.Tree(lark.Token('RULE', 'copy'),
-                      [im.Tree(lark.Token('RULE', 'copy_shell'),[lark.Token('WORD', path),
-                      lark.Token('WORD', '/ch/script.sh')], meta)],meta))
-   df_children.append(im.Tree(lark.Token('RULE', 'run'),
-                      [im.Tree(lark.Token('RULE', 'run_shell'),
-                      [lark.Token('LINE_CHUNK', '/ch/script.sh')], meta)],meta))
-   return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
-
-# Traverse Lark parse tree and do what it says.
-#
-# We don’t actually care whether the tree is traversed breadth-first or
-# depth-first, but we *do* care that instruction nodes are visited in order.
-# Neither visit() nor visit_topdown() are documented as of 2020-06-11 [1], but
-# examining source code [2] shows that visit_topdown() uses
-# Tree.iter_trees_topdown(), which *is* documented to be in-order [3].
-#
-# This change seems to have been made in 0.8.6 (see PR #761); before then,
-# visit() was in order. Therefore, we call that instead, if visit_topdown() is
-# not present, to improve compatibility (see issue #792).
-#
-# [1]: https://lark-parser.readthedocs.io/en/latest/visitors/#visitors
-# [2]: https://github.com/lark-parser/lark/blob/445c8d4/lark/visitors.py#L211
-# [3]: https://lark-parser.readthedocs.io/en/latest/classes/#tree
-def traverse_parse_tree(tree):
-   ml = Main_Loop()
-   if (hasattr(ml, 'visit_topdown')):
-      ml.visit_topdown(tree)
-   else:
-      ml.visit(tree)
-   if (ml.instruction_total_ct > 0):
-      if (ml.miss_ct == 0):
-         ml.inst_prev.checkout()
-      ml.inst_prev.ready()
-   return ml
 
 def unescape(sl):
    # FIXME: This is also ugly and should go in the grammar.
