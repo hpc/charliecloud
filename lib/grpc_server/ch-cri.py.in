@@ -13,7 +13,7 @@ def serve():
     server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
     cri_pb2_grpc.add_CRIServicer_to_server(CRIServicer(), server)
     # server.add_insecure_port('[::]:50051') //this was for TCP server
-    server.add_insecure_port('unix:///charliecloud.socket') 
+    server.add_insecure_port('unix:///home/aloshak/charliecloud/lib/grpc_server/charliecloud.socket') 
     server.start()
     print("Server running on charliecloud.socket")
     server.wait_for_termination()
