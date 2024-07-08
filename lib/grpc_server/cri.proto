@@ -1,0 +1,13 @@
+
+syntax = "proto3";
+
+service CRI {
+    rpc GetVersion(VersionRequest) returns (VersionResponse);
+}
+
+message VersionRequest {}
+
+message VersionResponse {
+    string version = 1;
+}
+

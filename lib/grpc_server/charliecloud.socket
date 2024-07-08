@@ -1,0 +1,10 @@
+[Unit]
+Description=Charliecloud gRPC Server Socket
+    
+[Socket]
+ListenStream=/lib/grpc_server/charliecloud.socket
+SocketMode=0666	   # This gives read write permissions to everyone 
+BindIPv6Only=both  # Listens on IPv4 and IPv6
+
+[Install]
+WantedBy=sockets.target  

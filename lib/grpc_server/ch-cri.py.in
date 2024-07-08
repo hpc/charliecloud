@@ -1,0 +1,23 @@
+import grpc
+import cri_pb2
+import cri_pb2_grpc
+from concurrent import futures
+
+class CRIServicer(cri_pb2_grpc.CRIServicer):
+    def GetVersion(self, request, context):
+        response = cri_pb2.VersionResponse()
+        response.version = "1.0.0"
+        return response
+
+def serve():
+    server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+    cri_pb2_grpc.add_CRIServicer_to_server(CRIServicer(), server)
+    # server.add_insecure_port('[::]:50051') //this was for TCP server
+    server.add_insecure_port('unix:///charliecloud.socket') 
+    server.start()
+    print("Server running on charliecloud.socket")
+    server.wait_for_termination()
+
+if __name__ == '__main__':
+    serve()
+
