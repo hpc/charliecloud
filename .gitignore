@@ -44,6 +44,7 @@ a.out
 /charliecloud-*/
 
 # debugging crap
+core
 /build-cache.gv
 /build-cache.pdf
 

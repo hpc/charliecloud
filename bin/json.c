@@ -287,15 +287,21 @@ void cdi_update(struct container *c, char **devids)
          cdi_add(&specs, spec);
       }
 
+   // filter device kinds to those requested
+
    // debugging: print parsed CDI specs
    for (size_t i = 0; specs[i] != NULL; i++)
       cdi_log(specs[0]);
 
-   // filter device kinds to those requested
-
    // figure out bind mounts actually needed and set up symlinks
 
-   // set ldconfig bit
+   // update c
+   list_join(
+   //
+   // lconfigs -- copy rather than assigning b/c (1) easier to free and (2)
+   // still works if we later grow other sources of ldconfig
+   //
+   // need list_join()
 
    // clean up
    for (size_t i = 0; specs[i] != NULL; i++)

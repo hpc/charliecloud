@@ -37,14 +37,15 @@ struct container {
    bool env_expand;      // expand variables in --set-env
    char *host_home;      // if --home, host path to user homedir, else NULL
    char *img_ref;        // image description from command line
+   char **ldconfigs;     // directories to pass to image’s ldconfig(8)
    char *newroot;        // path to new root directory
    bool join;            // is this a synchronized join?
    int join_ct;          // number of peers in a synchronized join
    pid_t join_pid;       // process in existing namespace to join
    char *join_tag;       // identifier for synchronized join
    char *overlay_size;   // size of overlaid tmpfs (NULL for no overlay)
-   bool private_passwd;  // don't bind custom /etc/{passwd,group}
-   bool private_tmp;     // don't bind host's /tmp
+   bool private_passwd;  // don’t bind custom /etc/{passwd,group}
+   bool private_tmp;     // don’t bind host's /tmp
    enum img_type type;   // directory, SquashFS, etc.
    bool writable;        // re-mount image read-write
 };

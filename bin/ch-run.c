@@ -24,10 +24,10 @@
 
 struct args {
    struct container c;
-   struct env_delta *env_deltas;
 #ifdef HAVE_JSON
-   char ** cdi_devids;
+   char **cdi_devids;
 #endif
+   struct env_delta *env_deltas;
    enum log_color_when log_color;
    enum log_test log_test;
    char *initial_dir;
@@ -193,6 +193,7 @@ int main(int argc, char *argv[])
                                .env_expand = true,
                                .host_home = NULL,
                                .img_ref = NULL,
+                               .ldconfigs = list_new(sizeof(char *), 0),
                                .newroot = NULL,
                                .join = false,
                                .join_ct = 0,
@@ -203,11 +204,13 @@ int main(int argc, char *argv[])
                                .private_tmp = false,
                                .type = IMG_NONE,
                                .writable = false },
+#ifdef HAVE_JSON
       .cdi_devids = list_new(sizeof(char *), 0),
-      .log_color = LL_COLOR_AUTO,
-      .log_test = LL_TEST_NONE,
+#endif
       .env_deltas = list_new(sizeof(struct env_delta), 0),
       .initial_dir = NULL,
+      .log_color = LL_COLOR_AUTO,
+      .log_test = LL_TEST_NONE,
 #ifdef HAVE_SECCOMP
       .seccomp_p = false,
 #endif
@@ -288,7 +291,8 @@ int main(int argc, char *argv[])
 
    cdi_update(&args.c, args.cdi_devids);
    containerize(&args.c);
-   fix_environment(&args);
+   fix_environment(&args); // FIXME -- fold into hooks_prestart()?
+   //hooks_prestart(&args.c);
 #ifdef HAVE_SECCOMP
    if (args.seccomp_p)
       seccomp_install();
