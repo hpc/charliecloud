@@ -473,6 +473,13 @@ AC_CHECK_DECL(FNM_EXTMATCH,
               [[#define _GNU_SOURCE
                 #include <fnmatch.h>]])
 
+# GNU extension type for the comparison function argument to qsort(3).
+AC_CHECK_TYPE(comparison_fn_t,
+              [have_comparison_fn_t=yes],
+              [have_comparison_fn_t=no],
+              [[#define _GNU_SOURCE
+                #include <stdlib.h>]])
+
 # cJSON. Note that we don’t try to ensure the header we find matches the
 # library we find. Hopefully that’s not a problem.
 AS_IF([test $want_json = yes], [
@@ -859,14 +866,10 @@ AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
-AS_IF([test $have_overlayfs = yes],
-      [AC_DEFINE([HAVE_OVERLAYFS], [1], [unprivileged overlayfs])])
-AS_IF([test $have_tmpfs_xattrs = yes],
-      [AC_DEFINE([HAVE_TMPFS_XATTRS], [1], [tmpfs user xattrs])])
+AS_IF([test $have_comparison_fn_t = yes],
+      [AC_DEFINE([HAVE_COMPARISON_FN_T], [1], [comp. function for qsort(3)])])
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
-AS_IF([test $have_seccomp = yes],
-      [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
 AM_CONDITIONAL([HAVE_JSON], [test $have_json = yes])
 AS_IF([test $have_json = yes],
       [AC_DEFINE([HAVE_JSON], [1], [enable JSON features])
@@ -874,6 +877,12 @@ AS_IF([test $have_json = yes],
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
+AS_IF([test $have_overlayfs = yes],
+      [AC_DEFINE([HAVE_OVERLAYFS], [1], [unprivileged overlayfs])])
+AS_IF([test $have_seccomp = yes],
+      [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
+AS_IF([test $have_tmpfs_xattrs = yes],
+      [AC_DEFINE([HAVE_TMPFS_XATTRS], [1], [tmpfs user xattrs])])
 
 
 
@@ -1036,6 +1045,7 @@ Building Charliecloud
 
   optional:
     extended glob patterns in --unset-env ... ${have_fnm_extmatch}
+    comparison_fn_t from libc ... ${have_comparison_fn_t}
 
   JSON features: ${have_json}
     enabled ... ${want_json}

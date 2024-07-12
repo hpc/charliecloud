@@ -426,13 +426,26 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
    [1]: http://www.c-faq.com/ptrs/genericpp.html */
 void list_append(void **ar, void *new, size_t size)
 {
-   int ct;
+   size_t ct;
    T_ (new != NULL);
 
    ct = list_count(*ar, size);
-   T_ (*ar = realloc(*ar, (ct+2)*size));        // existing + new + terminator
-   memcpy((char *)*ar + ct*size, new, size);    // append new (no overlap)
-   memset((char *)*ar + (ct+1)*size, 0, size);  // set new terminator
+   T_ (*ar = realloc(*ar, (ct+2)*size));  // existing + new + terminator
+   memcpy(*ar + ct*size, new, size);      // append new (no overlap)
+   memset(*ar + (ct+1)*size, 0, size);    // set new terminator
+}
+
+/* Copy the contents of list src onto the end of dest. */
+void list_cat(void **dst, void *src, size_t size)
+{
+   size_t ct_dst, ct_src;
+   T_ (src != NULL);
+
+   ct_dst = list_count(*dst, size);
+   ct_src = list_count(src, size);
+   T_ (*dst = realloc(*dst, (ct_dst+ct_src+1)*size));
+   memcpy(*dst + ct_dst*size, src, ct_src*size);  // append src (no overlap)
+   memset(*dst + (ct_dst+ct_src)*size, 0, size);  // set new terminator
 }
 
 /* Return the number of elements of size size in list *ar. */
@@ -459,6 +472,35 @@ void *list_new(size_t size, size_t ct)
    void *list;
    T_ (list = calloc(ct+1, size));
    return list;
+}
+
+/* Remove any duplicate elements in ar, in-place, according to comparison
+   function cmp. The last duplicate in the list wins. Preserves order
+   otherwise. */
+void list_uniq(void *ar, size_t size, comparison_fn_t cmp)
+{
+   size_t rm_ct;
+   size_t ct_starting = list_count(ar, size);
+   void *zero_blk = ar + ct_starting * size;  // assumes terminated correctly
+
+   // Loop backwards through array; set duplicates to zero. We could instead
+   // bubble out the duplicates here, but I felt keeping track of indices
+   // would be too hard.
+   for (int i = ct_starting - 1; i > 0; i--) {      // ar[0] has nothing prior
+      if (memcmp(ar + i * size, zero_blk, size))  // if not already deleted
+         for (int j = i - 1; j >= 0; j--)
+            if (!cmp(ar + i * size, ar + j * size))
+               memset(ar + j * size, 0, size);
+   }
+   // Loop forwards through array, shifting each item backwards the number of
+   // zero blocks we’ve seen so far.
+   rm_ct = 0;
+   for (int i = 0; i < ct_starting; i++)
+      if (!memcmp(ar + i * size, zero_blk, size))  // ar[i] deleted
+         rm_ct++;
+      else if (rm_ct > 0)
+         memcpy(ar + (i - rm_ct) * size, ar + i * size, size);
+   memset(ar + (ct_starting - rm_ct) * size, 0, size);  // terminate
 }
 
 /* If verbose enough, print uids and gids on stderr prefixed with where.

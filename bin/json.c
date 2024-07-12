@@ -36,10 +36,9 @@ struct cdi_hook_dispatch {
 struct cdi_spec {
    char *kind;
    char *src;             // path to source spec file
-   bool requested;        // true if user asked for this device kind
    struct env_var *envs;
    struct bind *binds;
-   char **ldconfig_dirs;  // directories to process with ldconfig(8)
+   char **ldconfigs;  // directories to process with ldconfig(8)
 };
 
 struct json_dispatch {
@@ -59,7 +58,7 @@ const size_t READ_SZ = 16384;
 /** Function prototypes (private) **/
 
 char **array_strings_json_to_c(cJSON *jarry, size_t *ct);
-void cdi_add(struct cdi_spec ***specs, struct cdi_spec *spec_new);
+int cdi_cmp_kind(const void *a, const void *b);
 void cdi_free(struct cdi_spec *spec);
 void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args);
 char *cdi_hook_to_string(const char *hook_name, char **args);
@@ -140,22 +139,18 @@ char **array_strings_json_to_c(cJSON *jarry, size_t *ct)
    return carry;
 }
 
-/* Add spec to the given list of CDI specs, which is an out parameter. If
-   we’ve seen the spec’s kind before, replace the existing spec with the same
-   kind. Otherwise, append the new spec. */
-void cdi_add(struct cdi_spec ***specs, struct cdi_spec *spec_new)
+/* Compare the kinds of specifications a and b (which are double pointers,
+   hence the hairy casts). As expected by qsort(3):
+
+     if a < b: return negative value
+     if a = b: return 0
+     if a > b: return positive value */
+int cdi_cmp_kind(const void *a, const void *b)
 {
-   if (*specs != NULL)
-      for (size_t i = 0; (*specs)[i] != NULL; i++)
-         if (!strcmp((*specs)[i]->kind, spec_new->kind)) {
-            DEBUG("CDI: spec %s: replacing at %d", spec_new->kind, i);
-            free((*specs)[i]);
-            *specs[i] = spec_new;
-            return;
-         }
-   // don’t alread have the kind if we got through the loop
-   DEBUG("CDI: spec %s: new", spec_new->kind);
-   list_append((void **)specs, &spec_new, sizeof(spec_new));
+   struct cdi_spec *a_ = *(struct cdi_spec **)a;
+   struct cdi_spec *b_ = *(struct cdi_spec **)b;
+
+   return strcmp(a_->kind, b_->kind);
 }
 
 /* Free spec. */
@@ -168,9 +163,9 @@ void cdi_free(struct cdi_spec *spec)
       free(spec->envs[i].value);
    }
    free(spec->envs);
-   for (size_t i = 0; spec->ldconfig_dirs[i] != NULL; i++)
-      free(spec->ldconfig_dirs[i]);
-   free(spec->ldconfig_dirs);
+   for (size_t i = 0; spec->ldconfigs[i] != NULL; i++)
+      free(spec->ldconfigs[i]);
+   free(spec->ldconfigs);
    free(spec);
 }
 
@@ -182,7 +177,7 @@ void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args)
          T_ (args[i+1] != NULL);
          T_ (dir = strdup(args[i+1]));
          // FIXME: YOU ARE HERE: APPEND ONLY IF WE DON'T ALREADY HAVE DIR
-         list_append((void **)&spec->ldconfig_dirs, &dir, sizeof(dir));
+         list_append((void **)&spec->ldconfigs, &dir, sizeof(dir));
          i++;
       }
 }
@@ -211,7 +206,6 @@ void cdi_log(struct cdi_spec *spec)
    size_t ct;
 
    DEBUG("CDI: %s from %s:", spec->kind, spec->src);
-   DEBUG("CDI:   devices requested:   %s", bool_to_string(spec->requested));
    ct = list_count((void *)(spec->envs), sizeof(struct env_var));
    DEBUG("CDI:   environment: %d:", ct);
    for (size_t i = 0; i < ct; i++)
@@ -220,10 +214,10 @@ void cdi_log(struct cdi_spec *spec)
    DEBUG("CDI:   bind mounts: %d:", ct);
    for (size_t i = 0; i < ct; i++)
       DEBUG("CDI:     %s ->  %s", spec->binds[i].src, spec->binds[i].dst);
-   ct = list_count((void *)(spec->ldconfig_dirs), sizeof(char *));
+   ct = list_count((void *)(spec->ldconfigs), sizeof(char *));
    DEBUG("CDI:   ldconfig directories: %d:", ct);
    for (size_t i = 0; i < ct; i++)
-      DEBUG("CDI:     %s", spec->ldconfig_dirs[i]);
+      DEBUG("CDI:     %s", spec->ldconfigs[i]);
 }
 
 /* Read and parse the CDI spec file at path. Return a pointer to the parsed
@@ -274,34 +268,34 @@ struct cdi_spec *cdi_read(const char *path)
    bind mounts) happens later. */
 void cdi_update(struct container *c, char **devids)
 {
-   struct cdi_spec *spec;
-   struct cdi_spec **specs = NULL;
+   struct cdi_spec **specs = list_new(sizeof(struct cdi_spec *), 12);
 
-   // read CDI spec files in configured directories
+   // read CDI spec files in configured directories, if requested
+   // FIXME
 
    // read CDI spec files specifically requested
    for (size_t i = 0; devids[i] != NULL; i++)
       if (devids[i][0] == '.' || devids[i][0] == '/') {
-         spec = cdi_read(devids[i]);
-         spec->requested = true;
-         cdi_add(&specs, spec);
+         struct cdi_spec *spec = cdi_read(devids[i]);
+         list_append((void **)&specs, &spec, sizeof(spec));
       }
 
-   // filter device kinds to those requested
+   // rm duplicate kinds
+   DEBUG("CDI: read %d specs", list_count(specs, sizeof(specs[0])));
+   list_uniq(specs, sizeof(specs[0]), cdi_cmp_kind);
 
    // debugging: print parsed CDI specs
+   DEBUG("CDI: using %d specs", list_count(specs, sizeof(specs[0])));
    for (size_t i = 0; specs[i] != NULL; i++)
       cdi_log(specs[0]);
 
-   // figure out bind mounts actually needed and set up symlinks
-
    // update c
-   list_join(
-   //
-   // lconfigs -- copy rather than assigning b/c (1) easier to free and (2)
-   // still works if we later grow other sources of ldconfig
-   //
-   // need list_join()
+   for (size_t i = 0; specs[i] != NULL; i++) {
+      // ldconfigs; copy rather than assigning because (1) easier to free
+      // and (2) still works if we later grow other sources of ldconfig.
+      list_cat((void **)&c->ldconfigs, (void *)specs[i]->ldconfigs,
+               sizeof(c->ldconfigs[0]));
+   }
 
    // clean up
    for (size_t i = 0; specs[i] != NULL; i++)

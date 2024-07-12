@@ -78,6 +78,10 @@
 
 /** Types **/
 
+#ifndef HAVE_COMPARISON_FN_T
+typedef int (*comparison_fn_t) (const void *, const void *);
+#endif
+
 enum env_action { ENV_END = 0,       // terminate list of environment changes
                   ENV_SET_DEFAULT,   // set by /ch/environment within image
                   ENV_SET_VARS,      // set by list of variables
@@ -140,8 +144,10 @@ void env_set(const char *name, const char *value, const bool expand);
 void env_unset(const char *glob);
 struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
+void list_cat(void **dst, void *src, size_t size);
 size_t list_count(void *ar, size_t size);
 void *list_new(size_t size, size_t ct);
+void list_uniq(void *ar, size_t size, comparison_fn_t cmp);
 void log_ids(const char *func, int line);
 void logging_init(enum log_color_when when, enum log_test test);
 void test_logging(bool fail);
