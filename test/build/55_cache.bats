@@ -1580,3 +1580,45 @@ EOF
     [[ $status -eq 0 ]]
     [[ $output != *'image erroneously marked cached, fixing'* ]]
 }
+
+@test "${tag}: modify" {
+    ch-image build-cache --reset
+
+    ch-image pull alpine:3.17
+    ch-image modify -c "echo foo" -c "echo bar" -- alpine:3.17 tmpimg
+
+    blessed_out=$(cat << 'EOF'
+*  (tmpimg) RUN.S echo bar
+*  RUN.S echo foo
+*  SHELL ['/bin/sh', '-c']
+*  (alpine+3.17) PULL alpine:3.17
+*  (root) ROOT
+EOF
+)
+
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    echo "touch /home/bar" >> "${BATS_TMPDIR}/script.sh"
+    chmod 755 "${BATS_TMPDIR}/script.sh"
+    ch-image modify alpine:3.17 tmpimg "${BATS_TMPDIR}/script.sh"
+
+    blessed_out=$(cat <<EOF
+*  (tmpimg) RUN.S /ch/script.sh
+*  COPY ['${BATS_TMPDIR}/script.sh'] -> '/ch/script.sh'
+| *  RUN.S echo bar
+| *  RUN.S echo foo
+|/
+*  SHELL ['/bin/sh', '-c']
+*  (alpine+3.17) PULL alpine:3.17
+*  (root) ROOT
+EOF
+)
+
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+}

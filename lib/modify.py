@@ -30,15 +30,14 @@ def main(cli_):
    global cli
    cli = cli_
 
-   # This file assumes that global cli comes from the “build” function. If we
+   # build.py assumes that global cli comes from the “build” function. If we
    # don’t assign these values, the program will fail after trying to access
    # them. FIXME: Can partially fix this by adding command line opts.
    cli.parse_only = False
-   #cli.force = ch.Force_Mode.SECCOMP
-   cli.force_cmd = force.FORCE_CMD_DEFAULT
-   #cli.bind = []
-   #cli.build_arg = []
+   #cli.force_cmd = force.FORCE_CMD_DEFAULT
    cli.context = os.path.abspath(os.sep)
+
+   build.cli_process_common(cli)
 
    commands = []
    # “Flatten” commands array

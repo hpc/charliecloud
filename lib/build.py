@@ -127,6 +127,8 @@ def main(cli_):
    global cli
    cli = cli_
 
+   cli_process_common(cli)
+
    # Process CLI. Make appropriate modifications to “cli” instance and return
    # Dockerfile text.
    text = cli_process(cli)
@@ -144,40 +146,6 @@ def main(cli_):
 # reference, so changes made to mutable objects (which “cli” is) will persist in
 # the scope of the caller.'
 def cli_process(cli):
-   # --force and friends.
-   if (cli.force_cmd and cli.force == ch.Force_Mode.FAKEROOT):
-      ch.FATAL("--force-cmd and --force=fakeroot are incompatible")
-   if (not cli.force_cmd):
-      cli.force_cmd = force.FORCE_CMD_DEFAULT
-   else:
-      cli.force = ch.Force_Mode.SECCOMP
-      # convert cli.force_cmd to parsed dict
-      force_cmd = dict()
-      for line in cli.force_cmd:
-         (cmd, args) = force.force_cmd_parse(line)
-         force_cmd[cmd] = args
-      cli.force_cmd = force_cmd
-   ch.VERBOSE("force mode: %s" % cli.force)
-   if (cli.force == ch.Force_Mode.SECCOMP):
-      for (cmd, args) in cli.force_cmd.items():
-         ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
-   if (    cli.force == ch.Force_Mode.SECCOMP
-       and ch.cmd([ch.CH_BIN + "/ch-run", "--feature=seccomp"],
-                  fail_ok=True) != 0):
-      ch.FATAL("ch-run was not built with seccomp(2) support")
-
-   # Deal with build arguments.
-   def build_arg_get(arg):
-      kv = arg.split("=")
-      if (len(kv) == 2):
-         return kv
-      else:
-         v = os.getenv(kv[0])
-         if (v is None):
-            ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
-         return (kv[0], v)
-   cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
-
    # Infer input file if needed.
    if (cli.file is None):
       cli.file = cli.context + "/Dockerfile"
@@ -233,6 +201,42 @@ def cli_process(cli):
       ch.close_(fp)
 
    return text
+
+# Process common opts between modify and build.
+def cli_process_common(cli):
+   # --force and friends.
+   if (cli.force_cmd and cli.force == ch.Force_Mode.FAKEROOT):
+      ch.FATAL("--force-cmd and --force=fakeroot are incompatible")
+   if (not cli.force_cmd):
+      cli.force_cmd = force.FORCE_CMD_DEFAULT
+   else:
+      cli.force = ch.Force_Mode.SECCOMP
+      # convert cli.force_cmd to parsed dict
+      force_cmd = dict()
+      for line in cli.force_cmd:
+         (cmd, args) = force.force_cmd_parse(line)
+         force_cmd[cmd] = args
+      cli.force_cmd = force_cmd
+   ch.VERBOSE("force mode: %s" % cli.force)
+   if (cli.force == ch.Force_Mode.SECCOMP):
+      for (cmd, args) in cli.force_cmd.items():
+         ch.VERBOSE("force command: %s" % ch.argv_to_string([cmd] + args))
+   if (    cli.force == ch.Force_Mode.SECCOMP
+       and ch.cmd([ch.CH_BIN + "/ch-run", "--feature=seccomp"],
+                  fail_ok=True) != 0):
+      ch.FATAL("ch-run was not built with seccomp(2) support")
+
+   # Deal with build arguments.
+   def build_arg_get(arg):
+      kv = arg.split("=")
+      if (len(kv) == 2):
+         return kv
+      else:
+         v = os.getenv(kv[0])
+         if (v is None):
+            ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
+         return (kv[0], v)
+   cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
 
 def parse_dockerfile(text):
    # Parse it.
