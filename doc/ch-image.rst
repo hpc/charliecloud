@@ -2107,7 +2107,7 @@ Delete all images and cache from ch-image builder storage.
 
 
 :code:`modify`
-=============
+==============
 
 Modify an image with shell commands, possibly interactively.
 

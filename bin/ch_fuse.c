@@ -188,7 +188,7 @@ int sq_loop(void)
 
    // Clean up zombie child if exit signal was SIGCHLD.
    if (!sigchld_received)
-      exit_code = ERR_SQUASH;
+      exit_code = EXIT_SQUASH;
    else {
       Tf (wait(&child_status) >= 0, "can't wait for child");
       if (WIFEXITED(child_status)) {

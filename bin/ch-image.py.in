@@ -284,11 +284,25 @@ def main():
    sp = ap.add_parser("modify", "foo")
    add_opts(sp, modify.main, deps_check=True, stog_init=True)
    sp.add_argument("-c", metavar="CMD", action="append", default=[], nargs=1, help="foo")
-   sp.add_argument("-S", "--shell", metavar="shell", help="foo")
+   sp.add_argument("-i", "--interactive", action="store_true", help="foo")
+   sp.add_argument("-t", "--test", action="store_true", help="foo")
+   sp.add_argument("-S", "--shell", metavar="shell", default="/bin/sh", help="foo")
    sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to modify")
    sp.add_argument("out_image", metavar="OUT_IMAGE", help="destination of modified image")
    # Optional positional argument? https://stackoverflow.com/a/4480202
    sp.add_argument("script", metavar="SCRIPT", help="foo", nargs='?')
+   sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
+                   action="append", default=[],
+                   help="mount SRC at guest DST (default: same as SRC)")
+   sp.add_argument("--build-arg", metavar="ARG[=VAL]",
+                   action="append", default=[],
+                   help="set build-time variable ARG to VAL, or $ARG if no VAL")
+   sp.add_argument("--force", metavar="MODE", nargs="?", default="seccomp",
+                   type=ch.Force_Mode, const="seccomp",
+                   help="inject unprivileged build workarounds")
+   sp.add_argument("--force-cmd", metavar="CMD,ARG1[,ARG2...]",
+                   action="append", default=[],
+                   help="command arg(s) to add under --force=seccomp")
 
    # pull
    sp = ap.add_parser("pull",

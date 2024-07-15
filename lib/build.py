@@ -134,7 +134,7 @@ def main(cli_):
    tree = parse_dockerfile(text)
 
    global image_ct
-   ml = traverse_parse_tree(tree, image_ct, cli)
+   ml = parse_tree_traverse(tree, image_ct, cli)
 
 ## Functions ##
 
@@ -144,35 +144,6 @@ def main(cli_):
 # reference, so changes made to mutable objects (which “cli” is) will persist in
 # the scope of the caller.'
 def cli_process(cli):
-   # Infer input file if needed.
-   if (cli.file is None):
-      cli.file = cli.context + "/Dockerfile"
-
-   # Infer image name if needed.
-   if (cli.tag is None):
-      path = os.path.basename(cli.file)
-      if ("." in path):
-         (base, ext_all) = str(path).split(".", maxsplit=1)
-         (base_all, ext_last) = str(path).rsplit(".", maxsplit=1)
-      else:
-         base = None
-         ext_last = None
-      if (base == "Dockerfile"):
-         cli.tag = ext_all
-         ch.VERBOSE("inferring name from Dockerfile extension: %s" % cli.tag)
-      elif (ext_last in ("df", "dockerfile")):
-         cli.tag = base_all
-         ch.VERBOSE("inferring name from Dockerfile basename: %s" % cli.tag)
-      elif (os.path.abspath(cli.context) != "/"):
-         cli.tag = os.path.basename(os.path.abspath(cli.context))
-         ch.VERBOSE("inferring name from context directory: %s" % cli.tag)
-      else:
-         assert (os.path.abspath(cli.context) == "/")
-         cli.tag = "root"
-         ch.VERBOSE("inferring name with root context directory: %s" % cli.tag)
-      cli.tag = re.sub(r"[^a-z0-9_.-]", "", cli.tag.lower())
-      ch.INFO("inferred image name: %s" % cli.tag)
-
    # --force and friends.
    if (cli.force_cmd and cli.force == ch.Force_Mode.FAKEROOT):
       ch.FATAL("--force-cmd and --force=fakeroot are incompatible")
@@ -206,6 +177,37 @@ def cli_process(cli):
             ch.FATAL("--build-arg: %s: no value and not in environment" % kv[0])
          return (kv[0], v)
    cli.build_arg = dict( build_arg_get(i) for i in cli.build_arg )
+
+   # Infer input file if needed.
+   if (cli.file is None):
+      cli.file = cli.context + "/Dockerfile"
+
+   # Infer image name if needed.
+   if (cli.tag is None):
+      path = os.path.basename(cli.file)
+      if ("." in path):
+         (base, ext_all) = str(path).split(".", maxsplit=1)
+         (base_all, ext_last) = str(path).rsplit(".", maxsplit=1)
+      else:
+         base = None
+         ext_last = None
+      if (base == "Dockerfile"):
+         cli.tag = ext_all
+         ch.VERBOSE("inferring name from Dockerfile extension: %s" % cli.tag)
+      elif (ext_last in ("df", "dockerfile")):
+         cli.tag = base_all
+         ch.VERBOSE("inferring name from Dockerfile basename: %s" % cli.tag)
+      elif (os.path.abspath(cli.context) != "/"):
+         cli.tag = os.path.basename(os.path.abspath(cli.context))
+         ch.VERBOSE("inferring name from context directory: %s" % cli.tag)
+      else:
+         assert (os.path.abspath(cli.context) == "/")
+         cli.tag = "root"
+         ch.VERBOSE("inferring name with root context directory: %s" % cli.tag)
+      cli.tag = re.sub(r"[^a-z0-9_.-]", "", cli.tag.lower())
+      ch.INFO("inferred image name: %s" % cli.tag)
+
+
    ch.DEBUG(cli)
 
    # Guess whether the context is a URL, and error out if so. This can be a
@@ -280,7 +282,7 @@ def parse_dockerfile(text):
 # [1]: https://lark-parser.readthedocs.io/en/latest/visitors/#visitors
 # [2]: https://github.com/lark-parser/lark/blob/445c8d4/lark/visitors.py#L211
 # [3]: https://lark-parser.readthedocs.io/en/latest/classes/#tree
-def traverse_parse_tree(tree, image_ct_, cli_):
+def parse_tree_traverse(tree, image_ct_, cli_):
    global cli
    global image_ct
    cli = cli_

@@ -25,9 +25,9 @@
 #define WARNINGS_SIZE (4*1024)
 
 /* Exit codes (see also: test/common.bash, lib/build.py). */
-#define ERR_CHRUN 31
-#define ERR_CMD 49
-#define ERR_SQUASH 84
+#define EXIT_CHRUN 31
+#define EXIT_CMD 49
+#define EXIT_SQUASH 84
 
 /* Test some value, and if it's not what we expect, exit with a fatal error.
    These are macros so we have access to the file and line number.

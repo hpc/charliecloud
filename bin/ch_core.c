@@ -568,7 +568,7 @@ void run_user_command(char *argv[], const char *initial_dir)
       T_ (freopen("/dev/null", "w", stderr));
    execvp(argv[0], argv);  // only returns if error
    ERROR(errno, "can't execve(2): %s", argv[0]);
-   exit(ERR_CMD);
+   exit(EXIT_CMD);
 }
 
 /* Set up the fake-syscall seccomp(2) filter. This computes and installs a

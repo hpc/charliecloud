@@ -445,7 +445,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #ifdef HAVE_FNM_EXTMATCH
          exit(0);
 #else
-         exit(ERR_CHRUN);
+         exit(EXIT_CHRUN);
 #endif
       } else if (!strcmp(arg, "overlayfs")) {
 #ifdef HAVE_OVERLAYFS
@@ -457,13 +457,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
 #ifdef HAVE_SECCOMP
          exit(0);
 #else
-         exit(ERR_CHRUN);
+         exit(EXIT_CHRUN);
 #endif
       } else if (!strcmp(arg, "squash")) {
 #ifdef HAVE_LIBSQUASHFUSE
          exit(0);
 #else
-         exit(ERR_CHRUN);
+         exit(EXIT_CHRUN);
 #endif
       } else if (!strcmp(arg, "tmpfs-xattrs")) {
 #ifdef HAVE_TMPFS_XATTRS
