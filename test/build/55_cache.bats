@@ -1621,4 +1621,25 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
+
+    printf 'echo hello\nexit\n' | ch-image modify -i alpine:3.17 tmpimg
+
+    blessed_out=$(cat <<EOF
+*  (tmpimg) MODIFY interactive
+| *  RUN.S /ch/script.sh
+| *  COPY ['${BATS_TMPDIR}/script.sh'] -> '/ch/script.sh'
+| | *  RUN.S echo bar
+| | *  RUN.S echo foo
+| |/
+| *  SHELL ['/bin/sh', '-c']
+|/
+*  (alpine+3.17) PULL alpine:3.17
+*  (root) ROOT
+EOF
+)
+
+    run ch-image build-cache --tree
+    echo "$output"
+    [[ $status -eq 0 ]]
+    diff -u <(echo "$blessed_out") <(echo "$output" | treeonly)
 }

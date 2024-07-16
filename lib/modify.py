@@ -34,7 +34,6 @@ def main(cli_):
    # don’t assign these values, the program will fail after trying to access
    # them. FIXME: Can partially fix this by adding command line opts.
    cli.parse_only = False
-   #cli.force_cmd = force.FORCE_CMD_DEFAULT
    cli.context = os.path.abspath(os.sep)
 
    build.cli_process_common(cli)

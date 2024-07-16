@@ -2158,11 +2158,11 @@ and::
   RUN echo world
   EOF
 
-That is, :code:`ch-image` simply builds a Dockerfile internally that uses
-:code:`foo` as a base image, starts with an appropriate :code:`SHELL` if
-:code:`-S` was given, converts each :code:`-c` to a :code:`RUN` command, and
-executes this Dockerfile to produce image :code:`bar`. That is, if any command
-fails, the build fails and no further commands are attempted.
+:code:`ch-image` simply builds a Dockerfile internally that uses :code:`foo` as
+a base image, starts with an appropriate :code:`SHELL` if :code:`-S` was given,
+converts each :code:`-c` to a :code:`RUN` command, and executes this Dockerfile
+to produce image :code:`bar`. As with regular Dockerfiles, if any command fails,
+the build fails and no further commands are attempted.
 
 This mode provides detailed image provenance just like a Dockerfile.
 
