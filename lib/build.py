@@ -136,8 +136,11 @@ def main(cli_):
 
    tree = parse_dockerfile(text)
 
+   # Count the number of stages (i.e., FROM instructions)
    global image_ct
-   ml = parse_tree_traverse(tree, image_ct, cli)
+   image_ct = sum(1 for i in tree.children_("from_"))
+
+   parse_tree_traverse(tree, image_ct, cli)
 
 ## Functions ##
 
@@ -257,10 +260,6 @@ def parse_dockerfile(text):
    # Sometimes we exit after parsing.
    if (cli.parse_only):
       ch.exit(0)
-
-   # Count the number of stages (i.e., FROM instructions)
-   global image_ct
-   image_ct = sum(1 for i in tree.children_("from_"))
 
    # If we use RSYNC, error out quickly if appropriate rsync(1) not present.
    if (tree.child("rsync") is not None):

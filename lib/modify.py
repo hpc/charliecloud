@@ -4,6 +4,7 @@ import enum
 import os
 import subprocess
 import sys
+import tempfile
 import uuid
 
 import charliecloud as ch
@@ -60,37 +61,33 @@ def main(cli_):
    # Determine modify mode based on what is present in command line
    if (commands != []):
       if (cli.interactive):
-         ch.FATAL(">:(")
+         ch.FATAL("incompatible opts: “-c”, “-i”")
       if (cli.script is not None):
-         ch.FATAL(">:(")
+         ch.FATAL("script mode incompatible with command mode")
       mode = Modify_Mode.COMMAND_SEQ
    elif (cli.script is not None):
       if (cli.interactive):
-         ch.FATAL(">:(")
+         ch.FATAL("script mode incompatible with interactive mode")
       mode = Modify_Mode.SCRIPT
    elif (sys.stdin.isatty() or (cli.interactive)):
       mode = Modify_Mode.INTERACTIVE
    else:
-      # copy stdin to tmp file
-      # if tmp file is empty error out
-      # goto filename argument present, mode N
+      # Write stdin to tempfile, copy tempfile into container as a script, run
+      # script.
       stdin = sys.stdin.read()
       if (stdin == ''):
          ch.FATAL("modify mode unclear")
 
-      # We use “decode("utf-8")” here because stdout seems default to a bytes
-      # object, which is not a valid type for an argument for “Path”.
-      tmpfile = ch.Path(subprocess.run(["mktemp"],capture_output=True).stdout.decode("utf-8"))
-      # https://stackoverflow.com/a/6482200
-      with open(tmpfile, "w") as outfile:
-         outfile.write(stdin)
-      # By default, the file is seemingly created with its execute bit
-      # unassigned. This is problematic for the RUN instruction.
-      os.chmod(tmpfile, 0o755)
-      cli.script = str(tmpfile)
+      tmp = tempfile.NamedTemporaryFile()
+      with open(tmp.name, 'w') as fd:
+         fd.write(stdin)
+
+      cli.script = tmp.name
+
       mode = Modify_Mode.SCRIPT
 
-   ch.VERBOSE("shell: %s" % cli.shell)
+   ch.VERBOSE("modify shell: %s" % cli.shell)
+   ch.VERBOSE("modify mode: %s" % mode.value)
 
    ch.ILLERI("mode: %s" % mode)
    if (cli.test):
@@ -222,20 +219,16 @@ def modify_tree_make_script(src_img, path):
                         [lark.Token('IMAGE_REF', str(src_img))],
                         meta)
                       ], meta))
-   if (cli.shell is not None):
-      df_children.append(im.Tree(lark.Token('RULE', 'shell'),
-                         [lark.Token('STRING_QUOTED', '"%s"' % cli.shell),
-                          lark.Token('STRING_QUOTED', '"-c"')
-                         ],meta))
    df_children.append(im.Tree(lark.Token('RULE', 'copy'),
                       [im.Tree(lark.Token('RULE', 'copy_shell'),
                         [lark.Token('WORD', path),
                          lark.Token('WORD', '/ch/script.sh')
                         ], meta)
                       ],meta))
+   # FIXME: Add error handling if “cli.shell” doesn’t exist (issue #1913).
    df_children.append(im.Tree(lark.Token('RULE', 'run'),
                       [im.Tree(lark.Token('RULE', 'run_shell'),
-                        [lark.Token('LINE_CHUNK', '/ch/script.sh')],
+                        [lark.Token('LINE_CHUNK', '%s /ch/script.sh' % cli.shell)],
                         meta)
                       ], meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
