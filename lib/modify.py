@@ -184,7 +184,6 @@ def modify_tree_make(src_img, cmds):
                          ], meta))
    return im.Tree(lark.Token('RULE', 'start'), [im.Tree(lark.Token('RULE','dockerfile'), df_children)], meta)
 
-# FIXME: Combine with “modify_tree_make”?
 def modify_tree_make_script(src_img, path):
    """Temporary(?) analog of “modify_tree_make” for the non-interactive version
       of “modify” using a script. For the command line:
