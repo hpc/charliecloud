@@ -998,7 +998,6 @@ EOF
 
   # non-interactive, script
   echo "touch /home/bar" >> "${BATS_TMPDIR}/modify-script.sh"
-  chmod 755 "${BATS_TMPDIR}/modify-script.sh"
   ch-image modify alpine:3.17 tmpimg "${BATS_TMPDIR}/modify-script.sh"
   run ch-run tmpimg -- ls /home
   echo "$output"
@@ -1009,10 +1008,7 @@ EOF
   ch-image modify alpine:3.17 tmpimg <<'EOF'
 touch /home/foobar
 EOF
-  run ch-run tmpimg -- ls /home
-  echo "$output"
-  [[ $status -eq 0 ]]
-  [[ $output = *'foobar'* ]]
+  [[ -f "$CH_IMAGE_STORAGE/img/tmpimg/home/foobar" ]]
 
   # -c fail
   run ch-image modify -c 'echo foo' -- alpine:3.17 alpine:3.17

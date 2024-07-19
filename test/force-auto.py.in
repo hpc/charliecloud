@@ -129,12 +129,6 @@ class Test(abc.ABC):
       if (self.force in self.force_excludes):
          print(f"\n# skip: {self}: --force=%s excluded" % self.force)
          return
-      # targeted skip, see issue #1904
-      if ((self.base == "quay.io/centos/centos:stream8" and self.run == Run.NEEDED and self.force == "seccomp" and not self.preprep)
-         or (self.base == "fedora:26" and self.run == Run.NEEDED and self.force == "seccomp" and not self.preprep)):
-         skip = "skip 'see issue #1904'"
-      else:
-         skip = ""
       # scope
       if (    (self.scope == Scope.STANDARD or self.run == Run.NEEDED)
           and self.force != "fakeroot"):

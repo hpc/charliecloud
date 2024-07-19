@@ -2183,12 +2183,12 @@ and::
 That is, :code:`ch-image` uses :code:`COPY` to put the script inside the
 image, then runs it.
 
-If :code:`SCRIPT` is not provided and standard input is not a TTY, a script is
-read from there instead. In this case, standard input is copied in full to a
-file in a temporary directory, which is used as the context. The file’s
-modification time is set to 1993-10-21T10:00:00Z and its name to a hash of the
-content, so the cache hits if the content is the same and misses if not. That
-is, the following are equivalent::
+If :code:`SCRIPT` is not provided, standard input is not a TTY, and :code:`-i`
+is not specified, a script is read from stdin instead. In this case, standard
+input is copied in full to a file in a temporary directory, which is used as the
+context. The file’s modification time is set to 1993-10-21T10:00:00Z and its
+name to a hash of the content, so the cache hits if the content is the same and
+misses if not. That is, the following are equivalent::
 
   $ ch-image modify foo bar <<'EOF'
   echo hello world
