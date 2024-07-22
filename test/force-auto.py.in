@@ -85,7 +85,7 @@ class Test(abc.ABC):
       return ""
 
    @property
-   def build2_from_hook(self):
+   def build_from_hook(self):
       return ""
 
    @property
@@ -151,6 +151,7 @@ class Test(abc.ABC):
          build1 = f"""\
 run ch-image -v build -t tmpimg -f - . << 'EOF'
 FROM {self.base}
+{self.build_from_hook}
 RUN {self.prep_run}
 EOF
 echo "$output"
@@ -190,7 +191,7 @@ scope {scope}
 # build 2: image we're testing
 run ch-image -v build {force} -t tmpimg2 -f - . << 'EOF'
 FROM {build2_base}
-{self.build2_from_hook}
+{self.build_from_hook}
 RUN {run}
 EOF
 echo "$output"
@@ -231,19 +232,14 @@ class RHEL7(Test):
 class T_CentOS_7(RHEL7, EPEL_Mixin):
    scope = Scope.STANDARD
    base = "centos:7"
-   prep_run = f"""\
-sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo \
-&& sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo \
-&& sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo \
-&& yum install -y epel-release"""
+   prep_run = "yum install -y epel-release"
 
    @property
-   def build2_from_hook(self):
+   def build_from_hook(self):
       return f"""\
-RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo \
+sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo \
 && sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo \
-&& sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo \
-&& yum install -y epel-release"""
+&& sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo"""
 
 
 class RHEL8(Test):
