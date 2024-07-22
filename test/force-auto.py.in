@@ -120,14 +120,6 @@ class Test(abc.ABC):
       return "\n".join("RUN %s" % run for run in runs)
 
    def test(self):
-      # kludge up a way to fix centos mirror issue
-      if (self.base == "centos:7"):
-         kludge = f"""\
-RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo \
-    && sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo \
-    && sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo\n"""
-      else:
-         kludge = ""
       # skip?
       if (self.preprep and not (self.force and self.run == Run.NEEDED)):
          print(f"\n# skip: {self}: not needed")
