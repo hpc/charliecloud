@@ -221,7 +221,8 @@ bool buf_zero_p(void *buf, size_t size)
    return true;
 }
 
-/* Concatenate strings a and b, then return the result. */
+/* Concatenate strings a and b into a newly-allocated buffer and return the a
+   pointer to this buffer. */
 char *cat(const char *a, const char *b)
 {
    char *ret;
@@ -317,29 +318,39 @@ void env_set(const char *name, const char *value, const bool expand)
    bool first_written;
 
    // Walk through value fragments separated by colon and expand variables.
-   T_ (value_ = strdup(value));
-   value_expanded = "";
-   first_written = false;
-   while (true) {                               // loop executes ≥ once
-      char *fgmt = strsep(&value_, ":");        // NULL -> no more items
-      if (fgmt == NULL)
-         break;
-      if (expand && fgmt[0] == '$' && fgmt[1] != 0) {
-         fgmt = getenv(fgmt + 1);               // NULL if unset
-         if (fgmt != NULL && fgmt[0] == 0)
-            fgmt = NULL;                        // convert empty to unset
-      }
-      if (fgmt != NULL) {                       // NULL -> omit from output
-         if (first_written)
-            value_expanded = cat(value_expanded, ":");
-         value_expanded = cat(value_expanded, fgmt);
-         first_written = true;
+   if (!expand)
+      value_expanded = value;
+   else {
+      T_ (value_ = strdup(value));
+      value_expanded = "";
+      first_written = false;
+      while (true) {                               // loop executes ≥ once
+         char *fgmt = strsep(&value_, ":");        // NULL -> no more items
+         if (fgmt == NULL)
+            break;
+         if (fgmt[0] == '$' && fgmt[1] != 0) {
+            fgmt = getenv(fgmt + 1);               // NULL if unset
+            if (fgmt != NULL && fgmt[0] == 0)
+               fgmt = NULL;                        // convert empty to unset
+         }
+         if (fgmt != NULL) {                       // NULL -> omit from output
+            if (first_written)
+               value_expanded = cat(value_expanded, ":");
+            value_expanded = cat(value_expanded, fgmt);
+            first_written = true;
+         }
       }
    }
 
    // Save results.
    VERBOSE("environment: %s=%s", name, value_expanded);
    Z_ (setenv(name, value_expanded, 1));
+}
+
+void envs_set(const struct env_var *vars, const bool expand)
+{
+   for (size_t i = 0; vars[i].name != NULL; i++)
+      env_set(env_set(vars[i].name, vars[i].value, expand));
 }
 
 /* Remove variables matching glob from the environment. This is tricky,

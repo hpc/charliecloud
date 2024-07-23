@@ -154,11 +154,6 @@ mounting SquashFS images with FUSE.
     This is intended for use by :code:`ch-image(1)` when building images; see
     that man page for a detailed discussion.
 
-  :code:`-t`, :code:`--private-tmp`
-    By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
-    bind-mounted at container :code:`/tmp`. If this is specified, a new
-    :code:`tmpfs` is mounted on the container’s :code:`/tmp` instead.
-
   :code:`--set-env`, :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
     Set environment variables with newline-separated file
     (:code:`/ch/environment` within the image if not specified) or on the
@@ -166,6 +161,11 @@ mounting SquashFS images with FUSE.
 
   :code:`--set-env0`, :code:`--set-env0=FILE`, :code:`--set-env0=VAR=VALUE`
     Like :code:`--set-env`, but file is null-byte separated.
+
+  :code:`-t`, :code:`--private-tmp`
+    By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
+    bind-mounted at container :code:`/tmp`. If this is specified, a new
+    :code:`tmpfs` is mounted on the container’s :code:`/tmp` instead.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
@@ -507,8 +507,8 @@ the same. These are:
    represented in a host path once and then symlinking into it for the
    declared bind mounts.
 
-Command line options and environment variables
-----------------------------------------------
+Selecting devices
+-----------------
 
 :code:`ch-run` must do two things to make CDI devices available: (1) locate
 appropriate specification files and (2) select which kinds of CDI devices to
@@ -536,6 +536,16 @@ repeated to inject multiple device kinds.
 
 Importantly, both :code:`--device` and :code:`--devices` imply
 :code:`--write-fake` (:code:`-W`) so the container image can be written.
+
+Environment variables
+---------------------
+
+Injecting a CDI device may require setting environment variables, as declared
+in the spec file. These environment changes are executed in the order that
+that CDI command line options appear on the command line relative to other
+user-specified environment options, e.g. :code:`--set-env` and
+:code:`--unset-env`. See :ref:`ch-run_environment-variables` below for
+details.
 
 Hooks
 ------
@@ -594,39 +604,29 @@ Ignored hooks
    access to all appropriate files.
 
 
+.. _ch-run_environment-variables:
+
 Environment variables
 =====================
 
-:code:`ch-run` leaves environment variables unchanged, i.e. the host
-environment is passed through unaltered, except:
+Unlike most other implementations, :code:`ch-run`’s baseline for the container
+environment is to pass through the host environment unaltered. From this
+starting point, the environment is altered in this order:
 
-* by default (:code:`--home` not specified), :code:`HOME` is set to
-  :code:`/root`, if it exists, and :code:`/` otherwise.
-* limited tweaks to avoid significant guest breakage;
-* user-set variables via :code:`--set-env`;
-* user-unset variables via :code:`--unset-env`; and
-* set :code:`CH_RUNNING`.
+#. :code:`$HOME`, :code:`$PATH`, and :code:`$TMPDIR` are adjusted to avoid
+   common breakage (see below).
 
-This section describes these features.
+#. User-specified changes are executed in the order they appear on the command
+   line (i.e., :code:`-d`/:code:`--devices`, :code:`--device`,
+   :code:`--set-env`, and :code:`--unset-env`, some of which can appear
+   multiple times).
 
-The default tweaks happen first, then :code:`--set-env` and
-:code:`--unset-env` in the order specified on the command line, and then
-:code:`CH_RUNNING`. The two options can be repeated arbitrarily many times,
-e.g. to add/remove multiple variable sets or add only some variables in a
-file.
+#. :code:`$CH_RUNNING` is set.
 
-Default behavior
-----------------
+Built-in environment changes
+----------------------------
 
-By default, :code:`ch-run` makes the following environment variable changes:
-
-:code:`$CH_RUNNING`
-  Set to :code:`Weird Al Yankovic`. While a process can figure out that it’s
-  in an unprivileged container and what namespaces are active without this
-  hint, that can be messy, and there is no way to tell that it’s a
-  *Charliecloud* container specifically. This variable makes such a test
-  simple and well-defined. (**Note:** This variable is unaffected by
-  :code:`--unset-env`.)
+Prior to user changes, i.e. can be altered by the user:
 
 :code:`$HOME`
   If :code:`--home` is specified, then your home directory is bind-mounted
@@ -637,13 +637,12 @@ By default, :code:`ch-run` makes the following environment variable changes:
   is unchanged.)
 
 :code:`$PATH`
-  Newer Linux distributions replace some root-level directories, such as
-  :code:`/bin`, with symlinks to their counterparts in :code:`/usr`.
-
-  Some of these distributions (e.g., Fedora 24) have also dropped :code:`/bin`
-  from the default :code:`$PATH`. This is a problem when the guest OS does
-  *not* have a merged :code:`/usr` (e.g., Debian 8 “Jessie”). Thus, we add
-  :code:`/bin` to :code:`$PATH` if it’s not already present.
+  We append :code:`/bin` to :code:`$PATH` if it’s not already present. This is
+  because newer Linux distributions replace some root-level directories, such
+  as :code:`/bin`, with symlinks to their counterparts in :code:`/usr`. Some
+  of these distributions (e.g., Fedora 24) have also dropped :code:`/bin` from
+  the default :code:`$PATH`. This is a problem when the guest OS does *not*
+  have a merged :code:`/usr` (e.g., Debian 8 “Jessie”).
 
   Further reading:
 
@@ -655,6 +654,15 @@ By default, :code:`ch-run` makes the following environment variable changes:
   Unset, because this is almost certainly a host path, and that host path is
   made available in the guest at :code:`/tmp` unless :code:`--private-tmp` is
   given.
+
+After user changes, i.e. cannot be altered by the user with :code:`ch-run`:
+
+:code:`$CH_RUNNING`
+  Set to :code:`Weird Al Yankovic`. While a process can figure out that it’s
+  in an unprivileged container and what namespaces are active without this
+  hint, that can be messy, and there is no way to tell that it’s a
+  *Charliecloud* container specifically. This variable makes such a test
+  simple and well-defined.
 
 Setting variables with :code:`--set-env` or :code:`--set-env0`
 --------------------------------------------------------------

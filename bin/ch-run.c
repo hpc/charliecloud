@@ -22,12 +22,25 @@
 
 /** Types **/
 
+enum env_option_type {
+   ENV_END = 0,      // list terminator sentinel
+   ENV_SET,          // --set-env
+   ENV_SET0,         // --set-env0
+   ENV_UNSET,        // --unset-env
+   ENV_CDI_DEV,      // --device
+};
+
+struct env_option {
+   enum env_option_type opt;
+   char *arg;
+};
+
 struct args {
    struct container c;
 #ifdef HAVE_JSON
    char **cdi_devids;
 #endif
-   struct env_delta *env_deltas;
+   struct env_option *env_options;
    enum log_color_when log_color;
    enum log_test log_test;
    char *initial_dir;
@@ -144,9 +157,10 @@ bool get_first_env(char **array, char **name, char **value);
 void img_directory_verify(const char *img_path, const struct args *args);
 int join_ct(int cli_ct);
 char *join_tag(char *cli_tag);
+void parse_env(struct env_option **options, enum env_option_type opt,
+               const char *arg);
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
-void parse_set_env(struct args *args, char *arg, int delim);
 void privs_verify_invoking();
 char *storage_default(void);
 void write_fake_enable(struct args *args, char *overlay_size);
@@ -187,27 +201,30 @@ int main(int argc, char *argv[])
 
    verbose = LL_INFO;  // in ch_misc.c
    args = (struct args){
-      .c = (struct container){ .binds = list_new(sizeof(struct bind), 0),
-                               .container_gid = getegid(),
-                               .container_uid = geteuid(),
-                               .env_expand = true,
-                               .host_home = NULL,
-                               .img_ref = NULL,
-                               .ldconfigs = list_new(sizeof(char *), 0),
-                               .newroot = NULL,
-                               .join = false,
-                               .join_ct = 0,
-                               .join_pid = 0,
-                               .join_tag = NULL,
-                               .overlay_size = NULL,
-                               .private_passwd = false,
-                               .private_tmp = false,
-                               .type = IMG_NONE,
-                               .writable = false },
+      .c = (struct container){
+         .binds = list_new(sizeof(struct bind), 0),
+         .container_gid = getegid(),
+         .container_uid = geteuid(),
+         .env_expand = true,
+         .hooks_prestart = list_new(sizeof(struct hook), 0);
+         .host_home = NULL,
+         .img_ref = NULL,
+         .ldconfigs = list_new(sizeof(char *), 0),
+         .newroot = NULL,
+         .join = false,
+         .join_ct = 0,
+         .join_pid = 0,
+         .join_tag = NULL,
+         .overlay_size = NULL,
+         .private_passwd = false,
+         .private_tmp = false,
+         .type = IMG_NONE,
+         .writable = false
+      },
 #ifdef HAVE_JSON
       .cdi_devids = list_new(sizeof(char *), 0),
 #endif
-      .env_deltas = list_new(sizeof(struct env_delta), 0),
+      .env_options = list_new(sizeof(struct env_option), 0),
       .initial_dir = NULL,
       .log_color = LL_COLOR_AUTO,
       .log_test = LL_TEST_NONE,
@@ -215,7 +232,8 @@ int main(int argc, char *argv[])
       .seccomp_p = false,
 #endif
       .storage_dir = storage_default(),
-      .unsafe = false };
+      .unsafe = false
+   };
 
    /* I couldn't find a way to set argp help defaults other than this
       environment variable. Kludge sets/unsets only if not already set. */
@@ -229,6 +247,7 @@ int main(int argc, char *argv[])
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
    logging_init(args.log_color, args.log_test);
+   env_hooks_install(&args);
 
    if (arg_next >= argc - 1) {
       printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
@@ -291,72 +310,13 @@ int main(int argc, char *argv[])
 
    cdi_update(&args.c, args.cdi_devids);
    containerize(&args.c);
-   fix_environment(&args); // FIXME -- fold into hooks_prestart()?
-   //hooks_prestart(&args.c);
-#ifdef HAVE_SECCOMP
-   if (args.seccomp_p)
-      seccomp_install();
-#endif
-   // run_command(ldconfig, true, NULL);  // FIXME
-   run_user_command(c_argv, args.initial_dir); // should never return
+   hooks_prestart(&args.c);
+   run_user_command(c_argv, args.initial_dir);  // should never return
    exit(EXIT_FAILURE);
 }
 
 
 /** Supporting functions **/
-
-/* Adjust environment variables. Call once containerized, i.e., already
-   pivoted into new root. */
-void fix_environment(struct args *args)
-{
-   char *old_value, *new_value;
-
-   // $HOME: If --home, set to “/home/$USER”.
-   if (args->c.host_home) {
-      Z_ (setenv("HOME", cat("/home/", username), 1));
-   } else if (path_exists("/root", NULL, true)) {
-      Z_ (setenv("HOME", "/root", 1));
-   } else
-      Z_ (setenv("HOME", "/", 1));
-
-   // $PATH: Append /bin if not already present.
-   old_value = getenv("PATH");
-   if (old_value == NULL) {
-      WARNING("$PATH not set");
-   } else if (   strstr(old_value, "/bin") != old_value
-              && !strstr(old_value, ":/bin")) {
-      T_ (1 <= asprintf(&new_value, "%s:/bin", old_value));
-      Z_ (setenv("PATH", new_value, 1));
-      VERBOSE("new $PATH: %s", new_value);
-   }
-
-   // $TMPDIR: Unset.
-   Z_ (unsetenv("TMPDIR"));
-
-   // --set-env and --unset-env.
-   for (size_t i = 0; args->env_deltas[i].action != ENV_END; i++) {
-      struct env_delta ed = args->env_deltas[i];
-      switch (ed.action) {
-      case ENV_END:
-         Te (false, "unreachable code reached");
-         break;
-      case ENV_SET_DEFAULT:
-         ed.arg.vars = env_file_read("/ch/environment", ed.arg.delim);
-         // fall through
-      case ENV_SET_VARS:
-         for (size_t j = 0; ed.arg.vars[j].name != NULL; j++)
-            env_set(ed.arg.vars[j].name, ed.arg.vars[j].value,
-                    args->c.env_expand);
-         break;
-      case ENV_UNSET_GLOB:
-         env_unset(ed.arg.glob);
-         break;
-      }
-   }
-
-   // $CH_RUNNING is not affected by --unset-env or --set-env.
-   Z_ (setenv("CH_RUNNING", "Weird Al Yankovic", 1));
-}
 
 /* Find the first environment variable in array that is set; put its name in
    *name and its value in *value, and return true. If none are set, return
@@ -371,6 +331,98 @@ bool get_first_env(char **array, char **name, char **value)
    }
 
    return false;
+}
+
+/* Set the default environment variables that come before the user-specified
+   environment changes. d must be NULL. */
+void hook_envs_def_first(struct container *c, void *d)
+{
+   char *vnew, *vold;
+   T_ (d == NULL);
+
+   // $HOME: If --home, set to “/home/$USER”.
+   if (c->host_home) {
+      vnew = cat("/home/", username);
+      env_set("HOME", vnew, false);
+      free(vnew);
+   } else if (path_exists("/root", NULL, true)) {
+      env_set("HOME", "/root", false);
+   } else
+      env_set("HOME", "/", false);
+
+   // $PATH: Append /bin if not already present.
+   vold = getenv("PATH");
+   if (vold == NULL) {
+      WARNING("$PATH not set");
+   } else if (strstr(vold, "/bin") != vold && !strstr(vold, ":/bin")) {
+      T_ (1 <= asprintf(&vnew, "%s:/bin", vold));
+      env_set("PATH", vnew, false);
+   }
+
+   // $TMPDIR: Unset.
+   Z_ (unsetenv("TMPDIR"));
+}
+
+/* Set the default environment variables that come after the user-specified
+   changes. d must be NULL. */
+void hook_envs_def_last(struct container *c, void *d)
+{
+   T_ (d == NULL);
+   env_set("CH_RUNNING", "Weird Al Yankovic", false);
+}
+
+/* Install pre-start hooks for environment variable changes. */
+void hook_envs_install(struct args *args)
+{
+   hook_add(&args->hooks_prestart, "env-def-first", hook_envs_def_first, NULL);
+
+   for (size_t i = 0; args->env_options[i].opt != ENV_END; i++) {
+      char *name_base, *name;
+      hookf_t *f;
+      void *d;
+      enum env_option_type opt = args->env_options[i].opt;
+      char *arg = args->env_options[i].arg;
+
+      switch (opt) {
+      case ENV_SET:
+      case ENV_SET0:
+         int delim = ENV_SET ? '\n' : '\0';
+         if (args == NULL) {                 // guest path; defer file read
+            struct env_file *ef;
+            name_base = "env-set-gfile";
+            f = hook_envs_set_file;
+            T_ (ef = malloc(sizeof struct env_file));
+            ef->name = arg;
+            ef->delim = delim;
+            d = ef;
+         } else {
+            f = hook_envs_set;
+            if (strchr(arg, '=') == NULL) {  // host path; read file now
+               name_base = "env-set-hfile";
+               d = env_file_read(arg, delim);
+            } else {                         // direct set
+               name_base = "env-set-direct";
+               d = list_new(sizeof(struct env_var), 1);
+            }
+         }
+         break;
+      case ENV_UNSET:
+         name_base = "env-unset";
+         f = hook_envs_unset;
+         d = arg;
+         break;
+      case ENV_CDI_DEV:
+         name_base = "env-set-cdi";
+         f = hook_envs_set;
+         d = cdi_envs_get(arg);
+         break;
+      }
+      T_ (1 <= asprintf(&name, "%s-%d", name_base, i));
+      hook_add(&args->c.hooks_prestart, name, f, d);
+      free(name);
+   }
+
+   hook_add(&args->hooks_prestart, "env-def-last", hook_envs_def_last, NULL);
 }
 
 /* Validate that it’s OK to run the IMG_DIRECTORY format image at path; if
@@ -471,15 +523,11 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       args->c.join_pid = parse_int(arg, false, "--join-pid");
       break;
    case -6: // --set-env
-      parse_set_env(args, arg, '\n');
+      parse_env(&args->env_options, ENV_SET, arg);
       break;
-   case -7: { // --unset-env
-        struct env_delta ed;
-        Te (strlen(arg) > 0, "--unset-env: GLOB must have non-zero length");
-        ed.action = ENV_UNSET_GLOB;
-        ed.arg.glob = arg;
-        list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
-      } break;
+   case -7: // --unset-env
+      parse_env(&args->env_options, ENV_UNSET, arg);
+      break;
    case -9: // --no-passwd
       args->c.private_passwd = true;
       break;
@@ -537,7 +585,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
 #endif
    case -15: // --set-env0
-      parse_set_env(args, arg, '\0');
+      parse_env(&args->env_options, ENV_SET0, arg);
       break;
    case -16: // --warnings
       for (int i = 1; i <= parse_int(arg, false, "--warnings"); i++)
@@ -655,25 +703,15 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    return 0;
 }
 
-void parse_set_env(struct args *args, char *arg, int delim)
+void parse_env(struct env_option **options, enum env_option_type opt,
+               const char *arg)
 {
-   struct env_delta ed;
-
-   if (arg == NULL) {
-      ed.action = ENV_SET_DEFAULT;
-      ed.arg.delim = delim;
-   } else {
-      ed.action = ENV_SET_VARS;
-      if (strchr(arg, '=') == NULL)
-         ed.arg.vars = env_file_read(arg, delim);
-      else {
-         ed.arg.vars = list_new(sizeof(struct env_var), 1);
-         ed.arg.vars[0] = env_var_parse(arg, NULL, 0);
-      }
-   }
-   list_append((void **)&(args->env_deltas), &ed, sizeof(ed));
+   struct env_option eo = (struct env_option){ .opt = opt,
+                                               .arg = arg };
+   Te (arg == NULL || strlen(arg) > 0,
+       "environment options: argument must have non-zero length");
+   list_append((void **)env_options, &eo, sizeof(eo));
 }
-
 
 /* Validate that the UIDs and GIDs are appropriate for program start, and
    abort if not.

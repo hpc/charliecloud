@@ -15,6 +15,9 @@ endif
 if HAVE_LIBSQUASHFUSE
 ch_run_SOURCES += fuse.h fuse.c
 endif
+if HAVE_SECCOMP
+ch_run_SOURCES += seccomp.h seccomp.c
+endif
 
 # additional build flags for ch-run
 ch_run_CFLAGS = $(PTHREAD_CFLAGS)
