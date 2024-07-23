@@ -74,6 +74,74 @@ AC_CONFIG_FILES([Makefile
                  test/Makefile])
 
 
+### Our macros ######################################################
+
+# Macro to validate executable versions. Arguments:
+#
+#   $1  name of variable containing executable name or absolute path
+#   $2  minimum version
+#   $3  append to $1 to make shell pipeline to get actual version only
+#       (e.g., without program name)
+#
+# This macro is not able to determine if a program exists, only whether its
+# version is sufficient. ${!1} (i.e, the value of the variable whose name is
+# stored in $1) must be either empty, an absolute path to an executable, or
+# the name of a program in $PATH. A prior macro such as AX_WITH_PROG can be
+# used to ensure this condition.
+#
+# If ${!1} is an absolute path, and that file isn’t executable, error out. If
+# it’s something other than an absolute path, assume it’s the name of a
+# program in $PATH; if not, the behavior is undefined but not good (FIXME).
+#
+# Post-conditions:
+#
+#   1. If ${!1} is non-empty and the version reported by the program is
+#      greater than or equal to the minimum, ${!1} is unchanged. If ${!1} is
+#      empty or reported version is insufficient, ${!1} is the empty string.
+#      This lets you test version sufficiency by whether ${!1} is empty.
+#
+#   2. $1_VERSION_NOTE contains a brief explanatory note.
+#
+AC_DEFUN([CH_CHECK_VERSION], [
+  AS_VAR_PUSHDEF([prog], [$1])
+  AS_IF([test -n "$prog"], [
+    # ${!1} is non-empty
+    AS_CASE([$prog],
+      # absolute path; check if executable
+      [/*], [AC_MSG_CHECKING([if $prog is executable])
+             AS_IF([test -e "$prog"],
+              [AC_MSG_RESULT([ok])],
+              [AC_MSG_RESULT([no])
+               AC_MSG_ERROR([must be executable])])])
+    AC_MSG_CHECKING([if $prog version >= $2])
+    vact=$($prog $3)
+    AX_COMPARE_VERSION([$2], [le], [$vact], [
+      AC_SUBST([$1_VERSION_NOTE], ["ok ($vact)"])
+      AC_MSG_RESULT([ok ($vact)])
+    ], [
+      AC_SUBST([$1_VERSION_NOTE], ["too old ($vact)"])
+      AC_MSG_RESULT([too old ($vact)])
+      AS_UNSET([$1])
+    ])
+  ], [
+    # ${!} is empty
+    AC_SUBST([$1_VERSION_NOTE], ["not found"])
+    AS_UNSET([$1])
+  ])
+  AS_VAR_POPDEF([prog])
+])
+
+# Macro to validate that $1 is a directory (or a symlink to one). If not, exit
+# with error, prefixed with $2.
+AC_DEFUN([CH_REQUIRE_DIR], [
+  AC_MSG_CHECKING([whether $1 is a directory])
+  AS_IF([test -d "$1"],
+        [AC_MSG_RESULT(yes)],
+        [AC_MSG_RESULT(no)
+         AC_MSG_ERROR([$2: not a directory: $1])])
+])
+
+
 ### Options ##################################################################
 
 # Note: Variables must match option, e.g. --disable-foo-bar => enable_foo_bar.
@@ -139,6 +207,36 @@ AS_CASE([$with_seccomp],
   [*],    # anything else
     [AC_MSG_ERROR([invalid --with-seccomp arg: $with_seccomp])])
 
+AC_ARG_WITH([json],
+  AS_HELP_STRING([--with-json=@<:@yes|no@:>@],
+                 [enable JSON features by linking with libcjson]))
+AS_CASE([$with_json],
+  [yes],  # --with-json=yes or --with-json
+    [want_json=yes
+     need_json=yes],
+  [no],   # --with-json=no or --without-json
+    [want_json=no
+     need_json=no],
+  [''],   # neither --with-json nor --without-json specified
+    [want_json=yes
+     need_json=no],
+  [*],    # unknown argument
+    [AC_MSG_ERROR([--with-json: bad argument: $with_json])])
+
+AC_ARG_WITH([json-include],
+  AS_HELP_STRING([--with-json-include=DIR],
+                 [directory containing cJSON.h (if not in defaults)]))
+AS_IF([test -n "$with_json_include"],
+      [inc_json=$with_json_include
+       CH_REQUIRE_DIR([$inc_json], [--with-json-include])])
+
+AC_ARG_WITH([json-lib],
+  AS_HELP_STRING([--with-json-lib=DIR],
+                 [directory containing libcjson.so (if not in defaults)]))
+AS_IF([test -n "$with_json_lib"],
+      [lib_json=$with_json_lib
+       CH_REQUIRE_DIR([$lib_json], [--with-json-lib])])
+
 AC_ARG_WITH([libsquashfuse],
   AS_HELP_STRING([--with-libsquashfuse=@<:@yes|no|PATH@:>@],
                  [whether to link with libsquashfuse]))
@@ -174,78 +272,22 @@ AC_ARG_WITH([sphinx-python],
     [sphinx_python=''])
 
 
-### Feature test macros ######################################################
-
-# Macro to validate executable versions. Arguments:
-#
-#   $1  name of variable containing executable name or absolute path
-#   $2  minimum version
-#   $3  append to $1 to make shell pipeline to get actual version only
-#       (e.g., without program name)
-#
-# This macro is not able to determine if a program exists, only whether its
-# version is sufficient. ${!1} (i.e, the value of the variable whose name is
-# stored in $1) must be either empty, an absolute path to an executable, or
-# the name of a program in $PATH. A prior macro such as AX_WITH_PROG can be
-# used to ensure this condition.
-#
-# If ${!1} is an absolute path, and that file isn’t executable, error out. If
-# it’s something other than an absolute path, assume it’s the name of a
-# program in $PATH; if not, the behavior is undefined but not good (FIXME).
-#
-# Post-conditions:
-#
-#   1. If ${!1} is non-empty and the version reported by the program is
-#      greater than or equal to the minimum, ${!1} is unchanged. If ${!1} is
-#      empty or reported version is insufficient, ${!1} is the empty string.
-#      This lets you test version sufficiency by whether ${!1} is empty.
-#
-#   2. $1_VERSION_NOTE contains a brief explanatory note.
-#
-AC_DEFUN([CH_CHECK_VERSION], [
-  AS_VAR_PUSHDEF([prog], [$1])
-  AS_IF([test -n "$prog"], [
-    # ${!1} is non-empty
-    AS_CASE([$prog],
-      # absolute path; check if executable
-      [/*], [AC_MSG_CHECKING([if $prog is executable])
-             AS_IF([test -e "$prog"],
-              [AC_MSG_RESULT([ok])],
-              [AC_MSG_RESULT([no])
-               AC_MSG_ERROR([must be executable])])])
-    AC_MSG_CHECKING([if $prog version >= $2])
-    vact=$($prog $3)
-    AX_COMPARE_VERSION([$2], [le], [$vact], [
-      AC_SUBST([$1_VERSION_NOTE], ["ok ($vact)"])
-      AC_MSG_RESULT([ok ($vact)])
-    ], [
-      AC_SUBST([$1_VERSION_NOTE], ["too old ($vact)"])
-      AC_MSG_RESULT([too old ($vact)])
-      AS_UNSET([$1])
-    ])
-  ], [
-    # ${!} is empty
-    AC_SUBST([$1_VERSION_NOTE], ["not found"])
-    AS_UNSET([$1])
-  ])
-  AS_VAR_POPDEF([prog])
-])
-
-
 ### C compiler ###############################################################
 
 # Need a C99 compiler. (See https://stackoverflow.com/a/28558338.)
 AC_PROG_CC
 
-# Set up CFLAGS.
-ch_cflags='-std=c99 -Wall'
-AS_IF([test -n "$lib_libsquashfuse"],
-      [ch_cflags="$ch_cflags -I$inc_libsquashfuse -L$lib_libsquashfuse"
-       # Without this, clang fails with “error: argument unused during
-       # compilation” on the -L. GCC ignores it.
-       ch_cflags="$ch_cflags -Wno-unused-command-line-argument"])
+# Set up CFLAGS. -Wno-unused-command-line-argument is for clang, which fails
+# with an error if -L is present for non-linking stages. It seemed easier to
+# add it unconditionally rather than maintain conditionals about which
+# compiler and which libraries.
+ch_cflags='-std=c99 -Wall -Wno-unused-command-line-argument'
 AS_IF([test $use_werror = yes],
       [ch_cflags="$ch_cflags -Werror"])
+AS_IF([test -n "$inc_json"],                 # -L$lib_json added below
+      [ch_cflags="$ch_cflags -I$inc_json"])
+AS_IF([test -n "$lib_libsquashfuse"],
+      [ch_cflags="$ch_cflags -I$inc_libsquashfuse -L$lib_libsquashfuse"])
 
 AX_CHECK_COMPILE_FLAG([$ch_cflags], [
   CFLAGS="$CFLAGS $ch_cflags"
@@ -339,6 +381,9 @@ AC_RUN_IFELSE([AC_LANG_SOURCE([[
   [AC_MSG_ERROR([cross-compilation not supported])])
 AC_MSG_RESULT($have_userns)
 
+
+### ch-run optional ##########################################################
+
 # overlayfs
 AC_DEFUN([CH_OVERLAY_C], [[
   #define _GNU_SOURCE
@@ -421,15 +466,50 @@ AS_IF([test $enable_impolite_checks = yes],
                      [AC_MSG_ERROR([cross-compilation not supported])])])
 AC_MSG_RESULT($have_tmpfs_xattrs)
 
-
-### ch-run optional ##########################################################
-
 # FNM_EXTMATCH is a GNU extension to support extended globs in fnmatch(3).
 AC_CHECK_DECL(FNM_EXTMATCH,
               [have_fnm_extmatch=yes],
               [have_fnm_extmatch=no],
               [[#define _GNU_SOURCE
                 #include <fnmatch.h>]])
+
+# GNU extension type for the comparison function argument to qsort(3).
+AC_CHECK_TYPE(comparison_fn_t,
+              [have_comparison_fn_t=yes],
+              [have_comparison_fn_t=no],
+              [[#define _GNU_SOURCE
+                #include <stdlib.h>]])
+
+# cJSON. Note that we don’t try to ensure the header we find matches the
+# library we find. Hopefully that’s not a problem.
+AS_IF([test $want_json = yes], [
+  AC_CHECK_LIB(cjson, cJSON_ParseWithLength,
+               [have_libcjson=yes
+                AS_IF([test -n "$lib_json"],
+                      [CH_RUN_LIBS="-Wl,-rpath=$lib_json $CH_RUN_LIBS"])
+                CH_RUN_LIBS="-lcjson $CH_RUN_LIBS"],
+               [have_libcjson=no],
+               [$CH_RUN_LIBS])
+  # The include file installs by default to “$PREFIX/include/cjson/cJSON.h”,
+  # but --with-json-include shouldn’t require a “cjson” subdirectory and it
+  # seemed impossible to document that concisely anyway. Thereforre, try both
+  # and define a macro. Double quotes support bundling it with Charliecloud.
+  AC_CHECK_HEADER([cJSON.h],
+                  [have_cjson_h=yes
+                   cjson_h='"cJSON.h"'],
+                  [AC_CHECK_HEADER([cjson/cJSON.h],
+                                   [have_cjson_h=yes
+                                    cjson_h='"cjson/cJSON.h"'],
+                                   [cjson_h='not found'
+                                    have_cjson_h=no])])
+], [have_libcjson=no
+    have_cjson_h=no])
+# Error out if needed but not found.
+AS_IF([test $have_libcjson = yes && test $have_cjson_h = yes],
+      [have_json=yes],
+      [have_json=no])
+AS_IF([test $need_json = yes && test $have_json = no],
+      [AC_MSG_ERROR([--with-json=yes but cJSON not found])])
 
 # Should we build seccomp?
 AC_MSG_CHECKING([for seccomp filter support])
@@ -512,7 +592,7 @@ AS_IF([test $want_libsquashfuse = yes], [
       [have_ll_h=no],
       [#define SQFS_CONFIG_H
        #define FUSE_USE_VERSION 32
-      ])  # see comment in ch_fuse.c regarding these defines
+      ])  # see comment in fuse.c regarding these defines
   ],
   [have_libfuse3=no])
 ])
@@ -764,14 +844,13 @@ CH_CHECK_VERSION([WGET], [$vmin_wget], [--version | head -1 | cut -d' ' -f3])
 #      the output Makefile. It *does not* create a Make variable.
 #
 #   4. AC_DEFINE(foo, value, comment) #define’s the preprocessor symbol foo to
-#      value in config.h. (Supposedly value and comment are optional but I got
-#      warnings doing that.) So this is how you make configure values
-#      available in C code (as macros, not variables). Typically you would
-#      define something or not (allowing #ifdef), rather than always define to
-#      true or false (which would require #if).
+#      value in config.h. (Supposedly, value and comment are optional but I
+#      got warnings doing that.) Importantly, value is not expanded. This is
+#      good for either defining or not defining a C macro; you can then use
+#      #ifdef to gate on that macro.
 #
-#   5. AC_DEFINE_UNQUOTES adds some extra transformations to the above. I
-#      didn’t quite follow.
+#   5. AC_DEFINE_UNQUOTED also expands value. This is good for defining a C
+#      macro to the actual value of some configure variable.
 #
 # Below are all the variables we want available outside configure.
 
@@ -787,17 +866,23 @@ AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
-AS_IF([test $have_overlayfs = yes],
-      [AC_DEFINE([HAVE_OVERLAYFS], [1], [unprivileged overlayfs])])
-AS_IF([test $have_tmpfs_xattrs = yes],
-      [AC_DEFINE([HAVE_TMPFS_XATTRS], [1], [tmpfs user xattrs])])
+AS_IF([test $have_comparison_fn_t = yes],
+      [AC_DEFINE([HAVE_COMPARISON_FN_T], [1], [comp. function for qsort(3)])])
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
-AS_IF([test $have_seccomp = yes],
-      [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
+AM_CONDITIONAL([HAVE_JSON], [test $have_json = yes])
+AS_IF([test $have_json = yes],
+      [AC_DEFINE([HAVE_JSON], [1], [enable JSON features])
+       AC_DEFINE_UNQUOTED([CJSON_H], [$cjson_h], [cJSON.h location])])
 AM_CONDITIONAL([HAVE_LIBSQUASHFUSE], [test $have_libsquashfuse = yes])
 AS_IF([test $have_libsquashfuse = yes],
       [AC_DEFINE([HAVE_LIBSQUASHFUSE], [1], [link with libsquashfuse])])
+AS_IF([test $have_overlayfs = yes],
+      [AC_DEFINE([HAVE_OVERLAYFS], [1], [unprivileged overlayfs])])
+AS_IF([test $have_seccomp = yes],
+      [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
+AS_IF([test $have_tmpfs_xattrs = yes],
+      [AC_DEFINE([HAVE_TMPFS_XATTRS], [1], [tmpfs user xattrs])])
 
 
 
@@ -810,6 +895,14 @@ AS_IF([test $have_libsquashfuse = yes],
 AS_IF([   test $have_userns = yes],
       [have_ch_run=yes],
       [have_ch_run=no])
+
+AS_IF([   test $want_json = yes],
+      [libcjson_note=$have_libcjson
+       AS_IF([test $have_cjson_h = yes],
+             [cjson_h_note="yes, $cjson_h"],
+             [cjson_h_note=no])],
+      [libcjson_note='not tested'
+       cjson_h_note='not tested'])
 
 # image builders
 
@@ -946,10 +1039,18 @@ Building Charliecloud
     test suite ... ${enable_test}
 
   required:
-    C99 compiler ... ${CC} ${CFLAGS}
+    C99 compiler ... ${CC}
+    \$CFLAGS ... ${CFLAGS}
+    ch-run(1) library args ... ${CH_RUN_LIBS}
 
   optional:
     extended glob patterns in --unset-env ... ${have_fnm_extmatch}
+    comparison_fn_t from libc ... ${have_comparison_fn_t}
+
+  JSON features: ${have_json}
+    enabled ... ${want_json}
+    libcjson ... ${libcjson_note}
+    cJSON.h ... ${cjson_h_note}
 
   ch-run(1) internal SquashFS mounting: ${have_libsquashfuse}
     enabled ... ${want_libsquashfuse}

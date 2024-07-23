@@ -56,6 +56,42 @@ mounting SquashFS images with FUSE.
   :code:`-c`, :code:`--cd=DIR`
     Initial working directory in container.
 
+  :code:`--cdi-dirs=DIRS`
+    Colon-separated list of directories to search for CDI JSON specifications.
+    Default: :code:`CH_RUN_CDI_DIRS` if set, otherwise
+    :code:`/etc/cdi:/var/run/cdi`.
+
+  :code:`--color[=WHEN]`
+    Color logging output by log level when :code:`WHEN`:
+
+       * By default, or if :code:`WHEN` is :code:`auto`, :code:`tty`,
+         :code:`if-tty`: use color if standard error is a TTY; otherwise,
+         don’t use color.
+
+       * If :code:`WHEN` is :code:`yes`, :code:`always`, or :code:`force`; or
+         if :code:`--color` is specified without an argument: always use
+         color.
+
+       * If :code:`WHEN` is :code:`no`, :code:`never`, or :code:`none`: never
+         use color.
+
+    This uses ANSI color codes without checking any terminal databases, which
+    should work on all modern terminals.
+
+  :code:`-d`, :code:`--devices`
+    Inject default CDI devices into the container. The default devices are
+    those listed in :code:`CH_RUN_CDI_DEFAULT` if set, otherwise all devices
+    for which a specification is found. Implies :code:`--write-fake`.
+
+  :code:`--device=DEV[,DEV]`
+    Inject CDI device(s) identified by comma-separated :code:`DEV`. These are
+    either (1) a filename, if :code:`DEV` starts with a slash (:code:`/`) or
+    dot (:code:`.`), e.g. :code:`/etc/cdi/nvidia.json`, or (2) a CDI selector
+    for a list of devices in a CDI specification file, e.g.
+    :code:`nvidia.com/gpu`. Specific devices may not be selected, e.g.
+    :code:`nvidia.com/gpu=1:0` is invalid (see below for why). Implies
+    :code:`--write-fake`. Can be repeated.
+
   :code:`--env-no-expand`
     Don’t expand variables when using :code:`--set-env`.
 
@@ -118,11 +154,6 @@ mounting SquashFS images with FUSE.
     This is intended for use by :code:`ch-image(1)` when building images; see
     that man page for a detailed discussion.
 
-  :code:`-t`, :code:`--private-tmp`
-    By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
-    bind-mounted at container :code:`/tmp`. If this is specified, a new
-    :code:`tmpfs` is mounted on the container’s :code:`/tmp` instead.
-
   :code:`--set-env`, :code:`--set-env=FILE`, :code:`--set-env=VAR=VALUE`
     Set environment variables with newline-separated file
     (:code:`/ch/environment` within the image if not specified) or on the
@@ -130,6 +161,11 @@ mounting SquashFS images with FUSE.
 
   :code:`--set-env0`, :code:`--set-env0=FILE`, :code:`--set-env0=VAR=VALUE`
     Like :code:`--set-env`, but file is null-byte separated.
+
+  :code:`-t`, :code:`--private-tmp`
+    By default, the host’s :code:`/tmp` (or :code:`$TMPDIR` if set) is
+    bind-mounted at container :code:`/tmp`. If this is specified, a new
+    :code:`tmpfs` is mounted on the container’s :code:`/tmp` instead.
 
   :code:`-u`, :code:`--uid=UID`
     Run as user :code:`UID` within container.
@@ -345,6 +381,7 @@ Caveats:
 * Many of the arguments given to the race losers, such as the image path and
   :code:`--bind`, will be ignored in favor of what was given to the winner.
 
+
 .. _ch-run_overlay:
 
 Writeable overlay with :code:`--write-fake`
@@ -375,39 +412,221 @@ requires kernel support. Specifically:
    and thus is not helpful for unprivileged containers.)
 
 
+Injecting host “devices” with Container Device Interface (CDI)
+==============================================================
+
+Overview of CDI
+---------------
+
+`Container Device Interface (CDI)
+<https://github.com/cncf-tags/container-device-interface/blob/main/SPEC.md>`_
+is an emerging `Cloud Native Computing Foundation (CNCF)
+<https://www.cncf.io/>`_ standard to specify how “devices” are made available
+to containers. Importantly, a CDI *device* is not a hardware gadget nor a
+device file but rather a set of container modifications to be done before
+invoking the user command. It’s intended to make devices (in the usual sense
+of hardware gadgets) available inside containers but is quite flexible. A CDI
+device can specify multiple device files, environment variables, mounts, and
+more. Christopher Desiniotis gave a good talk at Container Plumbing Days 2024
+introducing CDI (`slides
+<https://static.sched.com/hosted_files/containerplumbingdays2024/e0/CDI_%20The%20Future%20of%20Specialized%20Hardware%20in%20Containers.pdf>`_,
+`video <https://www.youtube.com/watch?v=MbWjw6AMMVs>`_).
+
+CDI devices are described in JSON *specification files*, which are declarative
+except they provide for arbitrary hook programs. However, Charliecloud treats
+them as fully declarative by interpreting hooks as a declarative statement
+rather than a program to be run (brittle, but works for now). This
+declarativeness has a significant advantage over OCI hooks, because we have a
+clear description of what needs to be done rather than needing to run opaque
+programs as hooks.
+
+Another advantage of CDI is that it’s largely orthogonal to OCI. While the
+specifications have a strong OCI framing, this is largely an artifact of the
+exposition style rather than a core notion.
+
+Here is an example spec file:
+
+.. literalinclude:: cdi-nvidia.json
+   :language: JSON
+
+This declares:
+
+#. A single CDI device called :code:`nvidia.com/gpu=foo`, comprising:
+
+   #. Two device files to be made available in the container,
+      :code:`/dev/nvidia0` and :code:`/dev/dri/card0`.
+
+   #. One symlink to create inside the container,
+      :code:`/dev/by-path/pci-0000:07:00.0-card` → :code:`../card0`.
+
+#. A set of container changes to be made once regardless of which devices are
+   selected (this example has one, but real spec files have several),
+   comprising:
+
+   #. One environment variable to set, :code:`NVIDIA_VISIBLE_DEVICES`.
+
+   #. Two device files to be made available in the container,
+      :code:`/dev/nvidia-modeset` and :code:`/dev/nvidiactl`.
+
+   #. A socket (:code:`/run/nvidia-fabricmanager/socket`), executable
+      (:code:`nvidia-smi`), and shared library
+      (:code:`libcuda.so.535.161.08`) to be bind-mounted into the
+      container.
+
+   #. Run the *host* :code:`ldconfig` to update the *container* linker cache,
+      scanning only container directory :code:`/usr/lib/x86_64-linux-gnu`.
+
+Charliecloud’s CDI implementation
+---------------------------------
+
+Charliecloud has some differences from other container implementations in how
+this spec file is interpreted, but the results (working CDI devices) should be
+the same. These are:
+
+#. All CDI devices available to the user normally are also available in the
+   container. For example, some implementations allow
+   :code:`--device=nvidia.com/gpu=foo`, which puts only the GPU named
+   :code:`foo` in the container, but :code:`ch-run` accepts only
+   :code:`--device=nvidia.com/gpu` (and similarly in
+   :code:`CH_RUN_CDI_DEFAULT`). This is because the host :code:`/dev` is
+   bind-mounted into Charliecloud containers, so there is no need to deal with
+   individual device files.
+
+#. Hooks are interpreted declaratively rather than running the specified
+   program. This is because we have not yet encountered any hooks that are
+   both useful under Charliecloud and do a task that merits an external
+   program. See below for details on individual hooks.
+
+#. Only bind mounts are implemented, because unprivileged mount namespaces
+   can’t mount much that is meaningful, and we haven’t seen any other mount
+   types yet.
+
+#. Charliecloud minimizes the number of bind mounts to avoid bloating the
+   container filesystem tree. (The spec file for one of our not-that-large
+   systems declares 47 mounts!) We do this by bind-mounting each filesystem
+   represented in a host path once and then symlinking into it for the
+   declared bind mounts.
+
+Selecting devices
+-----------------
+
+:code:`ch-run` must do two things to make CDI devices available: (1) locate
+appropriate specification files and (2) select which kinds of CDI devices to
+inject. We assume further that the most common use case is to inject all
+available CDI devices. The design of Charliecloud’s CDI user interface follows
+from these principles.
+
+TL;DR: The intended most common usage is simply :code:`ch-run -d` to inject
+all available CDI devices, using prior configuration by users or admins.
+
+Available spec files are those in the colon-separated list of directories in
+:code:`--cdi-dirs=DIRS` if given, otherwise in :code:`CH_RUN_CDI_DIRS`,
+otherwise :code:`/etc/cdi:/var/run/cdi` as required by the standard.
+
+The option :code:`--devices` (plural) or :code:`-d` then injects all devices
+found in all spec files in these directories.
+
+Individual CDI device kinds can be selected with :code:`--device=DEV`
+(singular), where :code:`DEV` is a device identifier. If it identifier starts
+with slash (:code:`/`) or dot (:code:`.`), the identifier is a path to a JSON
+CDI spec file, and all devices in that file are injected (e.g.,
+:code:`--device=./foo.json`). Otherwise, it is a CDI device kind with no
+device name(s) (e.g., :code:`--device=nvidia.com/gpu`). The option can be
+repeated to inject multiple device kinds.
+
+Importantly, both :code:`--device` and :code:`--devices` imply
+:code:`--write-fake` (:code:`-W`) so the container image can be written.
+
+Environment variables
+---------------------
+
+Injecting a CDI device may require setting environment variables, as declared
+in the spec file. These environment changes are executed in the order that
+that CDI command line options appear on the command line relative to other
+user-specified environment options, e.g. :code:`--set-env` and
+:code:`--unset-env`. See :ref:`ch-run_environment-variables` below for
+details.
+
+Hooks
+------
+
+Behavior summary
+~~~~~~~~~~~~~~~~
+
+Presently, CDI hooks fall into three categories for Charliecloud:
+
+#. **Known hooks that we need**, with behavior emulated internally (i.e, we do
+   what the hook does, adapted for Charliecloud, rather than running it).
+
+#. **Known hooks that we don’t need**; we ignore these quietly (i.e., logged but
+   a level hidden by default).
+
+#. **Unknown hooks.** We warn about these, because they need to be either moved
+   into one of the first to categories or actually run. (That is, we’re still
+   figuring out what’s needed for Charliecloud here.)
+
+The next two sections document known hooks.
+
+.. note::
+
+   `nVidia Container Toolkit
+   <https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/index.html>`_
+   CDI hooks can be spelled either `either
+   <https://github.com/NVIDIA/nvidia-container-toolkit/issues/435>`_
+   :code:`nvidia-ctk hook` (two words) or :code:`nvidia-ctk-hook` (one word).
+   We treat the two spellings the same.
+
+Emulated hooks
+~~~~~~~~~~~~~~
+
+#. :code:`nvidia-ctk-hook update-ldcache` . This updates the container’s
+   linker cache (i.e., :code:`/etc/ld.so.cache`), `notably using
+   <https://github.com/cncf-tags/container-device-interface/issues/203#issuecomment-2117628618>`_
+   the *host’s* :code:`ldconfig`. For now at least, we instead use the
+   *container’s* :code:`ldconfig`, the reasoning being that (1) the
+   container’s linker updating its own cache is lower-risk compatibility wise
+   and (2) it seems unlikely that an image would be compatible with nVidia
+   libraries and have a linker cache but no :code:`ldconfig` executable.
+
+   If the image has no :code:`ldconfig`, :code:`ch-run` exits with an error
+   and the container does not run. This indicates the assumption above is
+   false, so please report this error as a bug.
+
+Ignored hooks
+~~~~~~~~~~~~~
+
+#. :code:`nvidia-ctk-hook create-symlinks`. This creates one or more symlinks.
+   In our experience, the links created already exist in the host’s
+   :code:`/dev` or are created by :code:`ldconfig(8)`.
+
+#. :code:`nvidia-ctk-hook chmod`. This changes file permissions, but in
+   unprivileged Charliecloud containers, the invoking user will already have
+   access to all appropriate files.
+
+
+.. _ch-run_environment-variables:
+
 Environment variables
 =====================
 
-:code:`ch-run` leaves environment variables unchanged, i.e. the host
-environment is passed through unaltered, except:
+Unlike most other implementations, :code:`ch-run`’s baseline for the container
+environment is to pass through the host environment unaltered. From this
+starting point, the environment is altered in this order:
 
-* by default (:code:`--home` not specified), :code:`HOME` is set to
-  :code:`/root`, if it exists, and :code:`/` otherwise.
-* limited tweaks to avoid significant guest breakage;
-* user-set variables via :code:`--set-env`;
-* user-unset variables via :code:`--unset-env`; and
-* set :code:`CH_RUNNING`.
+#. :code:`$HOME`, :code:`$PATH`, and :code:`$TMPDIR` are adjusted to avoid
+   common breakage (see below).
 
-This section describes these features.
+#. User-specified changes are executed in the order they appear on the command
+   line (i.e., :code:`-d`/:code:`--devices`, :code:`--device`,
+   :code:`--set-env`, and :code:`--unset-env`, some of which can appear
+   multiple times).
 
-The default tweaks happen first, then :code:`--set-env` and
-:code:`--unset-env` in the order specified on the command line, and then
-:code:`CH_RUNNING`. The two options can be repeated arbitrarily many times,
-e.g. to add/remove multiple variable sets or add only some variables in a
-file.
+#. :code:`$CH_RUNNING` is set.
 
-Default behavior
-----------------
+Built-in environment changes
+----------------------------
 
-By default, :code:`ch-run` makes the following environment variable changes:
-
-:code:`$CH_RUNNING`
-  Set to :code:`Weird Al Yankovic`. While a process can figure out that it’s
-  in an unprivileged container and what namespaces are active without this
-  hint, that can be messy, and there is no way to tell that it’s a
-  *Charliecloud* container specifically. This variable makes such a test
-  simple and well-defined. (**Note:** This variable is unaffected by
-  :code:`--unset-env`.)
+Prior to user changes, i.e. can be altered by the user:
 
 :code:`$HOME`
   If :code:`--home` is specified, then your home directory is bind-mounted
@@ -418,13 +637,12 @@ By default, :code:`ch-run` makes the following environment variable changes:
   is unchanged.)
 
 :code:`$PATH`
-  Newer Linux distributions replace some root-level directories, such as
-  :code:`/bin`, with symlinks to their counterparts in :code:`/usr`.
-
-  Some of these distributions (e.g., Fedora 24) have also dropped :code:`/bin`
-  from the default :code:`$PATH`. This is a problem when the guest OS does
-  *not* have a merged :code:`/usr` (e.g., Debian 8 “Jessie”). Thus, we add
-  :code:`/bin` to :code:`$PATH` if it’s not already present.
+  We append :code:`/bin` to :code:`$PATH` if it’s not already present. This is
+  because newer Linux distributions replace some root-level directories, such
+  as :code:`/bin`, with symlinks to their counterparts in :code:`/usr`. Some
+  of these distributions (e.g., Fedora 24) have also dropped :code:`/bin` from
+  the default :code:`$PATH`. This is a problem when the guest OS does *not*
+  have a merged :code:`/usr` (e.g., Debian 8 “Jessie”).
 
   Further reading:
 
@@ -436,6 +654,15 @@ By default, :code:`ch-run` makes the following environment variable changes:
   Unset, because this is almost certainly a host path, and that host path is
   made available in the guest at :code:`/tmp` unless :code:`--private-tmp` is
   given.
+
+After user changes, i.e. cannot be altered by the user with :code:`ch-run`:
+
+:code:`$CH_RUNNING`
+  Set to :code:`Weird Al Yankovic`. While a process can figure out that it’s
+  in an unprivileged container and what namespaces are active without this
+  hint, that can be messy, and there is no way to tell that it’s a
+  *Charliecloud* container specifically. This variable makes such a test
+  simple and well-defined.
 
 Setting variables with :code:`--set-env` or :code:`--set-env0`
 --------------------------------------------------------------
@@ -760,4 +987,6 @@ status is 1 regardless of the signal value.
 .. include:: ./see_also.rst
 
 ..  LocalWords:  mtune NEWROOT hugetlbfs UsrMerge fusermount mybox IMG HOSTPATH
-..  LocalWords:  noprofile norc SHLVL PWD kernelnewbies extglob
+..  LocalWords:  noprofile norc SHLVL PWD kernelnewbies extglob cdi AMMVs dri
+..  LocalWords:  Desiniotis declarativeness fabricmanager libglxserver ctk
+..  LocalWords:  libcuda ldcache

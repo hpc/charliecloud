@@ -29,10 +29,10 @@
 #include <time.h>
 #include <unistd.h>
 
-#include "ch_misc.h"
-#include "ch_core.h"
+#include "misc.h"
+#include "core.h"
 #ifdef HAVE_LIBSQUASHFUSE
-#include "ch_fuse.h"
+#include "fuse.h"
 #endif
 
 
@@ -383,6 +383,19 @@ void enter_udss(struct container *c)
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
    DEBUG("pivot_root(2) dance successful")
+}
+
+/* Append hook function f to hook_list. When called, it will be passed d; this
+   lets hooks receive arbitrary arguments (i.e., it’s a poor person’s
+   closure).
+
+   Warning: The hook framework does no memory management for name or d, i.e.,
+   if name needs to be freed, that is the responsibility of the caller (this
+   function uses a copy), and/or if anything in d either needs to be freed,
+   that is the responsibility of the hook. */
+void hook_add(struct hook **hook_list, const char *name, hookf_t *f, void *d)
+{
+   // FIXME: hooks: environment variables, seccomp, CDI
 }
 
 /* Return image type of path, or exit with error if not a valid type. */
