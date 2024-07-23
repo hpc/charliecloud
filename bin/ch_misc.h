@@ -25,7 +25,7 @@
 #define WARNINGS_SIZE (4*1024)
 
 /* Exit codes (see also: test/common.bash, lib/build.py). */
-#define EXIT_CHRUN 31
+#define EXIT_MISC_ERR 31
 #define EXIT_CMD 49
 #define EXIT_SQUASH 84
 

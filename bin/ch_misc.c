@@ -605,7 +605,7 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
    msgv(LL_FATAL, file, line, errno_, fmt, ap);
    va_end(ap);
 
-   exit(EXIT_CHRUN);
+   exit(EXIT_MISC_ERR);
 }
 
 /* va_list form of msg(). */

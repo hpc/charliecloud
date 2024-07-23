@@ -43,7 +43,7 @@ class Build_Mode(enum.Enum):
 
 # ch-run exit codes (see also: bin/ch_misc.h)
 class Ch_Run_Retcode(enum.Enum):
-   EXIT_CHRUN = 31
+   EXIT_MISC_ERR = 31
    EXIT_CMD = 49
    EXIT_SQUASH = 84
 

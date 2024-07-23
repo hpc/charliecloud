@@ -71,7 +71,7 @@ void fatal_(const char *file, int line, int errno_, const char *str)
    char *url = "https://github.com/hpc/charliecloud/blob/master/bin/ch-checkns.c";
    printf("error: %s: %d: %s\n", file, line, str);
    printf("errno: %d\nsee: %s\n", errno_, url);
-   exit(EXIT_CHRUN);
+   exit(EXIT_MISC_ERR);
 }
 
 int main(int argc, char *argv[])

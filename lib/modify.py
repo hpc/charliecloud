@@ -89,7 +89,6 @@ def main(cli_):
    ch.VERBOSE("modify shell: %s" % cli.shell)
    ch.VERBOSE("modify mode: %s" % mode.value)
 
-   ch.ILLERI("mode: %s" % mode)
    if (cli.test):
       exit(0)
 
