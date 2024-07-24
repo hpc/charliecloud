@@ -592,10 +592,16 @@ void msg_error(const char *file, int line, int errno_,
    va_list ap;
 
    va_start(ap, fmt);
+   /* We print errors at LL_FATAL because, according to our documentation,
+      errors are never suppressed. Perhaps we need to rename this log level (see
+      issue #1914). */
    msgv(LL_FATAL, file, line, errno_, fmt, ap);
    va_end(ap);
 }
 
+/* Note that msg_fatal doesn’t call msg_error like we do in the Python code
+   because the variable number of arguments make it easier to simply define
+   separate functions. */
 noreturn void msg_fatal(const char *file, int line, int errno_,
                        const char *fmt, ...)
 {

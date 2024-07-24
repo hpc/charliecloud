@@ -91,9 +91,6 @@ def main(cli_):
    ch.VERBOSE("modify shell: %s" % cli.shell)
    ch.VERBOSE("modify mode: %s" % mode.value)
 
-   if (cli.test):
-      exit(0)
-
    if (mode == Modify_Mode.INTERACTIVE):
       # Interactive case
 

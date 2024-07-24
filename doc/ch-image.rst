@@ -2258,9 +2258,9 @@ Interactive mode
    iterating a container, it rarely saves time over editing a Dockerfile or
    shell script. Only use it if you really know what you are doing.
 
-If :code:`SCRIPT` is not provided and standard input *is* a TTY,
-:code:`ch-image modify` opens an interactive shell. That is, the following are
-roughly equivalent (assuming a terminal)::
+If :code:`SCRIPT` is not provided and standard input *is* a TTY, or if
+:code:`-i` is specified :code:`ch-image modify` opens an interactive shell. That
+is, the following are roughly equivalent (assuming a terminal)::
 
   $ ch-image modify foo bar
 
