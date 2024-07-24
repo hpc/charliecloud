@@ -267,36 +267,36 @@ unset_vars () {
     # --join but no join count
     run ch-run --join "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ 'join: no valid peer group size found' ]]
     ipc_clean_p
 
     # join count no digits
     run ch-run --join-ct=a "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ 'join-ct: no digits found' ]]
     SLURM_CPUS_ON_NODE=a run ch-run --join "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ 'SLURM_CPUS_ON_NODE: no digits found' ]]
     ipc_clean_p
 
     # join count empty string
     run ch-run --join-ct='' "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ '--join-ct: no digits found' ]]
     SLURM_CPUS_ON_NODE=-1 run ch-run --join "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ 'join: no valid peer group size found' ]]
     ipc_clean_p
 
     # --join-ct digits followed by extra goo (OK from environment variable)
     run ch-run --join-ct=1a "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ '--join-ct: extra characters after digits' ]]
     ipc_clean_p
 
@@ -306,48 +306,48 @@ unset_vars () {
     # join count above INT_MAX
     run ch-run --join-ct=2147483648 "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ $range_re ]]
     SLURM_CPUS_ON_NODE=2147483648 \
         run ch-run --join "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ $range_re ]]
     ipc_clean_p
 
     # join count below INT_MIN
     run ch-run --join-ct=-2147483649 "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ $range_re ]]
     SLURM_CPUS_ON_NODE=-2147483649 \
         run ch-run --join "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ $range_re ]]
     ipc_clean_p
 
     # join count above LONG_MAX
     run ch-run --join-ct=9223372036854775808 "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ $range_re ]]
     SLURM_CPUS_ON_NODE=9223372036854775808 \
         run ch-run --join "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ $range_re ]]
     ipc_clean_p
 
     # join count below LONG_MIN
     run ch-run --join-ct=-9223372036854775809 "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ $range_re ]]
     SLURM_CPUS_ON_NODE=-9223372036854775809 \
         run ch-run --join "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ $range_re ]]
     ipc_clean_p
 }
@@ -361,11 +361,11 @@ unset_vars () {
     # join tag empty string
     run ch-run --join-tag='' "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ 'join: peer group tag cannot be empty string' ]]
     SLURM_STEP_ID='' run ch-run --join "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output =~ 'join: peer group tag cannot be empty string' ]]
     ipc_clean_p
 }
@@ -466,14 +466,14 @@ unset_vars () {
     # Can’t join namespaces of processes we don’t own.
     run ch-run -v --join-pid=1 "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output = *"join: can't open /proc/1/ns/user: Permission denied"* ]]
 
     # Can’t join namespaces of processes that don’t exist.
     pid=2147483647
     run ch-run -v --join-pid="$pid" "$ch_timg" -- true
     echo "$output"
-    [[ $status -eq $CH_ERR_RUN ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output = *"join: no PID ${pid}: /proc/${pid}/ns/user not found"* ]]
 }
 

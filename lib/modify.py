@@ -21,12 +21,6 @@ class Modify_Mode(enum.Enum):
    SCRIPT = "script"
 
 def main(cli_):
-   global called
-   called = True
-
-   # Need to pass tree to build.py
-   global tree
-
    # In this file, “cli” is used as a global variable
    global cli
    cli = cli_
@@ -200,7 +194,7 @@ def modify_tree_make_script(src_img, path):
                      WORD /path/to/script WORD /ch/script.sh
                run
                   run_shell
-                     LINE_CHUNK /ch/script.sh
+                     LINE_CHUNK /bin/sh /ch/script.sh
       """
    # Children of dockerfile tree
    df_children = []
