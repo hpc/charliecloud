@@ -31,9 +31,11 @@ def main(cli_):
    global cli
    cli = cli_
 
-   # build.py assumes that global cli comes from the “build” function. If we
-   # don’t assign these values, the program will fail after trying to access
-   # them. FIXME: Can partially fix this by adding command line opts.
+   # CLI opts that “build.py” expects, but that don’t make sense in the context
+   # of “modify”. We set “parse_only” to “False” because we don’t do any
+   # parsing, and “context” to the root of the filesystem to ensure that
+   # necessary files (e.g. the modify script) will always be somewhere in the
+   # context dir.
    cli.parse_only = False
    cli.context = os.path.abspath(os.sep)
 

@@ -18,7 +18,6 @@ demand-overlayfs () {
 
 @test 'relative path to image' {  # issue #6
     scope full
-    # shellcheck disable=SC2154
     cd "$(dirname "$ch_timg")" && ch-run "$(basename "$ch_timg")" -- /bin/true
 }
 

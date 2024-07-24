@@ -594,6 +594,8 @@ not allowed in Git branch names), and the empty base of everything
 common instruction :code:`RUN echo foo`.
 
 
+.. _ch-image_build:
+
 :code:`build`
 =============
 
@@ -2138,6 +2140,24 @@ Options:
 
   :code:`-S`, :code:`--shell SHELL`
     Use :code:`SHELL` instead of the default :code:`/bin/sh`.
+
+The following options are shared with :code:`ch-image build`. For more details
+about these options, see the section on :ref:`build <ch-image_build>`.
+
+  :code:`-b`, :code:`--bind SRC[:DST]`
+   For :code:`RUN` instructions only, bind-mount :code:`SRC` at guest
+   :code:`DST`.
+
+  :code:`--build-arg KEY[=VALUE]`
+   Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
+   to :code:`VALUE`.
+
+  :code:`--force[=MODE]`
+   Use unprivileged build with root emulation mode :code:`MODE`.
+
+  :code:`--force-cmd=CMD,ARG1[,ARG2...]`
+   If command :code:`CMD` is found in a :code:`RUN` instruction, add the
+   comma-separated :code:`ARGs` to it.
 
 :code:`ch-image modify` operates in one of the following three modes. If the
 mode desired is ambiguous, that is an error.
