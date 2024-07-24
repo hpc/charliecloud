@@ -237,9 +237,9 @@ class T_CentOS_7(RHEL7, EPEL_Mixin):
    @property
    def build_from_hook(self):
       return f"""\
-sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo \
-&& sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo \
-&& sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo"""
+RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo \
+    && sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo \
+    && sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo"""
 
 
 class RHEL8(Test):
