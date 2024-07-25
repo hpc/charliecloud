@@ -88,6 +88,8 @@ EOF
 
 bats_vmin=1.2.0  # FIXME: get from configure somehow?
 
+ch_build_unpack_all="argenv quick copy almalinux_8ch debian_11ch hello multistage seccomp"
+
 
 ### Functions
 
@@ -410,7 +412,7 @@ test_make () {
         test_make_auto "$phase" "${build_targets[@]}" > "${TMP_}/build_auto.bats"
         printf 'ok\n\n'
         ;;
-     run)
+    run)
         # For each tarball or squashfs file in --pack-dir look for a
         # corresponding example or image that produces a matching tag. If
         # found, check the image for exclusion conidtions.
@@ -831,7 +833,7 @@ ch_build_unpack_list=""
 while [[ $# -gt 0 ]]; do
     opt=$1; shift
     case $opt in
-    all|build|build-images|clean|examples|mk-perm-dirs|rm-perm-dirs|rootemu|run)
+    all|build|build-images|build-unpack|clean|examples|mk-perm-dirs|rm-perm-dirs|rootemu|run)
         require_unset phase
         phase=$opt
         ;;
@@ -1192,6 +1194,11 @@ case $phase in
         win
         ;;
     build-unpack)
+        if [[ -z "$ch_build_unpack_list" ]]; then
+            # Assume “build-unpack” was specified without “-i” being called,
+            # build and upack all images.
+            ch_build_unpack_list="$ch_build_unpack_all"
+        fi
         phase=build
         dir_tar_mk
         builder_check
@@ -1221,13 +1228,6 @@ case $phase in
         dir_tar_mk
         test_make
         test_build_images
-        win
-        ;;
-    build-unpack)
-        builder_check
-        dir_tar_mk
-        test_make
-        test_build_unpack
         win
         ;;
     mk-perm-dirs)
