@@ -85,6 +85,10 @@ class Test(abc.ABC):
       return ""
 
    @property
+   def build_from_hook(self):
+      return ""
+
+   @property
    def skip(self):
       if (self.skip_reason is None):
          return ""
@@ -147,6 +151,7 @@ class Test(abc.ABC):
          build1 = f"""\
 run ch-image -v build -t tmpimg -f - . << 'EOF'
 FROM {self.base}
+{self.build_from_hook}
 RUN {self.prep_run}
 EOF
 echo "$output"
@@ -186,6 +191,7 @@ scope {scope}
 # build 2: image we're testing
 run ch-image -v build {force} -t tmpimg2 -f - . << 'EOF'
 FROM {build2_base}
+{self.build_from_hook}
 RUN {run}
 EOF
 echo "$output"
@@ -227,6 +233,13 @@ class T_CentOS_7(RHEL7, EPEL_Mixin):
    scope = Scope.STANDARD
    base = "centos:7"
    prep_run = "yum install -y epel-release"
+
+   @property
+   def build_from_hook(self):
+      return f"""\
+RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo \
+    && sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo \
+    && sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo"""
 
 
 class RHEL8(Test):
