@@ -188,7 +188,7 @@ int sq_loop(void)
 
    // Clean up zombie child if exit signal was SIGCHLD.
    if (!sigchld_received)
-      exit_code = 0;
+      exit_code = EXIT_SQUASH;
    else {
       Tf (wait(&child_status) >= 0, "can't wait for child");
       if (WIFEXITED(child_status)) {
@@ -203,7 +203,7 @@ int sq_loop(void)
          //
          // [1]: https://codereview.stackexchange.com/a/109349
          // [2]: https://man7.org/linux/man-pages/man2/wait.2.html
-         exit_code = 1;
+         exit_code = 128 + WTERMSIG(child_status);
          VERBOSE("child terminated by signal %d", WTERMSIG(child_status))
       }
    }
@@ -254,7 +254,7 @@ void sq_mount(const char *img_path, char *mountpt)
                                    &OPS, sizeof(OPS), sq.ll)) {
          break;  // success
       } else if (i <= 0) {
-         FATAL("too many FUSE errors; giving up");
+         FATAL(0, "too many FUSE errors; giving up");
       } else {
          WARNING("FUSE error mounting SquashFS; will retry");
          sleep(1);

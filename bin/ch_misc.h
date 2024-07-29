@@ -24,6 +24,11 @@
    don’t need to worry about running out of room. */
 #define WARNINGS_SIZE (4*1024)
 
+/* Exit codes (see also: test/common.bash, lib/build.py). */
+#define EXIT_MISC_ERR 31
+#define EXIT_CMD 49
+#define EXIT_SQUASH 84
+
 /* Test some value, and if it's not what we expect, exit with a fatal error.
    These are macros so we have access to the file and line number.
 
@@ -66,12 +71,13 @@
 #define Zf(x, ...) if (x)    msg_fatal(__FILE__, __LINE__, errno, __VA_ARGS__)
 #define Ze(x, ...) if (x)    msg_fatal(__FILE__, __LINE__, 0, __VA_ARGS__)
 
-#define FATAL(...)   msg_fatal(      __FILE__, __LINE__, 0, __VA_ARGS__);
-#define WARNING(...) msg(LL_WARNING, __FILE__, __LINE__, 0, __VA_ARGS__);
-#define INFO(...)    msg(LL_INFO,    __FILE__, __LINE__, 0, __VA_ARGS__);
-#define VERBOSE(...) msg(LL_VERBOSE, __FILE__, __LINE__, 0, __VA_ARGS__);
-#define DEBUG(...)   msg(LL_DEBUG,   __FILE__, __LINE__, 0, __VA_ARGS__);
-#define TRACE(...)   msg(LL_TRACE,   __FILE__, __LINE__, 0, __VA_ARGS__);
+#define FATAL(e, ...) msg_fatal(      __FILE__, __LINE__, e, __VA_ARGS__);
+#define ERROR(e, ...) msg_error(      __FILE__, __LINE__, e, __VA_ARGS__);
+#define WARNING(...)  msg(LL_WARNING, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define INFO(...)     msg(LL_INFO,    __FILE__, __LINE__, 0, __VA_ARGS__);
+#define VERBOSE(...)  msg(LL_VERBOSE, __FILE__, __LINE__, 0, __VA_ARGS__);
+#define DEBUG(...)    msg(LL_DEBUG,   __FILE__, __LINE__, 0, __VA_ARGS__);
+#define TRACE(...)    msg(LL_TRACE,   __FILE__, __LINE__, 0, __VA_ARGS__);
 
 
 /** Types **/
@@ -134,6 +140,8 @@ void mkdirs(const char *base, const char *path, char **denylist,
             const char *scratch);
 void msg(enum log_level level, const char *file, int line, int errno_,
          const char *fmt, ...);
+void msg_error(const char *file, int line, int errno_,
+               const char *fmt, ...);
 noreturn void msg_fatal(const char *file, int line, int errno_,
                         const char *fmt, ...);
 bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink);

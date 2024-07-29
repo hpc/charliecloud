@@ -13,7 +13,9 @@ import charliecloud as ch
 import build
 import build_cache as bu
 import filesystem as fs
+import image as im
 import misc
+import modify
 import pull
 import push
 
@@ -277,6 +279,34 @@ def main():
                    help=argparse.SUPPRESS)
    sp.add_argument("image_ref", metavar="IMAGE_REF", nargs="?",
                    help="print details of this image only")
+
+   # modify
+   sp = ap.add_parser("modify", "foo")
+   add_opts(sp, modify.main, deps_check=True, stog_init=True)
+   sp.add_argument("-c", metavar="CMD", action="append", default=[], nargs=1,
+                   help="Run CMD as though specified by a RUN instruction. Can be repeated.")
+   sp.add_argument("-i", "--interactive", action="store_true",
+                   help="modify in interactive mode, even if stdin is not a TTY")
+   sp.add_argument("-S", "--shell", metavar="shell", default="/bin/sh",
+                   help="use SHELL instead of the default /bin/sh")
+   sp.add_argument("image_ref", metavar="IMAGE_REF", help="image to modify")
+   sp.add_argument("out_image", metavar="OUT_IMAGE", help="destination of modified image")
+   sp.add_argument("script", metavar="SCRIPT", help="foo", nargs='?')
+   # Options “modify” shares with “build”. Note that while we could abstract
+   # this out to avoid repeated lines, as we do for “common_opts”, we’ve decided
+   # that the tradeoff in code readability wouldn’t be worth it.
+   sp.add_argument("-b", "--bind", metavar="SRC[:DST]",
+                   action="append", default=[],
+                   help="mount SRC at guest DST (default: same as SRC)")
+   sp.add_argument("--build-arg", metavar="ARG[=VAL]",
+                   action="append", default=[],
+                   help="set build-time variable ARG to VAL, or $ARG if no VAL")
+   sp.add_argument("--force", metavar="MODE", nargs="?", default="seccomp",
+                   type=ch.Force_Mode, const="seccomp",
+                   help="inject unprivileged build workarounds")
+   sp.add_argument("--force-cmd", metavar="CMD,ARG1[,ARG2...]",
+                   action="append", default=[],
+                   help="command arg(s) to add under --force=seccomp")
 
    # pull
    sp = ap.add_parser("pull",

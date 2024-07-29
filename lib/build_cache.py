@@ -1379,6 +1379,9 @@ class Disabled_Cache(Rebuild_Cache):
    def __str__(self):
       return "disabled"
 
+   def branch_nocheckout(self, src_ref, dest):
+      pass
+
    def checkout(self, image, git_hash, base_image):
       ch.INFO("copying image ...")
       image.unpack_clear()
