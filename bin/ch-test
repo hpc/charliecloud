@@ -199,6 +199,9 @@ dir_tar_check_file () {
     for f in "$@"; do
         if [[ -f ${CH_TEST_TARDIR}/${f} ]]; then
             return 0
+        elif [[ "$f" == *"chtest"* ]] && [[ -n "$ch_build_unpack_list" ]]; then
+            # chtest not needed for build-unpack phase
+            return 0
         else
             missing+=("${CH_TEST_TARDIR}/${f}")
         fi
