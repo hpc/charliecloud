@@ -401,20 +401,21 @@ void hook_add(struct hook **hook_list, const char *name, hookf_t *f, void *d)
 
    T_ (h.name = strdup(name));
    h.f = f;
-   h.data = data;
+   h.data = d;
 
-   list_append(hook_list, &h, sizeof(h));
+   list_append((void **)hook_list, &h, sizeof(h));
 }
 
-/* Run hooks in hook_list, passing c, then deallocate and set the pointer to
-   NULL. hook_list must be a member of c. */
+/* Run hooks in hook_list, passing c, then deallocate the list and set
+   *hook_list to NULL. hook_list must be a member of c. */
 void hooks_run(struct container *c, struct hook **hook_list)
 {
-   for (int i = 0; (*hook_list)[i] != NULL; i++) {
-      struct hook *h = (*hook_list)[i];
-      VERBOSE("calling hook: %s", h->name);
-      h->f(c, h->data);
-      free(h->name);
+   
+   for (int i = 0; (*hook_list)[i].f != NULL; i++) {
+      struct hook h = (*hook_list)[i];
+      VERBOSE("calling hook: %s", h.name);
+      h.f(c, h.data);
+      free(h.name);
    }
 
    free(*hook_list);

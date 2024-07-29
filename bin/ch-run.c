@@ -14,6 +14,7 @@
 
 #include "config.h"
 #include "core.h"
+#include "hook.h"
 #ifdef HAVE_JSON
 #include "json.h"
 #endif
@@ -152,13 +153,12 @@ const struct argp_option options[] = {
 
 /** Function prototypes **/
 
-void fix_environment(struct args *args);
 bool get_first_env(char **array, char **name, char **value);
+void hooks_env_install(struct args *args);
 void img_directory_verify(const char *img_path, const struct args *args);
 int join_ct(int cli_ct);
 char *join_tag(char *cli_tag);
-void parse_env(struct env_option **options, enum env_option_type opt,
-               const char *arg);
+void parse_env(struct env_option **opts, enum env_option_type opt, char *arg);
 int parse_int(char *s, bool extra_ok, char *error_tag);
 static error_t parse_opt(int key, char *arg, struct argp_state *state);
 void privs_verify_invoking();
@@ -206,7 +206,7 @@ int main(int argc, char *argv[])
          .container_gid = getegid(),
          .container_uid = geteuid(),
          .env_expand = true,
-         .hooks_prestart = list_new(sizeof(struct hook), 0);
+         .hooks_prestart = list_new(sizeof(struct hook), 0),
          .host_home = NULL,
          .img_ref = NULL,
          .ldconfigs = list_new(sizeof(char *), 0),
@@ -246,8 +246,9 @@ int main(int argc, char *argv[])
    Z_ (argp_parse(&argp, argc, argv, 0, &arg_next, &args));
    if (!argp_help_fmt_set)
       Z_ (unsetenv("ARGP_HELP_FMT"));
+
    logging_init(args.log_color, args.log_test);
-   env_hooks_install(&args);
+   hooks_env_install(&args);
 
    if (arg_next >= argc - 1) {
       printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
@@ -310,7 +311,7 @@ int main(int argc, char *argv[])
 
    cdi_update(&args.c, args.cdi_devids);
    containerize(&args.c);
-   hooks_run(&args.c, args.c.hooks_prestart);
+   hooks_run(&args.c, &args.c.hooks_prestart);
    run_user_command(c_argv, args.initial_dir);  // should never return
    exit(EXIT_FAILURE);
 }
@@ -372,11 +373,12 @@ void hook_envs_def_last(struct container *c, void *d)
 }
 
 /* Install pre-start hooks for environment variable changes. */
-void hook_envs_install(struct args *args)
+void hooks_env_install(struct args *args)
 {
-   hook_add(&args->hooks_prestart, "env-def-first", hook_envs_def_first, NULL);
+   hook_add(&args->c.hooks_prestart,
+            "env-def-first", hook_envs_def_first, NULL);
 
-   for (size_t i = 0; args->env_options[i].opt != ENV_END; i++) {
+   for (int i = 0; args->env_options[i].opt != ENV_END; i++) {
       char *name_base, *name;
       hookf_t *f;
       void *d;
@@ -391,9 +393,10 @@ void hook_envs_install(struct args *args)
             struct env_file *ef;
             name_base = "env-set-gfile";
             f = hook_envs_set_file;
-            T_ (ef = malloc(sizeof struct env_file));
-            ef->name = arg;
+            T_ (ef = malloc(sizeof(struct env_file)));
+            ef->path = arg;
             ef->delim = delim;
+            ef->expand = args->c.env_expand;
             d = ef;
          } else {
             f = hook_envs_set;
@@ -414,7 +417,10 @@ void hook_envs_install(struct args *args)
       case ENV_CDI_DEV:
          name_base = "env-set-cdi";
          f = hook_envs_set;
-         d = cdi_envs_get(arg);
+         //d = cdi_envs_get(arg);
+         break;
+      case ENV_END:
+         T_ (false);  // unreachable
          break;
       }
       T_ (1 <= asprintf(&name, "%s-%d", name_base, i));
@@ -422,7 +428,7 @@ void hook_envs_install(struct args *args)
       free(name);
    }
 
-   hook_add(&args->hooks_prestart, "env-def-last", hook_envs_def_last, NULL);
+   hook_add(&args->c.hooks_prestart, "env-def-last", hook_envs_def_last, NULL);
 }
 
 /* Validate that it’s OK to run the IMG_DIRECTORY format image at path; if
@@ -703,14 +709,13 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    return 0;
 }
 
-void parse_env(struct env_option **options, enum env_option_type opt,
-               const char *arg)
+void parse_env(struct env_option **opts, enum env_option_type opt, char *arg)
 {
    struct env_option eo = (struct env_option){ .opt = opt,
                                                .arg = arg };
    Te (arg == NULL || strlen(arg) > 0,
        "environment options: argument must have non-zero length");
-   list_append((void **)env_options, &eo, sizeof(eo));
+   list_append((void **)opts, &eo, sizeof(eo));
 }
 
 /* Validate that the UIDs and GIDs are appropriate for program start, and

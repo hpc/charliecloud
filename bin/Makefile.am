@@ -8,16 +8,16 @@ bin_PROGRAMS = ch-checkns ch-run
 
 ch_checkns_SOURCES = ch-checkns.c misc.h misc.c
 
-ch_run_SOURCES = ch-run.c core.h core.c misc.h misc.c
+ch_run_SOURCES = ch-run.c core.h core.c hook.h hook.c misc.h misc.c
 if HAVE_JSON
 ch_run_SOURCES += json.h json.c
 endif
 if HAVE_LIBSQUASHFUSE
 ch_run_SOURCES += fuse.h fuse.c
 endif
-if HAVE_SECCOMP
-ch_run_SOURCES += seccomp.h seccomp.c
-endif
+#if HAVE_SECCOMP
+#ch_run_SOURCES += seccomp.h seccomp.c
+#endif
 
 # additional build flags for ch-run
 ch_run_CFLAGS = $(PTHREAD_CFLAGS)

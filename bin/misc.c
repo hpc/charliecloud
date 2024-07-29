@@ -314,43 +314,45 @@ struct env_var *env_file_read(const char *path, int delim)
    variables in value marked with "$" as described in the man page. */
 void env_set(const char *name, const char *value, const bool expand)
 {
-   char *value_, *value_expanded;
-   bool first_written;
+   char *vwk = NULL;           // modifiable copy of value
 
    // Walk through value fragments separated by colon and expand variables.
-   if (!expand)
-      value_expanded = value;
-   else {
-      T_ (value_ = strdup(value));
-      value_expanded = "";
-      first_written = false;
-      while (true) {                               // loop executes ≥ once
-         char *fgmt = strsep(&value_, ":");        // NULL -> no more items
-         if (fgmt == NULL)
+   if (expand) {
+      char *vwk_cur;           // current location in vwk
+      char *vout = NULL;       // output (expanded) string
+      bool first_out = false;  // true after 1st output element written
+      T_ (vwk = strdup(value));
+      vwk_cur = vwk;
+      while (true) {                            // loop executes ≥ once
+         char *elem = strsep(&vwk_cur, ":");     // NULL -> no more elements
+         if (elem == NULL)
             break;
-         if (fgmt[0] == '$' && fgmt[1] != 0) {
-            fgmt = getenv(fgmt + 1);               // NULL if unset
-            if (fgmt != NULL && fgmt[0] == 0)
-               fgmt = NULL;                        // convert empty to unset
+         if (elem[0] == '$' && elem[1] != 0) {  // looks like $VARIABLE
+            elem = getenv(elem + 1);            // NULL if unset
+            if (elem != NULL && elem[0] == 0)   // set but empty
+               elem = NULL;                     // convert to unset
          }
-         if (fgmt != NULL) {                       // NULL -> omit from output
-            if (first_written)
-               value_expanded = cat(value_expanded, ":");
-            value_expanded = cat(value_expanded, fgmt);
-            first_written = true;
+         if (elem != NULL) {   // empty -> omit from output list
+            char *vout_old = vout;
+            T_ (1 <= asprintf(&vout, "%s%s%s", vout_old ? vout_old : "",
+                              !first_out ? ":" : "", elem));
+            first_out = true;
+            free(vout_old);
          }
       }
+      value = vwk;
    }
 
    // Save results.
-   VERBOSE("environment: %s=%s", name, value_expanded);
-   Z_ (setenv(name, value_expanded, 1));
+   VERBOSE("environment: %s=%s", name, value);
+   Z_ (setenv(name, value, 1));
+   free(vwk);
 }
 
 void envs_set(const struct env_var *vars, const bool expand)
 {
    for (size_t i = 0; vars[i].name != NULL; i++)
-      env_set(env_set(vars[i].name, vars[i].value, expand));
+      env_set(vars[i].name, vars[i].value, expand);
 }
 
 /* Remove variables matching glob from the environment. This is tricky,
@@ -365,7 +367,7 @@ void envs_set(const struct env_var *vars, const bool expand)
 
    [1]: https://unix.stackexchange.com/a/302987
    [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
-void env_unset(const char *glob)
+void envs_unset(const char *glob)
 {
    char **new_environ = list_new(sizeof(char *), 0);
    for (size_t i = 0; environ[i] != NULL; i++) {

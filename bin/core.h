@@ -29,7 +29,7 @@ struct hook {
    char *name;
    hookf_t *f;
    void *data;
-}
+};
 
 enum img_type {
    IMG_DIRECTORY,  // normal directory, perhaps an external mount of some kind
@@ -63,7 +63,7 @@ struct container {
 /** Function prototypes **/
 
 void containerize(struct container *c);
-void hook_add(struct hook **hook_list, hookf_t *f, void *d);
+void hook_add(struct hook **hook_list, const char *name, hookf_t *f, void *d);
 void hooks_run(struct container *c, struct hook **hook_list);
 enum img_type image_type(const char *ref, const char *images_dir);
 char *img_name2path(const char *name, const char *storage_dir);

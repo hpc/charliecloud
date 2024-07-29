@@ -13,12 +13,13 @@
 
 struct env_file {
    char *path;
+   char delim;
    bool expand;
-}
+};
 
 
 /** Function prototypes **/
 
-void hook_env_set_file(struct container *c, void *d);
-void hook_env_set(struct container *c, void *d);
-void hook_env_unset(struct container *c, void *d);
+void hook_envs_set_file(struct container *c, void *d);
+void hook_envs_set(struct container *c, void *d);
+void hook_envs_unset(struct container *c, void *d);

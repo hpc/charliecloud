@@ -881,6 +881,7 @@ AS_IF([test $have_overlayfs = yes],
       [AC_DEFINE([HAVE_OVERLAYFS], [1], [unprivileged overlayfs])])
 AS_IF([test $have_seccomp = yes],
       [AC_DEFINE([HAVE_SECCOMP], [1], [seccomp supported])])
+AM_CONDITIONAL([HAVE_SECCOMP], [test $have_seccomp = yes])
 AS_IF([test $have_tmpfs_xattrs = yes],
       [AC_DEFINE([HAVE_TMPFS_XATTRS], [1], [tmpfs user xattrs])])
 
