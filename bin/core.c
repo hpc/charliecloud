@@ -387,7 +387,7 @@ void enter_udss(struct container *c)
 
 /* Append hook function f to hook_list. When called, it will be passed d; this
    lets hooks receive arbitrary arguments (i.e., it’s a poor person’s
-   closure).
+   closure). hook_list must be a member of c.
 
    Warning: The hook framework does no memory management for name or d, i.e.,
    if name needs to be freed, that is the responsibility of the caller (this
@@ -396,6 +396,29 @@ void enter_udss(struct container *c)
 void hook_add(struct hook **hook_list, const char *name, hookf_t *f, void *d)
 {
    // FIXME: hooks: environment variables, seccomp, CDI
+
+   struct hook h;
+
+   T_ (h.name = strdup(name));
+   h.f = f;
+   h.data = data;
+
+   list_append(hook_list, &h, sizeof(h));
+}
+
+/* Run hooks in hook_list, passing c, then deallocate and set the pointer to
+   NULL. hook_list must be a member of c. */
+void hooks_run(struct container *c, struct hook **hook_list)
+{
+   for (int i = 0; (*hook_list)[i] != NULL; i++) {
+      struct hook *h = (*hook_list)[i];
+      VERBOSE("calling hook: %s", h->name);
+      h->f(c, h->data);
+      free(h->name);
+   }
+
+   free(*hook_list);
+   *hook_list = NULL;
 }
 
 /* Return image type of path, or exit with error if not a valid type. */

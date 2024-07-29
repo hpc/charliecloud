@@ -310,7 +310,7 @@ int main(int argc, char *argv[])
 
    cdi_update(&args.c, args.cdi_devids);
    containerize(&args.c);
-   hooks_prestart(&args.c);
+   hooks_run(&args.c, args.c.hooks_prestart);
    run_user_command(c_argv, args.initial_dir);  // should never return
    exit(EXIT_FAILURE);
 }

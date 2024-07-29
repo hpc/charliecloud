@@ -64,7 +64,7 @@ struct container {
 
 void containerize(struct container *c);
 void hook_add(struct hook **hook_list, hookf_t *f, void *d);
-void hooks_prestart(struct container *c);
+void hooks_run(struct container *c, struct hook **hook_list);
 enum img_type image_type(const char *ref, const char *images_dir);
 char *img_name2path(const char *name, const char *storage_dir);
 void run_user_command(char *argv[], const char *initial_dir);
