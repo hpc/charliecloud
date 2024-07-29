@@ -406,6 +406,7 @@ void hooks_env_install(struct args *args)
             } else {                         // direct set
                name_base = "env-set-direct";
                d = list_new(sizeof(struct env_var), 1);
+               ((struct env_var *)d)[0] = env_var_parse(arg, NULL, 0);
             }
          }
          break;

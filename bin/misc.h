@@ -127,6 +127,7 @@ int dir_ls_count(const char *path);
 int dir_ls_filter(const struct dirent *e);
 struct env_var *env_file_read(const char *path, int delim);
 void env_set(const char *name, const char *value, const bool expand);
+void envs_free(struct env_var **vars);
 void envs_set(const struct env_var *envs, const bool expand);
 void envs_unset(const char *glob);
 struct env_var env_var_parse(const char *line, const char *path, size_t lineno);

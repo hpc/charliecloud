@@ -410,7 +410,6 @@ void hook_add(struct hook **hook_list, const char *name, hookf_t *f, void *d)
    *hook_list to NULL. hook_list must be a member of c. */
 void hooks_run(struct container *c, struct hook **hook_list)
 {
-   
    for (int i = 0; (*hook_list)[i].f != NULL; i++) {
       struct hook h = (*hook_list)[i];
       VERBOSE("calling hook: %s", h.name);

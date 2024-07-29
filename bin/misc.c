@@ -349,6 +349,17 @@ void env_set(const char *name, const char *value, const bool expand)
    free(vwk);
 }
 
+/* Free the environment variabls list *vars, both the individual buffers within
+   as well as the whole list, then set *vars to NULL. */
+void envs_free(struct env_var **vars)
+{
+   for (int i = 0; (*vars)[i].name != NULL; i++)
+      free((*vars)[i].name);  // .value points into same buffer; see split()
+
+   free(*vars);
+   *vars = NULL;
+}
+
 void envs_set(const struct env_var *vars, const bool expand)
 {
    for (size_t i = 0; vars[i].name != NULL; i++)
