@@ -873,11 +873,7 @@ while [[ $# -gt 0 ]]; do
         usage 0
         ;;
     -i)
-        #phase=one-file
         phase=build-unpack
-        #one_file="${TMP_}/build_auto.bats:$1"
-        # FIXME: remove ch_build_unpack
-        export ch_build_unpack="true"
         ch_build_unpack_list+=" $1"
         shift
         ;;
