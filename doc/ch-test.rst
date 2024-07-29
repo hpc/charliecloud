@@ -93,6 +93,11 @@ allows trading off thoroughness versus time.
   :code:`build-images`
     Build images from :code:`build` phase, without running the associated tests.
 
+  :code:`build-unpack`
+    Build and unpack images only. By default, build and unpack all applicable
+    images. If one or more images have been specified with :code:`-i`, build and
+    unpack those images only.
+
   :code:`clean`
     Delete automatically-generated test files, and packed and unpacked image
     directories.
@@ -158,6 +163,10 @@ Additional arguments:
 
   :code:`-h`, :code:`--help`
     Print usage and then exit.
+
+  :code:`-i IMG`
+    Build and unpack specified image (:code:`IMG`), can be repeated to build and
+    unpack multiple images. Implies :code:`build-unpack` as the phase.
 
   :code:`--img-dir DIR`
     Set unpacked images directory to :code:`DIR`. In a multi-node allocation,
