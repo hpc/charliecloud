@@ -18,4 +18,4 @@
 
 /** Function prototypes **/
 
-void cdi_update(struct container *c, char ** devids);
+void cdi_init(struct container *c, char ** devids);

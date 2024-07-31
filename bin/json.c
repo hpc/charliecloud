@@ -200,6 +200,46 @@ char *cdi_hook_to_string(const char *hook_name, char **args)
    return ret;
 }
 
+/* Update container configuration c according to CDI arguments given. Note
+   that here we just tidy up the configuration. Actually doing things (e.g.
+   bind mounts) happens later. */
+void cdi_init(struct container *c, char **devids)
+{
+   struct cdi_spec **specs = list_new(sizeof(struct cdi_spec *), 12);
+
+   // read CDI spec files in configured directories, if requested
+   // FIXME
+
+   // read CDI spec files specifically requested
+   for (size_t i = 0; devids[i] != NULL; i++)
+      if (devids[i][0] == '.' || devids[i][0] == '/') {
+         struct cdi_spec *spec = cdi_read(devids[i]);
+         list_append((void **)&specs, &spec, sizeof(spec));
+      }
+
+   // rm duplicate kinds
+   DEBUG("CDI: read %d specs", list_count(specs, sizeof(specs[0])));
+   list_uniq(specs, sizeof(specs[0]), cdi_cmp_kind);
+
+   // debugging: print parsed CDI specs
+   DEBUG("CDI: using %d specs", list_count(specs, sizeof(specs[0])));
+   for (size_t i = 0; specs[i] != NULL; i++)
+      cdi_log(specs[0]);
+
+   // update c
+   for (size_t i = 0; specs[i] != NULL; i++) {
+      // ldconfigs; copy rather than assigning because (1) easier to free
+      // and (2) still works if we later grow other sources of ldconfig.
+      list_cat((void **)&c->ldconfigs, (void *)specs[i]->ldconfigs,
+               sizeof(c->ldconfigs[0]));
+   }
+
+   // clean up
+   for (size_t i = 0; specs[i] != NULL; i++)
+      cdi_free(specs[i]);
+   free(specs);
+}
+
 /* Log contents of spec. */
 void cdi_log(struct cdi_spec *spec)
 {
@@ -261,46 +301,6 @@ struct cdi_spec *cdi_read(const char *path)
    free(text);
    cJSON_Delete(tree);
    return spec;
-}
-
-/* Update container configuration c according to CDI arguments given. Note
-   that here we just tidy up the configuration. Actually doing things (e.g.
-   bind mounts) happens later. */
-void cdi_update(struct container *c, char **devids)
-{
-   struct cdi_spec **specs = list_new(sizeof(struct cdi_spec *), 12);
-
-   // read CDI spec files in configured directories, if requested
-   // FIXME
-
-   // read CDI spec files specifically requested
-   for (size_t i = 0; devids[i] != NULL; i++)
-      if (devids[i][0] == '.' || devids[i][0] == '/') {
-         struct cdi_spec *spec = cdi_read(devids[i]);
-         list_append((void **)&specs, &spec, sizeof(spec));
-      }
-
-   // rm duplicate kinds
-   DEBUG("CDI: read %d specs", list_count(specs, sizeof(specs[0])));
-   list_uniq(specs, sizeof(specs[0]), cdi_cmp_kind);
-
-   // debugging: print parsed CDI specs
-   DEBUG("CDI: using %d specs", list_count(specs, sizeof(specs[0])));
-   for (size_t i = 0; specs[i] != NULL; i++)
-      cdi_log(specs[0]);
-
-   // update c
-   for (size_t i = 0; specs[i] != NULL; i++) {
-      // ldconfigs; copy rather than assigning because (1) easier to free
-      // and (2) still works if we later grow other sources of ldconfig.
-      list_cat((void **)&c->ldconfigs, (void *)specs[i]->ldconfigs,
-               sizeof(c->ldconfigs[0]));
-   }
-
-   // clean up
-   for (size_t i = 0; specs[i] != NULL; i++)
-      cdi_free(specs[i]);
-   free(specs);
 }
 
 void cdiPC_cdiVersion(cJSON *tree, struct cdi_spec *spec)

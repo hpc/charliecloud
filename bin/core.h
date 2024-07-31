@@ -31,6 +31,12 @@ struct hook {
    void *data;
 };
 
+enum hook_dup {    // see hook_add()
+   HOOK_DUP_OK,
+   HOOK_DUP_SKIP,
+   HOOK_DUP_FAIL
+};
+
 enum img_type {
    IMG_DIRECTORY,  // normal directory, perhaps an external mount of some kind
    IMG_SQUASH,     // SquashFS archive file (not yet mounted)
@@ -63,7 +69,8 @@ struct container {
 /** Function prototypes **/
 
 void containerize(struct container *c);
-void hook_add(struct hook **hook_list, const char *name, hookf_t *f, void *d);
+void hook_add(struct hook **hook_list, enum hook_dup dup,
+              const char *name, hookf_t *f, void *d);
 void hooks_run(struct container *c, struct hook **hook_list);
 enum img_type image_type(const char *ref, const char *images_dir);
 char *img_name2path(const char *name, const char *storage_dir);

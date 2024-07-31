@@ -19,6 +19,9 @@
 #include "json.h"
 #endif
 #include "misc.h"
+#ifdef HAVE_SECCOMP
+#include "seccomp.h"
+#endif
 
 
 /** Types **/
@@ -228,9 +231,6 @@ int main(int argc, char *argv[])
       .initial_dir = NULL,
       .log_color = LL_COLOR_AUTO,
       .log_test = LL_TEST_NONE,
-#ifdef HAVE_SECCOMP
-      .seccomp_p = false,
-#endif
       .storage_dir = storage_default(),
       .unsafe = false
    };
@@ -248,7 +248,6 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    logging_init(args.log_color, args.log_test);
-   hooks_env_install(&args);
 
    if (arg_next >= argc - 1) {
       printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
@@ -286,14 +285,14 @@ int main(int argc, char *argv[])
       args.c.join_tag = join_tag(args.c.join_tag);
    }
 
+   c_argv = list_new(sizeof(char *), argc - arg_next);
+   for (int i = 0; i < argc - arg_next; i++)
+      c_argv[i] = argv[i + arg_next];
+
    if (getenv("TMPDIR") != NULL)
       host_tmp = getenv("TMPDIR");
    else
       host_tmp = "/tmp";
-
-   c_argv = list_new(sizeof(char *), argc - arg_next);
-   for (int i = 0; i < argc - arg_next; i++)
-      c_argv[i] = argv[i + arg_next];
 
    VERBOSE("verbosity: %d", verbose);
    VERBOSE("image: %s", args.c.img_ref);
@@ -305,13 +304,16 @@ int main(int argc, char *argv[])
            args.c.join_pid);
    VERBOSE("private /tmp: %d", args.c.private_tmp);
 #ifdef HAVE_SECCOMP
-   VERBOSE("seccomp: %d", args.seccomp_p);
+   VERBOSE("seccomp: %s", bool_to_string(args.seccomp_p));
 #endif
-   VERBOSE("unsafe: %d", args.unsafe);
+   VERBOSE("unsafe: %s", bool_to_string(args.unsafe));
 
-   cdi_update(&args.c, args.cdi_devids);
+#ifdef HAVE_JSON
+   cdi_init(&args.c, args.cdi_devids);
+#endif
+   hooks_env_install(&args);
+
    containerize(&args.c);
-   hooks_run(&args.c, &args.c.hooks_prestart);
    run_user_command(c_argv, args.initial_dir);  // should never return
    exit(EXIT_FAILURE);
 }
@@ -375,11 +377,11 @@ void hook_envs_def_last(struct container *c, void *d)
 /* Install pre-start hooks for environment variable changes. */
 void hooks_env_install(struct args *args)
 {
-   hook_add(&args->c.hooks_prestart,
+   hook_add(&args->c.hooks_prestart, HOOK_DUP_FAIL,
             "env-def-first", hook_envs_def_first, NULL);
 
    for (int i = 0; args->env_options[i].opt != ENV_END; i++) {
-      char *name_base, *name;
+      char *name;
       hookf_t *f;
       void *d;
       enum env_option_type opt = args->env_options[i].opt;
@@ -391,7 +393,7 @@ void hooks_env_install(struct args *args)
          int delim = ENV_SET ? '\n' : '\0';
          if (args == NULL) {                 // guest path; defer file read
             struct env_file *ef;
-            name_base = "env-set-gfile";
+            name = "env-set-gfile";
             f = hook_envs_set_file;
             T_ (ef = malloc(sizeof(struct env_file)));
             ef->path = arg;
@@ -401,22 +403,22 @@ void hooks_env_install(struct args *args)
          } else {
             f = hook_envs_set;
             if (strchr(arg, '=') == NULL) {  // host path; read file now
-               name_base = "env-set-hfile";
+               name = "env-set-hfile";
                d = env_file_read(arg, delim);
             } else {                         // direct set
-               name_base = "env-set-direct";
+               name = "env-set-direct";
                d = list_new(sizeof(struct env_var), 1);
                ((struct env_var *)d)[0] = env_var_parse(arg, NULL, 0);
             }
          }
          break;
       case ENV_UNSET:
-         name_base = "env-unset";
+         name = "env-unset";
          f = hook_envs_unset;
          d = arg;
          break;
       case ENV_CDI_DEV:
-         name_base = "env-set-cdi";
+         name = "env-set-cdi";
          f = hook_envs_set;
          //d = cdi_envs_get(arg);
          break;
@@ -424,12 +426,11 @@ void hooks_env_install(struct args *args)
          T_ (false);  // unreachable
          break;
       }
-      T_ (1 <= asprintf(&name, "%s-%d", name_base, i));
-      hook_add(&args->c.hooks_prestart, name, f, d);
-      free(name);
+      hook_add(&args->c.hooks_prestart, HOOK_DUP_OK, name, f, d);
    }
 
-   hook_add(&args->c.hooks_prestart, "env-def-last", hook_envs_def_last, NULL);
+   hook_add(&args->c.hooks_prestart, HOOK_DUP_FAIL,
+            "env-def-last", hook_envs_def_last, NULL);
 }
 
 /* Validate that it’s OK to run the IMG_DIRECTORY format image at path; if
@@ -588,7 +589,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       break;
 #ifdef HAVE_SECCOMP
    case -14: // --seccomp
-      args->seccomp_p = true;
+      hook_add(&args->c.hooks_prestart, HOOK_DUP_SKIP,
+               "seccomp", hook_seccomp_install, NULL);
       break;
 #endif
    case -15: // --set-env0
@@ -705,7 +707,7 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       exit(EXIT_FAILURE);
    default:
       return ARGP_ERR_UNKNOWN;
-   };
+   }
 
    return 0;
 }

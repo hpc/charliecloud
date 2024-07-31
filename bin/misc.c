@@ -344,7 +344,7 @@ void env_set(const char *name, const char *value, const bool expand)
    }
 
    // Save results.
-   VERBOSE("environment: %s=%s", name, value);
+   DEBUG("environment: %s=%s", name, value);
    Z_ (setenv(name, value, 1));
    free(vwk);
 }
@@ -388,7 +388,7 @@ void envs_unset(const char *glob)
       T_ (name != NULL);          // environ entries must always have equals
       matchp = fnmatch(glob, name, FNM_EXTMATCH); // extglobs if available
       if (matchp == 0) {
-         VERBOSE("environment: unset %s", name);
+         DEBUG("environment: unset %s", name);
       } else {
          T_ (matchp == FNM_NOMATCH);
          *(value - 1) = '=';  // rejoin line
@@ -902,17 +902,22 @@ unsigned long path_mount_flags(const char *path)
           | (sv.f_flag & ST_SYNCHRONOUS ? MS_SYNCHRONOUS : 0);
 }
 
-/* Split path into dirname and basename. */
+/* Split path into dirname and basename. If dir and/or base is NULL, then skip
+   that output. */
 void path_split(const char *path, char **dir, char **base)
 {
    char *path2;
 
-   T_ (path2 = strdup(path));
-   T_ (*dir = strdup(dirname(path2)));
-   free(path2);
-   T_ (path2 = strdup(path));
-   T_ (*base = strdup(basename(path2)));
-   free(path2);
+   if (dir != NULL) {
+      T_ (path2 = strdup(path));
+      T_ (*dir = strdup(dirname(path2)));
+      free(path2);
+   }
+   if (base != NULL) {
+      T_ (path2 = strdup(path));
+      T_ (*base = strdup(basename(path2)));
+      free(path2);
+   }
 }
 
 /* Return true if path is a subdirectory of base, false otherwise. Acts on the

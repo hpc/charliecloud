@@ -7,4 +7,4 @@
 
 #include "core.h"
 
-void rootemu_init(struct container *c);
+void hook_seccomp_install(struct container *c, void *d);
