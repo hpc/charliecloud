@@ -56,6 +56,7 @@ Contributors:
 
 * Richard Berger <rberger@lanl.gov>
 * Lucas Caudill <lcaudill@lanl.gov>
+* Krishna Chilleri <krishnachilleri@lanl.gov>
 * Rusty Davis <rustyd@lanl.gov>
 * Hunter Easterday <heasterday@lanl.gov>
 * Oliver Freyermuth <o.freyermuth@googlemail.com>

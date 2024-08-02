@@ -401,8 +401,9 @@ enum img_type image_type(const char *ref, const char *storage_dir)
    Zf (stat(ref, &st), "can't stat: %s", ref);
 
    // If ref is the path to a directory, then it’s a directory.
-   if (S_ISDIR(st.st_mode))
+   if (S_ISDIR(st.st_mode)) {
       return IMG_DIRECTORY;
+   }
 
    // Now we know it’s file-like enough to read. See if it has the SquashFS
    // magic number.
