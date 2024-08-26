@@ -138,12 +138,13 @@ Other publications:
 Copyright and license
 ---------------------
 
-Charliecloud is copyright © 2014–2023 Triad National Security, LLC and others.
+Charliecloud is copyright © Charliecloud a Series of LF Projects, LLC and
+others.
 
-This software was produced under U.S. Government contract 89233218CNA000001
-for Los Alamos National Laboratory (LANL), which is operated by Triad National
-Security, LLC for the U.S. Department of Energy/National Nuclear Security
-Administration.
+This software was produced in part under U.S. Government contract
+89233218CNA000001 for Los Alamos National Laboratory (LANL), which is operated
+by Triad National Security, LLC for the U.S. Department of Energy/National
+Nuclear Security Administration.
 
 This is open source software (LA-CC 14-096); you can redistribute it and/or
 modify it under the terms of the Apache License, Version 2.0. A copy is

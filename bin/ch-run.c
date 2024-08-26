@@ -1,5 +1,3 @@
-/* Copyright © Triad National Security, LLC, and others. */
-
 /* Note: This program does not bother to free memory allocations, since they
    are modest and the program is short-lived. */
 

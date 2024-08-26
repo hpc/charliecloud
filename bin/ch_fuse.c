@@ -1,5 +1,3 @@
-/* Copyright © Triad National Security, LLC, and others. */
-
 /* Function prefixes:
 
    fuse_     libfuse; docs: https://libfuse.github.io/doxygen/globals.html
