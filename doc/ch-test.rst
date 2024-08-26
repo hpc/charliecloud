@@ -90,13 +90,10 @@ allows trading off thoroughness versus time.
     Create the filesystem permissions directories. Requires
     :code:`--perm-dirs`.
 
-  :code:`build-images`
-    Build images from :code:`build` phase, without running the associated tests.
-
   :code:`build-unpack`
-    Build and unpack images only. By default, build and unpack all applicable
-    images. If one or more images have been specified with :code:`-i`, build and
-    unpack those images only.
+    Build and unpack images only, without running the associated tests. By
+    default, build/unpack all images from the *build* phase. If :code:`-i` is
+    given, build/unpack those images only.
 
   :code:`clean`
     Delete automatically-generated test files, and packed and unpacked image
@@ -112,8 +109,8 @@ allows trading off thoroughness versus time.
     where you must specify the corresponding Dockerfile or :code:`Build` file
     instead. This is somewhat brittle and typically used for development or
     debugging. For example, it does not check whether the pre-requisites of
-    whatever is in the file are satisfied. Often running :code:`build` and
-    :code:`run` first is sufficient, but this varies.
+    whatever is in the file are satisfied. Often running :code:`build-unpack`
+    and first is sufficient, but this varies.
 
     If :code:`TEST` is also given, then run only tests with name containing
     that string, skipping the others. The separator is a literal colon. If the
@@ -165,8 +162,8 @@ Additional arguments:
     Print usage and then exit.
 
   :code:`-i IMG`
-    Build and unpack specified image (:code:`IMG`), can be repeated to build and
-    unpack multiple images. Implies :code:`build-unpack` as the phase.
+    Build and unpack specified image (:code:`IMG`); can be repeated for
+    multiple images. Implies :code:`build-unpack` as the phase.
 
   :code:`--img-dir DIR`
     Set unpacked images directory to :code:`DIR`. In a multi-node allocation,
