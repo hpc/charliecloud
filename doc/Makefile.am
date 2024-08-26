@@ -43,6 +43,7 @@ man/README \
 py_env.rst \
 rd100-winner.png \
 see_also.rst \
+tech-charter.rst \
 tutorial.rst
 
 if ENABLE_MAN
@@ -77,6 +78,7 @@ html/faq.html \
 html/index.html \
 html/install.html \
 html/search.html \
+html/tech-charter.html \
 html/tutorial.html
 endif
 
