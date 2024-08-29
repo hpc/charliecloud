@@ -64,8 +64,8 @@ static const char **LL_COLOURS = _LL_COLOURS + 3;
 
 /** External variables **/
 
-/* Level of chatter on stderr. */
-enum log_level verbose;
+/* If true, exit abnormally on fatal error. Set in ch-run.c. */
+bool abort_fatal = false;
 
 /* If true, use colored logging. Set in ch-run.c. */
 bool log_color_p = false;
@@ -75,6 +75,9 @@ char *host_tmp = NULL;
 
 /* Username of invoking users. Set during command line processing. */
 char *username = NULL;
+
+/* Level of chatter on stderr. */
+enum log_level verbose;
 
 /* List of warnings to be re-printed on exit. This is a buffer of shared memory
    allocated by mmap(2), structured as a sequence of null-terminated character
@@ -87,6 +90,7 @@ char *warnings;
    where the next appended string will start. This means that the null
    terminator of the previous string is warnings_offset - 1. */
 size_t warnings_offset = 0;
+
 
 
 /** Function prototypes (private) **/
@@ -241,7 +245,7 @@ int dir_ls(const char *path, struct dirent ***namelist)
    int entry_ct;
 
    entry_ct = scandir(path, namelist, dir_ls_filter, NULL);
-   Tf (entry_ct >= 0, "can't scan dir", path);
+   Tf (entry_ct >= 0, "can't scan dir: %s", path);
    return entry_ct;
 }
 
@@ -309,6 +313,20 @@ struct env_var *env_file_read(const char *path, int delim)
    Zf (fclose(fp), "can't close: %s", path);
    return vars;
 }
+
+/* Return the value of environment variable name if set; otherwise, return
+   value_default instead.
+
+   Note the implications for memory management: you may get a pointer into
+   environ (?), which you do not own and must not free, or value_default,
+   which may or may not need to be freed. */
+char *env_get(const char *name, char *value_default)
+{
+   char *ret = getenv(name);
+   return ret ? ret : value_default;
+}
+
+
 
 /* Set environment variable name to value. If expand, then further expand
    variables in value marked with "$" as described in the man page. */
@@ -485,6 +503,18 @@ size_t list_count(void *ar, size_t size)
    return ct;
 }
 
+/* *ar is a list of pointers to malloc()’ed buffers (which is why object size
+   is not provided). Free those buffers, then free *ar itself and set it to
+   NULL. */
+void list_free_shallow(void ***ar)
+{
+   T_ (*ar != NULL);
+   for (int i; (*ar)[i] != NULL; i++)
+      free((*ar)[i]);
+   free(*ar);
+   *ar = NULL;
+}
+
 /* Return a pointer to a new, empty zero-terminated array containing elements
    of size size, with room for ct elements without re-allocation. The latter
    allows to pre-allocate an arbitrary number of slots in the list, which can
@@ -494,7 +524,60 @@ size_t list_count(void *ar, size_t size)
 void *list_new(size_t size, size_t ct)
 {
    void *list;
+   T_ (size > 0);
    T_ (list = calloc(ct+1, size));
+   return list;
+}
+
+/* Split str into tokens delimited by delim (multiple adjacent delimiters are
+   treated as one). Copy each token into a newly-allocated string buffer, and
+   return these strings as a new list.
+
+   Notes:
+
+     1. The interface deliberately accepts a single delimiter, not multiple
+        like strtok(3).
+
+     2. This approach has a redundant malloc(3) for each token, because we
+        have to copy the input string into a new buffer anyway to satisfy
+        strtok_r(3). We could use the multiple token pointers into this single
+        buffer as the list elements. However, this would yield a
+        difficult-to-free list: one would have to free only the *first*
+        element in the list and no others. Also, if any other strings are
+        later added to the list, those would need to be freed differently.
+        This all seemed extremely bug-prone. */
+void *list_new_strings(char delim, const char *str)
+{
+   char **list;
+   char *str_copy, *str_init, *tok_state;
+   char delims[] = { delim, '\0' };
+   size_t delim_ct = 0;
+
+   // Count delimiters so we can allocate the right size list initially,
+   // avoiding one realloc() per delimiter. Note this does not account for
+   // adjacent delimiters and thus may overcount tokens, possibly wasting a
+   // small amount of memory.
+   for (int i = 0; str[i] != '\0'; i++)
+      delim_ct += str[i] == delim ? 1 : 0;
+
+   list = list_new(delim_ct + 1, sizeof(char *));
+
+   // Note: strtok_r(3)’s interface is rather awkward; see its man page.
+   T_ (str_copy = strdup(str));
+   str_init = str_copy;
+   tok_state = NULL;
+   for (int i = 0; true; i++) {
+      char *tok;
+      tok = strtok_r(str_init, delims, &tok_state);
+      if (tok == NULL)
+         break;
+      T_ (i < delim_ct + 1);  // bounds check
+      T_ (tok = strdup(tok));  // copy tok into buffer we own
+      list[i] = tok;
+      str_init = NULL;
+   }
+   free(str_copy);
+
    return list;
 }
 
@@ -743,7 +826,10 @@ noreturn void msg_fatal(const char *file, int line, int errno_,
    msgv(LL_FATAL, file, line, errno_, fmt, ap);
    va_end(ap);
 
-   exit(EXIT_FAILURE);
+   if (abort_fatal)
+      abort();
+   else
+      exit(EXIT_FAILURE);
 }
 
 /* va_list form of msg(). */

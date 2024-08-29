@@ -6,6 +6,8 @@
 #define _GNU_SOURCE
 #pragma once
 
+#include <stdbool.h>
+
 #include "config.h"
 #include "core.h"
 #include "misc.h"
@@ -15,7 +17,15 @@
 
 /** Types **/
 
+/* General CDI configuration. */
+struct cdi_config {
+   char **spec_dirs;      // directories to search for CDI spec files
+   bool devs_all_p;        // inject all devices found
+   char **devids;          // user-requested devices
+};
+
 
 /** Function prototypes **/
 
-void cdi_init(struct container *c, char ** devids);
+void cdi_envs_get(const char *devid);
+void cdi_init(struct cdi_config *cf);

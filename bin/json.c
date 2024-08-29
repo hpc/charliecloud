@@ -1,9 +1,12 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <sys/stat.h>
+#include <sys/sysmacros.h>
 
 #include "config.h"
 
@@ -35,10 +38,12 @@ struct cdi_hook_dispatch {
 
 struct cdi_spec {
    char *kind;
-   char *src;             // path to source spec file
+   char *src_path;         // source spec file path
+   dev_t src_dev;          // ... device ID
+   ino_t src_ino;          // ... inode number
    struct env_var *envs;
    struct bind *binds;
-   char **ldconfigs;  // directories to process with ldconfig(8)
+   char **ldconfigs;       // directories to process with ldconfig(8)
 };
 
 struct json_dispatch {
@@ -54,16 +59,26 @@ struct json_dispatch {
 // Block size in bytes for reading JSON files.
 const size_t READ_SZ = 16384;
 
+/** Globals **/
+
+// List of CDI specs we’ve read. Yes it’s a global, but that lets us keep
+// struct cdi_spec private to this file, which seemed like the right
+// trade-off. It also seemed like “all the specs we know about” wasn’t
+// something we needed multiple of.
+struct cdi_spec *cdi_specs = NULL;
+
 
 /** Function prototypes (private) **/
 
 char **array_strings_json_to_c(cJSON *jarry, size_t *ct);
-int cdi_cmp_kind(const void *a, const void *b);
+void cdi_append(struct cdi_spec **specs, struct cdi_spec *spec);
 void cdi_free(struct cdi_spec *spec);
 void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args);
 char *cdi_hook_to_string(const char *hook_name, char **args);
 void cdi_log(struct cdi_spec *spec);
 struct cdi_spec *cdi_read(const char *path);
+struct cdi_spec *cdi_read_maybe(struct cdi_spec *specs, const char *path);
+bool cdi_requested(struct cdi_config *cf, struct cdi_spec *spec);
 void visit(struct json_dispatch actions[], cJSON *tree, void *state);
 void visit_dispatch(struct json_dispatch action, cJSON *tree, void *state);
 
@@ -139,25 +154,34 @@ char **array_strings_json_to_c(cJSON *jarry, size_t *ct)
    return carry;
 }
 
-/* Compare the kinds of specifications a and b (which are double pointers,
-   hence the hairy casts). As expected by qsort(3):
-
-     if a < b: return negative value
-     if a = b: return 0
-     if a > b: return positive value */
-int cdi_cmp_kind(const void *a, const void *b)
+/* Return true if devid is a device kind (e.g. “nvidia.com/gpu”), false if
+   it’s a path. Exit with error if NULL pointer or empty string. */
+bool cdi_devid_kind_p(const char *devid)
 {
-   struct cdi_spec *a_ = *(struct cdi_spec **)a;
-   struct cdi_spec *b_ = *(struct cdi_spec **)b;
+   T_ (devid != NULL && devid[0] != '\0');
+   return (devid[0] != '.' && devid[0] != '/');
+}
 
-   return strcmp(a_->kind, b_->kind);
+/* Return a list of environment variables to be set for device kind kind, or
+   if kind is NULL, all known devices. Both the list and the buffers within
+   are newly allocated; the caller must free the list with envs_free(). */
+struct env_var *cdi_envs_get(const char *devid)
+{
+   struct env_var *vars;
+
+   // count variables so we can do just one allocation
+   for ()
+
+   // set up the list
+
+   return vars;
 }
 
 /* Free spec. */
 void cdi_free(struct cdi_spec *spec)
 {
    free(spec->kind);
-   free(spec->src);
+   free(spec->src_path);
    for (size_t i = 0; spec->envs[i].name != NULL; i++) {
       free(spec->envs[i].name);
       free(spec->envs[i].value);
@@ -200,32 +224,58 @@ char *cdi_hook_to_string(const char *hook_name, char **args)
    return ret;
 }
 
-/* Update container configuration c according to CDI arguments given. Note
-   that here we just tidy up the configuration. Actually doing things (e.g.
-   bind mounts) happens later. */
-void cdi_init(struct container *c, char **devids)
+/* Read the CDI spec files we need.
+
+   Note: We only read spec files in the search path directories if either
+   (a) --devices is specified, requesting all known devices or (b) a device
+   kind (rather than a filename) is given to --device (e.g., “nvidia.com/gpu”.
+   This protects users from errors in the spec files if they have not
+   requested any CDI features. */
+void cdi_init(struct cdi_config *cf)
 {
-   struct cdi_spec **specs = list_new(sizeof(struct cdi_spec *), 12);
+   bool req_by_kind = false;
 
-   // read CDI spec files in configured directories, if requested
-   // FIXME
+   // Initialize specs list.
+   T_ (cdi_specs == NULL);
+   cdi_specs = list_new(sizeof(struct cdi_spec), 0);
 
-   // read CDI spec files specifically requested
-   for (size_t i = 0; devids[i] != NULL; i++)
-      if (devids[i][0] == '.' || devids[i][0] == '/') {
-         struct cdi_spec *spec = cdi_read(devids[i]);
-         list_append((void **)&specs, &spec, sizeof(spec));
+   // Read CDI spec files specifically requested.
+   for (int i = 0; cf->devids[i] != NULL; i++)
+      if (cdi_devid_kind_p(cf->devids[i]))
+         req_by_kind = true;
+      else {
+         struct cdi_spec *spec = cdi_read_maybe(cdi_specs, cf->devids[i]);
+         if (spec != NULL)
+            list_append((void **)&cdi_specs, spec, sizeof(*spec));
+         free(spec);
       }
 
-   // rm duplicate kinds
-   DEBUG("CDI: read %d specs", list_count(specs, sizeof(specs[0])));
-   list_uniq(specs, sizeof(specs[0]), cdi_cmp_kind);
+   // Read CDI spec files in configured directories if neccessary.
+   if (cf->devs_all_p || req_by_kind)
+      for (int i = 0; cf->spec_dirs[i] != NULL; i++) {
+         int entry_ct;
+         struct dirent **des;
+         entry_ct = dir_ls(cf->spec_dirs[i], &des);
+         for (int j = 0; j < entry_ct; j++) {
+            if (!fnmatch("*.json", des[i]->d_name, 0)) {
+               char *path = path_join(cf->spec_dirs[i], des[i]->d_name);
+               struct cdi_spec *spec = cdi_read_maybe(cdi_specs, path);
+               if (spec != NULL && cdi_requested(cf, spec))
+                  list_append((void **)&cdi_specs, spec, sizeof(*spec));
+               free(path);
+               free(spec);
+            }
+            free(des[j]);
+         }
+         free(des);
+      }
 
    // debugging: print parsed CDI specs
-   DEBUG("CDI: using %d specs", list_count(specs, sizeof(specs[0])));
-   for (size_t i = 0; specs[i] != NULL; i++)
-      cdi_log(specs[0]);
+   DEBUG("CDI: read %d specs", list_count(cdi_specs, sizeof(cdi_specs[0])));
+   for (size_t i = 0; cdi_specs[i].kind != NULL; i++)
+      cdi_log(&cdi_specs[0]);
 
+/*
    // update c
    for (size_t i = 0; specs[i] != NULL; i++) {
       // ldconfigs; copy rather than assigning because (1) easier to free
@@ -233,11 +283,7 @@ void cdi_init(struct container *c, char **devids)
       list_cat((void **)&c->ldconfigs, (void *)specs[i]->ldconfigs,
                sizeof(c->ldconfigs[0]));
    }
-
-   // clean up
-   for (size_t i = 0; specs[i] != NULL; i++)
-      cdi_free(specs[i]);
-   free(specs);
+*/
 }
 
 /* Log contents of spec. */
@@ -245,7 +291,8 @@ void cdi_log(struct cdi_spec *spec)
 {
    size_t ct;
 
-   DEBUG("CDI: %s from %s:", spec->kind, spec->src);
+   DEBUG("CDI: %s from %s (%u,%u %u):", spec->kind, spec->src_path,
+         major(spec->src_dev), minor(spec->src_dev), spec->src_ino);
    ct = list_count((void *)(spec->envs), sizeof(struct env_var));
    DEBUG("CDI:   environment: %d:", ct);
    for (size_t i = 0; i < ct; i++)
@@ -266,6 +313,7 @@ void cdi_log(struct cdi_spec *spec)
 struct cdi_spec *cdi_read(const char *path)
 {
    FILE *fp;
+   struct stat st;
    char *text = NULL;
    const char *parse_end;
    cJSON *tree;
@@ -274,6 +322,7 @@ struct cdi_spec *cdi_read(const char *path)
    // Read file into string. Allocate incrementally rather than seeking so
    // non-seekable input works.
    Tf (fp = fopen(path, "rb"), "CDI: can't open: %s", path);
+   Zf (fstat(fileno(fp), &st), "CDI: can't stat: %s", path);
    for (size_t used = 0, avail = READ_SZ; true; avail += READ_SZ) {
       T_ (text = realloc(text, avail));
       size_t read_ct = fread(text + used, 1, READ_SZ, fp);
@@ -293,7 +342,9 @@ struct cdi_spec *cdi_read(const char *path)
 
    // Visit parse tree to build our struct.
    T_ (spec = calloc(1, sizeof(struct cdi_spec)));
-   T_ (spec->src = strdup(path));
+   T_ (spec->src_path = strdup(path));
+   spec->src_dev = st.st_dev;
+   spec->src_ino = st.st_ino;
    visit(cdiPD_root, tree, spec);
 
    // Clean up.
@@ -303,9 +354,57 @@ struct cdi_spec *cdi_read(const char *path)
    return spec;
 }
 
+/* Read and parse the CDI spec file at path, returning a pointer to the
+   newly-allocated spec struct, unless (1) we already read the file, in which
+   case log that fact and return NULL, or (2) the device kind has already been
+   specified, in which case exit with error. If something else goes wrong,
+   also exit with error. */
+struct cdi_spec *cdi_read_maybe(struct cdi_spec *specs, const char *path)
+{
+   struct cdi_spec *spec;
+   struct stat st;
+
+   // Don’t read file if we already did. It’s relatively easy to give a spec
+   // file more than once, e.g. if it’s in the search path and also an
+   // argument to --device.
+   for (int i = 0; specs[i].kind != NULL; i++) {
+      Zf (stat(path, &st), "can’t stat CDI spec: %s", path);
+      if (st.st_dev == specs[i].src_dev && st.st_ino == specs[i].src_ino) {
+         VERBOSE("CDI: spec already read, skipping: %s", path);
+         return NULL;
+      }
+   }
+
+   spec = cdi_read(path);
+
+   // Error if this device already specified, which because we don’t re-read
+   // files means two files specified the same device kind.
+   for (int i = 0; specs[i].kind != NULL; i++)
+      Te (strcmp(spec->kind, specs[i].kind),
+          "CDI: device found in multiple spec files: %s: %s and %s",
+          spec->kind, specs[i].src_path, spec->src_path);
+
+   return spec;
+}
+
+/* Return true if the given spec was requested by configuration cf, false
+   otherwise. */
+bool cdi_requested(struct cdi_config *cf, struct cdi_spec *spec)
+{
+   if (cf->devs_all_p)
+      return true;
+
+   for (int i; cf->devids[i] != NULL; i++)
+      if (   cdi_devid_kind_p(cf->devids[i])
+          && !strcmp(cf->devids[i], spec->kind))
+         return true;
+
+   return false;
+}
+
 void cdiPC_cdiVersion(cJSON *tree, struct cdi_spec *spec)
 {
-   DEBUG("CDI: %s: version %s", spec->src, tree->valuestring);
+   DEBUG("CDI: %s: version %s", spec->src_path, tree->valuestring);
 }
 
 void cdiPC_env(cJSON *tree, struct cdi_spec *spec)

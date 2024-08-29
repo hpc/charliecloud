@@ -56,7 +56,7 @@ mounting SquashFS images with FUSE.
   :code:`-c`, :code:`--cd=DIR`
     Initial working directory in container.
 
-  :code:`--cdi-dirs=DIRS`
+  :code:`--cdi-dirs=PATHS`
     Colon-separated list of directories to search for CDI JSON specifications.
     Default: :code:`CH_RUN_CDI_DIRS` if set, otherwise
     :code:`/etc/cdi:/var/run/cdi`.
@@ -79,16 +79,14 @@ mounting SquashFS images with FUSE.
     should work on all modern terminals.
 
   :code:`-d`, :code:`--devices`
-    Inject default CDI devices into the container. The default devices are
-    those listed in :code:`CH_RUN_CDI_DEFAULT` if set, otherwise all devices
-    for which a specification is found. Implies :code:`--write-fake`.
+    Inject all CDI devices for which a specification is found. Implies
+    :code:`--write-fake`.
 
-  :code:`--device=DEV[,DEV]`
-    Inject CDI device(s) identified by comma-separated :code:`DEV`. These are
-    either (1) a filename, if :code:`DEV` starts with a slash (:code:`/`) or
-    dot (:code:`.`), e.g. :code:`/etc/cdi/nvidia.json`, or (2) a CDI selector
-    for a list of devices in a CDI specification file, e.g.
-    :code:`nvidia.com/gpu`. Specific devices may not be selected, e.g.
+  :code:`--device=DEV`
+    Inject CDI device :code:`DEV`, either (1) a filename, if it starts with a
+    slash (:code:`/`) or dot (:code:`.`), e.g. :code:`/etc/cdi/nvidia.json`,
+    or (2) a CDI selector for a list of devices in a CDI specification file,
+    e.g. :code:`nvidia.com/gpu`. Specific devices may not be selected, e.g.
     :code:`nvidia.com/gpu=1:0` is invalid (see below for why). Implies
     :code:`--write-fake`. Can be repeated.
 

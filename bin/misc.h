@@ -108,10 +108,11 @@ enum log_test { LL_TEST_NONE  = 0,
 
 /** External variables **/
 
-extern enum log_level verbose;
+extern bool abort_fatal;
 extern bool log_color_p;
 extern char *host_tmp;
 extern char *username;
+extern enum log_level verbose;
 extern char *warnings;
 extern size_t warnings_offset;
 
@@ -127,6 +128,7 @@ int dir_ls(const char *path, struct dirent ***namelist);
 int dir_ls_count(const char *path);
 int dir_ls_filter(const struct dirent *e);
 struct env_var *env_file_read(const char *path, int delim);
+char *env_get(const char *name, char *value_default);
 void env_set(const char *name, const char *value, const bool expand);
 void envs_free(struct env_var **vars);
 void envs_set(const struct env_var *envs, const bool expand);
@@ -135,6 +137,8 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno);
 void list_append(void **ar, void *new, size_t size);
 void list_cat(void **dst, void *src, size_t size);
 size_t list_count(void *ar, size_t size);
+void list_free_shallow(void ***ar);
+void *list_new_strings(char delim, const char *s);
 void *list_new(size_t size, size_t ct);
 void list_uniq(void *ar, size_t size, comparison_fn_t cmp);
 void log_ids(const char *func, int line);

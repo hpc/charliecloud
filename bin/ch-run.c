@@ -27,11 +27,12 @@
 /** Types **/
 
 enum env_option_type {
-   ENV_END = 0,      // list terminator sentinel
-   ENV_SET,          // --set-env
-   ENV_SET0,         // --set-env0
-   ENV_UNSET,        // --unset-env
-   ENV_CDI_DEV,      // --device
+   ENV_END = 0,  // list terminator sentinel
+   ENV_SET,      // --set-env
+   ENV_SET0,     // --set-env0
+   ENV_UNSET,    // --unset-env
+   ENV_CDI_DEV,  // --device (specific device)
+   ENV_CDI_ALL,  // --devices (all known devices)
 };
 
 struct env_option {
@@ -42,7 +43,7 @@ struct env_option {
 struct args {
    struct container c;
 #ifdef HAVE_JSON
-   char **cdi_devids;
+   struct cdi_config cdi;
 #endif
    struct env_option *env_options;
    enum log_color_when log_color;
@@ -107,6 +108,8 @@ const char args_doc[] = "IMAGE -- COMMAND [ARG...]";
 /* Note: Long option numbers, once issued, are permanent; i.e., if you remove
    one, don’t re-number the others. */
 const struct argp_option options[] = {
+   { "abort-fatal",   -21, 0,      0,
+     "exit abnormally on error, maybe dumping core" },
    { "bind",          'b', "SRC[:DST]", 0,
      "mount SRC at guest DST (default: same as SRC)"},
    { "cd",            'c', "DIR",  0, "initial working directory in container"},
@@ -225,7 +228,12 @@ int main(int argc, char *argv[])
          .writable = false
       },
 #ifdef HAVE_JSON
-      .cdi_devids = list_new(sizeof(char *), 0),
+      .cdi = (struct cdi_config){
+         .spec_dirs = list_new_strings(':', env_get("CH_RUN_CDI_DIRS",
+                                                    "/etc/cdi:/var/run/cdi")),
+         .devs_all_p = false,
+         .devids = list_new(sizeof(char *), 0),
+      },
 #endif
       .env_options = list_new(sizeof(struct env_option), 0),
       .initial_dir = NULL,
@@ -289,10 +297,7 @@ int main(int argc, char *argv[])
    for (int i = 0; i < argc - arg_next; i++)
       c_argv[i] = argv[i + arg_next];
 
-   if (getenv("TMPDIR") != NULL)
-      host_tmp = getenv("TMPDIR");
-   else
-      host_tmp = "/tmp";
+   host_tmp = env_get("TMPDIR", "/tmp");  // global in misc.c
 
    VERBOSE("verbosity: %d", verbose);
    VERBOSE("image: %s", args.c.img_ref);
@@ -302,6 +307,7 @@ int main(int argc, char *argv[])
    VERBOSE("container gid: %u", args.c.container_gid);
    VERBOSE("join: %d %d %s %d", args.c.join, args.c.join_ct, args.c.join_tag,
            args.c.join_pid);
+   VERBOSE("host $TMPDIR: %s", host_tmp);
    VERBOSE("private /tmp: %d", args.c.private_tmp);
 #ifdef HAVE_SECCOMP
    VERBOSE("seccomp: %s", bool_to_string(args.seccomp_p));
@@ -309,9 +315,10 @@ int main(int argc, char *argv[])
    VERBOSE("unsafe: %s", bool_to_string(args.unsafe));
 
 #ifdef HAVE_JSON
-   cdi_init(&args.c, args.cdi_devids);
+   cdi_init(&args.cdi);
 #endif
    hooks_env_install(&args);
+   //cdi_hook_ldconfig_install(&args.c.hook_prestart, &args.cdi);
 
    containerize(&args.c);
    run_user_command(c_argv, args.initial_dir);  // should never return
@@ -420,8 +427,12 @@ void hooks_env_install(struct args *args)
       case ENV_CDI_DEV:
          name = "env-set-cdi";
          f = hook_envs_set;
-         //d = cdi_envs_get(arg);
+         d = cdi_envs_get(arg);
          break;
+      case ENV_CDI_ALL:
+         name = "env-set-cdi-all";
+         f = hook_envs_set;
+         d = cdi_envs_get(NULL);
       case ENV_END:
          T_ (false);  // unreachable
          break;
@@ -610,10 +621,19 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
          FATAL("invalid --test argument: %s; see source code", arg);
       break;
 #ifdef HAVE_JSON
-   case -18: // --device
-      Te (strlen(arg) > 0, "--device: DEV must be longer than zero");
-      write_fake_enable(args, NULL);
-      list_append((void **)&(args->cdi_devids), &arg, sizeof(arg));
+   case -18: { // --device
+         struct env_option ope;
+         Te (strlen(arg) > 0, "--device: DEV must be non-empty");
+         write_fake_enable(args, NULL);
+         list_append((void **)&args->cdi.devids, &arg, sizeof(arg));
+         ope.opt = ENV_CDI_DEV;
+         ope.arg = arg;
+         list_append((void **)&args->env_options, &ope, sizeof(ope));
+      } break;
+   case -19: // --cdi-dirs
+      Te (strlen(arg) > 0, "--cdi-dirs: PATHS must be non-empty");
+      list_free_shallow((void ***)&args->cdi.spec_dirs);
+      args->cdi.spec_dirs = list_new_strings(':', arg);
       break;
 #endif
    case -20: // --color
@@ -629,6 +649,9 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
          }
       }
       Tf (args->log_color != LL_COLOR_NULL, "--color: invalid arg: %s", arg);
+      break;
+   case -21: // --abort-fatal
+      abort_fatal = true;  // in misc.c
       break;
    case 'b': {  // --bind
          char *src, *dst;
@@ -654,6 +677,16 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'c':  // --cd
       args->initial_dir = arg;
       break;
+#ifdef HAVE_JSON
+   case 'd': {  // --devices
+      // Can’t add the devices here b/c we don’t know the CDI spec dirs yet.
+      struct env_option ope;
+      args->cdi.devs_all_p = true;
+      ope.opt = ENV_CDI_ALL;
+      ope.arg = NULL;
+      list_append((void **)&args->env_options, &ope, sizeof(ope));
+      } break;
+#endif
    case 'g':  // --gid
       i = parse_int(arg, false, "--gid");
       Te (i >= 0, "--gid: must be non-negative");
