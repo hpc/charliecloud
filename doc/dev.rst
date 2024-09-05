@@ -941,6 +941,56 @@ characters.
 C code
 ------
 
+Memory management
+~~~~~~~~~~~~~~~~~
+
+*TL;DR:* Charliecloud does not call :code:`free(3)`.
+
+*How-To:* (1) Use Charliecloud wrappers for all library functions that
+allocate memory, e.g. :code:`ch_malloc()` instead of :code:`malloc(3)`.
+Importantly, this includes things like :code:`strdup(3)` makeand
+:code:`asprintf(3)`. (2) Don’t call :code:`free(3)` or any other library
+functions that free memory.
+
+:code:`ch-run.c` has, since `very nearly the beginning
+<https://github.com/hpc/charliecloud/commit/b65e7c1>`_, carried the notice
+that it “does not bother to free memory allocations, since they are modest and
+the program is short-lived”. Explicit memory management is difficult and
+time-consuming, and it didn’t seem worth the effort.
+
+Eventually, we grew a `long-running process
+<https://github.com/hpc/charliecloud/releases/tag/v0.26>`_ to serve a
+SquashFUSE filesystem, and the short-lived justification became obsolete. The
+rough goal became: convert to proper memory management, freeing everything
+that we allocated. Various :code:`free(3)` crept in here and there, but a full
+refactor was never a priority.
+
+Then `PR #1919 <https://github.com/hpc/charliecloud/pull/1902>`_ came to be
+and grew in scope until it was a significant refactor. We tried to Do It Right
+on memory management everywhere this PR touched, and we did, until Reid got
+fed up writing comments about whose problem it was to free this or that and
+copying data simply so those comments could be tractable.
+
+So now we’re back full circle. Memory management is not worth Charliecloud
+developers’ time. We gleefully :code:`malloc(3)` and :code:`realloc(3)`
+without a care in the world, sinning every time. But now you have options. You
+can either:
+
+1. YOLO, i.e. simply never free anything, i.e. leak like a sieve. But
+   Charliecloud is still a small program and it’s unlikely to be an actual
+   problem. Quick-and-dirty tests show a main :code:`ch-run` process using
+   **FIXME** MiB just before it executes the user program, and the SquashFUSE
+   process **FIXME** MiB upon exit.
+
+2. Link with :code:`libgc`, i.e. the `Boehm-Demers-Weiser
+   <https://hboehm.info/gc/>`_ conservative garbage collector. The idea is
+   that garbage collection scans the stack, heap, and other pointer sources
+   for integers that *look* like pointers and assumes they *are* pointers.
+   Apparently it `works quite well <https://hboehm.info/gc/issues.html>`_ and
+   can even be faster than explicit memory management in some cases. The
+   quick-and-dirty tests show **FIXME** MiB by the main process, and the
+   SquashFUSE process **FIXME** just after forking and **FIXME** upon exit.
+
 :code:`const`
 ~~~~~~~~~~~~~
 
