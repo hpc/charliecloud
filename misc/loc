@@ -283,7 +283,6 @@ find . -type f -a \( \
         -path ./.gitattributes \
      -o -path ./.gitignore \
      -o -path ./VERSION \
-     -o -path ./misc/docker-clean.sh \
      -o -path ./misc/branches-tidy \
      -o -path ./misc/grep \
      -o -path ./misc/loc \) | sort > /tmp/loc.misc
