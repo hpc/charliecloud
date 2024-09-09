@@ -116,12 +116,19 @@ cv_dir_squash () {
     # Exclude build cache metadata. 64kiB block size based on Shane’s
     # experiments.
     # shellcheck disable=SC2086
+<<<<<<< HEAD
     if mksquashfs --help 2>&1 | grep "quiet"; then 
        mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root \
                          -pf "$pflist" -e "$1"/ch/git -e "$1"/ch/git.pickle -quiet
+=======
+    if mksquashfs --help 2>&1 | grep "quiet"; then
+	INFO "In quiet"
+	quiet mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root \
+		-pf "$pflist" -e "$1"/ch/git -e "$1"/ch/git.pickle -quiet
+>>>>>>> 613e545 (Removed trailing whitespaces)
     else
-       quiet mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root \
-                         -pf "$pflist" -e "$1"/ch/git -e "$1"/ch/git.pickle
+	mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root \
+		-pf "$pflist" -e "$1"/ch/git -e "$1"/ch/git.pickle
     fi
     # Zero the archive’s internal modification time at bytes 8–11, 0-indexed
     # [1]. Newer SquashFS-Tools ≥4.3 have option “-fstime 0” to do this, but
