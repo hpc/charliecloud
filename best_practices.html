@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>12. Best practices &mdash; Charliecloud 0.37 documentation</title>
+  <title>12. Best practices &mdash; Charliecloud 0.38 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -34,7 +34,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.37
+                0.38
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -70,6 +70,14 @@
 <li class="toctree-l3"><a class="reference internal" href="#your-software-stored-on-the-host">12.3.4. Your software stored on the host</a></li>
 </ul>
 </li>
+<li class="toctree-l2"><a class="reference internal" href="#mpi">12.4. MPI</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#problems-that-best-practices-help-you-avoid">12.4.1. Problems that best practices help you avoid</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#recommendations-tl-dr">12.4.2. Recommendations TL;DR</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#use-libfabric">12.4.3. Use libfabric</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#choose-a-compatible-pmi">12.4.4. Choose a compatible PMI</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#choose-an-mpi-compatible-with-your-libfabric-and-pmi">12.4.5. Choose an MPI compatible with your libfabric and PMI</a></li>
+</ul>
+</li>
 </ul>
 </li>
 <li class="toctree-l1"><a class="reference internal" href="dev.html">13. Contributor’s guide</a></li>
@@ -100,8 +108,36 @@
              
   <section id="best-practices">
 <h1><span class="section-number">12. </span>Best practices<a class="headerlink" href="#best-practices" title="Permalink to this heading">¶</a></h1>
+<nav class="contents local" id="contents">
+<ul class="simple">
+<li><p><a class="reference internal" href="#other-best-practices-information" id="id1">Other best practices information</a></p></li>
+<li><p><a class="reference internal" href="#filesystems" id="id2">Filesystems</a></p>
+<ul>
+<li><p><a class="reference internal" href="#metadata-traffic" id="id3">Metadata traffic</a></p></li>
+<li><p><a class="reference internal" href="#file-copy-performance" id="id4">File copy performance</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#installing-your-own-software" id="id5">Installing your own software</a></p>
+<ul>
+<li><p><a class="reference internal" href="#third-party-software-via-package-manager" id="id6">Third-party software via package manager</a></p></li>
+<li><p><a class="reference internal" href="#third-party-software-compiled-from-source" id="id7">Third-party software compiled from source</a></p></li>
+<li><p><a class="reference internal" href="#your-software-stored-in-the-image" id="id8">Your software stored in the image</a></p></li>
+<li><p><a class="reference internal" href="#your-software-stored-on-the-host" id="id9">Your software stored on the host</a></p></li>
+</ul>
+</li>
+<li><p><a class="reference internal" href="#mpi" id="id10">MPI</a></p>
+<ul>
+<li><p><a class="reference internal" href="#problems-that-best-practices-help-you-avoid" id="id11">Problems that best practices help you avoid</a></p></li>
+<li><p><a class="reference internal" href="#recommendations-tl-dr" id="id12">Recommendations TL;DR</a></p></li>
+<li><p><a class="reference internal" href="#use-libfabric" id="id13">Use libfabric</a></p></li>
+<li><p><a class="reference internal" href="#choose-a-compatible-pmi" id="id14">Choose a compatible PMI</a></p></li>
+<li><p><a class="reference internal" href="#choose-an-mpi-compatible-with-your-libfabric-and-pmi" id="id15">Choose an MPI compatible with your libfabric and PMI</a></p></li>
+</ul>
+</li>
+</ul>
+</nav>
 <section id="other-best-practices-information">
-<h2><span class="section-number">12.1. </span>Other best practices information<a class="headerlink" href="#other-best-practices-information" title="Permalink to this heading">¶</a></h2>
+<h2><a class="toc-backref" href="#id1" role="doc-backlink"><span class="section-number">12.1. </span>Other best practices information</a><a class="headerlink" href="#other-best-practices-information" title="Permalink to this heading">¶</a></h2>
 <p>This isn’t the last word. Also consider:</p>
 <ul class="simple">
 <li><p>Many of Docker’s <a class="reference external" href="https://docs.docker.com/engine/userguide/eng-image/dockerfile_best-practices">Best practices for writing Dockerfiles</a>
@@ -115,10 +151,10 @@ NIST Special Publication 800-190; Souppaya, Morello, and Scarfone 2017.</p></li>
 </ul>
 </section>
 <section id="filesystems">
-<h2><span class="section-number">12.2. </span>Filesystems<a class="headerlink" href="#filesystems" title="Permalink to this heading">¶</a></h2>
+<h2><a class="toc-backref" href="#id2" role="doc-backlink"><span class="section-number">12.2. </span>Filesystems</a><a class="headerlink" href="#filesystems" title="Permalink to this heading">¶</a></h2>
 <p>There are two performance gotchas to be aware of for Charliecloud.</p>
 <section id="metadata-traffic">
-<h3><span class="section-number">12.2.1. </span>Metadata traffic<a class="headerlink" href="#metadata-traffic" title="Permalink to this heading">¶</a></h3>
+<h3><a class="toc-backref" href="#id3" role="doc-backlink"><span class="section-number">12.2.1. </span>Metadata traffic</a><a class="headerlink" href="#metadata-traffic" title="Permalink to this heading">¶</a></h3>
 <p>Directory-format container images and the Charliecloud storage directory often
 contain, and thus Charliecloud must manipulate, a very large number of files.
 For example, after running the test suite, the storage directory contains
@@ -134,7 +170,7 @@ metadata traffic. Images in this format are suitable for any filesystem,
 including Lustre.</p>
 </section>
 <section id="file-copy-performance">
-<span id="best-practices-file-copy"></span><h3><span class="section-number">12.2.2. </span>File copy performance<a class="headerlink" href="#file-copy-performance" title="Permalink to this heading">¶</a></h3>
+<span id="best-practices-file-copy"></span><h3><a class="toc-backref" href="#id4" role="doc-backlink"><span class="section-number">12.2.2. </span>File copy performance</a><a class="headerlink" href="#file-copy-performance" title="Permalink to this heading">¶</a></h3>
 <p><code class="code docutils literal notranslate"><span class="pre">ch-image</span></code> does a lot of file copying. The bulk of this is manipulating
 images in the storage directory. Importantly, this includes <a class="reference internal" href="ch-image.html#ch-image-bu-large"><span class="std std-ref">large files</span></a> stored by the build cache outside its Git repository,
 though this feature is disabled by default.</p>
@@ -249,7 +285,7 @@ Charliecloud does not currently attempt it.</p></li>
 </section>
 </section>
 <section id="installing-your-own-software">
-<h2><span class="section-number">12.3. </span>Installing your own software<a class="headerlink" href="#installing-your-own-software" title="Permalink to this heading">¶</a></h2>
+<h2><a class="toc-backref" href="#id5" role="doc-backlink"><span class="section-number">12.3. </span>Installing your own software</a><a class="headerlink" href="#installing-your-own-software" title="Permalink to this heading">¶</a></h2>
 <p>This section covers four situations for making software available inside a
 Charliecloud container:</p>
 <blockquote>
@@ -266,7 +302,7 @@ Charliecloud container:</p>
 trustworthy image on Docker Hub you can use as a base?</p>
 </div>
 <section id="third-party-software-via-package-manager">
-<h3><span class="section-number">12.3.1. </span>Third-party software via package manager<a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this heading">¶</a></h3>
+<h3><a class="toc-backref" href="#id6" role="doc-backlink"><span class="section-number">12.3.1. </span>Third-party software via package manager</a><a class="headerlink" href="#third-party-software-via-package-manager" title="Permalink to this heading">¶</a></h3>
 <p>This approach is the simplest and fastest way to install stuff in your image.
 The <code class="code docutils literal notranslate"><span class="pre">examples/hello</span></code> Dockerfile does this to install the package
 <code class="code docutils literal notranslate"><span class="pre">openssh-client</span></code>:</p>
@@ -288,7 +324,7 @@ ironed out yet. If you encounter problems, please do file a bug!</p>
 </div>
 </section>
 <section id="third-party-software-compiled-from-source">
-<h3><span class="section-number">12.3.2. </span>Third-party software compiled from source<a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this heading">¶</a></h3>
+<h3><a class="toc-backref" href="#id7" role="doc-backlink"><span class="section-number">12.3.2. </span>Third-party software compiled from source</a><a class="headerlink" href="#third-party-software-compiled-from-source" title="Permalink to this heading">¶</a></h3>
 <p>Under this method, one uses <code class="code docutils literal notranslate"><span class="pre">RUN</span></code> commands to fetch the desired software
 using <code class="code docutils literal notranslate"><span class="pre">curl</span></code> or <code class="code docutils literal notranslate"><span class="pre">wget</span></code>, compile it, and install. Our example
 (<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.almalinux_8ch</span></code>) does this with ImageMagick:</p>
@@ -396,7 +432,7 @@ normally be. For example, we install ImageMagick directly into
 </div>
 </section>
 <section id="your-software-stored-in-the-image">
-<h3><span class="section-number">12.3.3. </span>Your software stored in the image<a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this heading">¶</a></h3>
+<h3><a class="toc-backref" href="#id8" role="doc-backlink"><span class="section-number">12.3.3. </span>Your software stored in the image</a><a class="headerlink" href="#your-software-stored-in-the-image" title="Permalink to this heading">¶</a></h3>
 <p>This method covers software provided by you that is included in the image.
 This is recommended when your software is relatively stable or is not easily
 available to users of your image, for example a library rather than simulation
@@ -445,7 +481,7 @@ build files, since they would be inappropriate inside the container.</p></li>
 </div>
 </section>
 <section id="your-software-stored-on-the-host">
-<h3><span class="section-number">12.3.4. </span>Your software stored on the host<a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this heading">¶</a></h3>
+<h3><a class="toc-backref" href="#id9" role="doc-backlink"><span class="section-number">12.3.4. </span>Your software stored on the host</a><a class="headerlink" href="#your-software-stored-on-the-host" title="Permalink to this heading">¶</a></h3>
 <p>This method leaves your software on the host but compiles it in the image.
 This is recommended when your software is volatile or each image user needs a
 different version, for example a simulation code under active development.</p>
@@ -473,6 +509,151 @@ demonstrate this.</p>
 <p>A common use case is to leave a container shell open in one terminal for
 building, and then run using a separate container invoked from a different
 terminal.</p>
+</section>
+</section>
+<section id="mpi">
+<h2><a class="toc-backref" href="#id10" role="doc-backlink"><span class="section-number">12.4. </span>MPI</a><a class="headerlink" href="#mpi" title="Permalink to this heading">¶</a></h2>
+<section id="problems-that-best-practices-help-you-avoid">
+<h3><a class="toc-backref" href="#id11" role="doc-backlink"><span class="section-number">12.4.1. </span>Problems that best practices help you avoid</a><a class="headerlink" href="#problems-that-best-practices-help-you-avoid" title="Permalink to this heading">¶</a></h3>
+<p>These recommendations are derived from our experience in mitigating container
+MPI issues. It is important to note that, despite marketing claims, no single
+container implementation has “solved” MPI or is free of warts; the issues are
+numerous, multifaceted, and dynamic.</p>
+<p>Key concepts and related issues include:</p>
+<blockquote>
+<div><ol class="arabic">
+<li><p><strong>Workload management</strong>. Running applications on HPC clusters requires
+resource management and job scheduling. Put simply, resource management
+is the act of allocating and restricting compute resources, e.g., CPU and
+memory, whereas job scheduling is the act of prioritizing and enforcing
+resource management. <em>Both require privileged operations.</em></p>
+<p>Some privileged container implementations attempt to provide their own
+workload management, often referred to as “container orchestration”.</p>
+<p>Charliecloud is lightweight and completely unprivileged. We rely on
+existing, reputable and well established HPC workload managers such as
+Slurm.</p>
+</li>
+<li><p><strong>Job launch</strong>. When a multi-node MPI job is launched, each node must
+launch a number of containerized processes, i.e., <em>ranks</em>. Doing this
+unprivileged and at scale requires interaction between the application
+and workload manager. That is, something like Process Management
+Interface (PMI) is needed to facilitate the job launch.</p></li>
+<li><p><strong>Shared memory</strong>. Processes in separate sibling containers cannot use
+single-copy <em>cross-memory attach</em> (CMA), as opposed to double-copy POSIX
+or SysV shared memory. The solution is to put all ranks in the <em>same</em>
+container with <code class="code docutils literal notranslate"><span class="pre">ch-run</span> <span class="pre">--join</span></code>. (See above for details:
+<a class="reference internal" href="faq.html#faq-join"><span class="std std-ref">Communication between ranks on the same node fails</span></a>.)</p></li>
+<li><p><strong>Network fabric.</strong> Performant MPI jobs must recognize and use a system’s
+high-speed interconnect. Common issues that arise are:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p>Libraries required to use the interconnect are proprietary or
+otherwise unavailable to the container.</p></li>
+<li><p>The interconnect is not supported by the container MPI.</p></li>
+</ol>
+</div></blockquote>
+<p>In both cases, the containerized MPI application will either fail or run
+significantly slower.</p>
+</li>
+</ol>
+</div></blockquote>
+<p>These problems can be avoided, and this section describes our recommendations
+to do so.</p>
+</section>
+<section id="recommendations-tl-dr">
+<h3><a class="toc-backref" href="#id12" role="doc-backlink"><span class="section-number">12.4.2. </span>Recommendations TL;DR</a><a class="headerlink" href="#recommendations-tl-dr" title="Permalink to this heading">¶</a></h3>
+<p>Generally, we recommend building a flexible MPI container using:</p>
+<blockquote>
+<div><ol class="loweralpha simple">
+<li><p><strong>libfabric</strong> to flexibly manage process communication over a diverse
+set of network fabrics;</p></li>
+<li><p>a parallel <strong>process management interface</strong> (PMI), compatible with the
+host workload manager (e.g., PMI2, PMIx, flux-pmi); and</p></li>
+<li><p>an <strong>MPI</strong> that supports (1) libfabric and (2) the selected PMI.</p></li>
+</ol>
+</div></blockquote>
+<p>More experienced MPI and unprivileged container users can find success through
+MPI replacement (injection); however, such practices are beyond the scope of
+this FAQ.</p>
+<p>The remaining sections detail the reasoning behind our approach. We recommend
+referencing, or directly using, our examples
+<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.{libfabric,mpich,openmpi}</span></code>.</p>
+</section>
+<section id="use-libfabric">
+<h3><a class="toc-backref" href="#id13" role="doc-backlink"><span class="section-number">12.4.3. </span>Use libfabric</a><a class="headerlink" href="#use-libfabric" title="Permalink to this heading">¶</a></h3>
+<p><a class="reference external" href="https://ofiwg.github.io/libfabric">libfabric</a> (a.k.a. Open Fabrics
+Interfaces or OFI) is a low-level communication library that abstracts diverse
+networking technologies. It defines <em>providers</em> that implement the mapping
+between application-facing software (e.g., MPI) and network specific drivers,
+protocols, and hardware. These providers have been co-designed with fabric
+hardware and application developers with a focus on HPC needs. libfabric lets
+us more easily manage MPI communication over diverse network high-speed
+interconnects (a.k.a. <em>fabrics</em>).</p>
+<p>From our libfabric example (<code class="code docutils literal notranslate"><span class="pre">examples/Dockerfile.libfabric</span></code>):</p>
+<div class="highlight-docker notranslate"><div class="highlight"><pre><span></span><span class="k">ARG</span><span class="w"> </span><span class="nv">LIBFABRIC_VERSION</span><span class="o">=</span><span class="m">1</span>.15.1
+<span class="k">RUN</span><span class="w"> </span>git<span class="w"> </span>clone<span class="w"> </span>--branch<span class="w"> </span>v<span class="si">${</span><span class="nv">LIBFABRIC_VERSION</span><span class="si">}</span><span class="w"> </span>--depth<span class="w"> </span><span class="m">1</span><span class="w"> </span><span class="se">\</span>
+<span class="w">              </span>https://github.com/ofiwg/libfabric/<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="nb">cd</span><span class="w"> </span>libfabric<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./autogen.sh<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="o">[[</span><span class="w"> </span><span class="k">$(</span>uname<span class="w"> </span>-m<span class="k">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span>x86_64<span class="w"> </span><span class="o">]]</span><span class="p">;</span><span class="w"> </span><span class="k">then</span><span class="w"> </span><span class="nv">PSM_CONFIG</span><span class="o">=</span>enable<span class="p">;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">    </span><span class="k">else</span><span class="w"> </span><span class="nv">PSM_CONFIG</span><span class="o">=</span>disable<span class="p">;</span><span class="w"> </span><span class="k">fi</span><span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>./configure<span class="w"> </span>--prefix<span class="o">=</span>/usr/local<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--disable-opx<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--disable-psm2<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--disable-efa<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--disable-rxm<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--disable-sockets<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span><span class="s2">&quot;--</span><span class="si">${</span><span class="nv">PSM_CONFIG</span><span class="si">}</span><span class="s2">-psm3&quot;</span><span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--enable-rxm<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--enable-shm<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--enable-tcp<span class="w"> </span><span class="se">\</span>
+<span class="w">                </span>--enable-verbs<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>make<span class="w"> </span>-j<span class="k">$(</span>getconf<span class="w"> </span>_NPROCESSORS_ONLN<span class="k">)</span><span class="w"> </span>install<span class="w"> </span><span class="se">\</span>
+<span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span>rm<span class="w"> </span>-Rf<span class="w"> </span>../libfabric*
+</pre></div>
+</div>
+<p>The above compiles libfabric with several “built-in” providers, i.e.
+<code class="code docutils literal notranslate"><span class="pre">psm3</span></code> (on x86-64), <code class="code docutils literal notranslate"><span class="pre">rxm</span></code>, <code class="code docutils literal notranslate"><span class="pre">shm</span></code>, <code class="code docutils literal notranslate"><span class="pre">tcp</span></code>, and
+<code class="code docutils literal notranslate"><span class="pre">verbs</span></code>, which enables MPI applications to run efficiently over most
+verb devices using TCP, IB, OPA, and RoCE protocols.</p>
+<p>Two key advantages of using libfabric are: (1) the container’s libfabric can
+make use of “external” i.e. dynamic-shared-object (DSO) providers, and
+(2) libfabric replacement is simpler than MPI replacement and preserves the
+original container MPI. That is, managing host/container ABI compatibility is
+difficult and error-prone, so we instead manage the more forgiving libfabric
+ABI compatibility.</p>
+<p>A DSO provider can be used by a libfabric that did not originally compile it,
+i.e., they can be compiled on a target host and later injected into the
+container along with any missing shared library dependencies, and used by the
+container’s libfabric. To build a libfabric provider as a DSO, add <code class="code docutils literal notranslate"><span class="pre">=dl</span></code>
+to its <code class="code docutils literal notranslate"><span class="pre">configure</span></code> argument, e.g., <code class="code docutils literal notranslate"><span class="pre">--with-cxi=dl</span></code>.</p>
+<p>A container’s libfabric can also be replaced by a host libfabric. This is a
+brittle but usually effective way to give containers access to the Cray
+libfabric Slingshot provider <code class="code docutils literal notranslate"><span class="pre">cxi</span></code>.</p>
+<p>In Charliecloud, both of these injection operations are currently done with
+<code class="code docutils literal notranslate"><span class="pre">ch-fromhost</span></code>, though see <a class="reference external" href="https://github.com/hpc/charliecloud/issues/1861">issue #1861</a>.</p>
+</section>
+<section id="choose-a-compatible-pmi">
+<h3><a class="toc-backref" href="#id14" role="doc-backlink"><span class="section-number">12.4.4. </span>Choose a compatible PMI</a><a class="headerlink" href="#choose-a-compatible-pmi" title="Permalink to this heading">¶</a></h3>
+<p>Unprivileged processes, including unprivileged containerized processes, are
+unable to independently launch containerized processes on different nodes,
+aside from using SSH, which isn’t scalable. We must either (1) rely on a host
+supported parallel process management interface (PMI), or (2) achieve
+host/container MPI ABI compatibility through unsavory practices such as
+complete container MPI replacement.</p>
+<p>The preferred PMI implementation, e.g., PMI1, PMI2, OpenPMIx, or flux-pmi,
+will be that which is best supported by your host workload manager and
+container MPI.</p>
+<p>In <code class="code docutils literal notranslate"><span class="pre">example/Dockerfile.libfabric</span></code>, we selected <code class="code docutils literal notranslate"><span class="pre">OpenPMIx</span></code> because
+(1) it is supported by SLURM, OpenMPI, and MPICH, (2)~it is required for
+exascale, and (3) OpenMPI versions 5 and newer will no longer support PMI2.</p>
+</section>
+<section id="choose-an-mpi-compatible-with-your-libfabric-and-pmi">
+<h3><a class="toc-backref" href="#id15" role="doc-backlink"><span class="section-number">12.4.5. </span>Choose an MPI compatible with your libfabric and PMI</a><a class="headerlink" href="#choose-an-mpi-compatible-with-your-libfabric-and-pmi" title="Permalink to this heading">¶</a></h3>
+<p>There are various MPI implementations, e.g., OpenMPI, MPICH, MVAPICH2,
+Intel-MPI, etc., to consider. We generally recommend OpenMPI; however, your
+MPI implementation of choice will ultimately be that which best supports the
+libfabric and PMI most compatible with your hardware and workload manager.</p>
 </section>
 </section>
 </section>

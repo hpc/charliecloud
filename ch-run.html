@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>8. ch-run &mdash; Charliecloud 0.37 documentation</title>
+  <title>8. ch-run &mdash; Charliecloud 0.38 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -34,7 +34,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.37
+                0.38
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -148,9 +148,19 @@ absolute symlinks in this case, to avoid directory creation surprises.</p>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">--env-no-expand</span></code></dt><dd><p>Don’t expand variables when using <code class="code docutils literal notranslate"><span class="pre">--set-env</span></code>.</p>
 </dd>
-<dt><code class="code docutils literal notranslate"><span class="pre">--feature=FEAT</span></code></dt><dd><p>If feature <code class="code docutils literal notranslate"><span class="pre">FEAT</span></code> is enabled, exit with success. Valid values of
-<code class="code docutils literal notranslate"><span class="pre">FEAT</span></code> are <code class="code docutils literal notranslate"><span class="pre">extglob</span></code> for extended globs, <code class="code docutils literal notranslate"><span class="pre">seccomp</span></code> for
-<code class="code docutils literal notranslate"><span class="pre">seccomp(2)</span></code>, and <code class="code docutils literal notranslate"><span class="pre">squash</span></code> for squashfs archives.</p>
+<dt><code class="code docutils literal notranslate"><span class="pre">--feature=FEAT</span></code></dt><dd><p>If feature <code class="code docutils literal notranslate"><span class="pre">FEAT</span></code> is enabled, exit successfully (zero); otherwise,
+exit unsuccessfully (non-zero). Note this just communicates the results of
+<code class="code docutils literal notranslate"><span class="pre">configure</span></code> rather than testing the feature. Valid values of
+<code class="code docutils literal notranslate"><span class="pre">FEAT</span></code> are:</p>
+<blockquote>
+<div><ul class="simple">
+<li><p><code class="code docutils literal notranslate"><span class="pre">extglob</span></code>: extended globs in <code class="code docutils literal notranslate"><span class="pre">--unset-env</span></code></p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">seccomp</span></code>: <code class="code docutils literal notranslate"><span class="pre">--seccomp</span></code> available</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">squash</span></code>: internal SquashFUSE image mounts</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">overlayfs</span></code>: unprivileged overlayfs support</p></li>
+<li><p><code class="code docutils literal notranslate"><span class="pre">tmpfs-xattrs</span></code>: <code class="code docutils literal notranslate"><span class="pre">user</span></code> xattrs on tmpfs</p></li>
+</ul>
+</div></blockquote>
 </dd>
 <dt><code class="code docutils literal notranslate"><span class="pre">-g</span></code>, <code class="code docutils literal notranslate"><span class="pre">--gid=GID</span></code></dt><dd><p>Run as group <code class="code docutils literal notranslate"><span class="pre">GID</span></code> within container.</p>
 </dd>
