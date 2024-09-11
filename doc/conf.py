@@ -65,7 +65,7 @@ master_doc = 'index'
 
 # General information about the project.
 project = u'Charliecloud'
-copyright = u'Charliecloud a Series of LF Projects, LLC and others. For web site terms of use, trademark policy and other project policies please see: https://lfprojects.org'
+copyright = u'Charliecloud a Series of LF Projects, LLC and others (web content and website). For web site terms of use, trademark policy and other project policies please see: https://lfprojects.org'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the

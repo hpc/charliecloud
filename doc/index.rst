@@ -31,4 +31,3 @@ Overview
    faq
    best_practices
    dev
-   tech-charter
