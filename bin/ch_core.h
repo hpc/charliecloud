@@ -1,4 +1,6 @@
-/* This interface contains Charliecloud's core containerization features. */
+/* Copyright © Triad National Security, LLC, and others.
+
+   This interface contains Charliecloud's core containerization features. */
 
 #define _GNU_SOURCE
 #include <stdbool.h>

@@ -1,3 +1,5 @@
+/* Copyright © Triad National Security, LLC, and others. */
+
 #define _GNU_SOURCE
 #include "config.h"
 
