@@ -38,6 +38,7 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
+#include <syslog.h>
 
 #include "config.h"
 #include "mem.h"
@@ -76,17 +77,19 @@ ssize_t heap_prev = 0;
    be the fastest to format. */
 char *ch_asprintf(const char *fmt, ...)
 {
-   va_list ap;
+   va_list ap1, ap2;
    int str_len;
    char *str;
 
-   va_start(ap, fmt);
+   va_start(ap1, fmt);
+   va_copy(ap2, ap1);
 
-   T_ (0 <= (str_len = vsnprintf(NULL, 0, fmt, ap)));
+   T_ (0 <= (str_len = vsnprintf(NULL, 0, fmt, ap1)));
    str = ch_malloc(str_len + 1, false);
-   T_ (str_len == vsnprintf(str, str_len + 1, fmt, ap));
+   T_ (str_len == vsnprintf(str, str_len + 1, fmt, ap2));
 
-   va_end(ap);
+   va_end(ap1);
+   va_end(ap2);
 
    return str;
 }
@@ -164,12 +167,12 @@ void *ch_malloc(size_t size, bool pointerful)
    return buf;
 }
 
-/* Initialize memory management. */
-void ch_memory_init()
-{
-   ch_memory_log("init");
-}
+/* Initialize memory management.
 
+   We don’t log usage here because it’s called before logging is up. */
+void ch_memory_init(void)
+{
+}
 
 /* Log stack and heap memory usage, and GC statistics if enabled, to stderr
    and syslog if enabled. */
@@ -194,11 +197,12 @@ void ch_memory_log(const char *when)
    while ((line = ch_getdelim(fp, '\n'))) {
       int conv_ct;
       void *start, *end;
-      char path[8];  // must match literal in format string!
+      char path[8] = { 0 };  // length must match format string!
       conv_ct = sscanf(line, "%p-%p %*[rwxp-] %*x %*x:%*x %*u %7s",
                        &start, &end, path);
-      if (conv_ct != 3) {
-         WARNING("please report this bug: can't parse map: %s", line);
+      if (conv_ct < 2) {     // will be 2 if path empty
+         WARNING("please report this bug: can't parse map: %d: \"%s\"",
+                 conv_ct, line);
          break;
       }
       if (!strcmp(path, "[stack]"))
@@ -209,11 +213,11 @@ void ch_memory_log(const char *when)
    Z_ (fclose(fp));
 
    // log the basics
-   text = ch_asprintf("mem: %s: stack %zu kB %+zd, heap %zu kB %+zd", when,
+   text = ch_asprintf("mem: %s: stack %zd kB %+zd, heap %zd kB %+zd", when,
                       stack_len / 1024, (stack_len - stack_prev) / 1024,
                       heap_len / 1024, (heap_len - heap_prev) / 1024);
    VERBOSE(text);
-#ifdef HAVE_SYSLOG
+#ifdef ENABLE_SYSLOG
    syslog(SYSLOG_PRI, "%s", text);
 #endif
    stack_prev = stack_len;

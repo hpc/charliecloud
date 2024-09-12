@@ -167,14 +167,15 @@ bool cdi_devid_kind_p(const char *devid)
    are newly allocated; the caller must free the list with envs_free(). */
 struct env_var *cdi_envs_get(const char *devid)
 {
-   struct env_var *vars;
+   //struct env_var *vars;
 
    // count variables so we can do just one allocation
-   for ()
+   //for ()
 
    // set up the list
 
-   return vars;
+   //return vars;
+   return NULL;
 }
 
 /* Free spec. */

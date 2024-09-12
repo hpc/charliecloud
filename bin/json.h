@@ -27,5 +27,5 @@ struct cdi_config {
 
 /** Function prototypes **/
 
-void cdi_envs_get(const char *devid);
+struct env_var *cdi_envs_get(const char *devid);
 void cdi_init(struct cdi_config *cf);

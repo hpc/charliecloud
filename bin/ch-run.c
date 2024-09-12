@@ -18,6 +18,7 @@
 #ifdef HAVE_JSON
 #include "json.h"
 #endif
+#include "mem.h"
 #include "misc.h"
 #ifdef HAVE_SECCOMP
 #include "seccomp.h"
@@ -194,11 +195,12 @@ int main(int argc, char *argv[])
    T_ (warnings != MAP_FAILED);
 
    privs_verify_invoking();
+   ch_memory_init();
 
    Z_ (atexit(warnings_reprint));
 
 #ifdef ENABLE_SYSLOG
-   syslog(LOG_USER|LOG_INFO, "uid=%u args=%d: %s", getuid(), argc,
+   syslog(SYSLOG_PRI, "uid=%u args=%d: %s", getuid(), argc,
           argv_to_string(argv));
 #endif
 
@@ -256,6 +258,7 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    logging_init(args.log_color, args.log_test);
+   ch_memory_log("start");
 
    if (arg_next >= argc - 1) {
       printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
@@ -427,12 +430,12 @@ void hooks_env_install(struct args *args)
       case ENV_CDI_DEV:
          name = "env-set-cdi";
          f = hook_envs_set;
-         d = cdi_envs_get(arg);
+         //d = cdi_envs_get(arg);
          break;
       case ENV_CDI_ALL:
          name = "env-set-cdi-all";
          f = hook_envs_set;
-         d = cdi_envs_get(NULL);
+         //d = cdi_envs_get(NULL);
       case ENV_END:
          T_ (false);  // unreachable
          break;

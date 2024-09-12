@@ -8,7 +8,7 @@ bin_PROGRAMS = ch-checkns ch-run
 
 ch_checkns_SOURCES = ch-checkns.c misc.h misc.c
 
-ch_run_SOURCES = ch-run.c core.h core.c hook.h hook.c misc.h misc.c
+ch_run_SOURCES = ch-run.c core.h core.c hook.h hook.c mem.h mem.c misc.h misc.c
 if HAVE_JSON
 ch_run_SOURCES += json.h json.c
 endif

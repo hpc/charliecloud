@@ -23,6 +23,11 @@
    and hopefully others support the following extension. */
 #define noreturn __attribute__ ((noreturn))
 
+/* Syslog facility and level we use. */
+#ifdef ENABLE_SYSLOG
+#define SYSLOG_PRI (LOG_USER|LOG_INFO)
+#endif
+
 /* Size of “warnings” buffer, in bytes. We want this to be big enough that we
    don’t need to worry about running out of room. */
 #define WARNINGS_SIZE (4*1024)
