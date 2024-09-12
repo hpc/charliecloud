@@ -117,7 +117,7 @@ cv_dir_squash () {
     # experiments.
     # shellcheck disable=SC2086
     q=
-    if mksquashfs --help 2>&1 | egrep -q '^-quiet'; then
+    if mksquashfs --help 2>&1 | grep -qE '^-quiet'; then
 	q=-quiet
     fi
     quiet mksquashfs "$1" "$2" $squash_xattr_arg -b 65536 -noappend -all-root \
