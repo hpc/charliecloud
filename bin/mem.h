@@ -10,8 +10,9 @@
 
 char *ch_asprintf(const char *fmt, ...);
 char *ch_getdelim(FILE *fp, char delim);
-void ch_memory_init();
+void ch_memory_init(void);
 void ch_memory_log(const char *when);
+void ch_memory_log_exit(void);
 void *ch_malloc(size_t size, bool pointerful);
 void *ch_realloc(void *p, size_t size, bool pointerful);
 char *ch_strdup(const char *src);

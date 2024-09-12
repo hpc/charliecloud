@@ -197,6 +197,8 @@ int main(int argc, char *argv[])
    privs_verify_invoking();
    ch_memory_init();
 
+   // note: exit functions not called on fatal error if --abort-on-fatal
+   Z_ (atexit(ch_memory_log_exit));
    Z_ (atexit(warnings_reprint));
 
 #ifdef ENABLE_SYSLOG

@@ -229,6 +229,11 @@ void ch_memory_log(const char *when)
 #endif
 }
 
+void ch_memory_log_exit(void)
+{
+   ch_memory_log("exit");
+}
+
 /* Change the size of allocated buffer p to size bytes. Like realloc(3), if p
    is NULL, then this function is equivalent to ch_malloc(). Unlike free(3),
    size may not be zero.
