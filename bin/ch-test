@@ -987,17 +987,6 @@ if [[ -z $phase ]]; then
 fi
 printf '\n'
 
-# See issue #1580
-# shellcheck disable=SC2016
-if [[ -d /var/tmp/img ]] || [[ -d /var/tmp/tar ]]; then
-printf '\n'
-  warning 'NOTE: default image and pack directories changed to:'
-  warning '      CH_TEST_IMGDIR=/var/tmp/${USER}.img'
-  warning '      CH_TEST_TARDIR=/var/tmp/${USER}.pack'
-fi
-
-printf '\n'
-
 #    variable name    CLI              environment         default
 #                     desc. width  description
 vset CH_TEST_SCOPE    "$scope"         "$CH_TEST_SCOPE"    standard \
