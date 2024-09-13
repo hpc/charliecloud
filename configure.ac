@@ -188,6 +188,7 @@ AC_ARG_ENABLE([test],
   AS_HELP_STRING([--disable-test], [test suite]),
   [], [enable_test=yes])
 
+# --with-seccomp
 AC_ARG_WITH([seccomp],
   AS_HELP_STRING([--with-seccomp=(yes|no)],
                  [support for --seccomp]))
@@ -207,6 +208,38 @@ AS_CASE([$with_seccomp],
   [*],    # anything else
     [AC_MSG_ERROR([invalid --with-seccomp arg: $with_seccomp])])
 
+# --with-gc
+AC_ARG_WITH([gc],
+  AS_HELP_STRING([--with-gc=@<:@yes|no@:>@],
+                 [enable conservative garbage collection with libgc]))
+AS_CASE([$with_gc],
+  [yes],
+    [want_gc=yes
+     need_gc=yes],
+  [no],
+    [want_gc=no
+     need_gc=no],
+  [''],
+    [want_gc=yes
+     need_gc=no],
+  [*],
+    [AC_MSG_ERROR([--with-gc: bad argument: $with_gc])])
+
+AC_ARG_WITH([gc-include],
+  AS_HELP_STRING([--with-gc-include=DIR],
+                 [directory containing gc.h (if not in defaults)]))
+AS_IF([test -n "$with_gc_include"],
+      [inc_libgc=$with_gc_include
+       CH_REQUIRE_DIR([$inc_gc], [--with-gc-include])])
+
+AC_ARG_WITH([gc-lib],
+  AS_HELP_STRING([--with-gc-lib=DIR],
+                 [directory containing libgc.so (if not in defaults)]))
+AS_IF([test -n "$with_gc_lib"],
+      [lib_json=$with_gc_lib
+       CH_REQUIRE_DIR([$lib_gc], [--with-gc])])
+
+# --with-json
 AC_ARG_WITH([json],
   AS_HELP_STRING([--with-json=@<:@yes|no@:>@],
                  [enable JSON features by linking with libcjson]))
@@ -237,6 +270,7 @@ AS_IF([test -n "$with_json_lib"],
       [lib_json=$with_json_lib
        CH_REQUIRE_DIR([$lib_json], [--with-json-lib])])
 
+# --with-libsquashfuse
 AC_ARG_WITH([libsquashfuse],
   AS_HELP_STRING([--with-libsquashfuse=@<:@yes|no|PATH@:>@],
                  [whether to link with libsquashfuse]))
@@ -284,6 +318,8 @@ AC_PROG_CC
 ch_cflags='-std=c99 -Wall -Wno-unused-command-line-argument'
 AS_IF([test $use_werror = yes],
       [ch_cflags="$ch_cflags -Werror"])
+AS_IF([test -n "$inc_gc"],                   # -L$lib_gc added below
+      [ch_cflags="$ch_cflags -I$inc_gc"])
 AS_IF([test -n "$inc_json"],                 # -L$lib_json added below
       [ch_cflags="$ch_cflags -I$inc_json"])
 AS_IF([test -n "$lib_libsquashfuse"],
@@ -305,30 +341,6 @@ AS_IF([test "$CC" = icc],
 # instead of the (recommended by docs) AC_SEARCH_LIBS, because that adds
 # things to LIBS, which we don’t want because it’s applied to all executables.
 CH_RUN_LIBS=
-
-# asprintf(3)
-#
-# You can do this with AC_CHECK_FUNC or AC_CHECK_FUNCS, but those macros call
-# the function with no arguments. This causes a warning for asprintf() for
-# some compilers (and I have no clue why others accept it); see issue #798.
-# Instead, try to build a small test program that calls asprintf() correctly.
-AC_MSG_CHECKING([for asprintf in libc])
-AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
-    #define _GNU_SOURCE
-    #include <stdio.h>
-    #include <stdlib.h>
-
-    int main(void)
-    {
-       char *p;
-       if (asprintf(&p, "WEIRD AL YANKOVIC\n") >= 0)
-          free(p);
-       return 0;
-    }
-  ]])],
-  [AC_MSG_RESULT([yes])],
-  [AC_MSG_RESULT([no])
-   AC_MSG_ERROR([asprintf(3) not found; please report this bug])])
 
 # argp_parse(3), which is included with glibc but not other libc’s, e.g. musl.
 AC_MSG_CHECKING([for argp_parse in libc])
@@ -473,15 +485,29 @@ AC_CHECK_DECL(FNM_EXTMATCH,
               [[#define _GNU_SOURCE
                 #include <fnmatch.h>]])
 
-# GNU extension type for the comparison function argument to qsort(3).
-AC_CHECK_TYPE(comparison_fn_t,
-              [have_comparison_fn_t=yes],
-              [have_comparison_fn_t=no],
-              [[#define _GNU_SOURCE
-                #include <stdlib.h>]])
-
-# cJSON. Note that we don’t try to ensure the header we find matches the
+# libgc. Note that we don’t try to ensure the header we find matches the
 # library we find. Hopefully that’s not a problem.
+AS_IF([test $want_gc = yes], [
+  AC_CHECK_LIB(gc, GC_malloc,
+               [have_libgc=yes
+                AS_IF([test -n "$lib_gc"],
+                      [CH_RUN_LIBS="-Wl,-rpath=$lib_gc $CH_RUN_LIBS"])
+                CH_RUN_LIBS="-lgc $CH_RUN_LIBS"],
+               [have_libgc=no],
+               [$CH_RUN_LIBS])
+  AC_CHECK_HEADER([gc.h],
+                  [have_gc_h=yes],
+                  [have_gc_h=no])
+], [have_libgc=no
+    have_gc_h=no])
+# Error out if needed but not found.
+AS_IF([test $have_libgc = yes && test $have_gc_h = yes],
+      [have_gc=yes],
+      [have_gc=no])
+AS_IF([test $need_gc = yes && test $have_gc = no],
+      [AC_MSG_ERROR([--with-gc=yes but libgc not found])])
+
+# cJSON. Also do not check this header matches the library we find.
 AS_IF([test $want_json = yes], [
   AC_CHECK_LIB(cjson, cJSON_ParseWithLength,
                [have_libcjson=yes
@@ -866,10 +892,10 @@ AC_SUBST([CH_RUN_LIBS])
 AC_SUBST([PYTHON_SHEBANG])
 AC_SUBST([SPHINX])
 
-AS_IF([test $have_comparison_fn_t = yes],
-      [AC_DEFINE([HAVE_COMPARISON_FN_T], [1], [comp. function for qsort(3)])])
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
+AS_IF([test $have_gc = yes],
+      [AC_DEFINE([HAVE_GC], [1], [enable garbage collection])])
 AM_CONDITIONAL([HAVE_JSON], [test $have_json = yes])
 AS_IF([test $have_json = yes],
       [AC_DEFINE([HAVE_JSON], [1], [enable JSON features])
@@ -897,13 +923,19 @@ AS_IF([   test $have_userns = yes],
       [have_ch_run=yes],
       [have_ch_run=no])
 
+AS_IF([   test $want_gc = yes],
+      [note_libgc=$have_libgc
+       note_gc_h=$have_gc_h],
+      [note_libgc='not tested'
+       note_gc_h='not tested'])
+
 AS_IF([   test $want_json = yes],
-      [libcjson_note=$have_libcjson
+      [note_libcjson=$have_libcjson
        AS_IF([test $have_cjson_h = yes],
-             [cjson_h_note="yes, $cjson_h"],
-             [cjson_h_note=no])],
-      [libcjson_note='not tested'
-       cjson_h_note='not tested'])
+             [note_cjson_h="yes, $cjson_h"],
+             [note_cjson_h=no])],
+      [note_libcjson='not tested'
+       note_cjson_h='not tested'])
 
 # image builders
 
@@ -1044,14 +1076,17 @@ Building Charliecloud
     \$CFLAGS ... ${CFLAGS}
     ch-run(1) library args ... ${CH_RUN_LIBS}
 
-  optional:
-    extended glob patterns in --unset-env ... ${have_fnm_extmatch}
-    comparison_fn_t from libc ... ${have_comparison_fn_t}
+  extended glob patterns in --unset-env: ${have_fnm_extmatch}
+
+  garbage collection: ${have_gc}
+    enabled ... ${want_gc}
+    libgc ... ${note_libgc}
+    gc.h ... ${note_gc_h}
 
   JSON features: ${have_json}
     enabled ... ${want_json}
-    libcjson ... ${libcjson_note}
-    cJSON.h ... ${cjson_h_note}
+    libcjson ... ${note_libcjson}
+    cJSON.h ... ${note_cjson_h}
 
   ch-run(1) internal SquashFS mounting: ${have_libsquashfuse}
     enabled ... ${want_libsquashfuse}

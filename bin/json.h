@@ -5,10 +5,10 @@
 
 #define _GNU_SOURCE
 #pragma once
+#include "config.h"
 
 #include <stdbool.h>
 
-#include "config.h"
 #include "core.h"
 #include "misc.h"
 

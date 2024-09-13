@@ -198,7 +198,7 @@ int main(int argc, char *argv[])
    ch_memory_init();
 
    // note: exit functions not called on fatal error if --abort-on-fatal
-   Z_ (atexit(ch_memory_log_exit));
+   Z_ (atexit(ch_memory_exit));
    Z_ (atexit(warnings_reprint));
 
 #ifdef ENABLE_SYSLOG

@@ -59,14 +59,6 @@ struct json_dispatch {
 // Block size in bytes for reading JSON files.
 const size_t READ_SZ = 16384;
 
-/** Globals **/
-
-// List of CDI specs we’ve read. Yes it’s a global, but that lets us keep
-// struct cdi_spec private to this file, which seemed like the right
-// trade-off. It also seemed like “all the specs we know about” wasn’t
-// something we needed multiple of.
-struct cdi_spec *cdi_specs = NULL;
-
 
 /** Function prototypes (private) **/
 
@@ -89,7 +81,13 @@ void cdiPC_hook(cJSON *tree, struct cdi_spec *spec);
 void cdiPC_kind(cJSON *tree, struct cdi_spec *spec);
 
 
-/** Global variables **/
+/** Globals **/
+
+// List of CDI specs we’ve read. Yes it’s a global, but that lets us keep
+// struct cdi_spec private to this file, which seemed like the right
+// trade-off. It also seemed like “all the specs we know about” wasn’t
+// something we needed multiple of.
+struct cdi_spec *cdi_specs = NULL;
 
 /* Callback tables. In the struct, the callback’s second argument is “void *”
    so any state object can be provided. However, we’d prefer the actual

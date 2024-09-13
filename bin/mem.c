@@ -1,4 +1,20 @@
-/* Re. zeroing newly-allocated memory:
+/* libgc API
+   ---------
+
+   See:
+
+     https://hboehm.info/gc/gcinterface.html
+     https://github.com/ivmai/bdwgc/blob/57ccbcc/include/gc/gc.h#L459
+
+   The latter is more complete.
+
+   libgc provides both upper-case, e.g. GC_MALLOC(), and lower-case, e.g.
+   GC_malloc(), versions of many functions. It’s not totally clear to me what
+   the separation principles are, though the vibe does seem to prefer the
+   upper-case versions. We use the upper-case when available.
+
+   Zeroing newly-allocated memory
+   ------------------------------
 
    Because we use a lot of zero-terminated data structures, it would be nice
    for the allocation functions to return zeroed buffers. We also want to not
@@ -34,13 +50,17 @@
    [1]: https://stackoverflow.com/questions/1281686 */
 
 #define _GNU_SOURCE
+#include "config.h"
 
 #include <stdarg.h>
 #include <stdio.h>
 #include <string.h>
 #include <syslog.h>
 
-#include "config.h"
+#ifdef HAVE_GC
+#include <gc.h>
+#endif
+
 #include "mem.h"
 #include "misc.h"
 
@@ -51,16 +71,53 @@
 
 /** Constants **/
 
+/** Function prototytpes (private) **/
+
+ssize_t kB(ssize_t byte_ct);
+
+
 /** Globals **/
 
-/* Size of the stack and heap at previous ch_memory_log() call. These are
-   signed to avoid subtraction gotchas. */
+/* Note: All the memory statistics are signed “ssize_t” rather than the more
+   correct unsigned “size_t” so that subtractions are less error-prone (we
+   report lots of differences). We assume that memory usage is small enough
+   for this to not matter. */
+
+/* Size of the stack, heap, and anonymous mmap(2) mappings at previous
+   ch_memory_log() call. */
 ssize_t stack_prev = 0;
 ssize_t heap_prev = 0;
+ssize_t anon_prev = 0;
+
+#ifdef HAVE_GC
+
+/* Note: The first four counters are from GC_prof_stats_s fields and have the
+   corresponding names. Total size of allocated blocks is derived. See gc.h. */
+
+/* Total size of the heap. This includes “unmapped” bytes that libgc is
+   tracking but has given back to the OS, I assume to be re-requested from the
+   OS if needed. */
+ssize_t heapsize_prev = 0;
+
+/* Free bytes in the heap, both mapped and unmapped. */
+ssize_t free_prev = 0;
+
+/* Unmapped bytes (i.e., returned to the OS but still tracked by libgc) in the
+   heap. */
+ssize_t unmapped_prev = 0;
+
+/* Number of garbage collections done so far. */
+ssize_t gc_no_prev = 0;
+
+/* Total time spent doing garbage collection, in milliseconds. Corresponds to
+   GC_get_full_gc_total_time(). Note that because ch-run is single-threaded,
+   we do not report time spent collecting with the world stopped. */
+long time_collecting_prev = 0;
+
+#endif
 
 
 /** Functions **/
-
 
 /* Return a snprintf(3)-formatted string in a newly allocated buffer of
    appropriate length. Exit on error.
@@ -158,20 +215,31 @@ void *ch_malloc(size_t size, bool pointerful)
    void *buf;
 
 #ifdef HAVE_GC
-   #error
+   buf = pointerful ? GC_MALLOC(size) : GC_MALLOC_ATOMIC(size);
 #else
    (void)pointerful;  // suppress warning
-   T_ (buf = malloc(size));
+   buf = malloc(size);
 #endif
 
+   T_ (buf);
    return buf;
 }
 
-/* Initialize memory management.
+/* Shut down memory management. */
+void ch_memory_exit(void)
+{
+   ch_memory_log("exit");
+}
 
-   We don’t log usage here because it’s called before logging is up. */
+/* Initialize memory management. We don’t log usage here because it’s called
+   before logging is up. */
 void ch_memory_init(void)
 {
+#ifdef HAVE_GC
+   //GC_set_handle_fork(1); // I think the default mode is fine???
+   GC_INIT();
+   GC_start_performance_measurement();
+#endif
 }
 
 /* Log stack and heap memory usage, and GC statistics if enabled, to stderr
@@ -180,11 +248,16 @@ void ch_memory_log(const char *when)
 {
    FILE *fp;
    char *line = NULL;
-   ssize_t stack_len = 0, heap_len = 0;
-   char *text;
+   char *s;
+   ssize_t stack_len = 0, heap_len = 0, anon_len = 0;
+#ifdef HAVE_GC
+   struct GC_prof_stats_s ps;
+   ssize_t alloc, alloc_prev;
+   long time_collecting;
+#endif
 
-   /* Compute stack and heap size. While awkward, AFAICT this is the best
-      available way to get these sizes. See proc_pid_maps(5).
+   /* Compute stack, heap, and anonymous mapping sizes. While awkward, AFAICT
+      this is the best available way to get these sizes. See proc_pid_maps(5).
       Whitespace-separated (?) fields:
 
         1. start (inclusive) and end (exclusive) addresses, in hex
@@ -205,7 +278,9 @@ void ch_memory_log(const char *when)
                  conv_ct, line);
          break;
       }
-      if (!strcmp(path, "[stack]"))
+      if (strlen(path) == 0)
+         anon_len += end - start;
+      else if (!strcmp(path, "[stack]"))
          stack_len += end - start;
       else if (!strcmp(path, "[heap]"))
          heap_len += end - start;
@@ -213,25 +288,52 @@ void ch_memory_log(const char *when)
    Z_ (fclose(fp));
 
    // log the basics
-   text = ch_asprintf("mem: %s: stack %zd kB %+zd, heap %zd kB %+zd", when,
-                      stack_len / 1024, (stack_len - stack_prev) / 1024,
-                      heap_len / 1024, (heap_len - heap_prev) / 1024);
-   VERBOSE(text);
+   s = ch_asprintf("mem: %s: "
+         "stac %zdkB %+zd, heap %zdkB %+zd, anon %zdkB %+zd",
+         when,
+         kB(stack_len), kB(stack_len - stack_prev),
+         kB(heap_len),  kB(heap_len - heap_prev),
+         kB(anon_len),  kB(anon_len - anon_prev));
+   DEBUG(s);
 #ifdef ENABLE_SYSLOG
-   syslog(SYSLOG_PRI, "%s", text);
+   syslog(SYSLOG_PRI, "%s", s);
 #endif
    stack_prev = stack_len;
    heap_prev = heap_len;
+   anon_prev = anon_len;
 
    // log GC stuff
 #ifdef HAVE_GC
-   FIXME
+   GC_get_prof_stats(&ps, sizeof(ps));
+   time_collecting = GC_get_full_gc_total_time();
+   alloc = ps.heapsize_full - ps.free_bytes_full;
+   alloc_prev = heapsize_prev - free_prev;
+   s = ch_asprintf("gc:  "
+         "%s: %ld collections (%+ld) in %zdms (%+zd)",
+         when,
+         ps.gc_no, ps.gc_no - gc_no_prev,
+         time_collecting, time_collecting - time_collecting_prev);
+   DEBUG(s);
+#ifdef ENABLE_SYSLOG
+   syslog(SYSLOG_PRI, "%s", s);
 #endif
-}
-
-void ch_memory_log_exit(void)
-{
-   ch_memory_log("exit");
+   gc_no_prev = ps.gc_no;
+   time_collecting_prev = time_collecting;
+   s = ch_asprintf("gc:  %s: "
+         "totl %zdkB %+zd, allc %zdkB %+zd, free %zdkB %+zd, unmp %zdkB %+zd",
+         when,
+         kB(ps.heapsize_full), kB(ps.heapsize_full - heapsize_prev),
+         kB(alloc), kB(alloc - alloc_prev),
+         kB(ps.free_bytes_full), kB(ps.free_bytes_full - free_prev),
+         kB(ps.unmapped_bytes), kB(ps.unmapped_bytes - unmapped_prev));
+   DEBUG(s);
+#ifdef ENABLE_SYSLOG
+   syslog(SYSLOG_PRI, "%s", s);
+#endif
+   heapsize_prev = ps.heapsize_full;
+   free_prev = ps.free_bytes_full;
+   unmapped_prev = ps.unmapped_bytes;
+#endif
 }
 
 /* Change the size of allocated buffer p to size bytes. Like realloc(3), if p
@@ -249,12 +351,25 @@ void *ch_realloc(void *p, size_t size, bool pointerful)
 {
    void *p_new;
 
-#ifdef HAVE_GC
-   #error
-#else
-   (void)pointerful;  // suppress warning
-   T_ (p_new = realloc(p, size));
-#endif
+   T_ (size > 0);
 
+   if (p == NULL)
+      p_new = ch_malloc(size, pointerful);  // no GC_REALLOC_ATOMIC()
+   else {
+#ifdef HAVE_GC
+      p_new = GC_REALLOC(p, size);
+#else
+      p_new = realloc(p, size);
+#endif
+   }
+
+   T_ (p_new);
    return p_new;
 }
+
+/* Convert a signed number of bytes to kilobytes (truncated) and return it. */
+ssize_t kB(ssize_t byte_ct)
+{
+   return byte_ct / 1024;
+}
+

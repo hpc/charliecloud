@@ -19,6 +19,7 @@
 #include <time.h>
 #include <unistd.h>
 
+#include "mem.h"
 #include "misc.h"
 #include "core.h"
 #ifdef HAVE_LIBSQUASHFUSE
@@ -633,6 +634,7 @@ void run_user_command(char *argv[], const char *initial_dir)
       T_ (freopen("/dev/null", "w", stdout));
    if (verbose < LL_STDERR)
       T_ (freopen("/dev/null", "w", stderr));
+   ch_memory_log("usrx");
    execvp(argv[0], argv);  // only returns if error
    Tf (0, "can't execve(2): %s", argv[0]);
 }
