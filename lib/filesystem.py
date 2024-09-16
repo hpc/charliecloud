@@ -1175,20 +1175,6 @@ class Storage:
       if (v_found == STORAGE_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
          self.lock()
-      elif (v_found in {None}):  # initialize/upgrade
-         ch.INFO("%s storage directory: v%d %s"
-                 % (op, STORAGE_VERSION, self.root))
-         self.root.mkdir()
-         self.lock()
-         # These directories appeared in various storage versions, but since
-         # the thing to do on upgrade is the same as initialize, we don’t
-         # track the details.
-         self.download_cache.mkdir()
-         self.build_cache.mkdir()
-         self.build_large.mkdir()
-         self.unpack_base.mkdir()
-         self.upload_cache.mkdir()
-         self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
                   % (v_found, self.root),
@@ -1284,10 +1270,8 @@ class Storage:
                      % (msg_prefix, img), ch.BUG_REPORT_PLZ)
 
    def version_read(self):
-      # While support for storage v1 was dropped some time ago, let’s at least
-      # retain the ability to recognize it.
       if (not os.path.isfile(self.version_file)):
-         return 1
+         return None
       text = self.version_file.file_read_all()
       try:
          return int(text)
