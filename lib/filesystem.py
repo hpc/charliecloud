@@ -1271,7 +1271,7 @@ class Storage:
 
    def version_read(self):
       if (not os.path.isfile(self.version_file)):
-         return None
+         ch.FATAL('Expected file "%s" not found' % self.version_fil  e)
       text = self.version_file.file_read_all()
       try:
          return int(text)
