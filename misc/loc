@@ -127,6 +127,7 @@ patch
 plain text
     filter remove_matches TEXT_HAS_NO_COMMENTS_BUT_A_FILTER_IS_REQUIRED
     extension txt
+    filename NOTICE
     filename PERUSEME
     filename README
     filename VERSION
@@ -257,6 +258,7 @@ countem "TEST SUITE & EXAMPLES" /tmp/loc.test
 # documentation
 find . -type f -a \( \
          -path './doc/*.rst' \
+      -o -path ./NOTICE \
       -o -path ./README.rst \
       -o -path ./doc/conf.py \
       -o -path ./doc/make-deps-overview \
