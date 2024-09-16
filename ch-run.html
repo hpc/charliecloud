@@ -4,7 +4,7 @@
   <meta charset="utf-8" /><meta name="generator" content="Docutils 0.19: https://docutils.sourceforge.io/" />
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>8. ch-run &mdash; Charliecloud 0.38 documentation</title>
+  <title>8. ch-run &mdash; Charliecloud 0.39~pre+a1fe557 documentation</title>
       <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
       <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
     <link rel="shortcut icon" href="_static/favicon.ico"/>
@@ -34,7 +34,7 @@
               <img src="_static/logo-sidebar.png" class="logo" alt="Logo"/>
           </a>
               <div class="version">
-                0.38
+                0.39~pre+a1fe557
               </div>
 <div role="search">
   <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
@@ -797,11 +797,28 @@ would terminate the string.</p>
 </section>
 <section id="exit-status">
 <h2><span class="section-number">8.10. </span>Exit status<a class="headerlink" href="#exit-status" title="Permalink to this heading">¶</a></h2>
-<p>If there is an error during containerization, <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> exits with status
-non-zero. If the user command is started successfully, the exit status is that
-of the user command, with one exception: if the image is an internally mounted
-SquashFS filesystem and the user command is killed by a signal, the exit
-status is 1 regardless of the signal value.</p>
+<p>If the user command is started successfully and exits normally,
+<code class="code docutils literal notranslate"><span class="pre">ch-run</span></code>’s exit status is that of the user command. Otherwise, the exit
+status is one of:</p>
+<table class="docutils align-default">
+<tbody>
+<tr class="row-odd"><td><p>31</p></td>
+<td><p>Miscellaneous <code class="code docutils literal notranslate"><span class="pre">ch-run</span></code> failure other than the below</p></td>
+</tr>
+<tr class="row-even"><td><p>49</p></td>
+<td><p>Unable to start user command (i.e., <code class="code docutils literal notranslate"><span class="pre">execvp(2)</span></code> failed)</p></td>
+</tr>
+<tr class="row-odd"><td><p>84</p></td>
+<td><p>SquashFUSE loop exited on signal before user command was complete</p></td>
+</tr>
+<tr class="row-even"><td><p>87</p></td>
+<td><p>Feature queried by <code class="code docutils literal notranslate"><span class="pre">--feature</span></code> is not available</p></td>
+</tr>
+<tr class="row-odd"><td><p>128 + <em>N</em></p></td>
+<td><p>User command killed by signal <em>N</em></p></td>
+</tr>
+</tbody>
+</table>
 </section>
 </section>
 
@@ -816,7 +833,7 @@ status is 1 regardless of the signal value.</p>
   <hr/>
 
   <div role="contentinfo">
-    <p>&#169; Copyright 2014–2023, Triad National Security, LLC and others.</p>
+    <p>&#169; Copyright Charliecloud a Series of LF Projects, LLC and others (web content and website). For web site terms of use, trademark policy and other project policies please see: https://lfprojects.org.</p>
   </div>
 
    
