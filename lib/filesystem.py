@@ -1188,6 +1188,7 @@ class Storage:
          self.build_large.mkdir()
          self.unpack_base.mkdir()
          self.upload_cache.mkdir()
+         self.version_file.file_write("%d\n" % STORAGE_VERSION)
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
                   % (v_found, self.root),
