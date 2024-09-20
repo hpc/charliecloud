@@ -3,6 +3,8 @@
    This interface contains the seccomp filter for root emulation. */
 
 #define _GNU_SOURCE
+#include "config.h"
+
 #include <linux/audit.h>
 #include <linux/filter.h>
 #include <linux/seccomp.h>
@@ -15,6 +17,7 @@
 
 #include "core.h"
 #include "hook.h"
+#include "mem.h"
 
 
 /** Macros **/
@@ -151,7 +154,7 @@ void hook_seccomp_install(struct container *c, void *d)
              + ct_mknod      // mknod(2) handling
              + ct_mknodat);  // mknodat(2) handling
    DEBUG("seccomp: filter program has %d instructions", p.len);
-   T_ (p.filter = calloc(p.len, sizeof(struct sock_filter)));
+   p.filter = ch_malloc(p.len * sizeof(struct sock_filter), false);
 
    // Return call addresses. Allow needs to come first because we’ll jump to
    // it for unknown architectures.

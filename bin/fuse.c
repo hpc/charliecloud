@@ -35,7 +35,7 @@
 // Now we can include ll.h.
 #include <squashfuse/ll.h>
 
-#include "config.h"
+#include "config.h"  // here to avoid potential clash with SquashFUSE config.h
 #include "core.h"
 #include "fuse.h"
 #include "misc.h"
@@ -121,8 +121,7 @@ void sq_fork(struct container *c)
 
    // Default mount point?
    if (c->newroot == NULL) {
-      char *subdir;
-      T_ (asprintf(&subdir, "/%s.ch/mnt", username) > 0);
+      char *subdir = asprintf("/%s.ch/mnt", username);
       c->newroot = cat("/var/tmp", subdir);
       VERBOSE("using default mount point: %s", c->newroot);
       mkdirs("/var/tmp", subdir, NULL, NULL);
@@ -141,8 +140,7 @@ void sq_fork(struct container *c)
    // Now that the filesystem is mounted, we can fork without race condition.
    // The child returns to caller and runs the user command. When that exits,
    // the parent gets SIGCHLD.
-   pid_child = fork();
-   Tf (pid_child >= 0, "can't fork");
+   pid_child = ch_fork();
    if (pid_child > 0)  // parent (child does nothing here)
       exit(sq_loop());
 }
@@ -229,7 +227,7 @@ void sq_mount(const char *img_path, char *mountpt)
    struct fuse_args mount_args = FUSE_ARGS_INIT(mount_argc, mount_argv);
 
    sq.mountpt = mountpt;
-   T_ (sq.chan = malloc(sizeof(sqfs_ll_chan)));
+   sq.chan = ch_malloc(sizeof(sqfs_ll_chan));
 
    sq.ll = sqfs_ll_open(img_path, 0);
    Te (sq.ll != NULL, "can't open SquashFS: %s; try ch-run -vv?", img_path);

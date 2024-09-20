@@ -206,12 +206,7 @@ void containerize(struct container *c)
 
       HOOK_DUP_OK    add the hook anyway
       HOOK_DUP_SKIP  silently do nothing (i.e., don’t add the hook)
-      HOOK_DUP_FAIL  fatal error
-
-   Warning: The hook framework does no memory management for name or d, i.e.,
-   if name needs to be freed, that is the responsibility of the caller (this
-   function uses a copy), and/or if anything in d either needs to be freed,
-   that is the responsibility of the hook. */
+      HOOK_DUP_FAIL  fatal error  */
 void hook_add(struct hook **hook_list, enum hook_dup dup,
               const char *name, hookf_t *f, void *d)
 {
@@ -232,26 +227,24 @@ void hook_add(struct hook **hook_list, enum hook_dup dup,
       }
    }
 
-   T_ (h.name = strdup(name));
+   h.name = name;
    h.f = f;
    h.data = d;
 
    list_append((void **)hook_list, &h, sizeof(h));
 }
 
-/* Run hooks in hook_list, passing c, then deallocate the list and set
-   *hook_list to NULL. hook_list must be a member of c. */
+/* Run hooks in hook_list, passing c, then set *hook_list to NULL. hook_list
+   must be a member of c. */
 void hooks_run(struct container *c, struct hook **hook_list)
 {
    int hook_ct = list_count(*hook_list, sizeof((*hook_list)[0]));
-   for (int i = 0; (*hook_list)[i].f != NULL; i++) {
+   for (int i = 0; i < hook_ct; i++) {
       struct hook h = (*hook_list)[i];
       DEBUG("calling hook %d/%d: %s", i+1, hook_ct, h.name);
       h.f(c, h.data);
-      free(h.name);
    }
 
-   free(*hook_list);
    *hook_list = NULL;
 }
 
@@ -297,15 +290,12 @@ enum img_type image_type(const char *ref, const char *storage_dir)
 char *img_name2path(const char *name, const char *storage_dir)
 {
    char *path;
-   char *name_fs = strdup(name);
+   char *name_fs = ch_strdup(name);
 
    replace_char(name_fs, '/', '%');
    replace_char(name_fs, ':', '+');
 
-   T_ (1 <= asprintf(&path, "%s/img/%s", storage_dir, name_fs));
-
-   free(name_fs);  // make Tim happy
-   return path;
+   return path_join(storage_dir, path_join("img", name_fs));
 }
 
 /* Begin coordinated section of namespace joining. */
@@ -405,18 +395,17 @@ void mounts_setup(struct container *c)
       char *options;
       struct stat st;
       VERBOSE("overlaying tmpfs for --write-fake (%s)", c->overlay_size);
-      T_ (1 <= asprintf(&options, "size=%s", c->overlay_size));
+      options = cat("size=", c->overlay_size);
       Zf (mount(NULL, WF_MNT, "tmpfs", 0, options),
           "cannot mount tmpfs for overlay");
-      free(options);
       Z_ (mkdir(WF_MNT "/upper", 0700));
       Z_ (mkdir(WF_MNT "/work", 0700));
       Z_ (mkdir(WF_MNT "/merged", 0700));
       mkdir_scratch = WF_MNT "/mkdir_overmount";
       Z_ (mkdir(mkdir_scratch, 0700));
-      T_ (1 <= asprintf(&options, ("lowerdir=%s,upperdir=%s,workdir=%s,"
-                                   "index=on,userxattr,volatile"),
-                        c->newroot, WF_MNT "/upper", WF_MNT "/work"));
+      options = ch_asprintf(("lowerdir=%s,upperdir=%s,workdir=%s,"
+                             "index=on,userxattr,volatile"),
+                            c->newroot, WF_MNT "/upper", WF_MNT "/work"));
       // update newroot
       Zf (stat(c->newroot, &st),
           "can't stat new root; overmounted by tmpfs for -W?: %s", c->newroot);
@@ -424,7 +413,6 @@ void mounts_setup(struct container *c)
       Zf (mount(NULL, c->newroot, "overlay", 0, options),
           "can't overlay: %s, %s", c->newroot, options);
       VERBOSE("newroot updated: %s", c->newroot);
-      free(options);
    }
    DEBUG("starting bind-mounts");
    // Bind-mount default files and directories.
@@ -446,8 +434,6 @@ void mounts_setup(struct container *c)
    }
    // Bind-mount user-specified directories.
    bind_mounts(c->binds, c->newroot, 0, mkdir_scratch);
-
-   free(nr_parent);
 }
 
 /* Join a specific namespace. */
@@ -456,7 +442,7 @@ void namespace_join(pid_t pid, const char *ns)
    char *path;
    int fd;
 
-   T_ (1 <= asprintf(&path, "/proc/%d/ns/%s", pid, ns));
+   path = ch_asprintf(&path, "/proc/%d/ns/%s", pid, ns);
    fd = open(path, O_RDONLY);
    if (fd == -1) {
       if (errno == ENOENT) {
@@ -545,7 +531,7 @@ void passwd_setup(const struct container *c)
    struct passwd *p;
 
    // /etc/passwd
-   T_ (path = cat(host_tmp, "/ch-run_passwd.XXXXXX"));
+   path = cat(host_tmp, "/ch-run_passwd.XXXXXX");
    T_ (-1 != (fd = mkstemp(path)));  // mkstemp(3) writes path
    if (c->container_uid != 0)
       T_ (1 <= dprintf(fd, "root:x:0:0:root:/root:/bin/sh\n"));
@@ -570,7 +556,7 @@ void passwd_setup(const struct container *c)
    Z_ (unlink(path));
 
    // /etc/group
-   T_ (path = cat(host_tmp, "/ch-run_group.XXXXXX"));
+   path = cat(host_tmp, "/ch-run_group.XXXXXX");
    T_ (-1 != (fd = mkstemp(path)));
    if (c->container_gid != 0)
       T_ (1 <= dprintf(fd, "root:x:0:\n"));
@@ -615,8 +601,6 @@ void pivot(struct container *c)
        "can't pivot_root(2)");
    Zf (chroot("."), "can't chroot(2) into new root");
    Zf (umount2("/dev", MNT_DETACH), "can't umount old root");
-   free(nr_parent);
-   free(nr_base);
 }
 
 /* Replace the current process with user command and arguments. */

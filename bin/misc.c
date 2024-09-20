@@ -1,6 +1,8 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#include "config.h"
+
 #include <ctype.h>
 #include <dirent.h>
 #include <fcntl.h>
@@ -16,7 +18,6 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 
-#include "config.h"
 #include "misc.h"
 
 
@@ -64,7 +65,8 @@ static const char **LL_COLOURS = _LL_COLOURS + 3;
 
 /** External variables **/
 
-/* If true, exit abnormally on fatal error. Set in ch-run.c. */
+/* If true, exit abnormally on fatal error. Set in ch-run.c during argument
+   parsing, so will always be default value before that. */
 bool abort_fatal = false;
 
 /* If true, use colored logging. Set in ch-run.c. */
@@ -115,7 +117,8 @@ char *argv_to_string(char **argv)
       bool quote_p = false;
 
       // Max length is escape every char plus two quotes and terminating zero.
-      T_ (argv_ = calloc(2 * strlen(argv[i]) + 3, 1));
+      // Initialize to zeroes so we don’t have to terminate string later.
+      argv_ = ch_malloc_zeroed(2 * strlen(argv[i]) + 3, false);
 
       // Copy to new string, escaping as we go. Note lots of fall-through. I'm
       // not sure where this list of shell meta-characters came from; I just
@@ -158,22 +161,8 @@ char *argv_to_string(char **argv)
          }
       }
 
-      if (quote_p) {
-         x = argv_;
-         T_ (1 <= asprintf(&argv_, "\"%s\"", argv_));
-         free(x);
-      }
-
-      if (i != 0) {
-         x = s;
-         s = cat(s, " ");
-         free(x);
-      }
-
-      x = s;
-      s = cat(s, argv_);
-      free(x);
-      free(argv_);
+      s = cats(5, s, i == 0 ? "" : " ",
+               quote_p ? "\"" : "", argv_, quote_p ? "\"");
    }
 
    return s;
@@ -197,9 +186,9 @@ const char *bool_to_string(bool b)
       3. The buffer contains no empty strings.
 
    These assumptions are consistent with the construction of the “warnings”
-   shared memory buffer, which is the main justification for this function. Note
-   that under these assumptions, the final byte in the buffer is guaranteed to
-   be null. */
+   shared memory buffer, which is the main justification for this function.
+   Note that under these assumptions, the final byte in the buffer is
+   guaranteed to be null. */
 int buf_strings_count(char *buf, size_t size)
 {
    int count = 0;
@@ -225,50 +214,102 @@ bool buf_zero_p(void *buf, size_t size)
    return true;
 }
 
-/* Concatenate strings a and b into a newly-allocated buffer and return the a
+/* Concatenate strings a and b into a newly-allocated buffer and return a
    pointer to this buffer. */
 char *cat(const char *a, const char *b)
 {
-   char *ret;
-   if (a == NULL)
-      a = "";
-   if (b == NULL)
-       b = "";
-   T_ (asprintf(&ret, "%s%s", a, b) == strlen(a) + strlen(b));
+   return cats(2, a, b);
+}
+
+/* Concatenate argc strings into a newly allocated buffer and return a pointer
+   to this buffer. If argc is zero, return the empty string. NULL pointers are
+   treated as empty strings. */
+char *cats(size_t argc, ...)
+{
+   char *ret, *next;
+   size_t ret_len;
+   char **argv;
+   size_t *argv_lens;
+   va_list ap;
+
+   argv = ch_malloc(argc * sizeof(char *), true);
+   argv_lens = ch_malloc(argc * sizeof(size_t), false);
+
+   // compute buffer size and convert NULLs to empty string
+   va_start(ap, argc);
+   ret_len = 1;  // for terminator
+   for (int i = 0; i < argc; i++)
+   {
+      char *arg = va_arg(ap);
+      if (arg == NULL) {
+         argv[i] = "";
+         argv_lens[i] = 0;
+      } else {
+         argv[i] = arg;
+         argv_lens[i] = strlen(arg);
+      }
+      ret_len += argv_lens[i];
+   }
+   va_end(ap);
+
+   // copy strings
+   ret = ch_malloc(ret_len, false);
+   next = ret;
+   for (int i = 0; i < argc; i++) {
+      memcpy(next, argv[i], argv_lens[i]);
+      next += argv_lens[i];
+   }
+   ret[ret_len] = '\0';
+
    return ret;
 }
 
-/* Like scandir(3), but (1) filter excludes “.” and “..”, (2) results are not
-   sorted, and (3) cannot fail (exits with an error instead). */
-int dir_ls(const char *path, struct dirent ***namelist)
-{
-   int entry_ct;
+/* Return a newly-allocated, null-terminated list of filenames in directory
+   path that match fnmatch(3)-pattern glob, excluding “.” and “..”. For a list
+   of everything, pass "*" for glob. Leading dots *do* match “*”.
 
-   entry_ct = scandir(path, namelist, dir_ls_filter, NULL);
-   Tf (entry_ct >= 0, "can't scan dir: %s", path);
-   return entry_ct;
+   We use readdir(3) rather than scandir(3) because the latter allocates
+   memory with malloc(3). */
+char **dir_glob(const char *path, const char *glob)
+{
+   DIR *dp;
+   int i;  // index of next free array element
+   size_t alloc_ct = 16;
+   char **entries = ch_malloc(alloc_ct * sizeof(char *), true);
+
+   Tf (dp = opendir(path), "can't open directory: %s", path);
+   i = 0;
+   while (true) {
+      struct dirent *entry;
+      int matchp;
+      errno = 0;
+      entry = readdir(dp);
+      if (entry == NULL) {
+         Zf (errno, "can’t read directory: %s", path);
+         break;  // EOF
+      }
+      matchp = fnmatch(glob, entry->d_name, FNM_EXTMATCH);
+      if (matchp != 0) {
+         T_ (matchp == FNM_NOMATCH);  // error?
+         continue;                    // no match, skip
+      }
+      if (i >= alloc_ct - 1) {
+         alloc_ct *= 2;
+         entries = ch_realloc(allot_ct * sizeof(char *), true);
+      }
+      entries[i] = entry->d_name;
+      i++;
+   }
+   entries[i] = NULL;
+   Zf (closedir(dp), "can't close directory: %s", path);
+
+   return entries;
 }
 
-/* Return the number of entries in directory path, not including “.” and “..”;
-   i.e., the empty directory returns 0 despite them. */
-int dir_ls_count(const char *path)
+/* Return the number of matches for glob in path. */
+int dir_glob_count(const char *path, const char *glob)
 {
-   int ct;
-   struct dirent **namelist;
-
-   ct = dir_ls(path, &namelist);
-   for (size_t i = 0; i < ct; i++)
-      free(namelist[i]);
-   free(namelist);
-
-   return ct;
-}
-
-/* scandir(3) filter that excludes “.” and “..”: Return 0 if e->d_name is one
-   of those strings, else 1. */
-int dir_ls_filter(const struct dirent *e)
-{
-   return !(!strcmp(e->d_name, ".") || !strcmp(e->d_name, ".."));
+   return list_count((void **)dir_glob(path, glob), sizeof(char *));
 }
 
 /* Read the file listing environment variables at path, with records separated
@@ -293,18 +334,14 @@ struct env_var *env_file_read(const char *path, int delim)
    vars = list_new(sizeof(struct env_var), 0);
    for (size_t line_no = 1; true; line_no++) {
       struct env_var var;
-      char *line = NULL;
-      size_t line_len = 0;  // don't care but required by getline(3)
+      char *line;
       errno = 0;
-      if (-1 == getdelim(&line, &line_len, delim, fp)) {
-         if (errno == 0)    // EOF
-            break;
-         else
-            Tf (0, "can't read: %s", path);
-      }
-      if (line[strlen(line) - 1] == '\n')  // rm newline if present
+      line = ch_getdelim(fp, delim, fp);
+      if (line == NULL)  // EOF
+         break;
+      if (line[strlen(line) - 1] == (char)delim)  // rm delimiter if present
          line[strlen(line) - 1] = 0;
-      if (line[0] == 0)                    // skip blank lines
+      if (line[0] == '\0')                        // skip blank lines
          continue;
       var = env_var_parse(line, path, line_no);
       list_append((void **)&vars, &var, sizeof(var));
@@ -315,17 +352,12 @@ struct env_var *env_file_read(const char *path, int delim)
 }
 
 /* Return the value of environment variable name if set; otherwise, return
-   value_default instead.
-
-   Note the implications for memory management: you may get a pointer into
-   environ (?), which you do not own and must not free, or value_default,
-   which may or may not need to be freed. */
+   value_default instead. */
 char *env_get(const char *name, char *value_default)
 {
    char *ret = getenv(name);
    return ret ? ret : value_default;
 }
-
 
 
 /* Set environment variable name to value. If expand, then further expand
@@ -339,10 +371,10 @@ void env_set(const char *name, const char *value, const bool expand)
       char *vwk_cur;           // current location in vwk
       char *vout = NULL;       // output (expanded) string
       bool first_out = false;  // true after 1st output element written
-      T_ (vwk = strdup(value));
+      vwk = ch_strdup(value);
       vwk_cur = vwk;
       while (true) {                            // loop executes ≥ once
-         char *elem = strsep(&vwk_cur, ":");     // NULL -> no more elements
+         char *elem = strsep(&vwk_cur, ":");    // NULL -> no more elements
          if (elem == NULL)
             break;
          if (elem[0] == '$' && elem[1] != 0) {  // looks like $VARIABLE
@@ -351,11 +383,8 @@ void env_set(const char *name, const char *value, const bool expand)
                elem = NULL;                     // convert to unset
          }
          if (elem != NULL) {   // empty -> omit from output list
-            char *vout_old = vout;
-            T_ (1 <= asprintf(&vout, "%s%s%s", vout_old ? vout_old : "",
-                              !first_out ? ":" : "", elem));
+            vout = cats(3, vout, first_out ? "" : ":", elem);
             first_out = true;
-            free(vout_old);
          }
       }
       value = vwk;
@@ -364,18 +393,6 @@ void env_set(const char *name, const char *value, const bool expand)
    // Save results.
    DEBUG("environment: %s=%s", name, value);
    Z_ (setenv(name, value, 1));
-   free(vwk);
-}
-
-/* Free the environment variabls list *vars, both the individual buffers within
-   as well as the whole list, then set *vars to NULL. */
-void envs_free(struct env_var **vars)
-{
-   for (int i = 0; (*vars)[i].name != NULL; i++)
-      free((*vars)[i].name);  // .value points into same buffer; see split()
-
-   free(*vars);
-   *vars = NULL;
 }
 
 void envs_set(const struct env_var *vars, const bool expand)
@@ -391,8 +408,8 @@ void envs_set(const struct env_var *vars, const bool expand)
    O(n^2) search until no matches remain.
 
    Our approach is O(n): we build up a copy of environ, skipping variables
-   that match the glob, and then assign environ to the copy. (This is a valid
-   thing to do [2].)
+   that match the glob, and then assign environ to the copy. This is a valid
+   thing to do [2].
 
    [1]: https://unix.stackexchange.com/a/302987
    [2]: http://man7.org/linux/man-pages/man3/exec.3p.html */
@@ -404,7 +421,7 @@ void envs_unset(const char *glob)
       int matchp;
       split(&name, &value, environ[i], '=');
       T_ (name != NULL);          // environ entries must always have equals
-      matchp = fnmatch(glob, name, FNM_EXTMATCH); // extglobs if available
+      matchp = fnmatch(glob, name, FNM_EXTMATCH);  // extglobs if available
       if (matchp == 0) {
          DEBUG("environment: unset %s", name);
       } else {
@@ -424,17 +441,15 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
 {
    char *name, *value, *where;
 
-   if (path == NULL) {
-      T_ (where = strdup(line));
-   } else {
-      T_ (1 <= asprintf(&where, "%s:%zu", path, lineno));
-   }
+   if (path == NULL)
+      where = ch_strdup(line);
+   else
+      where = ch_asprintf("%s:%zu", path, lineno));
 
    // Split line into variable name and value.
    split(&name, &value, line, '=');
    Te (name != NULL, "can't parse variable: no delimiter: %s", where);
    Te (name[0] != 0, "can't parse variable: empty name: %s", where);
-   free(where);  // for Tim
 
    // Strip leading and trailing single quotes from value, if both present.
    if (   strlen(value) >= 2
@@ -453,17 +468,21 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
    list to the new location. *list can be NULL to initialize a new list.
    Return the new array size.
 
-   Note: ar must be cast, e.g. "list_append((void **)&foo, ...)".
+   Usage note: ar must be cast, e.g. "list_append((void **)&foo, ...)".
+
+   Implementation note: We could round up the new size to the next power of
+   two for allocation purposes, which would reduce the number of realloc()
+   that actually change the size. However, many allocators do this type of
+   thing internally already, and that seems a better place for it.
 
    Warning: This function relies on all pointers having the same
    representation, which is true on most modern machines but is not guaranteed
    by the standard [1]. We could instead return the new value of ar rather
    than using an out parameter, which would avoid the double pointer and
    associated non-portability but make it easy for callers to create dangling
-   pointers, i.e., after "a = list_append(b, ...)", b will dangle. That
-   problem could in turn be avoided by returning a *copy* of the array rather
-   than a modified array, but then the caller has to deal with the original
-   array itself. It seemed to me the present behavior was the best trade-off.
+   pointers, i.e., after “a = list_append(b, ...)”, b will be invalid. This
+   isn’t just about memory leaks but also the fact that b points to an invalid
+   buffer that likely *looks* valid.
 
    [1]: http://www.c-faq.com/ptrs/genericpp.html */
 void list_append(void **ar, void *new, size_t size)
@@ -472,7 +491,7 @@ void list_append(void **ar, void *new, size_t size)
    T_ (new != NULL);
 
    ct = list_count(*ar, size);
-   T_ (*ar = realloc(*ar, (ct+2)*size));  // existing + new + terminator
+   *ar = ch_realloc(*ar, (ct+2)*size, true));   // existing + new + terminator
    memcpy(*ar + ct*size, new, size);      // append new (no overlap)
    memset(*ar + (ct+1)*size, 0, size);    // set new terminator
 }
@@ -485,12 +504,13 @@ void list_cat(void **dst, void *src, size_t size)
 
    ct_dst = list_count(*dst, size);
    ct_src = list_count(src, size);
-   T_ (*dst = realloc(*dst, (ct_dst+ct_src+1)*size));
+   *dst = ch_realloc(*dst, (ct_dst+ct_src+1)*size, true);
    memcpy(*dst + ct_dst*size, src, ct_src*size);  // append src (no overlap)
    memset(*dst + (ct_dst+ct_src)*size, 0, size);  // set new terminator
 }
 
-/* Return the number of elements of size size in list *ar. */
+/* Return the number of elements of size size in list *ar, not including the
+   terminating zero element. */
 size_t list_count(void *ar, size_t size)
 {
    size_t ct;
@@ -503,29 +523,17 @@ size_t list_count(void *ar, size_t size)
    return ct;
 }
 
-/* *ar is a list of pointers to malloc()’ed buffers (which is why object size
-   is not provided). Free those buffers, then free *ar itself and set it to
-   NULL. */
-void list_free_shallow(void ***ar)
-{
-   T_ (*ar != NULL);
-   for (int i; (*ar)[i] != NULL; i++)
-      free((*ar)[i]);
-   free(*ar);
-   *ar = NULL;
-}
-
 /* Return a pointer to a new, empty zero-terminated array containing elements
    of size size, with room for ct elements without re-allocation. The latter
    allows to pre-allocate an arbitrary number of slots in the list, which can
-   then be filled directly without testing the list's length for each one.
+   then be filled directly without testing the list’s length for each one.
    (The list is completely filled with zeros, so every position has a
    terminator after it.) */
 void *list_new(size_t size, size_t ct)
 {
    void *list;
    T_ (size > 0);
-   T_ (list = calloc(ct+1, size));
+   T_ (list = ch_malloc_zeroed(ct+1, size, true));
    return list;
 }
 
@@ -533,23 +541,11 @@ void *list_new(size_t size, size_t ct)
    treated as one). Copy each token into a newly-allocated string buffer, and
    return these strings as a new list.
 
-   Notes:
-
-     1. The interface deliberately accepts a single delimiter, not multiple
-        like strtok(3).
-
-     2. This approach has a redundant malloc(3) for each token, because we
-        have to copy the input string into a new buffer anyway to satisfy
-        strtok_r(3). We could use the multiple token pointers into this single
-        buffer as the list elements. However, this would yield a
-        difficult-to-free list: one would have to free only the *first*
-        element in the list and no others. Also, if any other strings are
-        later added to the list, those would need to be freed differently.
-        This all seemed extremely bug-prone. */
+   The function accepts a single delimiter, not multiple like strtok(3). */
 void *list_new_strings(char delim, const char *str)
 {
    char **list;
-   char *str_copy, *str_init, *tok_state;
+   char *str_, *tok_state;
    char delims[] = { delim, '\0' };
    size_t delim_ct = 0;
 
@@ -558,56 +554,24 @@ void *list_new_strings(char delim, const char *str)
    // adjacent delimiters and thus may overcount tokens, possibly wasting a
    // small amount of memory.
    for (int i = 0; str[i] != '\0'; i++)
-      delim_ct += str[i] == delim ? 1 : 0;
+      delim_ct += (str[i] == delim ? 1 : 0);
 
    list = list_new(delim_ct + 1, sizeof(char *));
 
    // Note: strtok_r(3)’s interface is rather awkward; see its man page.
-   T_ (str_copy = strdup(str));
-   str_init = str_copy;
+   str_ = ch_strdup(str);     // so we can modify it
    tok_state = NULL;
    for (int i = 0; true; i++) {
       char *tok;
-      tok = strtok_r(str_init, delims, &tok_state);
+      tok = strtok_r(str_, delims, &tok_state);
       if (tok == NULL)
          break;
       T_ (i < delim_ct + 1);  // bounds check
-      T_ (tok = strdup(tok));  // copy tok into buffer we own
       list[i] = tok;
-      str_init = NULL;
+      str_ = NULL;            // only pass actual string on first call
    }
-   free(str_copy);
 
    return list;
-}
-
-/* Remove any duplicate elements in ar, in-place, according to comparison
-   function cmp. The last duplicate in the list wins. Preserves order
-   otherwise. */
-void list_uniq(void *ar, size_t size, comparison_fn_t cmp)
-{
-   size_t rm_ct;
-   size_t ct_starting = list_count(ar, size);
-   void *zero_blk = ar + ct_starting * size;  // assumes terminated correctly
-
-   // Loop backwards through array; set duplicates to zero. We could instead
-   // bubble out the duplicates here, but I felt keeping track of indices
-   // would be too hard.
-   for (int i = ct_starting - 1; i > 0; i--) {      // ar[0] has nothing prior
-      if (memcmp(ar + i * size, zero_blk, size))  // if not already deleted
-         for (int j = i - 1; j >= 0; j--)
-            if (!cmp(ar + i * size, ar + j * size))
-               memset(ar + j * size, 0, size);
-   }
-   // Loop forwards through array, shifting each item backwards the number of
-   // zero blocks we’ve seen so far.
-   rm_ct = 0;
-   for (int i = 0; i < ct_starting; i++)
-      if (!memcmp(ar + i * size, zero_blk, size))  // ar[i] deleted
-         rm_ct++;
-      else if (rm_ct > 0)
-         memcpy(ar + (i - rm_ct) * size, ar + i * size, size);
-   memset(ar + (ct_starting - rm_ct) * size, 0, size);  // terminate
 }
 
 /* If verbose enough, print uids and gids on stderr prefixed with where.
@@ -645,9 +609,8 @@ void log_ids(const char *func, int line)
    }
 }
 
-
-/* Set up logging. Note ch-run(1) specifies a bunch of
-   color synonyms; this translation happens during argument parsing.*/
+/* Set up logging. Note ch-run(1) specifies a bunch of color synonyms; this
+   translation happens during argument parsing.*/
 void logging_init(enum log_color_when when, enum log_test test)
 {
    // set up colors
@@ -667,7 +630,7 @@ void logging_init(enum log_color_when when, enum log_test test)
       log_color_p = false;
       break;
    case LL_COLOR_NULL:
-      Tf(0, "unreachable code reached");
+      T_ (0);  // unreachable
       break;
    }
 
@@ -700,9 +663,9 @@ void mkdir_overmount(const char *path, const char *scratch)
    struct dirent **entries;
 
    VERBOSE("making writeable via symlink ranch: %s", path);
-   path2 = strdup(path);
+   path2 = ch_strdup(path);
    parent = dirname(path2);
-   T_ (1 <= asprintf(&over, "%s/%d", scratch, dir_ls_count(scratch) + 1));
+   over = ch_asprintf("%s/%d", scratch, dir_ls_count(scratch) + 1);
    path_dst = path_join(over, orig_dir);
 
    // bind-mounts
@@ -714,25 +677,15 @@ void mkdir_overmount(const char *path, const char *scratch)
        "can't bind-mount: %s- > %s", over, parent);
 
    // symlink ranch
-   entry_ct = dir_ls(path_dst, &entries);
+   entry_ct = dir_glob_count(path_dst, "*");
    DEBUG("existing entries: %d", entry_ct);
    for (int i = 0; i < entry_ct; i++) {
       char * src = path_join(parent, entries[i]->d_name);
       char * dst = path_join(orig_dir, entries[i]->d_name);
-
       Zf (symlink(dst, src), "can't symlink: %s -> %s", src, dst);
-
-      free(src);
-      free(dst);
-      free(entries[i]);
    }
-   free(entries);
 
    Zf (mkdir(path, 0755), "can't mkdir even after overmount: %s", path);
-
-   free(path_dst);
-   free(over);
-   free(path2);
 }
 
 /* Create directories in path under base. Exit with an error if anything goes
@@ -761,17 +714,16 @@ void mkdirs(const char *base, const char *path, char **denylist,
 
    TRACE("mkdirs: base: %s", basec);
    TRACE("mkdirs: path: %s", path);
-   for (size_t i = 0; denylist[i] != NULL; i++)
+   for (int i = 0; denylist[i] != NULL; i++)
       TRACE("mkdirs: deny: %s", denylist[i]);
 
-   pathw = cat(path, "");  // writeable copy
-   saveptr = NULL;         // avoid warning (#1048; see also strtok_r(3))
+   pathw = ch_strdup(path);  // writeable copy
+   saveptr = NULL;           // avoid warning (#1048; see also strtok_r(3))
    component = strtok_r(pathw, "/", &saveptr);
    nextc = basec;
    next = NULL;
    while (component != NULL) {
-      next = cat(nextc, "/");
-      next = cat(next, component);  // canonical except for last component
+      next = path_join(nextc, component);  // canonical except for last
       TRACE("mkdirs: next: %s", next)
       component = strtok_r(NULL, "/", &saveptr);  // next NULL if current last
       if (path_exists(next, &sb, false)) {
@@ -818,7 +770,7 @@ void msg(enum log_level level, const char *file, int line, int errno_,
 }
 
 noreturn void msg_fatal(const char *file, int line, int errno_,
-                       const char *fmt, ...)
+                        const char *fmt, ...)
 {
    va_list ap;
 
@@ -837,7 +789,6 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
           const char *fmt, va_list ap)
 {
    // note: all components contain appropriate leading/trailing space
-   // note: be careful about which components need to be freed
    char *text_formatted;  // caller’s message, formatted
    char *level_prefix;    // level prefix
    char *errno_code;      // errno code/number
@@ -846,14 +797,14 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    const char * colour;          // ANSI codes for color
    const char * colour_reset;    // ANSI codes to reset color
 
-   if (level > verbose)   // not verbose enough to log message; do nothing
+   if (level > verbose)   // not verbose enough; do nothing
       return;
 
    // Format caller message.
    if (fmt == NULL)
       text_formatted = "please report this bug";  // users should not see
    else
-      T_ (1 <= vasprintf(&text_formatted, fmt, ap));
+      text_formatted = ch_vasprintf(fmt, ap);
 
    // Prefix some of the levels.
    switch (level) {
@@ -874,7 +825,7 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
       errno_desc = "";
    } else {
       errno_code = cat(" ", strerrorname_np(errno_));  // FIXME: non-portable
-      T_ (1 <= asprintf(&errno_desc, ": %s", strerror(errno_)));
+      errno_desc = ch_asprintf(": %s", strerror(errno_));
    }
 
    // Color.
@@ -887,25 +838,16 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    };
 
    // Format and print.
-   T_ (1 <= asprintf(&text_full, "%s[%d]: %s%s%s (%s:%d%s)",
-                     program_invocation_short_name, getpid(),
-                     level_prefix, text_formatted, errno_desc,
-                     file, line, errno_code));
+   text_full = ch_asprintf("%s[%d]: %s%s%s (%s:%d%s)",
+                           program_invocation_short_name, getpid(),
+                           level_prefix, text_formatted, errno_desc,
+                           file, line, errno_code));
    fprintf(stderr, "%s%s%s\n", colour, text_full, colour_reset);
    if (fflush(stderr))
-      abort();  // can't print an error b/c already trying to do that
+      abort();  // can’t print an error b/c already trying to do that
    if (level == LL_WARNING)
       warnings_offset += string_append(warnings, text_full,
                                        WARNINGS_SIZE, warnings_offset);
-
-   // Clean up.
-   free(text_full);
-   if (errno_) {
-      free(errno_code);
-      free(errno_desc);
-   }
-   if (fmt != NULL)
-      free(text_formatted);
 }
 
 /* Return true if the given path exists, false otherwise. On error, exit. If
@@ -934,27 +876,23 @@ bool path_exists(const char *path, struct stat *statbuf, bool follow_symlink)
 /* Concatenate paths a and b, then return the result. */
 char *path_join(const char *a, const char *b)
 {
-   char *ret;
-
    T_ (a != NULL);
    T_ (strlen(a) > 0);
    T_ (b != NULL);
    T_ (strlen(b) > 0);
 
-   T_ (asprintf(&ret, "%s/%s", a, b) == strlen(a) + strlen(b) + 1);
-
-   return ret;
+   return ch_asprintf("%s/%s", a, b);
 }
 
 /* Return the mount flags of the file system containing path, suitable for
    passing to mount(2).
 
-   This is messy because, the flags we get from statvfs(3) are ST_* while the
+   This is messy because the flags we get from statvfs(3) are ST_* while the
    flags needed by mount(2) are MS_*. My glibc has a comment in bits/statvfs.h
-   that the ST_* "should be kept in sync with" the MS_* flags, and the values
+   that the ST_* “should be kept in sync with” the MS_* flags, and the values
    do seem to match, but there are additional undocumented flags in there.
-   Also, the kernel contains a test "unprivileged-remount-test.c" that
-   manually translates the flags. Thus, I wasn't comfortable simply passing
+   Also, the kernel contains a test “unprivileged-remount-test.c” that
+   manually translates the flags. Thus, I wasn’t comfortable simply passing
    the output of statvfs(3) to mount(2). */
 unsigned long path_mount_flags(const char *path)
 {
@@ -992,18 +930,10 @@ unsigned long path_mount_flags(const char *path)
    that output. */
 void path_split(const char *path, char **dir, char **base)
 {
-   char *path2;
-
-   if (dir != NULL) {
-      T_ (path2 = strdup(path));
-      T_ (*dir = strdup(dirname(path2)));
-      free(path2);
-   }
+   if (dir != NULL)
+      *dir = dirname(ch_strdup(path));
    if (base != NULL) {
-      T_ (path2 = strdup(path));
-      T_ (*base = strdup(basename(path2)));
-      free(path2);
-   }
+      *base = basename(ch_strdup(path));
 }
 
 /* Return true if path is a subdirectory of base, false otherwise. Acts on the
@@ -1048,7 +978,7 @@ char *realpath_(const char *path, bool fail_ok)
 
    if (pathc == NULL) {
       if (fail_ok) {
-         T_ (pathc = strdup(path));
+         pathc = ch_strdup(path));
       } else {
          Tf (false, "can't canonicalize: %s", path);
       }
@@ -1068,32 +998,23 @@ void replace_char(char *s, char old, char new)
 /* Split string str at first instance of delimiter del. Set *a to the part
    before del, and *b to the part after. Both can be empty; if no token is
    present, set both to NULL. Unlike strsep(3), str is unchanged; *a and *b
-   point into a new buffer allocated with malloc(3). This has two
-   implications: (1) the caller must free(3) *a but not *b, and (2) the parts
-   can be rejoined by setting *(*b-1) to del. The point here is to provide an
-   easier wrapper for strsep(3). */
+   point into a new buffer. Therefore, the parts can be rejoined by setting
+   *(*b-1) to del. The point here is to provide an easier wrapper for
+   strsep(3). */
 void split(char **a, char **b, const char *str, char del)
 {
-   char *tmp;
    char delstr[2] = { del, 0 };
    T_ (str != NULL);
-   tmp = strdup(str);
-   *b = tmp;
+   *b = ch_strdup(str);
    *a = strsep(b, delstr);
    if (*b == NULL)
       *a = NULL;
 }
 
-/* Report the version number. */
-void version(void)
-{
-   fprintf(stderr, "%s\n", VERSION);
-}
-
-/* Append null-terminated string “str” to the memory buffer “offset” bytes after
-   from the address pointed to by “addr”. Buffer length is “size” bytes. Return
-   the number of bytes written. If there isn’t enough room for the string, do
-   nothing and return zero. */
+/* Append null-terminated string “str” to the memory buffer “offset” bytes
+   after from the address pointed to by “addr”. Buffer length is “size” bytes.
+   Return the number of bytes written. If there isn’t enough room for the
+   string, do nothing and return zero. */
 size_t string_append(char *addr, char *str, size_t size, size_t offset)
 {
    size_t written = strlen(str) + 1;
@@ -1102,6 +1023,12 @@ size_t string_append(char *addr, char *str, size_t size, size_t offset)
       memcpy(addr + offset, str, written);
 
    return written;
+}
+
+/* Report the version number. */
+void version(void)
+{
+   fprintf(stderr, "%s\n", VERSION);
 }
 
 /* Reprint messages stored in “warnings” memory buffer. */

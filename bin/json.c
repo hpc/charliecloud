@@ -1,14 +1,14 @@
 /* Copyright © Triad National Security, LLC, and others. */
 
 #define _GNU_SOURCE
+#include "config.h"
+
 #include <fnmatch.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
-
-#include "config.h"
 
 #include CJSON_H
 
@@ -64,7 +64,6 @@ const size_t READ_SZ = 16384;
 
 char **array_strings_json_to_c(cJSON *jarry, size_t *ct);
 void cdi_append(struct cdi_spec **specs, struct cdi_spec *spec);
-void cdi_free(struct cdi_spec *spec);
 void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args);
 char *cdi_hook_to_string(const char *hook_name, char **args);
 void cdi_log(struct cdi_spec *spec);
@@ -130,8 +129,8 @@ struct cdi_hook_dispatch cdi_hooks[] = {
    a freshly allocated NULL-terminated array of C strings (pointers to
    null-terminated chars buffers) and return that. ct is an out parameter
 
-   WARNING: This is a shallow copy, i.e., the actual strings are still owned
-   by the JSON array. */
+   WARNING: This is a shallow copy, i.e., the actual strings are still shared
+   with the JSON array. */
 char **array_strings_json_to_c(cJSON *jarry, size_t *ct)
 {
    size_t i;
@@ -140,7 +139,7 @@ char **array_strings_json_to_c(cJSON *jarry, size_t *ct)
 
    Tf (cJSON_IsArray(jarry), "JSON: expected array");
    *ct = cJSON_GetArraySize(jarry);
-   T_ (carry = malloc((*ct + 1) * sizeof(char *)));
+   carry = ch_malloc((*ct + 1) * sizeof(char *));
    carry[*ct] = NULL;
 
    i = 0;
@@ -176,22 +175,6 @@ struct env_var *cdi_envs_get(const char *devid)
    return NULL;
 }
 
-/* Free spec. */
-void cdi_free(struct cdi_spec *spec)
-{
-   free(spec->kind);
-   free(spec->src_path);
-   for (size_t i = 0; spec->envs[i].name != NULL; i++) {
-      free(spec->envs[i].name);
-      free(spec->envs[i].value);
-   }
-   free(spec->envs);
-   for (size_t i = 0; spec->ldconfigs[i] != NULL; i++)
-      free(spec->ldconfigs[i]);
-   free(spec->ldconfigs);
-   free(spec);
-}
-
 void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args)
 {
    for (size_t i = 0; args[i] != NULL; i++)
@@ -208,19 +191,13 @@ void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args)
 /* Return a freshly allocated string describing the given hook, for logging. */
 char *cdi_hook_to_string(const char *hook_name, char **args)
 {
-   char *ret, *args_str;
+   char *args_str;
 
-   args_str = strdup("");
-   for (size_t i = 0; args[i] != NULL; i++) {
-      char *as_old = args_str;
-      T_ (1 <= asprintf(&args_str, "%s %s", as_old, args[i]));
-      free(as_old);
-   }
+   args_str = "";
+   for (size_t i = 0; args[i] != NULL; i++)
+      args_str = cats(3, as_old, " ", args[i]);
 
-   T_ (1 <= asprintf(&ret, "%s:%s", hook_name, args_str));
-
-   free(args_str);
-   return ret;
+   return ch_asprintf("%s:%s", hook_name, args_str));
 }
 
 /* Read the CDI spec files we need.
@@ -246,7 +223,6 @@ void cdi_init(struct cdi_config *cf)
          struct cdi_spec *spec = cdi_read_maybe(cdi_specs, cf->devids[i]);
          if (spec != NULL)
             list_append((void **)&cdi_specs, spec, sizeof(*spec));
-         free(spec);
       }
 
    // Read CDI spec files in configured directories if neccessary.
@@ -261,12 +237,8 @@ void cdi_init(struct cdi_config *cf)
                struct cdi_spec *spec = cdi_read_maybe(cdi_specs, path);
                if (spec != NULL && cdi_requested(cf, spec))
                   list_append((void **)&cdi_specs, spec, sizeof(*spec));
-               free(path);
-               free(spec);
             }
-            free(des[j]);
          }
-         free(des);
       }
 
    // debugging: print parsed CDI specs
@@ -307,8 +279,7 @@ void cdi_log(struct cdi_spec *spec)
 }
 
 /* Read and parse the CDI spec file at path. Return a pointer to the parsed
-   struct, which the caller is responsible for freeing. If something goes
-   wrong, exit with error. */
+   struct. If something goes wrong, exit with error. */
 struct cdi_spec *cdi_read(const char *path)
 {
    FILE *fp;
@@ -323,11 +294,11 @@ struct cdi_spec *cdi_read(const char *path)
    Tf (fp = fopen(path, "rb"), "CDI: can't open: %s", path);
    Zf (fstat(fileno(fp), &st), "CDI: can't stat: %s", path);
    for (size_t used = 0, avail = READ_SZ; true; avail += READ_SZ) {
-      T_ (text = realloc(text, avail));
+      text = ch_realloc(text, avail);
       size_t read_ct = fread(text + used, 1, READ_SZ, fp);
       used += read_ct;
       if (read_ct < READ_SZ) {
-         if (feof(fp)) {            // EOF reached
+         if (feof(fp)) {        // EOF reached
             text[used] = '\0';  // ensure string ended
             break;
          }
@@ -340,16 +311,14 @@ struct cdi_spec *cdi_read(const char *path)
    Tf(tree != NULL, "CDI: JSON failed at byte %d: %s", parse_end - text, path);
 
    // Visit parse tree to build our struct.
-   T_ (spec = calloc(1, sizeof(struct cdi_spec)));
-   T_ (spec->src_path = strdup(path));
+   spec = ch_malloc(sizeof(struct cdi_spec));
+   spec->src_path = path;
    spec->src_dev = st.st_dev;
    spec->src_ino = st.st_ino;
    visit(cdiPD_root, tree, spec);
 
    // Clean up.
    VERBOSE("CDI: spec read OK: %s: %s", spec->kind, path);
-   free(text);
-   cJSON_Delete(tree);
    return spec;
 }
 
@@ -463,14 +432,32 @@ void cdiPC_hook(cJSON *tree, struct cdi_spec *spec)
 
    if (!hook_known)
       WARNING("CDI: ignoring unknown hook: %s", hook_str);
-
-   free(hook_str);
-   free(args);
 }
 
 void cdiPC_kind(cJSON *tree, struct cdi_spec *spec)
 {
    T_ (spec->kind = strdup(tree->valuestring));
+}
+
+/* Initialize the cJSON stuff. Quirks:
+
+   1. Despite using reallocation internally, cJSON indeed does not accept a
+      realloc(3) replacement, though it possibly used to. If malloc(3) and
+      free(3) are provided, then it just doesn’t call any realloc().
+
+      Weirdly, cJSON appears to have a notion of “internal” memory management
+      that uses malloc(3), realloc(3), and free(3) regardless of these hooks.
+
+   2. cJSON prefixes everything with CJSON_CDECL, which is juts __cdecl, which
+      is unnecessary for C code. Maybe this is for using cJSON in C++? */
+void json_init(void)
+{
+   cJSON_Hooks hooks = (cJSON_Hooks) {
+      .malloc_fn = ch_malloc_pointerful,
+      .free_fn = ch_free_noop,
+   };
+
+   cJSON_InitHooks(&hooks);
 }
 
 /* Visit each node in the parse tree in depth-first order. At each node, if

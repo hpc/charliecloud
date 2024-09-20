@@ -4,6 +4,8 @@
    are modest and the program is short-lived. */
 
 #define _GNU_SOURCE
+#include "config.h"
+
 #include <argp.h>
 #include <limits.h>
 #include <stdlib.h>
@@ -12,7 +14,6 @@
 #include <sys/mman.h>
 #include <unistd.h>
 
-#include "config.h"
 #include "core.h"
 #include "hook.h"
 #ifdef HAVE_JSON
@@ -202,8 +203,8 @@ int main(int argc, char *argv[])
    Z_ (atexit(warnings_reprint));
 
 #ifdef ENABLE_SYSLOG
-   syslog(SYSLOG_PRI, "uid=%u args=%d: %s", getuid(), argc,
-          argv_to_string(argv));
+   syslog(SYSLOG_PRI, "uid=%u args=%d: %s",
+          getuid(), argc, argv_to_string(argv));
 #endif
 
    username = getenv("USER");
@@ -260,10 +261,14 @@ int main(int argc, char *argv[])
       Z_ (unsetenv("ARGP_HELP_FMT"));
 
    logging_init(args.log_color, args.log_test);
-   ch_memory_log("start");
+   ch_memory_log("init");
+#ifdef HAVE_JSON
+   json_init();
+#endif
+
 
    if (arg_next >= argc - 1) {
-      printf("usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
+      fprintf(stderr, "usage: ch-run [OPTION...] IMAGE -- COMMAND [ARG...]\n");
       FATAL("IMAGE and/or COMMAND not specified");
    }
    args.c.img_ref = argv[arg_next++];
@@ -352,27 +357,23 @@ bool get_first_env(char **array, char **name, char **value)
    environment changes. d must be NULL. */
 void hook_envs_def_first(struct container *c, void *d)
 {
-   char *vnew, *vold;
+   char *vold;
    T_ (d == NULL);
 
    // $HOME: If --home, set to “/home/$USER”.
-   if (c->host_home) {
-      vnew = cat("/home/", username);
-      env_set("HOME", vnew, false);
-      free(vnew);
-   } else if (path_exists("/root", NULL, true)) {
+   if (c->host_home)
+      env_set("HOME", cat("/home/", username), false);
+   else if (path_exists("/root", NULL, true))
       env_set("HOME", "/root", false);
-   } else
+   else
       env_set("HOME", "/", false);
 
    // $PATH: Append /bin if not already present.
    vold = getenv("PATH");
-   if (vold == NULL) {
+   if (vold == NULL)
       WARNING("$PATH not set");
-   } else if (strstr(vold, "/bin") != vold && !strstr(vold, ":/bin")) {
-      T_ (1 <= asprintf(&vnew, "%s:/bin", vold));
-      env_set("PATH", vnew, false);
-   }
+   else if (strstr(vold, "/bin") != vold && !strstr(vold, ":/bin"))
+      env_set("PATH", cat(vold, ":/bin"), false);
 
    // $TMPDIR: Unset.
    Z_ (unsetenv("TMPDIR"));
@@ -407,7 +408,7 @@ void hooks_env_install(struct args *args)
             struct env_file *ef;
             name = "env-set-gfile";
             f = hook_envs_set_file;
-            T_ (ef = malloc(sizeof(struct env_file)));
+            ef = ch_malloc(sizeof(struct env_file));
             ef->path = arg;
             ef->delim = delim;
             ef->expand = args->c.env_expand;
@@ -502,7 +503,7 @@ char *join_tag(char *cli_tag)
    }
 
    VERBOSE("join: peer group tag from getppid(2)");
-   T_ (1 <= asprintf(&tag, "%d", getppid()));
+   tag = ch_asprintf("%d", getppid());
 
 end:
    Te(tag[0] != '\0', "join: peer group tag cannot be empty string");
@@ -659,24 +660,22 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       abort_fatal = true;  // in misc.c
       break;
    case 'b': {  // --bind
-         char *src, *dst;
-         for (i = 0; args->c.binds[i].src != NULL; i++) // count existing binds
-            ;
-         T_ (args->c.binds = realloc(args->c.binds,
-                                     (i+2) * sizeof(struct bind)));
-         args->c.binds[i+1].src = NULL;                 // terminating zero
-         args->c.binds[i].dep = BD_MAKE_DST;
-         // source
-         src = strsep(&arg, ":");
-         T_ (src != NULL);
-         Te (src[0] != 0, "--bind: no source provided");
-         args->c.binds[i].src = src;
-         // destination
-         dst = arg ? arg : src;
-         Te (dst[0] != 0, "--bind: no destination provided");
-         Te (strcmp(dst, "/"), "--bind: destination can't be /");
-         Te (dst[0] == '/', "--bind: destination must be absolute");
-         args->c.binds[i].dst = dst;
+        char *src, *dst;
+        i = list_count(args->c.binds, sizeof(args->c.binds[0]));
+        args->c.binds = ch_realloc(args->c.binds, (i+2) * sizeof(struct bind));
+        memset(&args->c.binds[i+1], 0, sizeof(args->c.binds[0]));  // terminate
+        args->c.binds[i].dep = BD_MAKE_DST;
+        // source
+        src = strsep(&arg, ":");
+        T_ (src != NULL);
+        Te (src[0] != 0, "--bind: no source provided");
+        args->c.binds[i].src = src;
+        // destination
+        dst = arg ? arg : src;
+        Te (dst[0] != 0, "--bind: no destination provided");
+        Te (strcmp(dst, "/"), "--bind: destination can't be /");
+        Te (dst[0] == '/', "--bind: destination must be absolute");
+        args->c.binds[i].dst = dst;
       }
       break;
    case 'c':  // --cd
@@ -787,13 +786,13 @@ void privs_verify_invoking()
    T_ (euid == ruid && euid == suid);        // no setuid or funny business
 }
 
-/* Return path to the storage directory, if -s is not specified. */
+/* Return default path to the storage directory. */
 char *storage_default(void)
 {
    char *storage = getenv("CH_IMAGE_STORAGE");
 
    if (storage == NULL)
-      T_ (1 <= asprintf(&storage, "/var/tmp/%s.ch", username));
+      storage = ch_asprintf("/var/tmp/%s.ch", username));
 
    return storage;
 }

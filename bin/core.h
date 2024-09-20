@@ -26,7 +26,7 @@ struct bind {
 struct container;  // forward declaration to avoid definition loop
 typedef void (hookf_t)(struct container *, void *);
 struct hook {
-   char *name;
+   const char *name;
    hookf_t *f;
    void *data;
 };

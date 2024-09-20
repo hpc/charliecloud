@@ -29,3 +29,4 @@ struct cdi_config {
 
 struct env_var *cdi_envs_get(const char *devid);
 void cdi_init(struct cdi_config *cf);
+void json_init(void);

@@ -56,6 +56,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <syslog.h>
+#include <unistd.h>
 
 #ifdef HAVE_GC
 #include <gc.h>
@@ -134,21 +135,38 @@ long time_collecting_prev = 0;
    be the fastest to format. */
 char *ch_asprintf(const char *fmt, ...)
 {
-   va_list ap1, ap2;
-   int str_len;
+   va_list ap;
    char *str;
 
-   va_start(ap1, fmt);
-   va_copy(ap2, ap1);
-
-   T_ (0 <= (str_len = vsnprintf(NULL, 0, fmt, ap1)));
-   str = ch_malloc(str_len + 1, false);
-   T_ (str_len == vsnprintf(str, str_len + 1, fmt, ap2));
-
-   va_end(ap1);
-   va_end(ap2);
+   va_start(ap);
+   str = ch_vasprintf(fmt, ap);
+   va_end(ap);
 
    return str;
+}
+
+/* Fork the process. In parent, return the PID of the child; in the child,
+   return 0. Cannot fail.
+
+   The main purpose of this wrapper is to do an aggressive garbage collection
+   prior to fork(2) so the child is a small as possible. */
+pid_t ch_fork(void)
+{
+   pid_t child;
+
+   ch_memory_log("fork");
+   garbageinate("fkgc");
+
+   child = fork();
+   Tf (child >= 0, "can't fork");
+
+   return child;
+}
+
+/* free(3)-alike that does nothing. Don’t call it. Provided for libraries that
+   let us hook memory allocation and de-allocation, e.g. cJSON. */
+void ch_free_noop(void *p)
+{
 }
 
 /* Return a new null-terminated string containing the next record from fp,
@@ -222,6 +240,22 @@ void *ch_malloc(size_t size, bool pointerful)
 #endif
 
    T_ (buf);
+   return buf;
+}
+
+/* Like ch_malloc(), but same API as malloc(3). Prefer ch_malloc(). This is
+   provided for libraries that let us hook memory allocation and
+   de-allocation, e.g. cJSON. */
+void *ch_malloc(size_t size)
+{
+   return ch_malloc(size, true);
+}
+
+/* Like ch_malloc(), but buffer contents are zeroed. */
+void ch_malloc_zeroed(size_t size, bool pointerful)
+{
+   void *buf = ch_malloc(size, pointerful);
+   memset(buf, 0, size);
    return buf;
 }
 
@@ -367,9 +401,54 @@ void *ch_realloc(void *p, size_t size, bool pointerful)
    return p_new;
 }
 
+/* Return a copy of s in a newly allocated, pointerless buffer. Cannot fail.
+
+   Note: Unlike strdup(3), ch_strdup() is only needed if you need to actually
+   modify the copy. It should not be used to simplify memory management. */
+char *ch_strdup(const char *s)
+{
+   char *dst;
+
+#ifdef HAVE_GC
+   dst = GC_STRDUP(s);
+#else
+   dst = strdup(s);
+#endif
+
+   T_ (dst);
+   return dst;
+}
+
+/* Like ch_asprintf(), but takes and consumes a va_list pointer. */
+char *ch_vasprintf(const char *fmt, va_list ap)
+{
+   va_list ap2;
+   int str_len;
+   char *str;
+
+   va_copy(ap2, ap);
+
+   T_ (0 <= (str_len = vsnprintf(NULL, 0, fmt, ap)));
+   str = ch_malloc(str_len + 1, false);
+   T_ (str_len == vsnprintf(str, str_len + 1, fmt, ap2));
+
+   va_end(ap2);
+
+   return str;
+}
+
+/* If linked with libgc, do a maximum-effort garbage collection; otherwise, do
+   nothing. Use when to tag memory logging. */
+void garbageinate(const char *when)
+{
+#ifdef HAVE_GC
+   GC_collect_and_unmap();
+   ch_memory_log(when);
+#endif
+}
+
 /* Convert a signed number of bytes to kilobytes (truncated) and return it. */
 ssize_t kB(ssize_t byte_ct)
 {
    return byte_ct / 1024;
 }
-
