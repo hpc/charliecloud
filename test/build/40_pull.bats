@@ -555,3 +555,28 @@ EOF
     [[ $status -eq 1 ]]
     [[ $output = *'registry-1.docker.io:443/charliecloud/metadata:doesnotexist'* ]]
 }
+
+@test 'remove part_ files' {
+    export CH_IMAGE_STORAGE=/var/tmp/albug
+
+    # create a part_ file 
+    touch /var/tmp/albug/dlcache/part_PROBLEM
+    
+    # list images to invoke error
+    set +e
+    out=$(ch-image list 2>&1)
+    retcode=$?
+    set -e
+
+    echo "--- return code: ${retcode}"
+    echo '--- output:'
+    echo "$out"
+ 
+    # check if output errors
+    if [[ $retcode -ne 0 ]]; then
+        echo "fail: part_ file wasn't cleaned properly."
+        # Clean up the file if the test fails
+        rm /var/tmp/albug/dlcache/part_PROBLEM
+        exit 1
+    fi
+}
