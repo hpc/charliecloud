@@ -253,12 +253,6 @@ fail or that won’t give you additional information, and not pushing every
 commit (CI tests only the most recent commit in a pushed group). Avoid making
 commits merely to trigger CI.
 
-**Purging Docker cache.** :code:`misc/docker-clean.sh` can be used to purge
-your Docker cache, either by removing all tags or deleting all containers and
-images. The former is generally preferred, as it lets you update only those
-base images that have actually changed (the ones that haven’t will be
-re-tagged).
-
 Issue labeling
 --------------
 

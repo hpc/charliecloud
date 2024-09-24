@@ -594,6 +594,8 @@ not allowed in Git branch names), and the empty base of everything
 common instruction :code:`RUN echo foo`.
 
 
+.. _ch-image_build:
+
 :code:`build`
 =============
 
@@ -2106,6 +2108,213 @@ in the remote registry, so we don’t upload it again.)
 Delete all images and cache from ch-image builder storage.
 
 
+:code:`modify`
+==============
+
+Modify an image with shell commands, possibly interactively.
+
+Synopsis
+--------
+
+::
+
+   $ ch-image [...] shell [...] SOURCE DEST [SCRIPT]
+
+Description
+-----------
+
+This subcommand modifies :code:`SOURCE` using shell commands to create
+:code:`DEST`. These commands can be provided either interactively
+(discouraged) or non-interactively. In the non-interactive case, the commands
+are repackaged internally into a Dockerfile.
+
+Options:
+
+  :code:`-c CMD`
+    Run :code:`CMD` as though specified by a :code:`RUN` instruction. Can be
+    repeated to run multiple commands sequentially.
+
+  :code:`-i`
+    Execute the shell in interactive mode (by specifying :code:`-i` to it)
+    even if standard input is not a TTY.
+
+  :code:`-S`, :code:`--shell SHELL`
+    Use :code:`SHELL` instead of the default :code:`/bin/sh`.
+
+The following options are shared with :code:`ch-image build`. For more details
+about these options, see the section on :ref:`build <ch-image_build>`.
+
+  :code:`-b`, :code:`--bind SRC[:DST]`
+   For :code:`RUN` instructions only, bind-mount :code:`SRC` at guest
+   :code:`DST`.
+
+  :code:`--build-arg KEY[=VALUE]`
+   Set build-time variable :code:`KEY` defined by :code:`ARG` instruction
+   to :code:`VALUE`.
+
+  :code:`--force[=MODE]`
+   Use unprivileged build with root emulation mode :code:`MODE`.
+
+  :code:`--force-cmd=CMD,ARG1[,ARG2...]`
+   If command :code:`CMD` is found in a :code:`RUN` instruction, add the
+   comma-separated :code:`ARGs` to it.
+
+:code:`ch-image modify` operates in one of the following three modes. If the
+mode desired is ambiguous, that is an error.
+
+Non-interactive mode, commands specified with :code:`-c`
+--------------------------------------------------------
+
+The following are equivalent::
+
+  $ ch-image modify -S /bin/ash -c 'echo hello' -c 'echo world' foo bar
+
+and::
+
+  $ ch-image build -t bar <<'EOF'
+  FROM foo
+  SHELL /bin/ash
+  RUN echo hello
+  RUN echo world
+  EOF
+
+:code:`ch-image` simply builds a Dockerfile internally that uses :code:`foo` as
+a base image, starts with an appropriate :code:`SHELL` if :code:`-S` was given,
+converts each :code:`-c` to a :code:`RUN` command, and executes this Dockerfile
+to produce image :code:`bar`. As with regular Dockerfiles, if any command fails,
+the build fails and no further commands are attempted.
+
+This mode provides detailed image provenance just like a Dockerfile.
+
+Non-interactive mode using a shell script
+-----------------------------------------
+
+The following are equivalent::
+
+  $ ch-image modify foo bar /baz/qux.sh
+
+and::
+
+  $ ch-image build -t bar -f - / <<'EOF'
+  FROM foo
+  COPY /baz/qux.sh /ch/script.sh
+  RUN /bin/sh /ch/script.sh
+
+That is, :code:`ch-image` uses :code:`COPY` to put the script inside the
+image, then runs it.
+
+If :code:`SCRIPT` is not provided, standard input is not a TTY, and :code:`-i`
+is not specified, a script is read from stdin instead. In this case, standard
+input is copied in full to a file in a temporary directory, which is used as the
+context. The file’s modification time is set to 1993-10-21T10:00:00Z and its
+name to a hash of the content, so the cache hits if the content is the same and
+misses if not. That is, the following are equivalent::
+
+  $ ch-image modify foo bar <<'EOF'
+  echo hello world
+  EOF
+
+and::
+
+  $ ctx=$(mktemp -d)
+  $ cat > $ctx/foo <<'EOF'
+  echo hello world
+  EOF
+  $ hash=$(md5sum $ctx/foo)
+  $ mv $ctx/foo $ctx/$hash
+  $ touch -d 1993-10-21T10:00:00Z $ctx/$hash
+  $ ch-image build -t bar -f - $ctx <<EOF
+  FROM foo
+  COPY $hash /ch/script.sh   # note: substituted by shell, not ch-image(1)
+  RUN /bin/sh /ch/script.sh
+
+Importantly:
+
+#. Any shebang line is ignored.
+
+#. The script receives no arguments.
+
+#. Cache semantics are the same as a normal :code:`COPY` instruction, i.e., if
+   the script’s name, permissions, size, or modification time change, then the
+   :code:`COPY` is re-executed. Be cognizant in particular of mtime when
+   creating the file automatically (this is why a script is also accepted on
+   standard input).
+
+If the shell exits successfully (i.e., exit code zero), the image changes are
+saved; if unsuccessfully, they are discarded. Thus, judicious use of
+:code:`set -e`, explicit :code:`exit`, etc. are recommended.
+
+This mode does work with the cache but provides a looser and less transparent
+provenance than a Dockerfile.
+
+
+Interactive mode
+----------------
+
+.. warning::
+
+   Interactive mode is strongly discouraged because it gives no record of how
+   an image was created and interacts poorly with the build cache. Even when
+   iterating a container, it rarely saves time over editing a Dockerfile or
+   shell script. Only use it if you really know what you are doing.
+
+If :code:`SCRIPT` is not provided and standard input *is* a TTY, or if
+:code:`-i` is specified :code:`ch-image modify` opens an interactive shell. That
+is, the following are roughly equivalent (assuming a terminal)::
+
+  $ ch-image modify foo bar
+
+and::
+
+  $ ch-convert foo /tmp/foo
+  $ ch-run -w /tmp/foo -- /bin/sh -i
+  [... interactive session ...]
+  $ ch-convert /tmp/foo bar
+
+except that the parent of image :code:`bar` is :code:`foo` rather than the
+empty root image.
+
+This mode largely defeats the cache. While images descending from :code:`DEST`
+will use the latest version (as :code:`FROM` normally behaves), no other
+operations can re-use the results with a cache hit, and :code:`ch-image modify`
+cannot have a cache hit itself. (This is implemented with a random state ID.)
+We reasoned that making an interactive session cache-aware would be too
+difficult both conceptually and to implement. The mode is much like
+:code:`ch-image import` in this regard.
+
+For example, starting with a non-empty cache::
+
+  $ ch-image build-cache --tree
+   *  (bar) IMPORT bar
+   | *  (foo) IMPORT foo
+   |/
+   *  (root) ROOT
+
+   named images:       3
+   state IDs:          3
+   large files:        0
+   commits:            3
+   internal files:     7 K
+   disk used:        227 MiB
+   $ ch-image modify foo baz
+   copying image from cache ...
+   [...]
+   > exit
+   $ ch-image build-cache --tree
+   *  (baz) MODIFY interactive
+   *  (foo) IMPORT foo
+   | *  (bar) IMPORT bar
+   |/
+   *  (root) ROOT
+
+   named images:       4
+   state IDs:          4
+   large files:        0
+   commits:            4
+   internal files:     7 K
+   disk used:        227 MiB
+
+
 :code:`undelete`
 ================
 
@@ -2135,4 +2344,4 @@ Environment variables
 ..  LocalWords:  dlcache graphviz packfile packfiles bigFileThreshold fd Tpdf
 ..  LocalWords:  pstats gprof chofile cffd cacdb ARGs NSYNC dst imgroot popt
 ..  LocalWords:  globbed ni AHSXpr drwxrwx ctx sym nom newB newC newD dstC
-..  LocalWords:  dstB dstF dstG upover drwx kexec pdb
+..  LocalWords:  dstB dstF dstG upover drwx kexec pdb mktemp

@@ -329,6 +329,11 @@ chmod 700 "$btnew"
 export BATS_TMPDIR=$btnew
 [[ $(stat -c %a "$BATS_TMPDIR") = '700' ]]
 
+# ch-run exit codes. (see also: ch_misc.h, lib/build.py)
+CH_ERR_MISC=31
+CH_ERR_CMD=49
+#CH_ERR_SQUASH=84 # Currently not used
+
 ch_runfile=$(command -v ch-run)
 
 # Charliecloud version.
@@ -454,7 +459,7 @@ fi
 # Do we have and want sudo?
 if    [[ $CH_TEST_SUDO ]] \
    && command -v sudo >/dev/null 2>&1 \
-   && sudo -v > /dev/null 2>&1; then
+   && sudo true > /dev/null 2>&1; then
     # This isn’t super reliable; it returns true if we have *any* sudo
     # privileges, not specifically to run the commands we want to run.
     ch_have_sudo=yes

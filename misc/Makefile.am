@@ -1,1 +1,1 @@
-EXTRA_DIST = docker-clean.sh grep version
+EXTRA_DIST = grep version

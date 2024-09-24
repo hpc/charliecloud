@@ -1160,7 +1160,9 @@ EOF
     [[ $status -ne 0 ]]
     [[    $output = *'error: no context because '?'-'?' given'* \
        || $output = *'COPY failed: file not found in build context or'* \
-       || $output = *'no such file or directory'* ]]
+       || $output = *'no such file or directory'*
+       || $output = *'not found'*
+       || $output = *'failed to compute cache key: failed to calculate checksum of ref'* ]]
 }
 
 

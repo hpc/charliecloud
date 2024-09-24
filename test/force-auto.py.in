@@ -62,6 +62,7 @@ class Test(abc.ABC):
    base = None
    config = None
    scope = Scope.FULL
+   skip_reason = None
    prep_run = None
    runs = { Run.UNNEEDED_FAIL: "false",
             Run.UNNEEDED_WIN: "true" }
@@ -82,6 +83,17 @@ class Test(abc.ABC):
    @property
    def build2_post_hook(self):
       return ""
+
+   @property
+   def build_from_hook(self):
+      return ""
+
+   @property
+   def skip(self):
+      if (self.skip_reason is None):
+         return ""
+      else:
+         return "skip '%s'" % self.skip_reason
 
    def as_grep_files(self, grep_files, image, invert=False):
       cmds = []
@@ -139,6 +151,7 @@ class Test(abc.ABC):
          build1 = f"""\
 run ch-image -v build -t tmpimg -f - . << 'EOF'
 FROM {self.base}
+{self.build_from_hook}
 RUN {self.prep_run}
 EOF
 echo "$output"
@@ -168,6 +181,7 @@ echo "$output"
       # emit the test
       print(f"""
 @test "ch-image --force: {self}" {{
+{self.skip}
 scope {scope}
 {arch_excludes}
 
@@ -177,6 +191,7 @@ scope {scope}
 # build 2: image we're testing
 run ch-image -v build {force} -t tmpimg2 -f - . << 'EOF'
 FROM {build2_base}
+{self.build_from_hook}
 RUN {run}
 EOF
 echo "$output"
@@ -219,6 +234,13 @@ class T_CentOS_7(RHEL7, EPEL_Mixin):
    base = "centos:7"
    prep_run = "yum install -y epel-release"
 
+   @property
+   def build_from_hook(self):
+      return f"""\
+RUN sed -i s/mirror.centos.org/vault.centos.org/g /etc/yum.repos.d/*.repo \
+    && sed -i s/^#.*baseurl=http/baseurl=http/g /etc/yum.repos.d/*.repo \
+    && sed -i s/^mirrorlist=http/#mirrorlist=http/g /etc/yum.repos.d/*.repo"""
+
 
 class RHEL8(Test):
    config = "rhel8"
@@ -234,6 +256,7 @@ class T_RHEL_UBI_8(RHEL8):
 class CentOS_8(RHEL8, EPEL_Mixin):
    prep_run = "dnf install -y epel-release"
 class T_CentOS_8_Stream(CentOS_8):
+   skip_reason = "issue #1904"
    # CentOS Stream pulls from quay.io per the CentOS wiki:
    # https://wiki.centos.org/FAQ/CentOSStream#What_artifacts_are_built.3F
    base = "quay.io/centos/centos:stream8"
@@ -254,6 +277,7 @@ class T_Rocky_8(CentOS_8):
 class Fedora(RHEL8):
    config = "fedora"
 class T_Fedora_26(Fedora):
+   skip_reason = "issue #1904"
    # We would prefer to test the lowest supported --force version, 24,
    # but the ancient version of dnf it has doesn't fail the transaction when
    # a package fails so we test with 26 instead.

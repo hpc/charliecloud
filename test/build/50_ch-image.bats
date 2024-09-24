@@ -864,17 +864,17 @@ EOF
 @test 'ch-run storage errors' {
     run ch-run -v -w alpine:3.17 -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output = *'error: --write invalid when running by name'* ]]
 
     run ch-run -v "$CH_IMAGE_STORAGE"/img/alpine+3.17 -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output = *"error: can't run directory images from storage (hint: run by name)"* ]]
 
     run ch-run -v -s /doesnotexist alpine:3.17 -- /bin/true
     echo "$output"
-    [[ $status -eq 1 ]]
+    [[ $status -eq $CH_ERR_MISC ]]
     [[ $output = *'warning: storage directory not found: /doesnotexist'* ]]
     [[ $output = *"error: can't stat: alpine:3.17: No such file or directory"* ]]
 }
@@ -978,4 +978,47 @@ EOF
     echo "$output"
     [[ $status -eq 0 ]]
     [[ $output = *'PWD=/bar/baz'* ]]
+}
+
+@test "ch-image modify" {
+
+  # -c success, echo
+  run ch-image modify -c "echo foo" -c "echo bar" -- alpine:3.17 tmpimg
+  echo "$output"
+  [[ $status -eq 0 ]]
+  [[ $output = *'foo'* ]]
+  [[ $output = *'bar'* ]]
+
+  # -c success, create file
+  ch-image modify -c "touch /home/foo" -- alpine:3.17 tmpimg
+  run ch-run tmpimg -- ls /home
+  echo "$output"
+  [[ $status -eq 0 ]]
+  [[ $output = *'foo'* ]]
+
+  # non-interactive, script
+  echo "touch /home/bar" >> "${BATS_TMPDIR}/modify-script.sh"
+  ch-image modify alpine:3.17 tmpimg "${BATS_TMPDIR}/modify-script.sh"
+  run ch-run tmpimg -- ls /home
+  echo "$output"
+  [[ $status -eq 0 ]]
+  [[ $output = *'bar'* ]]
+
+  # non-interactive, here doc
+  ch-image modify alpine:3.17 tmpimg <<'EOF'
+touch /home/foobar
+EOF
+  [[ -f "$CH_IMAGE_STORAGE/img/tmpimg/home/foobar" ]]
+
+  # -c fail
+  run ch-image modify -c 'echo foo' -- alpine:3.17 alpine:3.17
+  echo "$output"
+  [[ $status -eq 1 ]]
+  [[ $output = *'output must be different from source image'* ]]
+
+  # non-existent shell
+  run ch-image modify -i -S "doesnotexist" -- alpine:3.17 tmpimg
+  echo "$output"
+  [[ $status -eq 1 ]]
+  [[ $output = *"can't run shell:"* ]]
 }
