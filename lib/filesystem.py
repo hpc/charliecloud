@@ -1144,6 +1144,7 @@ class Storage:
       part_ct = 0
       for path in self.download_cache.glob("part_*"):
          path = Path(path)
+         path = self.download_cache // path.name
          ch.VERBOSE("deleting: %s" % path)
          path.unlink()
          part_ct += 1
