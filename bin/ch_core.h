@@ -25,6 +25,7 @@ enum img_type {
    IMG_SQUASH,     // SquashFS archive file (not yet mounted)
    IMG_NAME,       // name of image in storage
    IMG_NONE,       // image type is not set yet
+   IMG_OCI_BUNDLE,     // contains rootfs img_directory and config.json file
 };
 
 struct container {
