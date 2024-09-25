@@ -280,7 +280,7 @@ void containerize(struct container *c)
       // reduce the number of code paths.
       setup_namespaces(c, geteuid(), 0, getegid(), 0);
 #ifdef HAVE_LIBSQUASHFUSE
-      if (c->type == IMG_SQUASH)
+      if ((c->type == IMG_SQUASH) || (c->type == IMG_SIF))
          sq_fork(c);
 #endif
       setup_namespaces(c, 0, c->container_uid, 0, c->container_gid);
@@ -391,6 +391,7 @@ enum img_type image_type(const char *ref, const char *storage_dir)
    struct stat st;
    FILE *fp;
    char magic[4];  // four bytes, not a string
+   char header[42]; // thirty-two bytes for launch len and ten for magic len
 
    // If there’s a directory in storage where we would expect there to be if
    // ref were an image name, assume it really is an image name.
@@ -409,8 +410,7 @@ enum img_type image_type(const char *ref, const char *storage_dir)
    fp = fopen(ref, "rb");
    Tf (fp != NULL, "can't open: %s", ref);
    Tf (fread(magic, sizeof(char), 4, fp) == 4, "can't read: %s", ref);
-   Zf (fclose(fp), "can't close: %s", ref);
-   VERBOSE("image file magic expected: 6873 7173; actual: %x%x %x%x",
+   VERBOSE("squash image file magic expected: 6873 7173; actual: %x%x %x%x",
            magic[0], magic[1], magic[2], magic[3]);
 
    // If magic number matches, it’s a squash. Note: Magic number is 6873 7173,
@@ -420,8 +420,32 @@ enum img_type image_type(const char *ref, const char *storage_dir)
    if (memcmp(magic, "hsqs", 4) == 0)
       return IMG_SQUASH;
 
+   // Check if it is a SIF file
+   // See: https://github.com/sylabs/sif/tree/main
+   // Parse header: skip launch constant and record magic value
+   fseek(fp, 0, SEEK_SET); // start from beginning of file
+   Tf (fread(header, sizeof(char), 32, fp) == 32, "can't read: %s", ref);
+   Tf (fread(header, 1, 10, fp) == 10, "can't read: %s", ref);
+   char *magic_val = to_string(header);
+   VERBOSE("sif file magic expected: SIF_MAGIC: actual: %s", magic_val);
+   if (strcmp(magic_val, "SIF_MAGIC") == 0)
+      return IMG_SIF;
+
+   Zf (fclose(fp), "can't close: %s", ref);
+
    // Well now we’re stumped.
    FATAL(0, "unknown image type: %s", ref);
+}
+
+char *to_string(char *c)
+{
+   char *str = malloc(strlen(c) + 1);
+   if (str == NULL) {
+      perror("Failed to allocate memory");
+      exit(EXIT_FAILURE);
+   }
+   strcpy(str, c);
+   return str;
 }
 
 char *img_name2path(const char *name, const char *storage_dir)

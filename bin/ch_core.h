@@ -22,6 +22,7 @@ struct bind {
 
 enum img_type {
    IMG_DIRECTORY,  // normal directory, perhaps an external mount of some kind
+   IMG_SIF,        // SIF file (squash portion not yet mounted)
    IMG_SQUASH,     // SquashFS archive file (not yet mounted)
    IMG_NAME,       // name of image in storage
    IMG_NONE,       // image type is not set yet
@@ -53,6 +54,7 @@ void containerize(struct container *c);
 enum img_type image_type(const char *ref, const char *images_dir);
 char *img_name2path(const char *name, const char *storage_dir);
 void run_user_command(char *argv[], const char *initial_dir);
+char *to_string(char *c);
 #ifdef HAVE_SECCOMP
 void seccomp_install(void);
 #endif
