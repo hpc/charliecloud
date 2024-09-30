@@ -17,13 +17,13 @@
    ------------------------------
 
    Because we use a lot of zero-terminated data structures, it would be nice
-   for the allocation functions to return zeroed buffers. We also want to not
-   require libgc, i.e., we want to still be able to use malloc(3) and
-   realloc(3) under the hood. It’s easy to provide a zeroing
-   malloc(3)-workalike, but as far as I can tell, it’s impossible to do so for
-   realloc(3)-alike unless we either (1) maintain our own allocation size
-   tracking or (2) use highly non-portable code. Neither of these seemed worth
-   the effort and complexity.
+   for the allocation functions to just always return zeroed buffers. We also
+   want to not require libgc, i.e., we want to still be able to use malloc(3)
+   and realloc(3) under the hood. It’s easy to provide a zeroing
+   malloc(3)-workalike, and we do, but as far as I can tell, it’s impossible
+   to do so for realloc(3)-alike unless we either (1) maintain our own
+   allocation size tracking or (2) use highly non-portable code. Neither of
+   these seemed worth the effort and complexity.
 
    This is because, as it turns out, the length of an allocated buffer is a
    more complicated notion than it seems. A buffer has *two* different
@@ -138,7 +138,7 @@ char *ch_asprintf(const char *fmt, ...)
    va_list ap;
    char *str;
 
-   va_start(ap);
+   va_start(ap, fmt);
    str = ch_vasprintf(fmt, ap);
    va_end(ap);
 
@@ -246,13 +246,13 @@ void *ch_malloc(size_t size, bool pointerful)
 /* Like ch_malloc(), but same API as malloc(3). Prefer ch_malloc(). This is
    provided for libraries that let us hook memory allocation and
    de-allocation, e.g. cJSON. */
-void *ch_malloc(size_t size)
+void *ch_malloc_pointerful(size_t size)
 {
    return ch_malloc(size, true);
 }
 
 /* Like ch_malloc(), but buffer contents are zeroed. */
-void ch_malloc_zeroed(size_t size, bool pointerful)
+void *ch_malloc_zeroed(size_t size, bool pointerful)
 {
    void *buf = ch_malloc(size, pointerful);
    memset(buf, 0, size);
@@ -284,9 +284,10 @@ void ch_memory_log(const char *when)
    char *line = NULL;
    char *s;
    ssize_t stack_len = 0, heap_len = 0, anon_len = 0;
+   ssize_t total_len, total_prev;
 #ifdef HAVE_GC
    struct GC_prof_stats_s ps;
-   ssize_t alloc, alloc_prev;
+   ssize_t used, used_prev;
    long time_collecting;
 #endif
 
@@ -322,51 +323,56 @@ void ch_memory_log(const char *when)
    Z_ (fclose(fp));
 
    // log the basics
+   total_len = stack_len + heap_len + anon_len;
+   total_prev = stack_prev + heap_prev + anon_prev;
    s = ch_asprintf("mem: %s: "
-         "stac %zdkB %+zd, heap %zdkB %+zd, anon %zdkB %+zd",
+         "%zdkB %+zd (stac %zdkB %+zd, heap %zdkB %+zd, anon %zdkB %+zd)",
          when,
+         kB(total_len), kB(total_len - total_prev),
          kB(stack_len), kB(stack_len - stack_prev),
          kB(heap_len),  kB(heap_len - heap_prev),
          kB(anon_len),  kB(anon_len - anon_prev));
+   stack_prev = stack_len;
+   heap_prev = heap_len;
+   anon_prev = anon_len;
    DEBUG(s);
 #ifdef ENABLE_SYSLOG
    syslog(SYSLOG_PRI, "%s", s);
 #endif
-   stack_prev = stack_len;
-   heap_prev = heap_len;
-   anon_prev = anon_len;
 
    // log GC stuff
 #ifdef HAVE_GC
    GC_get_prof_stats(&ps, sizeof(ps));
    time_collecting = GC_get_full_gc_total_time();
-   alloc = ps.heapsize_full - ps.free_bytes_full;
-   alloc_prev = heapsize_prev - free_prev;
+   // space
+   used = ps.heapsize_full - ps.free_bytes_full;
+   used_prev = heapsize_prev - free_prev;
+   s = ch_asprintf("gc:  %s: "
+         "%zdkB %+zd (used %zdkB %+zd, free %zdkB %+zd, unmp %zdkB %+zd)",
+         when,
+         kB(ps.heapsize_full), kB(ps.heapsize_full - heapsize_prev),
+         kB(used), kB(used - used_prev),
+         kB(ps.free_bytes_full), kB(ps.free_bytes_full - free_prev),
+         kB(ps.unmapped_bytes), kB(ps.unmapped_bytes - unmapped_prev));
+   heapsize_prev = ps.heapsize_full;
+   free_prev = ps.free_bytes_full;
+   unmapped_prev = ps.unmapped_bytes;
+   DEBUG(s);
+#ifdef ENABLE_SYSLOG
+   syslog(SYSLOG_PRI, "%s", s);
+#endif
+   // time
    s = ch_asprintf("gc:  "
          "%s: %ld collections (%+ld) in %zdms (%+zd)",
          when,
          ps.gc_no, ps.gc_no - gc_no_prev,
          time_collecting, time_collecting - time_collecting_prev);
-   DEBUG(s);
-#ifdef ENABLE_SYSLOG
-   syslog(SYSLOG_PRI, "%s", s);
-#endif
    gc_no_prev = ps.gc_no;
    time_collecting_prev = time_collecting;
-   s = ch_asprintf("gc:  %s: "
-         "totl %zdkB %+zd, allc %zdkB %+zd, free %zdkB %+zd, unmp %zdkB %+zd",
-         when,
-         kB(ps.heapsize_full), kB(ps.heapsize_full - heapsize_prev),
-         kB(alloc), kB(alloc - alloc_prev),
-         kB(ps.free_bytes_full), kB(ps.free_bytes_full - free_prev),
-         kB(ps.unmapped_bytes), kB(ps.unmapped_bytes - unmapped_prev));
    DEBUG(s);
 #ifdef ENABLE_SYSLOG
    syslog(SYSLOG_PRI, "%s", s);
 #endif
-   heapsize_prev = ps.heapsize_full;
-   free_prev = ps.free_bytes_full;
-   unmapped_prev = ps.unmapped_bytes;
 #endif
 }
 
@@ -424,7 +430,7 @@ char *ch_vasprintf(const char *fmt, va_list ap)
 {
    va_list ap2;
    int str_len;
-   char *str;
+   char *str; // = ch_malloc(1024, false);
 
    va_copy(ap2, ap);
 
@@ -442,7 +448,7 @@ char *ch_vasprintf(const char *fmt, va_list ap)
 void garbageinate(const char *when)
 {
 #ifdef HAVE_GC
-   GC_collect_and_unmap();
+   GC_gcollect_and_unmap();
    ch_memory_log(when);
 #endif
 }

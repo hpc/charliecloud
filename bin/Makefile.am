@@ -6,7 +6,7 @@
 
 bin_PROGRAMS = ch-checkns ch-run
 
-ch_checkns_SOURCES = ch-checkns.c misc.h misc.c
+ch_checkns_SOURCES = ch-checkns.c mem.h mem.c misc.h misc.c
 
 ch_run_SOURCES = ch-run.c core.h core.c hook.h hook.c mem.h mem.c misc.h misc.c
 if HAVE_JSON
@@ -18,10 +18,6 @@ endif
 if HAVE_SECCOMP
 ch_run_SOURCES += seccomp.h seccomp.c
 endif
-
-# additional build flags for ch-run
-ch_run_CFLAGS = $(PTHREAD_CFLAGS)
-ch_run_LDADD = $(CH_RUN_LIBS)
 
 
 ## Shell scripts - distributed as-is

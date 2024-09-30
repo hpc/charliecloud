@@ -26,7 +26,7 @@ void hook_envs_set(struct container *c, void *d)
 void hook_envs_set_file(struct container *c, void *d)
 {
    struct env_file *ef = d;
-   envs_set(env_file_read(ef->path, ef->delim);, c->env_expand);
+   envs_set(env_file_read(ef->path, ef->delim), c->env_expand);
 }
 
 /* Unset the environment variables matching glob d. */

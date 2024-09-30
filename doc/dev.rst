@@ -944,11 +944,14 @@ C code
 Memory management
 ~~~~~~~~~~~~~~~~~
 
-*TL;DR:* Charliecloud does not call :code:`free(3)`.
+*TL;DR:* Charliecloud does not free any memory. You can enable garbage
+collection with :code:`libgc` if you want, and this is the default, but it may
+not be necessary, i.e. simply leaking all allocated memory could still be
+smaller than the overhead of trying to clean up.
 
 *How-To:* (1) Use Charliecloud wrappers for all library functions that
 allocate memory, e.g. :code:`ch_malloc()` instead of :code:`malloc(3)`.
-Importantly, this includes things like :code:`strdup(3)` makeand
+Importantly, this includes things like :code:`strdup(3)` and
 :code:`asprintf(3)`. (2) Don’t call :code:`free(3)` or any other library
 functions that free memory.
 
@@ -978,9 +981,10 @@ can either:
 
 1. YOLO, i.e. simply never free anything, i.e. leak like a sieve. But
    Charliecloud is still a small program and it’s unlikely to be an actual
-   problem. Quick-and-dirty tests show a main :code:`ch-run` process using
-   **FIXME** MiB just before it executes the user program, and the SquashFUSE
-   process **FIXME** MiB upon exit.
+   problem. Our quick-and-dirty tests with a small “hello world” Alpine image
+   running :code:`true(1)` show a main :code:`ch-run` process using 350 KiB
+   just before it executes the user program, and the SquashFUSE process the
+   same just before forking and 1,600 KiB upon exit.
 
 2. Link with :code:`libgc`, i.e. the `Boehm-Demers-Weiser
    <https://hboehm.info/gc/>`_ conservative garbage collector. The idea is
@@ -988,8 +992,12 @@ can either:
    for integers that *look* like pointers and assumes they *are* pointers.
    Apparently it `works quite well <https://hboehm.info/gc/issues.html>`_ and
    can even be faster than explicit memory management in some cases. The
-   quick-and-dirty tests show **FIXME** MiB by the main process, and the
-   SquashFUSE process **FIXME** just after forking and **FIXME** upon exit.
+   quick-and-dirty tests show 900 KiB by the main process, and the SquashFUSE
+   process the same just before forking (after an explicit garbage collection)
+   and 2,200 KiB upon exit.
+
+:code:`ch-run` logs memory usage to syslog, and also stderr with :code:`-vv`,
+so you can analyze your specific situation.
 
 :code:`const`
 ~~~~~~~~~~~~~

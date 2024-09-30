@@ -14,6 +14,7 @@
 
 #include "core.h"
 #include "json.h"
+#include "mem.h"
 #include "misc.h"
 
 
@@ -82,10 +83,10 @@ void cdiPC_kind(cJSON *tree, struct cdi_spec *spec);
 
 /** Globals **/
 
-// List of CDI specs we’ve read. Yes it’s a global, but that lets us keep
-// struct cdi_spec private to this file, which seemed like the right
-// trade-off. It also seemed like “all the specs we know about” wasn’t
-// something we needed multiple of.
+/* List of CDI specs we’ve read. Yes it’s a global, but that lets us keep
+   struct cdi_spec private to this file, which seemed like the right
+   trade-off. It also seemed like “all the specs we know about” wasn’t
+   something we needed multiple of. */
 struct cdi_spec *cdi_specs = NULL;
 
 /* Callback tables. In the struct, the callback’s second argument is “void *”
@@ -139,7 +140,7 @@ char **array_strings_json_to_c(cJSON *jarry, size_t *ct)
 
    Tf (cJSON_IsArray(jarry), "JSON: expected array");
    *ct = cJSON_GetArraySize(jarry);
-   carry = ch_malloc((*ct + 1) * sizeof(char *));
+   carry = ch_malloc((*ct + 1) * sizeof(char *), true);
    carry[*ct] = NULL;
 
    i = 0;
@@ -195,9 +196,9 @@ char *cdi_hook_to_string(const char *hook_name, char **args)
 
    args_str = "";
    for (size_t i = 0; args[i] != NULL; i++)
-      args_str = cats(3, as_old, " ", args[i]);
+      args_str = cats(3, args_str, " ", args[i]);
 
-   return ch_asprintf("%s:%s", hook_name, args_str));
+   return ch_asprintf("%s:%s", hook_name, args_str);
 }
 
 /* Read the CDI spec files we need.
@@ -228,16 +229,13 @@ void cdi_init(struct cdi_config *cf)
    // Read CDI spec files in configured directories if neccessary.
    if (cf->devs_all_p || req_by_kind)
       for (int i = 0; cf->spec_dirs[i] != NULL; i++) {
-         int entry_ct;
-         struct dirent **des;
-         entry_ct = dir_ls(cf->spec_dirs[i], &des);
-         for (int j = 0; j < entry_ct; j++) {
-            if (!fnmatch("*.json", des[i]->d_name, 0)) {
-               char *path = path_join(cf->spec_dirs[i], des[i]->d_name);
-               struct cdi_spec *spec = cdi_read_maybe(cdi_specs, path);
-               if (spec != NULL && cdi_requested(cf, spec))
-                  list_append((void **)&cdi_specs, spec, sizeof(*spec));
-            }
+         char **entries = dir_glob(cf->spec_dirs[i], "*.json");
+         for (int j = 0; entries[j] != NULL; j++) {
+            struct cdi_spec *spec;
+            spec = cdi_read_maybe(cdi_specs,
+                                  path_join(cf->spec_dirs[i], entries[j]));
+            if (spec != NULL && cdi_requested(cf, spec))
+               list_append((void **)&cdi_specs, spec, sizeof(*spec));
          }
       }
 
@@ -294,12 +292,14 @@ struct cdi_spec *cdi_read(const char *path)
    Tf (fp = fopen(path, "rb"), "CDI: can't open: %s", path);
    Zf (fstat(fileno(fp), &st), "CDI: can't stat: %s", path);
    for (size_t used = 0, avail = READ_SZ; true; avail += READ_SZ) {
-      text = ch_realloc(text, avail);
-      size_t read_ct = fread(text + used, 1, READ_SZ, fp);
+      size_t read_ct;
+      text = ch_realloc(text, avail, false);
+      read_ct = fread(text + used, 1, READ_SZ, fp);
       used += read_ct;
       if (read_ct < READ_SZ) {
          if (feof(fp)) {        // EOF reached
-            text[used] = '\0';  // ensure string ended
+            T_ (used < avail);
+            text[used] = '\0';  // terminate string
             break;
          }
          Tf(0, "CDI: can't read: %s", path);
@@ -311,8 +311,8 @@ struct cdi_spec *cdi_read(const char *path)
    Tf(tree != NULL, "CDI: JSON failed at byte %d: %s", parse_end - text, path);
 
    // Visit parse tree to build our struct.
-   spec = ch_malloc(sizeof(struct cdi_spec));
-   spec->src_path = path;
+   spec = ch_malloc(sizeof(struct cdi_spec), true);
+   spec->src_path = (char *)path;  // shouldn’t ever be written
    spec->src_dev = st.st_dev;
    spec->src_ino = st.st_ino;
    visit(cdiPD_root, tree, spec);

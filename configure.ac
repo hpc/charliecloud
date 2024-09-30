@@ -325,48 +325,30 @@ AS_IF([test -n "$inc_json"],                 # -L$lib_json added below
 AS_IF([test -n "$lib_libsquashfuse"],
       [ch_cflags="$ch_cflags -I$inc_libsquashfuse -L$lib_libsquashfuse"])
 
-AX_CHECK_COMPILE_FLAG([$ch_cflags], [
-  CFLAGS="$CFLAGS $ch_cflags"
-], [
-  AC_MSG_ERROR([no suitable C99 compiler found])
-])
+AX_CHECK_COMPILE_FLAG([$ch_cflags], [],
+                      [AC_MSG_ERROR([no suitable C99 compiler found])])
 AS_IF([test "$CC" = icc],
       [AC_MSG_ERROR([icc not supported (see PR @%:@481)])])
 
 
 ### ch-run required ##########################################################
 
-# Only ch-run needs any kind of interesting library stuff; this variable holds
-# the library arguments we need. This also requires us to use AC_CHECK_LIB
-# instead of the (recommended by docs) AC_SEARCH_LIBS, because that adds
-# things to LIBS, which we don’t want because it’s applied to all executables.
-CH_RUN_LIBS=
+# Note: We link both ch-run and ch-checkns with all the shared libraries,
+# despite the latter using much less, depending on the compiler to omit
+# libraries that aren’t actually used (gcc does this) or just not caring that
+# extra libraries are linked.
 
 # argp_parse(3), which is included with glibc but not other libc’s, e.g. musl.
-AC_MSG_CHECKING([for argp_parse in libc])
-AC_LINK_IFELSE([AC_LANG_SOURCE([[
-    #include <argp.h>
-
-    int main(void)
-    {
-        argp_parse(0, 1, NULL, 0, 0, 0);
-        return 0;
-    }
-  ]])],
-  [AC_MSG_RESULT([yes])],  # built-in, no further action
-  [AC_MSG_RESULT([no])     # try external libargp
-   AC_CHECK_LIB(
-     [argp], [argp_parse],
-     [CH_RUN_LIBS="-largp $CH_RUN_LIBS"],
-     [AC_MSG_ERROR([argp_parse(3) not found; please report this bug])])])
+# In the latter case, we need an external libargp.
+AC_SEARCH_LIBS(argp_parse, argp, [],
+  [AC_MSG_ERROR([argp_parse(3) not found; please report this bug])])
 
 # pthreads; needed for “ch-run --join”.
 AX_PTHREAD
 
-# POSIX IPC lives in librt.
-AC_CHECK_LIB([rt], [shm_open], [CH_RUN_LIBS="-lrt $CH_RUN_LIBS"], [
-  AC_MSG_ERROR([shm_open(3) not found])
-])
+# POSIX IPC sometimes lives in librt.
+AC_SEARCH_LIBS(shm_open, rt, [],
+  [AC_MSG_ERROR([shm_open(3) not found; please report this bug])])
 
 # User namespaces
 AC_MSG_CHECKING([if in chroot])  # https://unix.stackexchange.com/a/14346
@@ -488,13 +470,11 @@ AC_CHECK_DECL(FNM_EXTMATCH,
 # libgc. Note that we don’t try to ensure the header we find matches the
 # library we find. Hopefully that’s not a problem.
 AS_IF([test $want_gc = yes], [
-  AC_CHECK_LIB(gc, GC_malloc,
-               [have_libgc=yes
-                AS_IF([test -n "$lib_gc"],
-                      [CH_RUN_LIBS="-Wl,-rpath=$lib_gc $CH_RUN_LIBS"])
-                CH_RUN_LIBS="-lgc $CH_RUN_LIBS"],
-               [have_libgc=no],
-               [$CH_RUN_LIBS])
+  AC_SEARCH_LIBS(GC_malloc, gc,
+                 [have_libgc=yes
+                  AS_IF([test -n "$lib_gc"],
+                        [ch_ldflags="-Wl,-rpath=$lib_gc $ch_ldflags"])],
+                 [have_libgc=no])
   AC_CHECK_HEADER([gc.h],
                   [have_gc_h=yes],
                   [have_gc_h=no])
@@ -509,13 +489,11 @@ AS_IF([test $need_gc = yes && test $have_gc = no],
 
 # cJSON. Also do not check this header matches the library we find.
 AS_IF([test $want_json = yes], [
-  AC_CHECK_LIB(cjson, cJSON_ParseWithLength,
-               [have_libcjson=yes
-                AS_IF([test -n "$lib_json"],
-                      [CH_RUN_LIBS="-Wl,-rpath=$lib_json $CH_RUN_LIBS"])
-                CH_RUN_LIBS="-lcjson $CH_RUN_LIBS"],
-               [have_libcjson=no],
-               [$CH_RUN_LIBS])
+  AC_SEARCH_LIBS(cJSON_ParseWithLength, cjson,
+                 [have_libcjson=yes
+                  AS_IF([test -n "$lib_json"],
+                        [ch_ldflags="-Wl,-rpath=$lib_json $ch_ldflags"])],
+                 [have_libcjson=no])
   # The include file installs by default to “$PREFIX/include/cjson/cJSON.h”,
   # but --with-json-include shouldn’t require a “cjson” subdirectory and it
   # seemed impossible to document that concisely anyway. Thereforre, try both
@@ -607,18 +585,30 @@ AS_IF([test $want_libsquashfuse = yes], [
         [AC_MSG_ERROR([need pkg-config to find libfuse3; try --with-libsquashfuse=no or see issue @%:@1844])])
   AS_IF([pkg-config --exists fuse3], [
     have_libfuse3=yes
-    CFLAGS="$CFLAGS $(pkg-config --cflags fuse3)"
+    ch_cflags="$ch_cflags $(pkg-config --cflags fuse3)"
+    # add -lfuse3 to LIBS (we already know it is available)
+    AC_SEARCH_LIBS(fuse_session_new, fuse3, [],
+      [AC_MSG_ERROR([libfuse3 found but not found; please report this bug])])
     # libsquashfuse?
-    AC_CHECK_LIB([squashfuse_ll], [sqfs_ll_mount],
-      [have_libsquashfuse_ll=yes],
-      [have_libsquashfuse_ll=no])
-    # ll.h?
+    AC_SEARCH_LIBS(sqfs_ll_mount, squashfuse_ll,
+                   [have_libsquashfuse_ll=yes],
+                   [have_libsquashfuse_ll=no])
+    # ll.h? This check is hairy because AC_CHECK_HEADERS tries to actually
+    # compile a program that includes the header, but that won’t work for ll.h
+    # without the -I for fuse3 we got from pkg-config. We’re also advised not
+    # to change $CFLAGS within configure.ac [1]. I couldn’t figure out a way
+    # to get the -I into AC_CHECK_HEADER without changing $CFLAGS, so I just
+    # put it back to follow the advice as best I could.
+    # [1]: https://www.gnu.org/software/autoconf/manual/autoconf-2.65/html_node/Preset-Output-Variables.html
+    cflags_old=$CFLAGS
+    CFLAGS="$ch_cflags $CFLAGS"
     AC_CHECK_HEADER([squashfuse/ll.h],
       [have_ll_h=yes],
       [have_ll_h=no],
       [#define SQFS_CONFIG_H
        #define FUSE_USE_VERSION 32
       ])  # see comment in fuse.c regarding these defines
+    CFLAGS=$cflags_old
   ],
   [have_libfuse3=no])
 ])
@@ -630,9 +620,7 @@ AS_IF([   test $want_libsquashfuse = yes \
        && test $have_ll_h = yes],
       [have_libsquashfuse=yes
        AS_IF([test -n "$lib_libsquashfuse"],
-             [rpath_libsquashfuse=-Wl,-rpath=$lib_libsquashfuse],
-             [rpath_libsquashfuse=])
-       CH_RUN_LIBS="-lsquashfuse_ll -lfuse3 $rpath_libsquashfuse $CH_RUN_LIBS"],
+             [ch_ldflags="-Wl,-rpath=$lib_libsquashfuse $ch_ldflags"])],
       [have_libsquashfuse=no])
 AS_IF([   test $need_libsquashfuse = yes \
        && test $have_libsquashfuse = no],
@@ -888,9 +876,10 @@ AS_IF([test $enable_syslog = yes],
       [AC_DEFINE([ENABLE_SYSLOG], [1], [log to syslog])])
 AM_CONDITIONAL([ENABLE_TEST], [test $enable_test = yes])
 
-AC_SUBST([CH_RUN_LIBS])
-AC_SUBST([PYTHON_SHEBANG])
-AC_SUBST([SPHINX])
+AC_SUBST(AM_CFLAGS, [$ch_cflags])
+AC_SUBST(AM_LDFLAGS, [$ch_ldflags])
+AC_SUBST(PYTHON_SHEBANG)
+AC_SUBST(SPHINX)
 
 AS_IF([test $have_fnm_extmatch = yes],
       [AC_DEFINE([HAVE_FNM_EXTMATCH], [1], [extended globs supported])])
@@ -1073,8 +1062,9 @@ Building Charliecloud
 
   required:
     C99 compiler ... ${CC}
-    \$CFLAGS ... ${CFLAGS}
-    ch-run(1) library args ... ${CH_RUN_LIBS}
+    \$CFLAGS ... ${ch_cflags}
+    \$LDFLAGS ... ${ch_ldflags}
+    library args ... ${LIBS}
 
   extended glob patterns in --unset-env: ${have_fnm_extmatch}
 

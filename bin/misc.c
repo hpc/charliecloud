@@ -18,6 +18,7 @@
 #include <sys/statvfs.h>
 #include <unistd.h>
 
+#include "mem.h"
 #include "misc.h"
 
 
@@ -113,7 +114,7 @@ char *argv_to_string(char **argv)
    char *s = NULL;
 
    for (size_t i = 0; argv[i] != NULL; i++) {
-      char *argv_, *x;
+      char *argv_;
       bool quote_p = false;
 
       // Max length is escape every char plus two quotes and terminating zero.
@@ -162,7 +163,7 @@ char *argv_to_string(char **argv)
       }
 
       s = cats(5, s, i == 0 ? "" : " ",
-               quote_p ? "\"" : "", argv_, quote_p ? "\"");
+               quote_p ? "\"" : "", argv_, quote_p ? "\"" : "");
    }
 
    return s;
@@ -240,7 +241,7 @@ char *cats(size_t argc, ...)
    ret_len = 1;  // for terminator
    for (int i = 0; i < argc; i++)
    {
-      char *arg = va_arg(ap);
+      char *arg = va_arg(ap, char *);
       if (arg == NULL) {
          argv[i] = "";
          argv_lens[i] = 0;
@@ -259,7 +260,7 @@ char *cats(size_t argc, ...)
       memcpy(next, argv[i], argv_lens[i]);
       next += argv_lens[i];
    }
-   ret[ret_len] = '\0';
+   ret[ret_len-1] = '\0';
 
    return ret;
 }
@@ -295,7 +296,7 @@ char **dir_glob(const char *path, const char *glob)
       }
       if (i >= alloc_ct - 1) {
          alloc_ct *= 2;
-         entries = ch_realloc(allot_ct * sizeof(char *), true);
+         entries = ch_realloc(entries, alloc_ct * sizeof(char *), true);
       }
       entries[i] = entry->d_name;
       i++;
@@ -309,7 +310,7 @@ char **dir_glob(const char *path, const char *glob)
 /* Return the number of matches for glob in path. */
 int dir_glob_count(const char *path, const char *glob)
 {
-   return list_count((void **)dir_glob(path, glob), sizeof(char *));
+   return list_count(dir_glob(path, glob), sizeof(char *));
 }
 
 /* Read the file listing environment variables at path, with records separated
@@ -336,7 +337,7 @@ struct env_var *env_file_read(const char *path, int delim)
       struct env_var var;
       char *line;
       errno = 0;
-      line = ch_getdelim(fp, delim, fp);
+      line = ch_getdelim(fp, delim);
       if (line == NULL)  // EOF
          break;
       if (line[strlen(line) - 1] == (char)delim)  // rm delimiter if present
@@ -444,7 +445,7 @@ struct env_var env_var_parse(const char *line, const char *path, size_t lineno)
    if (path == NULL)
       where = ch_strdup(line);
    else
-      where = ch_asprintf("%s:%zu", path, lineno));
+      where = ch_asprintf("%s:%zu", path, lineno);
 
    // Split line into variable name and value.
    split(&name, &value, line, '=');
@@ -491,7 +492,7 @@ void list_append(void **ar, void *new, size_t size)
    T_ (new != NULL);
 
    ct = list_count(*ar, size);
-   *ar = ch_realloc(*ar, (ct+2)*size, true));   // existing + new + terminator
+   *ar = ch_realloc(*ar, (ct+2)*size, true);   // existing + new + terminator
    memcpy(*ar + ct*size, new, size);      // append new (no overlap)
    memset(*ar + (ct+1)*size, 0, size);    // set new terminator
 }
@@ -533,7 +534,7 @@ void *list_new(size_t size, size_t ct)
 {
    void *list;
    T_ (size > 0);
-   T_ (list = ch_malloc_zeroed(ct+1, size, true));
+   T_ (list = ch_malloc_zeroed((ct+1) * size, true));
    return list;
 }
 
@@ -660,12 +661,12 @@ void mkdir_overmount(const char *path, const char *scratch)
    char *parent, *path2, *over, *path_dst;
    char *orig_dir = ".orig";  // resisted calling this .weirdal
    int entry_ct;
-   struct dirent **entries;
+   char **entries;
 
    VERBOSE("making writeable via symlink ranch: %s", path);
    path2 = ch_strdup(path);
    parent = dirname(path2);
-   over = ch_asprintf("%s/%d", scratch, dir_ls_count(scratch) + 1);
+   over = ch_asprintf("%s/%d", scratch, dir_glob_count(scratch, "*") + 1);
    path_dst = path_join(over, orig_dir);
 
    // bind-mounts
@@ -677,11 +678,12 @@ void mkdir_overmount(const char *path, const char *scratch)
        "can't bind-mount: %s- > %s", over, parent);
 
    // symlink ranch
-   entry_ct = dir_glob_count(path_dst, "*");
+   entries = dir_glob(path_dst, "*");
+   entry_ct = list_count(entries, sizeof(entries[0]));
    DEBUG("existing entries: %d", entry_ct);
    for (int i = 0; i < entry_ct; i++) {
-      char * src = path_join(parent, entries[i]->d_name);
-      char * dst = path_join(orig_dir, entries[i]->d_name);
+      char * src = path_join(parent, entries[i]);
+      char * dst = path_join(orig_dir, entries[i]);
       Zf (symlink(dst, src), "can't symlink: %s -> %s", src, dst);
    }
 
@@ -724,7 +726,7 @@ void mkdirs(const char *base, const char *path, char **denylist,
    next = NULL;
    while (component != NULL) {
       next = path_join(nextc, component);  // canonical except for last
-      TRACE("mkdirs: next: %s", next)
+      TRACE("mkdirs: next: %s", next);
       component = strtok_r(NULL, "/", &saveptr);  // next NULL if current last
       if (path_exists(next, &sb, false)) {
          if (S_ISLNK(sb.st_mode)) {
@@ -752,7 +754,7 @@ void mkdirs(const char *base, const char *path, char **denylist,
                Tf (0, "can't mkdir: %s", next);
          }
          nextc = next;  // canonical b/c we just created last component as dir
-         TRACE("mkdirs: created: %s", nextc)
+         TRACE("mkdirs: created: %s", nextc);
       }
    }
    TRACE("mkdirs: done");
@@ -841,7 +843,7 @@ void msgv(enum log_level level, const char *file, int line, int errno_,
    text_full = ch_asprintf("%s[%d]: %s%s%s (%s:%d%s)",
                            program_invocation_short_name, getpid(),
                            level_prefix, text_formatted, errno_desc,
-                           file, line, errno_code));
+                           file, line, errno_code);
    fprintf(stderr, "%s%s%s\n", colour, text_full, colour_reset);
    if (fflush(stderr))
       abort();  // can’t print an error b/c already trying to do that
@@ -932,7 +934,7 @@ void path_split(const char *path, char **dir, char **base)
 {
    if (dir != NULL)
       *dir = dirname(ch_strdup(path));
-   if (base != NULL) {
+   if (base != NULL)
       *base = basename(ch_strdup(path));
 }
 
@@ -978,7 +980,7 @@ char *realpath_(const char *path, bool fail_ok)
 
    if (pathc == NULL) {
       if (fail_ok) {
-         pathc = ch_strdup(path));
+         pathc = ch_strdup(path);
       } else {
          Tf (false, "can't canonicalize: %s", path);
       }

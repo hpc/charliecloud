@@ -289,7 +289,6 @@ enum img_type image_type(const char *ref, const char *storage_dir)
 
 char *img_name2path(const char *name, const char *storage_dir)
 {
-   char *path;
    char *name_fs = ch_strdup(name);
 
    replace_char(name_fs, '/', '%');
@@ -377,7 +376,7 @@ void mounts_setup(struct container *c)
 
    // Claim new root for this namespace. Despite MS_REC in bind_mount(), we do
    // need both calls to avoid pivot_root(2) failing with EBUSY later.
-   DEBUG("claiming new root for this namespace")
+   DEBUG("claiming new root for this namespace");
    bind_mount(c->newroot, c->newroot, BD_REQUIRED, "/", MS_PRIVATE, NULL);
    bind_mount(nr_parent, nr_parent, BD_REQUIRED, "/", MS_PRIVATE, NULL);
    // Re-mount new root read-only unless --write or already read-only.
@@ -405,7 +404,7 @@ void mounts_setup(struct container *c)
       Z_ (mkdir(mkdir_scratch, 0700));
       options = ch_asprintf(("lowerdir=%s,upperdir=%s,workdir=%s,"
                              "index=on,userxattr,volatile"),
-                            c->newroot, WF_MNT "/upper", WF_MNT "/work"));
+                            c->newroot, WF_MNT "/upper", WF_MNT "/work");
       // update newroot
       Zf (stat(c->newroot, &st),
           "can't stat new root; overmounted by tmpfs for -W?: %s", c->newroot);
@@ -442,7 +441,7 @@ void namespace_join(pid_t pid, const char *ns)
    char *path;
    int fd;
 
-   path = ch_asprintf(&path, "/proc/%d/ns/%s", pid, ns);
+   path = ch_asprintf("/proc/%d/ns/%s", pid, ns);
    fd = open(path, O_RDONLY);
    if (fd == -1) {
       if (errno == ENOENT) {

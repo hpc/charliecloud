@@ -38,6 +38,7 @@
 #include "config.h"  // here to avoid potential clash with SquashFUSE config.h
 #include "core.h"
 #include "fuse.h"
+#include "mem.h"
 #include "misc.h"
 
 
@@ -121,7 +122,7 @@ void sq_fork(struct container *c)
 
    // Default mount point?
    if (c->newroot == NULL) {
-      char *subdir = asprintf("/%s.ch/mnt", username);
+      char *subdir = ch_asprintf("/%s.ch/mnt", username);
       c->newroot = cat("/var/tmp", subdir);
       VERBOSE("using default mount point: %s", c->newroot);
       mkdirs("/var/tmp", subdir, NULL, NULL);
@@ -202,7 +203,7 @@ int sq_loop(void)
          // [1]: https://codereview.stackexchange.com/a/109349
          // [2]: https://man7.org/linux/man-pages/man2/wait.2.html
          exit_code = 1;
-         VERBOSE("child terminated by signal %d", WTERMSIG(child_status))
+         VERBOSE("child terminated by signal %d", WTERMSIG(child_status));
       }
    }
 
@@ -227,7 +228,7 @@ void sq_mount(const char *img_path, char *mountpt)
    struct fuse_args mount_args = FUSE_ARGS_INIT(mount_argc, mount_argv);
 
    sq.mountpt = mountpt;
-   sq.chan = ch_malloc(sizeof(sqfs_ll_chan));
+   sq.chan = ch_malloc(sizeof(sqfs_ll_chan), true);
 
    sq.ll = sqfs_ll_open(img_path, 0);
    Te (sq.ll != NULL, "can't open SquashFS: %s; try ch-run -vv?", img_path);

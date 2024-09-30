@@ -240,7 +240,7 @@ void hook_seccomp_install(struct container *c, void *d)
    // wrapper.
    T_ (ii == p.len);  // next instruction now one past the end of the buffer
    Z_ (prctl(PR_SET_SECCOMP, SECCOMP_MODE_FILTER, &p));
-   DEBUG("seccomp: see contributor's guide to disassemble")
+   DEBUG("seccomp: see contributor's guide to disassemble");
 
    // Test filter. This will fail if the kernel executes the call (because we
    // are not really privileged and the arguments are bogus) or succeed if

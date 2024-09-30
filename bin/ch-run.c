@@ -408,7 +408,7 @@ void hooks_env_install(struct args *args)
             struct env_file *ef;
             name = "env-set-gfile";
             f = hook_envs_set_file;
-            ef = ch_malloc(sizeof(struct env_file));
+            ef = ch_malloc(sizeof(struct env_file), true);
             ef->path = arg;
             ef->delim = delim;
             ef->expand = args->c.env_expand;
@@ -638,7 +638,6 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
       } break;
    case -19: // --cdi-dirs
       Te (strlen(arg) > 0, "--cdi-dirs: PATHS must be non-empty");
-      list_free_shallow((void ***)&args->cdi.spec_dirs);
       args->cdi.spec_dirs = list_new_strings(':', arg);
       break;
 #endif
@@ -662,7 +661,8 @@ static error_t parse_opt(int key, char *arg, struct argp_state *state)
    case 'b': {  // --bind
         char *src, *dst;
         i = list_count(args->c.binds, sizeof(args->c.binds[0]));
-        args->c.binds = ch_realloc(args->c.binds, (i+2) * sizeof(struct bind));
+        args->c.binds = ch_realloc(args->c.binds, (i+2) * sizeof(struct bind),
+                                   true);
         memset(&args->c.binds[i+1], 0, sizeof(args->c.binds[0]));  // terminate
         args->c.binds[i].dep = BD_MAKE_DST;
         // source
@@ -792,7 +792,7 @@ char *storage_default(void)
    char *storage = getenv("CH_IMAGE_STORAGE");
 
    if (storage == NULL)
-      storage = ch_asprintf("/var/tmp/%s.ch", username));
+      storage = ch_asprintf("/var/tmp/%s.ch", username);
 
    return storage;
 }
