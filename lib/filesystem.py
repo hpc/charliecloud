@@ -1129,7 +1129,9 @@ class Storage:
          less any Charliecloud storage directory we might feasibly come
          across, even if it can’t be upgraded. See also #1147."""
       return (os.path.isdir(self.unpack_base) and
-              os.path.isdir(self.download_cache))
+              os.path.isdir(self.download_cache) and
+              os.path.isfile(self.version_file)) and
+              self.version_read(self.version_file) >= STORAGE_VERSION)
 
    @property
    def version_file(self):
@@ -1284,8 +1286,6 @@ class Storage:
                      % (msg_prefix, img), ch.BUG_REPORT_PLZ)
 
    def version_read(self):
-      if (not os.path.isfile(self.version_file)):
-         ch.FATAL('Expected file "%s" not found' % self.version_file)
       text = self.version_file.file_read_all()
       try:
          return int(text)
