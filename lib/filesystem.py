@@ -23,8 +23,9 @@ import charliecloud as ch
 #
 # To see the directory formats in released versions:
 #
-#   $ git grep -E '^STORAGE_VERSION =' $(git tag | sort -V)
-STORAGE_VERSION = 7
+#   $ git grep -E '^STORAGE_CURRENT_VERSION =' $(git tag | sort -V)
+STORAGE_CURRENT_VERSION = 7
+STORAGE_MIN_VERSION = 7
 
 
 ## Globals ##
@@ -1131,7 +1132,7 @@ class Storage:
       return (os.path.isdir(self.unpack_base) and
               os.path.isdir(self.download_cache) and
               os.path.isfile(self.version_file)) and
-              self.version_read(self.version_file) >= STORAGE_VERSION)
+              self.version_read(self.version_file) >=  STORAGE_MIN_VERSION)
 
    @property
    def version_file(self):
@@ -1174,12 +1175,12 @@ class Storage:
                hint = None
             ch.FATAL("storage directory seems invalid: %s" % self.root, hint)
          v_found = self.version_read()
-      if (v_found == STORAGE_VERSION):
-         ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
+      if (v_found == STORAGE_CURRENT_VERSION):
+         ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_CURRENT_VERSION, self.root))
          self.lock()
       elif (v_found is None):  # initialize/upgrade
          ch.INFO("%s storage directory: v%d %s"
-                 % (op, STORAGE_VERSION, self.root))
+                 % (op, STORAGE_CURRENT_VERSION, self.root))
          self.root.mkdir()
          self.lock()
          # These directories appeared in various storage versions, but since
@@ -1190,7 +1191,7 @@ class Storage:
          self.build_large.mkdir()
          self.unpack_base.mkdir()
          self.upload_cache.mkdir()
-         self.version_file.file_write("%d\n" % STORAGE_VERSION)
+         self.version_file.file_write("%d\n" % STORAGE_CURRENT_VERSION)
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
                   % (v_found, self.root),
@@ -1273,9 +1274,9 @@ class Storage:
                % (msg_prefix, " ".join(sorted(entries))))
       # check version
       v_found = self.version_read()
-      if (v_found != STORAGE_VERSION):
+      if (v_found != STORAGE_CURRENT_VERSION):
          ch.FATAL("%s: version mismatch: %d expected, %d found"
-               % (msg_prefix, STORAGE_VERSION, v_found))
+               % (msg_prefix, STORAGE_CURRENT_VERSION, v_found))
       # check that no image directories have “:” in filename
       assert isinstance(self.unpack_base, Path) # remove if test suite passes
       imgs = self.unpack_base.listdir()
