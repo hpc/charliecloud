@@ -1178,7 +1178,7 @@ class Storage:
       if (v_found == STORAGE_CURRENT_VERSION):
          ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_CURRENT_VERSION, self.root))
          self.lock()
-      elif (v_found is None):  # initialize/upgrade
+      elif (v_found in {None,}):  # None if initializing, or upgraded version
          ch.INFO("%s storage directory: v%d %s"
                  % (op, STORAGE_CURRENT_VERSION, self.root))
          self.root.mkdir()
