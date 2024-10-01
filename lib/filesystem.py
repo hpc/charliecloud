@@ -1131,7 +1131,7 @@ class Storage:
          across, even if it can’t be upgraded. See also #1147."""
       return (os.path.isdir(self.unpack_base) and
               os.path.isdir(self.download_cache) and
-              os.path.isfile(self.version_file)) and
+              os.path.isfile(self.version_file) and
               self.version_read(self.version_file) >=  STORAGE_MIN_VERSION)
 
    @property
