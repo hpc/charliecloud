@@ -433,12 +433,12 @@ void hooks_env_install(struct args *args)
       case ENV_CDI_DEV:
          name = "env-set-cdi";
          f = hook_envs_set;
-         //d = cdi_envs_get(arg);
+         d = cdi_envs_get(arg);
          break;
       case ENV_CDI_ALL:
          name = "env-set-cdi-all";
          f = hook_envs_set;
-         //d = cdi_envs_get(NULL);
+         d = cdi_envs_get(NULL);
       case ENV_END:
          T_ (false);  // unreachable
          break;

@@ -160,20 +160,23 @@ bool cdi_devid_kind_p(const char *devid)
    return (devid[0] != '.' && devid[0] != '/');
 }
 
-/* Return a list of environment variables to be set for device kind kind, or
-   if kind is NULL, all known devices. Both the list and the buffers within
-   are newly allocated; the caller must free the list with envs_free(). */
+/* Return a list of environment variables to be set for device devid, which
+   can be either a device kind or a path, or if devid is NULL, all known
+   devices. */
 struct env_var *cdi_envs_get(const char *devid)
 {
-   //struct env_var *vars;
+   struct env_var *vars = list_new(sizeof(struct env_var), 0);
 
-   // count variables so we can do just one allocation
-   //for ()
+   for (int i = 0; cdi_specs[i].kind != NULL; i++) {
+      // Compare devid with both kind and path without checking what it is
+      // because it seemed the odds of false positive low enough.
+      if (   devid == NULL
+          || !strcmp(devid, cdi_specs[i].kind)
+          || !strcmp(devid, cdi_specs[i].src_path))
+         list_append((void **)&vars, cdi_specs[i].envs, sizeof(vars[0]));
+   }
 
-   // set up the list
-
-   //return vars;
-   return NULL;
+   return vars;
 }
 
 void cdi_hook_nv_ldcache(struct cdi_spec *spec, char **args)
