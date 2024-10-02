@@ -217,6 +217,35 @@ int sq_loop(void)
    return exit_code;
 }
 
+/* Find the byte offset of where the squash portion begins */
+int sq_offset(const char *sif_path)
+{
+   FILE *fp = fopen(sif_path, "rb");
+   char offset[8];
+   char magic[4];
+   int squash_offset = 0;
+   int i;
+
+   Tf (fp != NULL, "can't open: %s", sif_path);
+
+   // iterate through file in chunks of size eight until squash magic number appears
+   while (fread(offset,8,1,fp) != 0) {
+      for (i=0; i < 4; i++) {
+         magic[i] = offset[i];
+      }
+      if (memcmp(magic, "hsqs", 4) == 0) { // 6873 7173
+         // Squash byte offset is zero if IMG_SQUASH
+         // Squash byte offset is > zero if IMG_SIF
+         squash_offset = ftell(fp)-8;
+         VERBOSE("Squash byte offset: %d\n", squash_offset);
+         VERBOSE("Magic is: %x%x %x%x\n", magic[0],magic[1],magic[2],magic[3]);
+         break;
+      }
+   }
+   Zf (fclose(fp), "can't close: %s", sif_path);
+   return squash_offset;
+}
+
 /* Mount the SquashFS img_path at mountpt. Exit on any errors. */
 void sq_mount(const char *img_path, char *mountpt)
 {
@@ -231,7 +260,11 @@ void sq_mount(const char *img_path, char *mountpt)
    sq.mountpt = mountpt;
    T_ (sq.chan = malloc(sizeof(sqfs_ll_chan)));
 
-   sq.ll = sqfs_ll_open(img_path, 0);
+   int byte_offset = 0;
+
+   byte_offset = sq_offset(img_path);
+   sq.ll = sqfs_ll_open(img_path, byte_offset);
+
    Te (sq.ll != NULL, "can't open SquashFS: %s; try ch-run -vv?", img_path);
 
    // sqfs_ll_mount() is squirrely for a couple reasons:

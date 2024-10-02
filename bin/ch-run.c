@@ -208,6 +208,10 @@ int main(int argc, char *argv[])
       Tf (!args.c.writable || args.unsafe,
           "--write invalid when running by name");
       break;
+   case IMG_SIF:
+      INFO("SIF file detected!");
+      //args.c.newroot = realpath_(args.c.img_ref, false);
+      break;
    case IMG_SQUASH:
 #ifndef HAVE_LIBSQUASHFUSE
       FATAL(0, "this ch-run does not support internal SquashFS mounts");
