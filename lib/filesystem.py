@@ -23,8 +23,9 @@ import charliecloud as ch
 #
 # To see the directory formats in released versions:
 #
-#   $ git grep -E '^STORAGE_VERSION =' $(git tag | sort -V)
-STORAGE_VERSION = 7
+#   $ git grep -E '^STORAGE_CURRENT_VERSION =' $(git tag | sort -V)
+STORAGE_CURRENT_VERSION = 7
+STORAGE_MIN_VERSION = 7
 
 
 ## Globals ##
@@ -1129,7 +1130,9 @@ class Storage:
          less any Charliecloud storage directory we might feasibly come
          across, even if it can’t be upgraded. See also #1147."""
       return (os.path.isdir(self.unpack_base) and
-              os.path.isdir(self.download_cache))
+              os.path.isdir(self.download_cache) and
+              os.path.isfile(self.version_file) and
+              self.version_read(self.version_file) >=  STORAGE_MIN_VERSION)
 
    @property
    def version_file(self):
@@ -1172,12 +1175,12 @@ class Storage:
                hint = None
             ch.FATAL("storage directory seems invalid: %s" % self.root, hint)
          v_found = self.version_read()
-      if (v_found == STORAGE_VERSION):
-         ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_VERSION, self.root))
+      if (v_found == STORAGE_CURRENT_VERSION):
+         ch.VERBOSE("found storage dir v%d: %s" % (STORAGE_CURRENT_VERSION, self.root))
          self.lock()
-      elif (v_found in {None, 6}):  # initialize/upgrade
+      elif (v_found in {None,}):  # None if initializing, or upgraded version
          ch.INFO("%s storage directory: v%d %s"
-                 % (op, STORAGE_VERSION, self.root))
+                 % (op, STORAGE_CURRENT_VERSION, self.root))
          self.root.mkdir()
          self.lock()
          # These directories appeared in various storage versions, but since
@@ -1188,17 +1191,7 @@ class Storage:
          self.build_large.mkdir()
          self.unpack_base.mkdir()
          self.upload_cache.mkdir()
-         if (v_found is not None):  # upgrade
-            if (v_found == 6):
-               # Charliecloud 0.32 had a bug where symlinks to fat manifests
-               # that were really skinny were erroneously absolute, making the
-               # storage directory immovable (PR #1657). Remove all symlinks
-               # in dlcache; they’ll be re-created later.
-               for entry in self.download_cache.iterdir():
-                  if (entry.is_symlink()):
-                     ch.DEBUG("deleting bad v6 symlink: %s" % entry)
-                     entry.unlink()
-         self.version_file.file_write("%d\n" % STORAGE_VERSION)
+         self.version_file.file_write("%d\n" % STORAGE_CURRENT_VERSION)
       else:                         # can’t upgrade
          ch.FATAL("incompatible storage directory v%d: %s"
                   % (v_found, self.root),
@@ -1281,9 +1274,9 @@ class Storage:
                % (msg_prefix, " ".join(sorted(entries))))
       # check version
       v_found = self.version_read()
-      if (v_found != STORAGE_VERSION):
+      if (v_found != STORAGE_CURRENT_VERSION):
          ch.FATAL("%s: version mismatch: %d expected, %d found"
-               % (msg_prefix, STORAGE_VERSION, v_found))
+               % (msg_prefix, STORAGE_CURRENT_VERSION, v_found))
       # check that no image directories have “:” in filename
       assert isinstance(self.unpack_base, Path) # remove if test suite passes
       imgs = self.unpack_base.listdir()
@@ -1294,10 +1287,6 @@ class Storage:
                      % (msg_prefix, img), ch.BUG_REPORT_PLZ)
 
    def version_read(self):
-      # While support for storage v1 was dropped some time ago, let’s at least
-      # retain the ability to recognize it.
-      if (not os.path.isfile(self.version_file)):
-         return 1
       text = self.version_file.file_read_all()
       try:
          return int(text)
