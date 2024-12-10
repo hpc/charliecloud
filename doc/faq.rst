@@ -1361,6 +1361,28 @@ conversion. Important caveats include:
    in the :code:`user` namespace prior to Linux kernel `upstream 6.6
    <https://kernelnewbies.org/Linux_6.6#TMPFSe>`_ (Oct 2023).
 
+.. _faq_sourcing_when_container_starts:
+
+How do I source a file automatically when container starts?
+-----------------------------------------------------------
+
+There are ways to have Bash source an arbitrary script at start-up
+(`docs <https://www.gnu.org/software/bash/manual/html_node/Invoking-Bash.html>`_).
+
+For example :code:`ch-run ... -- bash --rcfile /my/start.sh`
+will give you an interactive shell with :code:`/my/start.sh` sourced first.
+
+Or: :code:`ch-run ... -- bash --login` will give you an interactive login shell
+and so it will source :code:`/etc/profile`.
+
+Finally, you can have a file :code:`$HOME/.bashrc` (where :code:`$HOME` is set by
+default - is described `here <ch-run#environment-variables>`_), which bash will
+source automatically with :code:`ch-run ... -- bash`.
+
+Alternatively, if you want the interactive Bash shell to source :code:`.bashrc`
+of your host system, you can consider using :code:`ch-run --home`, which binds your
+home directory into the container.
+
 
 ..  LocalWords:  CAs SY Gutmann AUTH rHsFFqwwqh MrieaQ Za loc mpihello mvo du
 ..  LocalWords:  VirtualSize linuxcontainers jour uk lxd rwxr xr qq qqq drwxr
