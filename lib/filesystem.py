@@ -24,7 +24,7 @@ import charliecloud as ch
 # To see the directory formats in released versions:
 #
 #   $ git grep -E '^STORAGE_VERSION =' $(git tag | sort -V)
-STORAGE_VERSION = 7
+STORAGE_VERSION = 8
 
 
 ## Globals ##
@@ -1096,6 +1096,12 @@ class Storage:
    @property
    def build_large(self):
       return self.root // "bularge"
+   
+   @property
+   def experiment_dir(self):
+      """this is the directory containing all of the experiments relating to the performance
+         of the Charliecloud build cache"""
+      return self.root // "experiment"
 
    @property
    def download_cache(self):
@@ -1186,6 +1192,7 @@ class Storage:
          self.download_cache.mkdir()
          self.build_cache.mkdir()
          self.build_large.mkdir()
+         self.experiment_dir.mkdir()
          self.unpack_base.mkdir()
          self.upload_cache.mkdir()
          if (v_found is not None):  # upgrade
@@ -1260,6 +1267,7 @@ class Storage:
       for entry in { i.name for i in (self.build_cache,
                                       self.build_large,
                                       self.download_cache,
+                                      self.experiment_dir,
                                       self.unpack_base,
                                       self.upload_cache,
                                       self.version_file) }:
