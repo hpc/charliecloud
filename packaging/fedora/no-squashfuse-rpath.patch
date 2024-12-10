@@ -1,0 +1,11 @@
+--- a/configure	2024-02-09 11:26:45.647046362 -0500
++++ b/configure	2024-02-09 11:30:18.613833446 -0500
+@@ -7137,7 +7137,7 @@
+ else $as_nop
+   rpath_libsquashfuse=
+ fi
+-       CH_RUN_LIBS="-lsquashfuse_ll -lfuse3 $rpath_libsquashfuse $CH_RUN_LIBS"
++       CH_RUN_LIBS="-lsquashfuse_ll -lfuse3 $CH_RUN_LIBS"
+ else $as_nop
+   have_libsquashfuse=no
+ fi
