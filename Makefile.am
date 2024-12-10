@@ -21,8 +21,10 @@ install-exec-hook:
 	         $(DESTDIR)@libdir@/charliecloud/base.sh \
 	         $(DESTDIR)@libexecdir@/charliecloud/doctest; \
 	do \
-	  sed -Ei -e 's|^(ch_lib ?= ?).+/lib"?$$|\1"@libdir@/charliecloud"|' \
-	          -e 's|^(CHTEST_DIR=).+$$|\1@libexecdir@/charliecloud|' \
-	          -e 's|^(CHTEST_EXAMPLES_DIR=).+$$|\1@docdir@/examples|' \
-              $$i; \
+	  if [ -e $$i ]; then \
+	    sed -Ei -e 's|^(ch_lib ?= ?).+/lib"?$$|\1"@libdir@/charliecloud"|'\
+	            -e 's|^(CHTEST_DIR=).+$$|\1@libexecdir@/charliecloud|' \
+	            -e 's|^(CHTEST_EXAMPLES_DIR=).+$$|\1@docdir@/examples|' \
+                $$i; \
+	  fi \
 	done
